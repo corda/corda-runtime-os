@@ -295,13 +295,13 @@ class KafkaCompactedSubscriptionImplTest {
             .beginningOffsets(any())
         doReturn(
             mutableMapOf(
-                TopicPartition(TOPIC, 0) to initialSnapshotResult.size.toLong() - 1,
+                TopicPartition(TOPIC, 0) to  numberOfRecords+1,
                 TopicPartition(TOPIC, 1) to 0,
             )
         ).whenever(kafkaConsumer).endOffsets(any())
         doReturn(numberOfRecords+1).whenever(kafkaConsumer).position(any())
-        doReturn(setOf(TopicPartition(TOPIC, 0))).whenever(kafkaConsumer).assignment()
-        doReturn(mapOf(TopicPartition(TOPIC, 0) to numberOfRecords+1)).whenever(kafkaConsumer).endOffsets(any())
+        doReturn(setOf(TopicPartition(TOPIC, 0), TopicPartition(TOPIC, 1))).whenever(kafkaConsumer).assignment()
+
         return Pair(kafkaConsumer, consumerBuilder)
     }
 }

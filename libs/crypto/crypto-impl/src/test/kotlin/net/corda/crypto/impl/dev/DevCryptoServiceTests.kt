@@ -37,6 +37,9 @@ import kotlin.test.assertTrue
 class DevCryptoServiceTests {
     companion object {
         private const val wrappingKeyAlias = "wrapping-key-alias"
+
+        private val EMPTY_CONTEXT = emptyMap<String, String>()
+
         private val UNSUPPORTED_SIGNATURE_SCHEME = SignatureScheme(
             codeName = "UNSUPPORTED_SIGNATURE_SCHEME",
             algorithmOIDs = listOf(
@@ -70,7 +73,7 @@ class DevCryptoServiceTests {
             )
             cryptoService = devCryptoServiceProvider.getInstance(
                 CryptoServiceContext(
-                    sandboxId = memberId,
+                    memberId = memberId,
                     category = CryptoCategories.LEDGER,
                     cipherSuiteFactory = mockFactory.cipherSuiteFactory,
                     config = DevCryptoServiceConfiguration()
@@ -130,7 +133,7 @@ class DevCryptoServiceTests {
         val alias = newAlias()
         assertTrue(cryptoService.containsKey(alias))
         val keyPair = validateGeneratedKeySpecs(alias, true)
-        val signature = cryptoService.sign(alias, signatureScheme, testData)
+        val signature = cryptoService.sign(alias, signatureScheme, testData, EMPTY_CONTEXT)
         assertTrue(signatureVerifier.isValid(keyPair.public, signature, testData))
         assertFalse(signatureVerifier.isValid(keyPair.public, signature, badVerifyData))
     }
@@ -147,7 +150,7 @@ class DevCryptoServiceTests {
         val keyPair = validateGeneratedKeySpecs(alias, true)
         assertNotNull(publicKey)
         assertEquals(keyPair.public, publicKey)
-        val signature = cryptoService.sign(alias, signatureScheme, testData)
+        val signature = cryptoService.sign(alias, signatureScheme, testData, EMPTY_CONTEXT)
         assertTrue(signatureVerifier.isValid(publicKey, signature, testData))
         assertFalse(signatureVerifier.isValid(publicKey, signature, badVerifyData))
     }
@@ -157,7 +160,7 @@ class DevCryptoServiceTests {
     fun `findPublicKey should return public key for generated key`() {
         val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
         val alias = newAlias()
-        cryptoService.generateKeyPair(alias, signatureScheme)
+        cryptoService.generateKeyPair(alias, signatureScheme, EMPTY_CONTEXT)
         val generated = validateGeneratedKeySpecs(alias, false)
         val publicKey = cryptoService.findPublicKey(alias)
         assertNotNull(publicKey)
@@ -171,11 +174,11 @@ class DevCryptoServiceTests {
         val badVerifyData = UUID.randomUUID().toString().toByteArray()
         val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
         val alias = newAlias()
-        val publicKey = cryptoService.generateKeyPair(alias, signatureScheme)
+        val publicKey = cryptoService.generateKeyPair(alias, signatureScheme, EMPTY_CONTEXT)
         val keyPair = validateGeneratedKeySpecs(alias, false)
         assertNotNull(publicKey)
         assertEquals(keyPair.public, publicKey)
-        val signature = cryptoService.sign(alias, signatureScheme, testData)
+        val signature = cryptoService.sign(alias, signatureScheme, testData, EMPTY_CONTEXT)
         assertTrue(signatureVerifier.isValid(publicKey, signature, testData))
         assertFalse(signatureVerifier.isValid(publicKey, signature, badVerifyData))
     }
@@ -185,18 +188,18 @@ class DevCryptoServiceTests {
     fun `Should generate deterministic EDDSA key pair with ED25519 curve based on alias`() {
         val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
         val alias1 = newAlias()
-        val publicKey1 = cryptoService.generateKeyPair(alias1, signatureScheme)
+        val publicKey1 = cryptoService.generateKeyPair(alias1, signatureScheme, EMPTY_CONTEXT)
         val keyPair1 = validateGeneratedKeySpecs(alias1, false)
         assertNotNull(publicKey1)
         assertEquals(keyPair1.public, publicKey1)
-        val publicKey2 = cryptoService.generateKeyPair(alias1, signatureScheme)
+        val publicKey2 = cryptoService.generateKeyPair(alias1, signatureScheme, EMPTY_CONTEXT)
         val keyPair2 = validateGeneratedKeySpecs(alias1, false)
         assertNotNull(publicKey2)
         assertEquals(keyPair2.public, publicKey2)
         assertEquals(keyPair1.public, keyPair2.public)
         assertEquals(keyPair1.private, keyPair2.private)
         val alias3 = newAlias()
-        val publicKey3 = cryptoService.generateKeyPair(alias3, signatureScheme)
+        val publicKey3 = cryptoService.generateKeyPair(alias3, signatureScheme, EMPTY_CONTEXT)
         val keyPair3 = validateGeneratedKeySpecs(alias3, false)
         assertNotNull(publicKey3)
         assertEquals(keyPair3.public, publicKey3)
@@ -211,7 +214,7 @@ class DevCryptoServiceTests {
         val badVerifyData = UUID.randomUUID().toString().toByteArray()
         val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
         val alias = newAlias()
-        val signature = cryptoService.sign(alias, signatureScheme, testData)
+        val signature = cryptoService.sign(alias, signatureScheme, testData, EMPTY_CONTEXT)
         val keyPair = validateGeneratedKeySpecs(alias, true)
         assertTrue(signatureVerifier.isValid(keyPair.public, signature, testData))
         assertFalse(signatureVerifier.isValid(keyPair.public, signature, badVerifyData))
@@ -248,7 +251,7 @@ class DevCryptoServiceTests {
         val testData = UUID.randomUUID().toString().toByteArray()
         val alias = newAlias()
         assertFailsWith<CryptoServiceBadRequestException> {
-            cryptoService.sign(alias, UNSUPPORTED_SIGNATURE_SCHEME, testData)
+            cryptoService.sign(alias, UNSUPPORTED_SIGNATURE_SCHEME, testData, EMPTY_CONTEXT)
         }
     }
 
@@ -257,7 +260,7 @@ class DevCryptoServiceTests {
     fun `Should fail when signing with unsupported signature scheme`() {
         val alias = newAlias()
         assertFailsWith<CryptoServiceBadRequestException> {
-            cryptoService.generateKeyPair(alias, UNSUPPORTED_SIGNATURE_SCHEME)
+            cryptoService.generateKeyPair(alias, UNSUPPORTED_SIGNATURE_SCHEME, EMPTY_CONTEXT)
         }
     }
 
@@ -267,7 +270,7 @@ class DevCryptoServiceTests {
         val testData = UUID.randomUUID().toString().toByteArray()
         val badVerifyData = UUID.randomUUID().toString().toByteArray()
         val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
-        val wrappedKeyPair = cryptoService.generateWrappedKeyPair(wrappingKeyAlias, signatureScheme)
+        val wrappedKeyPair = cryptoService.generateWrappedKeyPair(wrappingKeyAlias, signatureScheme, EMPTY_CONTEXT)
         val signature = cryptoService.sign(
             WrappedPrivateKey(
                 keyMaterial = wrappedKeyPair.keyMaterial,
@@ -275,7 +278,8 @@ class DevCryptoServiceTests {
                 signatureScheme = signatureScheme,
                 encodingVersion = wrappedKeyPair.encodingVersion
             ),
-            signatureScheme.signatureSpec, testData
+            testData,
+            EMPTY_CONTEXT
         )
         assertTrue(signatureVerifier.isValid(wrappedKeyPair.publicKey, signature, testData))
         assertFalse(signatureVerifier.isValid(wrappedKeyPair.publicKey, signature, badVerifyData))
@@ -287,7 +291,7 @@ class DevCryptoServiceTests {
         val testData = UUID.randomUUID().toString().toByteArray()
         val signatureScheme = schemeMetadata.findSignatureScheme(DevCryptoService.SUPPORTED_SCHEME_CODE_NAME)
         val wrappingKey2Alias = UUID.randomUUID().toString()
-        val wrappedKeyPair = cryptoService.generateWrappedKeyPair(wrappingKeyAlias, signatureScheme)
+        val wrappedKeyPair = cryptoService.generateWrappedKeyPair(wrappingKeyAlias, signatureScheme, EMPTY_CONTEXT)
         assertFailsWith<CryptoServiceBadRequestException> {
             cryptoService.sign(
                 WrappedPrivateKey(
@@ -296,8 +300,8 @@ class DevCryptoServiceTests {
                     signatureScheme = signatureScheme,
                     encodingVersion = wrappedKeyPair.encodingVersion
                 ),
-                signatureScheme.signatureSpec,
-                testData
+                testData,
+                EMPTY_CONTEXT
             )
         }
     }

@@ -2,6 +2,7 @@ package net.corda.crypto.client
 
 import net.corda.crypto.CryptoLibraryClientsFactory
 import net.corda.crypto.CryptoLibraryClientsFactoryProvider
+import net.corda.crypto.CryptoLibrarySandboxClientsFactoryProvider
 import net.corda.crypto.component.config.CryptoRpcConfig
 import net.corda.crypto.component.config.rpc
 import net.corda.crypto.impl.clearCache
@@ -25,15 +26,25 @@ import org.slf4j.Logger
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
-@Component(service = [CryptoLibraryClientsFactoryProvider::class])
-class CryptoLibraryClientsFactoryProviderImpl @Activate constructor(
+@Component(
+    service = [
+        CryptoLibrarySandboxClientsFactoryProvider::class,
+        CryptoLibraryClientsFactoryProvider::class,
+        CryptoLibraryClientsFactoryProviderImpl::class
+    ]
+)
+open class CryptoLibraryClientsFactoryProviderImpl @Activate constructor(
     @Reference(service = CipherSuiteFactory::class)
     private val cipherSuiteFactory: CipherSuiteFactory,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = MemberIdProvider::class)
     private val memberIdProvider: MemberIdProvider
-) : Lifecycle, CryptoLifecycleComponent, CryptoLibraryClientsFactoryProvider {
+) : Lifecycle, CryptoLifecycleComponent, CryptoLibrarySandboxClientsFactoryProvider,
+    CryptoLibraryClientsFactoryProvider {
+
+    private interface Impl : CryptoLibrarySandboxClientsFactoryProvider, CryptoLibraryClientsFactoryProvider
+
     companion object {
         private val logger: Logger = contextLogger()
 
@@ -41,7 +52,7 @@ class CryptoLibraryClientsFactoryProviderImpl @Activate constructor(
             "$memberId:$requestingComponent"
     }
 
-    private var impl: CryptoLibraryClientsFactoryProvider = DevImpl(
+    private var impl: Impl = DevImpl(
         cipherSuiteFactory,
         memberIdProvider,
         logger
@@ -54,7 +65,7 @@ class CryptoLibraryClientsFactoryProviderImpl @Activate constructor(
         isRunning = true
     }
 
-    override fun stop()  {
+    override fun stop() {
         logger.info("Stopping...")
         impl.closeGracefully()
         isRunning = false
@@ -64,7 +75,7 @@ class CryptoLibraryClientsFactoryProviderImpl @Activate constructor(
         logger.info("Received new configuration...")
         // thread safe, as another thread will go through the same sequence
         val currentImpl = impl
-        impl = if(config.isDev) {
+        impl = if (config.isDev) {
             DevImpl(
                 cipherSuiteFactory,
                 memberIdProvider,
@@ -85,15 +96,20 @@ class CryptoLibraryClientsFactoryProviderImpl @Activate constructor(
     override fun create(requestingComponent: String): CryptoLibraryClientsFactory =
         impl.create(requestingComponent)
 
+    override fun create(memberId: String, requestingComponent: String): CryptoLibraryClientsFactory =
+        impl.create(memberId, requestingComponent)
+
     private class DevImpl(
         private val cipherSuiteFactory: CipherSuiteFactory,
         private val memberIdProvider: MemberIdProvider,
         private val logger: Logger
-    ) : CryptoLibraryClientsFactoryProvider, AutoCloseable {
+    ) : Impl {
         private val factories = ConcurrentHashMap<String, CryptoLibraryClientsFactory>()
 
-        override fun create(requestingComponent: String): CryptoLibraryClientsFactory  {
-            val memberId = memberIdProvider.memberId
+        override fun create(requestingComponent: String): CryptoLibraryClientsFactory =
+            create(memberIdProvider.memberId, requestingComponent)
+
+        override fun create(memberId: String, requestingComponent: String): CryptoLibraryClientsFactory {
             val key = makeFactoryKey(memberId, requestingComponent)
             logger.warn(
                 "Using dev provider to get {} for {}",
@@ -124,7 +140,7 @@ class CryptoLibraryClientsFactoryProviderImpl @Activate constructor(
         private var config: CryptoRpcConfig,
         publisherFactory: PublisherFactory,
         private val logger: Logger
-    ) : CryptoLibraryClientsFactoryProvider, AutoCloseable {
+    ) : Impl {
         private var signingServiceSender: RPCSender<WireSigningRequest, WireSigningResponse> =
             publisherFactory.createRPCSender(config.signingRpcConfig)
 
@@ -133,8 +149,10 @@ class CryptoLibraryClientsFactoryProviderImpl @Activate constructor(
 
         private val factories = ConcurrentHashMap<String, CryptoLibraryClientsFactory>()
 
-        override fun create(requestingComponent: String): CryptoLibraryClientsFactory {
-            val memberId = memberIdProvider.memberId
+        override fun create(requestingComponent: String): CryptoLibraryClientsFactory =
+            create(memberIdProvider.memberId, requestingComponent)
+
+        override fun create(memberId: String, requestingComponent: String): CryptoLibraryClientsFactory {
             val key = makeFactoryKey(memberId, requestingComponent)
             logger.debug("Getting {} for {}", CryptoLibraryClientsFactory::class.java.name, key)
             return factories.getOrPut(key) {

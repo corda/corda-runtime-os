@@ -156,13 +156,24 @@ class SigningServiceClientTests {
             )
         }
         val alias = UUID.randomUUID().toString()
+        val context = mapOf(
+            "someId" to UUID.randomUUID().toString(),
+            "reason" to "Hello World!"
+        )
         val nowBefore = Instant.now()
-        val result = client.generateKeyPair(alias)
+        val result = client.generateKeyPair(alias, context)
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
         validatePassedRequestContext(requests, nowBefore, nowAfter)
         assertThat(requests.firstValue.request, instanceOf(WireSigningGenerateKeyPair::class.java))
         assertEquals(alias, (requests.firstValue.request as WireSigningGenerateKeyPair).alias)
+        assertEquals(2, (requests.firstValue.request as WireSigningGenerateKeyPair).context.size)
+        assertTrue((requests.firstValue.request as WireSigningGenerateKeyPair).context.any {
+            it.key == "someId" && it.value == context["someId"]
+        })
+        assertTrue((requests.firstValue.request as WireSigningGenerateKeyPair).context.any {
+            it.key == "reason" && it.value == context["reason"]
+        })
         assertEquals(keyPair.public, result)
     }
 
@@ -180,8 +191,12 @@ class SigningServiceClientTests {
                 ByteBuffer.wrap(signature)
             )
         }
+        val context = mapOf(
+            "someId" to UUID.randomUUID().toString(),
+            "reason" to "Hello World!"
+        )
         val nowBefore = Instant.now()
-        val result = client.sign(keyPair.public, data)
+        val result = client.sign(keyPair.public, data, context)
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
         validatePassedRequestContext(requests, nowBefore, nowAfter)
@@ -194,6 +209,13 @@ class SigningServiceClientTests {
             data,
             (requests.firstValue.request as WireSigningSign).bytes .array()
         )
+        assertEquals(2, (requests.firstValue.request as WireSigningSign).context.size)
+        assertTrue((requests.firstValue.request as WireSigningSign).context.any {
+            it.key == "someId" && it.value == context["someId"]
+        })
+        assertTrue((requests.firstValue.request as WireSigningSign).context.any {
+            it.key == "reason" && it.value == context["reason"]
+        })
         assertEquals(keyPair.public, result.by)
         assertArrayEquals(signature, result.bytes)
     }
@@ -213,8 +235,12 @@ class SigningServiceClientTests {
                 ByteBuffer.wrap(signature)
             )
         }
+        val context = mapOf(
+            "someId" to UUID.randomUUID().toString(),
+            "reason" to "Hello World!"
+        )
         val nowBefore = Instant.now()
-        val result = client.sign(keyPair.public, spec, data)
+        val result = client.sign(keyPair.public, spec, data, context)
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
         validatePassedRequestContext(requests, nowBefore, nowAfter)
@@ -235,6 +261,13 @@ class SigningServiceClientTests {
             "SHA-256",
             (requests.firstValue.request as WireSigningSignWithSpec).signatureSpec.customDigestName
         )
+        assertEquals(2, (requests.firstValue.request as WireSigningSignWithSpec).context.size)
+        assertTrue((requests.firstValue.request as WireSigningSignWithSpec).context.any {
+            it.key == "someId" && it.value == context["someId"]
+        })
+        assertTrue((requests.firstValue.request as WireSigningSignWithSpec).context.any {
+            it.key == "reason" && it.value == context["reason"]
+        })
         assertEquals(keyPair.public, result.by)
         assertArrayEquals(signature, result.bytes)
     }
@@ -253,8 +286,12 @@ class SigningServiceClientTests {
             )
         }
         val alias = UUID.randomUUID().toString()
+        val context = mapOf(
+            "someId" to UUID.randomUUID().toString(),
+            "reason" to "Hello World!"
+        )
         val nowBefore = Instant.now()
-        val result = client.sign(alias, data)
+        val result = client.sign(alias, data, context)
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
         validatePassedRequestContext(requests, nowBefore, nowAfter)
@@ -264,6 +301,13 @@ class SigningServiceClientTests {
             data,
             (requests.firstValue.request as WireSigningSignWithAlias).bytes .array()
         )
+        assertEquals(2, (requests.firstValue.request as WireSigningSignWithAlias).context.size)
+        assertTrue((requests.firstValue.request as WireSigningSignWithAlias).context.any {
+            it.key == "someId" && it.value == context["someId"]
+        })
+        assertTrue((requests.firstValue.request as WireSigningSignWithAlias).context.any {
+            it.key == "reason" && it.value == context["reason"]
+        })
         assertArrayEquals(signature, result)
     }
 
@@ -282,8 +326,12 @@ class SigningServiceClientTests {
             )
         }
         val alias = UUID.randomUUID().toString()
+        val context = mapOf(
+            "someId" to UUID.randomUUID().toString(),
+            "reason" to "Hello World!"
+        )
         val nowBefore = Instant.now()
-        val result = client.sign(alias, spec, data)
+        val result = client.sign(alias, spec, data, context)
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
         validatePassedRequestContext(requests, nowBefore, nowAfter)
@@ -301,6 +349,13 @@ class SigningServiceClientTests {
             "SHA-256",
             (requests.firstValue.request as WireSigningSignWithAliasSpec).signatureSpec.customDigestName
         )
+        assertEquals(2, (requests.firstValue.request as WireSigningSignWithAliasSpec).context.size)
+        assertTrue((requests.firstValue.request as WireSigningSignWithAliasSpec).context.any {
+            it.key == "someId" && it.value == context["someId"]
+        })
+        assertTrue((requests.firstValue.request as WireSigningSignWithAliasSpec).context.any {
+            it.key == "reason" && it.value == context["reason"]
+        })
         assertArrayEquals(signature, result)
     }
 

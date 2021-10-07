@@ -2,6 +2,7 @@ package net.corda.crypto.service.rpc
 
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.SigningService
 import net.corda.crypto.service.CryptoFactory
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.data.WireKeyValuePair
@@ -25,8 +26,10 @@ import net.corda.data.crypto.wire.signing.WireSigningSignWithAliasSpec
 import net.corda.data.crypto.wire.signing.WireSigningSignWithSpec
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
@@ -49,6 +52,7 @@ import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutionException
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -56,6 +60,68 @@ import kotlin.test.assertTrue
 import kotlin.test.fail
 
 class SigningServiceRpcProcessorTests {
+    private class SigningServiceWrapper(private val impl: SigningService): SigningService {
+        companion object {
+            val recordedContexts = ConcurrentHashMap<String, Map<String, String>>()
+        }
+
+        override val supportedSchemes: Array<SignatureScheme>
+            get() = impl.supportedSchemes
+
+        override fun findPublicKey(alias: String): PublicKey? {
+            return impl.findPublicKey(alias)
+        }
+
+        override fun generateKeyPair(alias: String, context: Map<String, String>): PublicKey {
+            if(context.containsKey("someId")) {
+                recordedContexts[context.getValue("someId")] = context
+            }
+            return impl.generateKeyPair(alias, context)
+        }
+
+        override fun sign(
+            publicKey: PublicKey,
+            data: ByteArray,
+            context: Map<String, String>
+        ): DigitalSignature.WithKey {
+            if(context.containsKey("someId")) {
+                recordedContexts[context.getValue("someId")] = context
+            }
+            return impl.sign(publicKey, data, context)
+        }
+
+        override fun sign(
+            publicKey: PublicKey,
+            signatureSpec: SignatureSpec,
+            data: ByteArray,
+            context: Map<String, String>
+        ): DigitalSignature.WithKey {
+            if(context.containsKey("someId")) {
+                recordedContexts[context.getValue("someId")] = context
+            }
+            return impl.sign(publicKey, signatureSpec, data, context)
+        }
+
+        override fun sign(alias: String, data: ByteArray, context: Map<String, String>): ByteArray {
+            if(context.containsKey("someId")) {
+                recordedContexts[context.getValue("someId")] = context
+            }
+            return impl.sign(alias, data, context)
+        }
+
+        override fun sign(
+            alias: String,
+            signatureSpec: SignatureSpec,
+            data: ByteArray,
+            context: Map<String, String>
+        ): ByteArray {
+            if(context.containsKey("someId")) {
+                recordedContexts[context.getValue("someId")] = context
+            }
+            return impl.sign(alias, signatureSpec, data, context)
+        }
+    }
+
     companion object {
         private lateinit var memberId: String
         private lateinit var cryptoMocks: CryptoMocks
@@ -80,7 +146,9 @@ class SigningServiceRpcProcessorTests {
                     fail("The member id in getSigningService invocation does not match")
                 }
                 val categoryArg = it.arguments[1].toString()
-                cryptoMocks.factories.cryptoClients(memberId).getSigningService(categoryArg)
+                SigningServiceWrapper(
+                    cryptoMocks.factories.cryptoClients(memberId).getSigningService(categoryArg)
+                )
             }
             whenever(
                 cryptoFactory.cipherSchemeMetadata
@@ -185,21 +253,30 @@ class SigningServiceRpcProcessorTests {
     }
 
     @Test
-    @Timeout(5)
+    //@Timeout(5)
     fun `Should generate key pair and be able to find and sign using default and custom schemes`() {
         val data = UUID.randomUUID().toString().toByteArray()
         val alias = UUID.randomUUID().toString()
         // generate
         val context1 = getWireRequestContext()
+        val operationContext = listOf(
+            WireKeyValuePair("someId", UUID.randomUUID().toString()),
+            WireKeyValuePair("reason", "Hello World!")
+        )
         val future1 = CompletableFuture<WireSigningResponse>()
         processor.onNext(
             WireSigningRequest(
                 context1,
-                WireSigningGenerateKeyPair(alias)
+                WireSigningGenerateKeyPair(alias, operationContext)
             ),
             future1
         )
         val result1 = future1.get()
+        val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
+        assertNotNull(operationContextMap)
+        assertEquals(2, operationContext.size)
+        assertEquals(operationContext[0].value, operationContextMap["someId"])
+        assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertEquivalent(context1, result1.context)
         assertThat(result1.response, instanceOf(WirePublicKey::class.java))
         val publicKey = schemeMetadata.decodePublicKey((result1.response as WirePublicKey).key.array())
@@ -233,15 +310,24 @@ class SigningServiceRpcProcessorTests {
         val alias = UUID.randomUUID().toString()
         // generate
         val context1 = getWireRequestContext()
+        val operationContext = listOf(
+            WireKeyValuePair("someId", UUID.randomUUID().toString()),
+            WireKeyValuePair("reason", "Hello World!")
+        )
         val future1 = CompletableFuture<WireSigningResponse>()
         processor.onNext(
             WireSigningRequest(
                 context1,
-                WireSigningGenerateKeyPair(alias)
+                WireSigningGenerateKeyPair(alias, operationContext)
             ),
             future1
         )
         val result1 = future1.get()
+        val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
+        assertNotNull(operationContextMap)
+        assertEquals(2, operationContext.size)
+        assertEquals(operationContext[0].value, operationContextMap["someId"])
+        assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertEquivalent(context1, result1.context)
         assertThat(result1.response, instanceOf(WirePublicKey::class.java))
         val publicKey = schemeMetadata.decodePublicKey((result1.response as WirePublicKey).key.array())
@@ -259,7 +345,8 @@ class SigningServiceRpcProcessorTests {
                     WireSignatureSpec(
                         "BAD-SIGNATURE-ALGORITHM",
                         "BAD-DIGEST-ALGORITHM"),
-                    ByteBuffer.wrap(data)
+                    ByteBuffer.wrap(data),
+                    emptyList()
                 )
             ),
             future3
@@ -342,18 +429,28 @@ class SigningServiceRpcProcessorTests {
     private fun testSigningByPublicKeyLookup(publicKey: PublicKey, data: ByteArray) {
         // sign using public key and default scheme
         val context2 = getWireRequestContext()
+        val operationContext = listOf(
+            WireKeyValuePair("someId", UUID.randomUUID().toString()),
+            WireKeyValuePair("reason", "Hello World!")
+        )
         val future2 = CompletableFuture<WireSigningResponse>()
         processor.onNext(
             WireSigningRequest(
                 context2,
                 WireSigningSign(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                    ByteBuffer.wrap(data)
+                    ByteBuffer.wrap(data),
+                    operationContext
                 )
             ),
             future2
         )
         val result2 = future2.get()
+        val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
+        assertNotNull(operationContextMap)
+        assertEquals(2, operationContext.size)
+        assertEquals(operationContext[0].value, operationContextMap["someId"])
+        assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertEquivalent(context2, result2.context)
         assertThat(result2.response, instanceOf(WireSignatureWithKey::class.java))
         val signature2 = result2.response as WireSignatureWithKey
@@ -369,7 +466,8 @@ class SigningServiceRpcProcessorTests {
                 WireSigningSignWithSpec(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     WireSignatureSpec(signatureSpec3.signatureName, signatureSpec3.customDigestName?.name),
-                    ByteBuffer.wrap(data)
+                    ByteBuffer.wrap(data),
+                    emptyList()
                 )
             ),
             future3
@@ -391,7 +489,8 @@ class SigningServiceRpcProcessorTests {
                 WireSigningSignWithSpec(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     WireSignatureSpec(signatureSpec4!!.signatureName, signatureSpec4.customDigestName?.name),
-                    ByteBuffer.wrap(data)
+                    ByteBuffer.wrap(data),
+                    emptyList()
                 )
             ),
             future4
@@ -407,18 +506,28 @@ class SigningServiceRpcProcessorTests {
     private fun testSigningByAliasLookup(alias: String, publicKey: PublicKey, data: ByteArray) {
         // sign using public key and default scheme
         val context2 = getWireRequestContext()
+        val operationContext = listOf(
+            WireKeyValuePair("someId", UUID.randomUUID().toString()),
+            WireKeyValuePair("reason", "Hello World!")
+        )
         val future2 = CompletableFuture<WireSigningResponse>()
         processor.onNext(
             WireSigningRequest(
                 context2,
                 WireSigningSignWithAlias(
                     alias,
-                    ByteBuffer.wrap(data)
+                    ByteBuffer.wrap(data),
+                    operationContext
                 )
             ),
             future2
         )
         val result2 = future2.get()
+        val operationContextMap = SigningServiceWrapper.recordedContexts[operationContext[0].value]
+        assertNotNull(operationContextMap)
+        assertEquals(2, operationContext.size)
+        assertEquals(operationContext[0].value, operationContextMap["someId"])
+        assertEquals(operationContext[1].value, operationContextMap["reason"])
         assertEquivalent(context2, result2.context)
         assertThat(result2.response, instanceOf(WireSignature::class.java))
         val signature2 = result2.response as WireSignature
@@ -433,7 +542,8 @@ class SigningServiceRpcProcessorTests {
                 WireSigningSignWithAliasSpec(
                     alias,
                     WireSignatureSpec(signatureSpec3.signatureName, signatureSpec3.customDigestName?.name),
-                    ByteBuffer.wrap(data)
+                    ByteBuffer.wrap(data),
+                    emptyList()
                 )
             ),
             future3
@@ -454,7 +564,8 @@ class SigningServiceRpcProcessorTests {
                 WireSigningSignWithAliasSpec(
                     alias,
                     WireSignatureSpec(signatureSpec4!!.signatureName, signatureSpec4.customDigestName?.name),
-                    ByteBuffer.wrap(data)
+                    ByteBuffer.wrap(data),
+                    emptyList()
                 )
             ),
             future4
