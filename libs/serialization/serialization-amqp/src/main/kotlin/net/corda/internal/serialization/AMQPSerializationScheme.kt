@@ -72,19 +72,12 @@ fun SerializerFactory.addToWhitelist(types: Collection<Class<*>>) {
     }
 }
 
-data class InternalCustomSerializerRegistrationData(
-    val customSerializer: SerializationCustomSerializer<*, *>,
-    val withInheritance: Boolean,
-    val revealSubclassesInSchema: Boolean = false
-)
-
 abstract class AbstractAMQPSerializationScheme private constructor(
-        private val cordappCustomSerializers: Set<SerializationCustomSerializer<*, *>>,
-        private val cordappSerializationWhitelists: Set<SerializationWhitelist>,
-        maybeNotConcurrentSerializerFactoriesForContexts: MutableMap<SerializationFactoryCacheKey, SerializerFactory>,
-        cipherSchemeMetadata: CipherSchemeMetadata,
-        val sff: SerializerFactoryFactory = createSerializerFactoryFactory(),
-        internalCustomSerializerFactories: Set<(factory: SerializerFactory) -> InternalCustomSerializerRegistrationData> = emptySet()
+    private val cordappCustomSerializers: Set<SerializationCustomSerializer<*, *>>,
+    private val cordappSerializationWhitelists: Set<SerializationWhitelist>,
+    maybeNotConcurrentSerializerFactoriesForContexts: MutableMap<SerializationFactoryCacheKey, SerializerFactory>,
+    cipherSchemeMetadata: CipherSchemeMetadata,
+    val sff: SerializerFactoryFactory = createSerializerFactoryFactory()
 ) : SerializationScheme {
     constructor(cipherSchemeMetadata: CipherSchemeMetadata) : this(
         emptySet<SerializationCustomSerializer<*, *>>(),
@@ -92,21 +85,6 @@ abstract class AbstractAMQPSerializationScheme private constructor(
         AccessOrderLinkedHashMap<SerializationFactoryCacheKey, SerializerFactory>(128).toSynchronised(),
         cipherSchemeMetadata
     )
-
-    private val _internalCustomSerializerFactories: MutableSet<(factory: SerializerFactory) -> InternalCustomSerializerRegistrationData> =
-        mutableSetOf()
-    private val internalCustomSerializerFactories: Set<(factory: SerializerFactory) -> InternalCustomSerializerRegistrationData> =
-        _internalCustomSerializerFactories
-
-    init {
-        internalCustomSerializerFactories.forEach {
-            registerInternalCustomSerializerFactory(it)
-        }
-    }
-
-    private fun registerInternalCustomSerializerFactory(factory: (factory: SerializerFactory) -> InternalCustomSerializerRegistrationData) {
-        _internalCustomSerializerFactories += factory
-    }
 
     @VisibleForTesting
     fun getRegisteredCustomSerializers() = cordappCustomSerializers
@@ -127,16 +105,6 @@ abstract class AbstractAMQPSerializationScheme private constructor(
     private fun registerCustomSerializers(context: SerializationContext, factory: SerializerFactory) {
         factory.register(publicKeySerializer, true, factory = factory)
         registerCustomSerializers(factory)
-
-        internalCustomSerializerFactories.forEach{
-            val registrationData = it(factory)
-            factory.register(
-                registrationData.customSerializer,
-                registrationData.withInheritance,
-                registrationData.revealSubclassesInSchema,
-                factory
-            )
-        }
 
         val serializersToRegister = context.customSerializers ?: cordappCustomSerializers
         serializersToRegister.forEach { customSerializer ->
