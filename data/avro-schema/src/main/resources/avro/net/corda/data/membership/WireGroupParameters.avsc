@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "WireGroupParameters",
+  "namespace": "net.corda.data.membership",
+  "doc": "Avro representation of GroupParameters data part, which will be sent over the wire, wrapped into the WireMembershipPackage..",
+  "fields": [
+    {
+      "name": "groupParameters",
+      "doc": "GroupParameters in a <List<Pair<String, String>> format.",
+      "type": { "type": "array", "items": "net.corda.data.WireKeyValuePair" }
+    }
+  ]
+}

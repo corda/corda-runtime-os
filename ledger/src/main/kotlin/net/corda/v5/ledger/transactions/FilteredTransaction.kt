@@ -104,6 +104,6 @@ class FilteredTransactionVerificationException(val id: SecureHash, val reason: S
 @CordaSerializable
 data class ReferenceStateRef(val stateRef: StateRef)
 
-/** Wrapper over [SecureHash] to be used when filtering network parameters hash. */
+/** Wrapper over [SecureHash] to be used when filtering group parameters hash. */
 @CordaSerializable
-data class NetworkParametersHash(val hash: SecureHash)
+data class GroupParametersHash(val hash: SecureHash)

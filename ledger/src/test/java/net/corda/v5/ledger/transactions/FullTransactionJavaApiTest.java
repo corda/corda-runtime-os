@@ -2,7 +2,6 @@ package net.corda.v5.ledger.transactions;
 
 import net.corda.v5.application.identity.AbstractParty;
 import net.corda.v5.application.identity.Party;
-import net.corda.v5.application.node.NetworkParameters;
 import net.corda.v5.crypto.SecureHash;
 import net.corda.v5.ledger.contracts.BelongsToContract;
 import net.corda.v5.ledger.contracts.Contract;
@@ -10,6 +9,7 @@ import net.corda.v5.ledger.contracts.ContractState;
 import net.corda.v5.ledger.contracts.StateAndRef;
 import net.corda.v5.ledger.contracts.StateRef;
 import net.corda.v5.ledger.contracts.TransactionState;
+import net.corda.v5.membership.GroupParameters;
 import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 public class FullTransactionJavaApiTest {
 
     private final FullTransaction fullTransaction = mock(FullTransaction.class);
-    private final NetworkParameters networkParameters = mock(NetworkParameters.class);
+    private final GroupParameters groupParameters = mock(GroupParameters.class);
     private final Party party = mock(Party.class);
     private final SecureHash secureHash = SecureHash.create("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
     private final TestContractState testContractState = new TestContractState();
@@ -63,12 +63,12 @@ public class FullTransactionJavaApiTest {
 
     @Test
     public void getMembershipParameters() {
-        doReturn(networkParameters).when(fullTransaction).getMembershipParameters();
+        doReturn(groupParameters).when(fullTransaction).getMembershipParameters();
 
-        NetworkParameters result = fullTransaction.getMembershipParameters();
+        GroupParameters result = fullTransaction.getMembershipParameters();
 
         Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(networkParameters);
+        Assertions.assertThat(result).isEqualTo(groupParameters);
     }
 
     @BelongsToContract(TestContract.class)

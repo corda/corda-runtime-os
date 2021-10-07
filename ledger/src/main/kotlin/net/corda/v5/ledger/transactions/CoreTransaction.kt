@@ -20,7 +20,7 @@ interface CoreTransaction : BaseTransaction {
     /** Outputs of this transaction represent as ContractStateData */
     override val outputs: List<ContractStateData<ContractState>>
     /**
-     * Hash of the network parameters that were in force when the transaction was notarised. Null means, that the transaction
+     * Hash of the group parameters that were in force when the transaction was notarised. Null means, that the transaction
      * was created on older version of Corda (before 4), resolution will default to initial parameters.
      */
     val membershipParametersHash: SecureHash?

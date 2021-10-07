@@ -1,0 +1,16 @@
+plugins {
+    id 'corda-api.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+description 'Corda Membership'
+
+dependencies {
+    api platform(project(':corda-api'))
+    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    compileOnly 'org.osgi:osgi.annotation'
+
+    api project(':base')
+}

@@ -1,7 +1,6 @@
 package net.corda.v5.ledger.transactions
 
 import net.corda.v5.application.identity.Party
-import net.corda.v5.application.node.NetworkParameters
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.util.castIfPossible
 import net.corda.v5.base.util.uncheckedCast
@@ -14,6 +13,7 @@ import net.corda.v5.ledger.contracts.CommandData
 import net.corda.v5.ledger.contracts.ContractState
 import net.corda.v5.ledger.contracts.StateAndRef
 import net.corda.v5.ledger.contracts.TransactionState
+import net.corda.v5.membership.GroupParameters
 import java.util.function.Predicate
 
 /**
@@ -355,7 +355,7 @@ interface LedgerTransaction : FullTransaction {
     operator fun component6(): Party?
     operator fun component7(): TimeWindow?
     operator fun component8(): PrivacySalt
-    operator fun component9(): NetworkParameters
+    operator fun component9(): GroupParameters
     operator fun component10(): List<StateAndRef<ContractState>>
 }
 

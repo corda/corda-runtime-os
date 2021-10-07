@@ -1,30 +1,28 @@
-package net.corda.v5.application.node
+package net.corda.v5.membership
 
-import net.corda.v5.application.injection.CordaFlowInjectable
-import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.time.Instant
 
 /**
- * Note: any values in the networkParametersValues map need to be
+ * Note: any values in the groupParametersValues map need to be
  * a.) serializable for P2P (AMQP) and checkpoints (Kryo)
  * b.) comparable with .equals()
  */
 @CordaSerializable
-interface NetworkParameters : CordaServiceInjectable, CordaFlowInjectable {
+interface GroupParameters {
 
     /**
-     * Gets the network parameter property matching the input [key].
+     * Gets the group parameter property matching the input [key].
      *
      * @param key The key.
      *
-     * @returns The matching network parameter property.
+     * @returns The matching group parameter property.
      */
     operator fun get(key: String): Any?
 
     /**
-     * Gets the keys of each network parameter key-pair.
+     * Gets the keys of each group parameter key-pair.
      */
     val keys: Set<String>
 
@@ -35,20 +33,20 @@ interface NetworkParameters : CordaServiceInjectable, CordaFlowInjectable {
         const val EPOCH_KEY = "corda.epoch"
 
         @JvmStatic
-        val NetworkParameters.minimumPlatformVersion: Int
+        val GroupParameters.minimumPlatformVersion: Int
             get() = getValue(MINIMUM_PLATFORM_VERSION_KEY)
 
         @JvmStatic
-        val NetworkParameters.modifiedTime: Instant
+        val GroupParameters.modifiedTime: Instant
             get() = getValue(MODIFIED_TIME_KEY)
 
         @JvmStatic
-        val NetworkParameters.epoch: Int
+        val GroupParameters.epoch: Int
             get() = getValue(EPOCH_KEY)
     }
 }
 
-inline fun <reified T> NetworkParameters.getValue(key: String): T {
+inline fun <reified T> GroupParameters.getValue(key: String): T {
     return this[key] as T
 }
 

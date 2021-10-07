@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "WireMembershipSyncRequest",
+  "namespace": "net.corda.data.membership",
+  "doc": "Membership data synchronization request which will be processed by the MGM.",
+  "fields": [
+    {
+      "name": "sendMembershipDataFrom",
+      "doc": "Timestamp value representing the date the member wants to have the sync from.",
+      "type": { "type": "long", "logicalType": "timestamp-millis" }
+    },
+    {
+      "name": "groupParametersHash",
+      "doc": "The hash value of the latest GroupParameters the member can see.",
+      "type": "string"
+    },
+    {
+      "name": "cpiWhitelistHash",
+      "doc": "The hash representation of the CpiVersions which are whitelisted on the member side.",
+      "type": "string"
+    }
+  ]
+}

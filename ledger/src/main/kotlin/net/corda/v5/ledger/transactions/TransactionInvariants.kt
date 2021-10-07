@@ -48,10 +48,10 @@ private fun FullTransaction.checkInputsAndReferencesHaveSameNotary() {
     }
 }
 
-/** Make sure the assigned notary is part of the network parameter whitelist. */
+/** Make sure the assigned notary is part of the group parameter whitelist. */
 fun FullTransaction.checkNotaryWhitelisted() {
     notary?.let { notaryParty ->
-        // Network parameters will never be null if the transaction is resolved from a CoreTransaction rather than constructed directly.
+        // Group parameters will never be null if the transaction is resolved from a CoreTransaction rather than constructed directly.
         membershipParameters?.let { parameters ->
             val notaryWhitelist = parameters.notaries.map { it.party }
             // Transaction can combine different identities of the same notary after key rotation.
@@ -59,7 +59,7 @@ fun FullTransaction.checkNotaryWhitelisted() {
             val notaries = setOf(notaryParty) + (inputs + references).map { it.state.notary }
             notaries.forEach {
                 check(it in notaryWhitelist) {
-                    "Notary [${it.description()}] specified by the transaction is not on the network parameter whitelist: " +
+                    "Notary [${it.description()}] specified by the transaction is not on the group parameter whitelist: " +
                             " [${notaryWhitelist.joinToString { party -> party.description() }}]"
                 }
             }

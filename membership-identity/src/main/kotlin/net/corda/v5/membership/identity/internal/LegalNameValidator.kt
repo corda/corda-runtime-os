@@ -1,6 +1,5 @@
-package net.corda.v5.application.internal
+package net.corda.v5.membership.identity.internal
 
-import net.corda.v5.application.internal.LegalNameValidator.normalize
 import java.text.Normalizer
 import javax.security.auth.x500.X500Principal
 
@@ -43,10 +42,10 @@ internal object LegalNameValidator {
     sealed class Rule<in T> {
         companion object {
             val attributeRules: List<Rule<String>> = listOf(
-                    UnicodeNormalizationRule(),
-                    LengthRule(maxLength = 255),
-                    MustHaveAtLeastTwoLettersRule(),
-                    CharacterRule('\u0000') // Ban null
+                UnicodeNormalizationRule(),
+                LengthRule(maxLength = 255),
+                MustHaveAtLeastTwoLettersRule(),
+                CharacterRule('\u0000') // Ban null
             )
             val legalNameRules: List<Rule<String>> = attributeRules + listOf(X500NameRule())
         }

@@ -39,8 +39,8 @@ interface SignedTransaction : TransactionWithSignatures {
     val references: List<StateRef>
     /** Helper to access the notary of the contained transaction. */
     val notary: Party?
-    /** Helper to access the network parameters hash for the contained transaction. */
-    val networkParametersHash: SecureHash?
+    /** Helper to access the group parameters hash for the contained transaction. */
+    val groupParametersHash: SecureHash?
 
     /** Returns the same transaction but with an additional (unchecked) signature. */
     fun withAdditionalSignature(sig: DigitalSignatureAndMeta): SignedTransaction

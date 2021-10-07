@@ -2,13 +2,13 @@ package net.corda.v5.ledger.transactions
 
 import net.corda.v5.application.crypto.DigitalSignatureAndMeta
 import net.corda.v5.application.identity.Party
-import net.corda.v5.application.node.NetworkParameters
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.contracts.ContractState
 import net.corda.v5.ledger.contracts.StateAndRef
 import net.corda.v5.ledger.crypto.TransactionDigestAlgorithmNames
+import net.corda.v5.membership.GroupParameters
 
 /**
  * A special transaction for changing the notary of a state. It only needs specifying the state(s) as input(s),
@@ -45,5 +45,5 @@ interface NotaryChangeLedgerTransaction : FullTransaction, TransactionWithSignat
     operator fun component3(): Party
     operator fun component4(): SecureHash
     operator fun component5(): List<DigitalSignatureAndMeta>
-    operator fun component6(): NetworkParameters?
+    operator fun component6(): GroupParameters?
 }

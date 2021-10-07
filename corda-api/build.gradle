@@ -15,6 +15,8 @@ dependencies {
         api project(':data:avro-schema')
         api project(':data:topic-schema')
         api project(':ledger')
+        api project(':membership')
+        api project(':membership-identity')
         api project(':packaging')
         api project(':persistence')
         api project(':serialization')

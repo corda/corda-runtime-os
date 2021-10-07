@@ -11,6 +11,8 @@ dependencies {
 
     api platform(project(':corda-api'))
     api project(":base")
+    api project(":membership")
+    api project(":membership-identity")
     api project(":serialization")
 
     implementation project(":crypto")

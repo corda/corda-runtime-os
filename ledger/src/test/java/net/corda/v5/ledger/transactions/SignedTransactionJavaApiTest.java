@@ -103,10 +103,10 @@ public class SignedTransactionJavaApiTest {
     }
 
     @Test
-    public void getNetworkParametersHash() {
-        when(signedTransaction.getNetworkParametersHash()).thenReturn(secureHash);
+    public void getGroupParametersHash() {
+        when(signedTransaction.getGroupParametersHash()).thenReturn(secureHash);
 
-        SecureHash result = signedTransaction.getNetworkParametersHash();
+        SecureHash result = signedTransaction.getGroupParametersHash();
 
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result).isEqualTo(secureHash);

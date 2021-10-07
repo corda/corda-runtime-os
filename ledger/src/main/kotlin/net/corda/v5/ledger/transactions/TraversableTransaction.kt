@@ -39,7 +39,7 @@ interface TraversableTransaction : CoreTransaction {
      * - The notary [Party][net.corda.v5.application.identity.Party], if present (list with one element)
      * - The time-window of the transaction, if present (list with one element)
      * - list of each reference input that is present
-     * - network parameters hash if present
+     * - group parameters hash if present
      */
     val availableComponentGroups: List<List<Any>>
 }

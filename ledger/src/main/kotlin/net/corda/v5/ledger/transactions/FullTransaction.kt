@@ -1,10 +1,10 @@
 package net.corda.v5.ledger.transactions
 
-import net.corda.v5.application.node.NetworkParameters
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.ledger.contracts.ContractState
 import net.corda.v5.ledger.contracts.StateAndRef
 import net.corda.v5.ledger.contracts.TransactionState
+import net.corda.v5.membership.GroupParameters
 
 /** A transaction with fully resolved components, such as input states. */
 @DoNotImplement
@@ -14,8 +14,8 @@ interface FullTransaction : BaseTransaction {
     override val outputs: List<TransactionState<ContractState>>
 
     /**
-     * Network parameters that were in force when this transaction was created. Resolved from the hash of network parameters on the corresponding
+     * Group parameters that were in force when this transaction was created. Resolved from the hash of group parameters on the corresponding
      * wire transaction.
      */
-    val membershipParameters: NetworkParameters?
+    val membershipParameters: GroupParameters?
 }

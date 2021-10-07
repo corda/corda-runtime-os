@@ -19,8 +19,8 @@ import net.corda.v5.ledger.contracts.TransactionVerificationException.Transactio
 import net.corda.v5.ledger.contracts.TransactionVerificationException.TransactionNotaryMismatchEncumbranceException;
 import net.corda.v5.ledger.contracts.TransactionVerificationException.TransactionContractConflictException;
 import net.corda.v5.ledger.contracts.TransactionVerificationException.TransactionRequiredContractUnspecifiedException;
-import net.corda.v5.ledger.contracts.TransactionVerificationException.TransactionNetworkParameterOrderingException;
-import net.corda.v5.ledger.contracts.TransactionVerificationException.MissingNetworkParametersException;
+import net.corda.v5.ledger.contracts.TransactionVerificationException.TransactionGroupParameterOrderingException;
+import net.corda.v5.ledger.contracts.TransactionVerificationException.MissingGroupParametersException;
 import net.corda.v5.ledger.contracts.TransactionVerificationException.BrokenTransactionException;
 import net.corda.v5.ledger.contracts.TransactionVerificationException.InvalidAttachmentException;
 import net.corda.v5.ledger.contracts.TransactionVerificationException.UnsupportedClassVersionError;
@@ -396,9 +396,9 @@ public class TransactionVerificationExceptionJavaApiTest {
     }
 
     @Nested
-    public class TransactionNetworkParameterOrderingExceptionJavaApiTest {
-        private final TransactionNetworkParameterOrderingException transactionNonMatchingEncumbranceException =
-                new TransactionNetworkParameterOrderingException(secureHash, message);
+    public class TransactionGroupParameterOrderingExceptionJavaApiTest {
+        private final TransactionGroupParameterOrderingException transactionNonMatchingEncumbranceException =
+                new TransactionGroupParameterOrderingException(secureHash, message);
 
         @Test
         public void txId() {
@@ -412,9 +412,9 @@ public class TransactionVerificationExceptionJavaApiTest {
     }
 
     @Nested
-    public class MissingNetworkParametersExceptionJavaApiTest {
-        private final MissingNetworkParametersException transactionNonMatchingEncumbranceException =
-                new MissingNetworkParametersException(secureHash, message);
+    public class MissingGroupParametersExceptionJavaApiTest {
+        private final MissingGroupParametersException transactionNonMatchingEncumbranceException =
+                new MissingGroupParametersException(secureHash, message);
 
         @Test
         public void txId() {

@@ -2,12 +2,12 @@ package net.corda.v5.ledger.contracts
 
 import net.corda.v5.application.flows.FlowException
 import net.corda.v5.application.identity.Party
-import net.corda.v5.application.node.NetworkParameters
-import net.corda.v5.application.node.NetworkParameters.Companion.epoch
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.services.AttachmentId
+import net.corda.v5.membership.GroupParameters
+import net.corda.v5.membership.GroupParameters.Companion.epoch
 
 
 /**
@@ -25,7 +25,7 @@ open class TransactionResolutionException(val hash: SecureHash, message: String)
      * new set of parameters, [TransactionResolutionException] will have already been thrown beforehand.
      */
     class UnknownParametersException(txId: SecureHash, paramsHash: SecureHash) : TransactionResolutionException(txId,
-            "Transaction specified network parameters $paramsHash but these parameters are not known.")
+            "Transaction specified group parameters $paramsHash but these parameters are not known.")
 }
 
 /**
@@ -225,29 +225,29 @@ abstract class TransactionVerificationException(val txId: SecureHash, message: S
     }
 
     /**
-     * If the network parameters associated with an input or reference state in a transaction are more recent than the network parameters of the new transaction itself.
+     * If the group parameters associated with an input or reference state in a transaction are more recent than the group parameters of the new transaction itself.
      */
-    class TransactionNetworkParameterOrderingException(txId: SecureHash, message: String) :
+    class TransactionGroupParameterOrderingException(txId: SecureHash, message: String) :
             TransactionVerificationException(txId, message, null) {
         constructor(txId: SecureHash,
                     inputStateRef: StateRef,
-                    txnNetworkParameters: NetworkParameters,
-                    inputNetworkParameters: NetworkParameters)
-                : this(txId, "The network parameters epoch (${txnNetworkParameters.epoch}) of this transaction " +
-                "is older than the epoch (${inputNetworkParameters.epoch}) of input state: $inputStateRef")
+                    txnGroupParameters: GroupParameters,
+                    inputGroupParameters: GroupParameters)
+                : this(txId, "The group parameters epoch (${txnGroupParameters.epoch}) of this transaction " +
+                "is older than the epoch (${inputGroupParameters.epoch}) of input state: $inputStateRef")
     }
 
     /**
-     * Thrown when the network parameters with hash: missingNetworkParametersHash is not available at this node. Usually all the parameters
-     * that are in the resolution chain for transaction with txId should be fetched from peer via [FetchParametersFlow] or from network map.
+     * Thrown when the group parameters with hash: missingGroupParametersHash is not available at this node. Usually all the parameters
+     * that are in the resolution chain for transaction with txId should be fetched from peer via [FetchParametersFlow] or from member lookup.
      *
      * @param txId Id of the transaction that has missing parameters hash in the resolution chain
-     * @param missingNetworkParametersHash Missing hash of the network parameters associated to this transaction
+     * @param missingGroupParametersHash Missing hash of the group parameters associated to this transaction
      */
-    class MissingNetworkParametersException(txId: SecureHash, message: String)
+    class MissingGroupParametersException(txId: SecureHash, message: String)
         : TransactionVerificationException(txId, message, null) {
-        constructor(txId: SecureHash, missingNetworkParametersHash: SecureHash) :
-                this(txId, "Couldn't find network parameters with hash: $missingNetworkParametersHash related to this transaction: $txId")
+        constructor(txId: SecureHash, missingGroupParametersHash: SecureHash) :
+                this(txId, "Couldn't find group parameters with hash: $missingGroupParametersHash related to this transaction: $txId")
     }
 
     /**

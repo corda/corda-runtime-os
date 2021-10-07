@@ -4,7 +4,6 @@ import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.application.identity.Party
 import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.application.injection.CordaServiceInjectable
-import net.corda.v5.application.node.MemberInfo
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.ledger.NotaryInfo.Companion.NOTARY_TYPE_VALIDATING
 
@@ -42,7 +41,7 @@ interface NotaryLookupService : CordaFlowInjectable, CordaServiceInjectable {
     /**
      * Returns the list of notary workers for given [notaryService].
      *
-     * Notary service is an identity, which is used to notarize transactions. It must be listed in the network parameters, however,
+     * Notary service is an identity, which is used to notarize transactions. It must be listed in the group parameters, however,
      * it may not have dedicated [MemberInfo] structure. Each notary service must have at least one associated worker.
      *
      * Notary worker is an identity, where notarization requests are routed to. It must have dedicated [MemberInfo] structure, which
@@ -65,7 +64,7 @@ interface NotaryLookupService : CordaFlowInjectable, CordaServiceInjectable {
     fun getNotaryWorkers(notaryService: Party): List<Party>
 
     /**
-     * Returns true if and only if the given [Party] is a notary, which is defined by the network parameters.
+     * Returns true if and only if the given [Party] is a notary, which is defined by the group parameters.
      *
      * @param party The [Party] to check.
      *
