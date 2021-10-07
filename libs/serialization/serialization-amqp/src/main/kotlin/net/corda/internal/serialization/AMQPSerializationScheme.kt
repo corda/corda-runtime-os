@@ -103,7 +103,7 @@ abstract class AbstractAMQPSerializationScheme private constructor(
     }
 
     private fun registerCustomSerializers(context: SerializationContext, factory: SerializerFactory) {
-        factory.register(publicKeySerializer, true, factory = factory)
+        factory.register(publicKeySerializer, true, factory)
         registerCustomSerializers(factory)
 
         val serializersToRegister = context.customSerializers ?: cordappCustomSerializers
