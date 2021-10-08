@@ -27,6 +27,7 @@ dependencies {
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
+    testImplementation project(":testing:test-utilities")
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"

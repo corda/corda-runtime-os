@@ -4,9 +4,13 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAndKey
+import net.corda.p2p.DataMessagePayload
+import net.corda.p2p.HeartbeatMessage
 import net.corda.p2p.LinkInMessage
+import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
+import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
@@ -31,12 +35,18 @@ import net.corda.p2p.linkmanager.LinkManagerConfig
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
+import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
+import net.corda.p2p.schema.Schema
+import net.corda.test.util.eventually
+import net.corda.v5.base.util.millis
+import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -56,6 +66,7 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
@@ -82,8 +93,8 @@ class SessionManagerTest {
             MAX_MESSAGE_SIZE,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             longPeriodMilliSec,
-            40,
-            200
+            100,
+            500
         )
         val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
         val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
@@ -174,7 +185,10 @@ class SessionManagerTest {
         on { createMac(any()) } doReturn AuthenticationResult(Mockito.mock(CommonHeader::class.java), RANDOM_BYTES.array())
     }
 
-    class CallbackPublisher(private val callback: (() -> Any)? = null, private var throwFirst: Boolean = false): Publisher {
+    class CallbackPublisher(
+        private val callback: ((records: List<Record<*, *>>) -> Any)? = null,
+        private var throwFirst: Boolean = false
+    ): Publisher {
 
         override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
             fail("This should not be called in this test.")
@@ -182,7 +196,7 @@ class SessionManagerTest {
 
         @Suppress("TooGenericExceptionThrown")
         override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-            callback?.let{ it() }
+            callback?.let{ it(records) }
             if (throwFirst) {
                 throwFirst = false
                 return listOf(CompletableFuture.failedFuture(RuntimeException("Ohh No something went wrong.")))
@@ -745,9 +759,9 @@ class SessionManagerTest {
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         sessionManager.processSessionMessage(LinkInMessage(responderHello))
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionAlreadyPending)
-        Thread.sleep(2 * configWithHeartbeat.sessionTimeoutMilliSecs)
-        assertTrue(sessionManager.processOutboundMessage(message) is NewSessionNeeded)
-
+        eventually(Duration.ofMillis(2 * configWithHeartbeat.sessionTimeoutMilliSecs), 5.millis) {
+            assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
+        }
         sessionManager.stop()
     }
 
@@ -776,16 +790,24 @@ class SessionManagerTest {
         sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
-        Thread.sleep(2 * configWithHeartbeat.sessionTimeoutMilliSecs)
 
-        assertTrue(sessionManager.processOutboundMessage(message) is NewSessionNeeded)
-
+        eventually(Duration.ofMillis(2 * configWithHeartbeat.sessionTimeoutMilliSecs), 5.millis) {
+            assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
+        }
         sessionManager.stop()
     }
 
     @Test
     fun `when a data message is sent, heartbeats are sent, if these are not acknowledged the session times out`() {
-        val publisher = CallbackPublisher()
+        val messages = mutableListOf<AuthenticatedDataMessage>()
+        fun callback(records: List<Record<*, *>>) {
+            val record = records.single()
+            assertEquals(Schema.LINK_OUT_TOPIC, record.topic)
+            val message = (record.value as LinkOutMessage).payload as AuthenticatedDataMessage
+            messages.add(message)
+        }
+
+        val publisher = CallbackPublisher(::callback)
         whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(publisher)
         val sessionManager = SessionManagerImpl(
             configWithHeartbeat,
@@ -812,11 +834,16 @@ class SessionManagerTest {
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
-        Thread.sleep(2 * configWithHeartbeat.sessionTimeoutMilliSecs)
 
-        assertTrue(sessionManager.processOutboundMessage(message) is NewSessionNeeded)
-
+        eventually(Duration.ofMillis(2 * configWithHeartbeat.sessionTimeoutMilliSecs), 5.millis) {
+            assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
+        }
         sessionManager.stop()
+
+        for (message in messages) {
+            val heartbeatMessage = DataMessagePayload.fromByteBuffer(message.payload)
+            assertThat(heartbeatMessage.message).isInstanceOf(HeartbeatMessage::class.java)
+        }
     }
 
     @Test
@@ -824,11 +851,13 @@ class SessionManagerTest {
         val heartbeatsBeforeTimeout = configWithHeartbeat.sessionTimeoutMilliSecs / configWithHeartbeat.heartbeatMessagePeriodMilliSecs - 1
         val publishLatch = CountDownLatch(heartbeatsBeforeTimeout.toInt() - 1)
 
-        var sessionId: String? = null
-
-        fun callback() {
-            sessionId ?: fail("SessionId must be set before callback is called.")
-            sessionManager.messageAcknowledged(sessionId!!)
+        val messages = mutableListOf<AuthenticatedDataMessage>()
+        fun callback(records: List<Record<*, *>>) {
+            val record = records.single()
+            assertEquals(Schema.LINK_OUT_TOPIC, record.topic)
+            val message = (record.value as LinkOutMessage).payload as AuthenticatedDataMessage
+            messages.add(message)
+            sessionManager.messageAcknowledged(message.header.sessionId)
             publishLatch.countDown()
         }
 
@@ -850,8 +879,11 @@ class SessionManagerTest {
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
 
         val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
-        sessionId = sessionState.sessionId
         whenever(authenticatedSession.sessionId).thenReturn(sessionState.sessionId)
+        whenever(authenticatedSession.createMac(any())).thenReturn(AuthenticationResult(
+            CommonHeader(MessageType.DATA, 1, sessionState.sessionId, 5, Instant.now().toEpochMilli()),
+            RANDOM_BYTES.array()
+        ))
 
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
@@ -866,6 +898,10 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
 
         sessionManager.stop()
+        for (message in messages) {
+              val heartbeatMessage = DataMessagePayload.fromByteBuffer(message.payload)
+              assertThat(heartbeatMessage.message).isInstanceOf(HeartbeatMessage::class.java)
+        }
     }
 
     @Test

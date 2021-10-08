@@ -7,6 +7,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAck
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.DataMessagePayload
+import net.corda.p2p.HeartbeatMessageAck
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
@@ -271,7 +272,7 @@ class LinkManagerTest {
         Mockito.`when`(mockNetworkMap.getMemberInfo(any())).thenReturn(FIRST_DEST_MEMBER_INFO)
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
 
-        val sessionManager = Mockito.`mock`(SessionManager::class.java)
+        val sessionManager = Mockito.mock(SessionManager::class.java)
 
         val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory)
         queue.start()
@@ -512,6 +513,7 @@ class LinkManagerTest {
         assertThat(records).filteredOn { it.topic == P2P_OUT_MARKERS }.extracting<String> { it.key as String }
             .containsExactly(*messageIds.toTypedArray())
 
+        verify(mockSessionManager, times(messages.size)).dataMessageSent(state.session)
     }
 
     @Test
@@ -659,6 +661,33 @@ class LinkManagerTest {
     }
 
     @Test
+    fun `InboundMessageProcessor processes a Heartbeat ACK message producing no markers`() {
+        val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
+        val linkOutMessage = linkOutMessageFromAck(
+            MessageAck(HeartbeatMessageAck()),
+            FIRST_SOURCE,
+            FIRST_DEST,
+            session.initiatorSession,
+            netMap
+        )
+        val message = LinkInMessage(linkOutMessage?.payload)
+
+        val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
+        Mockito.`when`(mockSessionManager.getSessionById(any()))
+            .thenReturn(SessionManager.SessionDirection.Outbound(
+                SessionManager.SessionKey(FIRST_SOURCE.toHoldingIdentity(), FIRST_DEST.toHoldingIdentity()),
+                session.responderSession
+            )
+        )
+
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
+        val records = processor.onNext(listOf(EventLogRecord(TOPIC, KEY, message, 0, 0)))
+
+        assertThat(records).hasSize(0)
+        verify(mockSessionManager).messageAcknowledged(session.responderSession.sessionId)
+    }
+
+    @Test
     fun `InboundMessageProcessor processes an ACK message producing a LinkManagerReceivedMarker`() {
         val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
         val linkOutMessage = linkOutMessageFromAck(
@@ -687,6 +716,7 @@ class LinkManagerTest {
             .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
             .extracting<AppMessageMarker> { it.value as AppMessageMarker }
             .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerReceivedMarker::class.java) }
+        verify(mockSessionManager).messageAcknowledged(session.responderSession.sessionId)
     }
 
     @Test
