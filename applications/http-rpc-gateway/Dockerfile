@@ -25,4 +25,4 @@ USER corda
 
 EXPOSE 8888/tcp
 
-ENTRYPOINT java -jar $JAR_NAME_ENV --instanceId 1 --kafka $KAFKA_PROP_ENV
+CMD java $JAVA_ARGS -jar $JAR_NAME_ENV --instanceId 1 --kafka $KAFKA_PROP_ENV

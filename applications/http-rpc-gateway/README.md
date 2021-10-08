@@ -21,7 +21,15 @@ Build Docker Image (should be done after `gradlew clean appJar`):\
 `docker build -t http-rpc-gw .`
 
 Running  Docker container:\
-`docker run --name http-rpc-gw -d -P http-rpc-gw`
+`docker run --name http-rpc-gw -d -p 8888:8888 http-rpc-gw`
 
-A random vacant local port will be mapped on port `8888` exposed within container. To establish which port is that run:\
-`docker ps -f name=http-rpc-gw`
+Swagger UI can now be accessed using [local URL](https://localhost:8888/api/v1/swagger).
+
+If you need to debug or indeed pass any Java option to a JVM that will be started inside container, there is an
+environment variable for that: `JAVA_ARGS`.
+To enable remote debugging container should be run as follows:
+
+`docker run --name http-rpc-gw -d -p 8888:8888 -e JAVA_ARGS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -p 5005:5005 http-rpc-gw`
+
+__NOTE:__ `-p 5005:5005` which forwards internal container debug port to a local port such that remote debugger could
+be attached.
