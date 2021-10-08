@@ -2,7 +2,6 @@ package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
-import net.corda.sandbox.internal.SandboxServiceImpl
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.loggerFor
 import org.osgi.framework.Bundle
@@ -21,7 +20,7 @@ internal open class SandboxImpl(
     final override val publicBundles: Set<Bundle>,
     private val privateBundles: Set<Bundle>
 ) : SandboxInternal {
-    private val logger = loggerFor<SandboxServiceImpl>()
+    private val logger = loggerFor<SandboxImpl>()
 
     // The other sandboxes whose services, bundles and events this sandbox can receive.
     // We use the sandboxes' IDs, rather than the sandboxes, to allow unloaded sandboxes to be garbage-collected.
