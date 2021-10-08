@@ -2,7 +2,7 @@ package net.corda.crypto.impl
 
 import net.corda.crypto.CryptoCategories
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
-import net.corda.crypto.impl.dev.InMemoryPersistentCacheFactory
+import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactory
 import net.corda.crypto.impl.stubs.MockCryptoFactory
 import net.corda.test.util.createTestCase
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -84,7 +84,7 @@ class DefaultCryptoServiceProviderTests {
     @Timeout(30)
     fun `Should throw unrecoverable CryptoServiceLibraryException if configured factory is not found`() {
         val provider = DefaultCryptoServiceProvider(
-            persistenceFactories = listOf(InMemoryPersistentCacheFactory())
+            persistenceFactories = listOf(InMemoryKeyValuePersistenceFactory())
         )
         provider.start()
         provider.handleConfigEvent(
@@ -111,7 +111,7 @@ class DefaultCryptoServiceProviderTests {
                 CryptoLibraryConfigImpl(
                     mapOf(
                         "keyCache" to mapOf(
-                            "cacheFactoryName" to InMemoryPersistentCacheFactory.NAME
+                            "factoryName" to InMemoryKeyValuePersistenceFactory.NAME
                         ),
                         "mngCache" to emptyMap()
                     )
@@ -127,14 +127,14 @@ class DefaultCryptoServiceProviderTests {
 
     private fun createCryptoServiceProvider(): DefaultCryptoServiceProvider {
         val provider = DefaultCryptoServiceProvider(
-            persistenceFactories = listOf(InMemoryPersistentCacheFactory())
+            persistenceFactories = listOf(InMemoryKeyValuePersistenceFactory())
         )
         provider.start()
         provider.handleConfigEvent(
             CryptoLibraryConfigImpl(
                 mapOf(
                     "keyCache" to mapOf(
-                        "cacheFactoryName" to InMemoryPersistentCacheFactory.NAME
+                        "factoryName" to InMemoryKeyValuePersistenceFactory.NAME
                     ),
                     "mngCache" to emptyMap()
                 )

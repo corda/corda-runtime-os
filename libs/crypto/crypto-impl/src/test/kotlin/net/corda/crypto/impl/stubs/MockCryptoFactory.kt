@@ -9,9 +9,9 @@ import net.corda.crypto.impl.DigestServiceProviderImpl
 import net.corda.crypto.impl.FreshKeySigningServiceImpl
 import net.corda.crypto.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.impl.SigningServiceImpl
-import net.corda.crypto.impl.config.CryptoCacheConfig
-import net.corda.crypto.impl.dev.InMemoryPersistentCache
-import net.corda.crypto.impl.dev.InMemoryPersistentCacheFactory
+import net.corda.crypto.impl.config.CryptoPersistenceConfig
+import net.corda.crypto.impl.dev.InMemoryKeyValuePersistence
+import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactory
 import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCacheImpl
 import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
@@ -43,7 +43,7 @@ class MockCryptoFactory(
             createVerificationService()
     }
 
-    private val persistentCacheFactory: InMemoryPersistentCacheFactory = InMemoryPersistentCacheFactory()
+    private val persistentCacheFactory: InMemoryKeyValuePersistenceFactory = InMemoryKeyValuePersistenceFactory()
 
     private val defaultSignatureScheme: SignatureScheme =
         schemeMetadata.findSignatureScheme(defaultSignatureSchemeCodeName)
@@ -51,15 +51,15 @@ class MockCryptoFactory(
     private val defaultFreshKeySignatureScheme: SignatureScheme =
         schemeMetadata.findSignatureScheme(defaultFreshKeySignatureSchemeCodeName)
 
-    val signingPersistentKeyCache: InMemoryPersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo> =
+    val signingPersistentKeyCache: InMemoryKeyValuePersistence<SigningPersistentKeyInfo, SigningPersistentKeyInfo> =
         persistentCacheFactory.createSigningPersistentCache(
-            CryptoCacheConfig.default
-        ) as InMemoryPersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo>
+            CryptoPersistenceConfig.default
+        ) as InMemoryKeyValuePersistence<SigningPersistentKeyInfo, SigningPersistentKeyInfo>
 
-    val defaultPersistentKeyCache: InMemoryPersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo> =
+    val defaultPersistentKeyCache: InMemoryKeyValuePersistence<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo> =
         persistentCacheFactory.createDefaultCryptoPersistentCache(
-            CryptoCacheConfig.default
-        ) as InMemoryPersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
+            CryptoPersistenceConfig.default
+        ) as InMemoryKeyValuePersistence<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
 
     private val freshKeyServices = ConcurrentHashMap<String, FreshKeySigningService>()
     private val signingServices = ConcurrentHashMap<String, SigningService>()

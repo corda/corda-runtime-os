@@ -8,9 +8,9 @@ import net.corda.crypto.impl.DigestServiceProviderImpl
 import net.corda.crypto.impl.FreshKeySigningServiceImpl
 import net.corda.crypto.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.impl.SigningServiceImpl
-import net.corda.crypto.impl.config.CryptoCacheConfig
-import net.corda.crypto.impl.dev.InMemoryPersistentCache
-import net.corda.crypto.impl.dev.InMemoryPersistentCacheFactory
+import net.corda.crypto.impl.config.CryptoPersistenceConfig
+import net.corda.crypto.impl.dev.InMemoryKeyValuePersistence
+import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactory
 import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCacheImpl
@@ -34,15 +34,15 @@ class CryptoServicesTestFactory : CipherSuiteFactory {
 
     val memberId: String = UUID.randomUUID().toString()
 
-    private val persistentCacheFactory = InMemoryPersistentCacheFactory()
+    private val persistentCacheFactory = InMemoryKeyValuePersistenceFactory()
 
     val signingPersistentKeyCache = persistentCacheFactory.createSigningPersistentCache(
-        CryptoCacheConfig.default
-    ) as InMemoryPersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo>
+        CryptoPersistenceConfig.default
+    ) as InMemoryKeyValuePersistence<SigningPersistentKeyInfo, SigningPersistentKeyInfo>
 
     val defaultPersistentKeyCache = persistentCacheFactory.createDefaultCryptoPersistentCache(
-        CryptoCacheConfig.default
-    ) as InMemoryPersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
+        CryptoPersistenceConfig.default
+    ) as InMemoryKeyValuePersistence<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
 
     val schemeMetadata: CipherSchemeMetadata =
         CipherSchemeMetadataProviderImpl().getInstance()

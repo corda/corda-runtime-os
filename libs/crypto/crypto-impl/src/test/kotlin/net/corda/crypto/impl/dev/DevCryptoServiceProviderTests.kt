@@ -94,7 +94,7 @@ class DevCryptoServiceProviderTests {
 
     private fun createCryptoServiceProvider(): DevCryptoServiceProvider {
         return DevCryptoServiceProvider(
-            persistentCacheFactories = listOf(InMemoryPersistentCacheFactory())
+            persistentCacheFactories = listOf(InMemoryKeyValuePersistenceFactory())
         )
     }
 

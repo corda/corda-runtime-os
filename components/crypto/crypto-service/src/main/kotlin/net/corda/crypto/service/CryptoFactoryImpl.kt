@@ -5,8 +5,7 @@ import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.crypto.impl.config.CryptoCacheConfig
-import net.corda.crypto.impl.persistence.PersistentCacheFactory
+import net.corda.crypto.impl.config.CryptoPersistenceConfig
 import net.corda.crypto.impl.persistence.SigningKeyCache
 import net.corda.crypto.impl.persistence.SigningKeyCacheImpl
 import net.corda.crypto.CryptoCategories
@@ -19,6 +18,7 @@ import net.corda.crypto.impl.clearCache
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.config.mngCache
+import net.corda.crypto.impl.persistence.KeyValuePersistenceFactoryProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -38,8 +38,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CryptoFactory::class])
 class CryptoFactoryImpl @Activate constructor(
-    @Reference(service = PersistentCacheFactory::class)
-    private val persistenceFactories: List<PersistentCacheFactory>,
+    @Reference(service = KeyValuePersistenceFactoryProvider::class)
+    private val persistenceProviders: List<KeyValuePersistenceFactoryProvider>,
     @Reference(service = CipherSuiteFactory::class)
     private val cipherSuiteFactory: CipherSuiteFactory,
     @Reference(service = CryptoServiceProvider::class)
@@ -50,7 +50,7 @@ class CryptoFactoryImpl @Activate constructor(
     }
 
     private var impl = Impl(
-        persistenceFactories,
+        persistenceProviders,
         cipherSuiteFactory,
         cryptoServiceProviders,
         CryptoLibraryConfigImpl(emptyMap()),
@@ -74,7 +74,7 @@ class CryptoFactoryImpl @Activate constructor(
         logger.info("Received new configuration...")
         val currentImpl = impl
         impl = Impl(
-            persistenceFactories,
+            persistenceProviders,
             cipherSuiteFactory,
             cryptoServiceProviders,
             config,
@@ -92,7 +92,7 @@ class CryptoFactoryImpl @Activate constructor(
         impl.getSigningService(memberId, category)
 
     private class Impl(
-        private val persistenceFactories: List<PersistentCacheFactory>,
+        private val persistenceProviders: List<KeyValuePersistenceFactoryProvider>,
         private val cipherSuiteFactory: CipherSuiteFactory,
         private val cryptoServiceProviders: List<CryptoServiceProvider<*>>,
         private val libraryConfig: CryptoLibraryConfig,
@@ -192,18 +192,18 @@ class CryptoFactoryImpl @Activate constructor(
             }
         }
 
-        private fun getSigningKeyCache(memberId: String, config: CryptoCacheConfig): SigningKeyCache {
-            val persistenceFactory = persistenceFactories.firstOrNull {
-                it.name == config.cacheFactoryName
-            } ?: throw CryptoServiceLibraryException(
-                "Cannot find ${config.cacheFactoryName}",
+        private fun getSigningKeyCache(memberId: String, config: CryptoPersistenceConfig): SigningKeyCache {
+            val persistenceFactory = persistenceProviders.firstOrNull {
+                it.name == config.factoryName
+            }?.create() ?: throw CryptoServiceLibraryException(
+                "Cannot find ${config.factoryName}",
                 isRecoverable = false
             )
             return signingCaches.getOrPut(memberId) {
                 SigningKeyCacheImpl(
                     memberId = memberId,
                     keyEncoder = cipherSchemeMetadata,
-                    persistence = persistenceFactory.createSigningPersistentCache(config)
+                    persistenceFactory = persistenceFactory
                 )
             }
         }

@@ -69,7 +69,7 @@ class DevCryptoServiceTests {
             schemeMetadata = mockFactory.schemeMetadata
             signatureVerifier = mockFactory.createVerificationService()
             devCryptoServiceProvider = DevCryptoServiceProvider(
-                listOf(InMemoryPersistentCacheFactory())
+                listOf(InMemoryKeyValuePersistenceFactory())
             )
             cryptoService = devCryptoServiceProvider.getInstance(
                 CryptoServiceContext(

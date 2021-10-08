@@ -1,10 +1,10 @@
 package net.corda.crypto.service.persistence
 
-import net.corda.crypto.impl.config.CryptoCacheConfig
+import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
 import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
-import net.corda.crypto.impl.persistence.PersistentCache
-import net.corda.crypto.impl.persistence.PersistentCacheFactory
+import net.corda.crypto.impl.persistence.KeyValuePersistence
+import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -19,26 +19,35 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
-class KafkaPersistentCacheTests {
+class KafkaKeyValuePersistenceTests {
+    private lateinit var memberId: String
     private lateinit var subscriptionFactory: SubscriptionFactory
     private lateinit var publisherFactory: PublisherFactory
     private lateinit var sub: CompactedSubscription<String, SigningPersistentKeyInfo>
     private lateinit var pub: Publisher
-    private lateinit var factory: PersistentCacheFactory
-    private lateinit var signingPersistence: PersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo>
-    private lateinit var defaultPersistence: PersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
+    private lateinit var factory: KeyValuePersistenceFactory
+    private lateinit var signingPersistence: KeyValuePersistence<SigningPersistentKeyInfo, SigningPersistentKeyInfo>
+    private lateinit var defaultPersistence: KeyValuePersistence<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
 
     @BeforeEach
     fun setup() {
+        memberId = UUID.randomUUID().toString()
         subscriptionFactory = mock()
         publisherFactory = mock()
         sub = mock()
         pub = mock()
+        val completedFuture = CompletableFuture<Unit>()
+        completedFuture.complete(Unit)
+        whenever(
+            pub.publish(any())
+        ).thenReturn(listOf(completedFuture))
         Mockito.`when`(
             subscriptionFactory.createCompactedSubscription(
                 any(),
@@ -52,30 +61,39 @@ class KafkaPersistentCacheTests {
                 any()
             )
         ).thenReturn(pub)
-        factory = KafkaPersistentCacheFactoryImpl(
+        factory = KafkaKeyValuePersistenceFactory(
             subscriptionFactory = subscriptionFactory,
             publisherFactory = publisherFactory,
-        )
-        signingPersistence = factory.createSigningPersistentCache(
-            config = CryptoCacheConfig(
+            config = CryptoLibraryConfigImpl(
                 mapOf(
-                    "persistenceConfig" to mapOf(
-                        "groupName" to "groupName",
-                        "topicName" to "topicName"
+                    "keyCache" to mapOf(
+                        "persistenceConfig" to mapOf(
+                            "groupName" to "groupName",
+                            "topicName" to "topicName",
+                            "clientId" to "clientId"
+                        )
+                    ),
+                    "mngCache" to mapOf(
+                        "persistenceConfig" to mapOf(
+                            "groupName" to "groupName",
+                            "topicName" to "topicName",
+                            "clientId" to "clientId"
+                        )
+
                     )
                 )
             )
         )
-        defaultPersistence = factory.createDefaultCryptoPersistentCache(
-            config = CryptoCacheConfig(
-                mapOf(
-                    "persistenceConfig" to mapOf(
-                        "groupName" to "groupName",
-                        "topicName" to "topicName"
-                    )
-                )
-            )
-        )
+        signingPersistence = factory.createSigningPersistence(
+            memberId = memberId
+        ) {
+            it
+        }
+        defaultPersistence = factory.createDefaultCryptoPersistence(
+            memberId = memberId
+        ) {
+            DefaultCryptoCachedKeyInfo(memberId = it.memberId)
+        }
     }
 
     @Test
@@ -85,13 +103,13 @@ class KafkaPersistentCacheTests {
             publicKeyHash = "hash1",
             alias = "alias1",
             publicKey = "Hello World!".toByteArray(),
-            memberId = "123",
+            memberId = memberId,
             externalId = UUID.randomUUID(),
             masterKeyAlias = "MK",
             privateKeyMaterial = "material".toByteArray(),
             schemeCodeName = "CODE"
         )
-        signingPersistence.put("hash1", original) { it.also { v -> v.alias = v.alias + "-123" } }
+        signingPersistence.put("hash1", original)
         Mockito.verify(pub).publish(publishedRecords.capture())
         assertEquals(1, publishedRecords.allValues.size)
         assertEquals(1, publishedRecords.firstValue.size)
@@ -107,10 +125,10 @@ class KafkaPersistentCacheTests {
         assertEquals(original.masterKeyAlias, publishedRecord.value!!.masterKeyAlias)
         assertArrayEquals(original.privateKeyMaterial, publishedRecord.value!!.privateKeyMaterial)
         assertEquals(original.schemeCodeName, publishedRecord.value!!.schemeCodeName)
-        val cachedRecord = signingPersistence.get("hash1") { it }
+        val cachedRecord = signingPersistence.get("hash1")
         assertNotNull(cachedRecord)
         assertEquals(original.publicKeyHash, cachedRecord.publicKeyHash)
-        assertEquals("alias1-123", cachedRecord.alias)
+        assertEquals("alias1", cachedRecord.alias)
         assertArrayEquals(original.publicKey, cachedRecord.publicKey)
         assertEquals(original.memberId, cachedRecord.memberId)
         assertEquals(original.externalId, cachedRecord.externalId)
@@ -125,7 +143,7 @@ class KafkaPersistentCacheTests {
             publicKeyHash = "hash1",
             alias = "alias1",
             publicKey = "Hello World!".toByteArray(),
-            memberId = "123",
+            memberId = memberId,
             externalId = UUID.randomUUID(),
             masterKeyAlias = "MK",
             privateKeyMaterial = "material".toByteArray(),
@@ -134,10 +152,10 @@ class KafkaPersistentCacheTests {
         Mockito.`when`(
             sub.getValue("hash1")
         ).thenReturn(original)
-        val cachedRecord1 = signingPersistence.get("hash1") { it.also { v -> v.alias = v.alias + "-123" } }
+        val cachedRecord1 = signingPersistence.get("hash1")
         assertNotNull(cachedRecord1)
         assertEquals(original.publicKeyHash, cachedRecord1.publicKeyHash)
-        assertEquals("alias1-123", cachedRecord1.alias)
+        assertEquals("alias1", cachedRecord1.alias)
         assertArrayEquals(original.publicKey, cachedRecord1.publicKey)
         assertEquals(original.memberId, cachedRecord1.memberId)
         assertEquals(original.externalId, cachedRecord1.externalId)
@@ -145,10 +163,10 @@ class KafkaPersistentCacheTests {
         assertArrayEquals(original.privateKeyMaterial, cachedRecord1.privateKeyMaterial)
         assertEquals(original.schemeCodeName, cachedRecord1.schemeCodeName)
         // again - will return from cache
-        val cachedRecord2 = signingPersistence.get("hash1") { it }
+        val cachedRecord2 = signingPersistence.get("hash1")
         assertNotNull(cachedRecord2)
         assertEquals(original.publicKeyHash, cachedRecord2.publicKeyHash)
-        assertEquals("alias1-123", cachedRecord2.alias)
+        assertEquals("alias1", cachedRecord2.alias)
         assertArrayEquals(original.publicKey, cachedRecord2.publicKey)
         assertEquals(original.memberId, cachedRecord2.memberId)
         assertEquals(original.externalId, cachedRecord2.externalId)
@@ -159,22 +177,27 @@ class KafkaPersistentCacheTests {
 
     @Test
     fun `Should get signing cache null when it's not found`() {
-        val cachedRecord = signingPersistence.get("hash1") { it }
+        val cachedRecord = signingPersistence.get("hash1")
         assertNull(cachedRecord)
     }
 
     @Test
     fun `Should get default crypto cache null when it's not found`() {
-        val cachedRecord = defaultPersistence.get("hash1") {
-            DefaultCryptoCachedKeyInfo(memberId = it.memberId)
-        }
+        val key = "hash1"
+        whenever(
+            sub.getValue(key)
+        ).thenReturn(null)
+        val cachedRecord = defaultPersistence.get(key)
         assertNull(cachedRecord)
     }
 
     @Test
     fun `Should close publisher and subscription`() {
-        (signingPersistence as AutoCloseable).close()
-        Mockito.verify(pub, Mockito.times(1)).close()
-        Mockito.verify(sub, Mockito.times(1)).close()
+        (factory as AutoCloseable).close()
+        // twice - for the signing & crypto proxies
+        Mockito.verify(pub, Mockito.times(2)).close()
+        Mockito.verify(sub, Mockito.times(2)).close()
     }
+
+    // TODO2 add guarding member id tests
 }
