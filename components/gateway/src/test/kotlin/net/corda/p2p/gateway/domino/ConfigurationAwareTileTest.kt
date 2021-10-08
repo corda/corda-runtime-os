@@ -1,12 +1,12 @@
 package net.corda.p2p.gateway.domino
 
 import com.typesafe.config.Config
+import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.StartEvent
-import net.corda.p2p.gateway.domino.ConfigurationAwareTile.Companion.CONFIG_KEY
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -32,19 +32,22 @@ class ConfigurationAwareTileTest {
     }
     private val calledNewConfigurations = mutableListOf<Pair<Configuration, Configuration?>>()
     private val registration = mock<AutoCloseable>()
+    private val configurationHandler = argumentCaptor<ConfigurationHandler>()
     private val service = mock<ConfigurationReadService> {
-        on { registerForUpdates(any()) } doReturn registration
+        on { registerForUpdates(configurationHandler.capture()) } doReturn registration
     }
     private val configFactory = mock<(Config)->Configuration> {
         on { invoke(any()) } doAnswer {
             Configuration((it.arguments[0] as Config).getInt(""))
         }
     }
+    private val key = "key"
 
     private data class Configuration(val data: Int)
     private inner class Tile : ConfigurationAwareTile<Configuration>(
         factory,
         service,
+        key,
         configFactory,
     ) {
         override fun applyNewConfiguration(
@@ -57,9 +60,9 @@ class ConfigurationAwareTileTest {
 
     @Test
     fun `init register listener`() {
-        val tile = Tile()
+        Tile()
 
-        verify(service).registerForUpdates(tile)
+        verify(service).registerForUpdates(any())
     }
 
     @Test
@@ -85,7 +88,7 @@ class ConfigurationAwareTileTest {
         val tile = Tile()
         tile.start()
 
-        tile.onNewConfiguration(emptySet(), mapOf(CONFIG_KEY to mock()))
+        configurationHandler.firstValue.onNewConfiguration(emptySet(), mapOf(key to mock()))
 
         verify(configFactory, never()).invoke(any())
     }
@@ -95,7 +98,7 @@ class ConfigurationAwareTileTest {
         val tile = Tile()
         tile.start()
 
-        tile.onNewConfiguration(setOf(CONFIG_KEY), emptyMap())
+        configurationHandler.firstValue.onNewConfiguration(setOf(key), emptyMap())
 
         verify(configFactory, never()).invoke(any())
     }
@@ -107,7 +110,7 @@ class ConfigurationAwareTileTest {
         val tile = Tile()
         tile.start()
 
-        tile.onNewConfiguration(setOf(CONFIG_KEY), mapOf(CONFIG_KEY to config))
+        configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
         assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
     }
@@ -120,7 +123,7 @@ class ConfigurationAwareTileTest {
         val tile = Tile()
         tile.start()
 
-        tile.onNewConfiguration(setOf(CONFIG_KEY), mapOf(CONFIG_KEY to config))
+        configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
         assertThat(calledNewConfigurations)
             .hasSize(1)
@@ -135,7 +138,7 @@ class ConfigurationAwareTileTest {
         val tile = Tile()
         tile.start()
 
-        tile.onNewConfiguration(setOf(CONFIG_KEY), mapOf(CONFIG_KEY to config))
+        configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
         assertThat(tile.state).isEqualTo(DominoTile.State.Started)
     }
@@ -150,9 +153,9 @@ class ConfigurationAwareTileTest {
         }
         val tile = Tile()
         tile.start()
-        tile.onNewConfiguration(setOf(CONFIG_KEY), mapOf(CONFIG_KEY to config1))
+        configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config1))
 
-        tile.onNewConfiguration(setOf(CONFIG_KEY), mapOf(CONFIG_KEY to config2))
+        configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config2))
 
         assertThat(calledNewConfigurations)
             .hasSize(1)
@@ -169,9 +172,9 @@ class ConfigurationAwareTileTest {
         }
         val tile = Tile()
         tile.start()
-        tile.onNewConfiguration(setOf(CONFIG_KEY), mapOf(CONFIG_KEY to config1))
+        configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config1))
 
-        tile.onNewConfiguration(setOf(CONFIG_KEY), mapOf(CONFIG_KEY to config2))
+        configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config2))
 
         assertThat(calledNewConfigurations)
             .hasSize(2)
@@ -184,9 +187,9 @@ class ConfigurationAwareTileTest {
         val config = mock<Config> {
             on { getInt(any()) } doReturn 11
         }
-        val tile = Tile()
+        Tile()
 
-        tile.onNewConfiguration(setOf(CONFIG_KEY), mapOf(CONFIG_KEY to config))
+        configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
         assertThat(calledNewConfigurations)
             .isEmpty()
@@ -202,8 +205,8 @@ class ConfigurationAwareTileTest {
         val tile = Tile()
         tile.start()
 
-        tile.onNewConfiguration(setOf(CONFIG_KEY), mapOf(CONFIG_KEY to badConfig))
-        tile.onNewConfiguration(setOf(CONFIG_KEY), mapOf(CONFIG_KEY to goodConfig))
+        configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to badConfig))
+        configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to goodConfig))
 
         assertThat(calledNewConfigurations)
             .hasSize(1)
@@ -216,7 +219,7 @@ class ConfigurationAwareTileTest {
             on { getInt(any()) } doReturn 11
         }
         val tile = Tile()
-        tile.onNewConfiguration(setOf(CONFIG_KEY), mapOf(CONFIG_KEY to config))
+        configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
         tile.start()
 
@@ -243,6 +246,7 @@ class ConfigurationAwareTileTest {
         val tile = object : ConfigurationAwareTile<Configuration>(
             factory,
             service,
+            key,
             configFactory,
         ) {
             override fun applyNewConfiguration(
@@ -252,7 +256,7 @@ class ConfigurationAwareTileTest {
                 throw IOException("")
             }
         }
-        tile.onNewConfiguration(setOf(CONFIG_KEY), mapOf(CONFIG_KEY to config))
+        configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
         tile.start()
 

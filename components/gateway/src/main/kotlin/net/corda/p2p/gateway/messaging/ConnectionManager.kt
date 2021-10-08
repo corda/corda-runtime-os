@@ -4,6 +4,7 @@ import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.p2p.gateway.Gateway.Companion.CONFIG_KEY
 import net.corda.p2p.gateway.domino.ConfigurationAwareTile
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
@@ -33,7 +34,8 @@ class ConnectionManager(
 ) : ConfigurationAwareTile<GatewayConfiguration>(
     lifecycleCoordinatorFactory,
     configurationReaderService,
-    { it.toGatewayConfiguration() }
+    CONFIG_KEY,
+    { it.toGatewayConfiguration() },
 ) {
 
     companion object {

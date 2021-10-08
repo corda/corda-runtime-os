@@ -38,6 +38,7 @@ class Gateway(
     companion object {
         const val CONSUMER_GROUP_ID = "gateway"
         const val PUBLISHER_ID = "gateway"
+        const val CONFIG_KEY = "p2p.gateway"
     }
 
     private val inboundMessageHandler = InboundMessageHandler(

@@ -11,33 +11,34 @@ import java.util.concurrent.atomic.AtomicReference
 abstract class ConfigurationAwareTile<C>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
+    private val key: String,
     private val configFactory: (Config) -> C
 ) :
-    LeafTile(coordinatorFactory),
-    ConfigurationHandler {
+    LeafTile(coordinatorFactory) {
 
     companion object {
-        const val CONFIG_KEY = "p2p.gateway"
         private val logger = contextLogger()
     }
 
     private val configurationHolder = AtomicReference<C>()
     private val canReceiveConfigurations = AtomicBoolean(false)
 
-    private val registration = configurationReaderService.registerForUpdates(this)
+    private inner class Handler : ConfigurationHandler {
+        override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, Config>) {
+            if (changedKeys.contains(key)) {
+                val newConfiguration = config[key]
+                if (newConfiguration != null) {
+                    applyNewConfiguration(newConfiguration)
+                }
+            }
+        }
+    }
+
+    private val registration = configurationReaderService.registerForUpdates(Handler())
 
     override fun close() {
         registration.close()
         super.close()
-    }
-
-    override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, Config>) {
-        if (changedKeys.contains(CONFIG_KEY)) {
-            val newConfiguration = config[CONFIG_KEY]
-            if (newConfiguration != null) {
-                applyNewConfiguration(newConfiguration)
-            }
-        }
     }
 
     private fun applyNewConfiguration(newConfiguration: Config) {
@@ -50,11 +51,11 @@ abstract class ConfigurationAwareTile<C>(
                 logger.info("Configuration had not changed $name")
                 return
             } else if ((state == State.StoppedDueToError) || (canReceiveConfigurations.get())) {
-                logger.info("Reconfiguring gateway $name")
+                logger.info("Reconfiguring $name")
                 applyNewConfiguration(configuration, oldConfiguration)
                 canReceiveConfigurations.set(true)
                 updateState(State.Started)
-                logger.info("Gateway reconfigured $name")
+                logger.info("Reconfigured $name")
             }
         } catch (e: Throwable) {
             gotError(e)

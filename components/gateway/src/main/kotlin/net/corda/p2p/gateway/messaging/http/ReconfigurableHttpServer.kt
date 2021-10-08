@@ -3,6 +3,7 @@ package net.corda.p2p.gateway.messaging.http
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.domino.ConfigurationAwareTile
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
@@ -20,6 +21,7 @@ class ReconfigurableHttpServer(
     ConfigurationAwareTile<GatewayConfiguration>(
         lifecycleCoordinatorFactory,
         configurationReaderService,
+        Gateway.CONFIG_KEY,
         { it.toGatewayConfiguration() }
     ) {
 
