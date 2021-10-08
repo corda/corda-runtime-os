@@ -73,6 +73,7 @@ class ConfigReaderImpl(
 
     override fun registerCallback(configListener: ConfigListener): AutoCloseable {
         // YIFT: This must be within a lock
+        // See CORE-2781 and CORE-2759
         lock.withLock {
             val sub = ConfigListenerSubscription(this)
             configUpdates[sub] = configListener

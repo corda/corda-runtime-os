@@ -24,7 +24,6 @@ data class SslConfiguration(
     /**
      * The trust store password
      */
-    // YIFT: Not used?
     val trustStorePassword: String,
 
     /**

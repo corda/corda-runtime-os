@@ -13,61 +13,6 @@ import java.io.InputStream
 import java.security.KeyStore
 
 class SslConfigurationTest {
-
-    /*
-    val keyStore: KeyStore by lazy {
-        readKeyStore(rawKeyStore, keyStorePassword)
-    }
-    /**
-     * The trust root key store used to validate the peer certificate
-     */
-    val trustStore: KeyStore by lazy {
-        readKeyStore(rawTrustStore, trustStorePassword)
-    }
-
-    private fun readKeyStore(rawData: ByteArray, password: String): KeyStore {
-        return KeyStore.getInstance("JKS").also {
-            ByteArrayInputStream(rawData).use { keySoreInputStream ->
-                it.load(keySoreInputStream, password.toCharArray())
-            }
-        }
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is SslConfiguration) return false
-
-        if (!rawKeyStore.contentEquals(other.rawKeyStore)) return false
-        if (keyStorePassword != other.keyStorePassword) return false
-        if (!rawTrustStore.contentEquals(other.rawTrustStore)) return false
-        if (trustStorePassword != other.trustStorePassword) return false
-        if (revocationCheck != other.revocationCheck) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = rawKeyStore.contentHashCode()
-        result = 31 * result + keyStorePassword.hashCode()
-        result = 31 * result + rawTrustStore.contentHashCode()
-        result = 31 * result + trustStorePassword.hashCode()
-        result = 31 * result + revocationCheck.hashCode()
-        return result
-    }
-}
-
-internal fun Config.toSslConfiguration(): SslConfiguration {
-    val revocationCheckMode = this.getEnum(RevocationConfigMode::class.java, "revocationCheck.mode")
-    return SslConfiguration(
-        rawKeyStore = this.getString("keyStore").base64ToByteArray(),
-        keyStorePassword = this.getString("keyStorePassword"),
-        rawTrustStore = this.getString("trustStore").base64ToByteArray(),
-        trustStorePassword = this.getString("trustStorePassword"),
-        revocationCheck = RevocationConfig(revocationCheckMode)
-    )
-}
-    
-     */
     @Test
     fun `toSslConfiguration return correct configuration`() {
         val config = mock<Config> {

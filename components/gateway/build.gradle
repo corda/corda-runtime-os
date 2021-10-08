@@ -42,7 +42,6 @@ dependencies {
 
     integrationTestImplementation project(":testing:test-utilities")
 
-    // TODO: Change to OSGI
     integrationTestImplementation project(":libs:messaging:inmemory-messaging-impl")
     integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")

@@ -21,7 +21,6 @@ import org.osgi.service.component.annotations.Reference
  * to the internal messaging system.
  *
  */
-// YIFT: should this be internal?
 class Gateway(
     @Reference(service = ConfigurationReadService::class)
     configurationReaderService: ConfigurationReadService,

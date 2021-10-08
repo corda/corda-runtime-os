@@ -23,11 +23,9 @@ data class GatewayConfiguration(
     /**
      * Determines whether HTTP pipeline logging is enabled or not. Should only be turned on when debugging
      */
-    // YIFT: Not used?
     val traceLogging: Boolean = false
 )
 
-// YIFT: Not Used?
 data class ConnectionConfiguration(
     /**
      * Maximum size of the connection cache
