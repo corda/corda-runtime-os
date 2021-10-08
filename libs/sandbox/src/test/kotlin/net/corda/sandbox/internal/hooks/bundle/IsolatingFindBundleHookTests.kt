@@ -1,7 +1,7 @@
 package net.corda.sandbox.internal.hooks.bundle
 
 import net.corda.sandbox.internal.SandboxServiceInternal
-import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.createMockBundleContext
+import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.mockBundleContext
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -11,7 +11,7 @@ import org.osgi.framework.Bundle
 
 class IsolatingFindBundleHookTests {
     private val bundleOne = mock<Bundle>()
-    private val bundleOneContext = createMockBundleContext(bundleOne)
+    private val bundleOneContext = mockBundleContext(bundleOne)
     private val bundleTwo = mock<Bundle>()
     private val candidates = mutableListOf(bundleTwo)
 

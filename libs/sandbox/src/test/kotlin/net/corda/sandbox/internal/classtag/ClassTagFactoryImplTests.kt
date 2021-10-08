@@ -3,18 +3,18 @@ package net.corda.sandbox.internal.classtag
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
 import net.corda.sandbox.internal.CORDAPP_BUNDLE_NAME
-import net.corda.sandbox.internal.ClassTagV1
 import net.corda.sandbox.internal.CPK_BUNDLE_NAME
+import net.corda.sandbox.internal.ClassTagV1
 import net.corda.sandbox.internal.mockBundle
 import net.corda.sandbox.internal.mockCpk
-import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
+import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
+import java.util.UUID.randomUUID
 
 class ClassTagFactoryImplTests {
     private val classTagFactory = ClassTagFactoryImpl()
@@ -22,10 +22,7 @@ class ClassTagFactoryImplTests {
     private val mockBundle = mockBundle(CPK_BUNDLE_NAME)
     private val mockCordappBundle = mockBundle(CORDAPP_BUNDLE_NAME)
     private val mockCpk = mockCpk()
-    private val mockSandbox = mock<CpkSandboxInternal>().apply {
-        whenever(cpk).thenReturn(mockCpk)
-        whenever(cordappBundle).thenReturn(mockCordappBundle)
-    }
+    private val mockSandbox = CpkSandboxImpl(mock(), randomUUID(), mockCpk, mockCordappBundle, emptySet())
 
     /**
      * Returns a serialised class tag.
