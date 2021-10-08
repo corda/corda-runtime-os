@@ -2,9 +2,9 @@ package net.corda.sandbox.internal.hooks.bundle
 
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.SandboxServiceInternal
-import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.createMockBundleCapability
-import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.createMockBundleRequirement
-import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.createMockBundleRevision
+import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.mockBundleCapability
+import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.mockBundleRequirement
+import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.mockBundleRevision
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -16,13 +16,13 @@ class IsolatingResolverBundleHookTests {
     private val bundleOne = mock<Bundle>()
     private val bundleTwo = mock<Bundle>()
     private val bundleThree = mock<Bundle>()
-    private val bundleOneRevision = createMockBundleRevision(bundleOne)
-    private val bundleOneCapability = createMockBundleCapability(bundleOneRevision)
-    private val bundleTwoRevision = createMockBundleRevision(bundleTwo)
-    private val bundleTwoCapability = createMockBundleCapability(bundleTwoRevision)
-    private val bundleThreeRevision = createMockBundleRevision(bundleThree)
-    private val bundleThreeCapability = createMockBundleCapability(bundleThreeRevision)
-    private val bundleRequirement = createMockBundleRequirement(bundleOneRevision)
+    private val bundleOneRevision = mockBundleRevision(bundleOne)
+    private val bundleOneCapability = mockBundleCapability(bundleOneRevision)
+    private val bundleTwoRevision = mockBundleRevision(bundleTwo)
+    private val bundleTwoCapability = mockBundleCapability(bundleTwoRevision)
+    private val bundleThreeRevision = mockBundleRevision(bundleThree)
+    private val bundleThreeCapability = mockBundleCapability(bundleThreeRevision)
+    private val bundleRequirement = mockBundleRequirement(bundleOneRevision)
     private val candidates = mutableListOf(bundleTwoCapability)
     private val revisions = mutableListOf(bundleOneRevision)
 

@@ -2,12 +2,15 @@ package net.corda.sandbox.internal
 
 import net.corda.packaging.Cpk
 import net.corda.v5.crypto.SecureHash
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import org.osgi.framework.Version
 import java.security.MessageDigest
-import kotlin.random.Random
+import kotlin.random.Random.Default.nextInt
+import kotlin.random.Random.Default.nextLong
+import kotlin.math.abs
 
 const val PUBLIC_BUNDLE_NAME = "public_bundle_symbolic_name"
 const val CPK_BUNDLE_NAME = "cpk_bundle_symbolic_name"
@@ -21,12 +24,18 @@ fun randomSecureHash(): SecureHash {
     return SecureHash(digest.algorithm, digest.digest(randomBytes))
 }
 
-/** Generates a mock [Bundle] with the given [bundleSymbolicName] and [bundleVersion]. */
-fun mockBundle(bundleSymbolicName: String = Random.nextInt().toString(), bundleVersion: String = "0.0") =
-    mock<Bundle>().apply {
-        whenever(bundleId).thenReturn(Random.nextLong())
+/** Generates a mock [Bundle] with [bundleSymbolicName] that contains the given [classes]. */
+fun mockBundle(
+    bundleSymbolicName: String = nextInt().toString(),
+    classes: Collection<Class<*>> = emptySet()
+) = mock<Bundle>().apply {
+        whenever(bundleId).thenReturn(nextLong())
         whenever(symbolicName).thenReturn(bundleSymbolicName)
-        whenever(version).thenReturn(Version.parseVersion(bundleVersion))
+        whenever(version).thenReturn(Version.parseVersion("${abs(nextInt())}.${abs(nextInt())}"))
+        whenever(loadClass(any())).then { answer ->
+            val className = answer.arguments.single()
+            classes.find { klass -> klass.name == className } ?: throw ClassNotFoundException()
+        }
     }
 
 /** Generates a mock [Cpk.Expanded]. */
