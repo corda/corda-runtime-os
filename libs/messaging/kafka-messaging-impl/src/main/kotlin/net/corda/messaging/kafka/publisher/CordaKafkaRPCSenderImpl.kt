@@ -189,8 +189,8 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
             } else {
                 log.info(
                     "Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}. " +
-                            "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
-                            "a repartition event or the client dropped their future. The response status for it was $responseStatus"
+                    "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
+                    "a repartition event or the client dropped their future. The response status for it was $responseStatus"
                 )
             }
         }
