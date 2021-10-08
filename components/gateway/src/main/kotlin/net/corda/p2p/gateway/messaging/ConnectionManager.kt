@@ -11,6 +11,7 @@ import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -27,6 +28,8 @@ class ConnectionManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
     private val listener: HttpEventListener,
+    private val lock: Lock = ReentrantLock(),
+    private val nioEventLoopGroupFactory: (Int) -> NioEventLoopGroup = { NioEventLoopGroup(it) }
 ) : ConfigurationAwareTile<GatewayConfiguration>(
     lifecycleCoordinatorFactory,
     configurationReaderService,
@@ -42,7 +45,6 @@ class ConnectionManager(
     private var writeGroup: EventLoopGroup? = null
     private var nettyGroup: EventLoopGroup? = null
 
-    private val lock = ReentrantLock()
     private val waitForConfiguration = lock.newCondition()
     @Volatile
     private var sslConfiguration: SslConfiguration? = null
@@ -94,13 +96,13 @@ class ConnectionManager(
     }
 
     override fun createResources() {
-        NioEventLoopGroup(NUM_CLIENT_WRITE_THREADS).also {
+        nioEventLoopGroupFactory(NUM_CLIENT_WRITE_THREADS).also {
             executeBeforeStop {
                 it.shutdownGracefully()
                 it.terminationFuture().sync()
             }
         }.also { writeGroup = it }
-        nettyGroup = NioEventLoopGroup(NUM_CLIENT_NETTY_THREADS).also {
+        nettyGroup = nioEventLoopGroupFactory(NUM_CLIENT_NETTY_THREADS).also {
             executeBeforeStop {
                 it.shutdownGracefully()
                 it.terminationFuture().sync()

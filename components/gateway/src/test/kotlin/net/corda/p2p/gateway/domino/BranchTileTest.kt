@@ -36,7 +36,7 @@ class BranchTileTest {
     private inner class Tile(override val children: Collection<DominoTile>) : BranchTile(factory)
 
     @Nested
-    inner class `startTile tests` {
+    inner class StartTileTests {
         @Test
         fun `startTile will register to follow all the tiles on the first run`() {
             val names = (1..3).map {
@@ -84,7 +84,7 @@ class BranchTileTest {
     }
 
     @Nested
-    inner class `onChildStarted tests` {
+    inner class OnChildStartedTests {
         @Test
         fun `onChildStarted will start all the non error children`() {
             val children = listOf<DominoTile>(
@@ -113,7 +113,7 @@ class BranchTileTest {
         }
 
         @Test
-        fun `onChildStarted will not start error child`() {
+        fun `Tests for onChildStarted`() {
             val children = listOf<DominoTile>(
                 mock {
                     on { state } doReturn DominoTile.State.StoppedByParent
@@ -191,7 +191,7 @@ class BranchTileTest {
     }
 
     @Nested
-    inner class `onChildStopped tests` {
+    inner class OnChildStoppedTests {
         @Test
         fun `onChildStopped will stop the tile`() {
             val children = listOf(mock<DominoTile>())
@@ -210,7 +210,7 @@ class BranchTileTest {
     }
 
     @Nested
-    inner class `stopTile tests` {
+    inner class StopTileTests {
         @Test
         fun `stopTile will stop all the non error children`() {
             val children = listOf<DominoTile>(
@@ -252,8 +252,9 @@ class BranchTileTest {
             verify(children[1], never()).stop()
         }
     }
+
     @Nested
-    inner class `close tests` {
+    inner class CloseTests {
         @Test
         fun `close will close the registrations`() {
             val children = listOf<DominoTile>(mock())
