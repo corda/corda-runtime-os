@@ -45,7 +45,8 @@ class CustomSerializerRegistryTests {
     class MyCustomException : CordaRuntimeException("Custom exception annotated with @CordaSerializable")
     @Test
     fun `exception types can have custom serializers`() {
-        class TestCustomSerializer : AbstractTestCustomSerializer<MyCustomException, String>(), SerializationCustomSerializer<MyCustomException, String>
+        class TestCustomSerializer : AbstractTestCustomSerializer<MyCustomException, String>(),
+            SerializationCustomSerializer<MyCustomException, String>
 
         val customExceptionSerializer = TestCustomSerializer()
 
