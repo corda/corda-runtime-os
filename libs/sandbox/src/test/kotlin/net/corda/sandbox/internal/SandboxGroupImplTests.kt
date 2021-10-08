@@ -7,8 +7,8 @@ import net.corda.sandbox.internal.classtag.ClassTag
 import net.corda.sandbox.internal.classtag.ClassTagFactory
 import net.corda.sandbox.internal.classtag.EvolvableTag
 import net.corda.sandbox.internal.classtag.StaticTag
-import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
-import net.corda.sandbox.internal.sandbox.SandboxInternal
+import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
+import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -17,6 +17,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
+import java.util.UUID.randomUUID
 
 // Various dummy serialised class tags.
 private const val CPK_STATIC_TAG = "serialised_static_cpk_class"
@@ -38,23 +39,10 @@ class SandboxGroupImplTests {
     private val nonBundleClass = Boolean::class.java
     private val nonSandboxClass = Float::class.java
 
-    private val mockCpkBundle = mockBundle(CPK_BUNDLE_NAME)
-    private val mockPublicBundle = mockBundle(PUBLIC_BUNDLE_NAME)
-    private val mockNonSandboxBundle = mock<Bundle>()
+    private val mockCpkBundle = mockBundle(CPK_BUNDLE_NAME, setOf(cpkClass))
+    private val mockPublicBundle = mockBundle(PUBLIC_BUNDLE_NAME, setOf(publicClass))
+    private val mockNonSandboxBundle = mockBundle()
     private val mockCordappBundle = mockBundle(CORDAPP_BUNDLE_NAME)
-
-    private val mockCpk = mockCpk()
-
-    private val mockCpkSandbox = mock<CpkSandboxInternal>().apply {
-        whenever(cpk).thenReturn(mockCpk)
-        whenever(containsBundle(mockCpkBundle)).thenReturn(true)
-        whenever(cordappBundle).thenReturn(mockCordappBundle)
-        whenever(loadClass(cpkClass.name, CPK_BUNDLE_NAME)).thenReturn(cpkClass)
-    }
-    private val mockPublicSandbox = mock<SandboxInternal>().apply {
-        whenever(containsBundle(mockPublicBundle)).thenReturn(true)
-        whenever(loadClass(publicClass.name, PUBLIC_BUNDLE_NAME)).thenReturn(publicClass)
-    }
 
     private val mockBundleUtils = mock<BundleUtils>().apply {
         whenever(getBundle(cpkClass)).thenReturn(mockCpkBundle)
@@ -62,20 +50,26 @@ class SandboxGroupImplTests {
         whenever(getBundle(nonSandboxClass)).thenReturn(mockNonSandboxBundle)
     }
 
-    private val sandboxesById = mapOf(mockCpk.id to mockCpkSandbox)
-    private val classTagFactory = DummyClassTagFactory(mockCpk)
-    private val sandboxGroupImpl =
-        SandboxGroupImpl(mockBundleUtils, sandboxesById, setOf(mockPublicSandbox), classTagFactory)
+    private val cpkSandbox =
+        CpkSandboxImpl(mockBundleUtils, randomUUID(), mockCpk(), mockCordappBundle, setOf(mockCpkBundle))
+    private val publicSandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(mockPublicBundle), emptySet())
+
+    private val sandboxGroupImpl = SandboxGroupImpl(
+        mockBundleUtils,
+        mapOf(cpkSandbox.cpk.id to cpkSandbox),
+        setOf(publicSandbox),
+        DummyClassTagFactory(cpkSandbox.cpk)
+    )
 
     @Test
     fun `creates valid static tag for a CPK class`() {
-        val expectedTag = "true;false;$mockCpkBundle;$mockCpkSandbox"
+        val expectedTag = "true;false;$mockCpkBundle;$cpkSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(cpkClass))
     }
 
     @Test
     fun `creates valid static tag for a public class`() {
-        val expectedTag = "true;true;$mockPublicBundle;$mockPublicSandbox"
+        val expectedTag = "true;true;$mockPublicBundle;$publicSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(publicClass))
     }
 
@@ -95,13 +89,13 @@ class SandboxGroupImplTests {
 
     @Test
     fun `creates valid evolvable tag for a CPK class`() {
-        val expectedTag = "false;false;$mockCpkBundle;$mockCpkSandbox"
+        val expectedTag = "false;false;$mockCpkBundle;$cpkSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(cpkClass))
     }
 
     @Test
     fun `creates valid evolvable tag for a public class`() {
-        val expectedTag = "false;true;$mockPublicBundle;$mockPublicSandbox"
+        val expectedTag = "false;true;$mockPublicBundle;$publicSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(publicClass))
     }
 

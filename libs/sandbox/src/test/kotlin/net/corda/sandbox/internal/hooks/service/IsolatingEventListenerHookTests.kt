@@ -1,8 +1,8 @@
 package net.corda.sandbox.internal.hooks.service
 
 import net.corda.sandbox.internal.SandboxServiceInternal
-import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.createMockBundleContext
-import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.createMockServiceReference
+import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.mockBundleContext
+import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.mockServiceReference
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -15,9 +15,9 @@ import org.osgi.framework.hooks.service.ListenerHook
 
 class IsolatingEventListenerHookTests {
     private val bundleOne = mock<Bundle>()
-    private val bundleOneContext = createMockBundleContext(bundleOne)
+    private val bundleOneContext = mockBundleContext(bundleOne)
     private val bundleTwo = mock<Bundle>()
-    private val bundleTwoServiceReference = createMockServiceReference(bundleTwo)
+    private val bundleTwoServiceReference = mockServiceReference(bundleTwo)
     private val bundleTwoServiceEvent = ServiceEvent(0, bundleTwoServiceReference)
     private val listeners = mutableMapOf<BundleContext, MutableCollection<ListenerHook.ListenerInfo>>(bundleOneContext to mutableListOf())
 
