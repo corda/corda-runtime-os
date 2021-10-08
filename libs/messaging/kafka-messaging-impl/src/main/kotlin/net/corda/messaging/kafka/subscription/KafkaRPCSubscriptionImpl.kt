@@ -159,7 +159,10 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
                             rpcRequest.replyTopic,
                             rpcRequest.correlationKey,
                             ResponseStatus.CANCELLED,
-                            ExceptionEnvelope(error.javaClass.name, error.message).toByteBuffer().array()
+                            ExceptionEnvelope(
+                                error.javaClass.name,
+                                "Cancellation exception has no message"
+                            ).toByteBuffer().array()
                         )
                     }
                     future.isCompletedExceptionally -> {
@@ -167,7 +170,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
                             rpcRequest.replyTopic,
                             rpcRequest.correlationKey,
                             ResponseStatus.FAILED,
-                            ExceptionEnvelope(error.cause.toString(), error.message).toByteBuffer().array()
+                            ExceptionEnvelope(error.javaClass.name, error.message).toByteBuffer().array()
                         )
                     }
                     else -> {

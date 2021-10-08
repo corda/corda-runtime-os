@@ -3,7 +3,6 @@ package net.corda.messaging.kafka.publisher.factory
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCResponse
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
