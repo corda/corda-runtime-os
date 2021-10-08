@@ -39,8 +39,7 @@ class SandboxImplTests {
     }
 
     /** Creates a mock [Bundle] for testing. */
-    private fun createMockBundle(bundleSymbolicName: String, klass: Class<*>) = mock<Bundle>().apply {
-        whenever(symbolicName).thenReturn(bundleSymbolicName)
+    private fun createMockBundle(bundleSymbolicName: String, klass: Class<*>) = mockBundle(bundleSymbolicName).apply {
         whenever(loadClass(klass.name)).thenReturn(klass)
         whenever(uninstall()).then {
             uninstalledBundles.add(this)
@@ -146,37 +145,27 @@ class SandboxImplTests {
     @Test
     fun `sandbox can be unloaded`() {
         val sandbox = createSandboxImpl()
-        assertTrue(sandbox.unload().isEmpty())
+        sandbox.unload()
 
         assertEquals(setOf(publicBundle, privateBundle), uninstalledBundles)
     }
 
     @Test
     fun `reports which sandbox bundles cannot be uninstalled`() {
-        val errorOne = IllegalStateException("abc")
-        val errorTwo = IllegalArgumentException("xyz")
-
         val cantBeUninstalledCordappBundle = mockBundle().apply {
-            whenever(uninstall()).then { throw errorOne }
+            whenever(uninstall()).then { throw IllegalStateException() }
         }
-        val cantBeUninstalledLibraryBundle = mockBundle().apply {
-            whenever(uninstall()).then { throw errorTwo }
+        val libraryBundle = mockBundle().apply {
+            whenever(uninstall()).then { uninstalledBundles.add(this) }
         }
 
-        val sandbox = SandboxImpl(
+        SandboxImpl(
             mockBundleUtils,
             randomUUID(),
-            setOf(cantBeUninstalledCordappBundle, cantBeUninstalledLibraryBundle),
-            setOf()
-        )
+            setOf(cantBeUninstalledCordappBundle, libraryBundle),
+            emptySet()
+        ).unload()
 
-        val uninstallFailureMessages = sandbox.unload()
-        assertEquals(
-            setOf(
-                "Bundle ${cantBeUninstalledCordappBundle.symbolicName} could not be uninstalled, due to: $errorOne",
-                "Bundle ${cantBeUninstalledLibraryBundle.symbolicName} could not be uninstalled, due to: $errorTwo"
-            ),
-            uninstallFailureMessages.toSet()
-        )
+        assertEquals(libraryBundle, uninstalledBundles.single())
     }
 }

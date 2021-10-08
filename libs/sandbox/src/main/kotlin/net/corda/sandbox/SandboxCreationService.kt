@@ -38,8 +38,6 @@ interface SandboxCreationService {
     /**
      * Attempts to uninstall each of the sandbox group's bundles in turn, and removes the sandbox group from the
      * service's cache.
-     *
-     * Returns a list of bundles that could not be uninstalled, with their cause of failure.
      */
-    fun unloadSandboxGroup(sandboxGroup: SandboxGroup): List<String>
+    fun unloadSandboxGroup(sandboxGroup: SandboxGroup)
 }

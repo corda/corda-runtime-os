@@ -38,8 +38,6 @@ internal interface SandboxInternal : Sandbox {
 
     /**
      * Uninstalls all the sandbox's bundles.
-     *
-     * Returns a list of bundles that could not be uninstalled, with their cause of failure.
      */
-    fun unload(): List<String>
+    fun unload()
 }
