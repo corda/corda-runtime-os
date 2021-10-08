@@ -13,11 +13,10 @@ import java.security.KeyPairGenerator
 import java.security.PublicKey
 
 internal class PublicKeySerializerTest {
-
     @Test
     fun `PublicKey serializer returns the correct class back`() {
         // Most of the work in this serializer is actually done by the KeyEncodingService.
-        // We're just
+        // We're just passing through to that service
         val publicKey = KeyPairGenerator.getInstance("RSA").genKeyPair().public
         val keyEncodingService: KeyEncodingService = mock<KeyEncodingService>().also {
             whenever(it.encodeAsByteArray(eq(publicKey))).thenReturn("1".encodeToByteArray())
