@@ -1,6 +1,7 @@
 package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.SandboxException
+import net.corda.sandbox.internal.mockBundle
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -15,9 +16,7 @@ import java.util.UUID.randomUUID
 class CpkSandboxImplTests {
     @Test
     fun `can load class from CorDapp bundles in CPK sandbox`() {
-        val cordappBundle = mock<Bundle>().apply {
-            whenever(loadClass(String::class.java.name)).thenReturn(String::class.java)
-        }
+        val cordappBundle = mockBundle(classes = setOf(String::class.java))
         val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), cordappBundle, emptySet())
 
         assertEquals(String::class.java, sandbox.loadClassFromCordappBundle(String::class.java.name))
@@ -25,12 +24,8 @@ class CpkSandboxImplTests {
 
     @Test
     fun `cannot load class from other bundles in CPK sandbox`() {
-        val cordappBundle = mock<Bundle>().apply {
-            whenever(loadClass(any())).thenThrow(ClassNotFoundException::class.java)
-        }
-        val otherBundle = mock<Bundle>().apply {
-            whenever(loadClass(Int::class.java.name)).thenReturn(Int::class.java)
-        }
+        val cordappBundle = mockBundle()
+        val otherBundle = mockBundle(classes = setOf(Int::class.java))
         val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), cordappBundle, setOf(otherBundle))
 
         assertThrows<SandboxException> {
@@ -52,14 +47,8 @@ class CpkSandboxImplTests {
 
     @Test
     fun `correctly indicates whether the CPK sandbox's CorDapp bundle contains a given class`() {
-        val cordappBundle = mock<Bundle>().apply {
-            whenever(loadClass(String::class.java.name)).thenReturn(String::class.java)
-            whenever(loadClass(Int::class.java.name)).thenThrow(ClassNotFoundException::class.java)
-            whenever(loadClass(Boolean::class.java.name)).thenThrow(ClassNotFoundException::class.java)
-        }
-        val otherBundle = mock<Bundle>().apply {
-            whenever(loadClass(Int::class.java.name)).thenReturn(Int::class.java)
-        }
+        val cordappBundle = mockBundle(classes = setOf(String::class.java))
+        val otherBundle = mockBundle(classes = setOf(Int::class.java))
 
         val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), cordappBundle, setOf(otherBundle))
 

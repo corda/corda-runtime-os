@@ -43,8 +43,8 @@ class SandboxServiceImplTests {
         private const val hashLength = 32
     }
 
-    private val frameworkBundle = mockBundle("org.apache.felix.framework", "1.9")
-    private val scrBundle = mockBundle("org.apache.felix.scr", "2.3")
+    private val frameworkBundle = mockBundle("org.apache.felix.framework")
+    private val scrBundle = mockBundle("org.apache.felix.scr")
 
     private val cpkAndBundlesOne = createDummyCpkAndBundles(String::class.java, Boolean::class.java)
     private val cpkOne = cpkAndBundlesOne.cpk
@@ -74,27 +74,16 @@ class SandboxServiceImplTests {
         libraryClass: Class<*>,
         cpkDependencies: NavigableSet<Cpk.Identifier> = emptyNavigableSet()
     ): CpkAndBundles {
-        val cordappBundleName = Random.nextInt().toString()
-        val cordappBundleVersion = "0.0"
+        val mockCordappBundle = mockBundle(classes = setOf(cordappClass))
+        val mockLibraryBundle = mockBundle(classes = setOf(libraryClass))
 
         val mockCordappManifest = mock<CordappManifest>().apply {
-            whenever(bundleSymbolicName).thenReturn(cordappBundleName)
-            whenever(bundleVersion).thenReturn(cordappBundleVersion)
+            whenever(bundleSymbolicName).thenAnswer { mockCordappBundle.symbolicName }
+            whenever(bundleVersion).thenAnswer { mockCordappBundle.version.toString() }
         }
 
         val dummyCpkMainJar = Paths.get("${Random.nextInt()}.jar")
         val dummyCpk = createDummyCpk(dummyCpkMainJar, mockCordappManifest, cpkDependencies)
-
-        val mockCordappBundle = mockBundle(cordappBundleName, cordappBundleVersion).apply {
-            whenever(loadClass(any())).then { answer ->
-                val className = answer.arguments.single()
-                if (className == cordappClass.name) cordappClass else throw ClassNotFoundException()
-            }
-        }
-
-        val mockLibraryBundle = mockBundle().apply {
-            whenever(loadClass(libraryClass.name)).thenReturn(libraryClass)
-        }
 
         return CpkAndBundles(dummyCpk, mockCordappBundle, mockLibraryBundle, cordappClass, libraryClass)
     }
@@ -258,8 +247,8 @@ class SandboxServiceImplTests {
 
     @Test
     fun `throws if a CPK's CorDapp bundle cannot be started`() {
-        val cordappBundle = mock<Bundle>()
-        val libraryBundle = mock<Bundle>()
+        val cordappBundle = mockBundle()
+        val libraryBundle = mockBundle()
 
         val mockBundleUtils = mock<BundleUtils>().apply {
             whenever(getServiceRuntimeComponentBundle()).thenReturn(scrBundle)
@@ -276,8 +265,8 @@ class SandboxServiceImplTests {
 
     @Test
     fun `throws if a CPK's library bundles cannot be started`() {
-        val cordappBundle = mock<Bundle>()
-        val libraryBundle = mock<Bundle>()
+        val cordappBundle = mockBundle()
+        val libraryBundle = mockBundle()
 
         val mockBundleUtils = mock<BundleUtils>().apply {
             whenever(getServiceRuntimeComponentBundle()).thenReturn(scrBundle)

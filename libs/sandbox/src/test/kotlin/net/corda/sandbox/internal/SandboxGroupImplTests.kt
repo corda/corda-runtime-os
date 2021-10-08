@@ -40,7 +40,7 @@ class SandboxGroupImplTests {
 
     private val mockCpkBundle = mockBundle(CPK_BUNDLE_NAME)
     private val mockPublicBundle = mockBundle(PUBLIC_BUNDLE_NAME)
-    private val mockNonSandboxBundle = mock<Bundle>()
+    private val mockNonSandboxBundle = mockBundle()
     private val mockCordappBundle = mockBundle(CORDAPP_BUNDLE_NAME)
 
     private val mockCpk = mockCpk()

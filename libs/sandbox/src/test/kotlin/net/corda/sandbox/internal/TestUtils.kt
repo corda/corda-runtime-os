@@ -2,6 +2,7 @@ package net.corda.sandbox.internal
 
 import net.corda.packaging.Cpk
 import net.corda.v5.crypto.SecureHash
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
@@ -21,12 +22,18 @@ fun randomSecureHash(): SecureHash {
     return SecureHash(digest.algorithm, digest.digest(randomBytes))
 }
 
-/** Generates a mock [Bundle] with the given [bundleSymbolicName] and [bundleVersion]. */
-fun mockBundle(bundleSymbolicName: String = Random.nextInt().toString(), bundleVersion: String = "0.0") =
-    mock<Bundle>().apply {
+/** Generates a mock [Bundle] with [bundleSymbolicName] that contains the given [classes]. */
+fun mockBundle(
+    bundleSymbolicName: String = Random.nextInt().toString(),
+    classes: Collection<Class<*>> = emptySet()
+) = mock<Bundle>().apply {
         whenever(bundleId).thenReturn(Random.nextLong())
         whenever(symbolicName).thenReturn(bundleSymbolicName)
-        whenever(version).thenReturn(Version.parseVersion(bundleVersion))
+        whenever(version).thenReturn(Version.parseVersion("0.0"))
+        whenever(loadClass(any())).then { answer ->
+            val className = answer.arguments.single()
+            classes.find { klass -> klass.name == className } ?: throw ClassNotFoundException()
+        }
     }
 
 /** Generates a mock [Cpk.Expanded]. */
