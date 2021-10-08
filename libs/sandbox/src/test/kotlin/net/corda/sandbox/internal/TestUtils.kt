@@ -8,7 +8,9 @@ import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import org.osgi.framework.Version
 import java.security.MessageDigest
-import kotlin.random.Random
+import kotlin.random.Random.Default.nextInt
+import kotlin.random.Random.Default.nextLong
+import kotlin.math.abs
 
 const val PUBLIC_BUNDLE_NAME = "public_bundle_symbolic_name"
 const val CPK_BUNDLE_NAME = "cpk_bundle_symbolic_name"
@@ -24,12 +26,12 @@ fun randomSecureHash(): SecureHash {
 
 /** Generates a mock [Bundle] with [bundleSymbolicName] that contains the given [classes]. */
 fun mockBundle(
-    bundleSymbolicName: String = Random.nextInt().toString(),
+    bundleSymbolicName: String = nextInt().toString(),
     classes: Collection<Class<*>> = emptySet()
 ) = mock<Bundle>().apply {
-        whenever(bundleId).thenReturn(Random.nextLong())
+        whenever(bundleId).thenReturn(nextLong())
         whenever(symbolicName).thenReturn(bundleSymbolicName)
-        whenever(version).thenReturn(Version.parseVersion("0.0"))
+        whenever(version).thenReturn(Version.parseVersion("${abs(nextInt())}.${abs(nextInt())}"))
         whenever(loadClass(any())).then { answer ->
             val className = answer.arguments.single()
             classes.find { klass -> klass.name == className } ?: throw ClassNotFoundException()
