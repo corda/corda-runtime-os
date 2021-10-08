@@ -29,7 +29,6 @@ import net.corda.p2p.schema.Schema
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
-import java.io.IOException
 import java.net.URI
 import java.nio.ByteBuffer
 
@@ -110,12 +109,13 @@ internal class OutboundMessageHandler(
         if (HttpResponseStatus.OK == message.statusCode) {
             // response messages should have empty payloads unless they are part of the initial session handshake
             if (message.payload.isNotEmpty()) {
+                @Suppress("TooGenericExceptionCaught")
                 try {
                     // Attempt to deserialize as an early check. Shouldn't forward unrecognised message types
                     LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
                     val record = Record(LINK_IN_TOPIC, "key", message)
                     p2pInPublisher.publish(listOf(record))
-                } catch (e: IOException) {
+                } catch (e: Throwable) {
                     logger.warn("Invalid message received. Cannot deserialize")
                     logger.debug(e.stackTraceToString())
                 }

@@ -26,7 +26,6 @@ import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.v5.base.util.contextLogger
-import java.io.IOException
 import java.nio.ByteBuffer
 import java.util.UUID
 
@@ -72,9 +71,10 @@ internal class InboundMessageHandler(
         }
 
         logger.debug("Processing request message from ${message.source}")
+        @Suppress("TooGenericExceptionCaught")
         val p2pMessage = try {
             LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
-        } catch (e: IOException) {
+        } catch (e: Throwable) {
             logger.warn("Invalid message received. Cannot deserialize")
             logger.debug(e.stackTraceToString())
             server.writeResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR, message.source)
@@ -118,10 +118,6 @@ internal class InboundMessageHandler(
             is InitiatorHandshakeMessage -> (message.payload as InitiatorHandshakeMessage).header.sessionId
             is ResponderHelloMessage -> (message.payload as ResponderHelloMessage).header.sessionId
             is ResponderHandshakeMessage -> (message.payload as ResponderHandshakeMessage).header.sessionId
-            is UnauthenticatedMessage -> {
-                logger.warn("No session associated with ${UnauthenticatedMessage::class.java}")
-                return null
-            }
             else -> {
                 logger.warn("Invalid payload of LinkInMessage: ${message.payload::class.java}")
                 return null
