@@ -151,7 +151,7 @@ class SandboxImplTests {
     }
 
     @Test
-    fun `reports which sandbox bundles cannot be uninstalled`() {
+    fun `unloading a sandbox attempts to uninstall all bundles`() {
         val cantBeUninstalledCordappBundle = mockBundle().apply {
             whenever(uninstall()).then { throw IllegalStateException() }
         }
