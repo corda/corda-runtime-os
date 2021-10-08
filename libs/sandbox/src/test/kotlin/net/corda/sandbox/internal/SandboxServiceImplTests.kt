@@ -82,8 +82,9 @@ class SandboxServiceImplTests {
             whenever(bundleVersion).thenAnswer { mockCordappBundle.version.toString() }
         }
 
-        val dummyCpkMainJar = Paths.get("${Random.nextInt()}.jar")
-        val dummyCpk = createDummyCpk(dummyCpkMainJar, mockCordappManifest, cpkDependencies)
+        val dummyCpk = createDummyCpk(
+            Paths.get("${Random.nextInt()}.jar"), mockCordappManifest, cpkDependencies
+        )
 
         return CpkAndBundles(dummyCpk, mockCordappBundle, mockLibraryBundle, cordappClass, libraryClass)
     }
