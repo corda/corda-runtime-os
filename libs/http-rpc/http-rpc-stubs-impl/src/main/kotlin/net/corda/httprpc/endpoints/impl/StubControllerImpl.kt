@@ -12,6 +12,8 @@ import io.javalin.plugin.openapi.annotations.OpenApiContent
 import io.javalin.plugin.openapi.annotations.OpenApiParam
 import io.javalin.plugin.openapi.annotations.OpenApiRequestBody
 import io.javalin.plugin.openapi.annotations.OpenApiResponse
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.models.tags.Tag
 import net.corda.httprpc.Controller
 import net.corda.httprpc.durablestream.DurableStreamContext
 import net.corda.httprpc.durablestream.DurableStreamHelper
@@ -30,6 +32,11 @@ class StubControllerImpl : Controller {
         private val log = contextLogger()
     }
 
+    override val tag: Tag = Tag().apply {
+        name = "Stub API"
+        description = "The Stub APIs custom description"
+    }
+
     override fun register() {
         path("stubs") {
             get(::all)
@@ -44,9 +51,6 @@ class StubControllerImpl : Controller {
             put("/:id", ::put)
             delete("/:id", ::delete)
         }
-    }
-
-    private fun paths() {
     }
 
     private fun all(ctx: Context) {
@@ -105,11 +109,18 @@ class StubControllerImpl : Controller {
         ctx.result(id)
     }
 
-    class SomeJson(val a: String, val b: Int)
+    class SomeJson(
+        @Schema(nullable = true)
+        val a: String, val b: Int)
 }
 
 @Component(service = [Controller::class])
 class CalendarControllerImpl : Controller {
+
+    override val tag: Tag = Tag().apply {
+        name = "Calendar"
+        description = "Another custom description for one of the tags"
+    }
 
     override fun register() {
         path("/calendar") {

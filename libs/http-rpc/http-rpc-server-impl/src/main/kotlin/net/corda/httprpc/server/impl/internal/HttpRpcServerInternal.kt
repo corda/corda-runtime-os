@@ -182,6 +182,7 @@ internal class HttpRpcServerInternal(
                         url = "rpc@r3.com"
                     })
                 }
+                controllers.map(Controller::tag).forEach(openApi::addTagsItem)
 //                openApi.addServersItem(
 //                    io.swagger.v3.oas.models.servers.Server().url(
 //                        "/${configurationsProvider.getBasePath()}/v${configurationsProvider.getApiVersion()}".replace("/+".toRegex(), "/")
