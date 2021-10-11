@@ -20,7 +20,9 @@ import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
 import java.util.UUID
 
-class CryptoServicesTestFactory : CipherSuiteFactory {
+class CryptoServicesTestFactory(
+    schemeMetadataOverride: CipherSchemeMetadata? = null
+) : CipherSuiteFactory {
     val wrappingKeyAlias = "wrapping-key-alias"
 
     val passphrase = "PASSPHRASE"
@@ -32,7 +34,7 @@ class CryptoServicesTestFactory : CipherSuiteFactory {
     val persistenceFactory = InMemoryKeyValuePersistenceFactory()
 
     val schemeMetadata: CipherSchemeMetadata =
-        CipherSchemeMetadataProviderImpl().getInstance()
+        schemeMetadataOverride ?: CipherSchemeMetadataProviderImpl().getInstance()
 
     val digest: DigestService by lazy {
         DigestServiceProviderImpl().getInstance(this)
