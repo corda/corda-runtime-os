@@ -13,7 +13,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.v5.base.util.contextLogger
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 abstract class DominoTile(
@@ -21,7 +21,7 @@ abstract class DominoTile(
 ) : Lifecycle {
     companion object {
         private val logger = contextLogger()
-        private val instanceIndex = AtomicInteger(0)
+        private val instancesIndex = ConcurrentHashMap<String, Int>()
     }
     enum class State {
         Created,
@@ -31,7 +31,13 @@ abstract class DominoTile(
     }
     val name = LifecycleCoordinatorName(
         javaClass.simpleName,
-        instanceIndex.incrementAndGet().toString()
+        instancesIndex.compute(javaClass.simpleName) { _, last ->
+            if (last == null) {
+                1
+            } else {
+                last + 1
+            }
+        }.toString()
     )
 
     override fun start() {
@@ -47,7 +53,7 @@ abstract class DominoTile(
                 startTile()
             }
             State.StoppedDueToError -> {
-                logger.info("Can not start $name, it was stopped due to an error")
+                logger.warn("Can not start $name, it was stopped due to an error")
             }
         }
     }

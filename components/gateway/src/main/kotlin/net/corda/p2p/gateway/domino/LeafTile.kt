@@ -25,14 +25,18 @@ abstract class LeafTile(coordinatorFactory: LifecycleCoordinatorFactory) : Domin
     abstract fun createResources()
 
     override fun stopTile() {
-        stopActions.onEach {
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                it.invoke()
-            } catch (e: Throwable) {
-                logger.warn("Fail to stop", e)
+        do {
+            val action = stopActions.pollFirst()
+            if (action != null) {
+                @Suppress("TooGenericExceptionCaught")
+                try {
+                    action.invoke()
+                } catch (e: Throwable) {
+                    logger.warn("Fail to stop", e)
+                }
+            } else {
+                break
             }
-        }
-        stopActions.clear()
+        } while (true)
     }
 }
