@@ -1,7 +1,7 @@
 package net.corda.crypto.impl.config
 
 import net.corda.crypto.CryptoCategories
-import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactory
+import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactoryProvider
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import org.junit.jupiter.api.Test
@@ -25,7 +25,7 @@ class CryptoLibraryConfigTests {
                 )
             ),
             "mngCache" to mapOf(
-                "factoryName" to InMemoryKeyValuePersistenceFactory.NAME,
+                "factoryName" to InMemoryKeyValuePersistenceFactoryProvider.NAME,
                 "expireAfterAccessMins" to "120",
                 "maximumSize" to "50",
                 "persistenceConfig" to mapOf(
@@ -75,10 +75,10 @@ class CryptoLibraryConfigTests {
         assertEquals(25, config.keyCache.maximumSize)
         assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.keyCache.factoryName)
         assertEquals("keyPersistenceUrl", config.keyCache.persistenceConfig.getString("url"))
-        assertEquals(InMemoryKeyValuePersistenceFactory.NAME, config.mngCache.factoryName)
+        assertEquals(InMemoryKeyValuePersistenceFactoryProvider.NAME, config.mngCache.factoryName)
         assertEquals(120, config.mngCache.expireAfterAccessMins)
         assertEquals(50, config.mngCache.maximumSize)
-        assertEquals(InMemoryKeyValuePersistenceFactory.NAME, config.mngCache.factoryName)
+        assertEquals(InMemoryKeyValuePersistenceFactoryProvider.NAME, config.mngCache.factoryName)
         assertEquals("mngPersistenceUrl", config.mngCache.persistenceConfig.getString("url"))
         assertEquals("customSchemeMetadataProvider", config.cipherSuite.schemeMetadataProvider)
         assertEquals("customSignatureVerificationProvider", config.cipherSuite.signatureVerificationProvider)

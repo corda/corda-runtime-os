@@ -120,10 +120,10 @@ class CryptoOperationsTests {
             }
         }
 
-        private fun getGeneratedKeyInfo(publicKey: PublicKey): SigningPersistentKeyInfo {
-            return factory.signingPersistentKeyCache.data.values.first {
-                it.first.publicKeyHash == "${factory.memberId}:${publicKey.sha256Bytes().toHexString()}"
-            }.first
+        private fun getGeneratedKeyInfo(publicKey: PublicKey): SigningPersistentKeyInfo? {
+            return factory.persistenceFactory.signingData[
+                "${factory.memberId}:${publicKey.sha256Bytes().toHexString()}"
+            ]?.second
         }
 
         private fun newAlias(): String = UUID.randomUUID().toString()
