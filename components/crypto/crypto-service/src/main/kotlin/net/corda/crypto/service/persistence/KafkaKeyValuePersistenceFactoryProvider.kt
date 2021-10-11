@@ -61,7 +61,7 @@ class KafkaKeyValuePersistenceFactoryProvider @Activate constructor(
 
     override val name: String = CryptoPersistenceConfig.DEFAULT_FACTORY_NAME
 
-    override fun create(): KeyValuePersistenceFactory = impl.create()
+    override fun get(): KeyValuePersistenceFactory = impl.get()
 
     private class Impl(
         private val subscriptionFactory: SubscriptionFactory,
@@ -78,7 +78,7 @@ class KafkaKeyValuePersistenceFactoryProvider @Activate constructor(
             )
         }
 
-        fun create(): KeyValuePersistenceFactory = factory
+        fun get(): KeyValuePersistenceFactory = factory
 
         override fun close() {
             factory.closeGracefully()

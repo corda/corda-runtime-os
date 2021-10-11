@@ -41,7 +41,7 @@ class KafkaProxy<E: IHaveMemberId>(
     private val sub: CompactedSubscription<String, E> = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(groupName, topicName),
         NoOpSubscriptionProcessor(valueClass)
-    )
+    ).also { it.start() }
 
     fun publish(key: String, entity: E) : CompletableFuture<Unit> {
         logger.debug("Publishing a record '{}' with key='{}'", valueClass.name, key)
@@ -70,8 +70,7 @@ class KafkaProxy<E: IHaveMemberId>(
     private class NoOpSubscriptionProcessor<E: Any>(
         override val valueClass: Class<E>
     ) : CompactedProcessor<String, E> {
-        override val keyClass: Class<String>
-            get() = String::class.java
+        override val keyClass: Class<String> = String::class.java
         override fun onSnapshot(currentData: Map<String, E>) {
         }
         override fun onNext(newRecord: Record<String, E>, oldValue: E?, currentData: Map<String, E>) {

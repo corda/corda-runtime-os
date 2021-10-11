@@ -2,7 +2,6 @@ package net.corda.crypto.impl.dev
 
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCacheImpl
-import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactoryProvider
 import net.corda.crypto.impl.persistence.SigningKeyCache
 import net.corda.crypto.impl.persistence.SigningKeyCacheImpl
@@ -50,7 +49,7 @@ class DevCryptoServiceProvider @Activate constructor(
         val schemeMetadata = cipherSuiteFactory.getSchemeMap()
         val persistenceFactory = persistenceProviders.firstOrNull {
             it.name == InMemoryKeyValuePersistenceFactoryProvider.NAME
-        }?.create() ?: throw CryptoServiceLibraryException(
+        }?.get() ?: throw CryptoServiceLibraryException(
             "There is no provider with the name '${InMemoryKeyValuePersistenceFactoryProvider.NAME}'",
             isRecoverable = false
         )

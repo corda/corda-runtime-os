@@ -14,5 +14,5 @@ class InMemoryKeyValuePersistenceFactoryProvider : KeyValuePersistenceFactoryPro
 
     override val name: String = NAME
 
-    override fun create(): KeyValuePersistenceFactory = factory
+    override fun get(): KeyValuePersistenceFactory = factory
 }

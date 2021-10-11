@@ -4,7 +4,6 @@ import net.corda.crypto.impl.config.CryptoPersistenceConfig
 import net.corda.crypto.impl.config.keyCache
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCacheImpl
-import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactoryProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
@@ -90,7 +89,7 @@ open class DefaultCryptoServiceProvider @Activate constructor(
         ): DefaultCryptoKeyCache {
             val persistenceFactory = persistenceProviders.firstOrNull {
                 it.name == config.factoryName
-            }?.create() ?: throw CryptoServiceLibraryException(
+            }?.get() ?: throw CryptoServiceLibraryException(
                 "Cannot find ${config.factoryName}",
                 isRecoverable = false
             )

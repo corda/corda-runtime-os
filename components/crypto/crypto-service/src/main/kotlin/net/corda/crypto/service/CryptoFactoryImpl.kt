@@ -195,7 +195,7 @@ class CryptoFactoryImpl @Activate constructor(
         private fun getSigningKeyCache(memberId: String, config: CryptoPersistenceConfig): SigningKeyCache {
             val persistenceFactory = persistenceProviders.firstOrNull {
                 it.name == config.factoryName
-            }?.create() ?: throw CryptoServiceLibraryException(
+            }?.get() ?: throw CryptoServiceLibraryException(
                 "Cannot find ${config.factoryName}",
                 isRecoverable = false
             )

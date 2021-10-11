@@ -12,6 +12,6 @@ interface KeyValuePersistenceFactoryProvider {
     /**
      * Creates a new instance of the key/value persistence for [KeyValuePersistenceFactory].
      */
-    fun create(): KeyValuePersistenceFactory
+    fun get(): KeyValuePersistenceFactory
 }
 

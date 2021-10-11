@@ -51,7 +51,7 @@ class CryptoLibraryClientsFactoryTests {
     @Test
     @Timeout(30)
     fun `Should create services without starting nor providing configuration in dev mode`() {
-        val factory = provider.create(
+        val factory = provider.get(
             "testComponent"
         )
         assertNotNull(factory.getFreshKeySigningService())
@@ -77,19 +77,19 @@ class CryptoLibraryClientsFactoryTests {
         ).thenReturn(freshKeysServiceSender)
         provider.start()
         assertTrue(provider.isRunning)
-        var factory = provider.create(
+        var factory = provider.get(
             "testComponent"
         )
         assertNotNull(factory.getFreshKeySigningService())
         assertNotNull(factory.getSigningService(CryptoCategories.LEDGER))
         provider.handleConfigEvent(config)
-        factory = provider.create(
+        factory = provider.get(
             "testComponent"
         )
         (1..100).createTestCase { i ->
             if(i % 3 == 2) {
                 provider.handleConfigEvent(config)
-                factory = provider.create(
+                factory = provider.get(
                     "testComponent"
                 )
             }
@@ -113,19 +113,19 @@ class CryptoLibraryClientsFactoryTests {
             )
         )
         provider.start()
-        var factory = provider.create(
+        var factory = provider.get(
             "testComponent"
         )
         assertNotNull(factory.getFreshKeySigningService())
         assertNotNull(factory.getSigningService(CryptoCategories.LEDGER))
         provider.handleConfigEvent(config)
-        factory = provider.create(
+        factory = provider.get(
             "testComponent"
         )
         (1..100).createTestCase { i ->
             if(i % 3 == 2) {
                 provider.handleConfigEvent(config)
-                factory = provider.create(
+                factory = provider.get(
                     "testComponent"
                 )
             }
