@@ -12,6 +12,7 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
 import net.corda.p2p.schema.Schema
@@ -110,10 +111,19 @@ class InMemorySessionReplayerTest {
             GROUP_ID
         ).generateInitiatorHello()
 
+        var invocations = 0
+        fun callback(key: SessionManager.SessionKey, sessionId: String)  {
+            assertEquals(US, key.ourId)
+            assertEquals(COUNTER_PARTY, key.responderId)
+            assertEquals(id, sessionId)
+            invocations++
+        }
+
         replayer.start()
-        replayer.addMessageForReplay(id, SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY))
+        replayer.addMessageForReplay(id, InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY, ::callback))
 
         publisher.testWaitLatch.await()
+        assertEquals(totalReplays, invocations)
         assertEquals(totalReplays, publisher.list.size)
         for (record in publisher.list) {
             assertEquals(Schema.LINK_OUT_TOPIC, record.topic)
@@ -201,11 +211,11 @@ class InMemorySessionReplayerTest {
 
         replayer.addMessageForReplay(
             firstId,
-            SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY)
+            InMemorySessionReplayer.SessionMessageReplay(helloMessage, firstId, US, COUNTER_PARTY) {_, _ ->}
         )
         replayer.addMessageForReplay(
             secondId,
-            SessionReplayer.SessionMessageReplay(secondHelloMessage, COUNTER_PARTY)
+            InMemorySessionReplayer.SessionMessageReplay(secondHelloMessage, secondId, US, COUNTER_PARTY) {_, _ ->}
         )
 
         publisher.testWaitLatch.await()
@@ -263,7 +273,7 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         replayer.start()
-        replayer.addMessageForReplay(id, SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY))
+        replayer.addMessageForReplay(id, InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) {_, _ ->})
         publisher.testWaitLatch.await()
         assertEquals(1, publisher.list.size)
         val record = publisher.list.single()
@@ -310,7 +320,7 @@ class InMemorySessionReplayerTest {
             ).generateInitiatorHello()
 
         replayer.start()
-        replayer.addMessageForReplay(id, SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY))
+        replayer.addMessageForReplay(id, InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) {_,_ ->})
         publisher.testWaitLatch.await()
         assertEquals(1, publisher.list.size)
         val record = publisher.list.single()
@@ -350,7 +360,10 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
         val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, mockNetworkMap)
         assertThrows<IllegalStateException> {
-            replayer.addMessageForReplay("", SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY))
+            replayer.addMessageForReplay(
+                "",
+                InMemorySessionReplayer.SessionMessageReplay(helloMessage, "", US, COUNTER_PARTY) {_, _->}
+            )
         }
     }
 }

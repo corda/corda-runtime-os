@@ -7,6 +7,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.messaging.MessageConverter
+import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.schema.Schema
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -18,8 +19,8 @@ import kotlin.concurrent.write
 class InMemorySessionReplayer(
     sessionMessageReplayPeriod: Duration,
     publisherFactory: PublisherFactory,
-    private val networkMap: LinkManagerNetworkMap
-): Lifecycle, SessionReplayer {
+    private val networkMap: LinkManagerNetworkMap,
+): Lifecycle {
 
     companion object {
         const val MESSAGE_REPLAYER_CLIENT_ID = "session-message-replayer-client"
@@ -56,22 +57,33 @@ class InMemorySessionReplayer(
         }
     }
 
-    override fun addMessageForReplay(uniqueId: String, messageReplay: SessionReplayer.SessionMessageReplay) {
+    data class SessionMessageReplay(
+        val message: Any,
+        val sessionId: String,
+        val source: LinkManagerNetworkMap.HoldingIdentity,
+        val dest: LinkManagerNetworkMap.HoldingIdentity,
+        val sentSessionMessageCallback: (key: SessionManager.SessionKey, sessionId: String) -> Any
+    )
+
+    fun addMessageForReplay(
+        uniqueId: String,
+        messageReplay: SessionMessageReplay
+    ) {
         startStopLock.read {
             if (!running) {
                 throw IllegalStateException("A message was added for replay before the InMemorySessionReplayer was started.")
             }
-
             replayScheduler.addForReplay(Instant.now().toEpochMilli(), uniqueId, messageReplay)
         }
     }
 
-    override fun removeMessageFromReplay(uniqueId: String) {
+    fun removeMessageFromReplay(uniqueId: String) {
         replayScheduler.removeFromReplay(uniqueId)
     }
 
-    private fun replayMessage(messageReplay: SessionReplayer.SessionMessageReplay) {
-
+    private fun replayMessage(
+        messageReplay: SessionMessageReplay,
+    ) {
         val memberInfo = networkMap.getMemberInfo(messageReplay.dest)
         if (memberInfo == null) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName})" +
@@ -89,5 +101,9 @@ class InMemorySessionReplayer(
 
         val message = MessageConverter.createLinkOutMessage(messageReplay.message, memberInfo, networkType)
         publisher.publish(listOf(Record(Schema.LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
+        messageReplay.sentSessionMessageCallback(
+            SessionManager.SessionKey(messageReplay.source, messageReplay.dest),
+            messageReplay.sessionId
+        )
     }
 }
