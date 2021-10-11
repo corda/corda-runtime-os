@@ -1,8 +1,0 @@
-registry: engineering-docker.software.r3.com
-nodes:
-    alice:
-        debug: true
-    bob:
-        debug: true
-    notary:
-        notary: true
