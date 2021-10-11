@@ -75,6 +75,7 @@ include 'applications:examples:persistence:persistence-demo-publisher'
 include 'applications:examples:hello-quasar'
 include 'applications:tools:kafka-reader'
 include 'applications:tools:kafka-setup'
+include 'applications:tools:bundle-cleanup'
 include 'components:crypto:crypto-client'
 include 'components:crypto:crypto-component-base'
 include 'components:crypto:crypto-service'
@@ -206,3 +207,6 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
         }
     }
 }
+
+include 'testbed'
+include 'testbed:testbed-cpk'

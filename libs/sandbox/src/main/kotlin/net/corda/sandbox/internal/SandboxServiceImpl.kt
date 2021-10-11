@@ -155,6 +155,10 @@ internal class SandboxServiceImpl @Activate constructor(
         }
     }
 
+    override fun getZombieBundles(): List<Bundle> {
+        TODO("Not yet implemented")
+    }
+
     /**
      * Retrieves the CPKs from the [installService] based on their [cpkFileHashes], and verifies the CPKs.
      *

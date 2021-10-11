@@ -1,12 +1,13 @@
 package net.corda.sandbox.internal
 
+import net.corda.sandbox.SandboxAdminService
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import org.osgi.framework.Bundle
 
-/** Extends [SandboxCreationService] and [SandboxContextService] with internal methods. */
-internal interface SandboxServiceInternal : SandboxCreationService, SandboxContextService {
+/** Extends [SandboxCreationService], [SandboxContextService] and [SandboxAdminService] with internal methods. */
+internal interface SandboxServiceInternal : SandboxCreationService, SandboxContextService, SandboxAdminService {
     /** Returns the [SandboxInternal] containing the given [bundle], or null if no match. */
     fun getSandbox(bundle: Bundle): SandboxInternal?
 
