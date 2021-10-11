@@ -28,23 +28,26 @@ The simulator configuration file differs depending on the mode.
 
 In the sender mode, the configuration file should have the following form:
 ```
-dbParams:
-    username: "corda"
-    password: "corda-p2p-masters"
-    host: "localhost"
-    db: "corda"
-parallelClients: 1
-simulatorMode: SENDER
-loadGenerationParams:
-    peerX500Name: "O=Alice,L=London,C=GB"
-    peerGroupId: "group-1"
-    ourX500Name: "O=Bob,L=London,C=GB"
-    ourGroupId: "group-1"
-    loadGenerationType: ONE_OFF
-    totalNumberOfMessages: 1000
-    batchSize: 10
-    interBatchDelay:  0ms
-    messageSizeBytes: 10000
+{
+    dbParams: {
+        username: "corda",
+        password: "corda-p2p-masters",
+        host: "localhost",
+        db: "corda"
+    },
+    parallelClients: 1,
+    simulatorMode: "SENDER",
+    loadGenerationParams: {
+        peerX500Name: "O=Alice,L=London,C=GB",
+        peerGroupId: "group-1",
+        ourX500Name: "O=Bob,L=London,C=GB",
+        ourGroupId: "group-1",
+        loadGenerationType: "CONTINUOUS", 
+        batchSize: 10,
+        interBatchDelay: 0ms,
+        messageSizeBytes: 10000
+    }
+}
 ```
 
 The `loadGenerationType` can have two values:
@@ -66,13 +69,16 @@ java -jar applications/tools/p2p-test/app-simulator/build/bin/corda-app-simulato
 
 In the receiver mode, the configuration file should have the following form:
 ```
-dbParams:
-    username: "corda"
-    password: "corda-p2p-masters"
-    host: "localhost"
-    db: "corda"
-parallelClients: 1
-simulatorMode: RECEIVER
+{
+	dbParams: {
+        username: "corda",
+        password: "corda-p2p-masters",
+        host: "localhost",
+        db: "corda"
+    },
+    parallelClients: 1
+    simulatorMode: "RECEIVER"
+}
 ```
 
 In this mode, the tool will run until explicitly stopped with Ctrl+C.
