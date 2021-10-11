@@ -1,6 +1,8 @@
 package net.corda.p2p.linkmanager.messaging
 
 import net.corda.p2p.AuthenticatedMessageAndKey
+import net.corda.p2p.DataMessagePayload
+import net.corda.p2p.HeartbeatMessage
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
@@ -74,13 +76,13 @@ class MessageConverter {
             return createLinkOutMessageFromPayload(serializedMessage, source, destination, session, networkMap)
         }
 
-        fun linkOutMessageFromFlowMessageAndKey(
+        fun linkOutMessageFromAuthenticatedMessageAndKey(
             message: AuthenticatedMessageAndKey,
             session: Session,
             networkMap: LinkManagerNetworkMap
         ): LinkOutMessage? {
             val serializedMessage = try {
-                message.toByteBuffer()
+                DataMessagePayload(message).toByteBuffer()
             } catch (exception: IOException) {
                 logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
                 return null
@@ -89,6 +91,28 @@ class MessageConverter {
                 serializedMessage,
                 message.message.header.source,
                 message.message.header.destination,
+                session,
+                networkMap
+            )
+        }
+
+        fun linkOutMessageFromHeartbeat(
+            source: HoldingIdentity,
+            destination: HoldingIdentity,
+            message: HeartbeatMessage,
+            session: Session,
+            networkMap: LinkManagerNetworkMap
+        ): LinkOutMessage? {
+            val serializedMessage = try {
+                DataMessagePayload(message).toByteBuffer()
+            } catch (exception: IOException) {
+                logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
+                return null
+            }
+            return createLinkOutMessageFromPayload(
+                serializedMessage,
+                source,
+                destination,
                 session,
                 networkMap
             )

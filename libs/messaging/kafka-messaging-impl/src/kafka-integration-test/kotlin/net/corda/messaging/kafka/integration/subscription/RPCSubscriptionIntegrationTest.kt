@@ -20,17 +20,22 @@ import net.corda.messaging.kafka.integration.processors.TestRPCAvroResponderProc
 import net.corda.messaging.kafka.integration.processors.TestRPCCancelResponderProcessor
 import net.corda.messaging.kafka.integration.processors.TestRPCErrorResponderProcessor
 import net.corda.messaging.kafka.integration.processors.TestRPCResponderProcessor
+import net.corda.messaging.kafka.integration.processors.TestRPCUnresponsiveResponderProcessor
+import net.corda.test.util.eventually
 import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.fail
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
 import java.util.concurrent.CancellationException
+import java.util.concurrent.CompletableFuture
 
 @ExtendWith(ServiceExtension::class)
 class RPCSubscriptionIntegrationTest {
@@ -214,6 +219,38 @@ class RPCSubscriptionIntegrationTest {
         }
 
         rpcSender.close()
+        rpcSub.stop()
+    }
+
+    @Test
+    fun `start rpc sender and responder, send message, complete exceptionally due to repartition`() {
+        rpcConfig = RPCConfig(CLIENT_ID, CLIENT_ID, TopicTemplates.RPC_TOPIC, String::class.java, String::class.java)
+        rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
+
+        val rpcSub = subscriptionFactory.createRPCSubscription(
+            rpcConfig, kafkaConfig, TestRPCUnresponsiveResponderProcessor()
+        )
+
+        rpcSender.start()
+        rpcSub.start()
+        var attempts = 5
+        var messageSent = false
+        var future = CompletableFuture<String>()
+        while (!messageSent && attempts > 0) {
+            attempts--
+            try {
+                future = rpcSender.sendRequest("REQUEST")
+                messageSent = true
+                rpcSender.close()
+            } catch (ex: CordaRPCAPISenderException) {
+                Thread.sleep(2000)
+            }
+        }
+        eventually(10.seconds, 1.seconds) {
+            assertThrows<CordaRPCAPISenderException> {
+                future.getOrThrow()
+            }
+        }
         rpcSub.stop()
     }
 }

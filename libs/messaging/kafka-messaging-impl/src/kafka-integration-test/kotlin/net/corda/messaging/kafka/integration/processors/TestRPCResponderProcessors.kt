@@ -33,4 +33,9 @@ class TestRPCCancelResponderProcessor: RPCResponderProcessor<String, String> {
     }
 }
 
+class TestRPCUnresponsiveResponderProcessor : RPCResponderProcessor<String, String> {
+    override fun onNext(request: String, respFuture: CompletableFuture<String>) {
+    }
+}
+
 private class ArbitraryException(message: String?, exception: Exception? = null): Exception(message, exception)
