@@ -3,7 +3,8 @@ package net.corda.crypto.service
 import net.corda.crypto.CryptoCategories
 import net.corda.crypto.impl.DefaultCryptoServiceProvider
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
-import net.corda.crypto.service.persistence.KafkaPersistentCacheFactoryImpl
+import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactoryProvider
+import net.corda.crypto.service.persistence.KafkaKeyValuePersistenceFactoryProvider
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.test.util.createTestCase
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
@@ -25,11 +26,11 @@ class CryptoFactoryTests {
     fun setup() {
         cryptoMocks = CryptoMocks()
         val persistenceProviders = listOf(
-            KafkaPersistentCacheFactoryImpl(
+            KafkaKeyValuePersistenceFactoryProvider(
                 mock(),
                 mock()
             ),
-            cryptoMocks.persistentCacheFactory
+            cryptoMocks.persistenceFactoryProvider
         )
         val defaultCryptoServiceProvider = DefaultCryptoServiceProvider(
             persistenceProviders
@@ -44,10 +45,10 @@ class CryptoFactoryTests {
         config = CryptoLibraryConfigImpl(
             mapOf(
                 "keyCache" to mapOf(
-                    "cacheFactoryName" to "dev"
+                    "factoryName" to InMemoryKeyValuePersistenceFactoryProvider.NAME
                 ),
                 "mngCache" to mapOf(
-                    "cacheFactoryName" to "dev"
+                    "factoryName" to InMemoryKeyValuePersistenceFactoryProvider.NAME
                 )
             )
         )

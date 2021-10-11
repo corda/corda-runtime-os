@@ -227,9 +227,9 @@ class SigningServiceRpcProcessorTests {
         }
 
         private fun get(publicKey: PublicKey): SigningPersistentKeyInfo? {
-            return cryptoMocks.signingPersistentKeyCache.data.values.firstOrNull {
-                it.first.publicKeyHash == "$memberId:${publicKey.sha256Bytes().toHexString()}"
-            }?.first
+            return cryptoMocks.factories.cryptoServices.signingPersistence.getValue(memberId).persistence.get(
+                "$memberId:${publicKey.sha256Bytes().toHexString()}"
+            )
         }
     }
 
