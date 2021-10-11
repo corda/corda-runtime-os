@@ -6,6 +6,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -23,7 +24,6 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
-import net.corda.p2p.gateway.domino.util.PublisherWithDominoLogic
 import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl

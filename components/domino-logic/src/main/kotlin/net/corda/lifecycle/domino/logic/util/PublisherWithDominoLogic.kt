@@ -1,9 +1,9 @@
-package net.corda.p2p.gateway.domino.util
+package net.corda.lifecycle.domino.logic.util
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.LeafTile
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
-import net.corda.p2p.gateway.domino.LeafTile
 import java.util.concurrent.CompletableFuture
 
 class PublisherWithDominoLogic(

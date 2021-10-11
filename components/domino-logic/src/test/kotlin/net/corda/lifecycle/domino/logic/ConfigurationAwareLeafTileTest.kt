@@ -1,4 +1,4 @@
-package net.corda.p2p.gateway.domino
+package net.corda.lifecycle.domino.logic
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
@@ -36,7 +36,7 @@ class ConfigurationAwareLeafTileTest {
     private val service = mock<ConfigurationReadService> {
         on { registerForUpdates(configurationHandler.capture()) } doReturn registration
     }
-    private val configFactory = mock<(Config)->Configuration> {
+    private val configFactory = mock<(Config)-> Configuration> {
         on { invoke(any()) } doAnswer {
             Configuration((it.arguments[0] as Config).getInt(""))
         }

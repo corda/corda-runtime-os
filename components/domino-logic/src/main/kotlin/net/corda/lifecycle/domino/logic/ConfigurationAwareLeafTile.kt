@@ -1,4 +1,4 @@
-package net.corda.p2p.gateway.domino
+package net.corda.lifecycle.domino.logic
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler

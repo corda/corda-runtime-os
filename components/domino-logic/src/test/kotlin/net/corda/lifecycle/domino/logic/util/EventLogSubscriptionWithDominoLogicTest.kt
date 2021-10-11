@@ -1,4 +1,4 @@
-package net.corda.p2p.gateway.domino.util
+package net.corda.lifecycle.domino.logic.util
 
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory

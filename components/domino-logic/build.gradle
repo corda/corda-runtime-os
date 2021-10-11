@@ -1,0 +1,28 @@
+plugins {
+    id 'corda.common-library'
+}
+
+description 'Domino logic'
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "net.corda:corda-base"
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":components:configuration:configuration-read-service")
+    implementation project(":libs:messaging:messaging")
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    // Log4J: logging framework (with SLF4J bindings) - TEMPORARY UNTIL I FIGURE OUT LOGGING IN THIS PROJECT
+    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    // For async logging
+    implementation "com.lmax:disruptor:$disruptorVersion"
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
+        exclude group: 'mockito-core'
+    }
+
+}

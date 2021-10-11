@@ -1,4 +1,4 @@
-package net.corda.p2p.gateway.domino
+package net.corda.lifecycle.domino.logic
 
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.Lifecycle

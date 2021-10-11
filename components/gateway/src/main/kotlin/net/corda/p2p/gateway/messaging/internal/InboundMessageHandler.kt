@@ -4,6 +4,9 @@ import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.InternalTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -17,9 +20,6 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
-import net.corda.p2p.gateway.domino.InternalTile
-import net.corda.p2p.gateway.domino.DominoTile
-import net.corda.p2p.gateway.domino.util.PublisherWithDominoLogic
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer

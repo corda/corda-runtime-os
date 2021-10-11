@@ -3,6 +3,8 @@ package net.corda.p2p.gateway.messaging.internal
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.util.EventLogSubscriptionWithDominoLogic
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
@@ -18,8 +20,6 @@ import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
-import net.corda.p2p.gateway.domino.util.EventLogSubscriptionWithDominoLogic
-import net.corda.p2p.gateway.domino.util.PublisherWithDominoLogic
 import net.corda.p2p.gateway.messaging.ConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
