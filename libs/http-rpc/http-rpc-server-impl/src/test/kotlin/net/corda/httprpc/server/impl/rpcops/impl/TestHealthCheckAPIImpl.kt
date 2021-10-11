@@ -1,7 +1,10 @@
 package net.corda.httprpc.server.impl.rpcops.impl
 
-import net.corda.httprpc.server.impl.rpcops.TestHealthCheckAPI
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.server.impl.rpcops.TestHealthCheckAPI
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Calendar.DAY_OF_YEAR
 import java.util.GregorianCalendar
@@ -36,7 +39,8 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRPCOps<TestHealthChe
 
     override fun timeCall(time: TestHealthCheckAPI.TimeCallDto): String = time.time.toString()
 
-    override fun dateCall(date: TestHealthCheckAPI.DateCallDto): String = date.date.toString()
+    override fun dateCall(date: TestHealthCheckAPI.DateCallDto): String =
+        DateTimeFormatter.ISO_DATE_TIME.format(LocalDateTime.ofInstant(date.date.toInstant(), ZoneId.of("UTC")))
 
     override fun instantCall(instant: TestHealthCheckAPI.InstantCallDto): String = instant.instant.toString()
 

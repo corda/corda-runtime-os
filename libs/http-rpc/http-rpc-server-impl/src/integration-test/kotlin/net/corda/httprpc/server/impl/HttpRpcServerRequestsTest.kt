@@ -309,7 +309,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
         val date = "2021-07-29T13:13:14"
         val dateCallResponse = client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest<Any>("health/datecall", """ { "date": { "date": "$date" } } """), userName, password)
         assertEquals(HttpStatus.SC_OK, dateCallResponse.responseStatus)
-        assertThat(dateCallResponse.body!!).contains("Thu Jul 29 13:13:14")
+        assertThat(dateCallResponse.body!!).contains("\"2021-07-29T13:13:14\"")
     }
 
     @Test
