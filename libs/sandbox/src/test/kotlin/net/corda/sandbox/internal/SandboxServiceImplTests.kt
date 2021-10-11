@@ -123,6 +123,11 @@ class SandboxServiceImplTests {
     private fun createSandboxService(cpksAndBundles: Set<CpkAndBundles>): SandboxServiceInternal {
         val mockInstallService = createMockInstallService(cpksAndBundles.map(CpkAndBundles::cpk))
         val mockBundleUtils = createMockBundleUtils(cpksAndBundles)
+
+        cpksAndBundles.flatMap(CpkAndBundles::bundles).forEach { bundle ->
+            whenever(bundle.uninstall()).then { uninstalledBundles.add(bundle) }
+        }
+
         return SandboxServiceImpl(mockInstallService, mockBundleUtils)
     }
 
@@ -153,7 +158,6 @@ class SandboxServiceImplTests {
 
             cpksAndBundles.flatMap(CpkAndBundles::bundles).forEach { bundle ->
                 whenever(startBundle(bundle)).then { startedBundles.add(bundle) }
-                whenever(bundle.uninstall()).then { uninstalledBundles.add(bundle) }
             }
         }
 
@@ -597,34 +601,34 @@ class SandboxServiceImplTests {
         val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.cpkHash, cpkTwo.cpkHash))
         sandboxService.unloadSandboxGroup(sandboxGroup)
 
-        val bundles = cpkAndBundlesOne.bundles + cpkAndBundlesTwo.bundles
+        assertEquals(cpkAndBundlesOne.bundles + cpkAndBundlesTwo.bundles, uninstalledBundles.toSet())
 
-        bundles.forEach { bundle ->
+        uninstalledBundles.forEach { bundle ->
             assertNull(sandboxService.getSandbox(bundle))
         }
-
-        assertEquals(bundles, uninstalledBundles.toSet())
     }
 
     @Test
-    fun `throws if sandbox bundle cannot be uninstalled`() {
-        val cantBeUninstalledBundle = mockBundle().apply {
-            whenever(uninstall()).then { throw IllegalStateException("") }
+    fun `unloading a sandbox group attempts to uninstall all bundles`() {
+        val cantBeUninstalledCordappBundle = mockBundle().apply {
+            whenever(uninstall()).then { throw IllegalStateException() }
         }
-        val libraryBundle = mockBundle()
+        val libraryBundle = mockBundle().apply {
+            whenever(uninstall()).then { uninstalledBundles.add(this) }
+        }
 
         val mockBundleUtils = mock<BundleUtils>().apply {
             whenever(getServiceRuntimeComponentBundle()).thenReturn(scrBundle)
-            whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(cantBeUninstalledBundle)
+            whenever(installAsBundle(anyString(), eq(cpkOne.mainJar.toUri()))).thenReturn(cantBeUninstalledCordappBundle)
             whenever(installAsBundle(anyString(), eq(cpkOne.libraries.single().toUri()))).thenReturn(libraryBundle)
             whenever(allBundles).thenReturn(listOf(frameworkBundle, scrBundle))
         }
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
 
         val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne.cpkHash))
+        sandboxService.unloadSandboxGroup(sandboxGroup)
 
-        val e = assertThrows<SandboxException> { sandboxService.unloadSandboxGroup(sandboxGroup) }
-        assertTrue(e.message!!.contains("Bundle could not be uninstalled: "))
+        assertEquals(libraryBundle, uninstalledBundles.single())
     }
 }
 

@@ -68,12 +68,10 @@ internal class SandboxServiceImpl @Activate constructor(
     override fun createSandboxGroupWithoutStarting(cpkFileHashes: Iterable<SecureHash>) =
         createSandboxes(cpkFileHashes, startBundles = false)
 
-    override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
-        sandboxGroup.sandboxes.forEach { sandbox ->
-            sandboxes.remove(sandbox.id)
-            sandboxGroups.remove(sandbox.id)
-            (sandbox as SandboxInternal).unload()
-        }
+    override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) = sandboxGroup.sandboxes.forEach { sandbox ->
+        sandboxes.remove(sandbox.id)
+        sandboxGroups.remove(sandbox.id)
+        (sandbox as SandboxInternal).unload()
     }
 
     override fun getClassInfo(klass: Class<*>): ClassInfo {
