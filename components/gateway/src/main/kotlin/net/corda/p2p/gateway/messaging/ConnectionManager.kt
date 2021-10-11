@@ -74,7 +74,7 @@ class ConnectionManager(
                 nettyGroup!!,
                 listener
             )
-            executeBeforeStop(client::close)
+            resources.keep(client)
             client.start()
             client
         }
@@ -97,20 +97,20 @@ class ConnectionManager(
         }
     }
 
-    override fun createResources() {
+    override fun startTile() {
         nioEventLoopGroupFactory(NUM_CLIENT_WRITE_THREADS).also {
-            executeBeforeStop {
+            resources.keep {
                 it.shutdownGracefully()
                 it.terminationFuture().sync()
             }
         }.also { writeGroup = it }
         nettyGroup = nioEventLoopGroupFactory(NUM_CLIENT_NETTY_THREADS).also {
-            executeBeforeStop {
+            resources.keep {
                 it.shutdownGracefully()
                 it.terminationFuture().sync()
             }
         }
-        executeBeforeStop(clientPool::clear)
-        super.createResources()
+        resources.keep(clientPool::clear)
+        super.startTile()
     }
 }

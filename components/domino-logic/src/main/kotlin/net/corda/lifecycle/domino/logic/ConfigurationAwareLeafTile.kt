@@ -4,17 +4,18 @@ import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 abstract class ConfigurationAwareLeafTile<C>(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    configurationReaderService: ConfigurationReadService,
+    private val configurationReaderService: ConfigurationReadService,
     private val key: String,
     private val configFactory: (Config) -> C
 ) :
-    LeafTile(coordinatorFactory) {
+    DominoTile(coordinatorFactory) {
 
     companion object {
         private val logger = contextLogger()
@@ -22,6 +23,7 @@ abstract class ConfigurationAwareLeafTile<C>(
 
     private val configurationHolder = AtomicReference<C>()
     private val canReceiveConfigurations = AtomicBoolean(false)
+    protected val resources = ResourcesHolder()
 
     private inner class Handler : ConfigurationHandler {
         override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, Config>) {
@@ -34,10 +36,10 @@ abstract class ConfigurationAwareLeafTile<C>(
         }
     }
 
-    private val registration = configurationReaderService.registerForUpdates(Handler())
+    private val registration = AtomicReference<AutoCloseable>(null)
 
     override fun close() {
-        registration.close()
+        registration.getAndSet(null)?.close()
         super.close()
     }
 
@@ -64,7 +66,12 @@ abstract class ConfigurationAwareLeafTile<C>(
 
     abstract fun applyNewConfiguration(newConfiguration: C, oldConfiguration: C?)
 
-    override fun createResources() {
+    override fun startTile() {
+        if(registration.get() == null) {
+            registration.getAndSet(
+                configurationReaderService.registerForUpdates(Handler()))
+                ?.close()
+        }
         if (configurationHolder.get() != null) {
             @Suppress("TooGenericExceptionCaught")
             try {
@@ -76,8 +83,12 @@ abstract class ConfigurationAwareLeafTile<C>(
         }
 
         canReceiveConfigurations.set(true)
-        executeBeforeStop {
+        resources.keep {
             canReceiveConfigurations.set(false)
         }
+    }
+
+    override fun stopTile() {
+        resources.close()
     }
 }

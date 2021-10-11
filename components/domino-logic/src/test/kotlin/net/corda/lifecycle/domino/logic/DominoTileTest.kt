@@ -164,7 +164,7 @@ class DominoTileTest {
     }
 
     @Test
-    fun `isRunning will return true if state is not started`() {
+    fun `isRunning will return false if state is not started`() {
         val tile = Tile()
         tile.setState(DominoTile.State.StoppedDueToError)
 

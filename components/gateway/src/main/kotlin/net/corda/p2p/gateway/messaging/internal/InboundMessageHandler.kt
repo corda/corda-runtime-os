@@ -1,13 +1,11 @@
 package net.corda.p2p.gateway.messaging.internal
 
-import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.InternalTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -35,7 +33,7 @@ import java.util.UUID
 internal class InboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
-    private val publisherFactory: PublisherFactory,
+    publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
 ) :
     HttpEventListener,
@@ -45,11 +43,7 @@ internal class InboundMessageHandler(
         private val logger = contextLogger()
     }
 
-    private var p2pInPublisher = let {
-        val publisherConfig = PublisherConfig(PUBLISHER_ID)
-        val publisher = publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty())
-        PublisherWithDominoLogic(publisher, lifecycleCoordinatorFactory)
-    }
+    private var p2pInPublisher = PublisherWithDominoLogic(publisherFactory, lifecycleCoordinatorFactory, PUBLISHER_ID)
     private val sessionPartitionMapper = SessionPartitionMapperImpl(lifecycleCoordinatorFactory, subscriptionFactory)
     private val server = ReconfigurableHttpServer(lifecycleCoordinatorFactory, configurationReaderService, this)
 

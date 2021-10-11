@@ -16,6 +16,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.IOException
@@ -59,8 +60,8 @@ class ConfigurationAwareLeafTileTest {
     }
 
     @Test
-    fun `init register listener`() {
-        Tile()
+    fun `start register listener`() {
+        Tile().start()
 
         verify(service).registerForUpdates(any())
     }
@@ -68,6 +69,7 @@ class ConfigurationAwareLeafTileTest {
     @Test
     fun `close unregister listener`() {
         val tile = Tile()
+        tile.start()
 
         tile.close()
 
@@ -187,9 +189,12 @@ class ConfigurationAwareLeafTileTest {
         val config = mock<Config> {
             on { getInt(any()) } doReturn 11
         }
+        whenever(service.registerForUpdates(any())).doAnswer {
+            val handler = it.arguments[0] as ConfigurationHandler
+            handler.onNewConfiguration(setOf(key), mapOf(key to config))
+            registration
+        }
         Tile()
-
-        configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
         assertThat(calledNewConfigurations)
             .isEmpty()
@@ -214,12 +219,16 @@ class ConfigurationAwareLeafTileTest {
     }
 
     @Test
-    fun `createResources will apply new configuration when started`() {
+    fun `startTile will apply new configuration when started`() {
         val config = mock<Config> {
             on { getInt(any()) } doReturn 11
         }
+        whenever(service.registerForUpdates(any())).doAnswer {
+            val handler = it.arguments[0] as ConfigurationHandler
+            handler.onNewConfiguration(setOf(key), mapOf(key to config))
+            registration
+        }
         val tile = Tile()
-        configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
         tile.start()
 
@@ -229,7 +238,7 @@ class ConfigurationAwareLeafTileTest {
     }
 
     @Test
-    fun `createResources not will apply new configuration if not ready`() {
+    fun `startTile not will apply new configuration if not ready`() {
         val tile = Tile()
 
         tile.start()
@@ -239,9 +248,14 @@ class ConfigurationAwareLeafTileTest {
     }
 
     @Test
-    fun `createResources will set as error if tile failed to apply`() {
+    fun `startTile will set as error if tile failed to apply`() {
         val config = mock<Config> {
             on { getInt(any()) } doReturn 11
+        }
+        whenever(service.registerForUpdates(any())).doAnswer {
+            val handler = it.arguments[0] as ConfigurationHandler
+            handler.onNewConfiguration(setOf(key), mapOf(key to config))
+            registration
         }
         val tile = object : ConfigurationAwareLeafTile<Configuration>(
             factory,
@@ -256,10 +270,29 @@ class ConfigurationAwareLeafTileTest {
                 throw IOException("")
             }
         }
-        configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
-
         tile.start()
 
         assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+    }
+
+    @Test
+    fun `startTile will not register more than once`() {
+        val tile = object : ConfigurationAwareLeafTile<Configuration>(
+            factory,
+            service,
+            key,
+            configFactory,
+        ) {
+            override fun applyNewConfiguration(
+                newConfiguration: Configuration,
+                oldConfiguration: Configuration?
+            ) {
+            }
+        }
+        tile.start()
+
+        tile.start()
+
+        verify(service, times(1)).registerForUpdates(any())
     }
 }

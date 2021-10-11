@@ -53,7 +53,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import kotlin.concurrent.thread
 
 class GatewayTest : TestBase() {
     companion object {
@@ -161,21 +160,21 @@ class GatewayTest : TestBase() {
     fun `gateway reconfiguration`() {
         val configurationCount = 3
         alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
-        val outboundServerUrl = URI.create("http://www.alice.net:10000")
+        val recipientServerUrl = URI.create("http://www.alice.net:10000")
 
         val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
         val linkOutMessage = LinkOutMessage.newBuilder().apply {
-            header = LinkOutHeader("", NetworkType.CORDA_5, outboundServerUrl.toString())
+            header = LinkOutHeader("", NetworkType.CORDA_5, recipientServerUrl.toString())
             payload = authenticatedP2PMessage("link out")
         }.build()
 
         val configPublisher = ConfigPublisher()
 
-        val outboundCountdownLatch = CountDownLatch(1)
+        val messageReceivedLatch = CountDownLatch(1)
         val listenToOutboundMessages = object : ListenerWithServer() {
             override fun onOpen(event: HttpConnectionEvent) {
                 assertThat(event.channel.localAddress()).isInstanceOfSatisfying(InetSocketAddress::class.java) {
-                    assertThat(it.port).isEqualTo(outboundServerUrl.port)
+                    assertThat(it.port).isEqualTo(recipientServerUrl.port)
                 }
             }
 
@@ -187,20 +186,20 @@ class GatewayTest : TestBase() {
                         softly.assertThat(String(it.payload.array())).isEqualTo("link out")
                     }
                     server?.write(HttpResponseStatus.OK, ByteArray(0), message.source)
-                    outboundCountdownLatch.countDown()
+                    messageReceivedLatch.countDown()
                 }
             }
         }
         HttpServer(
             listenToOutboundMessages,
             GatewayConfiguration(
-                outboundServerUrl.host,
-                outboundServerUrl.port,
+                recipientServerUrl.host,
+                recipientServerUrl.port,
                 aliceSslConfig,
             )
-        ).use { outboundServer ->
-            listenToOutboundMessages.server = outboundServer
-            outboundServer.startAndWaitForStarted()
+        ).use { recipientServer ->
+            listenToOutboundMessages.server = recipientServer
+            recipientServer.startAndWaitForStarted()
             Gateway(
                 configPublisher.readerService,
                 alice.subscriptionFactory,
@@ -214,7 +213,7 @@ class GatewayTest : TestBase() {
                 }.map {
                     URI.create("http://www.alice.net:$it")
                 }.forEach { url ->
-                    val inboundCountdownLatch = CountDownLatch(1)
+                    val ackReceivedLatch = CountDownLatch(1)
                     val clientListener = object : HttpEventListener {
                         override fun onMessage(message: HttpMessage) {
                             assertSoftly {
@@ -222,12 +221,14 @@ class GatewayTest : TestBase() {
                                 it.assertThat(message.statusCode).isEqualTo(HttpResponseStatus.OK)
                                 it.assertThat(message.payload).isEmpty()
                             }
-                            inboundCountdownLatch.countDown()
+                            ackReceivedLatch.countDown()
                         }
                     }
 
                     configPublisher.publishConfig(GatewayConfiguration(url.host, url.port, aliceSslConfig))
-                    gateway.startAndWaitForStarted()
+                    eventually(duration = 20.seconds) {
+                        assertThat(gateway.isRunning).isTrue
+                    }
                     eventually(duration = 10.seconds, waitBefore = Duration.ofMillis(200), waitBetween = Duration.ofMillis(200)) {
                         assertDoesNotThrow {
                             Socket(url.host, url.port).close()
@@ -248,11 +249,11 @@ class GatewayTest : TestBase() {
                         secondInboundClient.start()
 
                         secondInboundClient.write(linkInMessage.toByteBuffer().array())
-                        inboundCountdownLatch.await()
+                        ackReceivedLatch.await()
                     }
 
                     alice.publish(Record(LINK_OUT_TOPIC, "key", linkOutMessage))
-                    outboundCountdownLatch.await()
+                    messageReceivedLatch.await()
                 }
             }
         }
@@ -461,13 +462,6 @@ class GatewayTest : TestBase() {
             it.join()
         }
 
-        val threads = gateways.map {
-            thread {
-                receivedLatch.await()
-                it.close()
-            }
-        }
-
         val allMessagesDelivered = receivedLatch.await(30, TimeUnit.SECONDS)
         if (!allMessagesDelivered) {
             fail(
@@ -478,8 +472,9 @@ class GatewayTest : TestBase() {
 
         val endTime = Instant.now().toEpochMilli()
         logger.info("Done processing ${messageCount * 2} in ${endTime - startTime} milliseconds.")
-        threads.forEach {
-            it.join()
+        receivedLatch.await()
+        gateways.forEach {
+            it.close()
         }
     }
 

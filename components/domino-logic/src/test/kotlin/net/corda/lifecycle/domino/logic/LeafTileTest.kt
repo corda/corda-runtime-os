@@ -56,24 +56,25 @@ class LeafTileTest {
 
     @Test
     fun `stopTile will close all the resources`() {
+        val actions = mutableListOf<Int>()
         val tile = object : LeafTile(factory) {
             override fun createResources() {
+                resources.keep {
+                    actions.add(1)
+                }
+                resources.keep {
+                    actions.add(2)
+                }
+                resources.keep {
+                    actions.add(3)
+                }
             }
 
             override fun start() {
                 stopTile()
             }
         }
-        val actions = mutableListOf<Int>()
-        tile.executeBeforeStop {
-            actions.add(1)
-        }
-        tile.executeBeforeStop {
-            actions.add(2)
-        }
-        tile.executeBeforeStop {
-            actions.add(3)
-        }
+        tile.createResources()
 
         tile.stop()
 
@@ -82,24 +83,25 @@ class LeafTileTest {
 
     @Test
     fun `stopTile will ignore error during stop`() {
+        val actions = mutableListOf<Int>()
         val tile = object : LeafTile(factory) {
             override fun createResources() {
+                resources.keep {
+                    actions.add(1)
+                }
+                resources.keep {
+                    throw IOException("")
+                }
+                resources.keep {
+                    actions.add(3)
+                }
             }
 
             override fun start() {
                 stopTile()
             }
         }
-        val actions = mutableListOf<Int>()
-        tile.executeBeforeStop {
-            actions.add(1)
-        }
-        tile.executeBeforeStop {
-            throw IOException("")
-        }
-        tile.executeBeforeStop {
-            actions.add(3)
-        }
+        tile.createResources()
 
         tile.stop()
 
@@ -108,19 +110,20 @@ class LeafTileTest {
 
     @Test
     fun `stopTile will not run the same actions again`() {
+        val actions = mutableListOf<Int>()
         val tile = object : LeafTile(factory) {
             override fun createResources() {
+                resources.keep {
+                    actions.add(1)
+                }
             }
 
             override fun start() {
                 stopTile()
             }
         }
-        val actions = mutableListOf<Int>()
-        tile.executeBeforeStop {
-            actions.add(1)
-        }
 
+        tile.createResources()
         tile.stop()
         tile.stop()
         tile.stop()

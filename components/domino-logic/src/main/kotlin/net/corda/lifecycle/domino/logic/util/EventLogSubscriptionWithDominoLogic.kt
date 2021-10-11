@@ -12,7 +12,7 @@ class EventLogSubscriptionWithDominoLogic<K, V>(
 
     override fun createResources() {
         eventLogSubscription.start()
-        executeBeforeStop {
+        resources.keep {
             eventLogSubscription.stop()
         }
         updateState(State.Started)

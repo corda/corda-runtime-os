@@ -63,7 +63,7 @@ class SessionPartitionMapperImpl(
 
     override fun createResources() {
         sessionPartitionSubscription.start()
-        executeBeforeStop {
+        resources.keep {
             sessionPartitionSubscription.stop()
         }
     }

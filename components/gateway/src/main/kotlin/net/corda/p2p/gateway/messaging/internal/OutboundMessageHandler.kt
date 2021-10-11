@@ -9,7 +9,6 @@ import net.corda.lifecycle.domino.logic.InternalTile
 import net.corda.lifecycle.domino.logic.util.EventLogSubscriptionWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.processor.EventLogProcessor
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -40,7 +39,7 @@ internal class OutboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
-    private val publisherFactory: PublisherFactory,
+    publisherFactory: PublisherFactory,
 ) : EventLogProcessor<String, LinkOutMessage>,
     Lifecycle,
     HttpEventListener,
@@ -64,10 +63,11 @@ internal class OutboundMessageHandler(
         EventLogSubscriptionWithDominoLogic(subscription, lifecycleCoordinatorFactory)
     }
 
-    private var p2pInPublisher = let {
-        val publisher = publisherFactory.createPublisher(PublisherConfig(PUBLISHER_ID), ConfigFactory.empty())
-        PublisherWithDominoLogic(publisher, lifecycleCoordinatorFactory)
-    }
+    private var p2pInPublisher = PublisherWithDominoLogic(
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        PUBLISHER_ID
+    )
 
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {

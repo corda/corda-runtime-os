@@ -6,7 +6,9 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -21,12 +23,15 @@ class PublisherWithDominoLogicTest {
             handler.lastValue.processEvent(StartEvent(), mock)
         }
     }
-    private val factory = mock<LifecycleCoordinatorFactory> {
+    private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
     private val publisher = mock<Publisher>()
+    private val factory = mock<PublisherFactory> {
+        on { createPublisher(any(), any()) } doReturn publisher
+    }
 
-    private val wrapper = PublisherWithDominoLogic(publisher, factory)
+    private val wrapper = PublisherWithDominoLogic(factory, coordinatorFactory, "")
 
     @Test
     fun `createResources will start the publisher`() {
@@ -51,7 +56,16 @@ class PublisherWithDominoLogicTest {
     }
 
     @Test
+    fun `createResources will close old publisher`() {
+        wrapper.start()
+        wrapper.createResources()
+
+        verify(publisher).close()
+    }
+
+    @Test
     fun `publishToPartition will call the publisher`() {
+        wrapper.start()
         wrapper.publishToPartition(listOf(1 to mock()))
 
         verify(publisher).publishToPartition(any())
@@ -59,8 +73,23 @@ class PublisherWithDominoLogicTest {
 
     @Test
     fun `publish will call the publisher`() {
+        wrapper.start()
         wrapper.publish(listOf(mock()))
 
         verify(publisher).publish(any())
+    }
+
+    @Test
+    fun `publishToPartition will throw an exception if not started`() {
+        assertThrows<IllegalStateException>() {
+            wrapper.publishToPartition(listOf(1 to mock()))
+        }
+    }
+
+    @Test
+    fun `publish will throw an exception if not started`() {
+        assertThrows<IllegalStateException>() {
+            wrapper.publish(mock())
+        }
     }
 }

@@ -49,14 +49,14 @@ class ReconfigurableHttpServer(
                 oldServer?.stop()
                 val newServer = HttpServer(listener, newConfiguration)
                 newServer.start()
-                executeBeforeStop(newServer::stop)
+                resources.keep(newServer::stop)
                 httpServer = newServer
             }
         } else {
             logger.info("New server configuration, $name will be connected to ${newConfiguration.hostAddress}:${newConfiguration.hostPort}")
             val newServer = HttpServer(listener, newConfiguration)
             newServer.start()
-            executeBeforeStop(newServer::stop)
+            resources.keep(newServer::stop)
             serverLock.write {
                 val oldServer = httpServer
                 httpServer = null
