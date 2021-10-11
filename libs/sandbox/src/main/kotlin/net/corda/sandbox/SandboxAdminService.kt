@@ -7,5 +7,5 @@ import org.osgi.framework.Bundle
  */
 interface SandboxAdminService {
     /** Returns the bundles that failed to uninstall as part of unloading sandbox groups. */
-    fun getZombieBundles(): List<Bundle>
+    val zombieBundles: List<Bundle>
 }

@@ -15,6 +15,16 @@ class Testbed {
     @Test
     fun testbed() {
         println("jjj")
-        println(sandboxLoader.cpk.type)
+
+        val sandboxCreationService = sandboxLoader.sandboxCreationService
+        val cpkHash = sandboxLoader.cpk.cpkHash
+
+        (0..3).forEach {
+            val sandboxGroup = sandboxCreationService.createSandboxGroup(setOf(cpkHash))
+            sandboxCreationService.unloadSandboxGroup(sandboxGroup)
+        }
+
+        val sandboxAdminService = sandboxLoader.sandboxAdminService
+        println(sandboxAdminService.zombieBundles)
     }
 }

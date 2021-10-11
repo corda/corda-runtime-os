@@ -7,6 +7,7 @@ import net.corda.sandbox.CpkClassInfo
 import net.corda.sandbox.CpkSandbox
 import net.corda.sandbox.PublicClassInfo
 import net.corda.sandbox.Sandbox
+import net.corda.sandbox.SandboxAdminService
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
@@ -32,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.streams.asSequence
 
 /** An implementation of [SandboxCreationService] and [SandboxContextService]. */
-@Component(service = [SandboxCreationService::class, SandboxContextService::class, SandboxServiceInternal::class])
+@Component(service = [SandboxCreationService::class, SandboxContextService::class, SandboxAdminService::class])
 @Suppress("TooManyFunctions")
 internal class SandboxServiceImpl @Activate constructor(
     @Reference
@@ -54,6 +55,9 @@ internal class SandboxServiceImpl @Activate constructor(
     // A list of the public sandboxes.
     private val publicSandboxes = mutableListOf<SandboxInternal>()
 
+    // A list of bundles that failed to uninstall when their sandbox group was unloaded.
+    override val zombieBundles = mutableListOf<Bundle>()
+
     private val logger = loggerFor<SandboxServiceImpl>()
 
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
@@ -71,7 +75,7 @@ internal class SandboxServiceImpl @Activate constructor(
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) = sandboxGroup.sandboxes.forEach { sandbox ->
         sandboxes.remove(sandbox.id)
         sandboxGroups.remove(sandbox.id)
-        (sandbox as SandboxInternal).unload()
+        zombieBundles.addAll((sandbox as SandboxInternal).unload())
     }
 
     override fun getClassInfo(klass: Class<*>): ClassInfo {
@@ -151,10 +155,6 @@ internal class SandboxServiceImpl @Activate constructor(
         } else {
             null
         }
-    }
-
-    override fun getZombieBundles(): List<Bundle> {
-        TODO("Not yet implemented")
     }
 
     /**
