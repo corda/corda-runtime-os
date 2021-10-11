@@ -149,7 +149,7 @@ class AppSimulator @Activate constructor(
                     .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-sender-$client"))
                 val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator"), kafkaConfig)
                 publisher.use {
-                    while (moreMessagesToSend(messagesSent, loadGenerationParams) && !stopped) {
+                    while (moreMessagesToSend(messagesSent, loadGenerationParams)) {
                         val messageWithIds = (1..loadGenerationParams.batchSize).map {
                             createMessage(senderId, loadGenerationParams.peer, loadGenerationParams.ourIdentity, loadGenerationParams.messageSizeBytes)
                         }
@@ -182,8 +182,8 @@ class AppSimulator @Activate constructor(
 
     private fun moreMessagesToSend(messagesSent: Int, loadGenerationParams: LoadGenerationParams): Boolean {
         return when(loadGenerationParams.loadGenerationType) {
-            LoadGenerationType.ONE_OFF -> (messagesSent < loadGenerationParams.totalNumberOfMessages!!)
-            LoadGenerationType.CONTINUOUS -> true
+            LoadGenerationType.ONE_OFF -> (messagesSent < loadGenerationParams.totalNumberOfMessages!!) && !stopped
+            LoadGenerationType.CONTINUOUS -> !stopped
         }
     }
 
