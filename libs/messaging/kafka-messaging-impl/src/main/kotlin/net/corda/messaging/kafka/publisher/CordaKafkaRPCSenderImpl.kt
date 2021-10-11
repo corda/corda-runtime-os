@@ -199,8 +199,18 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     @Suppress("TooGenericExceptionCaught")
     override fun sendRequest(req: TREQ): CompletableFuture<TRESP> {
         val uuid = UUID.randomUUID().toString()
-        val reqBytes = serializer.serialize(topic, req)
         val future = CompletableFuture<TRESP>()
+        var reqBytes: ByteArray? = null
+        try {
+            reqBytes = serializer.serialize(topic, req)
+        } catch (ex: Exception) {
+            future.completeExceptionally(
+                CordaRPCAPISenderException(
+                    "Serializing your request resulted in an exception. " +
+                    "Verify that the fields of the request are populated correctly", ex
+                )
+            )
+        }
 
         if (partitionListener.partitions.size == 0) {
             future.completeExceptionally(CordaRPCAPISenderException("No partitions. Couldn't send"))
