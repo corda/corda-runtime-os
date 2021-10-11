@@ -12,7 +12,22 @@ import io.javalin.plugin.openapi.annotations.OpenApiContent
 import io.javalin.plugin.openapi.annotations.OpenApiParam
 import io.javalin.plugin.openapi.annotations.OpenApiRequestBody
 import io.javalin.plugin.openapi.annotations.OpenApiResponse
+import io.javalin.plugin.openapi.dsl.DocumentedContent
+import io.javalin.plugin.openapi.dsl.DocumentedResponse
+import io.javalin.plugin.openapi.dsl.OpenApiDocumentation
+import io.javalin.plugin.openapi.dsl.OpenApiUpdater
+import io.javalin.plugin.openapi.dsl.applyDocumentedContent
+import io.javalin.plugin.openapi.dsl.applyDocumentedResponse
+import io.javalin.plugin.openapi.dsl.document
+import io.javalin.plugin.openapi.dsl.documented
+import io.javalin.plugin.openapi.dsl.documentedContent
+import io.javalin.plugin.openapi.dsl.oneOf
 import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.models.media.Content
+import io.swagger.v3.oas.models.media.MediaType
+import io.swagger.v3.oas.models.parameters.RequestBody
+import io.swagger.v3.oas.models.responses.ApiResponse
+import io.swagger.v3.oas.models.responses.ApiResponses
 import io.swagger.v3.oas.models.tags.Tag
 import net.corda.httprpc.Controller
 import net.corda.httprpc.durablestream.DurableStreamContext
@@ -111,7 +126,8 @@ class StubControllerImpl : Controller {
 
     class SomeJson(
         @Schema(nullable = true)
-        val a: String, val b: Int)
+        val a: String, val b: Int
+    )
 }
 
 @Component(service = [Controller::class])
@@ -124,26 +140,58 @@ class CalendarControllerImpl : Controller {
 
     override fun register() {
         path("/calendar") {
-            post("/daysoftheyear", ::daysOfTheYear)
+            post("/daysoftheyear", documented(daysOfTheYearDocument(), ::daysOfTheYear))
         }
     }
 
-    @OpenApi(
-        summary = "Get the days of the year",
-        operationId = "getDaysOfTheYear",
-        tags = [ "Calendar" ],
-        requestBody = OpenApiRequestBody(
-            content = [OpenApiContent(from = CalendarDaysOfTheYearRequest::class, type = "application/json")]
-        ),
-        responses = [
-            OpenApiResponse(
-                content = [OpenApiContent(from = CalendarDaysOfTheYearPollResultResponse::class, type = "application/json")],
-                status = "200"
-            ),
-            OpenApiResponse(status = "404"),
-            OpenApiResponse(status = "500")
-        ]
-    )
+    // Example of adding documentation programmatically rather than with annotations
+    private fun daysOfTheYearDocument(): OpenApiDocumentation {
+        return document().apply {
+            operation {
+                it.summary = "Get the days of the year"
+                it.operationId = "getDaysOfTheYear"
+                it.tags = listOf("Calendar")
+                // This also works
+//                it.requestBody = RequestBody().apply {
+//                    content = Content().apply {
+//                        addMediaType("application/json", MediaType().apply {
+//                            schema = io.swagger.v3.oas.models.media.Schema<CalendarDaysOfTheYearRequest>()
+//                        })
+//                    }
+//                }
+            }
+            body<CalendarDaysOfTheYearRequest>(contentType = "application/json") {
+                it.description = "Custom description"
+            }
+            json<CalendarDaysOfTheYearPollResultResponse>("200") {
+                it.description = "200 Ok custom response"
+            }
+            // The anonymous class can be a lambda in Javalin 4
+            result(status = "404", returnType = null, openApiUpdater = object : OpenApiUpdater<ApiResponse> {
+                override fun applyUpdates(value: ApiResponse) {
+                    value.description = "404 Not found custom response"
+                }
+            })
+            result("500", returnType = null)
+        }
+    }
+
+//    @OpenApi(
+//        summary = "Get the days of the year",
+//        operationId = "getDaysOfTheYear",
+//        tags = ["Calendar"],
+//        requestBody = OpenApiRequestBody(
+//            content = [OpenApiContent(from = CalendarDaysOfTheYearRequest::class, type = "application/json")]
+//        ),
+//        responses = [
+//            OpenApiResponse(
+//                content = [OpenApiContent(from = CalendarDaysOfTheYearPollResultResponse::class, type = "application/json")],
+//                status = "200"
+//            ),
+//            OpenApiResponse(status = "404"),
+//            OpenApiResponse(status = "500")
+//        ]
+//    )
     private fun daysOfTheYear(ctx: Context) {
         val json = ctx.bodyAsClass(CalendarDaysOfTheYearRequest::class.java)
         val year = json.year
