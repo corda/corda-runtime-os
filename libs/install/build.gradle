@@ -75,9 +75,11 @@ dependencies {
 }
 
 tasks.named('jar', Jar) {
-    bnd """\
+    bundle {
+        bnd """\
 -conditionalpackage: aQute.*
 """
+    }
 }
 
 def resolve = tasks.register('resolve', Resolve) {

@@ -1,6 +1,3 @@
-# Ensure Bnd uses the same Java executable as Gradle.
-java: ${project.javaExecutable}
-
 -tester: biz.aQute.tester.junit-platform
 -runfw: org.apache.felix.framework;
 -runee: JavaSE-11

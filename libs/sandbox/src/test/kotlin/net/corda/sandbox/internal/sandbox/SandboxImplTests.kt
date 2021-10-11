@@ -39,11 +39,11 @@ class SandboxImplTests {
     }
 
     /** Creates a mock [Bundle] for testing. */
-    private fun createMockBundle(bundleSymbolicName: String, klass: Class<*>) = mockBundle(bundleSymbolicName).apply {
-        whenever(loadClass(klass.name)).thenReturn(klass)
-        whenever(uninstall()).then {
-            uninstalledBundles.add(this)
-        }
+    private fun createMockBundle(bundleSymbolicName: String, klass: Class<*>) = mockBundle(
+        bundleSymbolicName = bundleSymbolicName,
+        classes = setOf(klass)
+    ).apply {
+        whenever(uninstall()).then { uninstalledBundles.add(this) }
     }
 
     /** Creates a [SandboxImpl] for testing. */

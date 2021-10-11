@@ -51,7 +51,11 @@ interface LinkManagerNetworkMap {
 
     data class EndPoint(val address: String)
 
-    data class HoldingIdentity(val x500Name: String, val groupId: String)
+    data class HoldingIdentity(val x500Name: String, val groupId: String) {
+        fun toHoldingIdentity(): net.corda.p2p.app.HoldingIdentity {
+            return net.corda.p2p.app.HoldingIdentity(x500Name, groupId)
+        }
+    }
 
     enum class NetworkType {
         CORDA_4, CORDA_5

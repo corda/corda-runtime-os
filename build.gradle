@@ -1,4 +1,5 @@
 import static org.gradle.api.JavaVersion.VERSION_11
+import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
 
 buildscript {
     configurations.classpath {
@@ -7,11 +8,6 @@ buildscript {
             cacheDynamicVersionsFor 0, 'seconds'
         }
     }
-
-    ext {
-        // Remember where our Java executable lives (until Bnd supports Gradle toolchains).
-        javaExecutable = file("${System.getProperty('java.home')}/bin/java")
-    }
 }
 
 plugins {
@@ -19,6 +15,7 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.allopen' apply false
     id 'org.jetbrains.kotlin.plugin.jpa' apply false
     id 'io.gitlab.arturbosch.detekt' apply false
+    id 'biz.aQute.bnd.builder' apply false
     id 'idea'
     id 'application'
     id 'net.corda.cordapp.cordapp-configuration'
@@ -80,6 +77,14 @@ allprojects {
 
         doFirst {
             systemProperty 'java.io.tmpdir', buildDir.absolutePath
+        }
+    }
+
+    pluginManager.withPlugin('biz.aQute.bnd.builder') {
+        tasks.withType(aQute.bnd.gradle.Bndrun).configureEach {
+            javaLauncher = javaToolchains.launcherFor {
+                languageVersion = of(javaVersion.getMajorVersion().toInteger())
+            }
         }
     }
 

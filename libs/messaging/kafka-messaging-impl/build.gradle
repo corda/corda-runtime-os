@@ -65,13 +65,19 @@ dependencies {
     kafkaIntegrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
 
+def resolve = tasks.register('resolve', Resolve) {
+    dependsOn jar, kafkaTestingBundle
+    bundles = files(sourceSets.kafkaIntegrationTest.runtimeClasspath, configurations.archives.artifacts.files)
+    bndrun = file('test.bndrun')
+    //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
+    System.setProperty("bnd.home.dir", "$rootDir/bnd/")
+}
 
 tasks.register('kafkaIntegrationTest', TestOSGi) {
     description = "Runs Kafka OSGi integration tests."
     group = "verification"
-    dependsOn resolve
     bundles = files(sourceSets.kafkaIntegrationTest.runtimeClasspath, configurations.archives.artifacts.files)
-    bndrun = file('test.bndrun')
+    bndrun = resolve.flatMap { it.outputBndrun }
 }
 
 def kafkaTestingBundle = tasks.register('kafkaTestingBundle', Bundle) {
@@ -83,14 +89,6 @@ def kafkaTestingBundle = tasks.register('kafkaTestingBundle', Bundle) {
 Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
 Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
 """
-}
-
-def resolve = tasks.register('resolve', Resolve) {
-    dependsOn jar, kafkaTestingBundle
-    bundles = files(sourceSets.kafkaIntegrationTest.runtimeClasspath, configurations.archives.artifacts.files)
-    bndrun = file('test.bndrun')
-    //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
-    System.setProperty("bnd.home.dir", "$rootDir/bnd/")
 }
 
 artifacts {
