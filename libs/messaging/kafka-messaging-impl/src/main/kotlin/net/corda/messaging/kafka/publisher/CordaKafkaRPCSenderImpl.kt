@@ -20,7 +20,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.RESPONSE_
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
-import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
+import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.RPCConsumerRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
@@ -43,7 +43,7 @@ import kotlin.concurrent.withLock
 class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private val config: Config,
     private val publisher: Publisher,
-    private val consumerBuilder: CordaKafkaConsumerBuilderImpl<String, RPCResponse>,
+    private val consumerBuilder: ConsumerBuilder<String, RPCResponse>,
     private val serializer: CordaAvroSerializer<TREQ>,
     private val deserializer: CordaAvroDeserializer<TRESP>
 ) : RPCSender<TREQ, TRESP>, RPCSubscription<TREQ, TRESP> {

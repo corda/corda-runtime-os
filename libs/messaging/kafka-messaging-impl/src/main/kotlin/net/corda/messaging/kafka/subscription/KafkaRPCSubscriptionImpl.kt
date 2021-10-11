@@ -161,7 +161,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
                             ResponseStatus.CANCELLED,
                             ExceptionEnvelope(
                                 error.javaClass.name,
-                                "Cancellation exception has no message"
+                                "Future was cancelled"
                             ).toByteBuffer().array()
                         )
                     }

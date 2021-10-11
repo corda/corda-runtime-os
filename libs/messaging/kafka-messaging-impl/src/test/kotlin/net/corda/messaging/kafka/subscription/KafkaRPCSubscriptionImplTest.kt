@@ -2,8 +2,12 @@ package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscri
 
 import com.typesafe.config.Config
 import net.corda.data.messaging.RPCRequest
+import net.corda.data.messaging.RPCResponse
+import net.corda.data.messaging.ResponseStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_RPC_RESPONDER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
@@ -19,11 +23,15 @@ import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.mockito.Captor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -42,7 +50,6 @@ class KafkaRPCSubscriptionImplTest {
     }
 
     private val config: Config = createStandardTestConfig().getConfig(PATTERN_RPC_RESPONDER)
-
     private val dummyRequest = HoldingIdentity(
         "identity",
         "group"
@@ -65,18 +72,25 @@ class KafkaRPCSubscriptionImplTest {
             )
         )
     )
-
     private val schemaRegistry: AvroSchemaRegistry = mock<AvroSchemaRegistry>().also {
         whenever(it.deserialize(any(), any(), anyOrNull())).thenReturn(dummyRequest)
+        whenever(it.serialize(any())).thenReturn(dummyRequest.toByteBuffer())
         whenever(it.getClassType(any())).thenReturn(HoldingIdentity::class.java)
     }
     private val deserializer = CordaAvroDeserializer(schemaRegistry, mock(), HoldingIdentity::class.java)
+    private val serializer = CordaAvroSerializer<HoldingIdentity>(schemaRegistry)
+    private val publisher: Publisher = mock()
+    private lateinit var kafkaConsumer: CordaKafkaConsumer<String, RPCRequest>
+    private lateinit var consumerBuilder: ConsumerBuilder<String, RPCRequest>
 
-    @Test
-    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
-    fun `rpc subscription returns correct results`() {
-        val processor = TestProcessor()
+    @Captor
+    private val captor = argumentCaptor<List<Pair<Int, Record<Int, RPCResponse>>>>()
+
+    @BeforeEach
+    fun before() {
         val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
+        this.kafkaConsumer = kafkaConsumer
+        this.consumerBuilder = consumerBuilder
 
         doAnswer {
             requestRecord
@@ -85,22 +99,80 @@ class KafkaRPCSubscriptionImplTest {
         doAnswer {
             listOf(TopicPartition(TOPIC, 0))
         }.whenever(kafkaConsumer).getPartitions(any(), any())
-
+    }
+    @Test
+    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
+    fun `rpc subscription receives request and completes it OK`() {
+        val processor = TestProcessor(ResponseStatus.OK)
         val subscription = KafkaRPCSubscriptionImpl(
             config,
-            mock(),
+            publisher,
             consumerBuilder,
             processor,
-            CordaAvroSerializer(schemaRegistry),
+            serializer,
             deserializer
         )
+
         subscription.start()
         while (subscription.isRunning) {
             Thread.sleep(10)
         }
 
         verify(kafkaConsumer, times(1)).subscribe(listOf("topic"))
-        Assertions.assertThat(processor.incomingRecords.size).isEqualTo(1)
+        assertThat(processor.incomingRecords.size).isEqualTo(1)
+        verify(publisher, times(1)).publishToPartition(captor.capture())
+        val capturedValue = captor.firstValue
+        assertEquals(capturedValue[0].second.value?.responseStatus, ResponseStatus.OK)
+    }
+
+    @Test
+    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
+    fun `rpc subscription receives request and completes it exceptionally`() {
+        val processor = TestProcessor(ResponseStatus.FAILED)
+        val subscription = KafkaRPCSubscriptionImpl(
+            config,
+            publisher,
+            consumerBuilder,
+            processor,
+            serializer,
+            deserializer
+        )
+
+        subscription.start()
+        while (subscription.isRunning) {
+            Thread.sleep(10)
+        }
+
+        verify(kafkaConsumer, times(1)).subscribe(listOf("topic"))
+        assertThat(processor.incomingRecords.size).isEqualTo(1)
+        verify(publisher, times(1)).publishToPartition(captor.capture())
+        val capturedValue = captor.firstValue
+        assertEquals(capturedValue[0].second.value?.responseStatus, ResponseStatus.FAILED)
+    }
+
+    @Test
+    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
+    fun `rpc subscription receives request and cancels it`() {
+        val processor = TestProcessor(ResponseStatus.CANCELLED)
+        val subscription = KafkaRPCSubscriptionImpl(
+            config,
+            publisher,
+            consumerBuilder,
+            processor,
+            serializer,
+            deserializer
+        )
+
+        subscription.start()
+        while (subscription.isRunning) {
+            Thread.sleep(10)
+        }
+
+        verify(kafkaConsumer, times(1)).subscribe(listOf("topic"))
+        assertThat(processor.incomingRecords.size).isEqualTo(1)
+        verify(publisher, times(1)).publishToPartition(captor.capture())
+        val capturedValue = captor.firstValue
+        assertEquals(capturedValue[0].second.value?.responseStatus, ResponseStatus.CANCELLED)
     }
 
     private fun setupStandardMocks(): Pair<CordaKafkaConsumer<String, RPCRequest>, ConsumerBuilder<String, RPCRequest>> {
@@ -117,17 +189,31 @@ class KafkaRPCSubscriptionImplTest {
         return Pair(kafkaConsumer, consumerBuilder)
     }
 
-    private class TestProcessor : RPCResponderProcessor<HoldingIdentity, HoldingIdentity> {
+    private class TestProcessor(val responseStatus: ResponseStatus) :
+        RPCResponderProcessor<HoldingIdentity, HoldingIdentity> {
         val log = contextLogger()
 
         var failNext = false
         val incomingRecords = mutableListOf<HoldingIdentity>()
 
-
         override fun onNext(request: HoldingIdentity, respFuture: CompletableFuture<HoldingIdentity>) {
             log.info("Processing new request")
             if (failNext) {
                 throw CordaMessageAPIFatalException("Abandon Ship!")
+            } else {
+                when (responseStatus) {
+                    ResponseStatus.OK -> {
+                        respFuture.complete(
+                            HoldingIdentity("identity", "group")
+                        )
+                    }
+                    ResponseStatus.FAILED -> {
+                        respFuture.completeExceptionally(CordaMessageAPIFatalException("Abandon ship"))
+                    }
+                    else -> {
+                        respFuture.cancel(true)
+                    }
+                }
             }
             incomingRecords += request
             failNext = true
