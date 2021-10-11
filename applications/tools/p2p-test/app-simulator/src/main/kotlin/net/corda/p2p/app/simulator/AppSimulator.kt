@@ -59,7 +59,7 @@ class AppSimulator @Activate constructor(
         private val logger: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
-        const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
+        const val KAFKA_BOOTSTRAP_SERVER_KEY = "messaging.kafka.common.bootstrap.servers"
         const val PRODUCER_CLIENT_ID = "messaging.kafka.producer.client.id"
 
         const val DB_PARAMS_PREFIX = "dbParams"
@@ -115,43 +115,47 @@ class AppSimulator @Activate constructor(
                 return
             }
 
-            val sendTopic = parameters.sendTopic ?: Schema.P2P_OUT_TOPIC
-            val receiveTopic = parameters.receiveTopic ?: Schema.P2P_IN_TOPIC
-            val simulatorConfig = ConfigFactory.parseFile(parameters.simulatorConfig).withFallback(DEFAULT_CONFIG)
-            val clients = simulatorConfig.getInt(PARALLEL_CLIENTS_KEY)
-            val dbParams = readDbParams(simulatorConfig)
-            connectToDb(dbParams)
-
-
-            val simulatorMode = simulatorConfig.getEnum(SimulationMode::class.java, "simulatorMode")
-            when(simulatorMode) {
-                SimulationMode.SENDER -> {
-                    val loadGenerationParams = readLoadGenParams(simulatorConfig)
-                    executeSender(loadGenerationParams, sendTopic, kafkaProperties, clients)
-                }
-                SimulationMode.RECEIVER -> {
-                    startReceiver(receiveTopic, kafkaProperties, clients)
-                }
-                else -> throw IllegalStateException("Invalid value for simulator mode: $simulatorMode")
-            }
+            runSimulator(parameters, kafkaProperties)
         }
     }
 
-    private fun executeSender(loadGenerationParams: LoadGenerationParams, sendTopic: String, kafkaProperties: Properties, clients: Int) {
+    private fun runSimulator(parameters: CliParameters, kafkaProperties: Properties) {
+        val sendTopic = parameters.sendTopic ?: Schema.P2P_OUT_TOPIC
+        val receiveTopic = parameters.receiveTopic ?: Schema.P2P_IN_TOPIC
+        val simulatorConfig = ConfigFactory.parseFile(parameters.simulatorConfig).withFallback(DEFAULT_CONFIG)
+        val clients = simulatorConfig.getInt(PARALLEL_CLIENTS_KEY)
+        val dbParams = readDbParams(simulatorConfig)
+        connectToDb(dbParams)
+
+        val simulatorMode = simulatorConfig.getEnum(SimulationMode::class.java, "simulatorMode")
+        when(simulatorMode) {
+            SimulationMode.SENDER -> {
+                val loadGenerationParams = readLoadGenParams(simulatorConfig)
+                executeSender(loadGenerationParams, sendTopic, kafkaProperties, clients)
+            }
+            SimulationMode.RECEIVER -> {
+                startReceiver(receiveTopic, kafkaProperties, clients)
+            }
+            else -> throw IllegalStateException("Invalid value for simulator mode: $simulatorMode")
+        }
+    }
+
+    private fun executeSender(loadGenParams: LoadGenerationParams, sendTopic: String, kafkaProperties: Properties, clients: Int) {
         val senderId = UUID.randomUUID().toString()
+        val kafkaBoostrapServers = kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()
         logInfo("Using sender ID: $senderId")
 
         val threads = (1..clients).map { client ->
             thread(isDaemon = true) {
                 var messagesSent = 0
                 val kafkaConfig = ConfigFactory.empty()
-                    .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
+                    .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaBoostrapServers))
                     .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-sender-$client"))
                 val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator"), kafkaConfig)
                 publisher.use {
-                    while (moreMessagesToSend(messagesSent, loadGenerationParams)) {
-                        val messageWithIds = (1..loadGenerationParams.batchSize).map {
-                            createMessage(senderId, loadGenerationParams.peer, loadGenerationParams.ourIdentity, loadGenerationParams.messageSizeBytes)
+                    while (moreMessagesToSend(messagesSent, loadGenParams)) {
+                        val messageWithIds = (1..loadGenParams.batchSize).map {
+                            createMessage(senderId, loadGenParams.peer, loadGenParams.ourIdentity, loadGenParams.messageSizeBytes)
                         }
                         val records = messageWithIds.map { (messageId, message) ->
                             Record(sendTopic, messageId, message)
@@ -163,9 +167,9 @@ class AppSimulator @Activate constructor(
                         }
                         writeSentMessagesToDb(messageSentEvents)
                         futures.forEach { it.get() }
-                        messagesSent += loadGenerationParams.batchSize
+                        messagesSent += loadGenParams.batchSize
 
-                        Thread.sleep(loadGenerationParams.interBatchDelay.toMillis())
+                        Thread.sleep(loadGenParams.interBatchDelay.toMillis())
                     }
                     logInfo("Client $client sent $messagesSent messages.")
                 }
@@ -173,8 +177,9 @@ class AppSimulator @Activate constructor(
         }
         writerThreads.addAll(threads)
 
-        // If it's one-off we wait until all messages have been sent. Otherwise, we let the threads run until the process is stopped by the user.
-        if (loadGenerationParams.loadGenerationType == LoadGenerationType.ONE_OFF) {
+        // If it's one-off we wait until all messages have been sent.
+        // Otherwise, we let the threads run until the process is stopped by the user.
+        if (loadGenParams.loadGenerationType == LoadGenerationType.ONE_OFF) {
             writerThreads.forEach { it.join() }
             shutdownOSGiFramework()
         }
@@ -191,7 +196,7 @@ class AppSimulator @Activate constructor(
         (1..clients).forEach { client ->
             val subscriptionConfig = SubscriptionConfig("app-simulator", receiveTopic, 1)
             val kafkaConfig = ConfigFactory.empty()
-                .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
+                .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
                 .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-receiver-$client"))
             val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig, MessageProcessor(), kafkaConfig, null)
             subscription.start()
@@ -235,15 +240,17 @@ class AppSimulator @Activate constructor(
         val properties = Properties()
         properties.setProperty("user", dbParams.username)
         properties.setProperty("password", dbParams.password)
-        // DriverManager uses internally Class.forName(), which doesn't work within OSGi by default. This is why we force-load the driver here.
-        // For example, see:
+        // DriverManager uses internally Class.forName(), which doesn't work within OSGi by default.
+        // This is why we force-load the driver here. For example, see:
         // http://hwellmann.blogspot.com/2009/04/jdbc-drivers-in-osgi.html
         // https://stackoverflow.com/questions/54292876/how-to-use-mysql-in-osgi-application-with-maven
         org.postgresql.Driver()
         dbConnection = DriverManager.getConnection("jdbc:postgresql://${dbParams.host}/${dbParams.db}", properties)
         dbConnection!!.autoCommit = false
-        writeSentStmt = dbConnection!!.prepareStatement("INSERT INTO sent_messages (sender_id, message_id, sent_time) VALUES (?, ?, ?) on conflict do nothing")
-        writeReceivedStmt = dbConnection!!.prepareStatement("INSERT INTO received_messages (sender_id, message_id, received_time) VALUES (?, ?, ?) on conflict do nothing")
+        writeSentStmt = dbConnection!!.prepareStatement("INSERT INTO sent_messages (sender_id, message_id, sent_time) " +
+                "VALUES (?, ?, ?) on conflict do nothing")
+        writeReceivedStmt = dbConnection!!.prepareStatement("INSERT INTO received_messages (sender_id, message_id, received_time) " +
+                "VALUES (?, ?, ?) on conflict do nothing")
     }
 
     private fun readDbParams(config: Config): DBParams {
@@ -260,7 +267,8 @@ class AppSimulator @Activate constructor(
         val peerGroupId = config.getString("$LOAD_GEN_PARAMS_PREFIX.peerGroupId")
         val ourX500Name = config.getString("$LOAD_GEN_PARAMS_PREFIX.ourX500Name")
         val ourGroupId = config.getString("$LOAD_GEN_PARAMS_PREFIX.ourGroupId")
-        val loadGenerationType = config.getEnum(LoadGenerationType::class.java, "$LOAD_GEN_PARAMS_PREFIX.loadGenerationType")
+        val loadGenerationType =
+            config.getEnum(LoadGenerationType::class.java, "$LOAD_GEN_PARAMS_PREFIX.loadGenerationType")
         val totalNumberOfMessages = when(loadGenerationType) {
             LoadGenerationType.ONE_OFF -> config.getInt("$LOAD_GEN_PARAMS_PREFIX.totalNumberOfMessages")
             LoadGenerationType.CONTINUOUS -> null
