@@ -58,6 +58,7 @@
 	net.corda.registry;version='[5.0.0,5.0.1)',\
 	net.corda.schema-registry;version='[5.0.0,5.0.1)',\
 	net.corda.schema-registry-impl;version='[5.0.0,5.0.1)',\
+	net.corda.test-utilities;version='[5.0.0,5.0.1)',\
 	net.corda.topic-admin;version='[5.0.0,5.0.1)',\
 	net.corda.topic-admin-impl;version='[5.0.0,5.0.1)',\
 	org.apache.commons.commons-compress;version='[1.21.0,1.21.1)',\
