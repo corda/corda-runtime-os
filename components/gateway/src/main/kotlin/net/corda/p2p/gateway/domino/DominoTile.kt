@@ -9,7 +9,6 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.v5.base.util.contextLogger
@@ -85,6 +84,8 @@ abstract class DominoTile(
         logger.info("State of $name is $newState")
     }
 
+    open fun handleEvent(event: LifecycleEvent): Boolean = false
+
     private inner class EventHandler : LifecycleEventHandler {
         override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
             when (event) {
@@ -102,15 +103,10 @@ abstract class DominoTile(
                 is StopEvent -> {
                     // Do nothing
                 }
-                is RegistrationStatusChangeEvent -> {
-                    if (event.status == LifecycleStatus.UP) {
-                        onChildStarted()
-                    } else {
-                        onChildStopped()
-                    }
-                }
                 else -> {
-                    logger.warn("Unexpected event $event")
+                    if (!handleEvent(event)) {
+                        logger.warn("Unexpected event $event")
+                    }
                 }
             }
         }
@@ -122,14 +118,6 @@ abstract class DominoTile(
             stopTile()
             updateState(State.StoppedDueToError)
         }
-    }
-
-    protected open fun onChildStopped() {
-        // Do nothing
-    }
-
-    protected open fun onChildStarted() {
-        // Do nothing
     }
 
     protected abstract fun startTile()

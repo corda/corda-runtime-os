@@ -17,7 +17,7 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
-import net.corda.p2p.gateway.domino.BranchTile
+import net.corda.p2p.gateway.domino.InternalTile
 import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.gateway.domino.util.PublisherWithDominoLogic
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
@@ -39,7 +39,7 @@ internal class InboundMessageHandler(
     subscriptionFactory: SubscriptionFactory,
 ) :
     HttpEventListener,
-    BranchTile(lifecycleCoordinatorFactory) {
+    InternalTile(lifecycleCoordinatorFactory) {
 
     companion object {
         private val logger = contextLogger()

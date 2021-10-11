@@ -5,7 +5,7 @@ import io.netty.channel.nio.NioEventLoopGroup
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.p2p.gateway.Gateway.Companion.CONFIG_KEY
-import net.corda.p2p.gateway.domino.ConfigurationAwareTile
+import net.corda.p2p.gateway.domino.ConfigurationAwareLeafTile
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
@@ -31,7 +31,7 @@ class ConnectionManager(
     private val listener: HttpEventListener,
     private val lock: Lock = ReentrantLock(),
     private val nioEventLoopGroupFactory: (Int) -> NioEventLoopGroup = { NioEventLoopGroup(it) }
-) : ConfigurationAwareTile<GatewayConfiguration>(
+) : ConfigurationAwareLeafTile<GatewayConfiguration>(
     lifecycleCoordinatorFactory,
     configurationReaderService,
     CONFIG_KEY,

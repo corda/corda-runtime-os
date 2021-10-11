@@ -20,7 +20,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.IOException
 
-class ConfigurationAwareTileTest {
+class ConfigurationAwareLeafTileTest {
     private val handler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
         on { start() } doAnswer {
@@ -44,7 +44,7 @@ class ConfigurationAwareTileTest {
     private val key = "key"
 
     private data class Configuration(val data: Int)
-    private inner class Tile : ConfigurationAwareTile<Configuration>(
+    private inner class Tile : ConfigurationAwareLeafTile<Configuration>(
         factory,
         service,
         key,
@@ -243,7 +243,7 @@ class ConfigurationAwareTileTest {
         val config = mock<Config> {
             on { getInt(any()) } doReturn 11
         }
-        val tile = object : ConfigurationAwareTile<Configuration>(
+        val tile = object : ConfigurationAwareLeafTile<Configuration>(
             factory,
             service,
             key,

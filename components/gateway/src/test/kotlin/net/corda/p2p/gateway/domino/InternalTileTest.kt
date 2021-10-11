@@ -3,6 +3,7 @@ package net.corda.p2p.gateway.domino
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
@@ -11,6 +12,7 @@ import net.corda.lifecycle.StartEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeast
@@ -23,7 +25,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class BranchTileTest {
+class InternalTileTest {
     private val handler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
         on { start() } doAnswer {
@@ -33,7 +35,7 @@ class BranchTileTest {
     private val factory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
-    private inner class Tile(override val children: Collection<DominoTile>) : BranchTile(factory)
+    private inner class Tile(override val children: Collection<DominoTile>) : InternalTile(factory)
 
     @Nested
     inner class StartTileTests {
@@ -84,12 +86,43 @@ class BranchTileTest {
     }
 
     @Nested
-    inner class OnChildStartedTests {
+    inner class StartKidsIfNeededTests {
         @Test
-        fun `onChildStarted will start all the non error children`() {
+        fun `startKidsIfNeeded will start all if there is no error child`() {
             val children = listOf<DominoTile>(
                 mock {
                     on { state } doReturn DominoTile.State.StoppedByParent
+                },
+                mock {
+                    on { state } doReturn DominoTile.State.Started
+                },
+                mock {
+                    on { state } doReturn DominoTile.State.Created
+                },
+            )
+
+            Tile(children)
+            handler.lastValue.processEvent(
+                RegistrationStatusChangeEvent(
+                    mock(),
+                    LifecycleStatus.UP
+                ),
+                coordinator
+            )
+
+            verify(children[0]).start()
+            verify(children[1]).start()
+            verify(children[2]).start()
+        }
+
+        @Test
+        fun `startKidsIfNeeded will not start any if there is error child`() {
+            val children = listOf<DominoTile>(
+                mock {
+                    on { state } doReturn DominoTile.State.StoppedByParent
+                },
+                mock {
+                    on { state } doReturn DominoTile.State.Started
                 },
                 mock {
                     on { state } doReturn DominoTile.State.StoppedDueToError
@@ -108,12 +141,44 @@ class BranchTileTest {
                 coordinator
             )
 
-            verify(children[0]).start()
-            verify(children[2]).start()
+            children.forEach {
+                verify(it, never()).start()
+            }
         }
 
         @Test
-        fun `Tests for onChildStarted`() {
+        fun `startKidsIfNeeded will stop all non error children`() {
+            val children = listOf<DominoTile>(
+                mock {
+                    on { state } doReturn DominoTile.State.StoppedByParent
+                },
+                mock {
+                    on { state } doReturn DominoTile.State.Started
+                },
+                mock {
+                    on { state } doReturn DominoTile.State.StoppedDueToError
+                },
+                mock {
+                    on { state } doReturn DominoTile.State.Created
+                },
+            )
+
+            Tile(children)
+            handler.lastValue.processEvent(
+                RegistrationStatusChangeEvent(
+                    mock(),
+                    LifecycleStatus.UP
+                ),
+                coordinator
+            )
+
+            verify(children[0]).stop()
+            verify(children[1]).stop()
+            verify(children[3]).stop()
+        }
+
+        @Test
+        fun `Tests for startKidsIfNeeded`() {
             val children = listOf<DominoTile>(
                 mock {
                     on { state } doReturn DominoTile.State.StoppedByParent
@@ -139,7 +204,7 @@ class BranchTileTest {
         }
 
         @Test
-        fun `onChildStarted will set the status to UP if all the children are running`() {
+        fun `startKidsIfNeeded will set the status to UP if all the children are running`() {
             val children = listOf<DominoTile>(
                 mock {
                     on { isRunning } doReturn true
@@ -164,7 +229,7 @@ class BranchTileTest {
             assertThat(tile.isRunning).isTrue
         }
         @Test
-        fun `onChildStarted will not set the status to UP if a child is not running`() {
+        fun `startKidsIfNeeded will not set the status to UP if a child is not running`() {
             val children = listOf<DominoTile>(
                 mock {
                     on { isRunning } doReturn true
@@ -191,9 +256,51 @@ class BranchTileTest {
     }
 
     @Nested
-    inner class OnChildStoppedTests {
+    inner class HandleEventTests {
         @Test
-        fun `onChildStopped will stop the tile`() {
+        fun `down will stop the tile`() {
+            val children = listOf<DominoTile>(
+                mock {
+                    on { isRunning } doReturn true
+                },
+                mock {
+                    on { isRunning } doReturn true
+                },
+                mock {
+                    on { isRunning } doReturn true
+                },
+            )
+            Tile(children)
+
+            handler.lastValue.processEvent(
+                RegistrationStatusChangeEvent(
+                    mock(),
+                    LifecycleStatus.UP
+                ),
+                coordinator
+            )
+
+            verify(children.first()).start()
+        }
+
+        @Test
+        fun `other events will not throw an exception`() {
+            val children = listOf<DominoTile>(
+                mock(),
+            )
+            Tile(children)
+            class Event : LifecycleEvent
+
+            assertDoesNotThrow {
+                handler.lastValue.processEvent(
+                    Event(),
+                    coordinator
+                )
+            }
+        }
+
+        @Test
+        fun `up will start the tile`() {
             val children = listOf(mock<DominoTile>())
 
             Tile(children)

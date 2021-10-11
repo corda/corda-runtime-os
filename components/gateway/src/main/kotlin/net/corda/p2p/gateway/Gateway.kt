@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.gateway.domino.BranchTile
+import net.corda.p2p.gateway.domino.InternalTile
 import net.corda.p2p.gateway.domino.DominoTile
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
@@ -30,7 +30,7 @@ class Gateway(
     publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-) : BranchTile(
+) : InternalTile(
     lifecycleCoordinatorFactory,
 ) {
 

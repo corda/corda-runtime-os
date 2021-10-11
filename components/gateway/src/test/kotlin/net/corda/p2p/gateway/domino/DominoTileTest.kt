@@ -33,8 +33,7 @@ class DominoTileTest {
     inner class Tile : DominoTile(factory) {
         var started = 0
         var stopped = 0
-        var childStarted = 0
-        var childStopped = 0
+        var handledEvent: LifecycleEvent? = null
         override fun startTile() {
             started ++
         }
@@ -43,22 +42,17 @@ class DominoTileTest {
             stopped ++
         }
 
-        override fun onChildStarted() {
-            childStarted ++
-            super.onChildStarted()
-        }
-
-        override fun onChildStopped() {
-            childStopped ++
-            super.onChildStopped()
-        }
-
         fun setState(newState: State) {
             updateState(newState)
         }
 
         fun sendError(e: Exception) {
             gotError(e)
+        }
+
+        override fun handleEvent(event: LifecycleEvent): Boolean {
+            handledEvent = event
+            return false
         }
     }
 
@@ -234,33 +228,19 @@ class DominoTileTest {
     }
 
     @Test
-    fun `processEvent will call child start on RegistrationStatusChangeEvent UP`() {
+    fun `processEvent will call implementation for any other event`() {
         val tile = Tile()
+        val event = RegistrationStatusChangeEvent(
+            mock(),
+            LifecycleStatus.UP
+        )
 
         handler.lastValue.processEvent(
-            RegistrationStatusChangeEvent(
-                mock(),
-                LifecycleStatus.UP
-            ),
+            event,
             coordinator
         )
 
-        assertThat(tile.childStarted).isEqualTo(1)
-    }
-
-    @Test
-    fun `processEvent will call child stopped on RegistrationStatusChangeEvent DOWN`() {
-        val tile = Tile()
-
-        handler.lastValue.processEvent(
-            RegistrationStatusChangeEvent(
-                mock(),
-                LifecycleStatus.DOWN
-            ),
-            coordinator
-        )
-
-        assertThat(tile.childStopped).isEqualTo(1)
+        assertThat(tile.handledEvent).isEqualTo(event)
     }
 
     @Test

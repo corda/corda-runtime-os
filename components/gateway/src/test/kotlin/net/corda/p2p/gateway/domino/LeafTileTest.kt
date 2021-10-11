@@ -3,9 +3,12 @@ package net.corda.p2p.gateway.domino
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -123,5 +126,22 @@ class LeafTileTest {
         tile.stop()
 
         assertThat(actions).isEqualTo(listOf(1))
+    }
+
+    @Test
+    fun `handleEvent can handle unknown event`() {
+        val tile = object : LeafTile(factory) {
+            override fun createResources() {
+            }
+        }
+        val event = RegistrationStatusChangeEvent(
+            mock(),
+            LifecycleStatus.UP
+        )
+        tile.start()
+
+        assertDoesNotThrow {
+            handler.lastValue.processEvent(event, coordinator)
+        }
     }
 }

@@ -1,11 +1,14 @@
 package net.corda.p2p.gateway.domino
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.atomic.AtomicReference
 
-abstract class BranchTile(coordinatorFactory: LifecycleCoordinatorFactory) : DominoTile(coordinatorFactory) {
+abstract class InternalTile(coordinatorFactory: LifecycleCoordinatorFactory) : DominoTile(coordinatorFactory) {
     companion object {
         private val logger = contextLogger()
     }
@@ -30,26 +33,41 @@ abstract class BranchTile(coordinatorFactory: LifecycleCoordinatorFactory) : Dom
             }
         }
 
-        children.forEach {
-            it.start()
-        }
-
-        onChildStarted()
+        startKidsIfNeeded()
     }
 
-    override fun onChildStarted() {
-        children.filter {
-            it.state != State.StoppedDueToError
-        }.forEach {
-            it.start()
-        }
-        if (children.all { it.isRunning }) {
-            updateState(State.Started)
+    override fun handleEvent(event: LifecycleEvent): Boolean {
+        return when (event) {
+            is RegistrationStatusChangeEvent -> {
+                if (event.status == LifecycleStatus.UP) {
+                    startKidsIfNeeded()
+                } else {
+                    stop()
+                }
+                true
+            }
+            else -> {
+                false
+            }
         }
     }
 
-    override fun onChildStopped() {
-        stop()
+    private fun startKidsIfNeeded() {
+        if (children.map { it.state }.contains(State.StoppedDueToError)) {
+            children.filter {
+                it.state != State.StoppedDueToError
+            }.forEach {
+                it.stop()
+            }
+        } else {
+            children.forEach {
+                it.start()
+            }
+
+            if (children.all { it.isRunning }) {
+                updateState(State.Started)
+            }
+        }
     }
 
     override fun stopTile() {

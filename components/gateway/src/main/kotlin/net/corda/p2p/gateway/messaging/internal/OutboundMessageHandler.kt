@@ -17,7 +17,7 @@ import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
-import net.corda.p2p.gateway.domino.BranchTile
+import net.corda.p2p.gateway.domino.InternalTile
 import net.corda.p2p.gateway.domino.util.EventLogSubscriptionWithDominoLogic
 import net.corda.p2p.gateway.domino.util.PublisherWithDominoLogic
 import net.corda.p2p.gateway.messaging.ConnectionManager
@@ -44,7 +44,7 @@ internal class OutboundMessageHandler(
 ) : EventLogProcessor<String, LinkOutMessage>,
     Lifecycle,
     HttpEventListener,
-    BranchTile(lifecycleCoordinatorFactory) {
+    InternalTile(lifecycleCoordinatorFactory) {
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
     }

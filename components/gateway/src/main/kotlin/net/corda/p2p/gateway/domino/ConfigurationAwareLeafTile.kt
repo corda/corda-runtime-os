@@ -8,7 +8,7 @@ import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
-abstract class ConfigurationAwareTile<C>(
+abstract class ConfigurationAwareLeafTile<C>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
     private val key: String,

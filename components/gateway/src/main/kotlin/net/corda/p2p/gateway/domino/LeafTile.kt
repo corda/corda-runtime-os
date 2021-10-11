@@ -4,7 +4,10 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.ConcurrentLinkedDeque
 
-abstract class LeafTile(coordinatorFactory: LifecycleCoordinatorFactory) : DominoTile(coordinatorFactory) {
+abstract class LeafTile(
+    coordinatorFactory: LifecycleCoordinatorFactory
+) :
+    DominoTile(coordinatorFactory) {
     companion object {
         private val logger = contextLogger()
     }
