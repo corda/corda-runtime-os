@@ -7,8 +7,8 @@ import net.corda.membership.impl.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.impl.MemberInfoExtension.Companion.IDENTITY_KEYS_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.impl.MemberInfoExtension.Companion.MODIFIED_TIME
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_OWNING_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
@@ -19,7 +19,7 @@ import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.impl.MemberInfoExtension.Companion.modifiedTime
 import net.corda.v5.application.node.EndpointInfo
 import net.corda.v5.application.node.MemberInfo
-import net.corda.v5.application.node.convertToListOfWireKeyValuePair
+import net.corda.v5.application.node.toWireKeyValuePairList
 import net.corda.v5.cipher.suite.KeyEncodingService
 import org.apache.avro.file.DataFileReader
 import org.apache.avro.file.DataFileWriter
@@ -47,10 +47,10 @@ class MemberInfoTest {
         private val memberInfo = createDummyMemberInfo()
 
         private fun createDummyMemberInfo(): MemberInfo = MemberInfoImpl(
-            memberProvidedContext = MemberContextImpl(
+            memberProvidedContext = KeyValueStoreImpl(
                 sortedMapOf(
                     PARTY_NAME to "O=Alice,L=London,C=GB",
-                    PARTY_KEY to keyEncodingService.encodeAsString(identityKeys.first()),
+                    PARTY_OWNING_KEY to keyEncodingService.encodeAsString(identityKeys.first()),
                     GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
                     *convertPublicKeys(keyEncodingService).toTypedArray(),
                     *convertEndpoints(endpoints).toTypedArray(),
@@ -58,15 +58,16 @@ class MemberInfoTest {
                     PLATFORM_VERSION to "10",
                     SERIAL to "1",
                     CERTIFICATE to "dummy_cert_path"
-                )
+                ),
+                keyEncodingService
             ),
-            mgmProvidedContext = MemberContextImpl(
+            mgmProvidedContext = KeyValueStoreImpl(
                 sortedMapOf(
                     STATUS to MEMBER_STATUS_ACTIVE,
                     MODIFIED_TIME to modifiedTime.toString()
-                )
-            ),
-            keyEncodingService
+                ),
+                keyEncodingService
+            )
         )
 
         private fun convertEndpoints(endpoints: List<EndpointInfo>): List<Pair<String, String>> {
@@ -95,8 +96,8 @@ class MemberInfoTest {
         )
         val dataFileWriter: DataFileWriter<WireMemberInfo> = DataFileWriter(userDatumWriter)
         val wireMemberInfo = WireMemberInfo(
-            memberInfo.memberProvidedContext.convertToListOfWireKeyValuePair(),
-            memberInfo.mgmProvidedContext.convertToListOfWireKeyValuePair()
+            memberInfo.memberProvidedContext.toWireKeyValuePairList(),
+            memberInfo.mgmProvidedContext.toWireKeyValuePairList()
         )
 
         dataFileWriter.create(wireMemberInfo.schema, File("avro-member-info.avro"))
@@ -112,20 +113,22 @@ class MemberInfoTest {
         var recreatedMemberInfo: MemberInfo? = null
         while (dataFileReader.hasNext()) {
             user = dataFileReader.next(user)
-            recreatedMemberInfo = convertToMemberInfo(
-                user.memberContext.convertToContext(),
-                user.mgmContext.convertToContext(),
-                keyEncodingService
+            recreatedMemberInfo = toMemberInfo(
+                user.memberContext.toKeyValueStore(keyEncodingService),
+                user.mgmContext.toKeyValueStore(keyEncodingService)
             )
         }
 
         assertEquals(memberInfo, recreatedMemberInfo)
         assertEquals(memberInfo.identityKeys, recreatedMemberInfo?.identityKeys)
-        assertEquals(memberInfo.party, recreatedMemberInfo?.party)
+        assertEquals(memberInfo.identityKeys, recreatedMemberInfo?.identityKeys)
+        //assertEquals(memberInfo.identity, recreatedMemberInfo?.identity)
+        assertEquals(memberInfo.owningKey, recreatedMemberInfo?.owningKey)
         assertEquals(memberInfo.endpoints, recreatedMemberInfo?.endpoints)
         assertEquals(memberInfo.modifiedTime, recreatedMemberInfo?.modifiedTime)
         assertEquals(memberInfo.isActive, recreatedMemberInfo?.isActive)
         assertEquals(memberInfo.serial, recreatedMemberInfo?.serial)
         assertEquals(memberInfo.platformVersion, recreatedMemberInfo?.platformVersion)
+        println(memberInfo.endpoints)
     }
 }

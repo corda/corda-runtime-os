@@ -1,8 +1,8 @@
 package net.corda.membership.impl
 
+import net.corda.membership.impl.serialization.EndpointInfoStringConverter
 import net.corda.v5.application.node.EndpointInfo
 import net.corda.v5.application.node.MemberInfo
-import net.corda.v5.application.node.readAs
 import net.corda.v5.base.util.NetworkHostAndPort
 import java.net.URL
 import java.time.Instant
@@ -18,7 +18,11 @@ class MemberInfoExtension {
 
         /** Key name for party property. */
         const val PARTY_NAME = "corda.party.name"
-        const val PARTY_KEY = "corda.party.key"
+        const val PARTY_OWNING_KEY = "corda.party.owningKey"
+
+        /** Key name for notary service property. */
+        const val NOTARY_SERVICE_PARTY_NAME = "corda.notaryServiceParty.name"
+        const val NOTARY_SERVICE_PARTY_KEY = "corda.notaryServiceParty.key"
 
         /** Key name for serial property. */
         const val SERIAL = "corda.serial"
@@ -31,6 +35,8 @@ class MemberInfoExtension {
 
         const val URL_KEY = "corda.endpoints.%s.connectionURL"
         const val PROTOCOL_VERSION = "corda.endpoints.%s.protocolVersion"
+        //corda.endpoints.1.connectionURL
+        //corda.endpoints.1.protocolVersion
 
         /** Key name for softwareVersion property. */
         const val SOFTWARE_VERSION = "corda.softwareVersion"
@@ -60,7 +66,7 @@ class MemberInfoExtension {
         const val MEMBER_STATUS_SUSPENDED = "SUSPENDED"
 
         /** Identity certificate or null for non-PKI option. Certificate subject and key should match party */
-        // TODO: we need PemUtilities.kt for this
+        // TODO !!!!!!!!!!
         /*@JvmStatic
         val MemberInfo.certificate: CertPath?
             get() = memberProvidedContext.readAs(CERTIFICATE)*/
@@ -68,7 +74,7 @@ class MemberInfoExtension {
         /** Group identifier. UUID as a String. */
         @JvmStatic
         val MemberInfo.groupId: String
-            get() = memberProvidedContext.readAs(GROUP_ID)
+            get() = memberProvidedContext.parse(GROUP_ID)
 
         /** List of P2P endpoints for member's node. */
         @JvmStatic
@@ -80,17 +86,20 @@ class MemberInfoExtension {
         /**  List of P2P endpoints for member's node. */
         @JvmStatic
         val MemberInfo.endpoints: List<EndpointInfo>
-            get() = memberProvidedContext.entries.readEndpoints()
+            get() = memberProvidedContext.parseList(
+                ENDPOINTS,
+                EndpointInfoStringConverter((memberProvidedContext as KeyValueStoreImpl).keyEncodingService)
+            )
 
         /** Corda-Release-Version. */
         @JvmStatic
         val MemberInfo.softwareVersion: String
-            get() = memberProvidedContext.readAs(SOFTWARE_VERSION)
+            get() = memberProvidedContext.parse(SOFTWARE_VERSION)
 
         /** Status of Membership. */
         @JvmStatic
         val MemberInfo.status: String
-            get() = mgmProvidedContext.readAs(STATUS)
+            get() = mgmProvidedContext.parse(STATUS)
 
         /**
          * The last time Membership was modified. Can be null.
@@ -101,9 +110,9 @@ class MemberInfoExtension {
          * */
         @JvmStatic
         val MemberInfo.modifiedTime: Instant?
-            get() = mgmProvidedContext.readAs(MODIFIED_TIME)
+            get() = mgmProvidedContext.parse(MODIFIED_TIME)
 
-        private fun Set<Map.Entry<String, String>>.readEndpoints() = filter { it.key.startsWith(ENDPOINTS) }
+        /*private fun Set<Map.Entry<String, String>>.readEndpoints() = filter { it.key.startsWith(ENDPOINTS) }
             .asSequence()
             .groupBy { it.key.split(".")[2] }
             .map {
@@ -111,6 +120,6 @@ class MemberInfoExtension {
                     it.value.first { it.key.contains("connectionURL") }.value,
                     it.value.first { it.key.contains("protocolVersion") }.value.toInt()
                 )
-            }
+            }*/
     }
 }
