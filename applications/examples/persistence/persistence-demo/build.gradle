@@ -28,6 +28,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
 
     implementation project(":components:examples:persistence:cluster-admin")
+    implementation project(":components:examples:persistence:config-admin")
 
     runtimeOnly project(":libs:db:db-admin-impl")
 //    runtimeOnly project(":libs:db:db-orm-impl")

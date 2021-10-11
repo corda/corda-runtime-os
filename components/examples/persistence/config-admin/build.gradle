@@ -1,0 +1,25 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Config Admin Component'
+
+dependencies {
+    implementation "net.corda:corda-base"
+    api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    api "javax.persistence:javax.persistence-api"
+
+    implementation "info.picocli:picocli:$picocliVersion"
+
+
+    implementation project(":osgi-framework-api")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation 'net.corda:avro-schema'
+    implementation project(":libs:messaging:messaging")
+}
