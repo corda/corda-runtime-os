@@ -73,19 +73,20 @@ class SigningServiceClient(
         }
     }
 
-    override fun generateKeyPair(alias: String): PublicKey {
+    override fun generateKeyPair(alias: String, context: Map<String, String>): PublicKey {
         val request = createRequest(
-            WireSigningGenerateKeyPair(alias)
+            WireSigningGenerateKeyPair(alias, context.toWire())
         )
         val response = request.executeWithTimeoutRetry(WirePublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
-    override fun sign(publicKey: PublicKey, data: ByteArray): DigitalSignature.WithKey {
+    override fun sign(publicKey: PublicKey, data: ByteArray, context: Map<String, String>): DigitalSignature.WithKey {
         val request = createRequest(
             WireSigningSign(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                ByteBuffer.wrap(data)
+                ByteBuffer.wrap(data),
+                context.toWire()
             )
         )
         val response = request.executeWithTimeoutRetry(WireSignatureWithKey::class.java)
@@ -95,12 +96,18 @@ class SigningServiceClient(
         )
     }
 
-    override fun sign(publicKey: PublicKey, signatureSpec: SignatureSpec, data: ByteArray): DigitalSignature.WithKey {
+    override fun sign(
+        publicKey: PublicKey,
+        signatureSpec: SignatureSpec,
+        data: ByteArray,
+        context: Map<String, String>
+    ): DigitalSignature.WithKey {
         val request = createRequest(
             WireSigningSignWithSpec(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                 WireSignatureSpec(signatureSpec.signatureName, signatureSpec.customDigestName?.name),
-                ByteBuffer.wrap(data)
+                ByteBuffer.wrap(data),
+                context.toWire()
             )
         )
         val response = request.executeWithTimeoutRetry(WireSignatureWithKey::class.java)
@@ -110,23 +117,30 @@ class SigningServiceClient(
         )
     }
 
-    override fun sign(alias: String, data: ByteArray): ByteArray {
+    override fun sign(alias: String, data: ByteArray, context: Map<String, String>): ByteArray {
         val request = createRequest(
             WireSigningSignWithAlias(
                 alias,
-                ByteBuffer.wrap(data)
+                ByteBuffer.wrap(data),
+                context.toWire()
             )
         )
         val response = request.executeWithTimeoutRetry(WireSignature::class.java)
         return response!!.bytes.array()
     }
 
-    override fun sign(alias: String, signatureSpec: SignatureSpec, data: ByteArray): ByteArray {
+    override fun sign(
+        alias: String,
+        signatureSpec: SignatureSpec,
+        data: ByteArray,
+        context: Map<String, String>
+    ): ByteArray {
         val request = createRequest(
             WireSigningSignWithAliasSpec(
                 alias,
                 WireSignatureSpec(signatureSpec.signatureName, signatureSpec.customDigestName?.name),
-                ByteBuffer.wrap(data)
+                ByteBuffer.wrap(data),
+                context.toWire()
             )
         )
         val response = request.executeWithTimeoutRetry(WireSignature::class.java)

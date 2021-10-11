@@ -13,10 +13,9 @@ class SandboxLocationTests {
 
     @Test
     fun `sandbox location is stringified correctly`() {
-        val validSandboxLocationString = "sandbox/$validUUID/$validURI"
-
         val sandboxLocation = SandboxLocation(validUUID, validURI)
-        assertEquals(validSandboxLocationString, sandboxLocation.toString())
+
+        assertEquals("sandbox/$validUUID/$validURI", sandboxLocation.toString())
     }
 
     @Test

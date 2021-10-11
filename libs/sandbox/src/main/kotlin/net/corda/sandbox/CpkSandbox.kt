@@ -4,7 +4,7 @@ import net.corda.packaging.Cpk
 
 /** A container for isolating a set of bundles created from a CPK. */
 interface CpkSandbox: Sandbox {
-    val cpk: Cpk.Expanded
+    val cpk: Cpk
 
     /**
      * Loads the [Class] with [className] from the sandbox's CorDapp bundle. Returns null if the bundle does not

@@ -101,9 +101,9 @@ class FreshKeysServiceRpcProcessor(
     ) : CryptoRpcHandler<WireRequestContext, WireFreshKeysFreshKey> {
         override fun handle(context: WireRequestContext, request: WireFreshKeysFreshKey): Any? {
             val publicKey = if(request.externalId.isNullOrBlank()) {
-                freshKeysService.freshKey()
+                freshKeysService.freshKey(request.context.toMap())
             } else {
-                freshKeysService.freshKey(UUID.fromString(request.externalId))
+                freshKeysService.freshKey(UUID.fromString(request.externalId), request.context.toMap())
             }
             return WirePublicKey(ByteBuffer.wrap(cipherSchemeMetadata.encodeAsByteArray(publicKey)))
         }
@@ -124,7 +124,7 @@ class FreshKeysServiceRpcProcessor(
     ) : CryptoRpcHandler<WireRequestContext, WireFreshKeysSign> {
         override fun handle(context: WireRequestContext, request: WireFreshKeysSign): Any {
             val publicKey = cipherSchemeMetadata.decodePublicKey(request.publicKey.array())
-            val signature = freshKeysService.sign(publicKey, request.bytes.array())
+            val signature = freshKeysService.sign(publicKey, request.bytes.array(), request.context.toMap())
             return WireSignatureWithKey(
                 ByteBuffer.wrap(cipherSchemeMetadata.encodeAsByteArray(signature.by)),
                 ByteBuffer.wrap(signature.bytes)
@@ -146,7 +146,7 @@ class FreshKeysServiceRpcProcessor(
                     DigestAlgorithmName(request.signatureSpec.customDigestName)
                 }
             )
-            val signature = freshKeysService.sign(publicKey, spec, request.bytes.array())
+            val signature = freshKeysService.sign(publicKey, spec, request.bytes.array(), request.context.toMap())
             return WireSignatureWithKey(
                 ByteBuffer.wrap(cipherSchemeMetadata.encodeAsByteArray(signature.by)),
                 ByteBuffer.wrap(signature.bytes)

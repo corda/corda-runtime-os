@@ -1,8 +1,8 @@
 package net.corda.sandbox.internal.hooks.service
 
 import net.corda.sandbox.internal.SandboxServiceInternal
-import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.createMockBundleContext
-import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.createMockServiceReference
+import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.mockBundleContext
+import net.corda.sandbox.internal.hooks.HookTestUtils.Companion.mockServiceReference
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -12,9 +12,9 @@ import org.osgi.framework.Bundle
 
 class IsolatingFindServiceHookTests {
     private val bundleOne = mock<Bundle>()
-    private val bundleOneContext = createMockBundleContext(bundleOne)
+    private val bundleOneContext = mockBundleContext(bundleOne)
     private val bundleTwo = mock<Bundle>()
-    private val bundleTwoServiceReference = createMockServiceReference(bundleTwo)
+    private val bundleTwoServiceReference = mockServiceReference(bundleTwo)
     private val serviceReferences = mutableListOf(bundleTwoServiceReference)
 
     @BeforeEach

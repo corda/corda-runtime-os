@@ -106,8 +106,12 @@ class FreshKeySigningServiceClientTests {
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public))
             )
         }
+        val context = mapOf(
+            "someId" to UUID.randomUUID().toString(),
+            "reason" to "Hello World!"
+        )
         val nowBefore = Instant.now()
-        val result = client.freshKey()
+        val result = client.freshKey(context)
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
         assertEquals(memberId, requests.firstValue.context.memberId)
@@ -119,6 +123,13 @@ class FreshKeySigningServiceClientTests {
         assertThat(requests.firstValue.context.other, empty())
         assertThat(requests.firstValue.request, instanceOf(WireFreshKeysFreshKey::class.java))
         assertNull((requests.firstValue.request as WireFreshKeysFreshKey).externalId)
+        assertEquals(2, (requests.firstValue.request as WireFreshKeysFreshKey).context.size)
+        assertTrue((requests.firstValue.request as WireFreshKeysFreshKey).context.any {
+            it.key == "someId" && it.value == context["someId"]
+        })
+        assertTrue((requests.firstValue.request as WireFreshKeysFreshKey).context.any {
+            it.key == "reason" && it.value == context["reason"]
+        })
         assertEquals(keyPair.public, result)
     }
 
@@ -134,8 +145,12 @@ class FreshKeySigningServiceClientTests {
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(keyPair.public))
             )
         }
+        val context = mapOf(
+            "someId" to UUID.randomUUID().toString(),
+            "reason" to "Hello World!"
+        )
         val nowBefore = Instant.now()
-        val result = client.freshKey(externalId)
+        val result = client.freshKey(externalId, context)
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
         assertEquals(memberId, requests.firstValue.context.memberId)
@@ -147,6 +162,13 @@ class FreshKeySigningServiceClientTests {
         assertThat(requests.firstValue.context.other, empty())
         assertThat(requests.firstValue.request, instanceOf(WireFreshKeysFreshKey::class.java))
         assertEquals(externalId, UUID.fromString((requests.firstValue.request as WireFreshKeysFreshKey).externalId))
+        assertEquals(2, (requests.firstValue.request as WireFreshKeysFreshKey).context.size)
+        assertTrue((requests.firstValue.request as WireFreshKeysFreshKey).context.any {
+            it.key == "someId" && it.value == context["someId"]
+        })
+        assertTrue((requests.firstValue.request as WireFreshKeysFreshKey).context.any {
+            it.key == "reason" && it.value == context["reason"]
+        })
         assertEquals(keyPair.public, result)
     }
 
@@ -164,8 +186,12 @@ class FreshKeySigningServiceClientTests {
                 ByteBuffer.wrap(signature)
             )
         }
+        val context = mapOf(
+            "someId" to UUID.randomUUID().toString(),
+            "reason" to "Hello World!"
+        )
         val nowBefore = Instant.now()
-        val result = client.sign(keyPair.public, data)
+        val result = client.sign(keyPair.public, data, context)
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
         assertEquals(memberId, requests.firstValue.context.memberId)
@@ -181,6 +207,13 @@ class FreshKeySigningServiceClientTests {
             (requests.firstValue.request as WireFreshKeysSign).publicKey.array()
         )
         assertArrayEquals(data, (requests.firstValue.request as WireFreshKeysSign).bytes .array())
+        assertEquals(2, (requests.firstValue.request as WireFreshKeysSign).context.size)
+        assertTrue((requests.firstValue.request as WireFreshKeysSign).context.any {
+            it.key == "someId" && it.value == context["someId"]
+        })
+        assertTrue((requests.firstValue.request as WireFreshKeysSign).context.any {
+            it.key == "reason" && it.value == context["reason"]
+        })
         assertEquals(keyPair.public, result.by)
         assertArrayEquals(signature, result.bytes)
     }
@@ -200,8 +233,12 @@ class FreshKeySigningServiceClientTests {
                 ByteBuffer.wrap(signature)
             )
         }
+        val context = mapOf(
+            "someId" to UUID.randomUUID().toString(),
+            "reason" to "Hello World!"
+        )
         val nowBefore = Instant.now()
-        val result = client.sign(keyPair.public, spec, data)
+        val result = client.sign(keyPair.public, spec, data, context)
         val nowAfter = Instant.now()
         Mockito.verify(sender).sendRequest(requests.capture())
         assertEquals(memberId, requests.firstValue.context.memberId)
@@ -225,6 +262,13 @@ class FreshKeySigningServiceClientTests {
             "SHA-256",
             (requests.firstValue.request as WireFreshKeysSignWithSpec).signatureSpec.customDigestName
         )
+        assertEquals(2, (requests.firstValue.request as WireFreshKeysSignWithSpec).context.size)
+        assertTrue((requests.firstValue.request as WireFreshKeysSignWithSpec).context.any {
+            it.key == "someId" && it.value == context["someId"]
+        })
+        assertTrue((requests.firstValue.request as WireFreshKeysSignWithSpec).context.any {
+            it.key == "reason" && it.value == context["reason"]
+        })
         assertEquals(keyPair.public, result.by)
         assertArrayEquals(signature, result.bytes)
     }

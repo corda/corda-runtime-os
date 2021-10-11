@@ -4,6 +4,7 @@ import net.corda.crypto.CryptoCategories
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.dev.InMemoryPersistentCacheFactory
 import net.corda.crypto.impl.stubs.MockCryptoFactory
+import net.corda.test.util.createTestCase
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
@@ -15,9 +16,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import java.util.UUID
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import kotlin.concurrent.thread
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -45,8 +43,8 @@ class DefaultCryptoServiceProviderTests {
             val testData = UUID.randomUUID().toString().toByteArray()
             val badVerifyData = UUID.randomUUID().toString().toByteArray()
             val alias = newAlias()
-            val publicKey = cryptoService.generateKeyPair(alias, signatureScheme)
-            val signature = cryptoService.sign(alias, signatureScheme, testData)
+            val publicKey = cryptoService.generateKeyPair(alias, signatureScheme, emptyMap())
+            val signature = cryptoService.sign(alias, signatureScheme, testData, emptyMap())
             assertNotNull(publicKey)
             assertTrue(signatureVerifier.isValid(publicKey, signature, testData))
             assertFalse(signatureVerifier.isValid(publicKey, signature, badVerifyData))
@@ -61,7 +59,7 @@ class DefaultCryptoServiceProviderTests {
         cryptoService.supportedWrappingSchemes().forEach { signatureScheme ->
             val testData = UUID.randomUUID().toString().toByteArray()
             val badVerifyData = UUID.randomUUID().toString().toByteArray()
-            val wrappedKeyPair = cryptoService.generateWrappedKeyPair(masterKeyAlias, signatureScheme)
+            val wrappedKeyPair = cryptoService.generateWrappedKeyPair(masterKeyAlias, signatureScheme, emptyMap())
             assertNotNull(wrappedKeyPair)
             assertNotNull(wrappedKeyPair.publicKey)
             assertNotNull(wrappedKeyPair.keyMaterial)
@@ -72,8 +70,8 @@ class DefaultCryptoServiceProviderTests {
                     signatureScheme = signatureScheme,
                     encodingVersion = wrappedKeyPair.encodingVersion
                 ),
-                signatureScheme.signatureSpec,
-                testData
+                testData,
+                emptyMap()
             )
             assertNotNull(signature)
             assertTrue(signature.isNotEmpty())
@@ -108,29 +106,19 @@ class DefaultCryptoServiceProviderTests {
     fun `Should be able to create instances concurrently`() {
         val provider = createCryptoServiceProvider()
         assertTrue(provider.isRunning)
-        val latch = CountDownLatch(1)
-        val threads = mutableListOf<Thread>()
-        for (i in 1..100) {
-            val thread = thread(start = true) {
-                latch.await(20, TimeUnit.SECONDS)
-                provider.handleConfigEvent(
-                    CryptoLibraryConfigImpl(
-                        mapOf(
-                            "keyCache" to mapOf(
-                                "cacheFactoryName" to InMemoryPersistentCacheFactory.NAME
-                            ),
-                            "mngCache" to emptyMap()
-                        )
+        (1..100).createTestCase {
+            provider.handleConfigEvent(
+                CryptoLibraryConfigImpl(
+                    mapOf(
+                        "keyCache" to mapOf(
+                            "cacheFactoryName" to InMemoryPersistentCacheFactory.NAME
+                        ),
+                        "mngCache" to emptyMap()
                     )
                 )
-                assertNotNull(provider.createCryptoService(CryptoCategories.LEDGER))
-            }
-            threads.add(thread)
-        }
-        latch.countDown()
-        threads.forEach {
-            it.join(5_000)
-        }
+            )
+            assertNotNull(provider.createCryptoService(CryptoCategories.LEDGER))
+        }.runAndValidate()
         provider.stop()
         assertFalse(provider.isRunning)
     }
@@ -157,7 +145,7 @@ class DefaultCryptoServiceProviderTests {
 
     private fun DefaultCryptoServiceProvider.createCryptoService(category: String): CryptoService = getInstance(
         CryptoServiceContext(
-            sandboxId = memberId,
+            memberId = memberId,
             category = category,
             cipherSuiteFactory = mockFactory.cipherSuiteFactory,
             config = DefaultCryptoServiceConfig(

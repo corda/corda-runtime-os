@@ -44,7 +44,11 @@ fun createDevCertificate(
     return v3CertGen.build(signer).toJca()
 }
 
-fun SigningService.getSigner(schemeMetadata: CipherSchemeMetadata, alias: String): ContentSigner {
+fun SigningService.getSigner(
+    schemeMetadata: CipherSchemeMetadata,
+    alias: String,
+    context: Map<String, String> = emptyMap()
+): ContentSigner {
     return object : ContentSigner {
         private val publicKey: PublicKey = findPublicKey(alias)
             ?: throw CryptoServiceBadRequestException("No key found for alias $alias")
@@ -57,11 +61,15 @@ fun SigningService.getSigner(schemeMetadata: CipherSchemeMetadata, alias: String
         private val baos = ByteArrayOutputStream()
         override fun getAlgorithmIdentifier(): AlgorithmIdentifier = sigAlgID
         override fun getOutputStream(): OutputStream = baos
-        override fun getSignature(): ByteArray = sign(alias, baos.toByteArray())
+        override fun getSignature(): ByteArray = sign(alias, baos.toByteArray(), context)
     }
 }
 
-fun FreshKeySigningService.getSigner(schemeMetadata: CipherSchemeMetadata, publicKey: PublicKey): ContentSigner {
+fun FreshKeySigningService.getSigner(
+    schemeMetadata: CipherSchemeMetadata,
+    publicKey: PublicKey,
+    context: Map<String, String>
+): ContentSigner {
     return object : ContentSigner {
         private val signatureScheme: SignatureScheme = schemeMetadata.findSignatureScheme(publicKey)
         private val sigAlgID: AlgorithmIdentifier = signatureScheme.signatureSpec.signatureOID
@@ -72,7 +80,7 @@ fun FreshKeySigningService.getSigner(schemeMetadata: CipherSchemeMetadata, publi
         private val baos = ByteArrayOutputStream()
         override fun getAlgorithmIdentifier(): AlgorithmIdentifier = sigAlgID
         override fun getOutputStream(): OutputStream = baos
-        override fun getSignature(): ByteArray = sign(publicKey, baos.toByteArray()).bytes
+        override fun getSignature(): ByteArray = sign(publicKey, baos.toByteArray(), context).bytes
     }
 }
 
@@ -84,7 +92,9 @@ private fun getValidityWindow(before: Duration, after: Duration): Pair<Date, Dat
 }
 
 private fun X509CertificateHolder.toJca(): X509Certificate =
-    requireNotNull(CertificateFactory.getInstance("X.509").generateCertificate(encoded.inputStream()) as? X509Certificate) {
+    requireNotNull(CertificateFactory.getInstance("X.509").generateCertificate(
+        encoded.inputStream()) as? X509Certificate
+    ) {
         "Not an X.509 certificate: $this"
     }
 

@@ -44,27 +44,32 @@ class FreshKeySigningServiceClient(
         private val logger: Logger = contextLogger()
     }
 
-    override fun freshKey(): PublicKey {
+    override fun freshKey(context: Map<String, String>): PublicKey {
         val request = createRequest(
-            WireFreshKeysFreshKey()
+            WireFreshKeysFreshKey(null, context.toWire())
         )
         val response = request.executeWithTimeoutRetry(WirePublicKey::class.java)
         return schemeMetadata.decodePublicKey(response.key.array())
     }
 
-    override fun freshKey(externalId: UUID): PublicKey {
+    override fun freshKey(externalId: UUID, context: Map<String, String>): PublicKey {
         val request = createRequest(
-            WireFreshKeysFreshKey(externalId.toString())
+            WireFreshKeysFreshKey(externalId.toString(), context.toWire())
         )
         val response = request.executeWithTimeoutRetry(WirePublicKey::class.java)
         return schemeMetadata.decodePublicKey(response.key.array())
     }
 
-    override fun sign(publicKey: PublicKey, data: ByteArray): DigitalSignature.WithKey {
+    override fun sign(
+        publicKey: PublicKey,
+        data: ByteArray,
+        context: Map<String, String>
+    ): DigitalSignature.WithKey {
         val request = createRequest(
             WireFreshKeysSign(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                ByteBuffer.wrap(data)
+                ByteBuffer.wrap(data),
+                context.toWire()
             )
         )
         val response = request.executeWithTimeoutRetry(WireSignatureWithKey::class.java)
@@ -74,12 +79,18 @@ class FreshKeySigningServiceClient(
         )
     }
 
-    override fun sign(publicKey: PublicKey, signatureSpec: SignatureSpec, data: ByteArray): DigitalSignature.WithKey {
+    override fun sign(
+        publicKey: PublicKey,
+        signatureSpec: SignatureSpec,
+        data: ByteArray,
+        context: Map<String, String>
+    ): DigitalSignature.WithKey {
         val request = createRequest(
             WireFreshKeysSignWithSpec(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                 WireSignatureSpec(signatureSpec.signatureName, signatureSpec.customDigestName?.name),
-                ByteBuffer.wrap(data)
+                ByteBuffer.wrap(data),
+                context.toWire()
             )
         )
         val response = request.executeWithTimeoutRetry(WireSignatureWithKey::class.java)

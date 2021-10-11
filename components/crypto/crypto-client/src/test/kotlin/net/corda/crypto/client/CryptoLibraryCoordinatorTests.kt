@@ -3,13 +3,12 @@ package net.corda.crypto.client
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.CryptoLibraryClientsFactoryProvider
 import net.corda.crypto.component.config.rpc
+import net.corda.crypto.component.lifecycle.AbstractCryptoCoordinator
 import net.corda.crypto.impl.config.isDev
 import net.corda.crypto.impl.config.keyCache
 import net.corda.crypto.impl.config.mngCache
 import net.corda.crypto.impl.dev.DevCryptoServiceProvider
-import net.corda.crypto.component.lifecycle.AbstractCryptoCoordinator
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -38,7 +37,7 @@ class CryptoLibraryCoordinatorTests {
     private lateinit var coordinatorFactory: LifecycleCoordinatorFactory
     private lateinit var configurationReadService: ConfigurationReadService
     private lateinit var cipherSuiteFactory: CipherSuiteFactoryStub
-    private lateinit var cryptoFactoryProvider: CryptoLibraryClientsFactoryProviderStub
+    private lateinit var cryptoFactoryProvider: CryptoLibraryClientsFactoryProviderImpl
     private lateinit var configChangeHandler: ConfigurationHandler
     private lateinit var registrationHandle: AutoCloseable
     private var coordinatorIsRunning = false
@@ -85,9 +84,9 @@ class CryptoLibraryCoordinatorTests {
         setupCoordinator()
         coordinator.postEvent(
             RegistrationStatusChangeEvent(
-            registration = mock(),
-            status = LifecycleStatus.UP
-        )
+                registration = mock(),
+                status = LifecycleStatus.UP
+            )
         )
         Mockito.verify(configurationReadService, times(1)).registerForUpdates(any())
         configChangeHandler.onNewConfiguration(
@@ -136,10 +135,12 @@ class CryptoLibraryCoordinatorTests {
     @Timeout(5)
     fun `Should close all AutoCloseable subcomponents`() {
         val cut = setupCoordinator()
-        coordinator.postEvent(RegistrationStatusChangeEvent(
-            registration = mock(),
-            status = LifecycleStatus.UP
-        ))
+        coordinator.postEvent(
+            RegistrationStatusChangeEvent(
+                registration = mock(),
+                status = LifecycleStatus.UP
+            )
+        )
         Mockito.verify(configurationReadService, times(1)).registerForUpdates(any())
         cut.close()
         assertFalse(cut.isRunning)
@@ -166,16 +167,14 @@ class CryptoLibraryCoordinatorTests {
         return cut
     }
 
-    private interface CipherSuiteFactoryStub: CipherSuiteFactory, Lifecycle, CryptoLifecycleComponent
-
-    private interface CryptoLibraryClientsFactoryProviderStub: CryptoLibraryClientsFactoryProvider, Lifecycle, CryptoLifecycleComponent
+    private interface CipherSuiteFactoryStub : CipherSuiteFactory, Lifecycle, CryptoLifecycleComponent
 
     @Suppress("LongParameterList")
     private class CryptoLibraryCoordinatorStub(
         coordinatorFactory: LifecycleCoordinatorFactory,
         configurationReadService: ConfigurationReadService,
         cipherSuiteFactory: CipherSuiteFactory,
-        cryptoFactoryProvider: CryptoLibraryClientsFactoryProvider
+        cryptoFactoryProvider: CryptoLibraryClientsFactoryProviderImpl
     ) : CryptoLibraryCoordinator(
         coordinatorFactory,
         configurationReadService,

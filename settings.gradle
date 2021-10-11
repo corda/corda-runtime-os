@@ -70,6 +70,9 @@ rootProject.name = 'corda-runtime-os'
 include 'applications:examples:demo-app'
 include 'applications:examples:demo-publisher'
 include 'applications:examples:goodbyeworld'
+include 'applications:examples:persistence:persistence-demo'
+include 'applications:examples:persistence:persistence-demo-publisher'
+include 'applications:examples:hello-quasar'
 include 'applications:tools:kafka-reader'
 include 'applications:tools:kafka-setup'
 include 'components:crypto:crypto-client'
@@ -93,6 +96,7 @@ include 'components:membership:membership-internal'
 include 'components:http-rpc-gateway-comp'
 include 'components:examples:config-reader'
 include 'components:examples:durable-sub'
+include 'components:examples:persistence:cluster-admin'
 include 'components:examples:publisher'
 include 'components:examples:pubsub-sub'
 include 'components:examples:state-plus-event-sub'
@@ -167,7 +171,8 @@ include 'libs:serialization:serialization-amqp:serializable-cpk-three'
 include 'libs:serialization:serialization-amqp:serializable-cpk-four'
 include 'libs:serialization:serialization-encoding'
 include 'libs:serialization:serialization-kryo'
-include 'libs:serialization:serialization-kryo:serializable-cpk-one'
+include 'libs:serialization:serialization-kryo:src:integrationTest:cpks:serializable-cpk-one'
+include 'libs:serialization:serialization-kryo:src:integrationTest:cpks:serializable-cpk-two'
 include 'libs:utilities'
 include 'libs:virtual-node:virtual-node-cache'
 include 'libs:virtual-node:virtual-node-cache-impl'
@@ -194,6 +199,8 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-avro-schema') using project(':data:avro-schema')
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
             substitute module('net.corda:corda-ledger') using project(':ledger')
+            substitute module('net.corda:corda-membership') using project(':membership')
+            substitute module('net.corda:corda-membership-identity') using project(':membership-identity')
             substitute module('net.corda:corda-packaging') using project(':packaging')
             substitute module('net.corda:corda-persistence') using project(':persistence')
             substitute module('net.corda:corda-serialization') using project(':serialization')

@@ -71,17 +71,21 @@ open class SignatureVerificationServiceImpl(
         require(clearData.isNotEmpty()) {
             "Clear data is empty, nothing to verify!"
         }
-        val effectiveSignatureSpec = signatureSpec ?: signatureScheme.signatureSpec
-        val signingData = effectiveSignatureSpec.getSigningData(hashingService, clearData)
-        return if (effectiveSignatureSpec.precalculateHash && signatureScheme.algorithmName == "RSA") {
+        val effectiveSignatureScheme = if(signatureSpec != null) {
+            signatureScheme.copy(signatureSpec = signatureSpec)
+        } else {
+            signatureScheme
+        }
+        val signingData = effectiveSignatureScheme.signatureSpec.getSigningData(hashingService, clearData)
+        return if (effectiveSignatureScheme.signatureSpec.precalculateHash && signatureScheme.algorithmName == "RSA") {
             val cipher = Cipher.getInstance(
-                    effectiveSignatureSpec.signatureName,
+                effectiveSignatureScheme.signatureSpec.signatureName,
                     schemeMetadata.providers.getValue(signatureScheme.providerName)
             )
             cipher.init(Cipher.DECRYPT_MODE, publicKey)
             cipher.doFinal(signatureBytes).contentEquals(signingData)
         } else {
-            signatureInstances.withSignature(signatureScheme, effectiveSignatureSpec) { signature ->
+            signatureInstances.withSignature(effectiveSignatureScheme) { signature ->
                 signature.initVerify(publicKey)
                 signature.update(signingData)
                 signature.verify(signatureBytes)

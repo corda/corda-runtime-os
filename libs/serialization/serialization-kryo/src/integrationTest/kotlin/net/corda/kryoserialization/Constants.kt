@@ -1,6 +1,5 @@
 package net.corda.kryoserialization
 
-// The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
 val PLATFORM_PUBLIC_BUNDLE_NAMES = listOf(
     "javax.persistence-api",
     "jcl.over.slf4j",
@@ -27,5 +26,6 @@ internal const val BLACKLISTED_KEYS_KEY = "blacklistedKeys"
 internal const val PLATFORM_VERSION_KEY = "platformVersion"
 
 internal const val CPK_ONE = "serializable-cpk-one-cordapp.cpk"
+internal const val CPK_TWO = "serializable-cpk-two-cordapp.cpk"
 
 internal const val SHA256 = "SHA-256"

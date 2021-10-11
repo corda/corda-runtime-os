@@ -274,8 +274,8 @@ class GatewayTest : TestBase() {
             subscriptionConfig = SubscriptionConfig("bob.intest", LINK_IN_TOPIC),
             processor = object : EventLogProcessor<Any, Any> {
                 override fun onNext(events: List<EventLogRecord<Any, Any>>): List<Record<*, *>> {
+                    bobReceivedMessages += events.size
                     repeat(events.size) {
-                        bobReceivedMessages += events.size
                         receivedLatch.countDown()
                     }
 
@@ -290,11 +290,11 @@ class GatewayTest : TestBase() {
         )
         bobSubscription.start()
         val aliceSubscription = alice.subscriptionFactory.createEventLogSubscription(
-            subscriptionConfig = SubscriptionConfig("bob.intest", LINK_IN_TOPIC),
+            subscriptionConfig = SubscriptionConfig("alice.intest", LINK_IN_TOPIC),
             processor = object : EventLogProcessor<Any, Any> {
                 override fun onNext(events: List<EventLogRecord<Any, Any>>): List<Record<*, *>> {
+                    aliceReceivedMessages += events.size
                     repeat(events.size) {
-                        aliceReceivedMessages += events.size
                         receivedLatch.countDown()
                     }
 

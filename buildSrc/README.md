@@ -30,6 +30,27 @@ plugins {
 }
 ```
 
+### Configure the plugin
+
+The plugin can be configured using the provided `osgiRun` extension, 
+you can configure one or more Java Agent that wil be launched at application startup an OSGi framework properties as follows
+
+```
+osgiRun {
+    frameworkProperties = [
+        "some.key" : "some value",
+        "another.key" : "another value"
+    ]
+    agent("some.agent.Class1", "Arguments to agent Class1")
+    agent("some.agent.Class1", "Arguments to agent Class2")
+}
+```
+
+> :warning: **The jar containing the Java agent class must also be added to either the 
+> `systemPackages` or `bootstrapClasspath` configurations** 
+> Specifically, if the agent classes need to be visible from within the OSGi framework (as it is the case for the Quasar Java agent)
+> the agent jar must be added to the `systemPackages`, otherwise to the `bootstrapClasspath` configuration
+
 
 ### How to declare application's dependencies.
 
@@ -38,8 +59,7 @@ The dependency management configurations defined by the Gradle
 Library**](https://docs.gradle.org/current/userguide/java_library_plugin.html)
 plugin are available to develop using the **Common App* plugin.
 
-* For the application bundle itself, **declare dependencies as usual** (i.e. `implementation` and `api`).
-
+* For the project bundle itself, **declare dependencies as usual** (i.e. `implementation` and `api`).
 
 * For bundles that the application needs **at runtime**, but not to compile the current project bundle,
   the `runtimeOnly` configuration will cause the dependency to be picked up and packaged into the application bootable
@@ -60,6 +80,10 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVersion"
     compileOnly "org.osgi:osgi.core:$osgiVersion"
     compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
+    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 }
 ```
 
@@ -70,26 +94,6 @@ to declare services.
 This documents uses annotations to explain
 [how to define the entry point of an application](#how_to_define_the_entry_point_of_an_application) and
 [how to refer to additional components in the class implementing the Application interface](#how_to_refer_to_additional_components_in_the_class_implementing_the_Application_interface).
-
-To use annotations to define services, the Corda application and its components,
-the `build.gradle` file of the module must include the following dependencies.
-
-```groovy
-dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
-
-    implementation project(":osgi-framework-api")                           // Used to define a Corda application.
-
-    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"    // Used to declare OSGi components/services
-    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"  // Used to declare OSGi components/services
-    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"    // Used to declare OSGi components/services
-
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version" // Corda uses JUnit 5
-}
-```
-
 
 ### How to build an application
 
@@ -105,21 +109,6 @@ To build the bootable JAR, run the Gradle task
 The plugin and the bootable JAR exposes the [SLF4J](http://www.slf4j.org/) and
 [Apache Log4j 2](https://logging.apache.org/log4j/2.x/) packages to the bundles through the OSGi framework, using *Log4j
 2* to implement logging.
-
-In the `build.gradle` of the module declare
-
-```groovy
-dependencies {
-    implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-}
-```
-
-or, if the module uses `net.corda.lifecycle.Lifecycle`, this depends on `net.corda:corda-base` and includes **Log4j2**, 
-hence declare
-
-```groovy
-implementation project(":libs:lifecycle")
-```
 
 In *Kotlin* code declare the `logger` as usual.
 
@@ -149,7 +138,7 @@ register itself as an OSGi service.
 Annotate the class implementing `net.corda.osgi.api.Application` with
 
 ```kotlin
-@Component(immediate = true)
+@Component
 ```
 
 *NOTE! In this document the expressions 'component' and OSGi 'service' are synonyms
@@ -159,18 +148,12 @@ See [OSGi Core r7 5.2.2 Service Interface](http://docs.osgi.org/specification/os
 
 See [OSGi Compendium r7 112. Declarative Services Specification](https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.component.html).
 
-To set the component as `immediate = true` means on object is instantiated for each object
-using the component as soon as possible, without delaying the creation of the component when
-required runtime. To create components immediately isn't compulsory, but it is convenient
-when they are surely used and during the development to be sure  those components are registered
-and available at debug time.
-
 See [OSGi Compendium r7 112.2.2 Immediate Component](https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.component.html#d0e36881).
 
 The `net.corda.osgi.api.Application.startup(args: Array<String>)` is the entry-point of the application called when all
 the OSGi bundles zipped in the bootable JAR are active.
 
-If no class implements the `net.corda.osgi.api.Application` interface, the application bootstrap throws an exception and
+If no class provides the `net.corda.osgi.api.Application` service, the application bootstrap throws an exception and
 stops.
 
 See [How to stop the application programmatically](#) for a full example of how to
@@ -179,7 +162,7 @@ implement `net.corda.osgi.api.Application`
 *EXAMPLE*
 
 ```kotlin
-@Component(immediate = true)
+@Component(service = [Application::class])
 class App : Application {
 
     private companion object {
@@ -206,11 +189,11 @@ terms are synonyms.
 
 To let the class to access additional services, annotate them with `@Reference` where the
 `service` attribute is the full-qualified name used to publish the service.
-By default, if the `service` attribute is not declared, the attruibute is set to the type of the property annotated
+By default, if the `service` attribute is not declared, the attribute is set to the type of the property annotated
 with `@Reference`.
 
 ```kotlin
-@Component(immediate = true)
+@Component(service = [Application::class])
 class App : Application {
 
     private companion object {
@@ -241,7 +224,7 @@ The following example declares `kafkaTopicAdmin` in the constructor to refers th
 the `KafkaTopicAdmin` service.
 
 ```kotlin
-@Component(immediate = true)
+@Component(service = [Application::class])
 class App @Activate constructor(
     @Reference(service = KafkaTopicAdmin::class)
     private var kafkaTopicAdmin: KafkaTopicAdmin,
@@ -354,31 +337,6 @@ The classpath or executable JAR has the following structure.
   \___ system_packages_extra
 ```
 
-## Common Flask Plugin 
-
-The **Common Flask** plugin wraps the bootable JAR built by the **Common App** plugin to make a new bootable JAR
-instrumented with [Quasar](https://docs.paralleluniverse.co/quasar/).
-
-To build the *Flask* bootable jar instrumented with *Quasar* apply the plugin in the `build.gradle`
-of application module with
-
-```groovy
-plugins {
-    id 'corda.publish'
-    id 'corda.common-flask'
-}
-```
-
-### How to build an application
-
-To build the bootable JAR, run the Gradle task
-
-* `appFlask` - builds a bootable JAR of JAR files. When the JAR runs, instruments the JVM and spawns the OSGi framework
-bootstrap module, this one starts the OSGI framework, and runs the applications contained the bootable JAR.
-  
-*NOTE! The `appFlask` depends on the `appJar` plugin.*
-   
-
 ## Common Library Plugin
 
 The **Common Library** plugin will specify the set of common configurations and dependencies that a library developer
@@ -451,15 +409,11 @@ The plugin defines two additional configurations to declare dependencies:
 
 The `appJar` task depends on the tasks
 
-* `cordaAssembleSystemPackagesExtra` - to list in the file `system_packages_extra`
+* `createSystemPackagesExtraFile` - to list in the file `system_packages_extra`
   the OSGi *Export-Package* instructions needed to export the dependencies declared with `systemPackages` through the
-  OSGi framework to the bundles. The file `system_packages_extra` is created at `build/resources/main/` path relative to
-  the module. The `systemPackages` dependencies are zipped in the bootable JAR by the `appJar` task. This task depends
-  on...
+  OSGi framework to the bundles. The `systemPackages` dependencies are zipped in the bootable JAR by the `appJar` task.
 
-
-* `cordaAssembleBundles` - copies in the `bundles` directory the OSGi dependencies, and it lists them in the
-  file `system_bundles`. The `bundles` directory and `system_bundles` file are assembled in the
-  `build/resources/main/` path relative to the module.
+* `createSystemBundleFile` - lists the required bundles in the
+  file `system_bundles`.
 
 See [The bootable JAR](#the_bootable_jar) section to know how is made the internal structure of the bootable JAR.

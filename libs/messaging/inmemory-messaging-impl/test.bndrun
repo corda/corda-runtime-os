@@ -1,7 +1,4 @@
 # Bndrun for Hello World sample
-# Ensure Bnd uses the same Java executable as Gradle.
-java: ${project.javaExecutable}
-
 -tester: biz.aQute.tester.junit-platform
 
 -runee: JavaSE-11
