@@ -21,6 +21,9 @@ configurations {
         canBeConsumed = false
         transitive = false
     }
+    contractCPK {
+        canBeConsumed = false
+    }
     workflowCPK {
         canBeConsumed = false
     }
@@ -53,6 +56,7 @@ dependencies {
     workflow project('test:workflow-cpk')
     workflowLibs project(path: 'test:workflow-cpk', configuration: 'libFolderDependencies')
     flowsCPK "net.corda:corda-flows:$cordaDevPreviewVersion:cordapp@cpk"
+    contractCPK project(path: 'test:contract-cpk', configuration: 'cordaCPK')
     workflowCPK project(path: 'test:workflow-cpk', configuration: 'cordaCPK')
 }
 
@@ -65,13 +69,14 @@ def certificateProvider = provider {
 }
 
 tasks.named('test', Test) {
-    inputs.files(configurations.flowsCPK, configurations.workflowCPK)
+    inputs.files(configurations.flowsCPK, configurations.contractCPK, configurations.workflowCPK)
 
     doFirst {
         systemProperties([
             'net.corda.dev.cert' : certificateProvider.get(),
             'net.corda.packaging.test.workflow.libs' : configurations.workflowLibs.collect { it.toURI() }.join(' '),
             'net.corda.flows.cpk' : configurations.flowsCPK.singleFile.toURI(),
+            'net.corda.packaging.test.contract.cpk' : configurations.contractCPK.singleFile.toURI(),
             'net.corda.packaging.test.workflow.cpk' : configurations.workflowCPK.singleFile.toURI(),
             'net.corda.packaging.test.contract.bundle.symbolic.name': contractSymbolicName,
             'net.corda.packaging.test.contract.bundle.version' : MavenVersion.parseMavenString(version.toString()).OSGiVersion.toString(),

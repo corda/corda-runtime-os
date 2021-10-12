@@ -1,4 +1,4 @@
-package net.corda.packaging.internal
+package net.corda.packaging.util
 
 import java.io.FilterInputStream
 import java.io.FilterOutputStream

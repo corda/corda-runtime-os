@@ -1,6 +1,7 @@
 package net.corda.packaging.internal
 
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPK
+import net.corda.packaging.util.ZipTweaker
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
@@ -21,19 +22,20 @@ import java.util.zip.ZipInputStream
 class ZipTweakerTest {
 
     private lateinit var testDir : Path
-    private lateinit var workflowCpkPath : URL
+    private lateinit var workflowCPKPath : URL
 
     @BeforeAll
     fun setup(@TempDir junitTestDir : Path) {
         testDir = junitTestDir
-        workflowCpkPath = URI(System.getProperty("net.corda.packaging.test.workflow.cpk")).toURL()
+        workflowCPKPath = URI(System.getProperty("net.corda.packaging.test.workflow.cpk")).toURL()
     }
 
     @Test
+    @Suppress("ComplexMethod")
     fun `Ensure a jar with removed signature can be read`() {
-        val cpk = Cpk.Expanded.from(workflowCpkPath.openStream(), testDir)
+        val cpk = CPK.from(workflowCPKPath.openStream(), testDir)
         val algo = "SHA-256"
-        val originalEntries = ZipInputStream(Files.newInputStream(cpk.mainJar)).use { zipInputStream ->
+        val originalEntries = ZipInputStream(cpk.getResourceAsStream(cpk.metadata.mainBundle)).use { zipInputStream ->
             generateSequence { zipInputStream.nextEntry }.map {
                 it.name to let {
                     val md = MessageDigest.getInstance(algo)
@@ -44,8 +46,14 @@ class ZipTweakerTest {
                 !it.first.toUpperCase().endsWith(".SF")
             }.associate { it }
         }
-        ZipTweaker.removeJarSignature(cpk.mainJar)
-        JarInputStream(Files.newInputStream(cpk.mainJar), true).use { jarInputStream ->
+        val dest = testDir.resolve("mainBundle.jar")
+        Files.newOutputStream(testDir.resolve("mainBundle.jar")).use { outputStream ->
+            cpk.getResourceAsStream(cpk.metadata.mainBundle).use {
+                it.transferTo(outputStream)
+            }
+        }
+        ZipTweaker.removeJarSignature(dest)
+        JarInputStream(Files.newInputStream(dest), true).use { jarInputStream ->
             while(true) {
                 val jarEntry = jarInputStream.nextJarEntry ?: break
                 Assertions.assertNull(jarEntry.codeSigners)
@@ -53,7 +61,7 @@ class ZipTweakerTest {
             }
         }
 
-        val unsignedJarEntries = ZipInputStream(Files.newInputStream(cpk.mainJar)).use { zipInputStream ->
+        val unsignedJarEntries = ZipInputStream(cpk.getResourceAsStream(cpk.metadata.mainBundle)).use { zipInputStream ->
             generateSequence { zipInputStream.nextEntry }.map {
                 it.name to let {
                     val md = MessageDigest.getInstance(algo)

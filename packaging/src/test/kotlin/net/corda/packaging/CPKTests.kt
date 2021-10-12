@@ -1,9 +1,10 @@
 package net.corda.packaging
 
-import net.corda.packaging.internal.CpkLoader
-import net.corda.packaging.internal.UncloseableInputStream
-import net.corda.packaging.internal.ZipTweaker
+import net.corda.packaging.internal.PackagingConstants
 import net.corda.packaging.internal.hash
+import net.corda.packaging.internal.summaryHash
+import net.corda.packaging.util.UncloseableInputStream
+import net.corda.packaging.util.ZipTweaker
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
@@ -22,7 +23,6 @@ import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
-import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.util.Base64
 import java.util.jar.JarFile
@@ -36,20 +36,20 @@ import java.util.zip.ZipOutputStream
 // no test case writes anything to the filesystem, nor alters the state of the test class instance;
 // this makes it safe to use the same instance for all test cases (test case execution order is irrelevant)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CpkTests {
+class CPKTests {
 
     private lateinit var testDir : Path
 
-    private lateinit var flowsCpkPath : Path
-    private lateinit var workflowCpkPath : Path
-    private lateinit var extractedWorkflowCpkPath : Path
-    private lateinit var workflowCpk : Cpk.Expanded
-    private lateinit var flowsCpk : Cpk
+    private lateinit var flowsCPKPath : Path
+    private lateinit var workflowCPKPath : Path
+    private lateinit var processedWorkflowCPKPath : Path
+    private lateinit var workflowCPK : CPK
+    private lateinit var flowsCPK : CPK.Metadata
     private lateinit var cordappJarPath : Path
     private lateinit var referenceExtractionPath : Path
     private lateinit var nonJarFile : Path
 
-    private lateinit var workflowCpkLibraries : Map<String, SecureHash>
+    private lateinit var workflowCPKLibraries : Map<String, SecureHash>
 
     private val cordaDevKey = SecureHash.create("SHA-256" + ":" + System.getProperty("net.corda.dev.cert"))
 
@@ -57,19 +57,19 @@ class CpkTests {
     fun setup(@TempDir junitTestDir : Path) {
         testDir = junitTestDir
 
-        flowsCpkPath = Path.of(URI(System.getProperty("net.corda.flows.cpk")))
-        flowsCpk = Cpk.Archived.from(Files.newInputStream(flowsCpkPath), flowsCpkPath.toString())
-        workflowCpkPath = Path.of(URI(System.getProperty("net.corda.packaging.test.workflow.cpk")))
-        extractedWorkflowCpkPath = testDir.resolve(workflowCpkPath.fileName)
-        workflowCpk = Cpk.Expanded.from(Files.newInputStream(workflowCpkPath), extractedWorkflowCpkPath, workflowCpkPath.toString())
+        flowsCPKPath = Path.of(URI(System.getProperty("net.corda.flows.cpk")))
+        flowsCPK = CPK.Metadata.from(Files.newInputStream(flowsCPKPath), flowsCPKPath.toString())
+        workflowCPKPath = Path.of(URI(System.getProperty("net.corda.packaging.test.workflow.cpk")))
+        processedWorkflowCPKPath = testDir.resolve(workflowCPKPath.fileName)
+        workflowCPK = CPK.from(Files.newInputStream(workflowCPKPath), processedWorkflowCPKPath, workflowCPKPath.toString())
         cordappJarPath = Path.of(URI(System.getProperty("net.corda.packaging.test.workflow.cordapp")))
         nonJarFile = Files.createFile(testDir.resolve("someFile.bin"))
-        workflowCpkLibraries = System.getProperty("net.corda.packaging.test.workflow.libs").split(' ').stream().map { jarFilePath ->
+        workflowCPKLibraries = System.getProperty("net.corda.packaging.test.workflow.libs").split(' ').stream().map { jarFilePath ->
             val filePath = Path.of(URI(jarFilePath))
-            filePath.fileName.toString() to computeSHA256Digest(Files.newInputStream(filePath))
+            Path.of(PackagingConstants.CPK_LIB_FOLDER).resolve(filePath.fileName).toString() to computeSHA256Digest(Files.newInputStream(filePath))
         }.collect(Collectors.toUnmodifiableMap({it.first}, {it.second}))
-        referenceExtractionPath = testDir.resolve("unzippedCpk")
-        referenceUnzipMethod(workflowCpkPath, referenceExtractionPath)
+        referenceExtractionPath = testDir.resolve("unzippedCPK")
+        referenceUnzipMethod(workflowCPKPath, referenceExtractionPath)
     }
 
 
@@ -99,13 +99,13 @@ class CpkTests {
         }
 
         private fun computeSHA256Digest(stream: InputStream, buffer: ByteArray = ByteArray(DEFAULT_BUFFER_SIZE)): SecureHash {
-            val md = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
-            DigestInputStream(stream, md).use {
-                while (it.read(buffer) >= 0) {
-                    continue
+            return hash(DigestAlgorithmName.SHA2_256) { md ->
+                while(true) {
+                    val read = stream.read(buffer)
+                    if(read <=0) break
+                    md.update(buffer, 0, read)
                 }
             }
-            return SecureHash(DigestAlgorithmName.SHA2_256.name, md.digest())
         }
     }
 
@@ -115,7 +115,7 @@ class CpkTests {
             override fun tweakEntry(inputStream: ZipInputStream,
                                     outputStream: ZipOutputStream,
                                     currentEntry: ZipEntry,
-                                    buffer : ByteArray) = if(currentEntry.name == workflowCpk.cordappJarFileName) {
+                                    buffer : ByteArray) = if(currentEntry.name == workflowCPK.metadata.mainBundle) {
                 val baos = ByteArrayOutputStream()
                 cordappJarTweaker.run(UncloseableInputStream(inputStream), baos)
                 writeZipEntry(outputStream, { ByteArrayInputStream(baos.toByteArray()) }, currentEntry.name, buffer, ZipEntry.STORED)
@@ -123,7 +123,7 @@ class CpkTests {
             } else {
                 AfterTweakAction.WRITE_ORIGINAL_ENTRY
             }
-        }.run(Files.newInputStream(workflowCpkPath), Files.newOutputStream(destination))
+        }.run(Files.newInputStream(workflowCPKPath), Files.newOutputStream(destination))
     }
 
     private fun tweakDependencyMetadataFile(destination : Path, xml : String) {
@@ -132,7 +132,7 @@ class CpkTests {
                                     outputStream: ZipOutputStream,
                                     currentEntry: ZipEntry,
                                     buffer: ByteArray) =
-                    if (currentEntry.name == CpkLoader.DEPENDENCIES_FILE_ENTRY) {
+                    if (currentEntry.name == PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY) {
                         val source = {
                             ByteArrayInputStream(xml.toByteArray())
                         }
@@ -145,69 +145,43 @@ class CpkTests {
 
     @Test
     fun `Verify hashes of jars in the lib folder of workflow cpk`() {
-        for(entry in workflowCpk.libraryDependencies) {
-            Assertions.assertEquals(workflowCpkLibraries[entry.key], entry.value,
-                    "The hash of library dependency '${entry.key}' of cpk file $workflowCpkPath from CPK.Metadata " +
+        for(libraryFileName in workflowCPK.metadata.libraries) {
+            val libraryHash = workflowCPK.getResourceAsStream(libraryFileName).use(::computeSHA256Digest)
+            Assertions.assertEquals(workflowCPKLibraries[libraryFileName], libraryHash,
+                    "The hash of library dependency '${libraryFileName}' of cpk file $workflowCPKPath from CPK.Metadata " +
                             "isn't consistent with the content of the file")
         }
     }
 
     @Test
-    fun `Verify hash of main jar file`() {
-        Assertions.assertEquals(computeSHA256Digest(Files.newInputStream(cordappJarPath)), workflowCpk.cordappHash,
-                "The hash from Cpk.Metadata differs from the actual hash of the .jar file in $cordappJarPath")
-    }
-
-    @Test
     fun `Verify hash of cpk file`() {
-        Assertions.assertEquals(computeSHA256Digest(Files.newInputStream(workflowCpkPath)), workflowCpk.cpkHash,
-                "The cpk hash from Cpk.Metadata differs from the actual hash of the .cpk file")
+        Assertions.assertEquals(computeSHA256Digest(Files.newInputStream(workflowCPKPath)), workflowCPK.metadata.hash,
+                "The cpk hash from CPK.Metadata differs from the actual hash of the .cpk file")
     }
-
-    @Test
-    fun `Verify that extracted files aren't corrupt and none of them is missing`() {
-        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-        Files.walk(referenceExtractionPath)
-                .filter(Path::isRegularFile).forEach { filePath ->
-            val relativePath = referenceExtractionPath.relativize(filePath)
-            val referenceFileHash = computeSHA256Digest(Files.newInputStream(filePath), buffer)
-            val extractedFile = extractedWorkflowCpkPath.resolve("content").resolve(relativePath)
-            Assertions.assertTrue(Files.exists(extractedFile), "Missing file '$relativePath' from cpk extraction folder")
-            val extractedFileHash = computeSHA256Digest(Files.newInputStream(extractedFile), buffer)
-            Assertions.assertEquals(referenceFileHash, extractedFileHash, "$filePath differs from $extractedFileHash")
-        }
-    }
-
-    @Test
-    fun `Verify mainJarUri URI is correct`() = Assertions.assertTrue(Files.exists(workflowCpk.mainJar))
 
     @Test
     fun `Verify library files are correct`() {
-        Assertions.assertEquals(workflowCpkLibraries.size, workflowCpk.libraries.size)
-        workflowCpk.libraries.forEach {
-            Assertions.assertTrue(Files.exists(it))
-        }
-        for(library in workflowCpk.libraries) {
+        Assertions.assertEquals(workflowCPKLibraries.size, workflowCPK.metadata.libraries.size)
+        for(library in workflowCPK.metadata.libraries) {
             val libraryHash = try {
-                 computeSHA256Digest(Files.newInputStream(library))
+                workflowCPK.getResourceAsStream(library).use(::computeSHA256Digest)
             } catch(e : IOException) {
                 Assertions.fail(e)
             }
-            val fileName = library.fileName.toString()
-            Assertions.assertEquals(libraryHash, workflowCpkLibraries[fileName],
-                    "The hash of library dependency '${fileName}' of cpk file $workflowCpkPath from CPK.libraryUris " +
+            Assertions.assertEquals(libraryHash, workflowCPKLibraries[library],
+                    "The hash of library dependency '${library}' of cpk file $workflowCPKPath from CPK.libraryUris " +
                             "isn't consistent with the content of the file")
         }
     }
 
     @Test
     fun `Verify CPK dependencies are correct`() {
-        val dependencies = workflowCpk.dependencies
+        val dependencies = workflowCPK.metadata.dependencies
         Assertions.assertEquals(1, dependencies.size)
-        val contractCpkDependency = dependencies.single()
+        val contractCPKDependency = dependencies.single()
 
-        contractCpkDependency.apply {
-            Assertions.assertEquals(System.getProperty("net.corda.packaging.test.contract.bundle.symbolic.name"), symbolicName)
+        contractCPKDependency.apply {
+            Assertions.assertEquals(System.getProperty("net.corda.packaging.test.contract.bundle.symbolic.name"), name)
             Assertions.assertEquals(System.getProperty("net.corda.packaging.test.contract.bundle.version"), version)
             Assertions.assertEquals(cordaDevKey.toString().toByteArray().hash(), signerSummaryHash,
         "The cpk dependency is expected to be signed with corda development key only"
@@ -217,15 +191,15 @@ class CpkTests {
 
     @Test
     fun `Verify cordapp signature`() {
-        Assertions.assertEquals(setOf(cordaDevKey),
-                workflowCpk.cordappCertificates
-                    .asSequence().map { it.publicKey.encoded.hash() }.toSet()
+        Assertions.assertEquals(
+            sequenceOf(cordaDevKey).summaryHash(),
+            workflowCPK.metadata.id.signerSummaryHash
         )
     }
 
     @Test
     fun `throws if CorDapp JAR has no manifest`() {
-        val modifiedWorkflowCpk = testDir.resolve("tweaked.cpk")
+        val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
         val tweaker = object : ZipTweaker() {
             override fun tweakEntry(inputStream: ZipInputStream,
                                     outputStream: ZipOutputStream,
@@ -234,23 +208,23 @@ class CpkTests {
                     if (currentEntry.name == JarFile.MANIFEST_NAME) AfterTweakAction.DO_NOTHING
                     else AfterTweakAction.WRITE_ORIGINAL_ENTRY
         }
-        tweakCordappJar(modifiedWorkflowCpk, tweaker)
+        tweakCordappJar(modifiedWorkflowCPK, tweaker)
         assertThrows<CordappManifestException> {
-            Cpk.Archived.from(Files.newInputStream(modifiedWorkflowCpk),
-                    cpkLocation = modifiedWorkflowCpk.toString(),
+            CPK.Metadata.from(Files.newInputStream(modifiedWorkflowCPK),
+                    cpkLocation = modifiedWorkflowCPK.toString(),
                     verifySignature = false)
         }
     }
 
     @Test
     fun `throws if a CPK does not have a dependencies file`() {
-        val modifiedWorkflowCpk = testDir.resolve("tweaked.cpk")
+        val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
         val tweaker = object : ZipTweaker() {
             override fun tweakEntry(inputStream: ZipInputStream,
                                     outputStream: ZipOutputStream,
                                     currentEntry: ZipEntry,
                                     buffer: ByteArray) =
-                    if (currentEntry.name == CpkLoader.DEPENDENCIES_FILE_ENTRY) {
+                    if (currentEntry.name == PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY) {
                         val source = {
                             ByteArrayInputStream("<<<<<This is clearly invalid XML content".toByteArray())
                         }
@@ -258,31 +232,31 @@ class CpkTests {
                         AfterTweakAction.DO_NOTHING
                     } else AfterTweakAction.WRITE_ORIGINAL_ENTRY
         }
-        tweakCordappJar(modifiedWorkflowCpk, tweaker)
+        tweakCordappJar(modifiedWorkflowCPK, tweaker)
         assertThrows<DependencyMetadataException> {
-            Cpk.Archived.from(Files.newInputStream(modifiedWorkflowCpk),
-                    cpkLocation = modifiedWorkflowCpk.toString(), verifySignature = false)
+            CPK.Metadata.from(Files.newInputStream(modifiedWorkflowCPK),
+                    cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false)
         }
     }
 
     @Test
     fun `does not complain if a CPK dependencies file lists no dependencies`() {
-        val modifiedWorkflowCpk = testDir.resolve("tweaked.cpk")
+        val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
         val xml = """
         |<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         |<cpkDependencies xmlns="urn:corda-cpk">
         |</cpkDependencies>
         """.trimMargin()
-        tweakDependencyMetadataFile(modifiedWorkflowCpk, xml)
+        tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
         Assertions.assertDoesNotThrow {
-            Cpk.Archived.from(Files.newInputStream(modifiedWorkflowCpk),
-                    cpkLocation = modifiedWorkflowCpk.toString(), verifySignature = false)
+            CPK.Metadata.from(Files.newInputStream(modifiedWorkflowCPK),
+                    cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false)
         }
     }
 
     @Test
     fun `throws if a CPK dependencies file lists a dependency with no signers`() {
-        val modifiedWorkflowCpk = testDir.resolve("tweaked.cpk")
+        val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
         val xml = """
         |<cpkDependencies xmlns="urn:corda-cpk">
         |    <cpkDependency>
@@ -291,16 +265,16 @@ class CpkTests {
         |    </cpkDependency>
         |</cpkDependencies>
         """.trimMargin()
-        tweakDependencyMetadataFile(modifiedWorkflowCpk, xml)
+        tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
         assertThrows<DependencyMetadataException> {
-            Cpk.Archived.from(Files.newInputStream(modifiedWorkflowCpk),
-                    cpkLocation = modifiedWorkflowCpk.toString(), verifySignature = false)
+            CPK.Metadata.from(Files.newInputStream(modifiedWorkflowCPK),
+                    cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false)
         }
     }
 
     @Test
     fun `throws if a CPK dependencies file lists a dependency with a signer but no algorithm`() {
-        val modifiedWorkflowCpk = testDir.resolve("tweaked.cpk")
+        val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
         val xml = """
         |<cpkDependencies xmlns="urn:corda-cpk">
         |    <cpkDependency>
@@ -312,10 +286,10 @@ class CpkTests {
         |    </cpkDependency>
         |</cpkDependencies>
         """.trimMargin()
-        tweakDependencyMetadataFile(modifiedWorkflowCpk, xml)
+        tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
         assertThrows<DependencyMetadataException> {
-            Cpk.Archived.from(Files.newInputStream(modifiedWorkflowCpk),
-                    cpkLocation = modifiedWorkflowCpk.toString(), verifySignature = false)
+            CPK.Metadata.from(Files.newInputStream(modifiedWorkflowCPK),
+                    cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false)
         }
     }
 
@@ -327,15 +301,10 @@ class CpkTests {
         val hashdata1 = publicKey.hash(DigestAlgorithmName.SHA2_384)
         val hashdata2 = publicKey.hash(DigestAlgorithmName.SHA2_384)
         val hashdata3 = publicKey.hash(DigestAlgorithmName.SHA2_512)
-        val expectedSignersSummaryHash = hash { md ->
-            sequenceOf(hashdata1, hashdata2, hashdata3)
-                .sortedWith(Cpk.Identifier.secureHashComparator)
-                .map(SecureHash::toString)
-                .map(String::toByteArray)
-                .forEach(md::update)
-        }
 
-        val modifiedWorkflowCpk = testDir.resolve("tweaked.cpk")
+        val expectedSignersSummaryHash = sequenceOf(hashdata1, hashdata2, hashdata3).summaryHash()
+
+        val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
         val xml = """
         |<cpkDependencies xmlns="urn:corda-cpk">
         |    <cpkDependency>
@@ -349,41 +318,41 @@ class CpkTests {
         |    </cpkDependency>
         |</cpkDependencies>
         """.trimMargin()
-        tweakDependencyMetadataFile(modifiedWorkflowCpk, xml)
-        val cpk = Cpk.Archived.from(Files.newInputStream(modifiedWorkflowCpk),
-                    cpkLocation = modifiedWorkflowCpk.toString(), verifySignature = false)
-        val dependency = cpk.dependencies.find { it.symbolicName == dummyName && it.version == dummyVersion }
+        tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
+        val cpk = CPK.Metadata.from(Files.newInputStream(modifiedWorkflowCPK),
+                    cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false)
+        val dependency = cpk.dependencies.find { it.name == dummyName && it.version == dummyVersion }
         Assertions.assertNotNull(dependency, "Test dependency not found")
         Assertions.assertEquals(expectedSignersSummaryHash, dependency!!.signerSummaryHash)
     }
 
     @Test
     fun `signature verification fails if archive has been tampered with`() {
-        val modifiedWorkflowCpk = testDir.resolve("tweaked.cpk")
+        val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
         val xml = """
         |<cpkDependencies xmlns="urn:corda-cpk">
         |</cpkDependencies>
         """.trimMargin()
-        tweakDependencyMetadataFile(modifiedWorkflowCpk, xml)
+        tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
         Assertions.assertThrows(InvalidSignatureException::class.java) {
-            Cpk.Archived.from(Files.newInputStream(modifiedWorkflowCpk), verifySignature = true)
+            CPK.Metadata.from(Files.newInputStream(modifiedWorkflowCPK), verifySignature = true)
         }
     }
 
     @Test
     fun `throws if archive is not a jar file at all`() {
         assertThrows<PackagingException> {
-            Cpk.Archived.from(Files.newInputStream(nonJarFile), nonJarFile.toString())
+            CPK.Metadata.from(Files.newInputStream(nonJarFile), nonJarFile.toString())
         }
         assertThrows<PackagingException> {
-            Cpk.Expanded.from(Files.newInputStream(nonJarFile), extractedWorkflowCpkPath, nonJarFile.toString())
+            CPK.from(Files.newInputStream(nonJarFile), processedWorkflowCPKPath, nonJarFile.toString())
         }
     }
 
     @Test
     fun `corda-api dependencies are not included in cpk dependencies`() {
-        Assertions.assertTrue(workflowCpk.dependencies.none {
-            it == flowsCpk.id
+        Assertions.assertTrue(workflowCPK.metadata.dependencies.none {
+            it == flowsCPK.id
         })
     }
 
@@ -392,7 +361,7 @@ class CpkTests {
         val md = MessageDigest.getInstance(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name)
         md.update(cordaDevKey.toString().toByteArray())
         val expectedHash = SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, md.digest())
-        Assertions.assertEquals(expectedHash, flowsCpk.id.signerSummaryHash)
+        Assertions.assertEquals(expectedHash, flowsCPK.id.signerSummaryHash)
     }
 }
 
