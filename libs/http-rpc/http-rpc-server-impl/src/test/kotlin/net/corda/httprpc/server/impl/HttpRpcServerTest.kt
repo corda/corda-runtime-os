@@ -12,8 +12,8 @@ import net.corda.httprpc.server.config.HttpRpcSettingsProvider
 import net.corda.httprpc.server.impl.internal.HttpRpcServerInternal
 import net.corda.httprpc.server.impl.internal.HttpRpcServerInternal.Companion.INSECURE_SERVER_DEV_MODE_WARNING
 import net.corda.httprpc.server.impl.internal.HttpRpcServerInternal.Companion.SSL_PASSWORD_MISSING
-import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
 import net.corda.httprpc.server.impl.security.SecurityManagerRPCImpl
+import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.httprpc.tools.annotations.validation.ParameterBodyCordaSerializableAnnotationValidator
 import org.assertj.core.api.Assertions.assertThatThrownBy

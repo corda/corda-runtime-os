@@ -10,11 +10,11 @@ import net.corda.httprpc.server.config.models.HttpRpcContext
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.config.models.SsoSettings
 import net.corda.httprpc.server.impl.HttpRpcServerTestBase.Companion.findFreePort
-import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
 import net.corda.httprpc.server.impl.utils.AzureAdMock
 import net.corda.httprpc.server.impl.utils.TestHttpClient
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
+import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.v5.httprpc.tools.HttpVerb
 import org.junit.jupiter.api.AfterEach
 import kotlin.test.assertEquals
