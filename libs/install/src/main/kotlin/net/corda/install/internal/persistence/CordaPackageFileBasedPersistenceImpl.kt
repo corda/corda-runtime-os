@@ -122,10 +122,17 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
 
     /** Returns the [Path] representing the node's CPK directory. */
     private fun getCpkDirectoryInternal(): Path {
-        val baseDirectoryString = configAdmin
-                .getConfiguration(ConfigurationAdmin::class.java.name, null)
-                .properties[CONFIG_ADMIN_BASE_DIRECTORY] as? String
-                ?: throw CpkInstallationException("Node's base directory could not be established for storing CPK files.")
+        val couldNotEstablishBaseDirErr by lazy {
+            CpkInstallationException("Node's base directory could not be established for storing CPK files.")
+        }
+
+        val properties = configAdmin
+            .getConfiguration(ConfigurationAdmin::class.java.name, null)
+            .properties ?: throw couldNotEstablishBaseDirErr
+
+        val baseDirectoryString = properties[CONFIG_ADMIN_BASE_DIRECTORY] as? String
+            ?: throw couldNotEstablishBaseDirErr
+
         return Paths.get(baseDirectoryString).resolve(CPK_DIRECTORY).also { Files.createDirectories(it) }
     }
 
