@@ -1,5 +1,6 @@
 package net.corda.httprpc.client
 
+import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.impl.HttpRpcClientProxyHandler
 import net.corda.httprpc.client.impl.HttpRpcConnectionListenerDistributor
 import net.corda.httprpc.client.impl.remote.RemoteUnirestClient
@@ -8,7 +9,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
-import net.corda.v5.httprpc.api.RpcOps
 import net.corda.httprpc.client.config.HttpRpcClientConfig
 import org.slf4j.Logger
 import java.lang.reflect.Proxy

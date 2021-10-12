@@ -1,5 +1,6 @@
 package net.corda.httprpc.client.impl
 
+import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.HttpRpcConnectionListener
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doNothing
@@ -9,7 +10,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import net.corda.httprpc.test.TestHealthCheckAPI
-import net.corda.v5.httprpc.api.RpcOps
 import net.corda.httprpc.client.auth.credentials.CredentialsProvider
 import org.junit.jupiter.api.Test
 

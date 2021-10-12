@@ -1,9 +1,9 @@
 package net.corda.httprpc.client.internal.processing
 
-import net.corda.v5.httprpc.api.annotations.HttpRpcGET
-import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
-import net.corda.v5.httprpc.tools.HttpVerb
-import net.corda.v5.httprpc.tools.staticExposedGetMethods
+import net.corda.httprpc.annotations.HttpRpcGET
+import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.tools.HttpVerb
+import net.corda.httprpc.tools.staticExposedGetMethods
 import java.lang.reflect.Method
 
 val Method.endpointHttpVerb: HttpVerb

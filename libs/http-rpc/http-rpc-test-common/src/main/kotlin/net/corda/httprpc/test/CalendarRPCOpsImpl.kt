@@ -1,8 +1,8 @@
 package net.corda.httprpc.test
 
+import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.durablestream.DurableStreamHelper
 import net.corda.v5.base.stream.FiniteDurableCursorBuilder
-import net.corda.v5.httprpc.api.PluggableRPCOps
 import java.time.DayOfWeek
 import java.time.format.DateTimeFormatter
 import java.util.Calendar

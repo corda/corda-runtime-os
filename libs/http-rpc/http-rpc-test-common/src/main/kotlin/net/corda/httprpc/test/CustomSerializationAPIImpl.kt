@@ -1,6 +1,6 @@
 package net.corda.httprpc.test
 
-import net.corda.v5.httprpc.api.PluggableRPCOps
+import net.corda.httprpc.PluggableRPCOps
 
 class CustomSerializationAPIImpl : CustomSerializationAPI, PluggableRPCOps<CustomSerializationAPI> {
     override val targetInterface: Class<CustomSerializationAPI>

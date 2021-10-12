@@ -1,7 +1,7 @@
 package net.corda.httprpc.client
 
+import net.corda.httprpc.RpcOps
 import net.corda.v5.base.annotations.DoNotImplement
-import net.corda.v5.httprpc.api.RpcOps
 
 /**
  * Represents a logical connection to the HTTP RPC server which may go up and down.

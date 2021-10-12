@@ -1,6 +1,6 @@
 package net.corda.httprpc.client
 
-import net.corda.v5.httprpc.api.RpcOps
+import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.auth.credentials.CredentialsProvider
 
 /**

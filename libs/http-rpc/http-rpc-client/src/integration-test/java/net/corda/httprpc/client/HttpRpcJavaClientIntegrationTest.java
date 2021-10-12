@@ -28,7 +28,7 @@ public class HttpRpcJavaClientIntegrationTest extends HttpRpcIntegrationTestBase
                 new HttpRpcServerImpl(
                         List.of(
                                 new TestHealthCheckAPIImpl(), new CustomSerializationAPIImpl()
-                        ), HttpRpcIntegrationTestBase.Companion.getSecurityManager(), httpRpcSettings, true, HttpRpcIntegrationTestBase.Companion.getClassLoader()
+                        ), HttpRpcIntegrationTestBase.Companion.getSecurityManager(), httpRpcSettings, true
                 )
         );
         HttpRpcIntegrationTestBase.Companion.getServer().start();

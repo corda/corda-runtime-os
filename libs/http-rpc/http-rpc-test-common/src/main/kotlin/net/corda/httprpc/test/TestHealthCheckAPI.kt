@@ -4,15 +4,15 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcGET
+import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcPathParameter
+import net.corda.httprpc.annotations.HttpRpcQueryParameter
+import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.annotations.RPCSinceVersion
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.httprpc.api.RpcOps
-import net.corda.v5.httprpc.api.annotations.HttpRpcGET
-import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
-import net.corda.v5.httprpc.api.annotations.HttpRpcPathParameter
-import net.corda.v5.httprpc.api.annotations.HttpRpcQueryParameter
-import net.corda.v5.httprpc.api.annotations.HttpRpcRequestBodyParameter
-import net.corda.v5.httprpc.api.annotations.HttpRpcResource
-import net.corda.v5.httprpc.api.annotations.RPCSinceVersion
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.util.Date
@@ -29,8 +29,8 @@ interface TestHealthCheckAPI : RpcOps {
 
     @HttpRpcGET(path = "hello2/{name}", title = "Hello2", description = "Hello endpoint")
     fun hello2(
-        @HttpRpcQueryParameter(name = "id", description = "id", required = false) queryParam: String?,
-        @HttpRpcPathParameter(name = "name", description = "The name") pathParam: String
+            @HttpRpcQueryParameter(name = "id", description = "id", required = false) queryParam: String?,
+            @HttpRpcPathParameter(name = "name", description = "The name") pathParam: String
     ): String
 
     @HttpRpcGET(path = "hello/{name}", title = "Hello", description = "Hello endpoint")

@@ -1,5 +1,6 @@
 package net.corda.httprpc.client
 
+import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.impl.HttpRpcClientProxyHandler
 import net.corda.httprpc.test.TestHealthCheckAPI
 import org.mockito.kotlin.any
@@ -12,7 +13,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import net.corda.test.util.eventually
-import net.corda.v5.httprpc.api.RpcOps
 import net.corda.httprpc.client.config.HttpRpcClientConfig
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test

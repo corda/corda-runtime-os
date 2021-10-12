@@ -20,7 +20,7 @@ import net.corda.httprpc.client.exceptions.PermissionException
 import net.corda.httprpc.client.exceptions.RequestErrorException
 import net.corda.httprpc.client.internal.processing.WebRequest
 import net.corda.httprpc.client.internal.processing.WebResponse
-import net.corda.v5.httprpc.tools.HttpVerb
+import net.corda.httprpc.tools.HttpVerb
 import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy
 import org.apache.http.impl.client.HttpClients

@@ -10,7 +10,7 @@ import net.corda.httprpc.client.config.EmptyAuthenticationConfig
 import net.corda.httprpc.client.internal.processing.WebRequest
 import net.corda.httprpc.client.internal.processing.WebResponse
 import net.corda.httprpc.client.internal.processing.encodeParam
-import net.corda.v5.httprpc.tools.HttpVerb
+import net.corda.httprpc.tools.HttpVerb
 import org.apache.commons.lang3.reflect.TypeUtils
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test

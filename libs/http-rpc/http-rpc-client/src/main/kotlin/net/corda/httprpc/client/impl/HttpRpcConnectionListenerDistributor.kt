@@ -1,11 +1,11 @@
 package net.corda.httprpc.client.impl
 
+import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.HttpRpcConnection
 import net.corda.httprpc.client.HttpRpcConnectionListener
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.v5.httprpc.api.RpcOps
 import net.corda.httprpc.client.auth.credentials.CredentialsProvider
 import java.util.concurrent.atomic.AtomicBoolean
 

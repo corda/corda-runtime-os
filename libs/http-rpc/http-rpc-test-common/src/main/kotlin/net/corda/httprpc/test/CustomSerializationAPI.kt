@@ -8,11 +8,11 @@ import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.httprpc.api.RpcOps
-import net.corda.v5.httprpc.api.annotations.HttpRpcPOST
-import net.corda.v5.httprpc.api.annotations.HttpRpcRequestBodyParameter
-import net.corda.v5.httprpc.api.annotations.HttpRpcResource
 
 @HttpRpcResource(path = "customjson")
 interface CustomSerializationAPI : RpcOps {

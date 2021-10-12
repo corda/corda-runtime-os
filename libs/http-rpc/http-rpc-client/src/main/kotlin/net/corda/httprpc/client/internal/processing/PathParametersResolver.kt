@@ -1,8 +1,8 @@
 package net.corda.httprpc.client.internal.processing
 
-import net.corda.v5.httprpc.api.annotations.HttpRpcPathParameter
-import net.corda.v5.httprpc.tools.annotations.extensions.name
-import net.corda.v5.httprpc.tools.annotations.validation.utils.asPathParam
+import net.corda.httprpc.annotations.HttpRpcPathParameter
+import net.corda.httprpc.tools.annotations.extensions.name
+import net.corda.httprpc.tools.annotations.validation.utils.asPathParam
 import java.lang.reflect.Method
 
 internal fun Method.pathParametersFrom(allParameters: Array<out Any?>) : Map<String, String> =

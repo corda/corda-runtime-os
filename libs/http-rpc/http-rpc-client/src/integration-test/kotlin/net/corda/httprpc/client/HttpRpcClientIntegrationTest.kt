@@ -42,7 +42,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
         fun setUpBeforeClass() {
             port = findFreePort()
             val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost",  port), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
-            server = HttpRpcServerImpl(listOf(TestHealthCheckAPIImpl(), CustomSerializationAPIImpl(), NumberSequencesRPCOpsImpl(), CalendarRPCOpsImpl()), securityManager, httpRpcSettings, true, classLoader).apply { start() } }
+            server = HttpRpcServerImpl(listOf(TestHealthCheckAPIImpl(), CustomSerializationAPIImpl(), NumberSequencesRPCOpsImpl(), CalendarRPCOpsImpl()), securityManager, httpRpcSettings, true).apply { start() } }
 
         @AfterAll
         @JvmStatic

@@ -1,8 +1,8 @@
 package net.corda.httprpc.client.internal.processing
 
+import net.corda.httprpc.annotations.HttpRpcQueryParameter
+import net.corda.httprpc.tools.annotations.extensions.name
 import net.corda.v5.base.util.uncheckedCast
-import net.corda.v5.httprpc.api.annotations.HttpRpcQueryParameter
-import net.corda.v5.httprpc.tools.annotations.extensions.name
 import java.lang.reflect.Method
 
 internal fun Method.queryParametersFrom(allParameters: Array<out Any?>) : Map<String, Any?> =
