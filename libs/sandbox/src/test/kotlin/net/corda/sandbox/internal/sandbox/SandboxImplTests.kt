@@ -151,13 +151,21 @@ class SandboxImplTests {
     }
 
     @Test
-    fun `throws if sandbox bundle cannot be uninstalled`() {
-        val cantBeUninstalledBundle = mock<Bundle>().apply {
-            whenever(uninstall()).then { throw IllegalStateException("") }
+    fun `unloading a sandbox attempts to uninstall all bundles`() {
+        val cantBeUninstalledCordappBundle = mockBundle().apply {
+            whenever(uninstall()).then { throw IllegalStateException() }
         }
-        val sandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(cantBeUninstalledBundle), setOf())
+        val libraryBundle = mockBundle().apply {
+            whenever(uninstall()).then { uninstalledBundles.add(this) }
+        }
 
-        val e = assertThrows<SandboxException> { sandbox.unload() }
-        assertTrue(e.message!!.contains("Bundle could not be uninstalled: "))
+        SandboxImpl(
+            mockBundleUtils,
+            randomUUID(),
+            setOf(cantBeUninstalledCordappBundle, libraryBundle),
+            emptySet()
+        ).unload()
+
+        assertEquals(libraryBundle, uninstalledBundles.single())
     }
 }

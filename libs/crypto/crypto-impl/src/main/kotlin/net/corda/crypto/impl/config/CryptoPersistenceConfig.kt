@@ -1,15 +1,15 @@
 package net.corda.crypto.impl.config
 
-class CryptoCacheConfig(
+class CryptoPersistenceConfig(
     map: Map<String, Any?>
 ) : CryptoConfigMap(map) {
     companion object {
-        val default = CryptoCacheConfig(emptyMap())
-        const val DEFAULT_CACHE_FACTORY_NAME = "kafka"
+        val default = CryptoPersistenceConfig(emptyMap())
+        const val DEFAULT_FACTORY_NAME = "kafka"
     }
 
-    val cacheFactoryName: String
-        get() = getString(this::cacheFactoryName.name, DEFAULT_CACHE_FACTORY_NAME)
+    val factoryName: String
+        get() = getString(this::factoryName.name, DEFAULT_FACTORY_NAME)
 
     val expireAfterAccessMins: Long
         get() = getLong(this::expireAfterAccessMins.name, 60)

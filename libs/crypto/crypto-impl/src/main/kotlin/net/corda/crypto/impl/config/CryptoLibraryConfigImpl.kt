@@ -16,11 +16,11 @@ class CryptoLibraryConfigImpl(
 
 val CryptoLibraryConfig.isDev: Boolean get() = CryptoConfigMap.getBoolean(this, this::isDev.name, false)
 
-val CryptoLibraryConfig.keyCache: CryptoCacheConfig get() =
-    CryptoCacheConfig(CryptoConfigMap.getOptionalConfig(this, this::keyCache.name) ?: emptyMap())
+val CryptoLibraryConfig.keyCache: CryptoPersistenceConfig get() =
+    CryptoPersistenceConfig(CryptoConfigMap.getOptionalConfig(this, this::keyCache.name) ?: emptyMap())
 
-val CryptoLibraryConfig.mngCache: CryptoCacheConfig get() =
-    CryptoCacheConfig(CryptoConfigMap.getOptionalConfig(this, this::mngCache.name) ?: emptyMap())
+val CryptoLibraryConfig.mngCache: CryptoPersistenceConfig get() =
+    CryptoPersistenceConfig(CryptoConfigMap.getOptionalConfig(this, this::mngCache.name) ?: emptyMap())
 
 val CryptoLibraryConfig.cipherSuite: CipherSuiteConfig
     get() = CipherSuiteConfig(CryptoConfigMap.getOptionalConfig(this, this::cipherSuite.name) ?: emptyMap())

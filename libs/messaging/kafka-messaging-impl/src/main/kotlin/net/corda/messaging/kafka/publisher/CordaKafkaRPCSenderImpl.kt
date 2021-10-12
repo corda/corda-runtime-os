@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.publisher
 
 import com.typesafe.config.Config
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
@@ -19,7 +20,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.RESPONSE_
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
-import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
+import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.RPCConsumerRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
@@ -42,10 +43,9 @@ import kotlin.concurrent.withLock
 class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private val config: Config,
     private val publisher: Publisher,
-    private val consumerBuilder: CordaKafkaConsumerBuilderImpl<String, RPCResponse>,
+    private val consumerBuilder: ConsumerBuilder<String, RPCResponse>,
     private val serializer: CordaAvroSerializer<TREQ>,
-    private val deserializer: CordaAvroDeserializer<TRESP>,
-    private val errorDeserializer: CordaAvroDeserializer<String>
+    private val deserializer: CordaAvroDeserializer<TRESP>
 ) : RPCSender<TREQ, TRESP>, RPCSubscription<TREQ, TRESP> {
 
     private companion object {
@@ -179,8 +179,12 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                     }
                     ResponseStatus.FAILED -> {
                         val responseBytes = it.record.value().payload
-                        val response = errorDeserializer.deserialize(responseTopic, responseBytes.array())
-                        future.completeExceptionally(CordaRPCAPIResponderException(response))
+                        val response = ExceptionEnvelope.fromByteBuffer(responseBytes)
+                        future.completeExceptionally(
+                            CordaRPCAPIResponderException(
+                                "Cause:${response.errorType}. Message: ${response.errorMessage}"
+                            )
+                        )
                     }
                     ResponseStatus.CANCELLED -> {
                         future.cancel(true)
@@ -200,9 +204,19 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     @Suppress("TooGenericExceptionCaught")
     override fun sendRequest(req: TREQ): CompletableFuture<TRESP> {
         val correlationId = UUID.randomUUID().toString()
-        val reqBytes = serializer.serialize(topic, req)
         val future = CompletableFuture<TRESP>()
         val partitions = partitionListener.getPartitions()
+        var reqBytes: ByteArray? = null
+        try {
+            reqBytes = serializer.serialize(topic, req)
+        } catch (ex: Exception) {
+            future.completeExceptionally(
+                CordaRPCAPISenderException(
+                    "Serializing your request resulted in an exception. " +
+                    "Verify that the fields of the request are populated correctly", ex
+                )
+            )
+        }
 
         if (partitions.isEmpty()) {
             future.completeExceptionally(CordaRPCAPISenderException("No partitions. Couldn't send"))
