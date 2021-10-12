@@ -208,6 +208,3 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
         }
     }
 }
-
-include 'testbed'
-include 'testbed:testbed-cpk'
