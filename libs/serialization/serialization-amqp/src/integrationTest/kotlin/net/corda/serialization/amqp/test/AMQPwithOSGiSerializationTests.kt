@@ -12,8 +12,8 @@ import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.amqpMagic
-import net.corda.packaging.Cpb
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPI
+import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxCreationService
 import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializedBytes
@@ -75,7 +75,7 @@ class AMQPwithOSGiSerializationTests {
             sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
         }
 
-        private fun assembleCpb(cpkUrls: List<URL>): Cpb {
+        private fun assembleCpb(cpkUrls: List<URL>): CPI {
             val cpks = cpkUrls.map { url ->
                 val urlAsString = url.toString()
                 val cpkName = urlAsString.substring(urlAsString.lastIndexOf("/") + 1)
@@ -89,7 +89,7 @@ class AMQPwithOSGiSerializationTests {
             val tempFile = Files.createTempFile("dummy-cordapp-bundle", ".cpb")
             return try {
                 Files.newOutputStream(tempFile).use { outputStream ->
-                    Cpb.assemble(outputStream, cpks)
+                    CPI.assemble(outputStream, "dummy-cordapp-bundle", "1.0", cpks)
                 }
                 installService.loadCpb(Files.newInputStream(tempFile))
             } finally {
@@ -125,10 +125,10 @@ class AMQPwithOSGiSerializationTests {
                 ?: fail("TestSerializable4-workflows-$cordappVersion-cordapp.cpk is missing")
 
         val cpb = assembleCpb(listOf(cpk1, cpk2, cpk3, cpk4))
-        val cpks = installService.getCpb(cpb.identifier)!!.cpks
+        val cpks = installService.getCpb(cpb.metadata.id)!!.cpks
 
         // Create sandbox group
-        val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks.map(Cpk::cpkHash))
+        val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks.map {it.metadata.hash})
         assertThat(sandboxGroup).isNotNull
         assertThat(sandboxGroup.sandboxes).hasSize(4)
 
@@ -149,14 +149,14 @@ class AMQPwithOSGiSerializationTests {
 
         // Serialise our object
         val cashClass = sandboxGroup.loadClassFromCordappBundle(
-                cpkIdentifier = installService.getCpb(cpb.identifier)!!.cpks.find {
-                    it.id.symbolicName == "net.corda.serializable-cpk-one" }!!.id,
+                cpkIdentifier = installService.getCpb(cpb.metadata.id)!!.cpks.find {
+                    it.metadata.id.name == "net.corda.serializable-cpk-one" }!!.metadata.id,
                 className = "net.corda.bundle1.Cash")
         val cashInstance = cashClass.getConstructor(Int::class.java).newInstance(100)
 
         val obligationClass = sandboxGroup.loadClassFromCordappBundle(
-                cpkIdentifier = installService.getCpb(cpb.identifier)!!.cpks.find {
-                    it.id.symbolicName == "net.corda.serializable-cpk-three" }!!.id,
+                cpkIdentifier = installService.getCpb(cpb.metadata.id)!!.cpks.find {
+                    it.metadata.id.name == "net.corda.serializable-cpk-three" }!!.metadata.id,
                 className = "net.corda.bundle3.Obligation")
 
         val obligationInstance = obligationClass.getConstructor(
@@ -166,14 +166,14 @@ class AMQPwithOSGiSerializationTests {
         val content = "This is a transfer document"
 
         val documentClass = sandboxGroup.loadClassFromCordappBundle(
-                cpkIdentifier = installService.getCpb(cpb.identifier)!!.cpks.find {
-                    it.id.symbolicName == "net.corda.serializable-cpk-two" }!!.id,
+                cpkIdentifier = installService.getCpb(cpb.metadata.id)!!.cpks.find {
+                    it.metadata.id.name == "net.corda.serializable-cpk-two" }!!.metadata.id,
                 className = "net.corda.bundle2.Document")
         val documentInstance = documentClass.getConstructor(String::class.java).newInstance(content)
 
         val transferClass = sandboxGroup.loadClassFromCordappBundle(
-                cpkIdentifier = installService.getCpb(cpb.identifier)!!.cpks.find {
-                    it.id.symbolicName == "net.corda.serializable-cpk-four" }!!.id,
+                cpkIdentifier = installService.getCpb(cpb.metadata.id)!!.cpks.find {
+                    it.metadata.id.name == "net.corda.serializable-cpk-four" }!!.metadata.id,
                 className = "net.corda.bundle4.Transfer")
 
         val transferInstance = transferClass.getConstructor(

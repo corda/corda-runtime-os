@@ -48,8 +48,8 @@ class SandboxServiceIsolationTest {
     fun testServicesForCPK1() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
-        val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.id)
-        val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.id)
+        val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.metadata.id)
+        val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.metadata.id)
         val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES1_FLOW_CLASS, thisGroup).onEach(::println)
 
         // CPK1 should be able to see its own services, and any
@@ -68,8 +68,8 @@ class SandboxServiceIsolationTest {
     fun testServicesForCPK2() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
-        val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.id)
-        val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.id)
+        val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.metadata.id)
+        val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.metadata.id)
         val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES2_FLOW_CLASS, thisGroup).onEach(::println)
 
         // CPK2 should be able to see its own services, and any
@@ -88,7 +88,7 @@ class SandboxServiceIsolationTest {
     fun testServicesForCPK3() {
         val thisGroup = sandboxLoader.group2
         val otherGroup = sandboxLoader.group1
-        val sandbox3 = thisGroup.getSandbox(sandboxLoader.cpk3.id)
+        val sandbox3 = thisGroup.getSandbox(sandboxLoader.cpk3.metadata.id)
         val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES3_FLOW_CLASS, thisGroup).onEach(::println)
 
         // CPK3 should be able to see its own services, but

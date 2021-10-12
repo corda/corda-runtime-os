@@ -7,7 +7,7 @@ import net.corda.internal.serialization.model.LocalTypeModel
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.internal.serialization.model.TypeIdentifier.Parameterised
 import net.corda.internal.serialization.osgi.TypeResolver
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.utilities.reflection.kotlinObjectInstance
@@ -148,7 +148,7 @@ class DefaultLocalSerializerFactory(
         return typesByName.getOrPut(typeName) {
             val localType = try {
                 val cpkIdentifierParts = metadata.getValue(typeName) as List<*>
-                val cpkIdentifier = Cpk.Identifier(
+                val cpkIdentifier = CPK.Identifier.newInstance(
                     cpkIdentifierParts[0] as String,
                     cpkIdentifierParts[1] as String,
                     SecureHash.create(cpkIdentifierParts[4] as String)
