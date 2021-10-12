@@ -42,7 +42,12 @@ abstract class InternalTile(coordinatorFactory: LifecycleCoordinatorFactory) : D
                 if (event.status == LifecycleStatus.UP) {
                     startKidsIfNeeded()
                 } else {
-                    stop()
+                    val errorKids = children.filter { it.state == State.StoppedDueToError }
+                    if (errorKids.isEmpty()) {
+                        stop()
+                    } else {
+                        gotError(Exception("Had error in ${errorKids.map { it.name }}"))
+                    }
                 }
                 true
             }

@@ -8,13 +8,16 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mockConstruction
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.net.InetSocketAddress
 
 class ReconfigurableHttpServerTest {
-    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
+    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
+        on { createCoordinator(any(), any()) } doReturn mock()
+    }
     private val configurationReaderService = mock<ConfigurationReadService>()
     private val listener = mock<HttpEventListener>()
     private val address = InetSocketAddress("www.r3.com", 30)

@@ -258,7 +258,7 @@ class InternalTileTest {
     @Nested
     inner class HandleEventTests {
         @Test
-        fun `down will stop the tile`() {
+        fun `up will start the tile`() {
             val children = listOf<DominoTile>(
                 mock {
                     on { isRunning } doReturn true
@@ -300,8 +300,12 @@ class InternalTileTest {
         }
 
         @Test
-        fun `up will start the tile`() {
-            val children = listOf(mock<DominoTile>())
+        fun `down without error will stop the tile`() {
+            val children = listOf(
+                mock<DominoTile> {
+                    on { state } doReturn DominoTile.State.StoppedByParent
+                }
+            )
 
             Tile(children)
             handler.lastValue.processEvent(
@@ -313,6 +317,29 @@ class InternalTileTest {
             )
 
             verify(children.first()).stop()
+        }
+
+        @Test
+        fun `down with error will post error`() {
+            val children = listOf(
+                mock {
+                    on { state } doReturn DominoTile.State.StoppedDueToError
+                },
+                mock<DominoTile> {
+                    on { state } doReturn DominoTile.State.StoppedByParent
+                }
+            )
+
+            val tile = Tile(children)
+            handler.lastValue.processEvent(
+                RegistrationStatusChangeEvent(
+                    mock(),
+                    LifecycleStatus.ERROR
+                ),
+                coordinator
+            )
+
+            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
         }
     }
 

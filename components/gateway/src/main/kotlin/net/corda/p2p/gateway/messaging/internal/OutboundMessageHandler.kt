@@ -19,7 +19,7 @@ import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
-import net.corda.p2p.gateway.messaging.ConnectionManager
+import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
@@ -48,7 +48,7 @@ internal class OutboundMessageHandler(
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
     }
 
-    private val connectionManager = ConnectionManager(
+    private val connectionManager = ReconfigurableConnectionManager(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         this,

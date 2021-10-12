@@ -182,11 +182,21 @@ class DominoTileTest {
     }
 
     @Test
-    fun `updateState will update the coordinator state from up to down`() {
+    fun `updateState will update the coordinator state from up to error`() {
         val tile = Tile()
         tile.setState(DominoTile.State.Started)
 
         tile.setState(DominoTile.State.StoppedDueToError)
+
+        verify(coordinator).updateStatus(LifecycleStatus.ERROR)
+    }
+
+    @Test
+    fun `updateState will update the coordinator state from up to down`() {
+        val tile = Tile()
+        tile.setState(DominoTile.State.Started)
+
+        tile.setState(DominoTile.State.StoppedByParent)
 
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }

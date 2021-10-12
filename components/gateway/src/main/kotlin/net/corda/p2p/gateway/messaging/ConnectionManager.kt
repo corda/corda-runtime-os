@@ -1,20 +1,11 @@
 package net.corda.p2p.gateway.messaging
 
-import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
-import net.corda.configuration.read.ConfigurationReadService
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.ConfigurationAwareLeafTile
-import net.corda.p2p.gateway.Gateway.Companion.CONFIG_KEY
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.Lock
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 /**
  * The [ConnectionManager] is responsible for creating an HTTP connection and caching it. If a connection to the requested
@@ -26,17 +17,10 @@ import kotlin.concurrent.withLock
  *
  */
 class ConnectionManager(
-    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    configurationReaderService: ConfigurationReadService,
+    private val sslConfiguration: SslConfiguration,
     private val listener: HttpEventListener,
-    private val lock: Lock = ReentrantLock(),
-    private val nioEventLoopGroupFactory: (Int) -> NioEventLoopGroup = { NioEventLoopGroup(it) }
-) : ConfigurationAwareLeafTile<GatewayConfiguration>(
-    lifecycleCoordinatorFactory,
-    configurationReaderService,
-    CONFIG_KEY,
-    { it.toGatewayConfiguration() },
-) {
+    nioEventLoopGroupFactory: (Int) -> NioEventLoopGroup = { NioEventLoopGroup(it) }
+) : AutoCloseable {
 
     companion object {
         private const val NUM_CLIENT_WRITE_THREADS = 2
@@ -44,73 +28,38 @@ class ConnectionManager(
     }
 
     private val clientPool = ConcurrentHashMap<URI, HttpClient>()
-    private var writeGroup: EventLoopGroup? = null
-    private var nettyGroup: EventLoopGroup? = null
-
-    private val waitForConfiguration = lock.newCondition()
-    @Volatile
-    private var sslConfiguration: SslConfiguration? = null
+    private var writeGroup = nioEventLoopGroupFactory(NUM_CLIENT_WRITE_THREADS)
+    private var nettyGroup = nioEventLoopGroupFactory(NUM_CLIENT_NETTY_THREADS)
 
     /**
      * Return an existing or new [HttpClient].
      * @param destinationInfo the [DestinationInfo] object containing the destination's URI, SNI, and legal name
      */
     fun acquire(destinationInfo: DestinationInfo): HttpClient {
-        if (sslConfiguration == null) {
-            lock.withLock {
-                if (sslConfiguration == null) {
-                    if (!waitForConfiguration.await(10, TimeUnit.MINUTES)) {
-                        throw IllegalStateException("Waiting too long for configuration")
-                    }
-                }
-            }
-        }
 
         return clientPool.computeIfAbsent(destinationInfo.uri) {
-            val client = HttpClient(
+            HttpClient(
                 destinationInfo,
-                sslConfiguration!!,
-                writeGroup!!,
-                nettyGroup!!,
+                sslConfiguration,
+                writeGroup,
+                nettyGroup,
                 listener
             )
-            resources.keep(client)
-            client.start()
-            client
-        }
-    }
-
-    override fun applyNewConfiguration(
-        newConfiguration: GatewayConfiguration,
-        oldConfiguration: GatewayConfiguration?
-    ) {
-        if (newConfiguration.sslConfig != oldConfiguration?.sslConfig) {
-            val oldClients = clientPool.toMap()
-            clientPool.clear()
-            oldClients.values.forEach {
-                it.close()
-            }
-            lock.withLock {
-                sslConfiguration = newConfiguration.sslConfig
-                waitForConfiguration.signalAll()
+        }.also {
+            if (!it.isRunning) {
+                it.start()
             }
         }
     }
 
-    override fun startTile() {
-        nioEventLoopGroupFactory(NUM_CLIENT_WRITE_THREADS).also {
-            resources.keep {
-                it.shutdownGracefully()
-                it.terminationFuture().sync()
-            }
-        }.also { writeGroup = it }
-        nettyGroup = nioEventLoopGroupFactory(NUM_CLIENT_NETTY_THREADS).also {
-            resources.keep {
-                it.shutdownGracefully()
-                it.terminationFuture().sync()
-            }
+    override fun close() {
+        clientPool.values.forEach {
+            it.stop()
         }
-        resources.keep(clientPool::clear)
-        super.startTile()
+        clientPool.clear()
+        writeGroup.shutdownGracefully()
+        writeGroup.terminationFuture().sync()
+        nettyGroup.shutdownGracefully()
+        nettyGroup.terminationFuture().sync()
     }
 }

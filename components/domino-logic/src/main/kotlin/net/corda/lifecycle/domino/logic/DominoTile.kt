@@ -76,12 +76,15 @@ abstract class DominoTile(
 
     protected fun updateState(newState: State) {
         val oldState = currentState.getAndSet(newState)
-        if ((newState != State.Started) && (oldState == State.Started)) {
-            coordinator.updateStatus(LifecycleStatus.DOWN)
-        } else if ((oldState != State.Started) && (newState == State.Started)) {
-            coordinator.updateStatus(LifecycleStatus.UP)
+        if (newState != oldState) {
+            val status = when (newState) {
+                State.Started -> LifecycleStatus.UP
+                State.Created, State.StoppedByParent -> LifecycleStatus.DOWN
+                State.StoppedDueToError -> LifecycleStatus.ERROR
+            }
+            coordinator.updateStatus(status)
+            logger.info("State of $name is $newState")
         }
-        logger.info("State of $name is $newState")
     }
 
     open fun handleEvent(event: LifecycleEvent): Boolean = false

@@ -26,14 +26,12 @@ class ConnectionManagerTest : TestBase() {
         sslConfig = aliceSslConfig
     )
 
-    private val configService = createConfigurationServiceFor(configuration)
-
     @Test
     @Timeout(30)
     fun `acquire connection`() {
         val responseReceived = CountDownLatch(1)
         val manager = ConnectionManager(
-            lifecycleCoordinatorFactory, configService,
+            aliceSslConfig,
             object : HttpEventListener {
                 override fun onMessage(message: HttpMessage) {
                     assertEquals(serverResponseContent, String(message.payload))
@@ -47,7 +45,6 @@ class ConnectionManagerTest : TestBase() {
                 server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(), message.source)
             }
         }
-        manager.startAndWaitForStarted()
         HttpServer(listener, configuration).use { server ->
             listener.server = server
             server.start()
@@ -61,9 +58,8 @@ class ConnectionManagerTest : TestBase() {
     @Test
     @Timeout(30)
     fun `reuse connection`() {
-        val manager = ConnectionManager(lifecycleCoordinatorFactory, configService, object : HttpEventListener {})
+        val manager = ConnectionManager(aliceSslConfig, object : HttpEventListener {})
         val remotePeers = mutableListOf<SocketAddress>()
-        manager.startAndWaitForStarted()
         val requestReceived = CountDownLatch(2)
         val listener = object : HttpEventListener {
             override fun onOpen(event: HttpConnectionEvent) {

@@ -20,7 +20,7 @@ import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
-import net.corda.p2p.gateway.messaging.ConnectionManager
+import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpMessage
@@ -57,7 +57,7 @@ class OutboundMessageHandlerTest {
             )
         } doReturn mock()
     }
-    private val connectionManager = mockConstruction(ConnectionManager::class.java)
+    private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java)
     private val p2pMessageSubscription = mockConstruction(EventLogSubscriptionWithDominoLogic::class.java)
     private val p2pInPublisher = mockConstruction(PublisherWithDominoLogic::class.java)
 

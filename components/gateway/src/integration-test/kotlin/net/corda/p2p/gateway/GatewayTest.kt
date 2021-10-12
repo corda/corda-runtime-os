@@ -514,7 +514,7 @@ class GatewayTest : TestBase() {
                 )
             )
             eventually(duration = 20.seconds) {
-                assertThat(gateway.state).isNotEqualTo(DominoTile.State.Started)
+                assertThat(gateway.state).isEqualTo(DominoTile.State.StoppedDueToError)
             }
             assertThrows<ConnectException> {
                 Socket(host, 10001).close()
@@ -536,7 +536,7 @@ class GatewayTest : TestBase() {
 
             configPublisher.publishBadConfig()
             eventually(duration = 20.seconds) {
-                assertThat(gateway.state).isNotEqualTo(DominoTile.State.Started)
+                assertThat(gateway.state).isEqualTo(DominoTile.State.StoppedDueToError)
             }
             assertThrows<ConnectException> {
                 Socket(host, 10002).close()
