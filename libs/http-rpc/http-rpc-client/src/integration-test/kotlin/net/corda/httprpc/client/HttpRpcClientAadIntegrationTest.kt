@@ -14,6 +14,7 @@ import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utls.AzureAdMock
 import net.corda.httprpc.client.config.HttpRpcClientConfig
+import net.corda.httprpc.test.utls.findFreePort
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -26,14 +27,8 @@ class HttpRpcClientAadIntegrationTest {
     private lateinit var httpRpcServer: HttpRpcServer
     private lateinit var securityManager: RPCSecurityManager
 
-    fun findFreePort() = ServerSocket(0).use { it.localPort }
-
     @BeforeEach
     fun setUp() {
-        val users = listOf(
-                User(AzureAdMock.username, null, setOf("InvokeRpc:net.corda.httprpc.test.net.corda.httprpc.test.TestHealthCheckAPI#ping")),
-                //User(AzureAdMock.clientId, null, setOf(Permissions.all()))
-        )
         securityManager = RPCSecurityManagerFactoryStubImpl().createRPCSecurityManager()
         httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()),
                 HttpRpcContext("1", "api", "HttpRpcContext test title ", "HttpRpcContext test description"),

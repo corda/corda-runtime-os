@@ -15,6 +15,7 @@ import net.corda.httprpc.test.NumberSequencesRPCOpsImpl
 import net.corda.httprpc.test.NumberTypeEnum
 import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
+import net.corda.httprpc.test.utls.findFreePort
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy

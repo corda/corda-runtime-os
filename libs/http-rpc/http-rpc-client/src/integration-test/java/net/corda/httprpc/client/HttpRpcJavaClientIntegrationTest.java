@@ -1,7 +1,8 @@
 package net.corda.httprpc.client;
 
+import net.corda.httprpc.server.impl.HttpRpcServerImpl;
 import net.corda.v5.base.util.NetworkHostAndPort;
-import net.corda.httprpc.server.HttpRPCServer;
+
 import net.corda.httprpc.server.config.models.HttpRpcSettings;
 import net.corda.httprpc.test.CustomSerializationAPIImpl;
 import net.corda.httprpc.test.TestHealthCheckAPI;
@@ -11,6 +12,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import java.util.List;
+
+import static net.corda.httprpc.test.utls.TestUtilsKt.findFreePort;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -19,10 +22,10 @@ public class HttpRpcJavaClientIntegrationTest extends HttpRpcIntegrationTestBase
 
     @BeforeAll
     static void setUpBeforeClass() {
-        port = HttpRpcIntegrationTestBase.Companion.getPortAllocator().nextPort();
+        port = findFreePort();
         HttpRpcSettings httpRpcSettings = new HttpRpcSettings(new NetworkHostAndPort("localhost",  port), HttpRpcIntegrationTestBase.Companion.getContext(), null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE);
         HttpRpcIntegrationTestBase.Companion.setServer(
-                new HttpRPCServer(
+                new HttpRpcServerImpl(
                         List.of(
                                 new TestHealthCheckAPIImpl(), new CustomSerializationAPIImpl()
                         ), HttpRpcIntegrationTestBase.Companion.getSecurityManager(), httpRpcSettings, true, HttpRpcIntegrationTestBase.Companion.getClassLoader()

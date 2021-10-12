@@ -7,11 +7,10 @@ import java.net.ServerSocket
 
 abstract class HttpRpcIntegrationTestBase {
     internal companion object {
-        fun findFreePort() = ServerSocket(0).use { it.localPort }
         lateinit var server: HttpRpcServer
         fun isServerInitialized() = ::server.isInitialized
-        const val password = "password"
-        val userAlice = User("Alice", password, setOf())
+        const val password = "admin"
+        val userAlice = User("admin", password, setOf())
         val securityManager = RPCSecurityManagerFactoryStubImpl().createRPCSecurityManager()
         val classLoader = ClassLoader.getSystemClassLoader()
         val context = HttpRpcContext("1", "api", "HttpRpcContext test title ", "HttpRpcContext test description")
