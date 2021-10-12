@@ -74,7 +74,10 @@ abstract class DominoTile(
     override val isRunning: Boolean
         get() = state == State.Started
 
-    protected fun updateState(newState: State) {
+    protected fun started() {
+        updateState(State.Started)
+    }
+    private fun updateState(newState: State) {
         val oldState = currentState.getAndSet(newState)
         if (newState != oldState) {
             val status = when (newState) {

@@ -76,7 +76,7 @@ abstract class InternalTile(coordinatorFactory: LifecycleCoordinatorFactory) : D
             }
 
             if (children.all { it.isRunning }) {
-                updateState(State.Started)
+                started()
             }
         }
     }

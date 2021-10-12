@@ -84,7 +84,9 @@ class InternalTileTest {
 
             tile.start()
 
-            verify(children[2], atLeast(1)).start()
+            children.forEach {
+                verify(it, atLeast(1)).start()
+            }
         }
     }
 

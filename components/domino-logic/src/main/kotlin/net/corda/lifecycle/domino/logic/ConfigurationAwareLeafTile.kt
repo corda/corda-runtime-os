@@ -56,7 +56,7 @@ abstract class ConfigurationAwareLeafTile<C>(
                 logger.info("Reconfiguring $name")
                 applyNewConfiguration(configuration, oldConfiguration)
                 canReceiveConfigurations.set(true)
-                updateState(State.Started)
+                started()
                 logger.info("Reconfigured $name")
             }
         } catch (e: Throwable) {
@@ -76,7 +76,7 @@ abstract class ConfigurationAwareLeafTile<C>(
             @Suppress("TooGenericExceptionCaught")
             try {
                 applyNewConfiguration(configurationHolder.get(), null)
-                updateState(State.Started)
+                started()
             } catch (e: Throwable) {
                 gotError(e)
             }

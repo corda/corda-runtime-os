@@ -45,7 +45,7 @@ class SessionPartitionMapperImpl(
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
-            updateState(State.Started)
+            started()
         }
 
         override fun onNext(

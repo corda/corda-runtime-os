@@ -23,7 +23,7 @@ class PublisherWithDominoLogic(
             publisher.getAndSet(it)?.close()
             resources.keep(it)
             it.start()
-            updateState(State.Started)
+            started()
         }
     }
 

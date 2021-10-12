@@ -15,6 +15,6 @@ class EventLogSubscriptionWithDominoLogic<K, V>(
         resources.keep {
             eventLogSubscription.stop()
         }
-        updateState(State.Started)
+        started()
     }
 }

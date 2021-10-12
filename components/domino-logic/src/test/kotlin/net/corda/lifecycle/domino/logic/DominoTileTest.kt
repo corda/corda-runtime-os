@@ -42,12 +42,12 @@ class DominoTileTest {
             stopped ++
         }
 
-        fun setState(newState: State) {
-            updateState(newState)
-        }
-
         fun sendError(e: Exception) {
             gotError(e)
+        }
+
+        fun sendStarted() {
+            started()
         }
 
         override fun handleEvent(event: LifecycleEvent): Boolean {
@@ -68,7 +68,7 @@ class DominoTileTest {
     @Test
     fun `start will not start the coordinator if started`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.Started)
+        tile.sendStarted()
 
         tile.start()
 
@@ -78,7 +78,7 @@ class DominoTileTest {
     @Test
     fun `start will not start the tile if started`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.Started)
+        tile.sendStarted()
 
         tile.start()
 
@@ -88,7 +88,7 @@ class DominoTileTest {
     @Test
     fun `start will not start the coordinator if stopped`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.StoppedByParent)
+        tile.stop()
 
         tile.start()
 
@@ -98,7 +98,7 @@ class DominoTileTest {
     @Test
     fun `start start the tile if stopped`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.StoppedByParent)
+        tile.stop()
 
         tile.start()
 
@@ -108,7 +108,7 @@ class DominoTileTest {
     @Test
     fun `start will not start the coordinator if errored`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.StoppedDueToError)
+        tile.sendError(Exception(""))
 
         tile.start()
 
@@ -118,7 +118,7 @@ class DominoTileTest {
     @Test
     fun `start will not start the tile if errored`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.StoppedDueToError)
+        tile.sendError(Exception(""))
 
         tile.start()
 
@@ -128,7 +128,7 @@ class DominoTileTest {
     @Test
     fun `stop will stop the tile is started`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.Started)
+        tile.sendStarted()
 
         tile.stop()
 
@@ -138,17 +138,17 @@ class DominoTileTest {
     @Test
     fun `stop will not stop the tile is stopped`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.StoppedByParent)
+        tile.stop()
 
         tile.stop()
 
-        assertThat(tile.stopped).isEqualTo(0)
+        assertThat(tile.stopped).isEqualTo(1)
     }
 
     @Test
     fun `stop will update the status the tile is started`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.Started)
+        tile.sendStarted()
 
         tile.stop()
 
@@ -158,7 +158,7 @@ class DominoTileTest {
     @Test
     fun `isRunning will return true if state is started`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.Started)
+        tile.sendStarted()
 
         assertThat(tile.isRunning).isTrue
     }
@@ -166,7 +166,7 @@ class DominoTileTest {
     @Test
     fun `isRunning will return false if state is not started`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.StoppedDueToError)
+        tile.sendError(Exception(""))
 
         assertThat(tile.isRunning).isFalse
     }
@@ -174,9 +174,9 @@ class DominoTileTest {
     @Test
     fun `updateState will update the coordinator state from down to up`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.StoppedDueToError)
+        tile.sendError(Exception(""))
 
-        tile.setState(DominoTile.State.Started)
+        tile.sendStarted()
 
         verify(coordinator).updateStatus(LifecycleStatus.UP)
     }
@@ -184,9 +184,9 @@ class DominoTileTest {
     @Test
     fun `updateState will update the coordinator state from up to error`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.Started)
+        tile.sendStarted()
 
-        tile.setState(DominoTile.State.StoppedDueToError)
+        tile.sendError(Exception(""))
 
         verify(coordinator).updateStatus(LifecycleStatus.ERROR)
     }
@@ -194,9 +194,9 @@ class DominoTileTest {
     @Test
     fun `updateState will update the coordinator state from up to down`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.Started)
+        tile.sendStarted()
 
-        tile.setState(DominoTile.State.StoppedByParent)
+        tile.stop()
 
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
@@ -204,7 +204,7 @@ class DominoTileTest {
     @Test
     fun `processEvent will set as error if the event is error`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.Started)
+        tile.sendStarted()
 
         handler.lastValue.processEvent(ErrorEvent(Exception("")), coordinator)
 
@@ -223,7 +223,7 @@ class DominoTileTest {
     @Test
     fun `processEvent will not start the tile the second time`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.Started)
+        tile.sendStarted()
 
         handler.lastValue.processEvent(StartEvent(), coordinator)
 
@@ -266,7 +266,7 @@ class DominoTileTest {
     @Test
     fun `onError will set state to error`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.Started)
+        tile.sendStarted()
 
         tile.sendError(IOException(""))
 
@@ -276,7 +276,7 @@ class DominoTileTest {
     @Test
     fun `onError will stop the tile`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.Started)
+        tile.sendStarted()
 
         tile.sendError(IOException(""))
 
@@ -286,11 +286,11 @@ class DominoTileTest {
     @Test
     fun `onError so nothing if state is errored`() {
         val tile = Tile()
-        tile.setState(DominoTile.State.StoppedDueToError)
+        tile.sendError(Exception(""))
 
         tile.sendError(IOException(""))
 
-        assertThat(tile.stopped).isEqualTo(0)
+        assertThat(tile.stopped).isEqualTo(1)
     }
 
     @Test
