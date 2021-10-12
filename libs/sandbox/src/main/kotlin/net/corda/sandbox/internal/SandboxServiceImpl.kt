@@ -101,6 +101,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun getSandbox(bundle: Bundle) = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundle) }
 
+    @Suppress("ComplexMethod")
     override fun hasVisibility(lookingBundle: Bundle, lookedAtBundle: Bundle): Boolean {
         val lookingSandbox = getSandbox(lookingBundle)
         val lookedAtSandbox = getSandbox(lookedAtBundle)
