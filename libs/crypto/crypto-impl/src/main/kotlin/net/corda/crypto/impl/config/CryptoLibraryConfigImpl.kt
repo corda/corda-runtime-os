@@ -8,9 +8,8 @@ class CryptoLibraryConfigImpl(
     map: Map<String, Any?>
 ) : CryptoConfigMap(map), CryptoLibraryConfig {
     override fun getMember(memberId: String): CryptoMemberConfig {
-        return CryptoMemberConfigImpl(
-            getOptionalConfig(memberId) ?: getOptionalConfig(DEFAULT_MEMBER_KEY) ?: emptyMap()
-        )
+        // TODO2 - remove from the public API
+        throw NotImplementedError()
     }
 }
 

@@ -1,5 +1,6 @@
-package net.corda.crypto.impl.config
+package net.corda.crypto.service.config
 
+import net.corda.crypto.impl.config.CryptoConfigMap
 import net.corda.v5.cipher.suite.config.CryptoMemberConfig
 import net.corda.v5.cipher.suite.config.CryptoMemberConfig.Companion.DEFAULT_CATEGORY_KEY
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
