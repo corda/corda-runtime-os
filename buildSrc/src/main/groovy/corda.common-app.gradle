@@ -270,7 +270,7 @@ def appJar = tasks.register('appJar', Jar) {
     into("META-INF/") {
         from(javaAgentFileTask)
     }
-    from(configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) })
+    from{ configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     from(createSystemBundlesFile)
     from(cordaAssembleSystemPackagesExtraTask)
     from(writeFrameworkPropertyFile)
