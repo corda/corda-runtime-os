@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
@@ -100,6 +101,7 @@ class KafkaRPCSubscriptionImplTest {
             listOf(TopicPartition(TOPIC, 0))
         }.whenever(kafkaConsumer).getPartitions(any(), any())
     }
+
     @Test
     @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `rpc subscription receives request and completes it OK`() {
@@ -148,6 +150,10 @@ class KafkaRPCSubscriptionImplTest {
         verify(publisher, times(1)).publishToPartition(captor.capture())
         val capturedValue = captor.firstValue
         assertEquals(capturedValue[0].second.value?.responseStatus, ResponseStatus.FAILED)
+        assertEquals(
+            ExceptionEnvelope.fromByteBuffer(capturedValue[0].second.value?.payload),
+            ExceptionEnvelope(CordaMessageAPIFatalException::class.java.name, "Abandon ship")
+        )
     }
 
     @Test
