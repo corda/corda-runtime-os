@@ -1,8 +1,7 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.CryptoCategories
 import net.corda.crypto.SigningService
-import net.corda.crypto.impl.stubs.MockCryptoFactory
+import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
@@ -31,18 +30,18 @@ import kotlin.test.assertNotEquals
 
 class CipherSchemeMetadataTests {
     companion object {
-        private lateinit var memberId: String
         private lateinit var schemeMetadataProvider: CipherSchemeMetadataProviderImpl
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var unknownSignatureSpec: SignatureSpec
         private lateinit var unknownScheme: SignatureScheme
+        private lateinit var factory: CryptoServicesTestFactory
 
         @JvmStatic
         @BeforeAll
         fun setup() {
-            memberId = UUID.randomUUID().toString()
             schemeMetadataProvider = CipherSchemeMetadataProviderImpl()
             schemeMetadata = schemeMetadataProvider.getInstance()
+            factory = CryptoServicesTestFactory(schemeMetadata)
             unknownSignatureSpec = SignatureSpec(
                 signatureName = "na",
                 signatureOID = AlgorithmIdentifier(PKCSObjectIdentifiers.RC2_CBC, null)
@@ -63,17 +62,10 @@ class CipherSchemeMetadataTests {
         @JvmStatic
         fun schemes(): Array<SignatureScheme> = schemeMetadata.schemes
 
-        private fun getSigner(defaultSignatureSchemeCodeName: String): SigningService {
-            val mockFactory = MockCryptoFactory(
-                defaultSignatureSchemeCodeName = defaultSignatureSchemeCodeName,
-                defaultFreshKeySignatureSchemeCodeName = defaultSignatureSchemeCodeName,
-                schemeMetadataOverride = schemeMetadata
+        private fun getSigner(defaultSignatureSchemeCodeName: String): SigningService =
+            factory.createSigningService(
+                schemeMetadata.findSignatureScheme(defaultSignatureSchemeCodeName)
             )
-            return mockFactory.createSigningService(
-                memberId = memberId,
-                category = CryptoCategories.LEDGER
-            )
-        }
     }
 
     @Test

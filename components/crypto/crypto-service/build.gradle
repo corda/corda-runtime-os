@@ -32,6 +32,7 @@ dependencies {
     testImplementation project(':testing:crypto-testkit')
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":testing:test-utilities")
+    testImplementation project(":libs:messaging:inmemory-messaging-impl")
 }
 
 description 'Crypto Service Components'

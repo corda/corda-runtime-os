@@ -2,7 +2,7 @@ package net.corda.virtual.node.cache
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.install.InstallService
-import net.corda.packaging.Cpb
+import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -26,7 +26,7 @@ class VirtualNodeCacheImpl @Activate constructor(
     /**
      * Given a flow, where do I go for the cpb (and sandbox)
      */
-    private val cpbForFlow = ConcurrentHashMap<String, Cpb.Identifier>()
+    private val cpbForFlow = ConcurrentHashMap<String, CPI.Identifier>()
 
     // This might need to go somewhere else...?
     override fun loadCpbs(
@@ -36,11 +36,11 @@ class VirtualNodeCacheImpl @Activate constructor(
             // Can I assume this load has already happened?
             // Regardless I need the Cpb.Identifier
             val cpb = installService.loadCpb(Files.newInputStream(cpbPath))
-            val cpbEx = installService.getCpb(cpb.identifier)
+            val cpbEx = installService.getCpb(cpb.metadata.id)
             cpbEx?.cpks?.forEach { cpk ->
-                cpk.cordappManifest.flows.forEach { flow ->
+                cpk.metadata.cordappManifest.flows.forEach { flow ->
                     // HMM: We don't know what to put for FlowKey here.  It might not belong in the key to the map.
-                    cpbForFlow.computeIfAbsent(flow) { cpb.identifier }
+                    cpbForFlow.computeIfAbsent(flow) { cpb.metadata.id }
                 }
             }
         }
@@ -52,7 +52,7 @@ class VirtualNodeCacheImpl @Activate constructor(
                 ?: throw CordaRuntimeException("Flow not available in cordapp")
             val cpb = installService.getCpb(cpbIdentifier)
                 ?: throw CordaRuntimeException("Could not get cpb from its identifier $cpbIdentifier")
-            sandboxCreationService.createSandboxGroup(cpb.cpks.map { it.cpkHash })
+            sandboxCreationService.createSandboxGroup(cpb.cpks.map { it.metadata.hash })
         }
     }
 }

@@ -1,7 +1,7 @@
 package net.corda.crypto.impl.dev
 
 import net.corda.crypto.CryptoCategories
-import net.corda.crypto.impl.stubs.MockCryptoFactory
+import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
@@ -20,17 +20,15 @@ import kotlin.test.assertTrue
 
 class DevCryptoServiceProviderTests {
     private val masterKeyAlias = "wrapping-key-alias"
-    private lateinit var memberId: String
-    private lateinit var mockFactory: MockCryptoFactory
+    private lateinit var factory: CryptoServicesTestFactory
     private lateinit var schemeMetadata: CipherSchemeMetadata
     private lateinit var signatureVerifier: SignatureVerificationService
 
     @BeforeEach
     fun setup() {
-        memberId = UUID.randomUUID().toString()
-        mockFactory = MockCryptoFactory()
-        schemeMetadata = mockFactory.schemeMetadata
-        signatureVerifier = mockFactory.createVerificationService()
+        factory = CryptoServicesTestFactory()
+        schemeMetadata = factory.schemeMetadata
+        signatureVerifier = factory.verifier
     }
 
     @Test
@@ -82,7 +80,7 @@ class DevCryptoServiceProviderTests {
     @Timeout(30)
     fun `Should throw unrecoverable CryptoServiceLibraryException if there is no InMemoryPersistentCacheFactory`() {
         val provider = DevCryptoServiceProvider(
-            persistentCacheFactories = listOf(mock())
+            listOf(mock())
         )
         val exception = assertThrows<CryptoServiceLibraryException> {
             provider.createCryptoService(CryptoCategories.FRESH_KEYS)
@@ -94,15 +92,15 @@ class DevCryptoServiceProviderTests {
 
     private fun createCryptoServiceProvider(): DevCryptoServiceProvider {
         return DevCryptoServiceProvider(
-            persistentCacheFactories = listOf(InMemoryPersistentCacheFactory())
+            listOf(InMemoryKeyValuePersistenceFactoryProvider())
         )
     }
 
     private fun DevCryptoServiceProvider.createCryptoService(category: String): CryptoService = getInstance(
         CryptoServiceContext(
-            memberId = memberId,
+            memberId = factory.memberId,
             category = category,
-            cipherSuiteFactory = mockFactory.cipherSuiteFactory,
+            cipherSuiteFactory = factory,
             config = DevCryptoServiceConfiguration()
         )
     )

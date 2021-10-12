@@ -1,10 +1,10 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.impl.config.CryptoCacheConfig
+import net.corda.crypto.impl.config.CryptoPersistenceConfig
 import net.corda.crypto.impl.config.keyCache
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCacheImpl
-import net.corda.crypto.impl.persistence.PersistentCacheFactory
+import net.corda.crypto.impl.persistence.KeyValuePersistenceFactoryProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -22,16 +22,16 @@ import org.slf4j.Logger
 
 @Component(service = [CryptoServiceProvider::class, DefaultCryptoServiceProvider::class])
 open class DefaultCryptoServiceProvider @Activate constructor(
-    @Reference(service = PersistentCacheFactory::class)
-    private val persistenceFactories: List<PersistentCacheFactory>
+    @Reference(service = KeyValuePersistenceFactoryProvider::class)
+    private val persistenceProviders: List<KeyValuePersistenceFactoryProvider>
 ) : Lifecycle, CryptoLifecycleComponent, CryptoServiceProvider<DefaultCryptoServiceConfig> {
     companion object {
         private val logger: Logger = contextLogger()
     }
 
     private var impl = Impl(
-        persistenceFactories,
-        CryptoCacheConfig.default,
+        persistenceProviders,
+        CryptoPersistenceConfig.default,
         logger
     )
 
@@ -54,7 +54,7 @@ open class DefaultCryptoServiceProvider @Activate constructor(
     override fun handleConfigEvent(config: CryptoLibraryConfig) {
         logger.info("Received new configuration...")
         impl = Impl(
-            persistenceFactories,
+            persistenceProviders,
             config.keyCache,
             logger
         )
@@ -64,8 +64,8 @@ open class DefaultCryptoServiceProvider @Activate constructor(
         impl.getInstance(context)
 
     private class Impl(
-        private val persistenceFactories: List<PersistentCacheFactory>,
-        private val config: CryptoCacheConfig,
+        private val persistenceProviders: List<KeyValuePersistenceFactoryProvider>,
+        private val config: CryptoPersistenceConfig,
         private val logger: Logger
     ) {
         fun getInstance(context: CryptoServiceContext<DefaultCryptoServiceConfig>): CryptoService {
@@ -87,18 +87,18 @@ open class DefaultCryptoServiceProvider @Activate constructor(
             context: CryptoServiceContext<DefaultCryptoServiceConfig>,
             schemeMetadata: CipherSchemeMetadata
         ): DefaultCryptoKeyCache {
-            val persistenceFactory = persistenceFactories.firstOrNull {
-                it.name == config.cacheFactoryName
-            } ?: throw CryptoServiceLibraryException(
-                "Cannot find ${config.cacheFactoryName}",
+            val persistenceFactory = persistenceProviders.firstOrNull {
+                it.name == config.factoryName
+            }?.get() ?: throw CryptoServiceLibraryException(
+                "Cannot find ${config.factoryName}",
                 isRecoverable = false
             )
             return DefaultCryptoKeyCacheImpl(
                 memberId = context.memberId,
                 passphrase = context.config.passphrase,
                 salt = context.config.salt,
-                persistence = persistenceFactory.createDefaultCryptoPersistentCache(config),
-                schemeMetadata = schemeMetadata
+                schemeMetadata = schemeMetadata,
+                persistenceFactory = persistenceFactory
             )
         }
     }
