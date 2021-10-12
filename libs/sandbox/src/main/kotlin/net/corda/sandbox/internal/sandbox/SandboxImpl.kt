@@ -67,14 +67,11 @@ internal open class SandboxImpl(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun unload() = allBundles.mapNotNull { bundle ->
-        bundle
-//        try {
-//            bundle.uninstall()
-//            null
-//        } catch (e: Exception) {
-//            logger.warn("Bundle ${bundle.symbolicName} could not be uninstalled, due to: $e")
-//            bundle
-//        }
+    override fun unload() = allBundles.forEach { bundle ->
+        try {
+            bundle.uninstall()
+        } catch (e: Exception) {
+            logger.warn("Bundle ${bundle.symbolicName} could not be uninstalled, due to: $e")
+        }
     }
 }
