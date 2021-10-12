@@ -114,7 +114,7 @@ class OutboundMessageHandlerTest {
 
         handler.stop()
 
-        verify(subscription).close()
+        verify(subscription).stop()
     }
 
     @Test

@@ -59,6 +59,13 @@ internal class OutboundMessageHandler(
         PUBLISHER_ID
     )
 
+    private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
+        SubscriptionConfig(Gateway.CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC),
+        this,
+        ConfigFactory.empty(),
+        null
+    )
+
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
         events.forEach { evt ->
@@ -122,13 +129,7 @@ internal class OutboundMessageHandler(
 
     override val children = listOf(connectionManager, p2pInPublisher)
     override fun createResources() {
-        val subscription = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig(Gateway.CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC),
-            this,
-            ConfigFactory.empty(),
-            null
-        )
-        resources.keep(subscription)
-        subscription.start()
+        resources.keep(p2pMessageSubscription::stop)
+        p2pMessageSubscription.start()
     }
 }
