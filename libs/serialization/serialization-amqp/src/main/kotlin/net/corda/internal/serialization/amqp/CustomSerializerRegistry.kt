@@ -37,8 +37,15 @@ interface CustomSerializerRegistry {
     val customSerializerNames: List<String>
 
     /**
-     * Register a custom serializer for any type that cannot be serialized or deserialized by the default serializer
-     * that expects to find getters and a constructor with a parameter for each property.
+     * Register an internal custom serializer for any type that cannot be serialized or deserialized by the default
+     * serializer that expects to find getters and a constructor with a parameter for each property.
+     *
+     * @param customSerializer a SerializationCustomSerializer that converts the target type to/from a proxy object
+     * @param factory the SerializerFactory currently in use, used to build internal serializers
+     * @param withInheritance should this serializer apply to subclasses of the target type? Useful for interface
+     * and abstract classes.
+     * @param revealSubclassesInSchema should we store subclasses in the serialized data? This is used for ZoneId
+     * and Throwable
      */
     fun register(
         customSerializer: SerializationCustomSerializer<*, *>,
@@ -46,7 +53,14 @@ interface CustomSerializerRegistry {
         withInheritance: Boolean,
         revealSubclassesInSchema: Boolean = false
     )
-    
+
+    /**
+     * Register a user defined custom serializer for any type that cannot be serialized or deserialized by the default
+     * serializer that expects to find getters and a constructor with a parameter for each property.
+     *
+     * @param customSerializer a SerializationCustomSerializer that converts the target type to/from a proxy object
+     * @param factory the SerializerFactory currently in use, used to build internal serializers
+     */
     fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory)
 
     /**
@@ -98,10 +112,6 @@ class CachingCustomSerializerRegistry(
     private val customSerializersCache: MutableMap<CustomSerializerIdentifier, CustomSerializerLookupResult> = DefaultCacheProvider.createCache()
     private val customSerializers: MutableList<SerializerFor> = mutableListOf()
 
-    /**
-     * Register a custom serializer for any type that cannot be serialized or deserialized by the default serializer
-     * that expects to find getters and a constructor with a parameter for each property.
-     */
     override fun register(
         customSerializer: SerializationCustomSerializer<*, *>,
         factory: SerializerFactory,
