@@ -1,9 +1,9 @@
 package net.corda.membership.impl
 
 import net.corda.data.WireKeyValuePair
-import net.corda.v5.application.node.KeyValueStore
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.application.node.MemberInfo
+import net.corda.v5.membership.identity.KeyValueStore
+import net.corda.v5.membership.identity.MemberInfo
 
 fun toMemberInfo(memberContext: KeyValueStore, mgmContext: KeyValueStore): MemberInfo {
     return MemberInfoImpl(memberContext, mgmContext)

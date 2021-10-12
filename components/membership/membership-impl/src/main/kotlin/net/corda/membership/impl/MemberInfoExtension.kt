@@ -1,9 +1,9 @@
 package net.corda.membership.impl
 
 import net.corda.membership.impl.serialization.EndpointInfoStringConverter
-import net.corda.v5.application.node.EndpointInfo
-import net.corda.v5.application.node.MemberInfo
 import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.v5.membership.identity.EndpointInfo
+import net.corda.v5.membership.identity.MemberInfo
 import java.net.URL
 import java.time.Instant
 
@@ -35,8 +35,6 @@ class MemberInfoExtension {
 
         const val URL_KEY = "corda.endpoints.%s.connectionURL"
         const val PROTOCOL_VERSION = "corda.endpoints.%s.protocolVersion"
-        //corda.endpoints.1.connectionURL
-        //corda.endpoints.1.protocolVersion
 
         /** Key name for softwareVersion property. */
         const val SOFTWARE_VERSION = "corda.softwareVersion"
@@ -66,7 +64,7 @@ class MemberInfoExtension {
         const val MEMBER_STATUS_SUSPENDED = "SUSPENDED"
 
         /** Identity certificate or null for non-PKI option. Certificate subject and key should match party */
-        // TODO !!!!!!!!!!
+        // TODO we will need a CertPath converter somewhere
         /*@JvmStatic
         val MemberInfo.certificate: CertPath?
             get() = memberProvidedContext.readAs(CERTIFICATE)*/
@@ -86,10 +84,7 @@ class MemberInfoExtension {
         /**  List of P2P endpoints for member's node. */
         @JvmStatic
         val MemberInfo.endpoints: List<EndpointInfo>
-            get() = memberProvidedContext.parseList(
-                ENDPOINTS,
-                EndpointInfoStringConverter((memberProvidedContext as KeyValueStoreImpl).keyEncodingService)
-            )
+            get() = memberProvidedContext.parseList(ENDPOINTS, EndpointInfoStringConverter())
 
         /** Corda-Release-Version. */
         @JvmStatic
@@ -111,15 +106,5 @@ class MemberInfoExtension {
         @JvmStatic
         val MemberInfo.modifiedTime: Instant?
             get() = mgmProvidedContext.parse(MODIFIED_TIME)
-
-        /*private fun Set<Map.Entry<String, String>>.readEndpoints() = filter { it.key.startsWith(ENDPOINTS) }
-            .asSequence()
-            .groupBy { it.key.split(".")[2] }
-            .map {
-                EndpointInfoImpl(
-                    it.value.first { it.key.contains("connectionURL") }.value,
-                    it.value.first { it.key.contains("protocolVersion") }.value.toInt()
-                )
-            }*/
     }
 }

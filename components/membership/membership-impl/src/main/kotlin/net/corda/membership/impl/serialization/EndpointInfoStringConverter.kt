@@ -1,13 +1,13 @@
 package net.corda.membership.impl.serialization
 
 import net.corda.membership.impl.EndpointInfoImpl
-import net.corda.v5.application.node.EndpointInfo
-import net.corda.v5.application.node.StringObjectConverter
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.membership.identity.EndpointInfo
+import net.corda.v5.membership.identity.KeyValueStore
+import net.corda.v5.membership.identity.StringObjectConverter
 
-class EndpointInfoStringConverter(val encodingService: KeyEncodingService): StringObjectConverter<EndpointInfo> {
-    override val keyEncodingService: KeyEncodingService get() = encodingService
-    override fun convert(stringProperties: Map<String, String>): EndpointInfo {
+class EndpointInfoStringConverter: StringObjectConverter<EndpointInfo> {
+    override fun convert(stringProperties: KeyValueStore, clazz: Class<out EndpointInfo>): EndpointInfo {
         return EndpointInfoImpl(
             stringProperties["connectionURL"]
                 ?: throw IllegalStateException("Object creation failed, url property was null."),
