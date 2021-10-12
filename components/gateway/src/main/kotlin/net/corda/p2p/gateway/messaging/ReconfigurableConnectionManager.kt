@@ -8,7 +8,6 @@ import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.v5.base.util.contextLogger
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
@@ -18,7 +17,7 @@ class ReconfigurableConnectionManager(
     configurationReaderService: ConfigurationReadService,
     listener: HttpEventListener,
     private val managerLock: ReentrantReadWriteLock = ReentrantReadWriteLock(),
-    private val managerFactory: (SslConfiguration) -> ConnectionManager = {ConnectionManager(it, listener)}
+    private val managerFactory: (SslConfiguration) -> ConnectionManager = { ConnectionManager(it, listener) }
 ) : ConfigurationAwareLeafTile<GatewayConfiguration>(
     lifecycleCoordinatorFactory,
     configurationReaderService,
@@ -27,7 +26,6 @@ class ReconfigurableConnectionManager(
 ) {
     @Volatile
     private var manager: ConnectionManager? = null
-    private val waitForConfiguration = managerLock.writeLock().newCondition()
 
     companion object {
         private val logger = contextLogger()
@@ -35,13 +33,7 @@ class ReconfigurableConnectionManager(
 
     fun acquire(destinationInfo: DestinationInfo): HttpClient {
         if (manager == null) {
-            managerLock.write {
-                if (manager == null) {
-                    if (!waitForConfiguration.await(10, TimeUnit.MINUTES)) {
-                        throw IllegalStateException("Waiting too long for configuration")
-                    }
-                }
-            }
+            throw IllegalStateException("Waiting too long for configuration")
         }
 
         return managerLock.read {
@@ -62,7 +54,6 @@ class ReconfigurableConnectionManager(
                 manager = null
                 oldManager?.close()
                 manager = newManager
-                waitForConfiguration.signalAll()
             }
         }
     }

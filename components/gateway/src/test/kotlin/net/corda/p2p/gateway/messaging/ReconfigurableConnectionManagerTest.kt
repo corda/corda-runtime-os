@@ -18,7 +18,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.net.URI
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
@@ -38,9 +37,7 @@ class ReconfigurableConnectionManagerTest {
     }
     private val listener = mock<HttpEventListener>()
     private val condition = mock<Condition>()
-    private val writeLock = mock<ReentrantReadWriteLock.WriteLock> {
-        on { newCondition() } doReturn condition
-    }
+    private val writeLock = mock<ReentrantReadWriteLock.WriteLock>()
     private val readLock = mock<ReentrantReadWriteLock.ReadLock>()
     private val lock = mock<ReentrantReadWriteLock> {
         on { writeLock() } doReturn writeLock
@@ -59,65 +56,6 @@ class ReconfigurableConnectionManagerTest {
         assertThrows<IllegalStateException> {
             connectionManager.acquire(DestinationInfo(URI("http://www.r3.com:3000"), "", null))
         }
-    }
-
-    @Test
-    fun `acquire will wait for configuration`() {
-        connectionManager.start()
-        whenever(condition.await(any(), any())).thenAnswer {
-            connectionManager.applyNewConfiguration(configuration, null)
-            true
-        }
-
-        connectionManager
-            .acquire(
-                DestinationInfo(
-                    URI("http://www.r3.com:3000"),
-                    "",
-                    null
-                )
-            )
-
-        verify(condition).await(any(), any())
-    }
-
-    @Test
-    fun `acquire will not wait for if configuration is ready`() {
-        connectionManager.start()
-        connectionManager.applyNewConfiguration(configuration, null)
-
-        connectionManager
-            .acquire(
-                DestinationInfo(
-                    URI("http://www.r3.com:3000"),
-                    "",
-                    null
-                )
-            )
-
-        verify(condition, never()).await(any(), any())
-    }
-
-    @Test
-    fun `acquire will not wait for if configuration is ready after the lock`() {
-        connectionManager.start()
-        val called = AtomicBoolean(false)
-        whenever(writeLock.lock()).thenAnswer {
-            if (!called.getAndSet(true)) {
-                connectionManager.applyNewConfiguration(configuration, null)
-            }
-        }
-
-        connectionManager
-            .acquire(
-                DestinationInfo(
-                    URI("http://www.r3.com:3000"),
-                    "",
-                    null
-                )
-            )
-
-        verify(condition, never()).await(any(), any())
     }
 
     @Test

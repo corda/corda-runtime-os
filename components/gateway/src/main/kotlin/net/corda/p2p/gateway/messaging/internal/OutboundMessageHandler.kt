@@ -69,6 +69,8 @@ internal class OutboundMessageHandler(
         PUBLISHER_ID
     )
 
+    override val startInParallel = false
+
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
         events.forEach { evt ->

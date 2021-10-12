@@ -35,7 +35,10 @@ class InternalTileTest {
     private val factory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
-    private inner class Tile(override val children: Collection<DominoTile>) : InternalTile(factory)
+    private inner class Tile(
+        override val children: Collection<DominoTile>,
+        override val startInParallel: Boolean = true
+    ) : InternalTile(factory)
 
     @Nested
     inner class StartTileTests {
@@ -113,6 +116,66 @@ class InternalTileTest {
             verify(children[0]).start()
             verify(children[1]).start()
             verify(children[2]).start()
+        }
+
+        @Test
+        fun `startKidsIfNeeded will start only the first one if its should not start in parallel`() {
+            val children = listOf<DominoTile>(
+                mock {
+                    on { state } doReturn DominoTile.State.Started
+                    on { isRunning } doReturn true
+                },
+                mock {
+                    on { state } doReturn DominoTile.State.Created
+                    on { isRunning } doReturn false
+                },
+                mock {
+                    on { state } doReturn DominoTile.State.Created
+                    on { isRunning } doReturn false
+                },
+            )
+
+            Tile(children, false)
+            handler.lastValue.processEvent(
+                RegistrationStatusChangeEvent(
+                    mock(),
+                    LifecycleStatus.UP
+                ),
+                coordinator
+            )
+
+            verify(children[0], never()).start()
+            verify(children[1]).start()
+            verify(children[2], never()).start()
+        }
+
+        @Test
+        fun `startKidsIfNeeded will set status to up if all are running`() {
+            val children = listOf<DominoTile>(
+                mock {
+                    on { state } doReturn DominoTile.State.Started
+                    on { isRunning } doReturn true
+                },
+                mock {
+                    on { state } doReturn DominoTile.State.Started
+                    on { isRunning } doReturn true
+                },
+                mock {
+                    on { state } doReturn DominoTile.State.Started
+                    on { isRunning } doReturn true
+                },
+            )
+
+            val tile = Tile(children, false)
+            handler.lastValue.processEvent(
+                RegistrationStatusChangeEvent(
+                    mock(),
+                    LifecycleStatus.UP
+                ),
+                coordinator
+            )
+
+            assertThat(tile.isRunning).isTrue
         }
 
         @Test
