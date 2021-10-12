@@ -18,6 +18,7 @@ class MockCryptoFactory(
     private val defaultSignatureScheme: SignatureScheme,
     private val defaultFreshKeySignatureScheme: SignatureScheme
 ) {
+    val signingPersistence = ConcurrentHashMap<String, SigningKeyCacheImpl>()
     private val freshKeyServices = ConcurrentHashMap<String, FreshKeySigningService>()
     private val signingServices = ConcurrentHashMap<String, SigningService>()
     private val cryptoServices = ConcurrentHashMap<String, CryptoService>()
@@ -25,36 +26,32 @@ class MockCryptoFactory(
     val cipherSchemeMetadata: CipherSchemeMetadata
         get() = mocks.schemeMetadata
 
-    fun getFreshKeySigningService(memberId: String): FreshKeySigningService =
-        freshKeyServices.getOrPut(memberId) {
+    fun getFreshKeySigningService(memberId: String): FreshKeySigningService {
+        val cache = getSigningKeyCache(memberId)
+        return freshKeyServices.getOrPut(memberId) {
             FreshKeySigningServiceImpl(
-                cache = SigningKeyCacheImpl(
-                    memberId = memberId,
-                    keyEncoder = mocks.schemeMetadata,
-                    persistence = mocks.signingPersistentKeyCache
-                ),
+                cache = cache,
                 cryptoService = getCryptoService(memberId, CryptoCategories.LEDGER),
                 freshKeysCryptoService = getCryptoService(memberId, CryptoCategories.FRESH_KEYS),
                 schemeMetadata = mocks.schemeMetadata,
                 defaultFreshKeySignatureSchemeCodeName = defaultFreshKeySignatureScheme.codeName
             )
         }
+    }
 
-    fun getSigningService(memberId: String, category: String): SigningService =
-        signingServices.getOrPut("$memberId:$category") {
+    fun getSigningService(memberId: String, category: String): SigningService {
+        val cache = getSigningKeyCache(memberId)
+        return signingServices.getOrPut("$memberId:$category") {
             SigningServiceImpl(
-                cache = SigningKeyCacheImpl(
-                    memberId = memberId,
-                    keyEncoder = mocks.schemeMetadata,
-                    persistence = mocks.signingPersistentKeyCache
-                ),
+                cache = cache,
                 cryptoService = getCryptoService(memberId, category),
                 schemeMetadata = mocks.schemeMetadata,
                 defaultSignatureSchemeCodeName = defaultSignatureScheme.codeName
             )
         }
+    }
 
-    fun getCryptoService(memberId: String, category: String): CryptoService =
+    private fun getCryptoService(memberId: String, category: String): CryptoService =
         cryptoServices.getOrPut("$memberId:$category") {
             DefaultCryptoService(
                 DefaultCryptoKeyCacheImpl(
@@ -62,10 +59,19 @@ class MockCryptoFactory(
                     passphrase = "PASSPHRASE",
                     salt = "SALT",
                     schemeMetadata = mocks.schemeMetadata,
-                    persistence = mocks.defaultPersistentKeyCache
+                    persistenceFactory = mocks.persistenceFactory
                 ),
                 schemeMetadata = mocks.schemeMetadata,
                 hashingService = mocks.factories.cipherSuite.getDigestService()
+            )
+        }
+
+    private fun getSigningKeyCache(memberId: String): SigningKeyCacheImpl =
+        signingPersistence.getOrPut(memberId) {
+            SigningKeyCacheImpl(
+                memberId = memberId,
+                keyEncoder = mocks.schemeMetadata,
+                persistenceFactory = mocks.persistenceFactory
             )
         }
 }

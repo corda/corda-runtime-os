@@ -1,12 +1,8 @@
 package net.corda.crypto.testkit
 
 import net.corda.crypto.impl.CipherSchemeMetadataProviderImpl
-import net.corda.crypto.impl.config.CryptoCacheConfig
-import net.corda.crypto.impl.dev.InMemoryPersistentCache
-import net.corda.crypto.impl.dev.InMemoryPersistentCacheFactory
-import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
-import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
-import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
+import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactoryProvider
+import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
@@ -14,26 +10,13 @@ import net.corda.v5.cipher.suite.schemes.SignatureScheme
 class CryptoMocks(
     schemeMetadataOverride: CipherSchemeMetadata? = null
 ) {
-    val persistentCacheFactory: InMemoryPersistentCacheFactory = InMemoryPersistentCacheFactory()
+    val persistenceFactoryProvider = InMemoryKeyValuePersistenceFactoryProvider()
+    val persistenceFactory: KeyValuePersistenceFactory = persistenceFactoryProvider.get()
 
-    val schemeMetadata: CipherSchemeMetadata = schemeMetadataOverride ?: CipherSchemeMetadataProviderImpl().getInstance()
-
-    val signingPersistentKeyCache: InMemoryPersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo> =
-        persistentCacheFactory.createSigningPersistentCache(
-            CryptoCacheConfig.default
-        ) as InMemoryPersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo>
-
-    val defaultPersistentKeyCache: InMemoryPersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo> =
-        persistentCacheFactory.createDefaultCryptoPersistentCache(
-            CryptoCacheConfig.default
-        ) as InMemoryPersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
+    val schemeMetadata: CipherSchemeMetadata =
+        schemeMetadataOverride ?: CipherSchemeMetadataProviderImpl().getInstance()
 
     val factories = Factories(this)
-
-    fun factories(
-        defaultSignatureSchemeCodeName: String,
-        defaultFreshKeySignatureSchemeCodeName: String) =
-        Factories(this, defaultSignatureSchemeCodeName, defaultFreshKeySignatureSchemeCodeName)
 
     class Factories(
         private val mocks: CryptoMocks,

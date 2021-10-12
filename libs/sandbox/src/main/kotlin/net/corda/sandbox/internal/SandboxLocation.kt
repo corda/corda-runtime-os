@@ -1,12 +1,11 @@
 package net.corda.sandbox.internal
 
 import net.corda.sandbox.SandboxException
-import java.net.URI
 import java.util.UUID
 
 /** Information about the sandbox that can be mapped to and from a unique OSGi bundle location. */
 @Suppress("ThrowsCount")
-data class SandboxLocation(val id: UUID, val uri: URI) {
+data class SandboxLocation(val id: UUID, val source: String) {
     companion object {
         fun fromString(string: String): SandboxLocation {
             val components = string.split('/')
@@ -14,7 +13,7 @@ data class SandboxLocation(val id: UUID, val uri: URI) {
             if (components.size != 3) {
                 throw SandboxException(
                     "Sandbox bundle location had incorrect format: $string. Expected " +
-                            "\"sandbox/{sandbox-id}/{sandbox-source-uri}\"."
+                            "\"sandbox/{sandbox-id}/{sandbox-source}\"."
                 )
             }
 
@@ -27,16 +26,9 @@ data class SandboxLocation(val id: UUID, val uri: URI) {
             } catch (e: IllegalArgumentException) {
                 throw SandboxException("Sandbox ID ${components[1]} was not a valid UUID.")
             }
-
-            val sandboxUri = try {
-                URI.create(components[2])
-            } catch (e: IllegalArgumentException) {
-                throw SandboxException("Sandbox URI ${components[2]} was not a valid URI.")
-            }
-
-            return SandboxLocation(sandboxId, sandboxUri)
+            return SandboxLocation(sandboxId, components[2])
         }
     }
 
-    override fun toString() = "sandbox/$id/$uri"
+    override fun toString() = "sandbox/$id/$source"
 }

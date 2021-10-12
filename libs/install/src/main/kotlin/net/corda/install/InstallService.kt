@@ -1,7 +1,7 @@
 package net.corda.install
 
-import net.corda.packaging.Cpb
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPI
+import net.corda.packaging.CPK
 import net.corda.packaging.PackagingException
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
@@ -23,35 +23,35 @@ interface InstallService {
     /**
      * Used when installing new CPBs on the node.
      *
-     * Creates a [Cpb.Expanded] from the [inputStream], verifies the [Cpb], parses its [Cpk]s, and stores them for the
+     * Creates a [CPI] from the [inputStream], verifies the [CPI], parses its [CPK]s, and stores them for the
      * creation of sandboxes and CorDapps in the future.
      *
-     * A [PackagingException] is thrown if the [inputStream] contains an invalid [Cpb].
+     * A [PackagingException] is thrown if the [inputStream] contains an invalid [CPI].
      * A [CpkInstallationException] is thrown if any of the CPB fails to install.
      * A [CpkVerificationException] is thrown if any of the CPBs fail to verify.
      *
-     * @return The [Cpb]s parsed from the [inputStream]
+     * @return The [CPI]s parsed from the [inputStream]
      */
-    fun loadCpb(inputStream : InputStream): Cpb.Expanded
+    fun loadCpb(inputStream : InputStream): CPI
 
     /**
-     * Verifies the [Cpk] retrieved from the [inputStream] and identified by [cpkHash], and stores it for retrieval
+     * Verifies the [CPK] retrieved from the [inputStream] and identified by [cpkHash], and stores it for retrieval
      * when creating future sandboxes.
      *
-     * A [PackagingException] is thrown if the [inputStream] contains an invalid [Cpk].
+     * A [PackagingException] is thrown if the [inputStream] contains an invalid [CPK].
      * A [CpkInstallationException] is thrown if any of the CPKs fails to install.
      * A [CpkVerificationException] is thrown if any of the CPKs fail to verify.
      */
-    fun loadCpk(cpkHash : SecureHash, inputStream : InputStream) : Cpk.Expanded
+    fun loadCpk(cpkHash : SecureHash, inputStream : InputStream) : CPK
 
-    /** Returns the stored [Cpb.Expanded] for the CPB identified by [cpbIdentifier], or null if no such CPB has been stored. */
-    fun getCpb(cpbIdentifier: Cpb.Identifier): Cpb.Expanded?
+    /** Returns the stored [CPI] for the CPI identified by [cpiIdentifier], or null if no such CPI has been stored. */
+    fun getCpb(cpiIdentifier: CPI.Identifier): CPI?
 
-    /** Returns the stored [Cpk.Expanded] identified by [id], or null if no such CPK has been stored. */
-    fun getCpk(id : Cpk.Identifier): Cpk.Expanded?
+    /** Returns the stored [CPK] identified by [id], or null if no such CPK has been stored. */
+    fun getCpk(id : CPK.Identifier): CPK?
 
-    /** Returns the stored [Cpk.Expanded] identified by [cpkHash], or null if no such CPK has been stored. */
-    fun getCpk(cpkHash: SecureHash): Cpk.Expanded?
+    /** Returns the stored [CPK] identified by [cpkHash], or null if no such CPK has been stored. */
+    fun getCpk(cpkHash: SecureHash): CPK?
 
     /**
      * Verifies a set of CPKs as a group.
@@ -60,9 +60,9 @@ interface InstallService {
      *
      * [Cpb]s are also verified as a group at installation time, and thus a CPB's CPKs don't need to be re-verified.
      */
-    fun verifyCpkGroup(cpks: Iterable<Cpk>)
+    fun verifyCpkGroup(cpks: Iterable<CPK>)
 
-    fun getCpbIdentifiers() : Set<Cpb.Identifier>
+    fun getCpbIdentifiers() : Set<CPI.Identifier>
 
     fun hasCpk(cpkHash: SecureHash): Boolean
 }

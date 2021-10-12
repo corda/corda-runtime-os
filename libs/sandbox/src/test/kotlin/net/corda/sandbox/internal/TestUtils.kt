@@ -1,6 +1,7 @@
 package net.corda.sandbox.internal
 
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPK
+import net.corda.v5.base.util.toHex
 import net.corda.v5.crypto.SecureHash
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -8,9 +9,10 @@ import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import org.osgi.framework.Version
 import java.security.MessageDigest
+import kotlin.math.abs
+import kotlin.random.Random.Default.nextBytes
 import kotlin.random.Random.Default.nextInt
 import kotlin.random.Random.Default.nextLong
-import kotlin.math.abs
 
 const val HASH_ALGORITHM = "SHA-256"
 const val HASH_LENGTH = 32
@@ -40,13 +42,17 @@ fun mockBundle(
         }
     }
 
-/** Generates a mock [Cpk.Expanded]. */
-fun mockCpk(): Cpk.Expanded {
-    val dummyCpkIdentifier = Cpk.Identifier("", "", randomSecureHash())
+/** Generates a mock [CPK]. */
+fun mockCpk(): CPK {
+    val dummyCpkIdentifier = CPK.Identifier.newInstance(nextBytes(ByteArray(8)).toHex(), "1.0", randomSecureHash())
     val mockCpkFileHash = randomSecureHash()
 
-    return mock<Cpk.Expanded>().apply {
+    val metadataMock = mock<CPK.Metadata>().apply {
         whenever(id).thenReturn(dummyCpkIdentifier)
-        whenever(cpkHash).thenReturn(mockCpkFileHash)
+        whenever(hash).thenReturn(mockCpkFileHash)
+    }
+
+    return mock<CPK>().apply {
+        whenever(metadata).thenReturn(metadataMock)
     }
 }

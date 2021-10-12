@@ -8,7 +8,7 @@ import net.corda.install.internal.CONFIG_ADMIN_PLATFORM_VERSION
 import net.corda.install.internal.SUPPORTED_CPK_FORMATS
 import net.corda.packaging.CordappManifest
 import net.corda.packaging.CordappManifest.Companion.DEFAULT_MIN_PLATFORM_VERSION
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPK
 import net.corda.packaging.DependencyResolutionException
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -26,10 +26,10 @@ import org.osgi.service.component.annotations.Reference
 @Component
 internal class CpkFormatVerifier : StandaloneCpkVerifier {
 
-    override fun verify(cpks: Iterable<Cpk>) {
+    override fun verify(cpks: Iterable<CPK.Metadata>) {
         cpks.forEach { cpk ->
-            val cpkFormat = cpk.cpkManifest.cpkFormatVersion
-            if (cpk.cpkManifest.cpkFormatVersion !in SUPPORTED_CPK_FORMATS) {
+            val cpkFormat = cpk.manifest.cpkFormatVersion
+            if (cpk.manifest.cpkFormatVersion !in SUPPORTED_CPK_FORMATS) {
                 throw CpkVerificationException("CPK ${cpk.id} is on version ${cpkFormat}. " +
                         "The supported CPK versions are: $SUPPORTED_CPK_FORMATS.")
             }
@@ -49,7 +49,7 @@ internal class MinimumPlatformVersionVerifier @Activate constructor(
         private val configAdmin: ConfigurationAdmin
 ) : StandaloneCpkVerifier {
 
-    override fun verify(cpks: Iterable<Cpk>) {
+    override fun verify(cpks: Iterable<CPK.Metadata>) {
         val conf = configAdmin.getConfiguration(ConfigurationAdmin::class.java.name, null)
         val platformVersion = conf.properties[CONFIG_ADMIN_PLATFORM_VERSION] as? Int
                 ?: throw CpkVerificationException("Parameter platformVersion needs to be set to perform platform " +
@@ -79,7 +79,7 @@ internal class MinimumPlatformVersionVerifier @Activate constructor(
 internal class CordappInfoVerifier : StandaloneCpkVerifier {
 
     @Suppress("ComplexMethod")
-    override fun verify(cpks: Iterable<Cpk>) = cpks.forEach { cpk ->
+    override fun verify(cpks: Iterable<CPK.Metadata>) = cpks.forEach { cpk ->
         val manifest = cpk.cordappManifest
 
         if (manifest.contractInfo.shortName == null && manifest.workflowInfo.shortName == null) {
@@ -106,6 +106,7 @@ internal class CordappInfoVerifier : StandaloneCpkVerifier {
         }
     }
 }
+
 /**
  * CorDapp signature verifier - Checks that none of the CorDapps have *only* been signed by prohibited signers (i.e.
  * a CorDapp signed by a blacklisted key and a non-blacklisted key is fine).
@@ -125,7 +126,7 @@ internal class CordappSignatureVerifier @Activate constructor(
 
     private fun ByteArray.sha256(): SecureHash = hashingService.hash(this, DigestAlgorithmName.SHA2_256)
 
-    override fun verify(cpks: Iterable<Cpk>) {
+    override fun verify(cpks: Iterable<CPK.Metadata>) {
         val conf = configAdmin.getConfiguration(ConfigurationAdmin::class.java.name, null)
         @Suppress("UNCHECKED_CAST") val blacklistedKeys = conf.properties[CONFIG_ADMIN_BLACKLISTED_KEYS] as? List<String>
                 ?: throw CpkVerificationException("Parameter blacklistedKeys needs to be set to perform signature verification check.")
@@ -168,9 +169,9 @@ internal class CordappSignatureVerifier @Activate constructor(
 @Component
 internal class DependenciesMetVerifier : GroupCpkVerifier {
 
-    override fun verify(cpks: Iterable<Cpk>)  {
+    override fun verify(cpks: Iterable<CPK.Metadata>)  {
         try {
-            Cpk.resolveDependencies(cpks, true)
+            CPK.resolveDependencies(cpks, true)
         } catch (ex : DependencyResolutionException) {
             throw CpkVerificationException(ex.message ?: "Failure during CPK dependency resolution", ex)
         }
@@ -178,15 +179,16 @@ internal class DependenciesMetVerifier : GroupCpkVerifier {
 }
 
 /**
- * Duplicate Cordapp hash verifier - Checks that no two Cordapps of the provided group of CPKs have the same hash.
+ * Duplicate Cordapp name verifier - Checks that no two Cordapps of the provided group of CPKs
+ * have the same bundle symbolic name.
  */
 @Component
-internal class DuplicateCordappHashVerifier : GroupCpkVerifier {
+internal class DuplicateCordappNameVerifier : GroupCpkVerifier {
 
-    override fun verify(cpks: Iterable<Cpk>) = detectDuplicates(
+    override fun verify(cpks: Iterable<CPK.Metadata>) = detectDuplicates(
             cpks,
             "The hash %s corresponds to multiple CorDapps: %s."
-    ) { cpk -> setOf(cpk.cordappHash) }
+    ) { cpk -> setOf(cpk.id.name) }
 }
 
 /**
@@ -201,10 +203,10 @@ internal class DuplicateCordappHashVerifier : GroupCpkVerifier {
 @Component
 internal class DuplicateCordappIdentifierVerifier : GroupCpkVerifier {
 
-    override fun verify(cpks: Iterable<Cpk>) = detectDuplicates(
+    override fun verify(cpks: Iterable<CPK.Metadata>) = detectDuplicates(
             cpks,
             "The identifier %s corresponds to multiple CorDapps: %s."
-    ) { cpk -> setOf(cpk.id.symbolicName to cpk.id.version) }
+    ) { cpk -> setOf(cpk.id.name to cpk.id.version) }
 }
 
 /**
@@ -213,7 +215,7 @@ internal class DuplicateCordappIdentifierVerifier : GroupCpkVerifier {
 @Component
 internal class DuplicateContractsVerifier : GroupCpkVerifier {
 
-    override fun verify(cpks: Iterable<Cpk>) = detectDuplicates(
+    override fun verify(cpks: Iterable<CPK.Metadata>) = detectDuplicates(
             cpks,
             "The contract %s is installed by multiple CorDapps: %s."
     ) { cpk -> cpk.cordappManifest.contracts }
@@ -225,7 +227,7 @@ internal class DuplicateContractsVerifier : GroupCpkVerifier {
 @Component
 internal class DuplicateFlowsVerifier : GroupCpkVerifier {
 
-    override fun verify(cpks: Iterable<Cpk>) = detectDuplicates(
+    override fun verify(cpks: Iterable<CPK.Metadata>) = detectDuplicates(
             cpks,
             "The flow %s is installed by multiple CorDapps: %s."
     ) { cpk -> cpk.cordappManifest.flows }
@@ -238,7 +240,7 @@ internal class DuplicateFlowsVerifier : GroupCpkVerifier {
  * The [errorMessage] should be a format string taking two arguments: the duplicate value, and the URIs of the
  * offending CPKs.
  */
-private fun detectDuplicates(cpks: Iterable<Cpk>, errorMessage: String, transform: (cpk: Cpk) -> Iterable<*>) {
+private fun detectDuplicates(cpks: Iterable<CPK.Metadata>, errorMessage: String, transform: (cpk: CPK.Metadata) -> Iterable<*>) {
     val duplicateCandidates = cpks.flatMap(transform)
 
     val duplicate = duplicateCandidates
@@ -261,14 +263,14 @@ private fun detectDuplicates(cpks: Iterable<Cpk>, errorMessage: String, transfor
  */
 @Component
 internal class NoSplitPackagesVerifier : GroupCpkVerifier {
-    override fun verify(cpks: Iterable<Cpk>) {
+    override fun verify(cpks: Iterable<CPK.Metadata>) {
         val cpkExports = cpks.associate { cpk ->
             cpk.id to cpk.cordappManifest.exportPackages
         }
 
         // Check that every package name is associated with
         // exactly one CPK Identifier.
-        val packageNames = mutableMapOf<String, Cpk.Identifier>()
+        val packageNames = mutableMapOf<String, CPK.Identifier>()
         cpkExports.entries.forEach { cpk ->
             cpk.value.forEach { packageName ->
                 packageNames.put(packageName, cpk.key)?.also { cpkId ->
