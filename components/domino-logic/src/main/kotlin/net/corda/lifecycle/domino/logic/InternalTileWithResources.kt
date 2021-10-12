@@ -14,8 +14,8 @@ abstract class InternalTileWithResources(
         super.started()
     }
 
-    override fun stopTile() {
+    override fun stopTile(dueToError: Boolean) {
         resources.close()
-        super.stopTile()
+        super.stopTile(dueToError)
     }
 }

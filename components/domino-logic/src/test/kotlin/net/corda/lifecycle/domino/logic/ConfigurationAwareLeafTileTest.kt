@@ -295,4 +295,25 @@ class ConfigurationAwareLeafTileTest {
 
         verify(service, times(1)).registerForUpdates(any())
     }
+
+    @Test
+    fun `stopTile will close the registration`() {
+        val tile = object : ConfigurationAwareLeafTile<Configuration>(
+            factory,
+            service,
+            key,
+            configFactory,
+        ) {
+            override fun applyNewConfiguration(
+                newConfiguration: Configuration,
+                oldConfiguration: Configuration?
+            ) {
+            }
+        }
+        tile.start()
+
+        tile.stop()
+
+        verify(registration).close()
+    }
 }

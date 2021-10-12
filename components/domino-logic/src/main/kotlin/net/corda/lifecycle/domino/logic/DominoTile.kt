@@ -59,7 +59,7 @@ abstract class DominoTile(
 
     override fun stop() {
         if (state != State.StoppedByParent) {
-            stopTile()
+            stopTile(false)
             updateState(State.StoppedByParent)
         }
     }
@@ -121,16 +121,16 @@ abstract class DominoTile(
     protected open fun gotError(cause: Throwable) {
         logger.warn("Got error in $name", cause)
         if (state != State.StoppedDueToError) {
-            stopTile()
+            stopTile(true)
             updateState(State.StoppedDueToError)
         }
     }
 
     protected abstract fun startTile()
-    protected abstract fun stopTile()
+    protected abstract fun stopTile(dueToError: Boolean)
 
     override fun close() {
-        stopTile()
+        stopTile(false)
 
         try {
             coordinator.close()

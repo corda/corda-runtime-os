@@ -71,7 +71,7 @@ class LeafTileTest {
             }
 
             override fun start() {
-                stopTile()
+                stopTile(false)
             }
         }
         tile.createResources()
@@ -98,7 +98,7 @@ class LeafTileTest {
             }
 
             override fun start() {
-                stopTile()
+                stopTile(false)
             }
         }
         tile.createResources()
@@ -119,7 +119,7 @@ class LeafTileTest {
             }
 
             override fun start() {
-                stopTile()
+                stopTile(false)
             }
         }
 

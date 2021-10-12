@@ -75,7 +75,7 @@ abstract class InternalTile(coordinatorFactory: LifecycleCoordinatorFactory) : D
         }
     }
 
-    override fun stopTile() {
+    override fun stopTile(dueToError: Boolean) {
         children.forEach {
             if (it.state != State.StoppedDueToError) {
                 it.stop()

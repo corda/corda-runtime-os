@@ -38,7 +38,7 @@ class DominoTileTest {
             started ++
         }
 
-        override fun stopTile() {
+        override fun stopTile(dueToError: Boolean) {
             stopped ++
         }
 

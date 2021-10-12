@@ -21,7 +21,7 @@ abstract class LeafTile(
 
     abstract fun createResources()
 
-    override fun stopTile() {
+    override fun stopTile(dueToError: Boolean) {
         resources.close()
     }
 }

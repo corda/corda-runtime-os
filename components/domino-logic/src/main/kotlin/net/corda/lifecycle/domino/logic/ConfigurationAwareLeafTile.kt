@@ -6,7 +6,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.v5.base.util.contextLogger
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 abstract class ConfigurationAwareLeafTile<C>(
@@ -21,8 +20,8 @@ abstract class ConfigurationAwareLeafTile<C>(
         private val logger = contextLogger()
     }
 
-    private val configurationHolder = AtomicReference<C>()
-    private val canReceiveConfigurations = AtomicBoolean(false)
+    private val lastConfiguration = AtomicReference<C>()
+
     protected val resources = ResourcesHolder()
 
     private inner class Handler : ConfigurationHandler {
@@ -48,14 +47,12 @@ abstract class ConfigurationAwareLeafTile<C>(
         try {
             val configuration = configFactory(newConfiguration)
             logger.info("Got configuration $name")
-            val oldConfiguration = configurationHolder.getAndSet(configuration)
+            val oldConfiguration = lastConfiguration.getAndSet(configuration)
             if (oldConfiguration == configuration) {
                 logger.info("Configuration had not changed $name")
                 return
-            } else if ((state == State.StoppedDueToError) || (canReceiveConfigurations.get())) {
-                logger.info("Reconfiguring $name")
+            } else {
                 applyNewConfiguration(configuration, oldConfiguration)
-                canReceiveConfigurations.set(true)
                 started()
                 logger.info("Reconfigured $name")
             }
@@ -67,28 +64,18 @@ abstract class ConfigurationAwareLeafTile<C>(
     abstract fun applyNewConfiguration(newConfiguration: C, oldConfiguration: C?)
 
     override fun startTile() {
-        if(registration.get() == null) {
+        if (registration.get() == null) {
             registration.getAndSet(
-                configurationReaderService.registerForUpdates(Handler()))
+                configurationReaderService.registerForUpdates(Handler())
+            )
                 ?.close()
-        }
-        if (configurationHolder.get() != null) {
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                applyNewConfiguration(configurationHolder.get(), null)
-                started()
-            } catch (e: Throwable) {
-                gotError(e)
-            }
-        }
-
-        canReceiveConfigurations.set(true)
-        resources.keep {
-            canReceiveConfigurations.set(false)
         }
     }
 
-    override fun stopTile() {
+    override fun stopTile(dueToError: Boolean) {
         resources.close()
+        if (!dueToError) {
+            registration.getAndSet(null)?.close()
+        }
     }
 }
