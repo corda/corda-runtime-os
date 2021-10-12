@@ -9,11 +9,9 @@ import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.impl.MemberInfoExtension.Companion.softwareVersion
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.membership.identity.*
 import java.security.PublicKey
 
-@CordaSerializable
 class MemberInfoImpl(
     override val memberProvidedContext: KeyValueStore,
     override val mgmProvidedContext: KeyValueStore

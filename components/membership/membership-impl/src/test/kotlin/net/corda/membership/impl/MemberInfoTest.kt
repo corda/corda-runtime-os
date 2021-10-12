@@ -18,7 +18,6 @@ import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.impl.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.impl.MemberInfoExtension.Companion.modifiedTime
-import net.corda.v5.application.identity.Party
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.identity.KeyValueStore
 import net.corda.v5.membership.identity.MemberInfo
@@ -95,13 +94,8 @@ class MemberInfoTest {
             return result
         }
 
-        private fun convertPublicKeys(keyEncodingService: KeyEncodingService): List<Pair<String, String>> {
-            val result = mutableListOf<Pair<String, String>>()
-            for(i in identityKeys.indices) {
-                result.add(Pair(String.format(IDENTITY_KEYS_KEY, i), keyEncodingService.encodeAsString(identityKeys[i])))
-            }
-            return result
-        }
+        private fun convertPublicKeys(keyEncodingService: KeyEncodingService): List<Pair<String, String>> =
+            identityKeys.mapIndexed { i, identityKey -> String.format(IDENTITY_KEYS_KEY, i) to keyEncodingService.encodeAsString(identityKey) }
 
         private fun convertTestObjects(): List<Pair<String, String>> {
             val result = mutableListOf<Pair<String, String>>()
@@ -171,7 +165,6 @@ class MemberInfoTest {
         assertEquals(memberInfo?.isActive, recreatedMemberInfo?.isActive)
         assertEquals(memberInfo?.serial, recreatedMemberInfo?.serial)
         assertEquals(memberInfo?.platformVersion, recreatedMemberInfo?.platformVersion)
-        assertEquals(memberInfo?.party, recreatedMemberInfo?.party)
     }
 
     @Test
@@ -192,16 +185,6 @@ class MemberInfoTest {
             memberInfo?.memberProvidedContext?.parseList<String>("dummyKey")?.isEmpty()!!
         }
     }
-
-    val PARTY = "corda.party"
-
-    val MemberInfo.party: Party
-        get() = memberProvidedContext.parse(PARTY)
-
-    val NOTARY_SERVICE_PARTY = "corda.notaryServiceParty"
-
-    val MemberInfo.notaryServiceParty: Party?
-        get() = memberProvidedContext.parse(NOTARY_SERVICE_PARTY)
 }
 
 data class TestObject(val number: Int, val text: String)
