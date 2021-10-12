@@ -9,8 +9,10 @@ import org.osgi.service.component.annotations.Reference
 @Component(immediate = true)
 @Suppress("unused")
 class Main @Activate constructor(
-    @Reference(service = BundleCleanupPublisher::class)
-    private val publisher: BundleCleanupPublisher
+    @Reference(service = DemoPublisher::class)
+    private val publisher: DemoPublisher,
+    @Reference(service = DemoConsumer::class)
+private val consumer: DemoConsumer
 ) : Application {
     companion object {
         private val log = contextLogger()
@@ -18,6 +20,7 @@ class Main @Activate constructor(
 
     override fun startup(args: Array<String>) {
         log.info("JJJ - Main started.")
+        consumer.start()
         publisher.start()
     }
 
