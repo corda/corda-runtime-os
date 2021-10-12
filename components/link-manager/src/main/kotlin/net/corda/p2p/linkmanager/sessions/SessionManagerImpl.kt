@@ -487,8 +487,11 @@ open class SessionManagerImpl(
          */
         class TrackedSession(
             var identityData: SessionKey,
+            @Volatile
             var lastSendTimestamp: Long,
+            @Volatile
             var lastAckTimestamp: Long,
+            @Volatile
             var sendingHeartbeats: Boolean = false
         )
 
