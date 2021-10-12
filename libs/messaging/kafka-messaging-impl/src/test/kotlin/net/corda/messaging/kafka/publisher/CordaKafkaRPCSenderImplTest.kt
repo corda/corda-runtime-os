@@ -22,7 +22,6 @@ import net.corda.v5.base.util.seconds
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -34,13 +33,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.concurrent.TimeUnit
 
 class CordaKafkaRPCSenderImplTest {
-
-    companion object {
-        private const val TEST_TIMEOUT_SECONDS = 2L
-    }
 
     private lateinit var cordaSenderImpl: CordaKafkaRPCSenderImpl<String, String>
 
@@ -72,7 +66,6 @@ class CordaKafkaRPCSenderImplTest {
     private val serializer = CordaAvroSerializer<String>(schemaRegistry)
 
     @Test
-    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `test rpc response subscription works`() {
         val publisher: Publisher = mock()
         val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
@@ -98,7 +91,6 @@ class CordaKafkaRPCSenderImplTest {
     }
 
     @Test
-    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `test send request finishes exceptionally due to lack of partitions`() {
         cordaSenderImpl = CordaKafkaRPCSenderImpl(mock(), mock(), mock(), serializer, deserializer)
 

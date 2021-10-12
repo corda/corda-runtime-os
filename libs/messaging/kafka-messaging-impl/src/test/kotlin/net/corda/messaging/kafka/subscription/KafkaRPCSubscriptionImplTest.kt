@@ -28,7 +28,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.mockito.Captor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -41,14 +40,9 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 
 
 class KafkaRPCSubscriptionImplTest {
-
-    companion object {
-        private const val TEST_TIMEOUT_SECONDS = 2L
-    }
 
     private val config: Config = createStandardTestConfig().getConfig(PATTERN_RPC_RESPONDER)
     private val dummyRequest = HoldingIdentity(
@@ -103,7 +97,6 @@ class KafkaRPCSubscriptionImplTest {
     }
 
     @Test
-    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `rpc subscription receives request and completes it OK`() {
         val processor = TestProcessor(ResponseStatus.OK)
         val subscription = KafkaRPCSubscriptionImpl(
@@ -128,7 +121,6 @@ class KafkaRPCSubscriptionImplTest {
     }
 
     @Test
-    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `rpc subscription receives request and completes it exceptionally`() {
         val processor = TestProcessor(ResponseStatus.FAILED)
         val subscription = KafkaRPCSubscriptionImpl(
@@ -157,7 +149,6 @@ class KafkaRPCSubscriptionImplTest {
     }
 
     @Test
-    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `rpc subscription receives request and cancels it`() {
         val processor = TestProcessor(ResponseStatus.CANCELLED)
         val subscription = KafkaRPCSubscriptionImpl(
