@@ -27,7 +27,6 @@ import net.corda.p2p.crypto.util.verify
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 import javax.crypto.AEADBadTagException
@@ -44,7 +43,11 @@ import kotlin.math.min
  * - [generateOurHandshakeMessage]
  * - [getSession]
  *
- * The [step] variable can be used to avoid calling methods when they have been called already (i.e. because of a duplicate message).
+ * This class is idempotent. If a method is invoked multiple times, no side-effects will be executed and cached results will be returned.
+ * This is in order to assist scenarios, where messages might be replayed safely without complicated logic on clients of the class.
+ *
+ * However, if methods are called out of sequence (e.g. [generateHandshakeSecrets] without the previous methods having ever been called),
+ * this is an error and an [IncorrectAPIUsageException] will be thrown.
  *
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
@@ -57,35 +60,10 @@ class AuthenticationProtocolResponder(private val sessionId: String,
         require(ourMaxMessageSize > MIN_PACKET_SIZE) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
     }
 
-    companion object {
-        @Suppress("LongParameterList")
-        fun fromStep2(sessionId: String,
-                      supportedModes: Set<ProtocolMode>,
-                      maxMessageSize: Int,
-                      initiatorHelloMsg: InitiatorHelloMessage,
-                      responderHelloMsg: ResponderHelloMessage,
-                      privateDHKey: ByteArray,
-                      publicDHKey: ByteArray): AuthenticationProtocolResponder {
-            val protocol = AuthenticationProtocolResponder(sessionId, supportedModes, maxMessageSize)
-            protocol.apply {
-                receiveInitiatorHello(initiatorHelloMsg)
-                myPrivateDHKey = protocol.ephemeralKeyFactory.generatePrivate(PKCS8EncodedKeySpec(privateDHKey))
-                myPublicDHKey = publicDHKey
-
-                sharedDHSecret = keyAgreement.perform(myPrivateDHKey!!, peerPublicDHKey!!)
-                responderHelloMessage = responderHelloMsg
-                selectedMode = responderHelloMsg.selectedMode
-                initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
-                                                      responderHelloMessage!!.toByteBuffer().array()
-
-                step = Step.SENT_MY_DH_KEY
-            }
-
-            return protocol
-        }
-    }
-
-    var step = Step.INIT
+    private var step = Step.INIT
+    private var handshakeIdentityData: HandshakeIdentityData? = null
+    private var responderHandshakeMessage: ResponderHandshakeMessage? = null
+    private var session: Session? = null
 
     enum class Step {
         INIT,
@@ -98,61 +76,48 @@ class AuthenticationProtocolResponder(private val sessionId: String,
     }
 
     fun receiveInitiatorHello(initiatorHelloMsg: InitiatorHelloMessage) {
-        transition(Step.INIT, Step.RECEIVED_PEER_DH_KEY)
-
-        initiatorHelloMessage = initiatorHelloMsg
-        peerPublicDHKey = ephemeralKeyFactory.generatePublic(X509EncodedKeySpec(initiatorHelloMsg.initiatorPublicKey.array()))
+        return transition(Step.INIT, Step.RECEIVED_PEER_DH_KEY, {}) {
+            initiatorHelloMessage = initiatorHelloMsg
+            peerPublicDHKey = ephemeralKeyFactory.generatePublic(X509EncodedKeySpec(initiatorHelloMsg.initiatorPublicKey.array()))
+        }
     }
 
     /**
      * Get identity information (SHA-256 hash of the identity public key and group identity) about the Initiator.
-     * Returns null if used before [receiveInitiatorHello].
+     * That should not be called before [receiveInitiatorHello]. In this case, it will throw an [IncorrectAPIUsageException].
      */
-    fun getInitiatorIdentity(): InitiatorHandshakeIdentity? {
-        return initiatorHelloMessage?.source
+    fun getInitiatorIdentity(): InitiatorHandshakeIdentity {
+        if(step < Step.RECEIVED_PEER_DH_KEY) {
+            throw IncorrectAPIUsageException("getInitiatorIdentity cannot be invoked before processing an initiator hello.")
+        }
+        return initiatorHelloMessage!!.source
     }
 
     /**
      * @throws NoCommonModeError when there is no mode that is supported by both the initiator and the responder.
      */
     fun generateResponderHello(): ResponderHelloMessage {
-        transition(Step.RECEIVED_PEER_DH_KEY, Step.SENT_MY_DH_KEY)
+        return transition(Step.RECEIVED_PEER_DH_KEY, Step.SENT_MY_DH_KEY, { responderHelloMessage!! }) {
+            val keyPair = keyPairGenerator.generateKeyPair()
+            myPrivateDHKey = keyPair.private
+            myPublicDHKey = keyPair.public.encoded
 
-        val keyPair = keyPairGenerator.generateKeyPair()
-        myPrivateDHKey = keyPair.private
-        myPublicDHKey = keyPair.public.encoded
+            sharedDHSecret = keyAgreement.perform(myPrivateDHKey!!, peerPublicDHKey!!)
+            val commonHeader = CommonHeader(MessageType.RESPONDER_HELLO, PROTOCOL_VERSION, sessionId,
+                0, Instant.now().toEpochMilli())
 
-        sharedDHSecret = keyAgreement.perform(myPrivateDHKey!!, peerPublicDHKey!!)
-        val commonHeader = CommonHeader(MessageType.RESPONDER_HELLO, PROTOCOL_VERSION, sessionId,
-                             0, Instant.now().toEpochMilli())
-
-        selectedMode = ProtocolModeNegotiation.selectMode(initiatorHelloMessage!!.supportedModes.toSet(), supportedModes)
-        responderHelloMessage = ResponderHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!), selectedMode)
-        initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
-                                              responderHelloMessage!!.toByteBuffer().array()
-        return responderHelloMessage!!
-    }
-
-    /**
-     * Caution: this is available in cases where one component needs to perform step 2 of the handshake
-     * and forward the generated DH key downstream to another component that wil complete the protocol from that point on.
-     * This means the private key will be temporarily exposed.
-     *
-     * That downstream component can resume the protocol from that point onwards
-     * creating a new instance of this class using the [fromStep2] method.
-     *
-     * @return a pair containing (in that order) the private and the public DH key.
-     */
-    fun getDHKeyPair(): Pair<ByteArray, ByteArray> {
-        checkState(Step.SENT_MY_DH_KEY)
-
-        return myPrivateDHKey!!.encoded to myPublicDHKey!!
+            selectedMode = ProtocolModeNegotiation.selectMode(initiatorHelloMessage!!.supportedModes.toSet(), supportedModes)
+            responderHelloMessage = ResponderHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!), selectedMode)
+            initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
+                    responderHelloMessage!!.toByteBuffer().array()
+            responderHelloMessage!!
+        }
     }
 
     fun generateHandshakeSecrets() {
-        transition(Step.SENT_MY_DH_KEY, Step.GENERATED_HANDSHAKE_SECRETS)
-
-        sharedHandshakeSecrets = generateHandshakeSecrets(sharedDHSecret!!, initiatorHelloToResponderHelloBytes!!)
+        return transition(Step.SENT_MY_DH_KEY, Step.GENERATED_HANDSHAKE_SECRETS, {}) {
+            sharedHandshakeSecrets = generateHandshakeSecrets(sharedDHSecret!!, initiatorHelloToResponderHelloBytes!!)
+        }
     }
 
     /**
@@ -168,68 +133,70 @@ class AuthenticationProtocolResponder(private val sessionId: String,
     @Suppress("ThrowsCount")
     fun validatePeerHandshakeMessage(
         initiatorHandshakeMessage: InitiatorHandshakeMessage,
-        initiatorPublicKey: PublicKey
+        initiatorPublicKey: PublicKey,
+        initiatorPublicKeyAlgo: KeyAlgorithm
     ): HandshakeIdentityData {
-        transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.RECEIVED_HANDSHAKE_MESSAGE)
-
-        val initiatorPublicKeyHash = messageDigest.hash(initiatorPublicKey.encoded)
-        val expectedInitiatorPublicKeyHash = getInitiatorIdentity()?.initiatorPublicKeyHash?.array()
-        if (!initiatorPublicKeyHash.contentEquals(expectedInitiatorPublicKeyHash)) {
-            throw WrongPublicKeyHashException(expectedInitiatorPublicKeyHash, initiatorPublicKeyHash)
-        }
-
-        val initiatorRecordHeaderBytes = initiatorHandshakeMessage.header.toByteBuffer().array()
-        try {
-            initiatorHandshakePayloadBytes = aesCipher.decrypt(initiatorRecordHeaderBytes,
-                                                       initiatorHandshakeMessage.authTag.array(),
-                                                       sharedHandshakeSecrets!!.initiatorNonce,
-                                                       initiatorHandshakeMessage.encryptedData.array(),
-                                                       sharedHandshakeSecrets!!.initiatorEncryptionKey)
-        } catch (e: AEADBadTagException) {
-            throw InvalidHandshakeMessageException()
-        }
-
-        val initiatorHandshakePayload = InitiatorHandshakePayload.fromByteBuffer(ByteBuffer.wrap(initiatorHandshakePayloadBytes))
-        val initiatorHandshakePayloadIncomplete = InitiatorHandshakePayload(
-            initiatorHandshakePayload.initiatorEncryptedExtensions,
-            initiatorHandshakePayload.initiatorPublicKeyHash,
-            ByteBuffer.allocate(0),
-            ByteBuffer.allocate(0)
-        )
-
-        // validate signature
-        val initiatorHelloToInitiatorPublicKeyHash = initiatorHelloToResponderHelloBytes!! +
-                                                              initiatorHandshakePayloadIncomplete.toByteBuffer().array()
-        val signatureWasValid = signature.verify(initiatorPublicKey,
-                                    INITIATOR_SIG_PAD.toByteArray(Charsets.UTF_8) +
-                                         messageDigest.hash(initiatorHelloToInitiatorPublicKeyHash),
-                                         initiatorHandshakePayload.initiatorPartyVerify.array())
-        if (!signatureWasValid) {
-            throw InvalidHandshakeMessageException()
-        }
-        initiatorHandshakePayloadIncomplete.initiatorPartyVerify = initiatorHandshakePayload.initiatorPartyVerify
-
-        // validate MAC
-        val initiatorHelloToInitiatorPartyVerify = initiatorHelloToResponderHelloBytes!! +
-                                                            initiatorHandshakePayloadIncomplete.toByteBuffer().array()
-        val calculatedInitiatorFinished = hmac.calculateMac(sharedHandshakeSecrets!!.initiatorAuthKey,
-                                                         messageDigest.hash(initiatorHelloToInitiatorPartyVerify))
-        if (!calculatedInitiatorFinished.contentEquals(initiatorHandshakePayload.initiatorFinished.array())) {
-            throw InvalidHandshakeMessageException()
-        }
-
-        initiatorHandshakePayload.initiatorEncryptedExtensions.maxMessageSize.apply {
-            if (this <= MIN_PACKET_SIZE) {
-                throw InvalidMaxMessageSizeProposedError("Initiator's proposed max message size ($this) " +
-                        "was smaller than the minimum allowed value ($MIN_PACKET_SIZE).")
+        return transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.RECEIVED_HANDSHAKE_MESSAGE, { handshakeIdentityData!! }) {
+            val initiatorPublicKeyHash = messageDigest.hash(initiatorPublicKey.encoded)
+            val expectedInitiatorPublicKeyHash = getInitiatorIdentity().initiatorPublicKeyHash.array()
+            if (!initiatorPublicKeyHash.contentEquals(expectedInitiatorPublicKeyHash)) {
+                throw WrongPublicKeyHashException(expectedInitiatorPublicKeyHash, initiatorPublicKeyHash)
             }
 
-            agreedMaxMessageSize = min(ourMaxMessageSize, this)
-        }
+            val initiatorRecordHeaderBytes = initiatorHandshakeMessage.header.toByteBuffer().array()
+            try {
+                initiatorHandshakePayloadBytes = aesCipher.decrypt(initiatorRecordHeaderBytes,
+                    initiatorHandshakeMessage.authTag.array(),
+                    sharedHandshakeSecrets!!.initiatorNonce,
+                    initiatorHandshakeMessage.encryptedData.array(),
+                    sharedHandshakeSecrets!!.initiatorEncryptionKey)
+            } catch (e: AEADBadTagException) {
+                throw InvalidHandshakeMessageException()
+            }
 
-        return HandshakeIdentityData(initiatorHandshakePayload.initiatorPublicKeyHash.array(),
-                                     initiatorHandshakePayload.initiatorEncryptedExtensions.responderPublicKeyHash.array(),
-                                     initiatorHandshakePayload.initiatorEncryptedExtensions.groupId)
+            val initiatorHandshakePayload = InitiatorHandshakePayload.fromByteBuffer(ByteBuffer.wrap(initiatorHandshakePayloadBytes))
+            val initiatorHandshakePayloadIncomplete = InitiatorHandshakePayload(
+                initiatorHandshakePayload.initiatorEncryptedExtensions,
+                initiatorHandshakePayload.initiatorPublicKeyHash,
+                ByteBuffer.allocate(0),
+                ByteBuffer.allocate(0)
+            )
+
+            // validate signature
+            val initiatorHelloToInitiatorPublicKeyHash = initiatorHelloToResponderHelloBytes!! +
+                    initiatorHandshakePayloadIncomplete.toByteBuffer().array()
+            val signatureWasValid = getSignature(initiatorPublicKeyAlgo).verify(initiatorPublicKey,
+                INITIATOR_SIG_PAD.toByteArray(Charsets.UTF_8) +
+                        messageDigest.hash(initiatorHelloToInitiatorPublicKeyHash),
+                initiatorHandshakePayload.initiatorPartyVerify.array())
+            if (!signatureWasValid) {
+                throw InvalidHandshakeMessageException()
+            }
+            initiatorHandshakePayloadIncomplete.initiatorPartyVerify = initiatorHandshakePayload.initiatorPartyVerify
+
+            // validate MAC
+            val initiatorHelloToInitiatorPartyVerify = initiatorHelloToResponderHelloBytes!! +
+                    initiatorHandshakePayloadIncomplete.toByteBuffer().array()
+            val calculatedInitiatorFinished = hmac.calculateMac(sharedHandshakeSecrets!!.initiatorAuthKey,
+                messageDigest.hash(initiatorHelloToInitiatorPartyVerify))
+            if (!calculatedInitiatorFinished.contentEquals(initiatorHandshakePayload.initiatorFinished.array())) {
+                throw InvalidHandshakeMessageException()
+            }
+
+            initiatorHandshakePayload.initiatorEncryptedExtensions.maxMessageSize.apply {
+                if (this <= MIN_PACKET_SIZE) {
+                    throw InvalidMaxMessageSizeProposedError("Initiator's proposed max message size ($this) " +
+                            "was smaller than the minimum allowed value ($MIN_PACKET_SIZE).")
+                }
+
+                agreedMaxMessageSize = min(ourMaxMessageSize, this)
+            }
+
+            handshakeIdentityData =  HandshakeIdentityData(initiatorHandshakePayload.initiatorPublicKeyHash.array(),
+                initiatorHandshakePayload.initiatorEncryptedExtensions.responderPublicKeyHash.array(),
+                initiatorHandshakePayload.initiatorEncryptedExtensions.groupId)
+            handshakeIdentityData!!
+        }
     }
 
     /**
@@ -241,35 +208,40 @@ class AuthenticationProtocolResponder(private val sessionId: String,
      * @param signingFn a callback function that will be invoked for performing signing (with the stable identity key).
      */
     fun generateOurHandshakeMessage(ourPublicKey: PublicKey, signingFn: (ByteArray) -> ByteArray): ResponderHandshakeMessage {
-        transition(Step.RECEIVED_HANDSHAKE_MESSAGE, Step.SENT_HANDSHAKE_MESSAGE)
+        return transition(Step.RECEIVED_HANDSHAKE_MESSAGE, Step.SENT_HANDSHAKE_MESSAGE, { responderHandshakeMessage!! }) {
+            val responderRecordHeader = CommonHeader(MessageType.RESPONDER_HANDSHAKE, PROTOCOL_VERSION,
+                sessionId, 1, Instant.now().toEpochMilli())
+            val responderRecordHeaderBytes = responderRecordHeader.toByteBuffer().array()
 
-        val responderRecordHeader = CommonHeader(MessageType.RESPONDER_HANDSHAKE, PROTOCOL_VERSION,
-            sessionId, 1, Instant.now().toEpochMilli())
-        val responderRecordHeaderBytes = responderRecordHeader.toByteBuffer().array()
+            val responderHandshakePayload = ResponderHandshakePayload(
+                ResponderEncryptedExtensions(agreedMaxMessageSize),
+                ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded)),
+                ByteBuffer.allocate(0),
+                ByteBuffer.allocate(0)
+            )
 
-        val responderHandshakePayload = ResponderHandshakePayload(
-            ResponderEncryptedExtensions(agreedMaxMessageSize),
-            ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded)),
-            ByteBuffer.allocate(0),
-            ByteBuffer.allocate(0)
-        )
+            // calculate signature
+            val initiatorHelloToResponderParty = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! +
+                    responderHandshakePayload.toByteBuffer().array()
+            responderHandshakePayload.responderPartyVerify = ByteBuffer.wrap(signingFn(RESPONDER_SIG_PAD.toByteArray(Charsets.UTF_8) +
+                    messageDigest.hash(initiatorHelloToResponderParty)))
 
-        // calculate signature
-        val initiatorHelloToResponderParty = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! +
-                                                      responderHandshakePayload.toByteBuffer().array()
-        responderHandshakePayload.responderPartyVerify = ByteBuffer.wrap(signingFn(RESPONDER_SIG_PAD.toByteArray(Charsets.UTF_8) +
-                                                                                    messageDigest.hash(initiatorHelloToResponderParty)))
+            // calculate MAC
+            val initiatorHelloToResponderPartyVerify = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! +
+                    responderHandshakePayload.toByteBuffer().array()
+            responderHandshakePayload.responderFinished = ByteBuffer.wrap(hmac.calculateMac(sharedHandshakeSecrets!!.responderAuthKey,
+                messageDigest.hash(initiatorHelloToResponderPartyVerify)))
 
-        // calculate MAC
-        val initiatorHelloToResponderPartyVerify = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! +
-                                                            responderHandshakePayload.toByteBuffer().array()
-        responderHandshakePayload.responderFinished = ByteBuffer.wrap(hmac.calculateMac(sharedHandshakeSecrets!!.responderAuthKey,
-                                                                                messageDigest.hash(initiatorHelloToResponderPartyVerify)))
-
-        responderHandshakePayloadBytes = responderHandshakePayload.toByteBuffer().array()
-        val (responderEncryptedData, responderTag) = aesCipher.encryptWithAssociatedData(responderRecordHeaderBytes,
+            responderHandshakePayloadBytes = responderHandshakePayload.toByteBuffer().array()
+            val (responderEncryptedData, responderTag) = aesCipher.encryptWithAssociatedData(responderRecordHeaderBytes,
                 sharedHandshakeSecrets!!.responderNonce, responderHandshakePayloadBytes!!, sharedHandshakeSecrets!!.responderEncryptionKey)
-        return ResponderHandshakeMessage(responderRecordHeader, ByteBuffer.wrap(responderEncryptedData), ByteBuffer.wrap(responderTag))
+            responderHandshakeMessage = ResponderHandshakeMessage(
+                responderRecordHeader,
+                ByteBuffer.wrap(responderEncryptedData),
+                ByteBuffer.wrap(responderTag)
+            )
+            responderHandshakeMessage!!
+        }
     }
 
     /**
@@ -280,30 +252,35 @@ class AuthenticationProtocolResponder(private val sessionId: String,
      * If the selected mode was [ProtocolMode.AUTHENTICATED_ENCRYPTION], this will return a [AuthenticatedEncryptionSession].
      */
     fun getSession(): Session {
-        transition(Step.SENT_HANDSHAKE_MESSAGE, Step.SESSION_ESTABLISHED)
+        return transition(Step.SENT_HANDSHAKE_MESSAGE, Step.SESSION_ESTABLISHED, { session!! }) {
+            val fullTranscript = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! + responderHandshakePayloadBytes!!
+            val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
 
-        val fullTranscript = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! + responderHandshakePayloadBytes!!
-        val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
-
-        return when(selectedMode!!) {
-            ProtocolMode.AUTHENTICATION_ONLY -> AuthenticatedSession(sessionId, 2, sharedSessionSecrets.responderEncryptionKey,
-                                                sharedSessionSecrets.initiatorEncryptionKey, agreedMaxMessageSize!!)
-            ProtocolMode.AUTHENTICATED_ENCRYPTION -> AuthenticatedEncryptionSession(sessionId, 2,
-                                                sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.responderNonce,
-                                                sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.initiatorNonce,
-                                                agreedMaxMessageSize!!)
+            session = when(selectedMode!!) {
+                ProtocolMode.AUTHENTICATION_ONLY -> AuthenticatedSession(sessionId, 2, sharedSessionSecrets.responderEncryptionKey,
+                    sharedSessionSecrets.initiatorEncryptionKey, agreedMaxMessageSize!!)
+                ProtocolMode.AUTHENTICATED_ENCRYPTION -> AuthenticatedEncryptionSession(sessionId, 2,
+                    sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.responderNonce,
+                    sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.initiatorNonce,
+                    agreedMaxMessageSize!!)
+            }
+            session!!
         }
     }
 
-    private fun transition(fromStep: Step, toStep: Step) {
-        checkState(fromStep)
+    private fun <R> transition(fromStep: Step, toStep: Step, getCachedValue: () -> R, calculateValue: () -> R): R {
+        if (step < fromStep) {
+            throw IncorrectAPIUsageException(
+                "This method must be invoked when the protocol is at least in step $fromStep, but it was in step $step."
+            )
+        }
+        if (step >= toStep) {
+            return getCachedValue()
+        }
+
+        val value = calculateValue()
         step = toStep
-    }
-
-    private fun checkState(expectedStep: Step) {
-        if (step != expectedStep) {
-            throw IncorrectAPIUsageException("This method must be invoked when the protocol is in step $expectedStep, but it was in step $step.")
-        }
+        return value
     }
 
 }

@@ -6,7 +6,11 @@ plugins {
 description 'Configuration Read API'
 
 dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    implementation project(":libs:lifecycle")
+    implementation project(":libs:lifecycle:lifecycle")
 }

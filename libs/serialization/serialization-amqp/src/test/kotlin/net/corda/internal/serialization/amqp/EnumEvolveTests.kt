@@ -1,14 +1,14 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.v5.serialization.SerializedBytes
-import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefault
-import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefaults
 import net.corda.internal.serialization.amqp.testutils.ProjectStructure.projectRootDir
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testName
 import net.corda.utilities.toPath
+import net.corda.v5.serialization.SerializedBytes
+import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefault
+import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefaults
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -24,10 +24,12 @@ import kotlin.test.assertNotNull
 //       the new ones out, then change each test to write out the serialized bytes rather than read
 //       the file.
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
+@Suppress("VariableNaming")
 class EnumEvolveTests {
     @Suppress("UNUSED")
     var localPath: URI = projectRootDir.toUri().resolve(
-            "serialization-internal/src/test/resources/net/corda/internal/serialization/amqp")
+        "serialization-internal/src/test/resources/net/corda/internal/serialization/amqp"
+    )
 
     // Version of the class as it was serialised
     //
@@ -38,7 +40,7 @@ class EnumEvolveTests {
     enum class DeserializeNewerSetToUnknown { A, B, C }
 
     @Test
-	fun deserialiseNewerSetToUnknown() {
+    fun deserialiseNewerSetToUnknown() {
         val resource = "${javaClass.simpleName}.${testName()}"
         val sf = testDefaultFactory()
 
@@ -66,7 +68,7 @@ class EnumEvolveTests {
     enum class DeserializeNewerSetToUnknown2 { A, B, C }
 
     @Test
-	fun deserialiseNewerSetToUnknown2() {
+    fun deserialiseNewerSetToUnknown2() {
         val resource = "${javaClass.simpleName}.${testName()}"
         val sf = testDefaultFactory()
 
@@ -95,7 +97,6 @@ class EnumEvolveTests {
         assertEquals(DeserializeNewerSetToUnknown2.C, obj3.e)
     }
 
-
     // Version of the class as it was serialised, evolve rule purposfuly not included to
     // test failure conditions
     //
@@ -106,7 +107,7 @@ class EnumEvolveTests {
 
     // Lets test to see if they forgot to provide an upgrade rule
     @Test
-	fun deserialiseNewerWithNoRule() {
+    fun deserialiseNewerWithNoRule() {
         val resource = "${javaClass.simpleName}.${testName()}"
         val sf = testDefaultFactory()
 
@@ -154,7 +155,7 @@ class EnumEvolveTests {
     enum class DeserializeWithRename { A, B, C }
 
     @Test
-	fun deserializeWithRename() {
+    fun deserializeWithRename() {
         val resource = "${javaClass.simpleName}.${testName()}"
         val sf = testDefaultFactory()
 
@@ -276,7 +277,7 @@ class EnumEvolveTests {
     enum class MultiOperations { A, B, C }
 
     @Test
-	fun multiOperations() {
+    fun multiOperations() {
         val resource = "${javaClass.simpleName}.${testName()}"
         val sf = testDefaultFactory()
 
@@ -319,49 +320,60 @@ class EnumEvolveTests {
         // File(URI("$localPath/$resource.5.G")).writeBytes(so.serialize(C(MultiOperations.G)).bytes)
 
         val stage1Resources = listOf(
-                Pair("$resource.1.A", MultiOperations.A),
-                Pair("$resource.1.B", MultiOperations.B),
-                Pair("$resource.1.C", MultiOperations.C),
-                Pair("$resource.1.D", MultiOperations.C))
+            Pair("$resource.1.A", MultiOperations.A),
+            Pair("$resource.1.B", MultiOperations.B),
+            Pair("$resource.1.C", MultiOperations.C),
+            Pair("$resource.1.D", MultiOperations.C)
+        )
 
         val stage2Resources = listOf(
-                Pair("$resource.2.A", MultiOperations.A),
-                Pair("$resource.2.B", MultiOperations.B),
-                Pair("$resource.2.C", MultiOperations.C),
-                Pair("$resource.2.D", MultiOperations.C),
-                Pair("$resource.2.E", MultiOperations.C))
+            Pair("$resource.2.A", MultiOperations.A),
+            Pair("$resource.2.B", MultiOperations.B),
+            Pair("$resource.2.C", MultiOperations.C),
+            Pair("$resource.2.D", MultiOperations.C),
+            Pair("$resource.2.E", MultiOperations.C)
+        )
 
         val stage3Resources = listOf(
-                Pair("$resource.3.A", MultiOperations.A),
-                Pair("$resource.3.B", MultiOperations.B),
-                Pair("$resource.3.C", MultiOperations.C),
-                Pair("$resource.3.D", MultiOperations.C),
-                Pair("$resource.3.BOB", MultiOperations.C))
+            Pair("$resource.3.A", MultiOperations.A),
+            Pair("$resource.3.B", MultiOperations.B),
+            Pair("$resource.3.C", MultiOperations.C),
+            Pair("$resource.3.D", MultiOperations.C),
+            Pair("$resource.3.BOB", MultiOperations.C)
+        )
 
         val stage4Resources = listOf(
-                Pair("$resource.4.A", MultiOperations.A),
-                Pair("$resource.4.B", MultiOperations.B),
-                Pair("$resource.4.CAT", MultiOperations.C),
-                Pair("$resource.4.D", MultiOperations.C),
-                Pair("$resource.4.BOB", MultiOperations.C),
-                Pair("$resource.4.F", MultiOperations.C),
-                Pair("$resource.4.G", MultiOperations.C))
+            Pair("$resource.4.A", MultiOperations.A),
+            Pair("$resource.4.B", MultiOperations.B),
+            Pair("$resource.4.CAT", MultiOperations.C),
+            Pair("$resource.4.D", MultiOperations.C),
+            Pair("$resource.4.BOB", MultiOperations.C),
+            Pair("$resource.4.F", MultiOperations.C),
+            Pair("$resource.4.G", MultiOperations.C)
+        )
 
         val stage5Resources = listOf(
-                Pair("$resource.5.APPLE", MultiOperations.A),
-                Pair("$resource.5.B", MultiOperations.B),
-                Pair("$resource.5.CAT", MultiOperations.C),
-                Pair("$resource.5.D", MultiOperations.C),
-                Pair("$resource.5.BBB", MultiOperations.C),
-                Pair("$resource.5.FLUMP", MultiOperations.C),
-                Pair("$resource.5.G", MultiOperations.C))
+            Pair("$resource.5.APPLE", MultiOperations.A),
+            Pair("$resource.5.B", MultiOperations.B),
+            Pair("$resource.5.CAT", MultiOperations.C),
+            Pair("$resource.5.D", MultiOperations.C),
+            Pair("$resource.5.BBB", MultiOperations.C),
+            Pair("$resource.5.FLUMP", MultiOperations.C),
+            Pair("$resource.5.G", MultiOperations.C)
+        )
 
         fun load(l: List<Pair<String, MultiOperations>>) = l.map {
             assertNotNull(EvolvabilityTests::class.java.getResource(it.first))
             assertThat(EvolvabilityTests::class.java.getResource(it.first).toPath()).exists()
 
-            Pair(DeserializationInput(sf).deserialize(SerializedBytes<C>(
-                    EvolvabilityTests::class.java.getResource(it.first).readBytes())), it.second)
+            Pair(
+                DeserializationInput(sf).deserialize(
+                    SerializedBytes<C>(
+                        EvolvabilityTests::class.java.getResource(it.first).readBytes()
+                    )
+                ),
+                it.second
+            )
         }
 
         load(stage1Resources).forEach { assertEquals(it.second, it.first.e) }
@@ -375,7 +387,7 @@ class EnumEvolveTests {
     enum class BadNewValue { A, B, C, D }
 
     @Test
-	fun badNewValue() {
+    fun badNewValue() {
         val sf = testDefaultFactory()
 
         data class C(val e: BadNewValue)
@@ -386,13 +398,13 @@ class EnumEvolveTests {
     }
 
     @CordaSerializationTransformEnumDefaults(
-            CordaSerializationTransformEnumDefault(new = "D", old = "E"),
-            CordaSerializationTransformEnumDefault(new = "E", old = "A")
+        CordaSerializationTransformEnumDefault(new = "D", old = "E"),
+        CordaSerializationTransformEnumDefault(new = "E", old = "A")
     )
     enum class OutOfOrder { A, B, C, D, E }
 
     @Test
-	fun outOfOrder() {
+    fun outOfOrder() {
         val sf = testDefaultFactory()
 
         data class C(val e: OutOfOrder)
@@ -411,7 +423,7 @@ class EnumEvolveTests {
     enum class ChangedOrdinality { A, B, D, C }
 
     @Test
-	fun changedOrdinality() {
+    fun changedOrdinality() {
         val resource = "${javaClass.simpleName}.${testName()}"
         val sf = testDefaultFactory()
 
@@ -422,8 +434,11 @@ class EnumEvolveTests {
         //         SerializationOutput(sf).serialize(C(ChangedOrdinality.A)).bytes)
 
         assertThatThrownBy {
-            DeserializationInput(sf).deserialize(SerializedBytes<C>(
-                    EvolvabilityTests::class.java.getResource(resource).readBytes()))
+            DeserializationInput(sf).deserialize(
+                SerializedBytes<C>(
+                    EvolvabilityTests::class.java.getResource(resource).readBytes()
+                )
+            )
         }.isInstanceOf(NotSerializableException::class.java)
     }
 
@@ -432,15 +447,15 @@ class EnumEvolveTests {
     // enum class ExtendedEnum { A, B, C }
     //
     // Version of the class as it's used in the test
-    @CordaSerializationTransformEnumDefaults (
-            CordaSerializationTransformEnumDefault("E", "C"),
-            CordaSerializationTransformEnumDefault("D", "C")
+    @CordaSerializationTransformEnumDefaults(
+        CordaSerializationTransformEnumDefault("E", "C"),
+        CordaSerializationTransformEnumDefault("D", "C")
     )
-    enum class ExtendedEnum { A, B, C, D, E}
+    enum class ExtendedEnum { A, B, C, D, E }
 
     // See https://r3-cev.atlassian.net/browse/CORDA-2264.
     @Test
-	fun extendEnum() {
+    fun extendEnum() {
         val resource = "${javaClass.simpleName}.${testName()}"
         val sf = testDefaultFactory()
 

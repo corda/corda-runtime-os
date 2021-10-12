@@ -17,10 +17,11 @@ configurations {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
+    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    compileOnly 'org.osgi:osgi.annotation'
     compileOnly "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"
     compileOnly "org.ow2.asm:asm:$asmVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
@@ -28,6 +29,7 @@ dependencies {
     testRuntimeOnly "org.ow2.asm:asm:$asmVersion"
 
     integrationTestImplementation project(':libs:kotlin-reflection:kotlin-reflection-test-example')
+    integrationTestImplementation 'org.slf4j:slf4j-api'
     integrationTestImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     integrationTestImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     integrationTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
@@ -37,21 +39,25 @@ dependencies {
 
 def jar = tasks.named('jar', Jar) {
     archiveBaseName = 'corda-kotlin-reflection'
-    bnd """\
+    bundle {
+        bnd """\
 Bundle-Name: Corda Kotlin Reflection
 Bundle-SymbolicName: \${project.group}.kotlin-reflection
 -includeresource: @kotlinx-metadata-jvm-${kotlinMetadataVersion}.jar
 -conditionalpackage: org.objectweb.asm
 """
+    }
 }
 
 def testingBundle = tasks.register('testingBundle', Bundle) {
     archiveClassifier = 'tests'
     from sourceSets.integrationTest.output
     sourceSet = sourceSets.integrationTest
-    bnd '''
+    bundle {
+        bnd '''\
 Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
 '''
+    }
 }
 
 def resolve = tasks.register('resolve', Resolve) {
@@ -67,14 +73,13 @@ def resolve = tasks.register('resolve', Resolve) {
 }
 
 def testOSGi = tasks.register('testOSGi', TestOSGi) {
-    dependsOn resolve
     resultsDirectory = file("$testResultsDir/integrationTest")
     bundles = files(
         sourceSets.integrationTest.runtimeClasspath,
         configurations.archives.artifacts.files,
         testingBundle
     )
-    bndrun = file('tests.bndrun')
+    bndrun = resolve.flatMap { it.outputBndrun }
 }
 
 tasks.register('integrationTest', Test) {

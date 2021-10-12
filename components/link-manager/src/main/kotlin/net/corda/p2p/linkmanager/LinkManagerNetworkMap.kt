@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import java.security.PublicKey
 
 /**
@@ -43,11 +44,18 @@ interface LinkManagerNetworkMap {
      */
     fun getNetworkType(groupId: String): NetworkType?
 
-    data class MemberInfo(val holdingIdentity: HoldingIdentity, val publicKey: PublicKey, val endPoint: EndPoint)
+    data class MemberInfo(val holdingIdentity: HoldingIdentity,
+                          val publicKey: PublicKey,
+                          val publicKeyAlgorithm: KeyAlgorithm,
+                          val endPoint: EndPoint)
 
     data class EndPoint(val address: String)
 
-    data class HoldingIdentity(val x500Name: String, val groupId: String)
+    data class HoldingIdentity(val x500Name: String, val groupId: String) {
+        fun toHoldingIdentity(): net.corda.p2p.app.HoldingIdentity {
+            return net.corda.p2p.app.HoldingIdentity(x500Name, groupId)
+        }
+    }
 
     enum class NetworkType {
         CORDA_4, CORDA_5

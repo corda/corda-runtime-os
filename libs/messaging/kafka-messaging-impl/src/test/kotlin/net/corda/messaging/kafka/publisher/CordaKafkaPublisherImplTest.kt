@@ -1,11 +1,5 @@
 package net.corda.messaging.kafka.publisher
 
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -14,13 +8,13 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.producer.wrapper.impl.CordaKafkaProducerImpl
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.GROUP_INSTANCE_ID
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PATTERN_PUBLISHER
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.GROUP_INSTANCE_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_PRODUCER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_PUBLISHER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_CLIENT_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_CLOSE_TIMEOUT
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.clients.producer.MockProducer
@@ -35,6 +29,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.function.Executable
 import org.mockito.Mockito
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
@@ -125,7 +125,6 @@ class CordaKafkaPublisherImplTest {
         assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
     }
 
-
     @Test
     fun testPublishUnknownError() {
         mockProducer = MockProducer(false, StringSerializer(), ByteBufferSerializer())
@@ -161,7 +160,6 @@ class CordaKafkaPublisherImplTest {
         verify(producer, times(1)).tryCommitTransaction()
     }
 
-
     @Test
     fun testTransactionBeginTransactionFailureIllegalStateException() {
         doThrow(IllegalStateException("")).whenever(producer).beginTransaction()
@@ -181,7 +179,6 @@ class CordaKafkaPublisherImplTest {
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(0)).tryCommitTransaction()
     }
-
 
     @Test
     fun testTransactionBeginTransactionAuthorizationException() {
@@ -346,7 +343,10 @@ class CordaKafkaPublisherImplTest {
         return cordaKafkaPublisherImpl.publish(records)
     }
 
-    private fun publishToPartition(isTransaction: Boolean = false, recordsWithPartitions: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
+    private fun publishToPartition(
+        isTransaction: Boolean = false,
+        recordsWithPartitions: List<Pair<Int, Record<*, *>>>
+    ): List<CompletableFuture<Unit>> {
         val publisherConfig = if (isTransaction) {
             kafkaConfig
                 .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
@@ -360,5 +360,4 @@ class CordaKafkaPublisherImplTest {
 
         return cordaKafkaPublisherImpl.publishToPartition(recordsWithPartitions)
     }
-
 }

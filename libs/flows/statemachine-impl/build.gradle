@@ -6,12 +6,15 @@ plugins {
 description "State Machine Impl"
 
 dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation("com.esotericsoftware:kryo:$kryoVersion")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
-    implementation "net.corda:avro-schema"
+    implementation "net.corda:corda-avro-schema"
 
     implementation project(':libs:flows:statemachine')
     implementation project(':libs:flows:dependency-injection')

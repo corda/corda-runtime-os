@@ -5,26 +5,18 @@ import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationFactory
 
 /**
- * Global singletons to be used as defaults that are injected elsewhere (generally, in the node or in RPC client).
+ * Global singletons to be used as defaults that are injected elsewhere (generally, in the node).
  *
  * Plus a static helper.
  */
 object SerializationDefaults {
     object Config {
-        var rpcServerContext: () -> SerializationContext = { throw CordaRuntimeException("SerializationDefault accessed before being set by node startup") }
-        var rpcClientContext: () -> SerializationContext = { throw CordaRuntimeException("SerializationDefault accessed before being set by node startup") }
         var storageContext: () -> SerializationContext = { throw CordaRuntimeException("SerializationDefault accessed before being set by node startup") }
         var p2pContext: () -> SerializationContext = { throw CordaRuntimeException("SerializationDefault accessed before being set by node startup") }
         var serializationFactory: () -> SerializationFactory = { throw CordaRuntimeException("SerializationDefault accessed before being set by node startup") }
     }
 
     val SERIALIZATION_FACTORY: SerializationFactory get() = Config.serializationFactory()
-
-    val RPC_SERVER_CONTEXT: SerializationContext
-        get() = Config.rpcServerContext()
-
-    val RPC_CLIENT_CONTEXT: SerializationContext
-        get() = Config.rpcClientContext()
 
     val STORAGE_CONTEXT: SerializationContext
         get() = Config.storageContext()

@@ -9,6 +9,8 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.ArgumentsProvider
 import org.junit.jupiter.params.provider.ArgumentsSource
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit.MINUTES
 import java.util.stream.Stream
 import kotlin.reflect.KClass
@@ -36,6 +38,12 @@ class KotlinReflectionSupportTest {
                 Arguments.of(JavaExample::class)
             )
         }
+    }
+
+    private val logger: Logger = LoggerFactory.getLogger(KotlinReflectionSupportTest::class.java)
+
+    private fun logInfo(obj: Any?) {
+        logger.info("{}", obj)
     }
 
     @ParameterizedTest(name = "{displayName} -> {0}")
@@ -128,56 +136,56 @@ class KotlinReflectionSupportTest {
     @DisplayName("Super Classes")
     @ArgumentsSource(ClassProvider::class)
     fun testKotlinSuperClassesAvailable(klazz: KClass<*>) {
-        klazz.superclasses.forEach(::println)
+        klazz.superclasses.forEach(::logInfo)
     }
 
     @ParameterizedTest(name = "{displayName} -> {0}")
     @DisplayName("All Super Classes")
     @ArgumentsSource(ClassProvider::class)
     fun testKotlinAllSuperClassesAvailable(klazz: KClass<*>) {
-        klazz.allSuperclasses.forEach(::println)
+        klazz.allSuperclasses.forEach(::logInfo)
     }
 
     @ParameterizedTest(name = "{displayName} -> {0}")
     @DisplayName("Super Types")
     @ArgumentsSource(ClassProvider::class)
     fun testKotlinSuperTypesAvailable(klazz: KClass<*>) {
-        klazz.supertypes.map(KType::javaType).forEach(::println)
+        klazz.supertypes.map(KType::javaType).forEach(::logInfo)
     }
 
     @ParameterizedTest(name = "{displayName} -> {0}")
     @DisplayName("All Super Types")
     @ArgumentsSource(ClassProvider::class)
     fun testKotlinAllSuperTypesAvailable(klazz: KClass<*>) {
-        klazz.allSupertypes.map(KType::javaType).forEach(::println)
+        klazz.allSupertypes.map(KType::javaType).forEach(::logInfo)
     }
 
     @ParameterizedTest(name = "{displayName} -> {0}")
     @DisplayName("Constructors")
     @ArgumentsSource(ClassProvider::class)
     fun testKotlinConstructorsAvailable(klazz: KClass<*>) {
-        klazz.constructors.forEach(::println)
+        klazz.constructors.forEach(::logInfo)
     }
 
     @ParameterizedTest(name = "{displayName} -> {0}")
     @DisplayName("Primary Constructor")
     @ArgumentsSource(ClassProvider::class)
     fun testKotlinPrimaryConstructorAvailable(klazz: KClass<*>) {
-        println(klazz.primaryConstructor)
+        logger.info("{}", klazz.primaryConstructor)
     }
 
     @ParameterizedTest(name = "{displayName} -> {0}")
     @DisplayName("Annotations")
     @ArgumentsSource(ClassProvider::class)
     fun testKotlinAnnotationsAvailable(klazz: KClass<*>) {
-        klazz.annotations.forEach(::println)
+        klazz.annotations.forEach(::logInfo)
     }
 
     @ParameterizedTest(name = "{displayName} -> {0}")
     @DisplayName("Sealed Subclasses")
     @ArgumentsSource(ClassProvider::class)
     fun testKotlinSealedSubclassesAvailable(klazz: KClass<*>) {
-        klazz.sealedSubclasses.forEach(::println)
+        klazz.sealedSubclasses.forEach(::logInfo)
     }
 
     @ParameterizedTest(name = "{displayName} -> {0}")
@@ -193,6 +201,6 @@ class KotlinReflectionSupportTest {
     @DisplayName("Type Parameters")
     @ArgumentsSource(ClassProvider::class)
     fun testKotlinTypeParametersAvailable(klazz: KClass<*>) {
-        klazz.typeParameters.forEach(::println)
+        klazz.typeParameters.forEach(::logInfo)
     }
 }

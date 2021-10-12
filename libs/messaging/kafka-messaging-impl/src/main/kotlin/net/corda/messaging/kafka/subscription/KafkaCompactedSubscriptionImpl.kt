@@ -5,11 +5,11 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_GROUP_ID
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_CONSUMER
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
@@ -17,7 +17,6 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.debug
-import org.apache.kafka.common.TopicPartition
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.locks.ReentrantLock
@@ -127,27 +126,32 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
 
     private fun pollAndProcessSnapshot(consumer: CordaKafkaConsumer<K, V>) {
         val partitions = consumer.assignment()
-        val snapshotEnds = consumer.endOffsets(partitions)
-        val currentOffsets = consumer.beginningOffsets(partitions)
+        val endOffsets = consumer.endOffsets(partitions)
+        val snapshotEnds = endOffsets.toMutableMap()
         consumer.seekToBeginning(partitions)
 
         val currentData = getLatestValues()
         currentData.clear()
 
-        while (currentOffsets.any { it.value < (snapshotEnds[it.key] ?: 0) }) {
+        while (snapshotEnds.isNotEmpty()) {
             val consumerRecords = consumer.poll()
-            if (consumerRecords.isEmpty()) {
-                break
-            }
+
             consumerRecords.forEach {
                 if (it.record.value() != null) {
                     currentData[it.record.key()] = it.record.value()
                 } else {
                     currentData.remove(it.record.key())
                 }
-                currentOffsets[TopicPartition(it.record.topic(), it.record.partition())] = it.record.offset()
+            }
+
+            for (offsets in endOffsets) {
+                val partition = offsets.key
+                if (consumer.position(partition) >= offsets.value) {
+                    snapshotEnds.remove(partition)
+                }
             }
         }
+
         processor.onSnapshot(currentData)
     }
 

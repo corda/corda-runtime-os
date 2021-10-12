@@ -14,8 +14,10 @@ import net.corda.internal.serialization.custom.PublicKeySerializer
 import net.corda.sandbox.SandboxGroup
 import net.corda.utilities.toSynchronised
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.util.uncheckedCast
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.ByteSequence
+import net.corda.v5.base.util.uncheckedCast
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.serialization.ClassWhitelist
 import net.corda.v5.serialization.ContextPropertyKeys
 import net.corda.v5.serialization.SerializationContext
@@ -37,22 +39,26 @@ fun SerializerFactory.addToWhitelist(types: Collection<Class<*>>) {
         types.toSet().forEach { duplicates -= it }
         "Cannot add duplicate classes to the whitelist ($duplicates)."
     }
+    val mutableClassWhitelist = this.whitelist as? MutableClassWhitelist
+        ?: throw CordaRuntimeException("whitelist is not an instance of MutableClassWhitelist, cannot whitelist types")
     for (type in types) {
-        (this.whitelist as? MutableClassWhitelist)?.add(type)
+        mutableClassWhitelist.add(type)
     }
 }
 
-abstract class AbstractAMQPSerializationScheme(
+abstract class AbstractAMQPSerializationScheme private constructor(
         private val cordappCustomSerializers: Set<SerializationCustomSerializer<*, *>>,
         private val cordappSerializationWhitelists: Set<SerializationWhitelist>,
         maybeNotConcurrentSerializerFactoriesForContexts: MutableMap<SerializationFactoryCacheKey, SerializerFactory>,
+        cipherSchemeMetadata: CipherSchemeMetadata,
         val sff: SerializerFactoryFactory = createSerializerFactoryFactory(),
         internalCustomSerializerFactories: Set<(factory: SerializerFactory) -> CustomSerializer<out Any>> = emptySet()
 ) : SerializationScheme {
-    constructor() : this(
+    constructor(cipherSchemeMetadata: CipherSchemeMetadata) : this(
         emptySet<SerializationCustomSerializer<*, *>>(),
         emptySet<SerializationWhitelist>(),
-        AccessOrderLinkedHashMap<SerializationFactoryCacheKey, SerializerFactory>(128).toSynchronised()
+        AccessOrderLinkedHashMap<SerializationFactoryCacheKey, SerializerFactory>(128).toSynchronised(),
+        cipherSchemeMetadata
     )
 
     private val _internalCustomSerializerFactories: MutableSet<(factory: SerializerFactory) -> CustomSerializer<out Any>> = mutableSetOf()
@@ -94,7 +100,7 @@ abstract class AbstractAMQPSerializationScheme(
 
         val serializersToRegister = context.customSerializers ?: cordappCustomSerializers
         serializersToRegister.forEach { customSerializer ->
-            factory.registerExternal(CorDappCustomSerializer(customSerializer, factory))
+            factory.registerExternal(CorDappCustomSerializer(customSerializer))
         }
 
         context.properties[ContextPropertyKeys.SERIALIZERS]?.apply {
@@ -114,24 +120,15 @@ abstract class AbstractAMQPSerializationScheme(
         }
     }
 
-    protected abstract fun rpcClientSerializerFactory(context: SerializationContext): SerializerFactory
-    protected abstract fun rpcServerSerializerFactory(context: SerializationContext): SerializerFactory
-
     // Not used as a simple direct import to facilitate testing
-    open val publicKeySerializer: CustomSerializer<*> = PublicKeySerializer
+    open val publicKeySerializer: CustomSerializer<*> = PublicKeySerializer(cipherSchemeMetadata)
 
     fun getSerializerFactory(context: SerializationContext): SerializerFactory {
         val sandboxGroup = context.sandboxGroup as? SandboxGroup
         val key = SerializationFactoryCacheKey(context.whitelist, sandboxGroup, context.preventDataLoss, context.customSerializers)
         // ConcurrentHashMap.get() is lock free, but computeIfAbsent is not, even if the key is in the map already.
         return serializerFactoriesForContexts[key] ?: serializerFactoriesForContexts.computeIfAbsent(key) {
-            when (context.useCase) {
-                SerializationContext.UseCase.RPCClient ->
-                    rpcClientSerializerFactory(context)
-                SerializationContext.UseCase.RPCServer ->
-                    rpcServerSerializerFactory(context)
-                else -> sff.make(context)
-            }.also {
+            sff.make(context).also {
                 registerCustomSerializers(context, it)
                 registerCustomWhitelists(it)
             }
@@ -139,23 +136,11 @@ abstract class AbstractAMQPSerializationScheme(
     }
 
     override fun <T : Any> deserialize(byteSequence: ByteSequence, clazz: Class<T>, context: SerializationContext): T {
-        // This is a hack introduced in version 3 to fix a spring boot issue - CORDA-1747.
-        // It breaks the shell because it overwrites the CordappClassloader with the system classloader that doesn't know about any CorDapps.
-        // In case a spring boot serialization issue with generics is found, a better solution needs to be found to address it.
-//        var contextToUse = context
-//        if (context.useCase == SerializationContext.UseCase.RPCClient) {
-//            contextToUse = context.withClassLoader(getContextClassLoader())
-//        }
         val serializerFactory = getSerializerFactory(context)
         return DeserializationInput(serializerFactory).deserialize(byteSequence, clazz, context)
     }
 
     override fun <T : Any> serialize(obj: T, context: SerializationContext): SerializedBytes<T> {
-        // See the above comment.
-//        var contextToUse = context
-//        if (context.useCase == SerializationContext.UseCase.RPCClient) {
-//            contextToUse = context.withClassLoader(getContextClassLoader())
-//        }
         val serializerFactory = getSerializerFactory(context)
         return SerializationOutput(serializerFactory).serialize(obj, context)
     }

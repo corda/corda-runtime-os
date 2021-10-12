@@ -6,13 +6,15 @@ plugins {
 description 'LinkManager for p2p communication'
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation project(":libs:p2p-crypto")
     implementation project(":libs:messaging:messaging")
-    implementation project(":libs:lifecycle")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":components:configuration:configuration-read-service")
+    implementation project(":libs:configuration:configuration-schema:p2p")
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
@@ -20,13 +22,16 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
-    implementation "net.corda:avro-schema"
-    implementation "net.corda:topic-schema"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-topic-schema"
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation project(":testing:test-utilities")
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    testImplementation project(":libs:messaging:inmemory-messaging-impl")
     testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }

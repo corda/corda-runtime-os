@@ -14,7 +14,7 @@ import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.application.services.CordaService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
-import net.corda.v5.serialization.SerializeAsToken
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope
 import java.lang.reflect.Field
@@ -24,8 +24,8 @@ import kotlin.reflect.full.allSuperclasses
 
 @Component(immediate = true, service = [DependencyInjectionService::class], scope = ServiceScope.SINGLETON)
 class DependencyInjectionServiceImpl : DependencyInjectionService {
-    internal companion object {
-        val log = contextLogger()
+    private companion object {
+        private val log = contextLogger()
     }
 
     // Interfaces we currently allow for injection. Used to verify valid interface registration.
@@ -35,11 +35,10 @@ class DependencyInjectionServiceImpl : DependencyInjectionService {
     )
 
     // Services which are created at injection time by invoking a lambda
-    val dynamicServices =
-        synchronizedMap(mutableMapOf<String, DependencyInjector<out Any>>())
+    private val dynamicServices = synchronizedMap(mutableMapOf<String, DependencyInjector<out Any>>())
 
     // Services which are created once and can be injected into multiple different flows/services
-    val singletonServices = MutableClassToInstanceMap.create<Any>()
+    private val singletonServices = MutableClassToInstanceMap.create<Any>()
 
     /**
      * Register injectable services which need to be newly created for each injection by invoking a lambda.
@@ -49,8 +48,9 @@ class DependencyInjectionServiceImpl : DependencyInjectionService {
         implementationInjector: DependencyInjector<U>
     ): Boolean {
         if (!injectableInterface.isInjectable()) {
-            log.debug("Attempted to register ${injectableInterface.simpleName} for injection but failed due to missing " +
-                    "interface implementation. Please implement one of ${injectableInterfaces.joinToString(",") { it.simpleName }}"
+            log.debug("Attempted to register ${injectableInterface.simpleName} for injection but failed due to " +
+                    "missing interface implementation. Please implement one of " +
+                    injectableInterfaces.joinToString(",") { it.simpleName }
             )
             return false
         }
@@ -67,8 +67,9 @@ class DependencyInjectionServiceImpl : DependencyInjectionService {
         implementation: U
     ): Boolean {
         if (!injectableInterface.isInjectable()) {
-            log.debug("Attempted to register ${injectableInterface.simpleName} for injection but failed due to missing " +
-                    "interface implementation. Please implement one of ${injectableInterfaces.joinToString(",") { it.simpleName }}"
+            log.debug("Attempted to register ${injectableInterface.simpleName} for injection but failed due to " +
+                    "missing interface implementation. Please implement one of " +
+                    injectableInterfaces.joinToString(",") { it.simpleName }
             )
             return false
         }
@@ -84,7 +85,7 @@ class DependencyInjectionServiceImpl : DependencyInjectionService {
         injectableInterface: KClass<*>,
         flowStateMachineInjectable: FlowStateMachineInjectable?,
         currentFlow: Flow<*>?,
-        currentService: SerializeAsToken?
+        currentService: SingletonSerializeAsToken?
     ): Any? =
         getDynamicServiceInjector(injectableInterface)?.inject(flowStateMachineInjectable, currentFlow, currentService)
 
@@ -95,7 +96,7 @@ class DependencyInjectionServiceImpl : DependencyInjectionService {
         field: Field,
         flowStateMachineInjectable: FlowStateMachineInjectable?,
         currentFlow: Flow<*>?,
-        currentService: SerializeAsToken?
+        currentService: SingletonSerializeAsToken?
     ): Any {
         val injectableInterface: KClass<*> = uncheckedCast(field.type.kotlin)
         val impl =
@@ -145,7 +146,7 @@ class DependencyInjectionServiceImpl : DependencyInjectionService {
     private fun getStateMachineInjectableOrNull(obj: Any?) =
         obj as? DynamicPropertyInjectable<FlowStateMachineInjectable>
 
-    override fun injectDependencies(service: SerializeAsToken) {
+    override fun injectDependencies(service: SingletonSerializeAsToken) {
         service::class.getFieldsForInjection()
             .forEach { field ->
                 field.isAccessible = true

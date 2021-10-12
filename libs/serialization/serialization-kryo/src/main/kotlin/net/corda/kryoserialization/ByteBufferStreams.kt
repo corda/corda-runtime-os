@@ -3,12 +3,9 @@ package net.corda.kryoserialization
 
 import net.corda.utilities.LazyPool
 import java.io.ByteArrayOutputStream
-import java.io.IOException
-import java.io.InputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer
-import java.util.Arrays
-import kotlin.math.min
+import java.util.*
 
 internal val serializeOutputStreamPool = LazyPool(
         clear = ByteBufferOutputStream::reset,
@@ -19,27 +16,6 @@ fun <T> byteArrayOutput(task: (ByteBufferOutputStream) -> T): ByteArray {
     return serializeOutputStreamPool.run { underlying ->
         task(underlying)
         underlying.toByteArray() // Must happen after close, to allow ZIP footer to be written for example.
-    }
-}
-
-class ByteBufferInputStream(val byteBuffer: ByteBuffer) : InputStream() {
-    @Throws(IOException::class)
-    override fun read(): Int {
-        return if (byteBuffer.hasRemaining()) byteBuffer.get().toInt() else -1
-    }
-
-    @Throws(IOException::class)
-    override fun read(b: ByteArray, offset: Int, length: Int): Int {
-        if (offset < 0 || length < 0 || length > b.size - offset) {
-            throw IndexOutOfBoundsException()
-        } else if (length == 0) {
-            return 0
-        } else if (!byteBuffer.hasRemaining()) {
-            return -1
-        }
-        val size = min(length, byteBuffer.remaining())
-        byteBuffer.get(b, offset, size)
-        return size
     }
 }
 

@@ -4,7 +4,7 @@ import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.injection.CordaInjectPreStart
 import net.corda.v5.application.services.CordaService
 import net.corda.v5.base.annotations.CordaInternal
-import net.corda.v5.serialization.SerializeAsToken
+import net.corda.v5.serialization.SingletonSerializeAsToken
 
 /**
  * An interface for handling injection of dependencies.
@@ -49,10 +49,10 @@ interface DependencyInjectionService {
     fun injectPreStartDependencies(cordaService: CordaService)
 
     /**
-     * Inject all available dependencies into a given service which implements [SerializeAsToken]. This could be corda services or notary
-     * services for example.
+     * Inject all available dependencies into a given service which implements [SingletonSerializeAsToken]. This could
+     * be corda services or notary services for example.
      */
-    fun injectDependencies(service: SerializeAsToken)
+    fun injectDependencies(service: SingletonSerializeAsToken)
 
     /**
      * Inject all available dependencies into a given flow.
@@ -75,5 +75,9 @@ fun interface DependencyInjector<T> {
      * @param currentFlow A flow object which can be used during initialisation.
      * @return A new instance of type T
      */
-    fun inject(flowStateMachineInjectable: FlowStateMachineInjectable?, currentFlow: Flow<*>?, currentService: SerializeAsToken?): T
+    fun inject(
+        flowStateMachineInjectable: FlowStateMachineInjectable?,
+        currentFlow: Flow<*>?,
+        currentService: SingletonSerializeAsToken?
+    ): T
 }

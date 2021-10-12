@@ -7,7 +7,7 @@ import net.corda.internal.serialization.model.LocalTypeModel
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.internal.serialization.model.TypeIdentifier.Parameterised
 import net.corda.internal.serialization.osgi.TypeResolver
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.utilities.reflection.kotlinObjectInstance
@@ -21,7 +21,6 @@ import org.apache.qpid.proton.amqp.Symbol
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.util.Optional
-import java.util.TreeSet
 import java.util.function.Function
 import java.util.function.Predicate
 import javax.annotation.concurrent.ThreadSafe
@@ -148,13 +147,13 @@ class DefaultLocalSerializerFactory(
     override fun getTypeInformation(context: SerializationContext, metadata: Metadata, typeName: String): LocalTypeInformation? {
         return typesByName.getOrPut(typeName) {
             val localType = try {
-                val classInfoParts = metadata.getValue(typeName) as List<*>
-                val classInfo = Cpk.Identifier(
-                        classInfoParts[0] as String,
-                        classInfoParts[1] as String,
-                        TreeSet((classInfoParts[2] as List<*>).map { SecureHash.create(it as String) }.toList())
+                val cpkIdentifierParts = metadata.getValue(typeName) as List<*>
+                val cpkIdentifier = CPK.Identifier.newInstance(
+                    cpkIdentifierParts[0] as String,
+                    cpkIdentifierParts[1] as String,
+                    SecureHash.create(cpkIdentifierParts[4] as String)
                 )
-                (context.sandboxGroup as? SandboxGroup)?.loadClass(classInfo, typeName)
+                (context.sandboxGroup as? SandboxGroup)?.loadClassFromCordappBundle(cpkIdentifier, typeName)
             } catch (_: SandboxException) {
                 logger.trace { "Failed to load class $typeName from any sandboxes" }
                 null

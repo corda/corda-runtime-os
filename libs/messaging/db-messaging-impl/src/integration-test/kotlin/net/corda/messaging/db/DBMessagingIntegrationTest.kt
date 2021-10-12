@@ -21,8 +21,8 @@ import net.corda.messaging.db.sync.OffsetTrackersManager
 import net.corda.messaging.db.util.DbUtils.Companion.createOffsetsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicRecordsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicsTableStmt
-import net.corda.messaging.db.util.eventually
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
@@ -184,9 +184,8 @@ class DBMessagingIntegrationTest {
         val records = (1..10).map { 1 to Record(topic1, "key-$it", "value-$it") }
         publisher.publishToPartition(records).map { it.get() }
 
-        val record = randomAccessSubscription.getRecord(1, 5)
-
         eventually(5.seconds, 5.millis) {
+            val record = randomAccessSubscription.getRecord(1, 5)
             assertThat(record).isNotNull
             assertThat(record!!.topic).isEqualTo(topic1)
             assertThat(record.key).contains("key-5")

@@ -1,19 +1,34 @@
 package net.corda.osgi.framework
 
-import org.osgi.framework.*
+import org.mockito.Mockito.mock
+import org.osgi.framework.Bundle
+import org.osgi.framework.BundleContext
+import org.osgi.framework.BundleEvent
+import org.osgi.framework.BundleException
+import org.osgi.framework.Constants
+import org.osgi.framework.FrameworkEvent
+import org.osgi.framework.FrameworkListener
+import org.osgi.framework.ServiceReference
+import org.osgi.framework.Version
 import org.osgi.framework.launch.Framework
 import java.io.File
 import java.io.InputStream
 import java.lang.IllegalArgumentException
 import java.net.URL
 import java.security.cert.X509Certificate
-import java.util.*
-import java.util.concurrent.*
+import java.util.Dictionary
+import java.util.Enumeration
+import java.util.Hashtable
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.jvm.Throws
-
 
 class OSGiFrameworkMock(
     private val configurationMap: MutableMap<String, String>,
@@ -30,8 +45,7 @@ class OSGiFrameworkMock(
         const val SAFE_START_LEVEL = 1
 
         const val WAIT_LATCH = 1
-
-    } //~ companion object
+    } // ~ companion object
 
     private val bundleContextAtomic = AtomicReference<OSGiBundleContextMock>()
 
@@ -82,7 +96,7 @@ class OSGiFrameworkMock(
         return bundle
     }
 
-    //: Framework
+    // : Framework
 
     /**
      * See [Framework.getBundleId].
@@ -119,6 +133,7 @@ class OSGiFrameworkMock(
     @Throws(
         BundleException::class
     )
+    @Suppress("SpreadOperator")
     override fun init() {
         init(*arrayOf())
     }
@@ -200,7 +215,6 @@ class OSGiFrameworkMock(
         // A bundle event of type BundleEvent.STARTED is fired.
         bundleContextAtomic.get().notifyToListeners(BundleEvent(BundleEvent.STARTED, this))
         // A framework event of type Framework.STARTED is fired.
-
     }
 
     /**
@@ -283,7 +297,7 @@ class OSGiFrameworkMock(
         }
     }
 
-//: Bundle
+// : Bundle
 
     /**
      * See [Bundle.getBundleContext].
@@ -319,7 +333,7 @@ class OSGiFrameworkMock(
         return versionAtomic.get()
     }
 
-//: Comparable
+// : Comparable
 
     /**
      * See [Comparable.compareTo]
@@ -333,7 +347,6 @@ class OSGiFrameworkMock(
         val thatId = other.bundleId
         return if (thisId < thatId) -1 else if (thisId == thatId) 0 else 1
     }
-
 
     override fun update() {
         TODO("Not yet implemented")
@@ -354,7 +367,6 @@ class OSGiFrameworkMock(
     override fun getHeaders(ignored: String?): Dictionary<String, String> {
         return Hashtable()
     }
-
 
     override fun getRegisteredServices(): Array<ServiceReference<*>> {
         TODO("Not yet implemented")
@@ -396,18 +408,15 @@ class OSGiFrameworkMock(
         TODO("Not yet implemented")
     }
 
-
     override fun getSignerCertificates(signersType: Int): MutableMap<X509Certificate, MutableList<X509Certificate>> {
         TODO("Not yet implemented")
     }
 
-
     override fun <A : Any?> adapt(type: Class<A>): A {
-        TODO("Not yet implemented")
+        return mock(type)
     }
 
     override fun getDataFile(filename: String): File {
         TODO("Not yet implemented")
     }
-
 }

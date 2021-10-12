@@ -47,6 +47,7 @@ class MemberOverrideMapTest {
         assertEquals(impl, map[implSignature])
         assertEquals(1, map.size)
 
+        @Suppress("SpreadOperator")
         val api = Api::class.java.getMethod(impl.name, *impl.parameterTypes)
         val apiSignature = api.toSignature()
         assertEquals(impl, map[apiSignature])
@@ -63,6 +64,7 @@ class MemberOverrideMapTest {
         assertEquals(api, map[apiSignature])
         assertEquals(1, map.size)
 
+        @Suppress("SpreadOperator")
         val impl = Impl::class.java.getMethod(api.name, *api.parameterTypes)
         val implSignature = impl.toSignature()
         assertEquals(api, map.put(implSignature, impl))

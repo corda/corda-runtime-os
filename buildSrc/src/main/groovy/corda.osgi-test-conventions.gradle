@@ -4,6 +4,7 @@
 import aQute.bnd.gradle.Bundle
 import aQute.bnd.gradle.Resolve
 import aQute.bnd.gradle.TestOSGi
+import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
 
 plugins {
     id 'biz.aQute.bnd.builder'
@@ -16,9 +17,9 @@ configurations {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    compileOnly "org.osgi:osgi.core:$osgiVersion"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiScrAnnotationVersion"
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     integrationTestImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     integrationTestImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
@@ -37,10 +38,12 @@ def testingBundle = tasks.register('testingBundle', Bundle) {
     from sourceSets.integrationTest.output
     sourceSet = sourceSets.integrationTest
 
-    bnd """\
+    bundle {
+        bnd """\
 Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
 Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
 """
+    }
 }
 
 def resolve = tasks.register('resolve', Resolve) {
@@ -54,10 +57,12 @@ def resolve = tasks.register('resolve', Resolve) {
 def testOSGi = tasks.register('testOSGi', TestOSGi) {
     description = "Runs OSGi integration tests."
     group = "verification"
-    dependsOn resolve
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = of(11)
+    }
     resultsDirectory = file("$testResultsDir/integrationTest")
     bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files)
-    bndrun = file('test.bndrun')
+    bndrun = resolve.flatMap { it.outputBndrun }
 }
 
 tasks.named('check') {

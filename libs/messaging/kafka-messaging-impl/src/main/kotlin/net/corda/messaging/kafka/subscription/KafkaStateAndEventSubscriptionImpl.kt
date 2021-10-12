@@ -1,93 +1,69 @@
 package net.corda.messaging.kafka.subscription
 
-import com.typesafe.config.Config
+import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
+import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_CLOSE_TIMEOUT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.KAFKA_PRODUCER
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLIENT_ID
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_CLOSE_TIMEOUT
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.PRODUCER_TRANSACTIONAL_ID
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.properties.KafkaProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
+import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
-import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
+import net.corda.messaging.kafka.types.StateAndEventConfig
+import net.corda.messaging.kafka.types.Topic
 import net.corda.messaging.kafka.utils.getEventsByBatch
-import net.corda.messaging.kafka.utils.render
-import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.messaging.kafka.utils.tryGetResult
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import org.apache.kafka.clients.CommonClientConfigs.GROUP_ID_CONFIG
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
+import net.corda.v5.base.util.uncheckedCast
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
-import org.apache.kafka.common.TopicPartition
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 import java.time.Clock
-import java.time.Duration
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
-class Topic(val prefix: String, val suffix: String) {
-    val topic
-        get() = prefix + suffix
-}
-
-@Suppress("TooManyFunctions")
+@Suppress("LongParameterList")
 class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
-    private val config: Config,
-    private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,
+    private val config: StateAndEventConfig,
     private val builder: StateAndEventBuilder<K, S, E>,
     private val processor: StateAndEventProcessor<K, S, E>,
+    private val avroSchemaRegistry: AvroSchemaRegistry,
+    private val stateAndEventListener: StateAndEventListener<K, S>? = null,
     private val clock: Clock = Clock.systemUTC()
-) : StateAndEventSubscription<K, S, E>, ConsumerRebalanceListener {
+) : StateAndEventSubscription<K, S, E> {
 
-    companion object {
-        private const val STATE_CONSUMER = "stateConsumer"
-        private const val EVENT_CONSUMER = "eventConsumer"
-        private const val STATE_TOPIC_NAME = "$STATE_CONSUMER.$TOPIC_NAME"
-        private const val EVENT_GROUP_ID = "$EVENT_CONSUMER.$GROUP_ID_CONFIG"
-        private val EVENT_CONSUMER_THREAD_STOP_TIMEOUT = CONSUMER_THREAD_STOP_TIMEOUT.replace("consumer", "eventConsumer")
-        private val EVENT_CONSUMER_CLOSE_TIMEOUT = CONSUMER_CLOSE_TIMEOUT.replace("consumer", "eventConsumer")
-        private val EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES = CONSUMER_POLL_AND_PROCESS_RETRIES.replace("consumer", "eventConsumer")
-    }
-
-    private val log = LoggerFactory.getLogger(
-        "${config.getString(EVENT_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
-    )
+    private val log = LoggerFactory.getLogger(config.loggerName)
 
     private lateinit var producer: CordaKafkaProducer
+    private lateinit var stateAndEventConsumer: StateAndEventConsumer<K, S, E>
     private lateinit var eventConsumer: CordaKafkaConsumer<K, E>
-    private lateinit var stateConsumer: CordaKafkaConsumer<K, S>
-    private var currentStates: MutableMap<K, Pair<Long, S>>? = null
 
     @Volatile
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
 
-    private val topicPrefix = config.getString(TOPIC_PREFIX)
-    private val eventTopic = Topic(topicPrefix, config.getString(TOPIC_NAME))
-    private val stateTopic = Topic(topicPrefix, config.getString(STATE_TOPIC_NAME))
-    private val groupName = config.getString(EVENT_GROUP_ID)
-    private val producerClientId: String = config.getString(PRODUCER_CLIENT_ID)
-    private val consumerThreadStopTimeout = config.getLong(EVENT_CONSUMER_THREAD_STOP_TIMEOUT)
-    private val producerCloseTimeout = Duration.ofMillis(config.getLong(PRODUCER_CLOSE_TIMEOUT))
-    private val consumerCloseTimeout = Duration.ofMillis(config.getLong(EVENT_CONSUMER_CLOSE_TIMEOUT))
-    private val consumerPollAndProcessMaxRetries = config.getLong(EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES)
+    private val cordaAvroSerializer = CordaAvroSerializer<Any>(avroSchemaRegistry)
 
-    // When syncing up new partitions gives us the (partition, endOffset) for a given new partition
-    private val statePartitionsToSync: MutableMap<Int, Long> = ConcurrentHashMap<Int, Long>()
+    private val topicPrefix = config.topicPrefix
+    private val eventTopic = Topic(topicPrefix, config.eventTopic)
+    private val stateTopic = Topic(topicPrefix, config.stateTopic)
+    private val groupName = config.eventGroupName
+    private val producerClientId: String = config.producerClientId
+    private val consumerThreadStopTimeout = config.consumerThreadStopTimeout
+    private val producerCloseTimeout = config.producerCloseTimeout
+    private val consumerPollAndProcessMaxRetries = config.consumerPollAndProcessMaxRetries
+    private val processorTimeout = config.processorTimeout
+    private val deadLetterQueueSuffix = config.deadLetterQueueSuffix
 
     /**
      * Is the subscription running.
@@ -98,7 +74,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
 
     override fun start() {
-        log.debug { "Starting subscription with config:\n${config.render()}" }
+        log.debug { "Starting subscription with config:\n${config}" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
@@ -126,39 +102,26 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    /**
-     * This is not guaranteed to be thread-safe!
-     */
-    override fun getValue(key: K): S? {
-        return getCurrentStates()[key]?.second
-    }
-
-    private fun getCurrentStates(): MutableMap<K, Pair<Long, S>> {
-        var current = currentStates
-        if (current == null) {
-            current = mapFactory.createMap()
-            currentStates = current
-        }
-        return current
-    }
-
     @Suppress("TooGenericExceptionCaught")
     fun runConsumeLoop() {
         var attempts = 0
         while (!stopped) {
             attempts++
             try {
-                producer = builder.createProducer(config.getConfig(KAFKA_PRODUCER))
-                stateConsumer = builder.createStateConsumer(config.getConfig(STATE_CONSUMER), processor.keyClass, processor.stateValueClass)
-                eventConsumer =
-                    builder.createEventConsumer(config.getConfig(EVENT_CONSUMER), processor.keyClass, processor.eventValueClass, this)
-                validateConsumers()
-
-                stateConsumer.assign(emptyList())
-                eventConsumer.subscribeToTopic()
+                producer = builder.createProducer(config)
+                val (stateAndEventConsumerTmp, rebalanceListener) = builder.createStateEventConsumerAndRebalanceListener(
+                    config,
+                    processor.keyClass,
+                    processor.stateValueClass,
+                    processor.eventValueClass,
+                    stateAndEventListener
+                )
+                stateAndEventConsumer = stateAndEventConsumerTmp
+                eventConsumer = stateAndEventConsumer.eventConsumer
+                eventConsumer.subscribeToTopic(rebalanceListener)
 
                 while (!stopped) {
-                    updateStates()
+                    stateAndEventConsumer.pollAndUpdateStates(true)
                     processEvents()
                 }
             } catch (ex: Exception) {
@@ -181,81 +144,18 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 }
             } finally {
                 producer.close(producerCloseTimeout)
-                eventConsumer.close(consumerCloseTimeout)
-                stateConsumer.close(consumerCloseTimeout)
+                stateAndEventConsumer.close()
             }
         }
         producer.close(producerCloseTimeout)
-        eventConsumer.close(consumerCloseTimeout)
-        stateConsumer.close(consumerCloseTimeout)
-    }
-
-    private fun validateConsumers() {
-        val statePartitions = stateConsumer.getPartitions(stateTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
-        val eventPartitions = eventConsumer.getPartitions(eventTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
-        if (statePartitions.size != eventPartitions.size) {
-            val errorMsg = "Mismatch between state and event partitions."
-            log.debug {
-                errorMsg + "\n" +
-                        "state: ${statePartitions.joinToString()}\n" +
-                        "event: ${eventPartitions.joinToString()}"
-            }
-            throw CordaRuntimeException(errorMsg)
-        }
-    }
-
-    /**
-     *  This rebalance is called for the event consumer, though most of the work is to ensure the state consumer
-     *  keeps up
-     */
-    override fun onPartitionsAssigned(newEventPartitions: MutableCollection<TopicPartition>) {
-        log.debug { "Updating state partitions to match new event partitions: $newEventPartitions" }
-        val newStatePartitions = newEventPartitions.toStateTopics()
-        val statePartitions = stateConsumer.assignment() + newStatePartitions
-        stateConsumer.assign(statePartitions)
-        stateConsumer.seekToBeginning(newStatePartitions)
-
-        // Initialise the housekeeping here but the sync and updates
-        // will be handled in the normal poll cycle
-        val syncablePartitions = filterSyncablePartitions(newStatePartitions)
-        log.debug { "Syncing the following new state partitions: $syncablePartitions" }
-        statePartitionsToSync.putAll(syncablePartitions)
-        eventConsumer.pause(syncablePartitions.map { TopicPartition(eventTopic.topic, it.first) })
-    }
-
-    private fun filterSyncablePartitions(newStatePartitions: List<TopicPartition>): List<Pair<Int, Long>> {
-        val beginningOffsets = stateConsumer.beginningOffsets(newStatePartitions)
-        val endOffsets = stateConsumer.endOffsets(newStatePartitions)
-        return newStatePartitions.mapNotNull {
-            val beginningOffset = beginningOffsets[it] ?: 0
-            val endOffset = endOffsets[it] ?: 0
-            if (beginningOffset < endOffset) {
-                Pair(it.partition(), endOffset)
-            } else {
-                null
-            }
-        }
-    }
-
-    /**
-     *  This rebalance is called for the event consumer, though most of the work is to ensure the state consumer
-     *  keeps up
-     */
-    override fun onPartitionsRevoked(removedEventPartitions: MutableCollection<TopicPartition>) {
-        log.debug { "Updating state partitions to match removed event partitions: $removedEventPartitions" }
-        val removedStatePartitions = removedEventPartitions.toStateTopics()
-        val statePartitions = stateConsumer.assignment() - removedStatePartitions
-        stateConsumer.assign(statePartitions)
-        for (topicPartition in removedStatePartitions) {
-            statePartitionsToSync.remove(topicPartition.partition())
-        }
+        stateAndEventConsumer.close()
     }
 
     @Suppress("TooGenericExceptionCaught")
     private fun processEvents() {
         var attempts = 0
         var pollAndProcessSuccessful = false
-        while (!pollAndProcessSuccessful) {
+        while (!pollAndProcessSuccessful && !stopped) {
             try {
                 for (batch in getEventsByBatch(eventConsumer.poll())) {
                     tryProcessBatchOfEvents(batch)
@@ -280,10 +180,11 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private fun tryProcessBatchOfEvents(events: List<ConsumerRecordAndMeta<K, E>>) {
         val outputRecords = mutableListOf<Record<*, *>>()
-        val updatedStates: MutableMap<K, S?> = mutableMapOf()
+        val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
 
         log.trace { "Processing events(size: ${events.size})" }
         for (event in events) {
+            stateAndEventConsumer.resetPollInterval()
             processEvent(event, outputRecords, updatedStates)
         }
 
@@ -293,70 +194,47 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         producer.tryCommitTransaction()
         log.trace { "Processing of events(size: ${events.size}) complete" }
 
-        onProcessorStateUpdated(updatedStates)
+        stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
     }
 
     private fun processEvent(
         event: ConsumerRecordAndMeta<K, E>,
         outputRecords: MutableList<Record<*, *>>,
-        updatedStates: MutableMap<K, S?>
+        updatedStates: MutableMap<Int, MutableMap<K, S?>>
     ) {
         log.trace { "Processing event: $event" }
         val key = event.record.key()
-        val thisEventUpdates = processor.onNext(getCurrentStates()[key]?.second, event.asRecord())
-        outputRecords.addAll(thisEventUpdates.responseEvents)
-        val updatedState = thisEventUpdates.updatedState
-        outputRecords.add(Record(stateTopic.suffix, key, updatedState))
-        updatedStates[key] = updatedState
-        log.trace { "Completed event: $event" }
+        val state = stateAndEventConsumer.getInMemoryStateValue(key)
+        val partitionId = event.record.partition()
+        val thisEventUpdates = getUpdatesForEvent(state, event)
+
+        if (thisEventUpdates == null) {
+            log.warn("Sending event: $event, and state: $state to dead letter queue. Processor failed to complete.")
+            outputRecords.add(generateDeadLetterRecord(event.record, state))
+            outputRecords.add(Record(stateTopic.suffix, key, null))
+            updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
+        } else {
+            outputRecords.addAll(thisEventUpdates.responseEvents)
+            val updatedState = thisEventUpdates.updatedState
+            outputRecords.add(Record(stateTopic.suffix, key, updatedState))
+            updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
+            log.trace { "Completed event: $event" }
+        }
     }
 
-    private fun onProcessorStateUpdated(updatedStates: MutableMap<K, S?>) {
-        for (entry in updatedStates) {
-            val key = entry.key
-            val value = entry.value
-            if (value != null) {
-                getCurrentStates()[key] = Pair(clock.instant().toEpochMilli(), value)
-            } else {
-                getCurrentStates().remove(key)
-            }
-        }
+    private fun getUpdatesForEvent(state: S?, event: ConsumerRecordAndMeta<K, E>): StateAndEventProcessor.Response<S>? {
+        val future = stateAndEventConsumer.waitForFunctionToFinish({ processor.onNext(state, event.asRecord()) }, processorTimeout,
+            "Failed to finish within the time limit for state: $state and event: $event")
+        return uncheckedCast(future.tryGetResult())
     }
 
-    private fun updateStates() {
-        if (stateConsumer.assignment().isEmpty()) {
-            log.trace { "State consumer has to partitions assigned." }
-            return
-        }
-        val states = stateConsumer.poll()
-        for (state in states) {
-            log.trace { "Updating state: $state" }
-            getCurrentStates().compute(state.record.key()) { _, currentState ->
-                if (currentState == null || currentState.first <= state.record.timestamp()) {
-                    if (state.record.value() == null) {
-                        // Removes this state from the map
-                        null
-                    } else {
-                        // Replaces/adds the new state
-                        Pair(state.record.timestamp(), state.record.value())
-                    }
-                } else {
-                    // Keeps the old state
-                    currentState
-                }
-            }
-            // Check sync and resume
-            if (statePartitionsToSync.isNotEmpty()) {
-                val currentPartition = state.record.partition()
-                val endOffset = statePartitionsToSync[currentPartition]
-                if (endOffset != null && endOffset >= state.record.offset()) {
-                    statePartitionsToSync.remove(currentPartition)
-                    val resumablePartition = TopicPartition(eventTopic.topic, currentPartition)
-                    log.debug { "State consumer is up to date for $resumablePartition.  Resuming event feed." }
-                    eventConsumer.resume(setOf(resumablePartition))
-                }
-            }
-        }
+    private fun generateDeadLetterRecord(event: ConsumerRecord<K, E>, state: S?): Record<*, *> {
+        val keyBytes = ByteBuffer.wrap(cordaAvroSerializer.serialize(stateTopic.topic, event.key()))
+        val stateBytes = if (state != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(stateTopic.topic, state)) else null
+        val eventBytes = ByteBuffer.wrap(cordaAvroSerializer.serialize(eventTopic.topic, event.value()))
+        return Record(eventTopic.suffix + deadLetterQueueSuffix, event.key(),
+            StateAndEventDeadLetterRecord(clock.instant(), keyBytes, stateBytes, eventBytes)
+        )
     }
 
     /**
@@ -384,13 +262,4 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             throw CordaMessageAPIIntermittentException(message, ex)
         }
     }
-
-    private fun TopicPartition.toStateTopic() = TopicPartition(stateTopic.topic, partition())
-    private fun TopicPartition.toEventTopic() = TopicPartition(eventTopic.topic, partition())
-    private fun Collection<TopicPartition>.toStateTopics(): List<TopicPartition> = map { it.toStateTopic() }
-
-    @Suppress("unused")
-    private fun Collection<TopicPartition>.toEventTopics(): List<TopicPartition> = map { it.toEventTopic() }
-
-
 }

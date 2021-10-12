@@ -1,94 +1,155 @@
 package net.corda.messaging.emulation.subscription.pubsub
 
-import org.mockito.kotlin.any
-import org.mockito.kotlin.atLeast
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
+import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.emulation.properties.InMemProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.emulation.properties.InMemProperties.Companion.TOPICS_MAX_SIZE
-import net.corda.messaging.emulation.properties.InMemProperties.Companion.TOPICS_POLL_SIZE
-import net.corda.messaging.emulation.stubs.StubProcessor
-import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.EVENT_TOPIC
-import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory.Companion.GROUP_NAME
+import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
-import org.junit.jupiter.api.BeforeEach
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.nio.ByteBuffer
-import java.util.concurrent.CountDownLatch
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.Future
 
 class PubSubSubscriptionTest {
-    private lateinit var subscription : PubSubSubscription<String, ByteBuffer>
-    private lateinit var latch: CountDownLatch
-    private lateinit var processor : StubProcessor
-    private var executorService: ExecutorService? = null
-    private val topic = "helloworld"
-    private val topicService: TopicService = mock()
-    private val record = Record(topic, "key1", ByteBuffer.wrap("value1".toByteArray()))
-    private val records = listOf(
-        RecordMetadata(1, record),
-        RecordMetadata(2, record),
-        RecordMetadata(3, record),
-        RecordMetadata(4, record),
-        RecordMetadata(5, record))
-    private val mockRecordCount = records.size
-    private val latchTimeout = 30L
-    private val config = ConfigFactory.empty()
-        .withValue(TOPICS_MAX_SIZE, ConfigValueFactory.fromAnyRef(5))
-        .withValue(TOPICS_POLL_SIZE, ConfigValueFactory.fromAnyRef(5))
-        .withValue(EVENT_TOPIC, ConfigValueFactory.fromAnyRef(topic))
-        .withValue(GROUP_NAME, ConfigValueFactory.fromAnyRef("group1"))
-        .withValue(CONSUMER_THREAD_STOP_TIMEOUT, ConfigValueFactory.fromAnyRef(100))
+    private val config = SubscriptionConfig("group", "topic")
+    private val processor = mock<PubSubProcessor<String, Number>> {
+        on { keyClass } doReturn String::class.java
+        on { valueClass } doReturn Number::class.java
+    }
+    private val executor = mock<ExecutorService>()
+    private val consumeLifeCycle = mock<Consumption>()
+    private val topicService = mock<TopicService> {
+        on { createConsumption(any()) } doReturn consumeLifeCycle
+    }
 
-    @BeforeEach
-    fun setup() {
-        doReturn(records).whenever(topicService).getRecords(any(), any(), any(), any())
-        latch = CountDownLatch(mockRecordCount)
-        processor = StubProcessor(latch)
-        subscription = PubSubSubscription(config, processor, executorService, topicService)
+    private val pubSubSubscription = PubSubSubscription(config, processor, executor, topicService)
+
+    @Test
+    fun `isRunning return false if was not started`() {
+        assertThat(pubSubSubscription.isRunning).isFalse
     }
 
     @Test
-    fun testSubscription() {
-        subscription.start()
+    fun `isRunning return false if thread had died`() {
+        doReturn(false).whenever(consumeLifeCycle).isRunning
+        pubSubSubscription.start()
 
-        latch.await(latchTimeout, TimeUnit.SECONDS)
-
-        subscription.stop()
-        verify(topicService, atLeast(1)).getRecords(any(), any(), any(), any())
+        assertThat(pubSubSubscription.isRunning).isFalse
     }
 
     @Test
-    fun testProcessorFail() {
-        processor = StubProcessor(latch, Exception())
-        subscription = PubSubSubscription(config, processor, executorService, topicService)
+    fun `isRunning return true if thread is running`() {
+        doReturn(true).whenever(consumeLifeCycle).isRunning
+        pubSubSubscription.start()
 
-        subscription.start()
-
-        latch.await(latchTimeout, TimeUnit.SECONDS)
-
-        subscription.stop()
-        verify(topicService, atLeast(1)).getRecords( any(), any(), any(), any())
+        assertThat(pubSubSubscription.isRunning).isTrue
     }
 
     @Test
-    fun testSubscriptionExecutor() {
-        executorService = Executors.newFixedThreadPool(1)
-        subscription = PubSubSubscription(config, processor, executorService, topicService)
+    fun `start will subscribe a consumer`() {
+        pubSubSubscription.start()
 
-        subscription.start()
+        verify(topicService).createConsumption(any())
+    }
 
-        latch.await(latchTimeout, TimeUnit.SECONDS)
+    @Test
+    fun `double start will subscribe a consumer only once`() {
+        pubSubSubscription.start()
+        pubSubSubscription.start()
 
-        subscription.stop()
-        verify(topicService, atLeast(1)).getRecords( any(), any(), any(), any())
+        verify(topicService, times(1)).createConsumption(any())
+    }
+
+    @Test
+    fun `stop will stop any running thread`() {
+        pubSubSubscription.start()
+        pubSubSubscription.stop()
+
+        verify(consumeLifeCycle).stop()
+    }
+
+    @Test
+    fun `stop will stop any running thread only once`() {
+        pubSubSubscription.start()
+        pubSubSubscription.stop()
+        pubSubSubscription.stop()
+
+        verify(consumeLifeCycle, times(1)).stop()
+    }
+
+    @Test
+    fun `processRecords submit to executor`() {
+        val future = mock<Future<Any>>()
+        val captor = argumentCaptor<Runnable>()
+        doReturn(future).whenever(executor).submit(captor.capture())
+        val record = Record<String, Number>("topic", "key6", 4)
+        val records = listOf(
+            RecordMetadata(
+                offset = 1,
+                partition = 1,
+                record = record
+            )
+        )
+
+        pubSubSubscription.processRecords(records)
+        verify(processor, never()).onNext(any())
+
+        captor.firstValue.run()
+        verify(processor).onNext(record)
+    }
+
+    @Test
+    fun `processRecords send to processor in no executor`() {
+        val subscription = PubSubSubscription(config, processor, null, topicService)
+        val record = Record<String, Number>("topic", "key6", 3)
+        val records = listOf(
+            RecordMetadata(
+                offset = 1,
+                partition = 1,
+                record = record
+            )
+        )
+
+        subscription.processRecords(records)
+
+        verify(processor).onNext(record)
+    }
+
+    @Test
+    fun `processRecords ignore invalid keys and values`() {
+        val subscription = PubSubSubscription(config, processor, null, topicService)
+        val record1 = Record("topic", "key6", "3")
+        val record2 = Record<Int, Number>("topic", 4, 4)
+        val record3 = Record<String, Number>("topic", "key6", null)
+        val records = listOf(
+            RecordMetadata(
+                offset = 1,
+                partition = 1,
+                record = record1
+            ),
+            RecordMetadata(
+                offset = 2,
+                partition = 2,
+                record = record2
+            ),
+            RecordMetadata(
+                offset = 2,
+                partition = 2,
+                record = record3
+            ),
+        )
+
+        subscription.processRecords(records)
+
+        verify(processor).onNext(record3)
     }
 }
