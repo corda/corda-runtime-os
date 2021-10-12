@@ -15,7 +15,10 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsume
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.test.util.eventually
 import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.v5.base.util.millis
+import net.corda.v5.base.util.seconds
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.junit.jupiter.api.Test
@@ -89,7 +92,9 @@ class CordaKafkaRPCSenderImplTest {
             Thread.sleep(10)
         }
 
-        verify(kafkaConsumer, times(1)).subscribe(eq(listOf("topic.resp")), any())
+        eventually(5.seconds, 5.millis) {
+            verify(kafkaConsumer, times(1)).subscribe(eq(listOf("topic.resp")), any())
+        }
     }
 
     @Test
