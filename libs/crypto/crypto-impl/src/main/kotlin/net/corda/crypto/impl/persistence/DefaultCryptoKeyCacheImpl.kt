@@ -6,12 +6,12 @@ import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import java.security.KeyPair
 
 @Suppress("LongParameterList")
-open class DefaultCryptoKeyCacheImpl(
+class DefaultCryptoKeyCacheImpl(
     private val memberId: String,
     passphrase: String?,
     salt: String?,
     private val schemeMetadata: CipherSchemeMetadata,
-    private val persistence: PersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
+    persistenceFactory: KeyValuePersistenceFactory
 ) : DefaultCryptoKeyCache, AutoCloseable {
     companion object {
         private val logger = contextLogger()
@@ -20,6 +20,9 @@ open class DefaultCryptoKeyCacheImpl(
     init {
         require(memberId.isNotBlank()) { "The member id must not be blank."}
     }
+
+    val persistence: KeyValuePersistence<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo> =
+        persistenceFactory.createDefaultCryptoPersistence(memberId, ::mutate)
 
     private val masterKey: WrappingKey = WrappingKey.deriveMasterKey(schemeMetadata, passphrase, salt)
 
@@ -34,13 +37,7 @@ open class DefaultCryptoKeyCacheImpl(
             algorithmName = scheme.algorithmName,
             version = 1
         )
-        persistence.put(partitionedAlias, entity) {
-            DefaultCryptoCachedKeyInfo(
-                memberId = memberId,
-                publicKey = keyPair.public,
-                privateKey = keyPair.private
-            )
-        }
+        persistence.put(partitionedAlias, entity)
     }
 
     override fun save(alias: String, key: WrappingKey) {
@@ -54,33 +51,29 @@ open class DefaultCryptoKeyCacheImpl(
             algorithmName = WrappingKey.WRAPPING_KEY_ALGORITHM,
             version = 1
         )
-        persistence.put(partitionedAlias, entity) {
-            DefaultCryptoCachedKeyInfo(
-                memberId = memberId,
-                wrappingKey = key
-            )
-        }
+        persistence.put(partitionedAlias, entity)
     }
 
     @Suppress("TooGenericExceptionCaught")
     override fun find(alias: String): DefaultCryptoCachedKeyInfo? {
         logger.debug("Looking for public key with alias={} for member={}", alias, memberId)
         val partitionedAlias = effectiveAlias(alias)
-        return persistence.get(partitionedAlias) { entity ->
-            if (entity.publicKey != null) {
-                DefaultCryptoCachedKeyInfo(
-                    memberId = entity.memberId,
-                    publicKey = schemeMetadata.decodePublicKey(entity.publicKey!!),
-                    privateKey = masterKey.unwrap(entity.privateKey)
-                )
-            } else {
-                DefaultCryptoCachedKeyInfo(
-                    memberId = entity.memberId,
-                    wrappingKey = masterKey.unwrapWrappingKey(entity.privateKey)
-                )
-            }
-        }
+        return persistence.get(partitionedAlias)
     }
+
+    private fun mutate(entity: DefaultCryptoPersistentKeyInfo): DefaultCryptoCachedKeyInfo =
+        if (entity.publicKey != null) {
+            DefaultCryptoCachedKeyInfo(
+                memberId = entity.memberId,
+                publicKey = schemeMetadata.decodePublicKey(entity.publicKey!!),
+                privateKey = masterKey.unwrap(entity.privateKey)
+            )
+        } else {
+            DefaultCryptoCachedKeyInfo(
+                memberId = entity.memberId,
+                wrappingKey = masterKey.unwrapWrappingKey(entity.privateKey)
+            )
+        }
 
     private fun effectiveAlias(alias: String) =
         "$memberId:$alias"

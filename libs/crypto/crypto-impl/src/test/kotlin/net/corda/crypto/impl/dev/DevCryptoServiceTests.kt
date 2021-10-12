@@ -1,11 +1,11 @@
 package net.corda.crypto.impl.dev
 
 import net.corda.crypto.CryptoCategories
-import net.corda.crypto.impl.stubs.MockCryptoFactory
 import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
 import net.corda.crypto.impl.persistence.SigningKeyCache
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
+import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.WrappedPrivateKey
@@ -52,8 +52,7 @@ class DevCryptoServiceTests {
             signatureSpec = NaSignatureSpec
         )
 
-        private lateinit var memberId: String
-        private lateinit var mockFactory: MockCryptoFactory
+        private lateinit var factory: CryptoServicesTestFactory
         private lateinit var devCryptoServiceProvider: DevCryptoServiceProvider
         private lateinit var signatureVerifier: SignatureVerificationService
         private lateinit var schemeMetadata: CipherSchemeMetadata
@@ -64,18 +63,17 @@ class DevCryptoServiceTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            memberId = UUID.randomUUID().toString()
-            mockFactory = MockCryptoFactory()
-            schemeMetadata = mockFactory.schemeMetadata
-            signatureVerifier = mockFactory.createVerificationService()
+            factory = CryptoServicesTestFactory()
+            schemeMetadata = factory.schemeMetadata
+            signatureVerifier = factory.verifier
             devCryptoServiceProvider = DevCryptoServiceProvider(
-                listOf(InMemoryPersistentCacheFactory())
+                listOf(InMemoryKeyValuePersistenceFactoryProvider())
             )
             cryptoService = devCryptoServiceProvider.getInstance(
                 CryptoServiceContext(
-                    memberId = memberId,
+                    memberId = factory.memberId,
                     category = CryptoCategories.LEDGER,
-                    cipherSuiteFactory = mockFactory.cipherSuiteFactory,
+                    cipherSuiteFactory = factory,
                     config = DevCryptoServiceConfiguration()
                 )
             ) as DevCryptoService
@@ -225,7 +223,7 @@ class DevCryptoServiceTests {
     private fun validateGeneratedKeySpecs(alias: String, signingCacheShouldExists: Boolean): KeyPair {
         val keyPairInfo = getGeneratedKeyPair(alias)
         assertNotNull(keyPairInfo)
-        assertEquals(memberId, keyPairInfo.memberId)
+        assertEquals(factory.memberId, keyPairInfo.memberId)
         assertNotNull(keyPairInfo.privateKey)
         assertNotNull(keyPairInfo.publicKey)
         assertEquals(keyPairInfo.privateKey!!.algorithm, "EdDSA")
@@ -237,7 +235,7 @@ class DevCryptoServiceTests {
             assertNotNull(signingKeyInfo)
             assertEquals(alias, signingKeyInfo.alias)
             assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPairInfo.publicKey!!), signingKeyInfo.publicKey)
-            assertEquals(memberId, signingKeyInfo.memberId)
+            assertEquals(factory.memberId, signingKeyInfo.memberId)
             assertNull(signingKeyInfo.externalId)
         } else {
             assertNull(signingKeyInfo)

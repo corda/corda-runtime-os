@@ -1,6 +1,6 @@
 package net.corda.sandbox
 
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPK
 
 /** An interface to a group of sandboxes with visibility of one another. */
 interface SandboxGroup {
@@ -14,7 +14,7 @@ interface SandboxGroup {
      *
      * Throws [SandboxException] if no sandbox with the given CPK identifier exists.
      */
-    fun getSandbox(cpkIdentifier: Cpk.Identifier): CpkSandbox
+    fun getSandbox(cpkIdentifier: CPK.Identifier): CpkSandbox
 
     /**
      * Finds the [CpkSandbox] out of [sandboxes] with the given [Cpk.Identifier] (there is guaranteed to be at
@@ -23,7 +23,7 @@ interface SandboxGroup {
      * Throws [SandboxException] if there is no sandbox with the given CPK identifier, if this sandbox does not contain
      * the named class, or if the CorDapp bundle of the sandbox with the given CPK identifier is uninstalled.
      */
-    fun loadClassFromCordappBundle(cpkIdentifier: Cpk.Identifier, className: String): Class<*>
+    fun loadClassFromCordappBundle(cpkIdentifier: CPK.Identifier, className: String): Class<*>
 
     /**
      * Attempts to load the [Class] with [className] from the CorDapp bundle of each sandbox in the sandbox group in

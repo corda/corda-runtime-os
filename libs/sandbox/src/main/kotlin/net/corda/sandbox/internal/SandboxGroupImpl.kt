@@ -1,6 +1,6 @@
 package net.corda.sandbox.internal
 
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.internal.classtag.ClassTagFactory
@@ -19,16 +19,16 @@ import net.corda.sandbox.internal.utilities.BundleUtils
  */
 internal class SandboxGroupImpl(
     private val bundleUtils: BundleUtils,
-    private val sandboxesById: Map<Cpk.Identifier, CpkSandboxInternal>,
+    private val sandboxesById: Map<CPK.Identifier, CpkSandboxInternal>,
     private val publicSandboxes: Iterable<SandboxInternal>,
     private val classTagFactory: ClassTagFactory
 ) : SandboxGroup {
     override val sandboxes = sandboxesById.values
 
-    override fun getSandbox(cpkIdentifier: Cpk.Identifier) = sandboxesById[cpkIdentifier]
+    override fun getSandbox(cpkIdentifier: CPK.Identifier) = sandboxesById[cpkIdentifier]
         ?: throw SandboxException("CPK $cpkIdentifier was not found in the sandbox group.")
 
-    override fun loadClassFromCordappBundle(cpkIdentifier: Cpk.Identifier, className: String) =
+    override fun loadClassFromCordappBundle(cpkIdentifier: CPK.Identifier, className: String) =
         getSandbox(cpkIdentifier).loadClassFromCordappBundle(className)
 
     override fun <T : Any> loadClassFromCordappBundle(className: String, type: Class<T>): Class<out T> {
@@ -58,9 +58,9 @@ internal class SandboxGroupImpl(
 
         if (!classTag.isPublicClass) {
             val sandbox = when (classTag) {
-                is StaticTag -> sandboxes.find { sandbox -> sandbox.cpk.cpkHash == classTag.cpkFileHash }
+                is StaticTag -> sandboxes.find { sandbox -> sandbox.cpk.metadata.hash == classTag.cpkFileHash }
                 is EvolvableTag -> sandboxes.find { sandbox ->
-                    sandbox.cpk.id.signerSummaryHash == classTag.cpkSignerSummaryHash
+                    sandbox.cpk.metadata.id.signerSummaryHash == classTag.cpkSignerSummaryHash
                             && sandbox.cordappBundle.symbolicName == classTag.cordappBundleName
                 }
             } ?: throw SandboxException(

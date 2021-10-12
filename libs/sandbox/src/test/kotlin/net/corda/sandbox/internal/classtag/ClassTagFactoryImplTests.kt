@@ -62,7 +62,7 @@ class ClassTagFactoryImplTests {
         assertEquals(1, classTag.version)
         assertFalse(classTag.isPublicClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
-        assertEquals(mockCpk.cpkHash, classTag.cpkFileHash)
+        assertEquals(mockCpk.metadata.hash, classTag.cpkFileHash)
     }
 
     @Test
@@ -97,7 +97,7 @@ class ClassTagFactoryImplTests {
         assertFalse(classTag.isPublicClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         assertEquals(mockSandbox.cordappBundle.symbolicName, classTag.cordappBundleName)
-        assertEquals(mockCpk.id.signerSummaryHash, classTag.cpkSignerSummaryHash)
+        assertEquals(mockCpk.metadata.id.signerSummaryHash, classTag.cpkSignerSummaryHash)
     }
 
     @Test

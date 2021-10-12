@@ -6,8 +6,9 @@ import net.corda.install.internal.CPK_DIRECTORY
 import net.corda.install.internal.EXTRACTION_DIRECTORY
 import net.corda.install.internal.verification.GroupCpkVerifier
 import net.corda.install.internal.verification.StandaloneCpkVerifier
-import net.corda.packaging.Cpb
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPI
+import net.corda.packaging.CPK
+import net.corda.packaging.util.TeeInputStream
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
@@ -22,6 +23,7 @@ import java.nio.file.Paths
 import java.util.Collections.unmodifiableSet
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
+
 
 /**
  * An implementation of [CordaPackagePersistence].
@@ -40,20 +42,20 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
 
     /** Represents a group of CPKs, keyed in various ways. */
     private data class StoredArchives(
-            val cpbsById: ConcurrentMap<Cpb.Identifier, Cpb.Expanded> = ConcurrentHashMap(),
-            val cpksById: ConcurrentMap<Cpk.Identifier, Cpk.Expanded> = ConcurrentHashMap(),
-            val cpksByHash: ConcurrentMap<SecureHash, Cpk.Expanded> = ConcurrentHashMap())
+        val cpbsById: ConcurrentMap<CPI.Identifier, CPI> = ConcurrentHashMap(),
+        val cpksById: ConcurrentMap<CPK.Identifier, CPK> = ConcurrentHashMap(),
+        val cpksByHash: ConcurrentMap<SecureHash, CPK> = ConcurrentHashMap())
 
     // These fields are lazy because they can't be calculated until `configAdmin` has been initialised.
     private val storedArchives: StoredArchives by lazy(::readCpksFromDisk)
     private val cpkDirectory: Path by lazy(::getCpkDirectoryInternal)
     private val expansionDirectory by lazy(::getExpansionDirectoryInternal)
 
-    override fun get(cpbIdentifier: Cpb.Identifier) = storedArchives.cpbsById[cpbIdentifier]
+    override fun get(cpbIdentifier: CPI.Identifier) = storedArchives.cpbsById[cpbIdentifier]
 
-    override fun getCpbIdentifiers(): Set<Cpb.Identifier> = unmodifiableSet(storedArchives.cpbsById.keys)
+    override fun getCpbIdentifiers(): Set<CPI.Identifier> = unmodifiableSet(storedArchives.cpbsById.keys)
 
-    override fun getCpk(id : Cpk.Identifier) : Cpk.Expanded? =
+    override fun getCpk(id : CPK.Identifier) : CPK? =
             storedArchives.cpksById[id]
 
     override fun get(cpkHash: SecureHash) =
@@ -61,26 +63,26 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
 
     override fun hasCpk(cpkHash: SecureHash) = storedArchives.cpksByHash.containsKey(cpkHash)
 
-    override fun putCpb(inputStream : InputStream) : Cpb.Expanded {
-        val cpb = Cpb.Expanded.from(inputStream,
+    override fun putCpb(inputStream : InputStream) : CPI {
+        val cpb = CPI.from(inputStream,
                 expansionLocation = Files.createTempDirectory(expansionDirectory, "cpb"),
                 verifySignature = true)
 
         // The group verifiers are only applied to CPBs, and not standalone CPKs, at installation time. This is
         // because we do not know in what groupings the standalone CPKs will be installed.
-        groupVerifiers.forEach { verifier -> verifier.verify(cpb.cpks) }
-        standaloneVerifiers.forEach { verifier -> verifier.verify(cpb.cpks) }
+        groupVerifiers.forEach { verifier -> verifier.verify(cpb.cpks.map(CPK::metadata)) }
+        standaloneVerifiers.forEach { verifier -> verifier.verify(cpb.cpks.map(CPK::metadata)) }
 
-        storedArchives.cpbsById[cpb.identifier] = cpb
+        storedArchives.cpbsById[cpb.metadata.id] = cpb
         for(cpk in cpb.cpks) addCpk(storedArchives.cpksById, storedArchives.cpksByHash, cpk)
         return cpb
     }
 
     private fun addCpk(
-            cpksById: MutableMap<Cpk.Identifier, Cpk.Expanded>,
-            cpksByHash: MutableMap<SecureHash, Cpk.Expanded>,
-            cpk : Cpk.Expanded) {
-        val previous = cpksById.put(cpk.id, cpk)
+            cpksById: MutableMap<CPK.Identifier, CPK>,
+            cpksByHash: MutableMap<SecureHash, CPK>,
+            cpk : CPK) {
+        val previous = cpksById.put(cpk.metadata.id, cpk)
         if(previous != null) {
             /**
              * Restore the previous entry.
@@ -89,36 +91,48 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
              * In this case we assume the first CPK to be stored is the one we want in the cpksById map. And all of them get stored in
              * the [StoredArchives.cpksByHash] map.
              */
-            cpksById[previous.id] = previous
+            cpksById[previous.metadata.id] = previous
         }
-        cpksByHash[cpk.cpkHash] = cpk
+        cpksByHash[cpk.metadata.hash] = cpk
     }
 
-    override fun putCpk(inputStream : InputStream)  : Cpk.Expanded {
+    override fun putCpk(inputStream : InputStream) : CPK {
+        val tmpFile = Files.createTempFile(cpkDirectory, null, ".cpk")
         val expansionLocation = Files.createTempDirectory(expansionDirectory, "cpk")
+        val teeStream = TeeInputStream(inputStream, Files.newOutputStream(tmpFile))
         @Suppress("TooGenericExceptionCaught")
         val cpk = try {
-             Cpk.Expanded.from(inputStream,
-             expansionLocation = expansionLocation,
+             CPK.from(teeStream,
+             cacheDir = expansionLocation,
              verifySignature = true).also {
-                 standaloneVerifiers.forEach { verifier -> verifier.verify(listOf(it)) }
+                 standaloneVerifiers.forEach { verifier -> verifier.verify(listOf(it.metadata)) }
              }
         } catch (ex : Exception) {
+            teeStream.close()
             Files.walk(expansionLocation).sorted(Comparator.reverseOrder()).forEach(Files::delete)
             throw ex
         }
-        val cpkPath = cpkDirectory.resolve(cpk.cpkHash.toHexString() + ".cpk")
         addCpk(storedArchives.cpksById, storedArchives.cpksByHash, cpk)
-        Files.copy(cpk.cpkFile, cpkPath)
+        //This class is going to be completely rewritten in a subsequent commit,
+        // commenting this line just make the code compile as it won't be possible to extract
+        // the cached file location of a CPK
+        Files.move(tmpFile, tmpFile.parent.resolve(cpk.metadata.hash.toHexString() + ".cpk"))
         return cpk
     }
 
     /** Returns the [Path] representing the node's CPK directory. */
     private fun getCpkDirectoryInternal(): Path {
-        val baseDirectoryString = configAdmin
-                .getConfiguration(ConfigurationAdmin::class.java.name, null)
-                .properties[CONFIG_ADMIN_BASE_DIRECTORY] as? String
-                ?: throw CpkInstallationException("Node's base directory could not be established for storing CPK files.")
+        val couldNotEstablishBaseDirErr by lazy {
+            CpkInstallationException("Node's base directory could not be established for storing CPK files.")
+        }
+
+        val properties = configAdmin
+            .getConfiguration(ConfigurationAdmin::class.java.name, null)
+            .properties ?: throw couldNotEstablishBaseDirErr
+
+        val baseDirectoryString = properties[CONFIG_ADMIN_BASE_DIRECTORY] as? String
+            ?: throw couldNotEstablishBaseDirErr
+
         return Paths.get(baseDirectoryString).resolve(CPK_DIRECTORY).also { Files.createDirectories(it) }
     }
 
@@ -150,14 +164,14 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
         // written to it.
         if (!Files.exists(cpkDirectory)) return StoredArchives()
 
-        val cpksById = ConcurrentHashMap<Cpk.Identifier, Cpk.Expanded>()
-        val cpksByHash = ConcurrentHashMap<SecureHash, Cpk.Expanded>()
+        val cpksById = ConcurrentHashMap<CPK.Identifier, CPK>()
+        val cpksByHash = ConcurrentHashMap<SecureHash, CPK>()
 
         Files.list(cpkDirectory)
-                .filter { it.fileName.toString().endsWith(Cpk.fileExtension) }
+                .filter { it.fileName.toString().endsWith(CPK.fileExtension) }
                 .forEach { cpkPath ->
-            val cpk = Cpk.Expanded.from(Files.newInputStream(cpkPath),
-                    expansionLocation = expansionDirectory.resolve(cpkPath.fileName),
+            val cpk = CPK.from(Files.newInputStream(cpkPath),
+                    cacheDir = expansionDirectory.resolve(cpkPath.fileName),
                     cpkLocation = cpkPath.toString(), true)
             addCpk(cpksById, cpksByHash, cpk)
         }

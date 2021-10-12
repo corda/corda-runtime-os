@@ -8,7 +8,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
-import java.net.URI
+import java.io.InputStream
 import java.security.AccessController.doPrivileged
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
@@ -25,13 +25,13 @@ internal class BundleUtils @Activate constructor(
      *
      * A [BundleException] is thrown if the bundle fails to install.
      */
-    fun installAsBundle(location: String, uri: URI): Bundle = uri.toURL().openStream().use { inputStream ->
+    fun installAsBundle(location: String, inputStream: InputStream): Bundle = inputStream.use {
         // CorDapp code will call this method indirectly when creating transaction verification sandboxes. The use of
         // `doPrivileged` here prevents the limited permissions of the calling code (i.e. the CorDapp code) from
         // causing this operation to be denied.
         try {
             doPrivileged(PrivilegedExceptionAction {
-                bundleContext.installBundle(location, inputStream)
+                bundleContext.installBundle(location, it)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception

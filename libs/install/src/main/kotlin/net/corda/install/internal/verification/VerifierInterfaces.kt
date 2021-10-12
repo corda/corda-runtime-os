@@ -1,13 +1,13 @@
 package net.corda.install.internal.verification
 
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPK
 
 /** Performs some check on a group of CPKs. */
 internal interface CpkVerifier {
     /**
     * Verifies whether a given group of [cpks] satisfy a given set of constraints.
     */
-    fun verify(cpks: Iterable<Cpk>)
+    fun verify(cpks: Iterable<CPK.Metadata>)
 }
 
 /**
