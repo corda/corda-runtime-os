@@ -20,36 +20,10 @@ def applyDependencySubstitution = { Configuration conf ->
     }
 }
 
-pluginManager.withPlugin('net.corda.plugins.cordapp-cpk') {
-    throw new StopExecutionException('corda.common-app plugin is incompatible with building CPKs and CPBs')
-}
-
-void alignToRuntimeClasspath(Configuration conf) {
-    conf.withDependencies { DependencySet dependencySet ->
-        Map<Tuple2<String, String>, String> modules = new TreeMap<>()
-        configurations.runtimeClasspath.incoming.resolutionResult.allComponents.each {
-            ModuleVersionIdentifier moduleVersionIdentifier = it.getModuleVersion()
-            modules.put(new Tuple2<>(moduleVersionIdentifier.group, moduleVersionIdentifier.name), moduleVersionIdentifier.version)
-        }
-        dependencySet.configureEach { dependency ->
-            Tuple2<String, String> needle = new Tuple2(dependency.group, dependency.name)
-            modules.get(needle)?.with { constrainedVersion ->
-                if(dependency instanceof ExternalDependency) {
-                    dependency.version {
-                        require(constrainedVersion)
-                    }
-                }
-            }
-        }
-    }
-}
-
 configurations {
     systemPackages {
         transitive = false
         canBeConsumed = false
-
-        alignToRuntimeClasspath(it)
     }
     bootstrapClasspath {
         transitive = true
@@ -60,25 +34,24 @@ configurations {
         attributes { attrs ->
             attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, LibraryElements.JAR))
         }
-        alignToRuntimeClasspath(it)
     }
     compileOnly {
         extendsFrom(systemPackages)
     }
-    bundles {
-        transitive = true
-        canBeConsumed = false
-        extendsFrom(runtimeClasspath)
+    runtimeClasspath {
         //This is to ensure that, when you add a project dependency to the configuration, you add the project's jar artifact,
         // otherwise Gradle adds the project's classes directory as that is usually enough to compile/run
         attributes { attrs ->
             attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, LibraryElements.JAR))
         }
-        alignToRuntimeClasspath(it)
     }
     applyDependencySubstitution(systemPackages)
     applyDependencySubstitution(bootstrapClasspath)
-    applyDependencySubstitution(bundles)
+    applyDependencySubstitution(runtimeClasspath)
+
+    compileClassPath.shouldResolveConsistentlyWith(runtimeClasspath)
+    systemPackages.shouldResolveConsistentlyWith(runtimeClasspath)
+    bootstrapClasspath.shouldResolveConsistentlyWith(runtimeClasspath)
 }
 
 dependencies {
@@ -88,8 +61,6 @@ dependencies {
     systemPackages "net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion"
     systemPackages "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
     systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
-    systemPackages "org.apache.logging.log4j:log4j-api:$log4jVersion"
-    systemPackages "org.apache.logging.log4j:log4j-core:$log4jVersion"
     systemPackages "net.corda:corda-base:$cordaApiVersion"
     systemPackages project(":osgi-framework-api")
 }
@@ -158,13 +129,13 @@ private def addSystemPackagesExtra(
 
 Provider<DefaultTask> createSystemBundlesFile = tasks.register("createSystemBundleFile") {
     inputs.files(jarTask)
-    inputs.files(configurations.bundles)
+    inputs.files(configurations.runtimeClasspath)
     File systemBundlesFile = new File(temporaryDir, "system_bundles")
     outputs.file(systemBundlesFile)
     doLast {
         systemBundlesFile.withWriter { writer ->
             writer.writeLine("bundles/${jarTask.flatMap {it.archiveFile }.map(RegularFile.&getAsFile).map(File.&getName).get()}")
-            (configurations.bundles - configurations.systemPackages).files.grep { File file -> isJar(file) && isBundle(new JarFile(file)) }.each { File file ->
+            (configurations.runtimeClasspath - configurations.systemPackages).files.grep { File file -> isJar(file) && isBundle(new JarFile(file)) }.each { File file ->
                 writer.writeLine("bundles/${file.name}")
             }
         }
@@ -271,7 +242,7 @@ Provider<JavaAgentFile> javaAgentFileTask =  tasks.register("javaAgentFile", Jav
 
 def appJar = tasks.register('appJar', Jar) {
     inputs.files(configurations.bootstrapClasspath)
-    inputs.files(configurations.bundles)
+    inputs.files(configurations.runtimeClasspath)
     inputs.files(configurations.systemPackages)
     inputs.files(jarTask)
 
@@ -299,13 +270,13 @@ def appJar = tasks.register('appJar', Jar) {
     into("META-INF/") {
         from(javaAgentFileTask)
     }
-    from(configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) })
+    from{ configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     from(createSystemBundlesFile)
     from(cordaAssembleSystemPackagesExtraTask)
     from(writeFrameworkPropertyFile)
     into("bundles") {
         from(jarTask)
-        from(configurations.bundles - configurations.systemPackages) {
+        from(configurations.runtimeClasspath - configurations.systemPackages) {
             eachFile { FileCopyDetails fileCopyDetails ->
                 if(!isJar(new File(fileCopyDetails.sourcePath))) fileCopyDetails.exclude()
             }

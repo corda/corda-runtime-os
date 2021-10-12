@@ -1,7 +1,7 @@
 package net.corda.sandbox.test
 
 import net.corda.install.InstallService
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPK
 import net.corda.sandbox.CpkSandbox
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxCreationService
@@ -61,28 +61,28 @@ class SandboxLoader @Activate constructor(
         }
     }
 
-    val cpk1: Cpk
-    val cpk2: Cpk
-    val cpk3: Cpk
+    val cpk1: CPK
+    val cpk2: CPK
+    val cpk3: CPK
 
     val group1: SandboxGroup
     val group2: SandboxGroup
 
     init {
-        val privateBundleNames = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.filter { bundle ->
-            bundle.symbolicName !in PLATFORM_PUBLIC_BUNDLE_NAMES
-        }.map(Bundle::getSymbolicName)
-
         configAdmin.getConfiguration(ConfigurationAdmin::class.java.name)?.also { config ->
             val properties = Properties()
             properties[BASE_DIRECTORY_KEY] = baseDirectory.toString()
             properties[BLACKLISTED_KEYS_KEY] = emptyList<String>()
             properties[PLATFORM_VERSION_KEY] = 999
-            properties[PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] = PLATFORM_PUBLIC_BUNDLE_NAMES
-            properties[PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY] = privateBundleNames
             @Suppress("unchecked_cast")
             config.update(properties as Dictionary<String, Any>)
         }
+
+        val allBundles = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles
+        val (publicBundles, privateBundles) = allBundles.partition { bundle ->
+            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
+        }
+        sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
 
         cpk1 = loadCPK(resourceName = CPK_ONE)
         cpk2 = loadCPK(resourceName = CPK_TWO)
@@ -94,9 +94,9 @@ class SandboxLoader @Activate constructor(
         group2 = createSandboxGroupFor(cpk3)
         assertThat(group2.sandboxes).hasSize(1)
 
-        val sandbox1 = group1.getSandbox(cpk1.id)
-        val sandbox2 = group1.getSandbox(cpk2.id)
-        val sandbox3 = group2.getSandbox(cpk3.id)
+        val sandbox1 = group1.getSandbox(cpk1.metadata.id)
+        val sandbox2 = group1.getSandbox(cpk2.metadata.id)
+        val sandbox3 = group2.getSandbox(cpk3.metadata.id)
 
         // Verify sandbox1 and sandbox2 can see each other.
         assertMutuallyVisible(sandbox1, sandbox2)
@@ -125,7 +125,7 @@ class SandboxLoader @Activate constructor(
             ?: fail("Workflow did not return the correct type.")
     }
 
-    private fun loadCPK(resourceName: String): Cpk {
+    private fun loadCPK(resourceName: String): CPK {
         val location = loadResource(resourceName)
         return location.toURL().openStream().buffered().use { source ->
             installService.loadCpk(hashOf(location, SHA256), source)
@@ -148,8 +148,8 @@ class SandboxLoader @Activate constructor(
         assertThat(bundle1.bundleId).isNotEqualTo(bundle2.bundleId)
     }
 
-    private fun createSandboxGroupFor(vararg cpks: Cpk): SandboxGroup {
-        return sandboxCreationService.createSandboxGroup(cpks.map(Cpk::cpkHash))
+    private fun createSandboxGroupFor(vararg cpks: CPK): SandboxGroup {
+        return sandboxCreationService.createSandboxGroup(cpks.map { it.metadata.hash })
     }
 
     private fun <T, U : T> getServiceFor(serviceType: Class<T>, bundleClass: Class<U>): T {

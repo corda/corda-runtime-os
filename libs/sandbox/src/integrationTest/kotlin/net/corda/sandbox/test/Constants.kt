@@ -25,8 +25,6 @@ val PLATFORM_PUBLIC_BUNDLE_NAMES = listOf(
 internal const val BASE_DIRECTORY_KEY = "baseDirectory"
 internal const val BLACKLISTED_KEYS_KEY = "blacklistedKeys"
 internal const val PLATFORM_VERSION_KEY = "platformVersion"
-internal const val PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY = "platformSandboxPublicBundles"
-internal const val PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY = "platformSandboxPrivateBundles"
 
 internal const val CPK_ONE = "sandbox-cpk-one-cordapp.cpk"
 internal const val CPK_TWO = "sandbox-cpk-two-cordapp.cpk"

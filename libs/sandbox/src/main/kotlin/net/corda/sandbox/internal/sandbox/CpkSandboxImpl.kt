@@ -1,6 +1,6 @@
 package net.corda.sandbox.internal.sandbox
 
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.utilities.BundleUtils
 import org.osgi.framework.Bundle
@@ -10,7 +10,7 @@ import java.util.UUID
 internal class CpkSandboxImpl(
     bundleUtils: BundleUtils,
     id: UUID,
-    override val cpk: Cpk.Expanded,
+    override val cpk: CPK,
     override val cordappBundle: Bundle,
     privateBundles: Set<Bundle>
 ) : SandboxImpl(bundleUtils, id, setOf(cordappBundle), privateBundles), CpkSandboxInternal {

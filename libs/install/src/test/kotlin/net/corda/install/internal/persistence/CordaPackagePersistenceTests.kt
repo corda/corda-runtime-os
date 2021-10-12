@@ -1,15 +1,12 @@
 package net.corda.install.internal.persistence
 
-import net.corda.cipher.suite.impl.CipherSchemeMetadataProviderImpl
-import net.corda.crypto.testkit.CryptoMocks
 import net.corda.install.CpkInstallationException
 import net.corda.install.internal.verification.TestUtils.createMockConfigurationAdmin
-import net.corda.packaging.Cpb
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPI
+import net.corda.packaging.CPK
 import net.corda.packaging.PackagingException
-import net.corda.packaging.internal.UncloseableInputStream
-import net.corda.packaging.internal.ZipTweaker
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.packaging.util.UncloseableInputStream
+import net.corda.packaging.util.ZipTweaker
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -30,8 +27,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.DigestInputStream
 import java.security.MessageDigest
-import java.security.NoSuchAlgorithmException
-import java.security.SecureRandom
 import java.util.TreeSet
 import java.util.jar.Attributes
 import java.util.jar.JarFile
@@ -47,14 +42,10 @@ class CordaPackagePersistenceTests {
     private lateinit var testCpbLocation : Path
 
     private lateinit var configurationAdmin : ConfigurationAdmin
-    private lateinit var flowsCpk : Cpk.Expanded
-    private lateinit var workflowCpk : Cpk.Expanded
-    private lateinit var contractCpk : Cpk.Expanded
+    private lateinit var flowsCpk : CPK
+    private lateinit var workflowCpk : CPK
+    private lateinit var contractCpk : CPK
     private lateinit var cordaPackagePersistence : CordaPackagePersistence
-
-    private val cryptoLibraryFactory = CryptoMocks().cryptoLibraryFactory()
-    private val hashingService = cryptoLibraryFactory.getDigestService()
-
 
     @BeforeEach
     fun setup(@TempDir junitTestDir : Path) {
@@ -73,65 +64,56 @@ class CordaPackagePersistenceTests {
         return Paths.get(System.getProperty(propertyName) ?: fail("Property '$propertyName' is not defined."))
     }
 
-    private fun cpk(location: Path, rootDir: Path): Cpk.Expanded {
+    private fun cpk(location: Path, rootDir: Path): CPK {
         val expansionLocation = rootDir.resolve("expanded-${location.fileName}")
-        return Cpk.Expanded.from(Files.newInputStream(location), expansionLocation, location.toString(), true)
+        return CPK.from(Files.newInputStream(location), expansionLocation, location.toString(), true)
     }
 
     @Test
     fun `can store CPKs and retrieve them`() {
         val loadedCpk = cordaPackagePersistence.putCpk(Files.newInputStream(workflowCpkLocation))
-        val cpkById = cordaPackagePersistence.getCpk(workflowCpk.id)
+        val cpkById = cordaPackagePersistence.getCpk(workflowCpk.metadata.id)
         assertNotNull(cpkById)
-        assertEquals(loadedCpk, cpkById)
+        assertEquals(loadedCpk.metadata, cpkById?.metadata)
 
-        val cpkRetrievedByHash = cordaPackagePersistence.get(workflowCpk.cpkHash)
+        val cpkRetrievedByHash = cordaPackagePersistence.get(workflowCpk.metadata.hash)
         assertEquals(loadedCpk, cpkRetrievedByHash)
     }
 
     @Test
     fun `can store CPBs and retrieve their CPKs `() {
-        Cpb.assemble(Files.newOutputStream(testCpbLocation), listOf(flowsCpkLocation, workflowCpkLocation, contractCpkLocation))
+        CPI.assemble(Files.newOutputStream(testCpbLocation), "test", "1.0",
+            listOf(flowsCpkLocation, workflowCpkLocation, contractCpkLocation))
         val testCpb = cordaPackagePersistence.putCpb(Files.newInputStream(testCpbLocation))
-        val retrievedCpb = cordaPackagePersistence.get(testCpb.identifier)
+        val retrievedCpb = cordaPackagePersistence.get(testCpb.metadata.id)
         assertSame(testCpb, retrievedCpb)
 
-        val expectedCpkIds = sequenceOf(flowsCpk, workflowCpk, contractCpk).mapTo(TreeSet(), Cpk::id)
-        val cpkIds = retrievedCpb!!.cpks.mapTo(TreeSet(), Cpk::id)
+        val expectedCpkIds = sequenceOf(flowsCpk, workflowCpk, contractCpk).mapTo(TreeSet()) { it.metadata.id }
+        val cpkIds = retrievedCpb!!.cpks.mapTo(TreeSet()) { it.metadata.id }
         assertEquals(expectedCpkIds, cpkIds)
 
-        val workflowCpkFromCpb = testCpb.cpks.find { it.id == workflowCpk.id }
-        val cpkRetrievedByHash = cordaPackagePersistence.get(workflowCpk.cpkHash)
+        val workflowCpkFromCpb = testCpb.cpks.find { it.metadata.id == workflowCpk.metadata.id }
+        val cpkRetrievedByHash = cordaPackagePersistence.get(workflowCpk.metadata.hash)
         assertEquals(workflowCpkFromCpb, cpkRetrievedByHash)
 
-        val cpkRetrievedById = cordaPackagePersistence.getCpk(workflowCpk.id)
+        val cpkRetrievedById = cordaPackagePersistence.getCpk(workflowCpk.metadata.id)
         assertNotNull(cpkRetrievedById)
         assertSame(workflowCpkFromCpb, cpkRetrievedById)
     }
 
-    private val cipherSchemeMetadata : CipherSchemeMetadata = CipherSchemeMetadataProviderImpl().getInstance()
-
-    @Throws(NoSuchAlgorithmException::class)
-    fun newSecureRandom(): SecureRandom = cipherSchemeMetadata.secureRandom
-
-    @Throws(NoSuchAlgorithmException::class)
-    fun secureRandomBytes(numOfBytes: Int): ByteArray = ByteArray(numOfBytes).apply { newSecureRandom().nextBytes(this) }
-
     @Test
     fun `returns null for unstored CPBs and CPKs`() {
         val retrievedCpks = cordaPackagePersistence.get(
-            Cpb.Identifier(
-                hashingService.hash(
-                    secureRandomBytes(hashingService.digestLength(DigestAlgorithmName.SHA2_256)), DigestAlgorithmName.SHA2_256
-                )
+            CPI.Identifier.newInstance(
+                "test", "1.0", SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32))
             )
         )
         assertEquals(null, retrievedCpks)
 
-        val cpkRetrievedByHash = cordaPackagePersistence.get(workflowCpk.cpkHash)
+        val cpkRetrievedByHash = cordaPackagePersistence.get(workflowCpk.metadata.hash)
         assertEquals(null, cpkRetrievedByHash)
 
-        val cpkRetrievedById = cordaPackagePersistence.getCpk(workflowCpk.id)
+        val cpkRetrievedById = cordaPackagePersistence.getCpk(workflowCpk.metadata.id)
         assertNull(cpkRetrievedById)
     }
 
@@ -163,7 +145,7 @@ class CordaPackagePersistenceTests {
 
     @Test
     fun `returns an empty set of CPKs when reading CPKs from disk if the CPKs directory doesn't exist`() {
-        assertNull(cordaPackagePersistence.getCpk(workflowCpk.id))
+        assertNull(cordaPackagePersistence.getCpk(workflowCpk.metadata.id))
     }
 
     @Test
@@ -195,7 +177,7 @@ class CordaPackagePersistenceTests {
             override fun tweakEntry(inputStream: ZipInputStream,
                                     outputStream: ZipOutputStream,
                                     currentEntry: ZipEntry,
-                                    buffer : ByteArray) = if(currentEntry.name == workflowCpk.cordappJarFileName) {
+                                    buffer : ByteArray) = if(currentEntry.name == workflowCpk.metadata.mainBundle) {
                 val baos = ByteArrayOutputStream()
                 cordappJarTweaker.run(UncloseableInputStream(inputStream), baos)
                 writeZipEntry(outputStream, { ByteArrayInputStream(baos.toByteArray()) }, currentEntry.name, buffer, ZipEntry.STORED)

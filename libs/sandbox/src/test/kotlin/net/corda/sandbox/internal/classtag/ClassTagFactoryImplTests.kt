@@ -3,18 +3,18 @@ package net.corda.sandbox.internal.classtag
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
 import net.corda.sandbox.internal.CORDAPP_BUNDLE_NAME
-import net.corda.sandbox.internal.ClassTagV1
 import net.corda.sandbox.internal.CPK_BUNDLE_NAME
+import net.corda.sandbox.internal.ClassTagV1
 import net.corda.sandbox.internal.mockBundle
 import net.corda.sandbox.internal.mockCpk
-import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
+import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
+import java.util.UUID.randomUUID
 
 class ClassTagFactoryImplTests {
     private val classTagFactory = ClassTagFactoryImpl()
@@ -22,10 +22,7 @@ class ClassTagFactoryImplTests {
     private val mockBundle = mockBundle(CPK_BUNDLE_NAME)
     private val mockCordappBundle = mockBundle(CORDAPP_BUNDLE_NAME)
     private val mockCpk = mockCpk()
-    private val mockSandbox = mock<CpkSandboxInternal>().apply {
-        whenever(cpk).thenReturn(mockCpk)
-        whenever(cordappBundle).thenReturn(mockCordappBundle)
-    }
+    private val mockSandbox = CpkSandboxImpl(mock(), randomUUID(), mockCpk, mockCordappBundle, emptySet())
 
     /**
      * Returns a serialised class tag.
@@ -55,7 +52,7 @@ class ClassTagFactoryImplTests {
     fun `can serialise and deserialise a static class tag for a CPK class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = true,
-            isPlatformBundle = false,
+            isPublicBundle = false,
             mockBundle,
             mockSandbox
         )
@@ -63,16 +60,16 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag) as StaticTag
 
         assertEquals(1, classTag.version)
-        assertFalse(classTag.isPlatformClass)
+        assertFalse(classTag.isPublicClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
-        assertEquals(mockCpk.cpkHash, classTag.cpkFileHash)
+        assertEquals(mockCpk.metadata.hash, classTag.cpkFileHash)
     }
 
     @Test
-    fun `can serialise and deserialise a static class tag for a platform class`() {
+    fun `can serialise and deserialise a static class tag for a public class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = true,
-            isPlatformBundle = true,
+            isPublicBundle = true,
             mockBundle,
             mockSandbox
         )
@@ -80,16 +77,16 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag) as StaticTag
 
         assertEquals(1, classTag.version)
-        assertTrue(classTag.isPlatformClass)
+        assertTrue(classTag.isPublicClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
-        // We do not check the class tag's CPK file hash, since a placeholder is used for platform classes.
+        // We do not check the class tag's CPK file hash, since a placeholder is used for public classes.
     }
 
     @Test
     fun `can serialise and deserialise an evolvable class tag for a CPK class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = false,
-            isPlatformBundle = false,
+            isPublicBundle = false,
             mockBundle,
             mockSandbox
         )
@@ -97,17 +94,17 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag) as EvolvableTag
 
         assertEquals(1, classTag.version)
-        assertFalse(classTag.isPlatformClass)
+        assertFalse(classTag.isPublicClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         assertEquals(mockSandbox.cordappBundle.symbolicName, classTag.cordappBundleName)
-        assertEquals(mockCpk.id.signerSummaryHash, classTag.cpkSignerSummaryHash)
+        assertEquals(mockCpk.metadata.id.signerSummaryHash, classTag.cpkSignerSummaryHash)
     }
 
     @Test
-    fun `can serialise and deserialise an evolvable class tag for a platform class`() {
+    fun `can serialise and deserialise an evolvable class tag for a public class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = false,
-            isPlatformBundle = true,
+            isPublicBundle = true,
             mockBundle,
             mockSandbox
         )
@@ -115,10 +112,10 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag) as EvolvableTag
 
         assertEquals(1, classTag.version)
-        assertTrue(classTag.isPlatformClass)
+        assertTrue(classTag.isPublicClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
         // We do not check the class tag's CorDapp bundle name or signer summary hash, since placeholders are used for
-        // platform classes.
+        // public classes.
     }
 
     @Test
@@ -126,7 +123,7 @@ class ClassTagFactoryImplTests {
         assertThrows<SandboxException> {
             classTagFactory.createSerialised(
                 isStaticClassTag = false,
-                isPlatformBundle = true,
+                isPublicBundle = true,
                 mock(),
                 mockSandbox
             )

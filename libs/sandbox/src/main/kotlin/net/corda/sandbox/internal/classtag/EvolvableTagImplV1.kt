@@ -9,15 +9,15 @@ import net.corda.v5.crypto.SecureHash
 
 /** Implements [EvolvableTag]. */
 internal class EvolvableTagImplV1(
-    isPlatformClass: Boolean,
+    isPublicClass: Boolean,
     classBundleName: String,
     cordappBundleName: String,
-    cpkSignerSummaryHash: SecureHash
-) : EvolvableTag(1, isPlatformClass, classBundleName, cordappBundleName, cpkSignerSummaryHash) {
+    cpkSignerSummaryHash: SecureHash?
+) : EvolvableTag(1, isPublicClass, classBundleName, cordappBundleName, cpkSignerSummaryHash) {
 
     companion object {
         private const val ENTRIES_LENGTH = 6
-        private const val IS_PLATFORM_CLASS_IDX = 2
+        private const val IS_PUBLIC_CLASS_IDX = 2
         private const val CLASS_BUNDLE_NAME_IDX = 3
         private const val CORDAPP_BUNDLE_NAME_IDX = 4
         private const val CPK_PUBLIC_KEY_HASHES_IDX = 5
@@ -29,7 +29,7 @@ internal class EvolvableTagImplV1(
                         "entries were expected. The entries were $classTagEntries."
             )
 
-            val isPlatformClass = classTagEntries[IS_PLATFORM_CLASS_IDX].toBoolean()
+            val isPublicClass = classTagEntries[IS_PUBLIC_CLASS_IDX].toBoolean()
 
             val cpkSignerSummaryHashString = classTagEntries[CPK_PUBLIC_KEY_HASHES_IDX]
             val cpkSignerSummaryHash = try {
@@ -41,7 +41,7 @@ internal class EvolvableTagImplV1(
             }
 
             return EvolvableTagImplV1(
-                isPlatformClass,
+                isPublicClass,
                 classTagEntries[CLASS_BUNDLE_NAME_IDX],
                 classTagEntries[CORDAPP_BUNDLE_NAME_IDX],
                 cpkSignerSummaryHash
@@ -56,7 +56,7 @@ internal class EvolvableTagImplV1(
 
         entries[CLASS_TAG_IDENTIFIER_IDX] = ClassTagV1.EVOLVABLE_IDENTIFIER
         entries[CLASS_TAG_VERSION_IDX] = version
-        entries[IS_PLATFORM_CLASS_IDX] = isPlatformClass
+        entries[IS_PUBLIC_CLASS_IDX] = isPublicClass
         entries[CLASS_BUNDLE_NAME_IDX] = classBundleName
         entries[CORDAPP_BUNDLE_NAME_IDX] = cordappBundleName
         entries[CPK_PUBLIC_KEY_HASHES_IDX] = cpkSignerSummaryHash

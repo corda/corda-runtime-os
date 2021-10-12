@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>ForbiddenComment:DemoApp.kt$CliParameters$// TODO: cluster DB config should maybe be taken from the Kafka message instead of passed in?</ID>
+  </CurrentIssues>
+</SmellBaseline>

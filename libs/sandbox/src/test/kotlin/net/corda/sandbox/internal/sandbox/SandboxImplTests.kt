@@ -1,14 +1,16 @@
 package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.SandboxException
+import net.corda.sandbox.internal.mockBundle
 import net.corda.sandbox.internal.utilities.BundleUtils
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito.mock
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
@@ -24,29 +26,32 @@ class SandboxImplTests {
     private val privateBundleClass = String::class.java
     private val nonSandboxClass = Boolean::class.java
 
-    private val publicBundle = mock(Bundle::class.java).apply {
-        whenever(symbolicName).thenReturn(PUBLIC_BUNDLE_NAME)
-        whenever(loadClass(publicBundleClass.name)).thenReturn(publicBundleClass)
-    }
-    private val privateBundle = mock(Bundle::class.java).apply {
-        whenever(symbolicName).thenReturn(PRIVATE_BUNDLE_NAME)
-        whenever(loadClass(privateBundleClass.name)).thenReturn(privateBundleClass)
-    }
-    private val nonSandboxBundle = mock(Bundle::class.java).apply {
-        whenever(loadClass(nonSandboxClass.name)).thenReturn(nonSandboxClass)
-    }
+    private val uninstalledBundles = mutableSetOf<Bundle>()
 
-    private val mockBundleUtils = mock(BundleUtils::class.java).apply {
-        // `Int` is assigned to the public bundle, `String` is assigned to the private bundle, and `Boolean` is
-        // assigned to the excluded bundle.
+    private val publicBundle = createMockBundle(PUBLIC_BUNDLE_NAME, publicBundleClass)
+    private val privateBundle = createMockBundle(PRIVATE_BUNDLE_NAME, privateBundleClass)
+    private val nonSandboxBundle = createMockBundle("", nonSandboxClass)
+
+    private val mockBundleUtils = mock<BundleUtils>().apply {
         whenever(getBundle(publicBundleClass)).thenReturn(publicBundle)
         whenever(getBundle(privateBundleClass)).thenReturn(privateBundle)
         whenever(getBundle(nonSandboxClass)).thenReturn(nonSandboxBundle)
     }
 
+    /** Creates a mock [Bundle] for testing. */
+    private fun createMockBundle(bundleSymbolicName: String, klass: Class<*>) = mockBundle(
+        bundleSymbolicName = bundleSymbolicName,
+        classes = setOf(klass)
+    ).apply {
+        whenever(uninstall()).then { uninstalledBundles.add(this) }
+    }
+
     /** Creates a [SandboxImpl] for testing. */
     private fun createSandboxImpl() =
         SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
+
+    @AfterEach
+    fun resetUninstalledBundles() = uninstalledBundles.clear()
 
     @Test
     fun `correctly indicates whether bundles are in the sandbox`() {
@@ -122,12 +127,12 @@ class SandboxImplTests {
 
     @Test
     fun `throws when attempting to load a class from an uninstalled bundle`() {
-        val publicBundle = mock(Bundle::class.java).apply {
+        val publicBundle = mock<Bundle>().apply {
             whenever(symbolicName).thenReturn(PUBLIC_BUNDLE_NAME)
             whenever(loadClass(any())).thenThrow(IllegalStateException::class.java)
         }
 
-        val mockBundleUtils = mock(BundleUtils::class.java).apply {
+        val mockBundleUtils = mock<BundleUtils>().apply {
             whenever(getBundle(publicBundleClass)).thenReturn(publicBundle)
         }
 
@@ -135,5 +140,32 @@ class SandboxImplTests {
         assertThrows<SandboxException> {
             sandbox.loadClass(privateBundleClass.name, PUBLIC_BUNDLE_NAME)
         }
+    }
+
+    @Test
+    fun `sandbox can be unloaded`() {
+        val sandbox = createSandboxImpl()
+        sandbox.unload()
+
+        assertEquals(setOf(publicBundle, privateBundle), uninstalledBundles)
+    }
+
+    @Test
+    fun `unloading a sandbox attempts to uninstall all bundles`() {
+        val cantBeUninstalledCordappBundle = mockBundle().apply {
+            whenever(uninstall()).then { throw IllegalStateException() }
+        }
+        val libraryBundle = mockBundle().apply {
+            whenever(uninstall()).then { uninstalledBundles.add(this) }
+        }
+
+        SandboxImpl(
+            mockBundleUtils,
+            randomUUID(),
+            setOf(cantBeUninstalledCordappBundle, libraryBundle),
+            emptySet()
+        ).unload()
+
+        assertEquals(libraryBundle, uninstalledBundles.single())
     }
 }

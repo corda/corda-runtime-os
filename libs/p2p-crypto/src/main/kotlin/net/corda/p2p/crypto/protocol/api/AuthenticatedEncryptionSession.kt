@@ -26,7 +26,7 @@ import kotlin.experimental.xor
  * This class is thread-safe, which means multiple threads can try to encrypt & decrypt data concurrently using the same session.
  */
 @Suppress("LongParameterList")
-class AuthenticatedEncryptionSession(private val sessionId: String,
+class AuthenticatedEncryptionSession(override val sessionId: String,
                                      nextSequenceNo: Long,
                                      private val outboundSecretKey: SecretKey,
                                      private val outboundNonce: ByteArray,

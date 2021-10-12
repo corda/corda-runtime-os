@@ -27,8 +27,11 @@ dependencies {
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation project(":testing:test-utilities")
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    testImplementation project(":libs:messaging:inmemory-messaging-impl")
     testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }

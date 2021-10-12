@@ -1,42 +1,18 @@
 package net.corda.kryoserialization
 
 import net.corda.install.InstallService
-import net.corda.packaging.Cpk
-import net.corda.sandbox.CpkSandbox
+import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.fail
-import org.osgi.framework.Bundle
-import org.osgi.framework.FrameworkUtil
-import org.osgi.service.cm.ConfigurationAdmin
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import java.io.InputStream
 import java.net.URI
-import java.nio.file.Paths
 import java.security.DigestInputStream
 import java.security.MessageDigest
-import java.util.*
 
-@Component(service = [SandboxManagementService::class])
-class SandboxManagementService @Activate constructor(
-    @Reference
-    configAdmin: ConfigurationAdmin,
-
-    @Reference
-    private val installService: InstallService,
-
-    @Reference
-    private val sandboxCreationService: SandboxCreationService
-) {
+class SandboxManagementService {
     companion object {
-        private val baseDirectory = Paths.get(
-            URI.create(System.getProperty("base.directory") ?: fail("base.directory property not found"))
-        ).toAbsolutePath()
-
         private fun loadResource(resourceName: String): URI {
             return (this::class.java.classLoader.getResource(resourceName)
                 ?: fail("Failed to load $resourceName")).toURI()
@@ -57,60 +33,23 @@ class SandboxManagementService @Activate constructor(
         }
     }
 
-    val cpk1: Cpk
+    private val installService: InstallService = ServiceLocator.getInstallService()
+    private val sandboxCreationService: SandboxCreationService = ServiceLocator.getSandboxCreationService()
 
-    val group1: SandboxGroup
+    val cpk1: CPK = loadCPK(resourceName = CPK_ONE)
+    val cpk2: CPK = loadCPK(resourceName = CPK_TWO)
+    val group1: SandboxGroup = createSandboxGroupFor(cpk1)
+    val group2: SandboxGroup = createSandboxGroupFor(cpk2)
 
-    init {
-        val privateBundleNames = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.filter { bundle ->
-            bundle.symbolicName !in PLATFORM_PUBLIC_BUNDLE_NAMES
-        }.map(Bundle::getSymbolicName)
-
-        configAdmin.getConfiguration(ConfigurationAdmin::class.java.name)?.also { config ->
-            val properties = Properties()
-            properties[BASE_DIRECTORY_KEY] = baseDirectory.toString()
-            properties[BLACKLISTED_KEYS_KEY] = emptyList<String>()
-            properties[PLATFORM_VERSION_KEY] = 999
-            properties[PLATFORM_SANDBOX_PUBLIC_BUNDLES_KEY] = PLATFORM_PUBLIC_BUNDLE_NAMES
-            properties[PLATFORM_SANDBOX_PRIVATE_BUNDLES_KEY] = privateBundleNames
-            @Suppress("unchecked_cast")
-            config.update(properties as Dictionary<String, Any>)
-        }
-
-        cpk1 = loadCPK(resourceName = CPK_ONE)
-        group1 = createSandboxGroupFor(cpk1)
-    }
-
-    /** Runs the flow with [className] in sandbox group [group] and casts the return value to [T]. */
-    internal fun <T: Any> runFlow(className: String, group: SandboxGroup): T {
-        val workflowClass = group.loadClassFromCordappBundle(className, Flow::class.java)
-        @Suppress("unchecked_cast")
-        return getServiceFor(Flow::class.java, workflowClass).call() as? T
-            ?: fail("Workflow did not return the correct type.")
-    }
-
-    private fun loadCPK(resourceName: String): Cpk {
+    @Suppress("SameParameterValue")
+    private fun loadCPK(resourceName: String): CPK {
         val location = loadResource(resourceName)
         return location.toURL().openStream().buffered().use { source ->
             installService.loadCpk(hashOf(location, SHA256), source)
         }
     }
 
-    private fun createSandboxGroupFor(vararg cpks: Cpk): SandboxGroup {
-        return sandboxCreationService.createSandboxGroup(cpks.map(Cpk::cpkHash))
+    private fun createSandboxGroupFor(vararg cpks: CPK): SandboxGroup {
+        return sandboxCreationService.createSandboxGroup(cpks.map { it.metadata.hash })
     }
-
-    private fun <T, U : T> getServiceFor(serviceType: Class<T>, bundleClass: Class<U>): T {
-        val context = FrameworkUtil.getBundle(bundleClass).bundleContext
-        return context.getServiceReferences(serviceType, null)
-            .map(context::getService)
-            .filterIsInstance(bundleClass)
-            .firstOrNull() ?: fail("No service for $bundleClass")
-    }
-
-    @Suppress("SameParameterValue")
-    private fun getBundle(className: String, sandbox: CpkSandbox): Bundle {
-        return FrameworkUtil.getBundle(sandbox.loadClassFromCordappBundle(className))
-    }
-
 }

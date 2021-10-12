@@ -4,19 +4,17 @@ import net.corda.sandbox.SandboxException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.net.URI
 import java.util.UUID.randomUUID
 
 class SandboxLocationTests {
     private val validUUID = randomUUID()
-    private val validURI = URI("testUri")
+    private val validURI = "testUri"
 
     @Test
     fun `sandbox location is stringified correctly`() {
-        val validSandboxLocationString = "sandbox/$validUUID/$validURI"
-
         val sandboxLocation = SandboxLocation(validUUID, validURI)
-        assertEquals(validSandboxLocationString, sandboxLocation.toString())
+
+        assertEquals("sandbox/$validUUID/$validURI", sandboxLocation.toString())
     }
 
     @Test
@@ -52,13 +50,6 @@ class SandboxLocationTests {
     fun `throws if sandbox location has invalid UUID`() {
         assertThrows<SandboxException> {
             SandboxLocation.fromString("sandbox/badUUID/$validURI")
-        }
-    }
-
-    @Test
-    fun `throws if sandbox location has invalid URI`() {
-        assertThrows<SandboxException> {
-            SandboxLocation.fromString("sandbox/$validUUID/${URI("/badUri")}")
         }
     }
 }

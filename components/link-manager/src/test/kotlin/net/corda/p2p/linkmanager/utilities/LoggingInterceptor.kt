@@ -28,35 +28,43 @@ class LoggingInterceptor private constructor(private val testAppender: TestAppen
 
     private class TestAppender: AbstractAppender("TestAppender", null, null, false, null) {
 
-        val messages = mutableListOf<String>()
-        val levels = mutableListOf<Level>()
+        data class LoggerMessage(val message: String, val level: Level)
+
+        val messages = mutableListOf<LoggerMessage>()
 
         override fun append(event: LogEvent?) {
             event?. let {
-                messages.add(it.message.formattedMessage)
-                levels.add(it.level)
+                messages.add(LoggerMessage(it.message.formattedMessage, it.level))
             }
         }
     }
 
     fun reset() {
         testAppender.messages.clear()
-        testAppender.levels.clear()
     }
 
     fun assertSingleWarning(expectedMessage: String) {
-        assertEquals(Level.WARN, testAppender.levels.single())
-        assertEquals(expectedMessage, testAppender.messages.single())
+        val warnings = testAppender.messages.filter { it.level == Level.WARN }
+        assertEquals(1, warnings.size)
+        assertEquals(expectedMessage, warnings.single().message)
+    }
+
+    fun assertSingleWarningContains(expectedMessagePart: String) {
+        val warnings = testAppender.messages.filter { it.level == Level.WARN }
+        assertEquals(1, warnings.size)
+        assertThat(warnings.single().message).contains(expectedMessagePart)
     }
 
     fun assertSingleError(expectedMessage: String) {
-        assertEquals(Level.ERROR, testAppender.levels.single())
-        assertEquals(expectedMessage, testAppender.messages.single())
+        val errors = testAppender.messages.filter { it.level == Level.ERROR }
+        assertEquals(1, errors.size)
+        assertEquals(expectedMessage, errors.single().message)
     }
 
     fun assertErrorContains(message: String) {
-        assertEquals(Level.ERROR, testAppender.levels.single())
-        assertThat(testAppender.messages.single()).contains(message)
+        val errors = testAppender.messages.filter { it.level == Level.ERROR }
+        assertEquals(1, errors.size)
+        assertThat(errors.single().message).contains(message)
     }
 
 }

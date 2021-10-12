@@ -24,7 +24,9 @@ dependencies {
 
 def jar = tasks.named('jar', Jar) {
     archiveBaseName = 'corda-serialization-encoding'
-    bnd """\
+
+    bundle {
+        bnd """\
 Bundle-Name: Corda serialization encoding library
 Bundle-SymbolicName: \${project.group}.serialization.encoding
 Import-Package:\
@@ -33,6 +35,7 @@ Import-Package:\
     *
 -includeresource: @snappy-${snappyVersion}.jar
 """
+    }
 }
 
 artifacts {

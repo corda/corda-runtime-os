@@ -1,4 +1,5 @@
 import static org.gradle.api.JavaVersion.VERSION_11
+import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
 
 buildscript {
     configurations.classpath {
@@ -7,11 +8,6 @@ buildscript {
             cacheDynamicVersionsFor 0, 'seconds'
         }
     }
-
-    ext {
-        // Remember where our Java executable lives (until Bnd supports Gradle toolchains).
-        javaExecutable = file("${System.getProperty('java.home')}/bin/java")
-    }
 }
 
 plugins {
@@ -19,6 +15,7 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.allopen' apply false
     id 'org.jetbrains.kotlin.plugin.jpa' apply false
     id 'io.gitlab.arturbosch.detekt' apply false
+    id 'biz.aQute.bnd.builder' apply false
     id 'idea'
     id 'application'
     id 'net.corda.cordapp.cordapp-configuration'
@@ -80,6 +77,14 @@ allprojects {
 
         doFirst {
             systemProperty 'java.io.tmpdir', buildDir.absolutePath
+        }
+    }
+
+    pluginManager.withPlugin('biz.aQute.bnd.builder') {
+        tasks.withType(aQute.bnd.gradle.Bndrun).configureEach {
+            javaLauncher = javaToolchains.launcherFor {
+                languageVersion = of(javaVersion.getMajorVersion().toInteger())
+            }
         }
     }
 
@@ -234,6 +239,9 @@ logger.quiet("Corda runtime OS release version: {}", version)
 logger.quiet("Corda API dependency version spec: {}", cordaApiVersion)
 logger.quiet("Old Corda dependencies version spec: {}", cordaVersion)
 //logger.quiet("Release Type: {}", releaseType)
+if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
+    logger.quiet( "Corda-Api project exists on disk in the expected location and Gradle composite build is enabled, corda-api binaries will be substituted with source code")
+}
 
 subprojects {
     buildscript {
@@ -252,6 +260,13 @@ subprojects {
 
     version rootProject.version
     group 'net.corda'
+
+    idea{
+        module {
+            downloadJavadoc = true
+            downloadSources = true
+        }
+    }
 
     detekt {
         baseline = file("$projectDir/detekt-baseline.xml")
