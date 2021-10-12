@@ -212,8 +212,9 @@ class SslConfigurationTest {
             revocationCheck =
             RevocationConfig(RevocationConfigMode.SOFT_FAIL)
         )
+        val config2 = config1.copy()
 
-        assertThat(config1).isEqualTo(config1)
+        assertThat(config1).isEqualTo(config2)
     }
 
     @Test
