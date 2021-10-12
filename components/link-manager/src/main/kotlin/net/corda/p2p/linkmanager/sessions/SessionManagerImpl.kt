@@ -486,7 +486,7 @@ open class SessionManagerImpl(
          * [sendingHeartbeats]: If true we send heartbeats to the counterparty (this happens after the session established).
          */
         class TrackedSession(
-            var identityData: SessionKey,
+            val identityData: SessionKey,
             @Volatile
             var lastSendTimestamp: Long,
             @Volatile
