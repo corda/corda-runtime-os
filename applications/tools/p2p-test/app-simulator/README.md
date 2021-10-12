@@ -1,4 +1,4 @@
-This is a tool that can be used to simulate the application layer and send/receive messages to/from the p2p layer.
+This is a tool that can be used to simulate the application layer by sending/receiving messages to/from the p2p layer.
 
 It can be executed in two main modes:
 * `SENDER`: in this mode, the tool sends messages to the Kafka topics monitored by p2p components and writes metadata to a postgres DB.
@@ -126,7 +126,7 @@ where rm.message_id is null
 
 #### Calculating latencies & aggregate statistics
 
-In order to calculate the latency of the delivery of every message, you can run the following query:
+In order to calculate the latency of the delivery of every message (in ms), you can run the following query:
 ```
 create table latencies
 as

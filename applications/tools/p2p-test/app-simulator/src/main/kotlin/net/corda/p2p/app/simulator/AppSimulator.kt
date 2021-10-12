@@ -44,7 +44,6 @@ import java.util.Random
 import java.util.UUID
 import kotlin.concurrent.thread
 
-@Suppress("SpreadOperator")
 @Component(immediate = true)
 class AppSimulator @Activate constructor(
     @Reference(service = Shutdown::class)
@@ -86,6 +85,7 @@ class AppSimulator @Activate constructor(
     private var writeReceivedStmt: PreparedStatement? = null
 
 
+    @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
         consoleLogger.info("Starting application simulator tool")
 
