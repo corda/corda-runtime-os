@@ -12,6 +12,8 @@ import kotlin.random.Random.Default.nextInt
 import kotlin.random.Random.Default.nextLong
 import kotlin.math.abs
 
+const val HASH_ALGORITHM = "SHA-256"
+const val HASH_LENGTH = 32
 const val PUBLIC_BUNDLE_NAME = "public_bundle_symbolic_name"
 const val CPK_BUNDLE_NAME = "cpk_bundle_symbolic_name"
 const val CORDAPP_BUNDLE_NAME = "cordapp_bundle_symbolic_name"
@@ -26,7 +28,7 @@ fun randomSecureHash(): SecureHash {
 
 /** Generates a mock [Bundle] with [bundleSymbolicName] that contains the given [classes]. */
 fun mockBundle(
-    bundleSymbolicName: String = nextInt().toString(),
+    bundleSymbolicName: String? = nextInt().toString(),
     classes: Collection<Class<*>> = emptySet()
 ) = mock<Bundle>().apply {
         whenever(bundleId).thenReturn(nextLong())
