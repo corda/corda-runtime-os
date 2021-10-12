@@ -1,4 +1,4 @@
-package net.corda.httprpc.server.impl.utils
+package net.corda.httprpc.test.utls
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nimbusds.jose.JWSAlgorithm

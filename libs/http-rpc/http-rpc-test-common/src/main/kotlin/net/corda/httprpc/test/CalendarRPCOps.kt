@@ -1,4 +1,4 @@
-package net.corda.httprpc.server.impl.rpcops
+package net.corda.httprpc.test
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.stream.FiniteDurableCursorBuilder

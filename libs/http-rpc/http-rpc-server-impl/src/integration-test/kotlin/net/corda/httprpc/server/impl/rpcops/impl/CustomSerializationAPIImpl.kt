@@ -1,10 +1,10 @@
 package net.corda.httprpc.server.impl.rpcops.impl
 
 
-import net.corda.httprpc.server.impl.rpcops.CustomMarshalString
-import net.corda.httprpc.server.impl.rpcops.CustomSerializationAPI
-import net.corda.httprpc.server.impl.rpcops.CustomString
-import net.corda.httprpc.server.impl.rpcops.CustomUnsafeString
+import net.corda.httprpc.test.CustomMarshalString
+import net.corda.httprpc.test.CustomSerializationAPI
+import net.corda.httprpc.test.CustomString
+import net.corda.httprpc.test.CustomUnsafeString
 import net.corda.v5.httprpc.api.PluggableRPCOps
 
 class CustomSerializationAPIImpl : CustomSerializationAPI, PluggableRPCOps<CustomSerializationAPI> {

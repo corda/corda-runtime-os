@@ -1,4 +1,4 @@
-package net.corda.httprpc.server.impl.rpcops
+package net.corda.httprpc.test
 
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext

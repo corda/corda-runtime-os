@@ -1,7 +1,6 @@
-package net.corda.httprpc.server.impl.rpcops.impl
+package net.corda.httprpc.test
 
 import net.corda.httprpc.durablestream.DurableStreamHelper
-import net.corda.httprpc.server.impl.rpcops.CalendarRPCOps
 import net.corda.v5.base.stream.FiniteDurableCursorBuilder
 import net.corda.v5.httprpc.api.PluggableRPCOps
 import java.time.DayOfWeek
