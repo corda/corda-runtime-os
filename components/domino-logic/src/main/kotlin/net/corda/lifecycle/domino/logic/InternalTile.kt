@@ -65,14 +65,8 @@ abstract class InternalTile(coordinatorFactory: LifecycleCoordinatorFactory) : D
                 it.stop()
             }
         } else {
-            if (startInParallel) {
-                children.forEach {
-                    it.start()
-                }
-            } else {
-                children.firstOrNull {
-                    !it.isRunning
-                }?.start()
+            children.forEach {
+                it.start()
             }
 
             if (children.all { it.isRunning }) {
@@ -106,6 +100,4 @@ abstract class InternalTile(coordinatorFactory: LifecycleCoordinatorFactory) : D
     override fun toString(): String {
         return "$name: $state: $children"
     }
-
-    protected open val startInParallel = true
 }

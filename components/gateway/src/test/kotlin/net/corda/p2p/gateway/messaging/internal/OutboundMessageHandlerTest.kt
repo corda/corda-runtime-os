@@ -2,13 +2,16 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.util.EventLogSubscriptionWithDominoLogic
+import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
@@ -31,7 +34,9 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -42,23 +47,32 @@ import java.net.URI
 import java.nio.ByteBuffer
 
 class OutboundMessageHandlerTest {
-    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
+    private val coordinatorHandler = argumentCaptor<LifecycleEventHandler>()
+    private val coordinator = mock<LifecycleCoordinator> {
+        on { start() } doAnswer {
+            coordinatorHandler.lastValue.processEvent(StartEvent(), mock)
+        }
+    }
+    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
+        on { createCoordinator(any(), coordinatorHandler.capture()) } doReturn coordinator
+    }
+
     private val configurationReaderService = mock<ConfigurationReadService>()
     private val publisherFactory = mock<PublisherFactory> {
         on { createPublisher(any(), any()) } doReturn mock()
     }
+    private val subscription = mock<Subscription<String, LinkOutMessage>>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on {
             createEventLogSubscription(
                 any(),
                 any<EventLogProcessor<String, LinkOutMessage>>(),
                 any(),
-                any()
+                anyOrNull()
             )
-        } doReturn mock()
+        } doReturn subscription
     }
     private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java)
-    private val p2pMessageSubscription = mockConstruction(EventLogSubscriptionWithDominoLogic::class.java)
     private val p2pInPublisher = mockConstruction(PublisherWithDominoLogic::class.java)
 
     private val handler = OutboundMessageHandler(
@@ -71,7 +85,6 @@ class OutboundMessageHandlerTest {
     @AfterEach
     fun cleanUp() {
         connectionManager.close()
-        p2pMessageSubscription.close()
         p2pInPublisher.close()
     }
 
@@ -79,9 +92,29 @@ class OutboundMessageHandlerTest {
     fun `children return all the children`() {
         assertThat(handler.children).containsExactlyInAnyOrder(
             connectionManager.constructed().first(),
-            p2pMessageSubscription.constructed().first(),
             p2pInPublisher.constructed().first(),
         )
+    }
+
+    @Test
+    fun `start will start a subscription`() {
+        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
+        whenever(p2pInPublisher.constructed().first().isRunning).doReturn(true)
+
+        handler.start()
+
+        verify(subscription).start()
+    }
+
+    @Test
+    fun `stop will stop the subscription`() {
+        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
+        whenever(p2pInPublisher.constructed().first().isRunning).doReturn(true)
+        handler.start()
+
+        handler.stop()
+
+        verify(subscription).close()
     }
 
     @Test

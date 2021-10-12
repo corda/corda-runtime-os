@@ -37,7 +37,6 @@ class InternalTileTest {
     }
     private inner class Tile(
         override val children: Collection<DominoTile>,
-        override val startInParallel: Boolean = true
     ) : InternalTile(factory)
 
     @Nested
@@ -121,37 +120,6 @@ class InternalTileTest {
         }
 
         @Test
-        fun `startKidsIfNeeded will start only the first one if its should not start in parallel`() {
-            val children = listOf<DominoTile>(
-                mock {
-                    on { state } doReturn DominoTile.State.Started
-                    on { isRunning } doReturn true
-                },
-                mock {
-                    on { state } doReturn DominoTile.State.Created
-                    on { isRunning } doReturn false
-                },
-                mock {
-                    on { state } doReturn DominoTile.State.Created
-                    on { isRunning } doReturn false
-                },
-            )
-
-            Tile(children, false)
-            handler.lastValue.processEvent(
-                RegistrationStatusChangeEvent(
-                    mock(),
-                    LifecycleStatus.UP
-                ),
-                coordinator
-            )
-
-            verify(children[0], never()).start()
-            verify(children[1]).start()
-            verify(children[2], never()).start()
-        }
-
-        @Test
         fun `startKidsIfNeeded will set status to up if all are running`() {
             val children = listOf<DominoTile>(
                 mock {
@@ -168,7 +136,7 @@ class InternalTileTest {
                 },
             )
 
-            val tile = Tile(children, false)
+            val tile = Tile(children)
             handler.lastValue.processEvent(
                 RegistrationStatusChangeEvent(
                     mock(),

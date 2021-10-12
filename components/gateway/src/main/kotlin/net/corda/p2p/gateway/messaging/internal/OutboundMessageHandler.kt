@@ -5,8 +5,7 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.InternalTile
-import net.corda.lifecycle.domino.logic.util.EventLogSubscriptionWithDominoLogic
+import net.corda.lifecycle.domino.logic.InternalTileWithResources
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -38,12 +37,12 @@ import java.nio.ByteBuffer
 internal class OutboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
-    subscriptionFactory: SubscriptionFactory,
+    private val subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
 ) : EventLogProcessor<String, LinkOutMessage>,
     Lifecycle,
     HttpEventListener,
-    InternalTile(lifecycleCoordinatorFactory) {
+    InternalTileWithResources(lifecycleCoordinatorFactory) {
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
     }
@@ -53,23 +52,12 @@ internal class OutboundMessageHandler(
         configurationReaderService,
         this,
     )
-    private val p2pMessageSubscription = let {
-        val subscription = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig(Gateway.CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC),
-            this,
-            ConfigFactory.empty(),
-            null
-        )
-        EventLogSubscriptionWithDominoLogic(subscription, lifecycleCoordinatorFactory)
-    }
 
     private var p2pInPublisher = PublisherWithDominoLogic(
         publisherFactory,
         lifecycleCoordinatorFactory,
         PUBLISHER_ID
     )
-
-    override val startInParallel = false
 
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
@@ -132,5 +120,15 @@ internal class OutboundMessageHandler(
     override val valueClass: Class<LinkOutMessage>
         get() = LinkOutMessage::class.java
 
-    override val children = listOf(connectionManager, p2pInPublisher, p2pMessageSubscription)
+    override val children = listOf(connectionManager, p2pInPublisher)
+    override fun createResources() {
+        val subscription = subscriptionFactory.createEventLogSubscription(
+            SubscriptionConfig(Gateway.CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC),
+            this,
+            ConfigFactory.empty(),
+            null
+        )
+        resources.keep(subscription)
+        subscription.start()
+    }
 }
