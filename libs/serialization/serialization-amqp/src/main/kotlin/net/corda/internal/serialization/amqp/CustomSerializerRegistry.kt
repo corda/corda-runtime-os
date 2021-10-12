@@ -46,6 +46,7 @@ interface CustomSerializerRegistry {
         withInheritance: Boolean,
         revealSubclassesInSchema: Boolean = false
     )
+    
     fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory)
 
     /**
