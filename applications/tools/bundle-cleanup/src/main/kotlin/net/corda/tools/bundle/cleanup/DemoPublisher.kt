@@ -3,7 +3,7 @@ package net.corda.tools.bundle.cleanup
 import com.typesafe.config.ConfigFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.SubscriberFactory
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -14,8 +14,8 @@ import java.lang.Thread.sleep
 
 @Component(service = [DemoPublisher::class])
 class DemoPublisher @Activate constructor(
-    @Reference(service = SubscriberFactory::class)
-    private val publisherFactory: SubscriberFactory
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory
 ) {
     companion object {
         private const val KAFKA_BOOTSTRAP_SERVERS_KEY = "messaging.kafka.common.bootstrap.servers"
