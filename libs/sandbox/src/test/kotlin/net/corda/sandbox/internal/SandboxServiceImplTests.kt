@@ -636,5 +636,6 @@ private data class CpkAndContents(
         }
 
         override fun getResourceAsStream(resourceName: String) = ByteArrayInputStream(ByteArray(0))
+        override fun close() {}
     }
 }
