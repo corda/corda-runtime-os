@@ -2,14 +2,17 @@ package net.corda.components.examples.persistence.config.admin
 
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.orm.impl.InMemoryEntityManagerConfiguration
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Connection
+import javax.persistence.EntityManagerFactory
 
 class ConfigDurableProcessor(
     private val outputEventTopic: String,
     private val dbConnection: Connection,
+    private val entityManagerFactory: EntityManagerFactory,
     private val logger: Logger,
 ) :
     DurableProcessor<String, String> {
@@ -29,19 +32,25 @@ class ConfigDurableProcessor(
     override fun onNext(events: List<Record<String, String>>): List<Record<*, *>> {
         val outputRecords = mutableListOf<Record<*, *>>()
 
-        // TODO: make this 1 transaction (to Hibernate)
+        val em = entityManagerFactory.createEntityManager()
+
+        em.transaction.begin()
+
         for (event in events) {
 
             val key = event.key
             val eventRecord = event.value
 
-            // TODO: Create Hibernate entity mgr and stick the config in there
+            val configRecord = ClusterConfig(key, eventRecord!!)
+            em.persist(configRecord)
 
             log.info("Durable sub processing key/value  ${key}/${eventRecord}")
             // config-state
             outputRecords.add(Record(outputEventTopic, key, eventRecord))
             counter++
         }
+
+        em.transaction.commit()
 
         return outputRecords
     }

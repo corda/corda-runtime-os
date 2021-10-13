@@ -17,9 +17,12 @@ dependencies {
 
     implementation "info.picocli:picocli:$picocliVersion"
 
+    implementation project(":libs:db:db-orm")
+    implementation project(":libs:db:db-orm-impl")
 
     implementation project(":osgi-framework-api")
     implementation project(":libs:lifecycle:lifecycle")
     implementation 'net.corda:avro-schema'
     implementation project(":libs:messaging:messaging")
+
 }

@@ -1,13 +1,15 @@
 package net.corda.applications.examples.persistence.config.admin
 
 import com.typesafe.config.ConfigFactory
+import net.corda.components.examples.persistence.config.admin.ClusterConfig
 import net.corda.components.examples.persistence.config.admin.ConfigAppSubscription
 import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.lifecycle.*
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.orm.impl.InMemoryEntityManagerConfiguration
 import net.corda.osgi.api.Application
-import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -24,6 +26,8 @@ class ConfigSubscriptionApp @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = EntityManagerFactoryFactory::class)
+    private val entityManagerFactoryFactory: EntityManagerFactoryFactory
 ) : Application {
 
     companion object {
@@ -32,6 +36,11 @@ class ConfigSubscriptionApp @Activate constructor(
     }
 
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
+    private val entityManagerFactory = entityManagerFactoryFactory.create(
+        "cluster-config",
+        listOf(ClusterConfig::class.java),
+        InMemoryEntityManagerConfiguration("cluster-config"),
+    )
 
     // TODO: add helpRequested use case?
     override fun startup(args: Array<String>) {
@@ -59,7 +68,7 @@ class ConfigSubscriptionApp @Activate constructor(
             when (event) {
                 is StartEvent -> {
                     consoleLogger.info("Starting kafka subscriptions from ${parameters.kafka}")
-                    configAdminEventSub = ConfigAppSubscription(subscriptionFactory, config, 1, dbConnection.connection)
+                    configAdminEventSub = ConfigAppSubscription(subscriptionFactory, config, 1, dbConnection.connection, entityManagerFactory)
                     configAdminEventSub!!.start()
                 }
                 is StopEvent -> {

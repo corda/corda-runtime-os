@@ -23,6 +23,9 @@ dependencies {
 
     implementation project(":components:examples:persistence:config-admin")
 
+    implementation project(":libs:db:db-orm")
+    implementation project(":libs:db:db-orm-impl")
+
     implementation project(":osgi-framework-api")
     implementation project(":libs:lifecycle:lifecycle")
     implementation 'net.corda:avro-schema'
