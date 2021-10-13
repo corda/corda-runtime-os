@@ -51,8 +51,11 @@ internal class SandboxServiceImpl @Activate constructor(
     // Maps each sandbox ID to the sandbox group that the sandbox is part of.
     private val sandboxGroups = ConcurrentHashMap<UUID, SandboxGroup>()
 
-    // A list of the public sandboxes.
+    // The created public sandboxes.
     private val publicSandboxes = mutableListOf<SandboxInternal>()
+
+    // Bundles that failed to uninstall when a sandbox group was unloaded.
+    private val zombieBundles = mutableListOf<Bundle>()
 
     private val logger = loggerFor<SandboxServiceImpl>()
 
@@ -71,7 +74,7 @@ internal class SandboxServiceImpl @Activate constructor(
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) = sandboxGroup.sandboxes.forEach { sandbox ->
         sandboxes.remove(sandbox.id)
         sandboxGroups.remove(sandbox.id)
-        (sandbox as SandboxInternal).unload()
+        zombieBundles.addAll((sandbox as SandboxInternal).unload())
     }
 
     override fun getClassInfo(klass: Class<*>): ClassInfo {
@@ -98,11 +101,13 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun getSandbox(bundle: Bundle) = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundle) }
 
+    @Suppress("ComplexMethod")
     override fun hasVisibility(lookingBundle: Bundle, lookedAtBundle: Bundle): Boolean {
         val lookingSandbox = getSandbox(lookingBundle)
         val lookedAtSandbox = getSandbox(lookedAtBundle)
 
         return when {
+            lookingBundle in zombieBundles || lookedAtBundle in zombieBundles -> false
             // These two framework bundles require full visibility.
             lookingBundle.bundleId in listOf(SYSTEM_BUNDLE_ID, serviceComponentRuntimeBundleId) -> true
             // Do both bundles belong to the same sandbox, or is neither bundle in a sandbox?

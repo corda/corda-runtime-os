@@ -21,7 +21,7 @@ internal class BundleUtils @Activate constructor(
     private val bundleContext: BundleContext
 ) {
     /**
-     * Installs the contents of the [uri] as a bundle, using the [location] provided.
+     * Installs the contents of the [inputStream] as a bundle, using the [location] provided.
      *
      * A [BundleException] is thrown if the bundle fails to install.
      */
