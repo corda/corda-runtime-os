@@ -1,7 +1,7 @@
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-app'
-    id 'com.google.cloud.tools.jib' version '3.1.4'
+    id 'com.google.cloud.tools.jib'
 }
 
 import static org.apache.tools.ant.taskdefs.condition.Os.*
@@ -54,5 +54,17 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 }
 
-println "${buildDir}\${libsDirName}"
-println "OS ${OS_NAME}"
+
+tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
+    description "Builds the docker image for the deployable OSGi application"
+
+    arguments = ["--instanceId", "1"]
+
+    if (rootProject.hasProperty('jibRemotePublish')) {
+        remotePublish = rootProject.jibRemotePublish.toBoolean()
+        println(rootProject.jibRemotePublish.toBoolean() ? "Publishing remotely" : "Publishing locally")
+    }
+    if (project.hasProperty('jibTargetImageTag')) {
+        targetImageTag = project.findProperty('jibTargetImageTag')
+    }
+}

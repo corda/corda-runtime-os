@@ -16,6 +16,8 @@ dependencies {
 
     implementation "net.corda.plugins:quasar-utils:$cordaGradlePluginsVersion"
     implementation "net.corda.plugins:flask:$cordaGradlePluginsVersion"
+    implementation "com.google.cloud.tools:jib-core:0.16.0"
+
 }
 
 repositories {
