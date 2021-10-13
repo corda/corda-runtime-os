@@ -14,7 +14,7 @@ import java.util.*
 internal class TestURLStreamHandlerFactory(content: Map<String, String>) : URLStreamHandlerFactory, Closeable {
     companion object {
         const val PROTOCOL = "mock"
-
+        @Suppress("TooGenericExceptionThrown", "TooGenericExceptionCaught")
         private fun forceSetURLStreamHandlerFactory(factory: URLStreamHandlerFactory?) {
             try {
                 URL.setURLStreamHandlerFactory(factory)

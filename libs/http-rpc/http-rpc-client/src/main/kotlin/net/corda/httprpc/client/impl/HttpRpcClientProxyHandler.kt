@@ -57,7 +57,8 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
         } else {
             val sinceVersion = method.getAnnotation(RPCSinceVersion::class.java)?.version ?: 0
             if (sinceVersion > serverProtocolVersion) {
-                throw UnsupportedOperationException("Method $method was added in RPC protocol version $sinceVersion but the server is running $serverProtocolVersion")
+                throw UnsupportedOperationException(
+                        "Method $method was added in RPC protocol version $sinceVersion but the server is running $serverProtocolVersion")
             }
         }
     }
@@ -68,14 +69,17 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
         val isExemptFromChecks = staticExposedGetMethods.any { it.equals(method.name, true) }
         if (!isExemptFromChecks) {
             if (method.annotations.none { it is HttpRpcGET || it is HttpRpcPOST }) {
-                throw UnsupportedOperationException("Http RPC proxy can not make remote calls for functions not annotated with HttpRpcGET, HttpRpcPOST or known as implicitly exposed.")
+                throw UnsupportedOperationException(
+                        "Http RPC proxy can not make remote calls for functions not annotated with HttpRpcGET," +
+                                " HttpRpcPOST or known as implicitly exposed.")
             }
 
             checkServerProtocolVersion(method)
         }
 
         val resourceName = rpcOpsClass.getAnnotation(HttpRpcResource::class.java)?.path(rpcOpsClass)?.toLowerCase()
-                ?: throw UnsupportedOperationException("Http RPC proxy can not make remote calls for interfaces not annotated with HttpRpcResource.")
+                ?: throw UnsupportedOperationException(
+                        "Http RPC proxy can not make remote calls for interfaces not annotated with HttpRpcResource.")
         val endpointName = method.endpointPath
         val rawPath = "$resourceName/$endpointName".toLowerCase().replace("/+".toRegex(), "/")
 

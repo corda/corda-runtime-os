@@ -79,7 +79,8 @@ class HttpRpcClient<I : RpcOps> internal constructor (
     }
 
     private val listeners: MutableSet<HttpRpcConnectionListener<I>> = CopyOnWriteArraySet()
-    private val connectionEventDistributor = HttpRpcConnectionListenerDistributor(listeners, clientConfig.authenticationConfig.getCredentialsProvider())
+    private val connectionEventDistributor = HttpRpcConnectionListenerDistributor(
+            listeners, clientConfig.authenticationConfig.getCredentialsProvider())
     private var serverProtocolVersion: Int? = null
     private lateinit var healthCheckTimer: Timer
     @VisibleForTesting

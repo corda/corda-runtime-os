@@ -100,7 +100,8 @@ class RemoteUnirestClient(override val baseAddress: String, private val enableSs
                 val errorResponseJson = response.mapError(String::class.java).formatAsJson()
                 when (response.status) {
                     HttpStatus.BAD_REQUEST -> throw RequestErrorException(errorResponseJson)
-                    HttpStatus.FORBIDDEN, HttpStatus.UNAUTHORIZED, HttpStatus.METHOD_NOT_ALLOWED, HttpStatus.PROXY_AUTHENTICATION_REQUIRED -> throw PermissionException(errorResponseJson)
+                    HttpStatus.FORBIDDEN, HttpStatus.UNAUTHORIZED, HttpStatus.METHOD_NOT_ALLOWED, HttpStatus.PROXY_AUTHENTICATION_REQUIRED
+                    -> throw PermissionException(errorResponseJson)
                     HttpStatus.NOT_FOUND -> throw MissingRequestedResourceException(errorResponseJson)
                     else -> {
                         throw InternalErrorException(errorResponseJson)

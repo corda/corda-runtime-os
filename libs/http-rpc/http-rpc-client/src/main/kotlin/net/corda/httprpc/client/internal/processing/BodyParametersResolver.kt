@@ -17,7 +17,8 @@ internal fun Method.bodyParametersFrom(methodArguments: Array<out Any?>, extraPa
             .mapIndexed { index, parameter -> parameter to methodArguments[index] }
             .filter {
                 it.first.annotations.any { annotation -> annotation is HttpRpcRequestBodyParameter } ||
-                        it.first.annotations.none { annotation -> annotation is HttpRpcPathParameter || annotation is HttpRpcQueryParameter }
+                        it.first.annotations.none {
+                            annotation -> annotation is HttpRpcPathParameter || annotation is HttpRpcQueryParameter }
             }
 
     val bodyParametersByName = bodyParameters.map {

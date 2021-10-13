@@ -10,9 +10,11 @@ import net.corda.httprpc.client.auth.credentials.CredentialsProvider
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * [HttpRpcConnectionListenerDistributor] is responsible for distributing connection and disconnection events to interested listeners ([HttpRpcConnectionListener]).
+ * [HttpRpcConnectionListenerDistributor] is responsible for distributing connection
+ * and disconnection events to interested listeners ([HttpRpcConnectionListener]).
  */
-class HttpRpcConnectionListenerDistributor<I : RpcOps>(private val listeners: Iterable<HttpRpcConnectionListener<I>>, private val credentialsProvider: CredentialsProvider) {
+class HttpRpcConnectionListenerDistributor<I : RpcOps>
+(private val listeners: Iterable<HttpRpcConnectionListener<I>>, private val credentialsProvider: CredentialsProvider) {
     companion object {
         private val log = contextLogger()
 

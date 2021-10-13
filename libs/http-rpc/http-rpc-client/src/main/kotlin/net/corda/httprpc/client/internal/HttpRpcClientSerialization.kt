@@ -26,7 +26,8 @@ val objectMapper = jacksonObjectMapper().apply {
 }
 
 // required because jackson can't deserialize to abstract type (interface)
-internal class PositionedValueDeserializer(private val valueType: JavaType? = null) : JsonDeserializer<Cursor.PollResult.PositionedValue<*>>(), ContextualDeserializer {
+internal class PositionedValueDeserializer(private val valueType: JavaType? = null)
+    : JsonDeserializer<Cursor.PollResult.PositionedValue<*>>(), ContextualDeserializer {
 
     override fun createContextual(ctxt: DeserializationContext, property: BeanProperty?): JsonDeserializer<*> {
         val newValueType = ctxt.contextualType.containedType(0)
@@ -35,7 +36,8 @@ internal class PositionedValueDeserializer(private val valueType: JavaType? = nu
     }
 
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Cursor.PollResult.PositionedValue<*> {
-        val jacksonType = ctxt.typeFactory.constructParametricType(DurableCursorTransferObject.Companion.PositionedValueImpl::class.java, valueType)
+        val jacksonType = ctxt.typeFactory.constructParametricType(
+                DurableCursorTransferObject.Companion.PositionedValueImpl::class.java, valueType)
         return ctxt.findRootValueDeserializer(jacksonType).deserialize(p, ctxt) as Cursor.PollResult.PositionedValue<*>
     }
 }
@@ -43,7 +45,8 @@ internal class PositionedValueDeserializer(private val valueType: JavaType? = nu
 /**
  * Needed or else the following exception will be thrown:
  * com.fasterxml.jackson.databind.exc.InvalidDefinitionException: Cannot construct instance of `net.corda.v5.crypto.SecureHash`
- * (no Creators, like default constructor, exist): abstract types either need to be mapped to concrete types, have custom deserializer, or contain additional type information
+ * (no Creators, like default constructor, exist): abstract types either need to be mapped to concrete types, have custom deserializer,
+ * or contain additional type information
  */
 internal object SecureHashDeserializer : JsonDeserializer<SecureHash>() {
 

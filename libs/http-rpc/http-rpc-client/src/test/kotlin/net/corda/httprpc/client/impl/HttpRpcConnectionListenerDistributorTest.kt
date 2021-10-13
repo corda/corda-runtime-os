@@ -86,8 +86,10 @@ internal class HttpRpcConnectionListenerDistributorTest {
         val throwable = Throwable()
         distributor.onDisconnect(throwable)
 
-        verify(listener1, times(1)).onDisconnect(argThat { this.credentialsProvider == credentialsProvider && this.throwableOpt === throwable })
-        verify(listener2, times(1)).onDisconnect(argThat { this.credentialsProvider == credentialsProvider && this.throwableOpt === throwable })
+        verify(listener1, times(1)).onDisconnect(
+                argThat { this.credentialsProvider == credentialsProvider && this.throwableOpt === throwable })
+        verify(listener2, times(1)).onDisconnect(
+                argThat { this.credentialsProvider == credentialsProvider && this.throwableOpt === throwable })
     }
 
     @Test

@@ -54,7 +54,8 @@ private class HttpRpcFiniteDurableCursorClientImpl(
         val itemType = methodParameterizedType.actualTypeArguments[0]
         val pollResultParamType = TypeUtils.parameterizePollResult(itemType)
 
-        val response = client.call(method.endpointHttpVerb, parameters.toWebRequest(rawPath), pollResultParamType, RequestContext.fromAuthenticationConfig(authenticationConfig))
+        val response = client.call(method.endpointHttpVerb, parameters.toWebRequest(rawPath),
+                pollResultParamType, RequestContext.fromAuthenticationConfig(authenticationConfig))
         return uncheckedCast(response.body!!)
     }
 }

@@ -77,7 +77,8 @@ internal class HttpRpcClientProxyHandlerTest {
 
     @Test
     fun `should call client translating body on post call if it exists`() {
-        val result = testHealthCheckApiProxyHandler.invoke(Any(), TestHealthCheckAPI::ping.javaMethod!!, arrayOf(TestHealthCheckAPI.PingPongData("example")))
+        val result = testHealthCheckApiProxyHandler.invoke(
+                Any(), TestHealthCheckAPI::ping.javaMethod!!, arrayOf(TestHealthCheckAPI.PingPongData("example")))
 
         verify(client, times(1)).call<Any>(
                 eq(HttpVerb.POST),
@@ -131,7 +132,8 @@ internal class HttpRpcClientProxyHandlerTest {
 
     @Test
     fun `should call client translating body with custom serializer successfully`() {
-        val result = customSerializationApiProxyHandler.invoke(Any(), CustomSerializationAPI::printString.javaMethod!!, arrayOf(CustomString("test")))
+        val result = customSerializationApiProxyHandler.invoke(
+                Any(), CustomSerializationAPI::printString.javaMethod!!, arrayOf(CustomString("test")))
 
         verify(client, times(1)).call(
                 eq(HttpVerb.POST),
