@@ -58,6 +58,13 @@ dependencies {
     integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+
+    integrationTestImplementation project(":libs:crypto:crypto-impl")
+    integrationTestImplementation project(":components:crypto:crypto-client")
+    integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
+    integrationTestImplementation project(":libs:configuration:configuration-read-impl")
+    integrationTestImplementation project(":libs:messaging:inmemory-messaging-impl")
+    integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

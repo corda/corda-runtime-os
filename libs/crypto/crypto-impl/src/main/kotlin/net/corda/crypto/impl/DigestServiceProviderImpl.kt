@@ -5,7 +5,7 @@ import net.corda.v5.cipher.suite.DigestServiceProvider
 import net.corda.v5.crypto.DigestService
 import org.osgi.service.component.annotations.Component
 
-@Component
+@Component(service = [DigestServiceProvider::class])
 class DigestServiceProviderImpl : DigestServiceProvider {
     companion object {
         const val SERVICE_NAME = "default"
