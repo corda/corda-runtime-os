@@ -15,7 +15,7 @@ class MockCipherSuiteFactory(
     }
 
     private val _digestService: DigestService by lazy {
-        DigestServiceProviderImpl().getInstance(mocks.factories.cipherSuite)
+        DigestServiceProviderImpl(null).getInstance(mocks.factories.cipherSuite)
     }
 
     override fun getSchemeMap(): CipherSchemeMetadata =

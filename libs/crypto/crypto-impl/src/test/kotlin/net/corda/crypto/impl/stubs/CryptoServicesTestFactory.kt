@@ -37,7 +37,7 @@ class CryptoServicesTestFactory(
         schemeMetadataOverride ?: CipherSchemeMetadataProviderImpl().getInstance()
 
     val digest: DigestService by lazy {
-        DigestServiceProviderImpl().getInstance(this)
+        DigestServiceProviderImpl(null).getInstance(this)
     }
 
     val verifier: SignatureVerificationService by lazy {
