@@ -32,12 +32,14 @@ class ReconfigurableConnectionManager(
     }
 
     fun acquire(destinationInfo: DestinationInfo): HttpClient {
-        if (manager == null) {
-            throw IllegalStateException("Manager is not ready")
-        }
+        return dataAccess {
+            if (manager == null) {
+                throw IllegalStateException("Manager is not ready")
+            }
 
-        return managerLock.read {
-            manager!!.acquire(destinationInfo)
+            managerLock.read {
+                manager!!.acquire(destinationInfo)
+            }
         }
     }
 

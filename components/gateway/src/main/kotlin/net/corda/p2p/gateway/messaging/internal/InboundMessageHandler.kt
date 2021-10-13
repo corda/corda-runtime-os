@@ -52,6 +52,9 @@ internal class InboundMessageHandler(
      * A session init request has additional handling as the Gateway needs to generate a secret and share it
      */
     override fun onMessage(message: HttpMessage) {
+        dataAccess { handleMessage(message) }
+    }
+    private fun handleMessage(message: HttpMessage) {
         if (!isRunning) {
             logger.error("Received message from ${message.source}, while handler is stopped. Discarding it and returning error code.")
             server.writeResponse(HttpResponseStatus.SERVICE_UNAVAILABLE, message.source)

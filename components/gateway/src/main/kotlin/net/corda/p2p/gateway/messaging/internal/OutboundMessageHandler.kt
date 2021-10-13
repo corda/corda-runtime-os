@@ -37,7 +37,7 @@ import java.nio.ByteBuffer
 internal class OutboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
-    private val subscriptionFactory: SubscriptionFactory,
+    subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
 ) : EventLogProcessor<String, LinkOutMessage>,
     Lifecycle,
@@ -68,28 +68,30 @@ internal class OutboundMessageHandler(
 
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
-        events.forEach { evt ->
-            evt.value?.let { peerMessage ->
-                try {
-                    val sni = SniCalculator.calculateSni(
-                        peerMessage.header.destinationX500Name,
-                        peerMessage.header.destinationNetworkType,
-                        peerMessage.header.address
-                    )
-                    val message = LinkInMessage(peerMessage.payload).toByteBuffer().array()
-                    val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
-                        X500Name(peerMessage.header.destinationX500Name)
-                    } else {
-                        null
+        dataAccess {
+            events.forEach { evt ->
+                evt.value?.let { peerMessage ->
+                    try {
+                        val sni = SniCalculator.calculateSni(
+                            peerMessage.header.destinationX500Name,
+                            peerMessage.header.destinationNetworkType,
+                            peerMessage.header.address
+                        )
+                        val message = LinkInMessage(peerMessage.payload).toByteBuffer().array()
+                        val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
+                            X500Name(peerMessage.header.destinationX500Name)
+                        } else {
+                            null
+                        }
+                        val destinationInfo = DestinationInfo(
+                            URI.create(peerMessage.header.address),
+                            sni,
+                            expectedX500Name
+                        )
+                        connectionManager.acquire(destinationInfo).write(message)
+                    } catch (e: IllegalArgumentException) {
+                        logger.warn("Can't send message to destination ${peerMessage.header.address}. ${e.message}")
                     }
-                    val destinationInfo = DestinationInfo(
-                        URI.create(peerMessage.header.address),
-                        sni,
-                        expectedX500Name
-                    )
-                    connectionManager.acquire(destinationInfo).write(message)
-                } catch (e: IllegalArgumentException) {
-                    logger.warn("Can't send message to destination ${peerMessage.header.address}. ${e.message}")
                 }
             }
         }
@@ -103,22 +105,24 @@ internal class OutboundMessageHandler(
      */
     override fun onMessage(message: HttpMessage) {
         logger.debug("Processing response message from ${message.source} with status ${message.statusCode}")
-        if (HttpResponseStatus.OK == message.statusCode) {
-            // response messages should have empty payloads unless they are part of the initial session handshake
-            if (message.payload.isNotEmpty()) {
-                @Suppress("TooGenericExceptionCaught")
-                try {
-                    // Attempt to deserialize as an early check. Shouldn't forward unrecognised message types
-                    LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
-                    val record = Record(LINK_IN_TOPIC, "key", message)
-                    p2pInPublisher.publish(listOf(record))
-                } catch (e: Throwable) {
-                    logger.warn("Invalid message received. Cannot deserialize")
-                    logger.debug(e.stackTraceToString())
+        dataAccess {
+            if (HttpResponseStatus.OK == message.statusCode) {
+                // response messages should have empty payloads unless they are part of the initial session handshake
+                if (message.payload.isNotEmpty()) {
+                    @Suppress("TooGenericExceptionCaught")
+                    try {
+                        // Attempt to deserialize as an early check. Shouldn't forward unrecognised message types
+                        LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
+                        val record = Record(LINK_IN_TOPIC, "key", message)
+                        p2pInPublisher.publish(listOf(record))
+                    } catch (e: Throwable) {
+                        logger.warn("Invalid message received. Cannot deserialize")
+                        logger.debug(e.stackTraceToString())
+                    }
                 }
+            } else {
+                logger.warn("Something went wrong with peer processing an outbound message. Peer response status ${message.statusCode}")
             }
-        } else {
-            logger.warn("Something went wrong with peer processing an outbound message. Peer response status ${message.statusCode}")
         }
     }
 

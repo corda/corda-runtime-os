@@ -13,6 +13,11 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 abstract class DominoTile(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -23,7 +28,6 @@ abstract class DominoTile(
     }
     private object StartTile : LifecycleEvent
     private data class StopTile(val dueToError: Boolean) : LifecycleEvent
-    private data class UpdateState(val state: State) : LifecycleEvent
     private class CallFromCoordinator(val callback: () -> Unit) : LifecycleEvent
     enum class State {
         Created,
@@ -42,55 +46,69 @@ abstract class DominoTile(
         }.toString()
     )
 
+    private val controlLock = ReentrantReadWriteLock()
+
     override fun start() {
-        logger.info("Starting $name")
-        when (state) {
-            State.Created -> {
-                coordinator.start()
-                coordinator.postEvent(StartTile)
-            }
-            State.Started -> {
-                // Do nothing
-            }
-            State.StoppedByParent -> {
-                coordinator.postEvent(StartTile)
-            }
-            State.StoppedDueToError -> {
-                logger.warn("Can not start $name, it was stopped due to an error")
+        controlLock.write {
+            logger.info("Starting $name")
+            when (state) {
+                State.Created -> {
+                    coordinator.start()
+                    coordinator.postEvent(StartTile)
+                }
+                State.Started -> {
+                    // Do nothing
+                }
+                State.StoppedByParent -> {
+                    coordinator.postEvent(StartTile)
+                }
+                State.StoppedDueToError -> {
+                    logger.warn("Can not start $name, it was stopped due to an error")
+                }
             }
         }
     }
 
     override fun stop() {
-        if (state != State.StoppedByParent) {
-            coordinator.postEvent(StopTile(false))
-            coordinator.postEvent(UpdateState(State.StoppedByParent))
+        controlLock.write {
+            if (state != State.StoppedByParent) {
+                coordinator.postEvent(StopTile(false))
+            }
+        }
+    }
+
+    fun <T> dataAccess(access: () -> T): T {
+        return controlLock.read {
+            access.invoke()
         }
     }
 
     protected val coordinator = coordinatorFactory.createCoordinator(name, EventHandler())
 
-    @Volatile
-    private var currentState = State.Created
+    private val currentState = AtomicReference(State.Created)
+
+    private val isOpen = AtomicBoolean(true)
 
     val state: State
-        get() = currentState
+        get() = currentState.get()
 
     override val isRunning: Boolean
         get() = state == State.Started
 
     protected open fun started() {
-        coordinator.postEvent(UpdateState(State.Started))
+        updateState(State.Started)
     }
     private fun updateState(newState: State) {
-        if (newState != currentState) {
+        val oldState = currentState.getAndSet(newState)
+        if (newState != oldState) {
             val status = when (newState) {
                 State.Started -> LifecycleStatus.UP
                 State.Created, State.StoppedByParent -> LifecycleStatus.DOWN
                 State.StoppedDueToError -> LifecycleStatus.ERROR
             }
-            currentState = newState
-            coordinator.updateStatus(status)
+            controlLock.write {
+                coordinator.updateStatus(status)
+            }
             logger.info("State of $name is $newState")
         }
     }
@@ -102,7 +120,7 @@ abstract class DominoTile(
     }
 
     private inner class EventHandler : LifecycleEventHandler {
-        override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        private fun handleControlEvent(event: LifecycleEvent) {
             when (event) {
                 is ErrorEvent -> {
                     gotError(event.cause)
@@ -115,12 +133,14 @@ abstract class DominoTile(
                 }
                 is StopTile -> {
                     stopTile(event.dueToError)
+                    if (event.dueToError) {
+                        updateState(State.StoppedDueToError)
+                    } else {
+                        updateState(State.StoppedByParent)
+                    }
                 }
                 is StartTile -> {
                     startTile()
-                }
-                is UpdateState -> {
-                    updateState(event.state)
                 }
                 is CallFromCoordinator -> {
                     event.callback.invoke()
@@ -132,13 +152,24 @@ abstract class DominoTile(
                 }
             }
         }
+
+        override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+            if (!isOpen.get()) {
+                return
+            }
+
+            controlLock.write {
+                handleControlEvent(event)
+            }
+        }
     }
 
     protected open fun gotError(cause: Throwable) {
         logger.warn("Got error in $name", cause)
         if (state != State.StoppedDueToError) {
-            coordinator.postEvent(StopTile(true))
-            coordinator.postEvent(UpdateState(State.StoppedDueToError))
+            controlLock.write {
+                coordinator.postEvent(StopTile(true))
+            }
         }
     }
 
@@ -146,13 +177,17 @@ abstract class DominoTile(
     protected abstract fun stopTile(dueToError: Boolean)
 
     override fun close() {
-        stopTile(false)
+        controlLock.write {
+            isOpen.set(false)
 
-        try {
-            coordinator.close()
-        } catch (e: LifecycleException) {
-            // This try-catch should be removed once CORE-2786 is fixed
-            logger.debug("Could not close coordinator", e)
+            stopTile(false)
+
+            try {
+                coordinator.close()
+            } catch (e: LifecycleException) {
+                // This try-catch should be removed once CORE-2786 is fixed
+                logger.debug("Could not close coordinator", e)
+            }
         }
     }
 

@@ -301,4 +301,28 @@ class DominoTileTest {
 
         verify(coordinator).close()
     }
+
+    @Test
+    fun `Tile will not handle any event after it had been closed`() {
+        val tile = Tile()
+        val event = object : LifecycleEvent {
+        }
+
+        tile.close()
+
+        handler.lastValue.processEvent(event, coordinator)
+
+        assertThat(tile.handledEvent).isNull()
+    }
+
+    @Test
+    fun `dataAccess return the invocation value`() {
+        val tile = Tile()
+
+        val data = tile.dataAccess {
+            33
+        }
+
+        assertThat(data).isEqualTo(33)
+    }
 }
