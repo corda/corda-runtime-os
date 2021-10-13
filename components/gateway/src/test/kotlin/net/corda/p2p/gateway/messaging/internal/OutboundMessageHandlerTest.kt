@@ -109,9 +109,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `stop will stop the subscription`() {
-        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
-        whenever(p2pInPublisher.constructed().first().isRunning).doReturn(true)
-        handler.start()
+        startHandler()
 
         handler.stop()
 
@@ -119,8 +117,7 @@ class OutboundMessageHandlerTest {
     }
 
     @Test
-    fun `onNext will throw an exception if the connection manager is not ready`() {
-        whenever(connectionManager.constructed().first().isRunning).doReturn(false)
+    fun `onNext will throw an exception if the handler is not ready`() {
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -148,7 +145,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will write message to the client`() {
-        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
+        startHandler()
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -176,7 +173,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will return empty list`() {
-        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
+        startHandler()
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -204,7 +201,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will use the correct destination info for CORDA5`() {
-        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
+        startHandler()
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -239,7 +236,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will use the correct destination info for CORDA4`() {
-        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
+        startHandler()
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -274,7 +271,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will not send anything for invalid arguments`() {
-        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
+        startHandler()
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -299,7 +296,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onMessage will publish a record with the message`() {
-        whenever(p2pInPublisher.constructed().first().isRunning).doReturn(true)
+        startHandler()
         val content = AuthenticatedEncryptedDataMessage.newBuilder()
             .apply {
                 header = CommonHeader(MessageType.DATA, 0, "", 1, 1)
@@ -320,8 +317,7 @@ class OutboundMessageHandlerTest {
     }
 
     @Test
-    fun `onMessage will not publish anything to the publisher if the publisher is not ready`() {
-        whenever(p2pInPublisher.constructed().first().isRunning).doReturn(false)
+    fun `onMessage will not publish anything to the publisher if the handler is not ready`() {
         val content = AuthenticatedEncryptedDataMessage.newBuilder()
             .apply {
                 header = CommonHeader(MessageType.DATA, 0, "", 1, 1)
@@ -388,5 +384,11 @@ class OutboundMessageHandlerTest {
         handler.onMessage(message)
 
         verify(p2pInPublisher.constructed().first(), never()).publish(any())
+    }
+
+    private fun startHandler() {
+        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
+        whenever(p2pInPublisher.constructed().first().isRunning).doReturn(true)
+        handler.start()
     }
 }

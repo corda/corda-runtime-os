@@ -69,7 +69,7 @@ internal class OutboundMessageHandler(
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
         withLifecycleLock {
-            if (!connectionManager.isRunning) {
+            if (!isRunning) {
                 throw IllegalStateException("Can not handle events")
             }
 
@@ -110,7 +110,7 @@ internal class OutboundMessageHandler(
     override fun onMessage(message: HttpMessage) {
         logger.debug("Processing response message from ${message.source} with status ${message.statusCode}")
         withLifecycleLock {
-            if (!p2pInPublisher.isRunning) {
+            if (!isRunning) {
                 logger.warn("Can not handle message")
                 return@withLifecycleLock
             }
