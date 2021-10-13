@@ -757,7 +757,7 @@ class SessionManagerTest {
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         sessionManager.processSessionMessage(LinkInMessage(responderHello))
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionAlreadyPending)
-        eventually(Duration.ofMillis(2 * configWithHeartbeat.sessionTimeoutMilliSecs), 5.millis) {
+        eventually(Duration.ofMillis(4 * configWithHeartbeat.sessionTimeoutMilliSecs), 5.millis) {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         sessionManager.stop()
@@ -789,7 +789,7 @@ class SessionManagerTest {
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
 
-        eventually(Duration.ofMillis(2 * configWithHeartbeat.sessionTimeoutMilliSecs), 5.millis) {
+        eventually(Duration.ofMillis(4 * configWithHeartbeat.sessionTimeoutMilliSecs), 5.millis) {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         sessionManager.stop()
@@ -833,7 +833,7 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
 
-        eventually(Duration.ofMillis(2 * configWithHeartbeat.sessionTimeoutMilliSecs), 5.millis) {
+        eventually(Duration.ofMillis(4 * configWithHeartbeat.sessionTimeoutMilliSecs), 5.millis) {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         sessionManager.stop()
@@ -891,7 +891,7 @@ class SessionManagerTest {
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
-        assertTrue(publishLatch.await(2 * configWithHeartbeat.sessionTimeoutMilliSecs, TimeUnit.MILLISECONDS))
+        assertTrue(publishLatch.await(4 * configWithHeartbeat.sessionTimeoutMilliSecs, TimeUnit.MILLISECONDS))
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
 
@@ -923,7 +923,7 @@ class SessionManagerTest {
 
         sessionManager.dataMessageSent(authenticatedSession)
 
-        assertTrue(publishLatch.await(10 * configWithHeartbeat.heartbeatMessagePeriodMilliSecs, TimeUnit.MILLISECONDS))
+        assertTrue(publishLatch.await(20 * configWithHeartbeat.heartbeatMessagePeriodMilliSecs, TimeUnit.MILLISECONDS))
         loggingInterceptor.assertSingleWarningContains("An exception was thrown when sending a heartbeat message.")
         sessionManager.stop()
     }

@@ -9,7 +9,7 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.osgi.service.component.annotations.Component
 import java.security.MessageDigest
 
-@Component
+@Component(service = [CipherSchemeMetadataProvider::class])
 class CipherSchemeMetadataProviderImpl : CipherSchemeMetadataProvider {
     companion object {
         const val SERVICE_NAME = "default"
