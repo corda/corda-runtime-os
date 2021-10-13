@@ -33,16 +33,26 @@ import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality
+import org.osgi.service.component.annotations.ReferencePolicyOption
 import org.slf4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CryptoFactory::class])
 class CryptoFactoryImpl @Activate constructor(
-    @Reference(service = KeyValuePersistenceFactoryProvider::class)
+    @Reference(
+        service = KeyValuePersistenceFactoryProvider::class,
+        cardinality = ReferenceCardinality.AT_LEAST_ONE,
+        policyOption = ReferencePolicyOption.GREEDY
+    )
     private val persistenceProviders: List<KeyValuePersistenceFactoryProvider>,
     @Reference(service = CipherSuiteFactory::class)
     private val cipherSuiteFactory: CipherSuiteFactory,
-    @Reference(service = CryptoServiceProvider::class)
+    @Reference(
+        service = CryptoServiceProvider::class,
+        cardinality = ReferenceCardinality.AT_LEAST_ONE,
+        policyOption = ReferencePolicyOption.GREEDY
+    )
     private val cryptoServiceProviders: List<CryptoServiceProvider<*>>,
 ) : Lifecycle, CryptoLifecycleComponent, CryptoFactory {
     companion object {
