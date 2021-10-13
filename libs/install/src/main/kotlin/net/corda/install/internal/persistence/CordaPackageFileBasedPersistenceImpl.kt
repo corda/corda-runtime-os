@@ -20,6 +20,7 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.util.Collections.unmodifiableSet
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
@@ -109,14 +110,17 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
              }
         } catch (ex : Exception) {
             teeStream.close()
-            Files.walk(expansionLocation).sorted(Comparator.reverseOrder()).forEach(Files::delete)
+            Files.delete(tmpFile)
             throw ex
         }
         addCpk(storedArchives.cpksById, storedArchives.cpksByHash, cpk)
-        //This class is going to be completely rewritten in a subsequent commit,
-        // commenting this line just make the code compile as it won't be possible to extract
-        // the cached file location of a CPK
-        Files.move(tmpFile, tmpFile.parent.resolve(cpk.metadata.hash.toHexString() + ".cpk"))
+        try {
+            Files.move(tmpFile, tmpFile.parent.resolve(cpk.metadata.hash.toHexString() + ".cpk"), StandardCopyOption.ATOMIC_MOVE)
+        } catch (ex : FileAlreadyExistsException) {
+            //If a file with the same name already exists, we assume it is exactly the same file as the filename
+            // matches the SHA256 hash of its content, hence we just remove the temporary file
+            Files.delete(tmpFile)
+        }
         return cpk
     }
 
@@ -146,13 +150,15 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
             Files.createDirectories(it)
             //wipe the expansion directory when the process terminates
             Runtime.getRuntime().addShutdownHook(Thread {
+                storedArchives.cpbsById.values.forEach(CPI::close)
+                storedArchives.cpksById.values.forEach(CPK::close)
                 if(Files.exists(it)) Files.walk(it).sorted(Comparator.reverseOrder()).forEach(Files::delete)
             })
         }
     }
 
     /**
-     * Creates [Cpk]s from the CPK files stored on disk and returns a [StoredArchives] object.
+     * Creates [CPK]s from the CPK files stored on disk and returns a [StoredArchives] object.
      *
      * Skips verification, as this was already performed when the CPKs were originally installed/fetched.
      *
