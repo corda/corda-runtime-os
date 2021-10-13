@@ -26,7 +26,13 @@ class SpiDigestAlgorithmFactory(
             val messageDigest = MessageDigest.getInstance(algorithm, provider)
             return MessageDigestWrapper(messageDigest, algorithm)
         } catch (e: NoSuchAlgorithmException) {
-            throw IllegalArgumentException("Unknown hash algorithm $algorithm")
+            //throw IllegalArgumentException("Unknown hash algorithm '$algorithm' for provider '${provider.name}'", e)
+            throw IllegalArgumentException(
+                "Unknown hash algorithm '$algorithm' for provider '${provider.name}'," + System.lineSeparator() +
+                        " ---${provider.services.filter { it.type == "MessageDigest" }
+                            .joinToString(System.lineSeparator()) { "type='${it.type}, algorithm=${it.algorithm}" }}",
+                e
+            )
         }
     }
 
