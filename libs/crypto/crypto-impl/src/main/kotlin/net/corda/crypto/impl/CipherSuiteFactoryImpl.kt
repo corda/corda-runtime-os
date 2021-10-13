@@ -17,16 +17,30 @@ import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality
+import org.osgi.service.component.annotations.ReferencePolicyOption
 import org.slf4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CipherSuiteFactory::class])
 open class CipherSuiteFactoryImpl @Activate constructor(
-    @Reference(service = CipherSchemeMetadataProvider::class)
+    @Reference(
+        service = CipherSchemeMetadataProvider::class,
+        cardinality = ReferenceCardinality.AT_LEAST_ONE,
+        policyOption = ReferencePolicyOption.GREEDY
+    )
     private val schemeMetadataProviders: List<CipherSchemeMetadataProvider>,
-    @Reference(service = SignatureVerificationServiceProvider::class)
+    @Reference(
+        service = SignatureVerificationServiceProvider::class,
+        cardinality = ReferenceCardinality.AT_LEAST_ONE,
+        policyOption = ReferencePolicyOption.GREEDY
+    )
     private val verifierProviders: List<SignatureVerificationServiceProvider>,
-    @Reference(service = DigestServiceProvider::class)
+    @Reference(
+        service = DigestServiceProvider::class,
+        cardinality = ReferenceCardinality.AT_LEAST_ONE,
+        policyOption = ReferencePolicyOption.GREEDY
+    )
     private val digestServiceProviders: List<DigestServiceProvider>
 ) : Lifecycle, CryptoLifecycleComponent, CipherSuiteFactory {
     companion object {

@@ -18,11 +18,17 @@ import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality
+import org.osgi.service.component.annotations.ReferencePolicyOption
 import org.slf4j.Logger
 
 @Component(service = [CryptoServiceProvider::class, DefaultCryptoServiceProvider::class])
 open class DefaultCryptoServiceProvider @Activate constructor(
-    @Reference(service = KeyValuePersistenceFactoryProvider::class)
+    @Reference(
+        service = KeyValuePersistenceFactoryProvider::class,
+        cardinality = ReferenceCardinality.AT_LEAST_ONE,
+        policyOption = ReferencePolicyOption.GREEDY
+    )
     private val persistenceProviders: List<KeyValuePersistenceFactoryProvider>
 ) : Lifecycle, CryptoLifecycleComponent, CryptoServiceProvider<DefaultCryptoServiceConfig> {
     companion object {
