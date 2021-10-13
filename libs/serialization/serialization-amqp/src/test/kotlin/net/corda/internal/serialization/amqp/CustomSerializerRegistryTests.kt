@@ -29,7 +29,7 @@ class CustomSerializerRegistryTests {
         @CordaSerializable
         class AnnotatedWithCordaSerializable
         class NotAnnotatedWithCordaSerializable
-        class TestCustomSerializer : AbstractTestCustomSerializer<Any, String>(), SerializationCustomSerializer<Any, String>
+        class TestCustomSerializer : AbstractTestCustomSerializer<Any, String>()
 
         val serializerForEverything = TestCustomSerializer()
         unit.register(serializerForEverything, mock(), true)
@@ -45,8 +45,7 @@ class CustomSerializerRegistryTests {
     class MyCustomException : CordaRuntimeException("Custom exception annotated with @CordaSerializable")
     @Test
     fun `exception types can have custom serializers`() {
-        class TestCustomSerializer : AbstractTestCustomSerializer<MyCustomException, String>(),
-            SerializationCustomSerializer<MyCustomException, String>
+        class TestCustomSerializer : AbstractTestCustomSerializer<MyCustomException, String>()
 
         val customExceptionSerializer = TestCustomSerializer()
 
@@ -58,7 +57,7 @@ class CustomSerializerRegistryTests {
     class Cash
     @Test
     fun `two custom serializers cannot register to serialize the same type`() {
-        class TestCashCustomSerializer : AbstractTestCustomSerializer<Cash, String>(), SerializationCustomSerializer<Cash, String>
+        class TestCashCustomSerializer : AbstractTestCustomSerializer<Cash, String>()
 
         val weSerializeCash = TestCashCustomSerializer()
         val weMaliciouslySerializeCash = TestCashCustomSerializer()
@@ -75,11 +74,11 @@ class CustomSerializerRegistryTests {
 
     @Test
     fun `primitive types cannot have custom serializers`() {
-        class TestCustomSerializer : AbstractTestCustomSerializer<Float, String>(), SerializationCustomSerializer<Float, String>
+        class TestCustomSerializer : AbstractTestCustomSerializer<Float, String>()
         unit.register(TestCustomSerializer(), mock(), true)
 
         assertFailsWith<IllegalCustomSerializerException> {
-            unit.find(java.lang.Float::class.java)
+            unit.find(Float::class.java)
         }
     }
 

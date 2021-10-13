@@ -7,6 +7,7 @@ import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
 import java.io.NotSerializableException
 import java.lang.reflect.Type
+import kotlin.reflect.full.allSupertypes
 import kotlin.reflect.jvm.javaType
 import kotlin.reflect.jvm.jvmErasure
 
@@ -105,7 +106,7 @@ internal class CorDappCustomSerializer constructor(
 internal data class CustomSerializerTypes(val targetType: Type, val proxyType: Type)
 
 internal fun SerializationCustomSerializer<*, *>.serializerTypes(): CustomSerializerTypes {
-    val types = this::class.supertypes.filter { it.jvmErasure == SerializationCustomSerializer::class }
+    val types = this::class.allSupertypes.filter { it.jvmErasure == SerializationCustomSerializer::class }
         .flatMap { it.arguments }
         .map { it.type!!.javaType }
 
