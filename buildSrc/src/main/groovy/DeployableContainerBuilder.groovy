@@ -20,8 +20,8 @@ import java.time.Instant
  * Add custom task which will allow us to publish containerized OSGi deployable
  * Currently this deploys a 'fat jar' to the container and we run 'java - jar *args*' as the entry point.
  * A user may pass further custom arguments using the 'arguments' property when using this task type.
- * If a kafka file is present in sub project dir it will be copied to container and
- * "--kafka", "/opt/override/kafka.properties" also passed to the Jar as additional arguments. *
+ * If a kafka file is present in the sub project directory it will be copied to container and
+ * '"--kafka", "/opt/override/kafka.properties"' also passed to the 'java -Jar' entrypoint as additional arguments.
  * Future iterations will use a more modular layered approach.
  */
 class DeployableContainerBuilder extends DefaultTask {
@@ -31,7 +31,6 @@ class DeployableContainerBuilder extends DefaultTask {
     private static final String KAFKA_FILE_LOCATION = CONTAINER_LOCATION + KAFKA_PROPERTIES
     private String defaultUsername = System.getenv("CORDA_ARTIFACTORY_USERNAME") ?: project.findProperty('cordaArtifactoryUsername') ?: System.getProperty('corda.artifactory.username')
     private String defaultPassword = System.getenv("CORDA_ARTIFACTORY_PASSWORD") ?: project.findProperty('cordaArtifactoryPassword') ?: System.getProperty('corda.artifactory.password')
-
 
     @PathSensitive(PathSensitivity.RELATIVE)
     @InputFile
@@ -67,7 +66,6 @@ class DeployableContainerBuilder extends DefaultTask {
     final Property<String> targetImageTag =
             project.objects.property(String).convention('latest')
 
-
     DeployableContainerBuilder() {
         description = 'Creates a new "corda-dev" image with the file specified in "overrideFilePath".'
         group = 'publishing'
@@ -77,7 +75,6 @@ class DeployableContainerBuilder extends DefaultTask {
     def updateImage() {
 
         String overrideFilePath = overrideFile.getAsFile().get().getPath()
-        println(overrideFilePath)
         logger.quiet("Publishing '${targetImageName.get()}:${targetImageTag.get()}' ${remotePublish.get() ? "remotely" : "locally"} with '$overrideFilePath', from base '${baseImageName.get()}:${targetImageTag.get()}'")
 
         RegistryImage baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
@@ -86,19 +83,19 @@ class DeployableContainerBuilder extends DefaultTask {
                 .setCreationTime(Instant.now())
                 .addLayer(Arrays.asList(Paths.get(overrideFilePath)), AbsoluteUnixPath.get(CONTAINER_LOCATION))
 
-        File myFile = new File("${project.getProjectDir()}/$KAFKA_PROPERTIES")
-        List<String> args = new ArrayList<>(arguments.get())
+        File projectKafkaFile = new File("${project.getProjectDir()}/$KAFKA_PROPERTIES")
+        List<String> javaArgs = new ArrayList<>(arguments.get())
 
         // if kafka file is present in sub project dir it will be copied to container
-        // and "--kafka", "/opt/override/kafka.properties" add as args
+        // and "--kafka", "/opt/override/kafka.properties" add as arguments
         if (new File("${project.getProjectDir()}/" + KAFKA_PROPERTIES).exists()) {
             logger.quiet("Kafka file found copying ${project.getProjectDir()}$KAFKA_PROPERTIES to " + CONTAINER_LOCATION + " inside container")
-            builder.addLayer(Arrays.asList(Paths.get(myFile.getPath())), AbsoluteUnixPath.get(CONTAINER_LOCATION))
-            args.addAll("--kafka", KAFKA_FILE_LOCATION)
+            builder.addLayer(Arrays.asList(Paths.get(projectKafkaFile.getPath())), AbsoluteUnixPath.get(CONTAINER_LOCATION))
+            javaArgs.addAll("--kafka", KAFKA_FILE_LOCATION)
         }
-        builder.addLayer(Arrays.asList(Paths.get(myFile.getPath())), AbsoluteUnixPath.get(CONTAINER_LOCATION))
+        builder.addLayer(Arrays.asList(Paths.get(projectKafkaFile.getPath())), AbsoluteUnixPath.get(CONTAINER_LOCATION))
         if (arguments.isPresent() && !arguments.get().isEmpty()) {
-            builder.setProgramArguments(args)
+            builder.setProgramArguments(javaArgs)
         }
         builder.setEntrypoint("java", "-jar", CONTAINER_LOCATION + overrideFile.getAsFile().get().getName())
 
