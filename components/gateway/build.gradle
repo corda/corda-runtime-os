@@ -28,11 +28,6 @@ dependencies {
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
     implementation "commons-validator:commons-validator:$commonsVersion"
 
-    // Log4J: logging framework (with SLF4J bindings) - TEMPORARY UNTIL I FIGURE OUT LOGGING IN THIS PROJECT
-    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-    implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
-    implementation "org.slf4j:jul-to-slf4j:$slf4jVersion"
-    implementation "org.slf4j:jcl-over-slf4j:$slf4jVersion"
     // For async logging
     implementation "com.lmax:disruptor:$disruptorVersion"
 
@@ -40,6 +35,11 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'
     }
+
+    integrationTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    integrationTestRuntimeOnly "org.slf4j:jul-to-slf4j:$slf4jVersion"
+    integrationTestRuntimeOnly "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+    integrationTestImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
 
     integrationTestImplementation project(":testing:test-utilities")
 
