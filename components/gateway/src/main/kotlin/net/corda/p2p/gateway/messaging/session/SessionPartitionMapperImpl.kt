@@ -29,12 +29,10 @@ class SessionPartitionMapperImpl(
     )
 
     override fun getPartitions(sessionId: String): List<Int>? {
-        return dataAccess {
-            if (!isRunning) {
-                throw IllegalStateException("getPartitions invoked, while session partition mapper is not running.")
-            } else {
-                sessionPartitionsMapping[sessionId]
-            }
+        return if (!isRunning) {
+            throw IllegalStateException("getPartitions invoked, while session partition mapper is not running.")
+        } else {
+            sessionPartitionsMapping[sessionId]
         }
     }
 
@@ -46,9 +44,7 @@ class SessionPartitionMapperImpl(
             get() = SessionPartitions::class.java
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
-            dataAccess {
-                sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
-            }
+            sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
             started()
         }
 
@@ -57,12 +53,10 @@ class SessionPartitionMapperImpl(
             oldValue: SessionPartitions?,
             currentData: Map<String, SessionPartitions>
         ) {
-            dataAccess {
-                if (newRecord.value == null) {
-                    sessionPartitionsMapping.remove(newRecord.key)
-                } else {
-                    sessionPartitionsMapping[newRecord.key] = newRecord.value!!.partitions
-                }
+            if (newRecord.value == null) {
+                sessionPartitionsMapping.remove(newRecord.key)
+            } else {
+                sessionPartitionsMapping[newRecord.key] = newRecord.value!!.partitions
             }
         }
     }

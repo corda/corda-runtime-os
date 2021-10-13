@@ -52,7 +52,7 @@ internal class InboundMessageHandler(
      * A session init request has additional handling as the Gateway needs to generate a secret and share it
      */
     override fun onMessage(message: HttpMessage) {
-        dataAccess { handleMessage(message) }
+        withLifecycleLock { handleMessage(message) }
     }
     private fun handleMessage(message: HttpMessage) {
         if (!isRunning) {

@@ -32,6 +32,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -118,7 +119,36 @@ class OutboundMessageHandlerTest {
     }
 
     @Test
+    fun `onNext will throw an exception if the connection manager is not ready`() {
+        whenever(connectionManager.constructed().first().isRunning).doReturn(false)
+        val payload = UnauthenticatedMessage.newBuilder().apply {
+            header = UnauthenticatedMessageHeader(
+                HoldingIdentity("A", "B"),
+                HoldingIdentity("C", "D")
+            )
+            payload = ByteBuffer.wrap(byteArrayOf())
+        }.build()
+        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/")
+        val message = LinkOutMessage(
+            headers,
+            payload,
+        )
+        val client = mock<HttpClient>()
+        whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
+
+        assertThrows<IllegalStateException> {
+            handler.onNext(
+                listOf(
+                    EventLogRecord("", "", message, 1, 1L),
+                    EventLogRecord("", "", null, 2, 2L)
+                )
+            )
+        }
+    }
+
+    @Test
     fun `onNext will write message to the client`() {
+        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -146,6 +176,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will return empty list`() {
+        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -173,6 +204,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will use the correct destination info for CORDA5`() {
+        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -207,6 +239,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will use the correct destination info for CORDA4`() {
+        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -241,6 +274,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will not send anything for invalid arguments`() {
+        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -265,6 +299,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onMessage will publish a record with the message`() {
+        whenever(p2pInPublisher.constructed().first().isRunning).doReturn(true)
         val content = AuthenticatedEncryptedDataMessage.newBuilder()
             .apply {
                 header = CommonHeader(MessageType.DATA, 0, "", 1, 1)
@@ -282,6 +317,28 @@ class OutboundMessageHandlerTest {
         handler.onMessage(message)
 
         verify(p2pInPublisher.constructed().first()).publish(listOf(Record(LINK_IN_TOPIC, "key", message)))
+    }
+
+    @Test
+    fun `onMessage will not publish anything to the publisher if the publisher is not ready`() {
+        whenever(p2pInPublisher.constructed().first().isRunning).doReturn(false)
+        val content = AuthenticatedEncryptedDataMessage.newBuilder()
+            .apply {
+                header = CommonHeader(MessageType.DATA, 0, "", 1, 1)
+                encryptedPayload = ByteBuffer.wrap(byteArrayOf())
+                authTag = ByteBuffer.wrap(byteArrayOf())
+            }.build()
+        val payload = LinkInMessage(content)
+        val message = HttpMessage(
+            statusCode = HttpResponseStatus.OK,
+            payload = payload.toByteBuffer().array(),
+            source = InetSocketAddress("www.r3.com", 30),
+            destination = InetSocketAddress("www.r3.com", 31),
+        )
+
+        handler.onMessage(message)
+
+        verify(p2pInPublisher.constructed().first(), never()).publish(any())
     }
 
     @Test

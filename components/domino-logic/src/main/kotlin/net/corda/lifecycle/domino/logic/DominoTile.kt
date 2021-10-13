@@ -49,35 +49,31 @@ abstract class DominoTile(
     private val controlLock = ReentrantReadWriteLock()
 
     override fun start() {
-        controlLock.write {
-            logger.info("Starting $name")
-            when (state) {
-                State.Created -> {
-                    coordinator.start()
-                    coordinator.postEvent(StartTile)
-                }
-                State.Started -> {
-                    // Do nothing
-                }
-                State.StoppedByParent -> {
-                    coordinator.postEvent(StartTile)
-                }
-                State.StoppedDueToError -> {
-                    logger.warn("Can not start $name, it was stopped due to an error")
-                }
+        logger.info("Starting $name")
+        when (state) {
+            State.Created -> {
+                coordinator.start()
+                coordinator.postEvent(StartTile)
+            }
+            State.Started -> {
+                // Do nothing
+            }
+            State.StoppedByParent -> {
+                coordinator.postEvent(StartTile)
+            }
+            State.StoppedDueToError -> {
+                logger.warn("Can not start $name, it was stopped due to an error")
             }
         }
     }
 
     override fun stop() {
-        controlLock.write {
-            if (state != State.StoppedByParent) {
-                coordinator.postEvent(StopTile(false))
-            }
+        if (state != State.StoppedByParent) {
+            coordinator.postEvent(StopTile(false))
         }
     }
 
-    fun <T> dataAccess(access: () -> T): T {
+    fun <T> withLifecycleLock(access: () -> T): T {
         return controlLock.read {
             access.invoke()
         }
@@ -167,9 +163,7 @@ abstract class DominoTile(
     protected open fun gotError(cause: Throwable) {
         logger.warn("Got error in $name", cause)
         if (state != State.StoppedDueToError) {
-            controlLock.write {
-                coordinator.postEvent(StopTile(true))
-            }
+            coordinator.postEvent(StopTile(true))
         }
     }
 

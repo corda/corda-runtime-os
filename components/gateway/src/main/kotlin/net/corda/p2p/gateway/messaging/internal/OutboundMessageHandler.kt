@@ -68,7 +68,11 @@ internal class OutboundMessageHandler(
 
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
-        dataAccess {
+        withLifecycleLock {
+            if (!connectionManager.isRunning) {
+                throw IllegalStateException("Can not handle events")
+            }
+
             events.forEach { evt ->
                 evt.value?.let { peerMessage ->
                     try {
@@ -105,7 +109,11 @@ internal class OutboundMessageHandler(
      */
     override fun onMessage(message: HttpMessage) {
         logger.debug("Processing response message from ${message.source} with status ${message.statusCode}")
-        dataAccess {
+        withLifecycleLock {
+            if (!p2pInPublisher.isRunning) {
+                logger.warn("Can not handle message")
+                return@withLifecycleLock
+            }
             if (HttpResponseStatus.OK == message.statusCode) {
                 // response messages should have empty payloads unless they are part of the initial session handshake
                 if (message.payload.isNotEmpty()) {

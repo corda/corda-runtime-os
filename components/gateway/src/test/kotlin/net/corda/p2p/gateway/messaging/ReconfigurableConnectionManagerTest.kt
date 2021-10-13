@@ -16,10 +16,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.net.URI
-import java.util.concurrent.locks.Condition
-import java.util.concurrent.locks.ReentrantReadWriteLock
 
 class ReconfigurableConnectionManagerTest {
     private val manager = mock<ConnectionManager>()
@@ -36,23 +33,14 @@ class ReconfigurableConnectionManagerTest {
         on { registerForUpdates(any()) } doReturn mock()
     }
     private val listener = mock<HttpEventListener>()
-    private val condition = mock<Condition>()
-    private val writeLock = mock<ReentrantReadWriteLock.WriteLock>()
-    private val readLock = mock<ReentrantReadWriteLock.ReadLock>()
-    private val lock = mock<ReentrantReadWriteLock> {
-        on { writeLock() } doReturn writeLock
-        on { readLock() } doReturn readLock
-    }
     private val configuration = mock<GatewayConfiguration> {
         on { sslConfig } doReturn mock()
     }
 
-    private val connectionManager = ReconfigurableConnectionManager(factory, service, listener, lock) { manager }
+    private val connectionManager = ReconfigurableConnectionManager(factory, service, listener) { manager }
 
     @Test
-    fun `acquire will throw an exception if configuration is not ready on time`() {
-        doReturn(false).whenever(condition).await(any(), any())
-
+    fun `acquire will throw an exception if configuration is not ready`() {
         assertThrows<IllegalStateException> {
             connectionManager.acquire(DestinationInfo(URI("http://www.r3.com:3000"), "", null))
         }

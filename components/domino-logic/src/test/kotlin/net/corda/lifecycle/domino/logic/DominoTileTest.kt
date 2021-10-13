@@ -316,10 +316,10 @@ class DominoTileTest {
     }
 
     @Test
-    fun `dataAccess return the invocation value`() {
+    fun `withLifecycleLock return the invocation value`() {
         val tile = Tile()
 
-        val data = tile.dataAccess {
+        val data = tile.withLifecycleLock {
             33
         }
 

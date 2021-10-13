@@ -33,24 +33,14 @@ class PublisherWithDominoLogic(
     }
 
     fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-        return dataAccess {
-            val publisher = publisher
-            if (publisher != null) {
-                publisher.publishToPartition(records)
-            } else {
-                throw IllegalStateException("Publisher had not started")
-            }
+        return withLifecycleLock {
+            publisher?.publishToPartition(records) ?: throw IllegalStateException("Publisher had not started")
         }
     }
 
     fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-        return dataAccess {
-            val publisher = publisher
-            if (publisher != null) {
-                publisher.publish(records)
-            } else {
-                throw IllegalStateException("Publisher had not started")
-            }
+        return withLifecycleLock {
+            publisher?.publish(records) ?: throw IllegalStateException("Publisher had not started")
         }
     }
 }
