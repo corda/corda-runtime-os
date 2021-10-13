@@ -6,6 +6,4 @@ interface SerializerFor {
      * parameter.
      */
     fun isSerializerFor(clazz: Class<*>): Boolean
-
-    val revealSubclassesInSchema: Boolean
 }

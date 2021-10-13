@@ -60,8 +60,8 @@ class AnonymousClassTest {
 
     private val factoryWithSerializersRegistered = testDefaultFactory().also {
         registerCustomSerializers(it)
-        it.register(SerializerForInterface(), it, true)
-        it.register(SerializerForAbstractClass(), it, true)
+        it.register(SerializerForInterface(), true)
+        it.register(SerializerForAbstractClass(), true)
     }
 
     class ProxyClass

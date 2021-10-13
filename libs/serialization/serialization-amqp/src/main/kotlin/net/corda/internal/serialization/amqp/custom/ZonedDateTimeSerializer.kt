@@ -11,13 +11,13 @@ import java.time.ZonedDateTime
  */
 class ZonedDateTimeSerializer : SerializationCustomSerializer<ZonedDateTime, ZonedDateTimeSerializer.ZonedDateTimeProxy> {
     override fun toProxy(obj: ZonedDateTime): ZonedDateTimeProxy =
-        ZonedDateTimeProxy(obj.toLocalDateTime(), obj.offset, obj.zone)
+        ZonedDateTimeProxy(obj.toLocalDateTime(), obj.offset.id, obj.zone)
 
     override fun fromProxy(proxy: ZonedDateTimeProxy): ZonedDateTime = ZonedDateTime.ofInstant(
         proxy.dateTime,
-        proxy.offset,
+        ZoneOffset.of(proxy.offset),
         proxy.zone
     )
 
-    data class ZonedDateTimeProxy(val dateTime: LocalDateTime, val offset: ZoneOffset, val zone: ZoneId)
+    data class ZonedDateTimeProxy(val dateTime: LocalDateTime, val offset: String, val zone: ZoneId)
 }

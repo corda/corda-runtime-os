@@ -103,12 +103,12 @@ abstract class AbstractAMQPSerializationScheme private constructor(
     }
 
     private fun registerCustomSerializers(context: SerializationContext, factory: SerializerFactory) {
-        factory.register(publicKeySerializer, factory, true)
+        factory.register(publicKeySerializer, true)
         registerCustomSerializers(factory)
 
         val serializersToRegister = context.customSerializers ?: cordappCustomSerializers
         serializersToRegister.forEach { customSerializer ->
-            factory.registerExternal(customSerializer, factory)
+            factory.registerExternal(customSerializer)
         }
     }
 
@@ -151,36 +151,36 @@ abstract class AbstractAMQPSerializationScheme private constructor(
 
 fun registerCustomSerializers(factory: SerializerFactory) {
     with(factory) {
-        register(ThrowableSerializer(this), this, true, true)
-        register(StackTraceElementSerializer(), this, true)
-        register(BigDecimalSerializer, this, false)
-        register(BigIntegerSerializer, this, false)
-        register(CurrencySerializer, this, false)
-        register(OpaqueBytesSubSequenceSerializer(), this, true)
-        register(InstantSerializer(), this, true)
-        register(DurationSerializer(), this, true)
-        register(LocalDateSerializer(), this, true)
-        register(LocalDateTimeSerializer(), this, true)
-        register(LocalTimeSerializer(), this, true)
-        register(ZonedDateTimeSerializer(), this, true)
-        register(ZoneIdSerializer(), this, true, true)
-        register(OffsetTimeSerializer(), this, true)
-        register(OffsetDateTimeSerializer(), this, true)
-        register(OptionalSerializer(), this, true)
-        register(YearSerializer(), this, true)
-        register(YearMonthSerializer(), this, true)
-        register(MonthDaySerializer(), this, true)
-        register(PeriodSerializer(), this, true)
-        register(ClassSerializer(), this, true)
-        register(X509CertificateSerializer, this, true)
-        register(X509CRLSerializer, this, true)
-        register(CertPathSerializer(), this, true)
-        register(StringBufferSerializer, this, false)
-        register(InputStreamSerializer, this, true)
-        register(BitSetSerializer(), this, true)
-        register(EnumSetSerializer(), this, true)
-        register(X500PrincipalSerializer(), this, true)
-        register(PrivateKeySerializer, this, true)
+        register(ThrowableSerializer(this), true)
+        register(StackTraceElementSerializer(), true)
+        register(BigDecimalSerializer, false)
+        register(BigIntegerSerializer, false)
+        register(CurrencySerializer, false)
+        register(OpaqueBytesSubSequenceSerializer(), true)
+        register(InstantSerializer(), true)
+        register(DurationSerializer(), true)
+        register(LocalDateSerializer(), true)
+        register(LocalDateTimeSerializer(), true)
+        register(LocalTimeSerializer(), true)
+        register(ZonedDateTimeSerializer(), true)
+        register(ZoneIdSerializer(), true)
+        register(OffsetTimeSerializer(), true)
+        register(OffsetDateTimeSerializer(), true)
+        register(OptionalSerializer(), true)
+        register(YearSerializer(), true)
+        register(YearMonthSerializer(), true)
+        register(MonthDaySerializer(), true)
+        register(PeriodSerializer(), true)
+        register(ClassSerializer(), true)
+        register(X509CertificateSerializer, true)
+        register(X509CRLSerializer, true)
+        register(CertPathSerializer(), true)
+        register(StringBufferSerializer, false)
+        register(InputStreamSerializer, true)
+        register(BitSetSerializer(), true)
+        register(EnumSetSerializer(), true)
+        register(X500PrincipalSerializer(), true)
+        register(PrivateKeySerializer, true)
     }
 }
 

@@ -4,7 +4,6 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 
@@ -32,7 +31,7 @@ class CustomSerializerRegistryTests {
         class TestCustomSerializer : AbstractTestCustomSerializer<Any, String>()
 
         val serializerForEverything = TestCustomSerializer()
-        unit.register(serializerForEverything, mock(), true)
+        unit.register(serializerForEverything, true)
 
         assertNotNull(unit.find(NotAnnotatedWithCordaSerializable::class.java))
 
@@ -49,7 +48,7 @@ class CustomSerializerRegistryTests {
 
         val customExceptionSerializer = TestCustomSerializer()
 
-        unit.register(customExceptionSerializer, mock(), true)
+        unit.register(customExceptionSerializer, true)
         assertNotNull(unit.find(MyCustomException::class.java))
     }
 
@@ -63,8 +62,8 @@ class CustomSerializerRegistryTests {
         val weMaliciouslySerializeCash = TestCashCustomSerializer()
 
         unit.run {
-            register(weSerializeCash, mock(), true)
-            register(weMaliciouslySerializeCash, mock(), true)
+            register(weSerializeCash, true)
+            register(weMaliciouslySerializeCash, true)
         }
 
         assertFailsWith<DuplicateCustomSerializerException> {
@@ -75,7 +74,7 @@ class CustomSerializerRegistryTests {
     @Test
     fun `primitive types cannot have custom serializers`() {
         class TestCustomSerializer : AbstractTestCustomSerializer<Float, String>()
-        unit.register(TestCustomSerializer(), mock(), true)
+        unit.register(TestCustomSerializer(), true)
 
         assertFailsWith<IllegalCustomSerializerException> {
             unit.find(Float::class.java)

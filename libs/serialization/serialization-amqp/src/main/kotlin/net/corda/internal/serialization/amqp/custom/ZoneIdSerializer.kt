@@ -6,11 +6,7 @@ import java.time.ZoneId
 /**
  * A serializer for [ZoneId] that uses a proxy object to write out the string form.
  */
-class ZoneIdSerializer : SerializationCustomSerializer<ZoneId, ZoneIdSerializer.ZoneIdProxy> {
-
-    override fun toProxy(obj: ZoneId): ZoneIdProxy = ZoneIdProxy(obj.id)
-
-    override fun fromProxy(proxy: ZoneIdProxy): ZoneId = ZoneId.of(proxy.id)
-
-    data class ZoneIdProxy(val id: String)
+class ZoneIdSerializer : SerializationCustomSerializer<ZoneId, String> {
+    override fun toProxy(obj: ZoneId): String = obj.id
+    override fun fromProxy(proxy: String): ZoneId = ZoneId.of(proxy)
 }

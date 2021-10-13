@@ -9,9 +9,8 @@ import java.time.ZoneOffset
  * A serializer for [OffsetDateTime] that uses a proxy object to write out the date and zone offset.
  */
 class OffsetDateTimeSerializer : SerializationCustomSerializer<OffsetDateTime, OffsetDateTimeSerializer.OffsetDateTimeProxy> {
-    override fun toProxy(obj: OffsetDateTime): OffsetDateTimeProxy = OffsetDateTimeProxy(obj.toLocalDateTime(), obj.offset)
+    override fun toProxy(obj: OffsetDateTime): OffsetDateTimeProxy = OffsetDateTimeProxy(obj.toLocalDateTime(), obj.offset.id)
+    override fun fromProxy(proxy: OffsetDateTimeProxy): OffsetDateTime = OffsetDateTime.of(proxy.dateTime, ZoneOffset.of(proxy.offset))
 
-    override fun fromProxy(proxy: OffsetDateTimeProxy): OffsetDateTime = OffsetDateTime.of(proxy.dateTime, proxy.offset)
-
-    data class OffsetDateTimeProxy(val dateTime: LocalDateTime, val offset: ZoneOffset)
+    data class OffsetDateTimeProxy(val dateTime: LocalDateTime, val offset: String)
 }

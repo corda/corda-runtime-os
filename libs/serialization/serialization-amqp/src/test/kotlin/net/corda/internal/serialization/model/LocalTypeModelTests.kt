@@ -29,11 +29,9 @@ class LocalTypeModelTests {
         override val customSerializerNames: List<String> = emptyList()
         override fun register(
             customSerializer: SerializationCustomSerializer<*, *>,
-            factory: SerializerFactory,
-            withInheritance: Boolean,
-            revealSubclassesInSchema: Boolean
+            withInheritance: Boolean
         ) {}
-        override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {}
+        override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>) {}
         override fun findCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? = null
     }
     private val modelWithoutOpacity =

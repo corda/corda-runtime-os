@@ -23,7 +23,7 @@ class CorDappSerializerTests {
             serializers: List<SerializationCustomSerializer<*, *>>
     ) = SerializerFactoryBuilder.build(AllWhitelist).apply {
         serializers.forEach {
-            registerExternal(it, this)
+            registerExternal(it)
         }
     }
 
@@ -55,8 +55,8 @@ class CorDappSerializerTests {
 
         val msg = "help"
 
-        proxyFactory.registerExternal(NeedsProxyProxySerializer(), proxyFactory)
-        internalProxyFactory.register(InternalProxySerializer(), internalProxyFactory, true)
+        proxyFactory.registerExternal(NeedsProxyProxySerializer())
+        internalProxyFactory.register(InternalProxySerializer(), true)
 
         val needsProxy = NeedsProxy(msg)
 
@@ -78,7 +78,7 @@ class CorDappSerializerTests {
         data class A(val a: Int, val b: NeedsProxy)
 
         val factory = testDefaultFactory()
-        factory.registerExternal(NeedsProxyProxySerializer(), factory)
+        factory.registerExternal(NeedsProxyProxySerializer())
 
         val tv1 = 100
         val tv2 = "pants schmants"
@@ -106,7 +106,7 @@ class CorDappSerializerTests {
 
         val whitelist = WL()
         val factory = SerializerFactoryBuilder.build(whitelist)
-        factory.registerExternal(NeedsProxyProxySerializer(), factory)
+        factory.registerExternal(NeedsProxyProxySerializer())
 
         val tv1 = 100
         val tv2 = "pants schmants"
@@ -133,7 +133,7 @@ class CorDappSerializerTests {
 
         val whitelist = WL()
         val factory = SerializerFactoryBuilder.build(whitelist)
-        factory.registerExternal(NeedsProxyProxySerializer(), factory)
+        factory.registerExternal(NeedsProxyProxySerializer())
 
         val tv1 = 100
         val tv2 = "pants schmants"
@@ -163,7 +163,7 @@ class CorDappSerializerTests {
 
         val whitelist = WL()
         val factory = SerializerFactoryBuilder.build(whitelist)
-        factory.registerExternal(NeedsProxyProxySerializer(), factory)
+        factory.registerExternal(NeedsProxyProxySerializer())
 
         val tv1 = 100
         val tv2 = "pants schmants"

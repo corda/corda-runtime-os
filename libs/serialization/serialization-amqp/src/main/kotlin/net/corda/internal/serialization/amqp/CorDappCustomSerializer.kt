@@ -43,11 +43,9 @@ private const val PROXY_TYPE = 1
  * @param withInheritance should the serializer work for this type and all inheriting classes? Allows serializers for
  * interfaces and abstract classes. Always set to false for CorDapp defined serializers
  */
-internal class CorDappCustomSerializer constructor(
-        private val serializer: SerializationCustomSerializer<*, *>,
-        factory: SerializerFactory,
-        private val withInheritance: Boolean,
-        override val revealSubclassesInSchema: Boolean
+internal class CorDappCustomSerializer(
+    private val serializer: SerializationCustomSerializer<*, *>,
+    private val withInheritance: Boolean
 ) : AMQPSerializer<Any>, SerializerFor {
 
     override val type: Type
@@ -61,9 +59,6 @@ internal class CorDappCustomSerializer constructor(
 
     override val typeDescriptor: Symbol = typeDescriptorFor(type)
     val descriptor: Descriptor = Descriptor(typeDescriptor)
-    private val objectSerializer: ObjectSerializer by lazy {
-        ObjectSerializer.make(factory.getTypeInformation(proxyType), factory)
-    }
 
     override fun writeClassInfo(output: SerializationOutput) {}
 
@@ -74,27 +69,15 @@ internal class CorDappCustomSerializer constructor(
                 SerializationCustomSerializer<Any?, Any?>>(serializer).toProxy(obj)
             ?: throw NotSerializableException("proxy object is null")
 
-        if (revealSubclassesInSchema) {
-            data.withList {
-                objectSerializer.propertySerializers.forEach { (_, serializer) ->
-                    serializer.writeProperty(proxy, this, output, context, 0)
-                }
-            }
-        } else {
-            data.withDescribed(descriptor) {
-                output.writeObject(proxy, data, proxyType, context)
-            }
+        data.withDescribed(descriptor) {
+            output.writeObject(proxy, data, proxyType, context)
         }
     }
 
     override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,
                             input: DeserializationInput, context: SerializationContext
     ): Any {
-        val proxy = if (revealSubclassesInSchema)
-            objectSerializer.readObject(obj, serializationSchemas, metadata, input, context)
-        else {
-            input.readObject(obj, serializationSchemas, metadata, proxyType, context)
-        }
+        val proxy = input.readObject(obj, serializationSchemas, metadata, proxyType, context)
         return uncheckedCast<SerializationCustomSerializer<*, *>,
                 SerializationCustomSerializer<Any?, Any?>>(serializer).fromProxy(proxy)!!
     }

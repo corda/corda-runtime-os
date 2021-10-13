@@ -273,7 +273,7 @@ class EvolvabilityTests {
         )
 
         val factory = testDefaultFactory().apply {
-            register(InstantSerializer(), this, true)
+            register(InstantSerializer(), true)
         }
 
         // Uncomment to regenerate test case

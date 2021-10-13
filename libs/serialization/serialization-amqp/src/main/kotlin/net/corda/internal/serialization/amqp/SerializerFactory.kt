@@ -33,16 +33,14 @@ class ComposedSerializerFactory(
 
         override fun register(
                 customSerializer: SerializationCustomSerializer<*, *>,
-                factory: SerializerFactory,
-                withInheritance: Boolean,
-                revealSubclassesInSchema: Boolean
+                withInheritance: Boolean
         ) {
-                customSerializerRegistry.register(customSerializer, factory, withInheritance, revealSubclassesInSchema)
+                customSerializerRegistry.register(customSerializer, withInheritance)
                 addToWhitelist(listOf(customSerializer.serializerTypes().proxyType.asClass()))
         }
 
-        override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {
-                customSerializerRegistry.registerExternal(customSerializer, factory)
+        override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>) {
+                customSerializerRegistry.registerExternal(customSerializer)
                 addToWhitelist(listOf(customSerializer.serializerTypes().proxyType.asClass()))
         }
 }
