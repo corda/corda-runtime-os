@@ -13,6 +13,7 @@ abstract class LeafTile(
     override fun startTile() {
         @Suppress("TooGenericExceptionCaught")
         try {
+            resources.close()
             createResources()
         } catch (e: Throwable) {
             gotError(e)

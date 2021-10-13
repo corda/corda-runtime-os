@@ -56,14 +56,6 @@ class PublisherWithDominoLogicTest {
     }
 
     @Test
-    fun `createResources will close old publisher`() {
-        wrapper.start()
-        wrapper.createResources()
-
-        verify(publisher).close()
-    }
-
-    @Test
     fun `publishToPartition will call the publisher`() {
         wrapper.start()
         wrapper.publishToPartition(listOf(1 to mock()))

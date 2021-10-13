@@ -18,11 +18,14 @@ class PublisherWithDominoLogic(
 
     @Volatile
     private var publisher: Publisher? = null
+
     override fun createResources() {
-        publisher?.close()
         val publisherConfig = PublisherConfig(publisherId)
         publisher = publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty()).also {
-            resources.keep(it)
+            resources.keep {
+                it.close()
+                publisher = null
+            }
             it.start()
         }
 
