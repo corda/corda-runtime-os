@@ -156,7 +156,7 @@ class GatewayTest : TestBase() {
     }
 
     @Test
-    @Timeout(30)
+    @Timeout(100)
     fun `gateway reconfiguration`() {
         val configurationCount = 3
         alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))

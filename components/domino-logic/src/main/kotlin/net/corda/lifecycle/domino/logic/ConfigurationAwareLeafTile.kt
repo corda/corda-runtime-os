@@ -6,7 +6,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.v5.base.util.contextLogger
-import java.util.concurrent.atomic.AtomicReference
 
 abstract class ConfigurationAwareLeafTile<C>(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -20,7 +19,8 @@ abstract class ConfigurationAwareLeafTile<C>(
         private val logger = contextLogger()
     }
 
-    private val lastConfiguration = AtomicReference<C>()
+    @Volatile
+    private var lastConfiguration: C? = null
 
     protected val resources = ResourcesHolder()
 
@@ -29,30 +29,28 @@ abstract class ConfigurationAwareLeafTile<C>(
             if (changedKeys.contains(key)) {
                 val newConfiguration = config[key]
                 if (newConfiguration != null) {
-                    applyNewConfiguration(newConfiguration)
+                    callFromCoordinator {
+                        applyNewConfiguration(newConfiguration)
+                    }
                 }
             }
         }
     }
 
-    private val registration = AtomicReference<AutoCloseable>(null)
-
-    override fun close() {
-        registration.getAndSet(null)?.close()
-        super.close()
-    }
+    @Volatile
+    private var registration: AutoCloseable? = null
 
     private fun applyNewConfiguration(newConfiguration: Config) {
         @Suppress("TooGenericExceptionCaught")
         try {
             val configuration = configFactory(newConfiguration)
             logger.info("Got configuration $name")
-            val oldConfiguration = lastConfiguration.getAndSet(configuration)
-            if (oldConfiguration == configuration) {
+            if (configuration == lastConfiguration) {
                 logger.info("Configuration had not changed $name")
                 return
             } else {
-                applyNewConfiguration(configuration, oldConfiguration)
+                applyNewConfiguration(configuration, lastConfiguration)
+                lastConfiguration = configuration
                 started()
                 logger.info("Reconfigured $name")
             }
@@ -64,18 +62,16 @@ abstract class ConfigurationAwareLeafTile<C>(
     abstract fun applyNewConfiguration(newConfiguration: C, oldConfiguration: C?)
 
     override fun startTile() {
-        if (registration.get() == null) {
-            registration.getAndSet(
-                configurationReaderService.registerForUpdates(Handler())
-            )
-                ?.close()
+        if (registration == null) {
+            registration = configurationReaderService.registerForUpdates(Handler())
         }
     }
 
     override fun stopTile(dueToError: Boolean) {
         resources.close()
         if (!dueToError) {
-            registration.getAndSet(null)?.close()
+            registration?.close()
+            registration = null
         }
     }
 }

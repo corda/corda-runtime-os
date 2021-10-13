@@ -4,8 +4,8 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -49,8 +49,8 @@ import java.nio.ByteBuffer
 class OutboundMessageHandlerTest {
     private val coordinatorHandler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
-        on { start() } doAnswer {
-            coordinatorHandler.lastValue.processEvent(StartEvent(), mock)
+        on { postEvent(any()) } doAnswer {
+            coordinatorHandler.lastValue.processEvent(it.getArgument(0) as LifecycleEvent, mock)
         }
     }
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {

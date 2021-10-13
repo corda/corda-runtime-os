@@ -8,7 +8,6 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicReference
 
 class PublisherWithDominoLogic(
     private val publisherFactory: PublisherFactory,
@@ -16,19 +15,22 @@ class PublisherWithDominoLogic(
     private val publisherId: String,
 ) :
     LeafTile(coordinatorFactory) {
-    private val publisher = AtomicReference<Publisher>(null)
+
+    @Volatile
+    private var publisher: Publisher? = null
     override fun createResources() {
+        publisher?.close()
         val publisherConfig = PublisherConfig(publisherId)
-        publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty()).also {
-            publisher.getAndSet(it)?.close()
+        publisher = publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty()).also {
             resources.keep(it)
             it.start()
-            started()
         }
+
+        started()
     }
 
     fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-        val publisher = publisher.get()
+        val publisher = publisher
         return if (publisher != null) {
             publisher.publishToPartition(records)
         } else {
@@ -37,7 +39,7 @@ class PublisherWithDominoLogic(
     }
 
     fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-        val publisher = publisher.get()
+        val publisher = publisher
         return if (publisher != null) {
             publisher.publish(records)
         } else {

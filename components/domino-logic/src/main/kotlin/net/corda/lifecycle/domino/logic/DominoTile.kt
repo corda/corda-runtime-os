@@ -13,7 +13,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicReference
 
 abstract class DominoTile(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -22,6 +21,10 @@ abstract class DominoTile(
         private val logger = contextLogger()
         private val instancesIndex = ConcurrentHashMap<String, Int>()
     }
+    private object StartTile : LifecycleEvent
+    private data class StopTile(val dueToError: Boolean) : LifecycleEvent
+    private data class UpdateState(val state: State) : LifecycleEvent
+    private class CallFromCoordinator(val callback: () -> Unit) : LifecycleEvent
     enum class State {
         Created,
         Started,
@@ -44,12 +47,13 @@ abstract class DominoTile(
         when (state) {
             State.Created -> {
                 coordinator.start()
+                coordinator.postEvent(StartTile)
             }
             State.Started -> {
                 // Do nothing
             }
             State.StoppedByParent -> {
-                startTile()
+                coordinator.postEvent(StartTile)
             }
             State.StoppedDueToError -> {
                 logger.warn("Can not start $name, it was stopped due to an error")
@@ -59,38 +63,43 @@ abstract class DominoTile(
 
     override fun stop() {
         if (state != State.StoppedByParent) {
-            stopTile(false)
-            updateState(State.StoppedByParent)
+            coordinator.postEvent(StopTile(false))
+            coordinator.postEvent(UpdateState(State.StoppedByParent))
         }
     }
 
     protected val coordinator = coordinatorFactory.createCoordinator(name, EventHandler())
 
-    private val currentState = AtomicReference(State.Created)
+    @Volatile
+    private var currentState = State.Created
 
     val state: State
-        get() = currentState.get()
+        get() = currentState
 
     override val isRunning: Boolean
         get() = state == State.Started
 
     protected open fun started() {
-        updateState(State.Started)
+        coordinator.postEvent(UpdateState(State.Started))
     }
     private fun updateState(newState: State) {
-        val oldState = currentState.getAndSet(newState)
-        if (newState != oldState) {
+        if (newState != currentState) {
             val status = when (newState) {
                 State.Started -> LifecycleStatus.UP
                 State.Created, State.StoppedByParent -> LifecycleStatus.DOWN
                 State.StoppedDueToError -> LifecycleStatus.ERROR
             }
+            currentState = newState
             coordinator.updateStatus(status)
             logger.info("State of $name is $newState")
         }
     }
 
     open fun handleEvent(event: LifecycleEvent): Boolean = false
+
+    fun callFromCoordinator(callback: () -> Unit) {
+        coordinator.postEvent(CallFromCoordinator(callback))
+    }
 
     private inner class EventHandler : LifecycleEventHandler {
         override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -99,15 +108,22 @@ abstract class DominoTile(
                     gotError(event.cause)
                 }
                 is StartEvent -> {
-                    when (state) {
-                        State.Created -> {
-                            startTile()
-                        }
-                        else -> logger.warn("Unexpected start event, my state is $state")
-                    }
+                    // Do Nothing
                 }
                 is StopEvent -> {
                     // Do nothing
+                }
+                is StopTile -> {
+                    stopTile(event.dueToError)
+                }
+                is StartTile -> {
+                    startTile()
+                }
+                is UpdateState -> {
+                    updateState(event.state)
+                }
+                is CallFromCoordinator -> {
+                    event.callback.invoke()
                 }
                 else -> {
                     if (!handleEvent(event)) {
@@ -121,8 +137,8 @@ abstract class DominoTile(
     protected open fun gotError(cause: Throwable) {
         logger.warn("Got error in $name", cause)
         if (state != State.StoppedDueToError) {
-            stopTile(true)
-            updateState(State.StoppedDueToError)
+            coordinator.postEvent(StopTile(true))
+            coordinator.postEvent(UpdateState(State.StoppedDueToError))
         }
     }
 

@@ -23,8 +23,8 @@ import java.io.IOException
 class DominoTileTest {
     private val handler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
-        on { start() } doAnswer {
-            handler.lastValue.processEvent(StartEvent(), mock)
+        on { postEvent(any()) } doAnswer {
+            handler.lastValue.processEvent(it.getArgument(0) as LifecycleEvent, mock)
         }
     }
     private val factory = mock<LifecycleCoordinatorFactory> {
@@ -209,15 +209,6 @@ class DominoTileTest {
         handler.lastValue.processEvent(ErrorEvent(Exception("")), coordinator)
 
         assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
-    }
-
-    @Test
-    fun `processEvent will start the tile after start event`() {
-        val tile = Tile()
-
-        handler.lastValue.processEvent(StartEvent(), coordinator)
-
-        assertThat(tile.started).isEqualTo(1)
     }
 
     @Test

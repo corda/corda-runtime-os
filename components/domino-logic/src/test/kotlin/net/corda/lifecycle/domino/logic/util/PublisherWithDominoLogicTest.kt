@@ -2,9 +2,9 @@ package net.corda.lifecycle.domino.logic.util
 
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.StartEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import org.junit.jupiter.api.Test
@@ -19,8 +19,8 @@ import org.mockito.kotlin.verify
 class PublisherWithDominoLogicTest {
     private val handler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
-        on { start() } doAnswer {
-            handler.lastValue.processEvent(StartEvent(), mock)
+        on { postEvent(any()) } doAnswer {
+            handler.lastValue.processEvent(it.getArgument(0) as LifecycleEvent, mock)
         }
     }
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {

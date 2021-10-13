@@ -33,7 +33,7 @@ class ReconfigurableConnectionManager(
 
     fun acquire(destinationInfo: DestinationInfo): HttpClient {
         if (manager == null) {
-            throw IllegalStateException("Waiting too long for configuration")
+            throw IllegalStateException("Manager is not ready")
         }
 
         return managerLock.read {

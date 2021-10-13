@@ -6,7 +6,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.v5.base.util.contextLogger
-import java.util.concurrent.atomic.AtomicReference
 
 abstract class InternalTile(coordinatorFactory: LifecycleCoordinatorFactory) : DominoTile(coordinatorFactory) {
     companion object {
@@ -15,22 +14,17 @@ abstract class InternalTile(coordinatorFactory: LifecycleCoordinatorFactory) : D
 
     abstract val children: Collection<DominoTile>
 
-    private val registrations = AtomicReference<Collection<RegistrationHandle>>()
+    @Volatile
+    private var registrations: Collection<RegistrationHandle>? = null
 
     override fun startTile() {
-        if (registrations.get() == null) {
-            val newRegistrations = children.map {
+        if (registrations == null) {
+            registrations = children.map {
                 it.name
             }.map {
                 coordinator.followStatusChangesByName(setOf(it))
             }
-            if (!registrations.compareAndSet(null, newRegistrations)) {
-                newRegistrations.forEach {
-                    it.close()
-                }
-            } else {
-                logger.info("Created $name with ${children.map { it.name }}")
-            }
+            logger.info("Created $name with ${children.map { it.name }}")
         }
 
         startKidsIfNeeded()
@@ -84,7 +78,7 @@ abstract class InternalTile(coordinatorFactory: LifecycleCoordinatorFactory) : D
     }
 
     override fun close() {
-        registrations.getAndSet(null)?.forEach {
+        registrations?.forEach {
             it.close()
         }
         super.close()

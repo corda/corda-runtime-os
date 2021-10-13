@@ -2,6 +2,8 @@ package net.corda.p2p.gateway.messaging.session
 
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -14,6 +16,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -23,9 +26,14 @@ import java.lang.IllegalStateException
 class SessionPartitionMapperImplTest {
 
     private var processor = argumentCaptor<CompactedProcessor<String, SessionPartitions>>()
-    private val coordinator = mock<LifecycleCoordinator>()
+    private val handler = argumentCaptor<LifecycleEventHandler>()
+    private val coordinator = mock<LifecycleCoordinator> {
+        on { postEvent(any()) } doAnswer {
+            handler.lastValue.processEvent(it.getArgument(0) as LifecycleEvent, mock)
+        }
+    }
     private val factory = mock<LifecycleCoordinatorFactory> {
-        on { createCoordinator(any(), any()) } doReturn coordinator
+        on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
     private val subscription = mock<CompactedSubscription<String, SessionPartitions>>()
 
