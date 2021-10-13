@@ -70,4 +70,6 @@ internal class CPIImpl(override val metadata: CPI.Metadata, cpks : Iterable<CPK>
     }
 
     override fun getCPKById(id: CPK.Identifier): CPK? = cpkMap[id]
+
+    override fun close() = cpks.forEach(CPK::close)
 }

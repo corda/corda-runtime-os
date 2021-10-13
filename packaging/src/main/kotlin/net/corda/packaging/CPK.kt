@@ -15,7 +15,7 @@ import java.util.NavigableSet
 import java.util.TreeMap
 
 /** Represents a [CPK] file in the filesystem */
-interface CPK {
+interface CPK : AutoCloseable {
 
     companion object {
         const val fileExtension = ".cpk"

@@ -7,6 +7,7 @@ import net.corda.packaging.util.UncloseableInputStream
 import net.corda.packaging.util.ZipTweaker
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -70,6 +71,11 @@ class CPKTests {
         }.collect(Collectors.toUnmodifiableMap({it.first}, {it.second}))
         referenceExtractionPath = testDir.resolve("unzippedCPK")
         referenceUnzipMethod(workflowCPKPath, referenceExtractionPath)
+    }
+
+    @AfterAll
+    fun teardown() {
+        workflowCPK.close()
     }
 
 
@@ -346,6 +352,7 @@ class CPKTests {
         }
         assertThrows<PackagingException> {
             CPK.from(Files.newInputStream(nonJarFile), processedWorkflowCPKPath, nonJarFile.toString())
+                .also(CPK::close)
         }
     }
 

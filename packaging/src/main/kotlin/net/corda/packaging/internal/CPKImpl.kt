@@ -52,6 +52,8 @@ internal class CPKImpl(override val metadata: CPK.Metadata, private val jarFile 
     override fun getResourceAsStream(resourceName: String) = jarFile.getJarEntry(resourceName)
         ?.let(jarFile::getInputStream)
         ?: throw IOException("Unknown resource $resourceName")
+
+    override fun close() = jarFile.close()
 }
 
 internal data class CPKFormatVersionImpl(override val major: Int, override val minor: Int) : CPK.FormatVersion {

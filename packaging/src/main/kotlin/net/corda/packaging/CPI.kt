@@ -11,7 +11,7 @@ import java.io.Reader
 import java.nio.file.Path
 import javax.security.auth.x500.X500Principal
 
-interface CPI {
+interface CPI : AutoCloseable {
 
     companion object {
 
