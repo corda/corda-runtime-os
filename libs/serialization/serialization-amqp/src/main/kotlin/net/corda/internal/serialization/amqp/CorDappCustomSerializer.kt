@@ -50,9 +50,15 @@ internal class CorDappCustomSerializer constructor(
         override val revealSubclassesInSchema: Boolean
 ) : AMQPSerializer<Any>, SerializerFor {
 
-    private val types = serializer.serializerTypes()
-    override val type = types.targetType
-    private val proxyType = types.proxyType
+    override val type: Type
+    private val proxyType: Type
+
+    init {
+        val types = serializer.serializerTypes()
+        type = types.targetType
+        proxyType = types.proxyType
+    }
+
     override val typeDescriptor: Symbol = typeDescriptorFor(type)
     val descriptor: Descriptor = Descriptor(typeDescriptor)
     private val objectSerializer: ObjectSerializer by lazy {
