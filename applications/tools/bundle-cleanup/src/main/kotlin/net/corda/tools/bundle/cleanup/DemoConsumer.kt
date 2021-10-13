@@ -4,7 +4,6 @@ import com.typesafe.config.ConfigFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.v5.base.util.contextLogger
@@ -16,7 +15,7 @@ import org.osgi.service.component.annotations.Reference
 class DemoConsumer @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriberFactory: SubscriptionFactory
-): CompactedProcessor<String, String> {
+) : CompactedProcessor<String, String> {
     companion object {
         private val log = contextLogger()
     }
@@ -27,24 +26,20 @@ class DemoConsumer @Activate constructor(
     private val subscription: CompactedSubscription<String, String>
 
     init {
-        val config = ConfigFactory.parseMap(mapOf(
-            "messaging.kafka.common.bootstrap.servers" to "localhost:9093", // TODO - Stop hardcoding this.
-        ))
-        // TODO - Move constants to constants file.
-        subscription = subscriberFactory.createCompactedSubscription(
-            SubscriptionConfig(
-                "joel-group",
-                "bundle-cleanup-bundle-cleanup-topic"
-            ), this, config)
+        val subscriptionConfig =  SubscriptionConfig(KAFKA_GROUP_NAME, KAFKA_TOPIC)
+        val nodeConfig = ConfigFactory.parseMap(mapOf(KAFKA_BOOTSTRAP_SERVERS_KEY to KAFKA_BOOTSTRAP_SERVERS))
+        subscription = subscriberFactory.createCompactedSubscription(subscriptionConfig, this, nodeConfig)
     }
 
-    fun start() {
-        subscription.start()
-    }
+    /** Starts the subscription. */
+    internal fun start() = subscription.start()
+
+    /** Stops the subscription. */
+    internal fun stop() = subscription.stop()
 
     override fun onSnapshot(currentData: Map<String, String>) = Unit
 
-    override fun onNext(newRecord: Record<String, String>, oldValue: String?, currentData: Map<String, String>) {
-        log.info("JJJ - New record consumed: $newRecord")
-    }
+    /** Logs each [newRecord]. */
+    override fun onNext(newRecord: Record<String, String>, oldValue: String?, currentData: Map<String, String>) =
+        log.info("JJJ - Received record $newRecord.")
 }

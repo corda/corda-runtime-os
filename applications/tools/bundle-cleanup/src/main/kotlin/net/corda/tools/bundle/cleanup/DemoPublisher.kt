@@ -8,44 +8,21 @@ import net.corda.messaging.api.records.Record
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.lang.Thread.sleep
-
-// TODO - Try making this a `LifeCycle`
 
 @Component(service = [DemoPublisher::class])
 class DemoPublisher @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory
 ) {
-    companion object {
-        private const val KAFKA_BOOTSTRAP_SERVERS_KEY = "messaging.kafka.common.bootstrap.servers"
-        private const val KAFKA_TOPIC_PREFIX_KEY = "messaging.topic.prefix"
-        private const val KAFKA_TOPIC_PREFIX_VALUE = "bundle-cleanup-"
-        private const val KAFKA_TOPIC = "bundle-cleanup-topic"
-        private const val KAFKA_CLIENT_ID =
-            "bundle-cleanup-client" // TODO - Can you just use a single client ID for all instances?
-    }
-
     private val publisher: Publisher
 
     init {
-        val config = ConfigFactory.parseMap(
-            mapOf(
-                KAFKA_BOOTSTRAP_SERVERS_KEY to "localhost:9093", // TODO - Stop hardcoding this.
-                KAFKA_TOPIC_PREFIX_KEY to KAFKA_TOPIC_PREFIX_VALUE
-            )
+        val publisherConfig = PublisherConfig(KAFKA_CLIENT_ID)
+        val nodeConfig = ConfigFactory.parseMap(
+            mapOf(KAFKA_BOOTSTRAP_SERVERS_KEY to KAFKA_BOOTSTRAP_SERVERS, KAFKA_TOPIC_PREFIX_KEY to KAFKA_TOPIC_PREFIX)
         )
-        publisher = publisherFactory.createPublisher(PublisherConfig(KAFKA_CLIENT_ID), config)
+        publisher = publisherFactory.createPublisher(publisherConfig, nodeConfig)
     }
 
-    fun start() {
-        run {
-            while (true) {
-                // TODO - Check its ok to auto-create the topics here, leave comment to that effect.
-                publisher.publish(listOf(Record(KAFKA_TOPIC, "z", "1")))
-                publisher.publish(listOf(Record(KAFKA_TOPIC, "zz", "2")))
-                sleep(100)
-            }
-        }
-    }
+    internal fun publish(key: String, value: String) = publisher.publish(listOf(Record(KAFKA_TOPIC_SUFFIX, key, value)))
 }
