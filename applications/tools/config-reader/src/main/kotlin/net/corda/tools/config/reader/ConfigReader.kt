@@ -1,7 +1,7 @@
-package net.corda.tools.kafka.reader
+package net.corda.tools.config.reader
 
 import com.typesafe.config.ConfigFactory
-import net.corda.comp.kafka.config.read.KafkaConfigRead
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -17,9 +17,9 @@ import java.io.File
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)
-class KafkaConfigReader @Activate constructor(
-    @Reference(service = KafkaConfigRead::class)
-    private var configReader: KafkaConfigRead,
+class ConfigReader @Activate constructor(
+    @Reference(service = ConfigurationReadService::class)
+    private var configurationReadService: ConfigurationReadService,
     @Reference(service = Shutdown::class)
     private var shutdown: Shutdown,
     @Reference(service = SmartConfigFactory::class)
@@ -38,19 +38,24 @@ class KafkaConfigReader @Activate constructor(
             shutdownOSGiFramework()
         } else {
             val conf = smartConfigFactory.create(ConfigFactory.parseFile(parameters.configurationFile))
-            configReader.start(conf)
-            logger.info("____________________________SLEEP______________________________________")
-            while (!configReader.isRunning) { Thread.sleep(100) }
+            configurationReadService.bootstrapConfig(conf)
+            configurationReadService.registerForUpdates { changedKeys, config ->
+                logger.info("New configuration received for $changedKeys")
+                logger.info("Full configuration: $config")
+            }
+            configurationReadService.start()
+            while (!configurationReadService.isRunning) { Thread.sleep(100) }
             shutdownOSGiFramework()
         }
     }
 
     override fun shutdown() {
         logger.info("Shutting down config reader")
+        configurationReadService.stop()
     }
 
     private fun shutdownOSGiFramework() {
-        val bundleContext: BundleContext? = FrameworkUtil.getBundle(KafkaConfigReader::class.java).bundleContext
+        val bundleContext: BundleContext? = FrameworkUtil.getBundle(ConfigReader::class.java).bundleContext
         if (bundleContext != null) {
                 shutdown.shutdown(bundleContext.bundle)
         }
