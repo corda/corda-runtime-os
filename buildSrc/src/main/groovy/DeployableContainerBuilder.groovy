@@ -2,6 +2,8 @@ package net.corda.gradle
 
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
@@ -60,7 +62,7 @@ class DeployableContainerBuilder extends DefaultTask {
 
     @Input
     final Property<String> targetImageName =
-            project.objects.property(String).convention("engineering-docker.software.r3.com/corda-dev/${project.name}")
+            project.objects.property(String).convention("engineering-docker.software.r3.com/${project.name}")
 
     @Input
     final Property<String> targetImageTag =
@@ -86,29 +88,37 @@ class DeployableContainerBuilder extends DefaultTask {
         File projectKafkaFile = new File("${project.getProjectDir()}/$KAFKA_PROPERTIES")
         List<String> javaArgs = new ArrayList<>(arguments.get())
 
-        // if kafka file is present in sub project dir it will be copied to container
-        // and "--kafka", "/opt/override/kafka.properties" add as arguments
+        // copy kafka file to container if file exists and pass as java arguments
         if (new File("${project.getProjectDir()}/" + KAFKA_PROPERTIES).exists()) {
             logger.quiet("Kafka file found copying ${project.getProjectDir()}$KAFKA_PROPERTIES to " + CONTAINER_LOCATION + " inside container")
             builder.addLayer(Arrays.asList(Paths.get(projectKafkaFile.getPath())), AbsoluteUnixPath.get(CONTAINER_LOCATION))
             javaArgs.addAll("--kafka", KAFKA_FILE_LOCATION)
         }
+
         builder.addLayer(Arrays.asList(Paths.get(projectKafkaFile.getPath())), AbsoluteUnixPath.get(CONTAINER_LOCATION))
+
         if (arguments.isPresent() && !arguments.get().isEmpty()) {
             builder.setProgramArguments(javaArgs)
         }
         builder.setEntrypoint("java", "-jar", CONTAINER_LOCATION + overrideFile.getAsFile().get().getName())
 
-        if (remotePublish.get()) {
-            builder.containerize(
-                    Containerizer.to(RegistryImage.named("${targetImageName.get()}:${targetImageTag.get()}")
-                            .addCredential(registryUsername.get(), registryPassword.get()))
-            )
-        } else {
+        if (!remotePublish.get()) {
             logger.quiet("Property jibRemotePublish is false, publishing locally")
+
             builder.containerize(
                     Containerizer.to(DockerDaemonImage.named("${targetImageName.get()}:${targetImageTag.get()}"))
             )
+            builder.containerize(
+                    Containerizer.to(DockerDaemonImage.named("${targetImageName.get()}:${project.version}"))
+            )
+        } else {
+            builder.containerize(
+                    Containerizer.to(RegistryImage.named("${targetImageName.get()}:${targetImageTag.get()}")
+                            .addCredential(registryUsername.get(), registryPassword.get())))
+
+            builder.containerize(
+                    Containerizer.to(RegistryImage.named("${targetImageName.get()}:${project.version}")
+                            .addCredential(registryUsername.get(), registryPassword.get())))
         }
     }
 }
