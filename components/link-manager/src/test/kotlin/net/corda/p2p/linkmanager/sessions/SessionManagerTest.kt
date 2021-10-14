@@ -864,7 +864,6 @@ class SessionManagerTest {
             publishLatch.countDown()
         }
 
-        //First time we throw an exception so nothing gets published.
         val publisher = CallbackPublisher(::callback)
         whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(publisher)
         sessionManager = SessionManagerImpl(
