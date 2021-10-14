@@ -25,12 +25,10 @@ class DigestServiceProviderImpl @Activate constructor(
         val factories = mutableListOf<DigestAlgorithmFactory>(
             DoubleSHA256DigestFactory()
         )
-        if(customFactoriesProvider != null) {
-            factories.addAll(customFactoriesProvider.factories())
-        }
         return DigestServiceImpl(
             schemeMetadata = cipherSuiteFactory.getSchemeMap(),
-            customDigestAlgorithmFactories = factories
+            customDigestAlgorithmFactories = factories,
+            customFactoriesProvider = customFactoriesProvider
         )
     }
 }
