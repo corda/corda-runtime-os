@@ -56,28 +56,29 @@ class CustomNonSerializableString(val unsafe: String) : CustomUnsafeString(unsaf
         flag = true
     }
 }
-class CustomSerializer: JsonSerializer<CustomString>() {
+
+class CustomSerializer : JsonSerializer<CustomString>() {
     override fun serialize(value: CustomString?, gen: JsonGenerator?, serializers: SerializerProvider?) {
         gen?.writeRawValue("\"custom ${value?.s}\"")
     }
 }
 
-class CustomDeserializer: JsonDeserializer<CustomString>() {
+class CustomDeserializer : JsonDeserializer<CustomString>() {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): CustomString {
         val s = p.valueAsString
         return CustomString(s)
     }
 }
 
-class CustomMarshalStringSerializer: JsonSerializer<CustomMarshalString>() {
+class CustomMarshalStringSerializer : JsonSerializer<CustomMarshalString>() {
     override fun serialize(value: CustomMarshalString?, gen: JsonGenerator?, serializers: SerializerProvider?) {
         gen?.writeStartObject()
-        gen?.writeStringField("data",  "custom ${value?.s}")
+        gen?.writeStringField("data", "custom ${value?.s}")
         gen?.writeEndObject()
     }
 }
 
-class CustomMarshalStringDeserializer: JsonDeserializer<CustomMarshalString>() {
+class CustomMarshalStringDeserializer : JsonDeserializer<CustomMarshalString>() {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): CustomMarshalString {
         val s = p.valueAsString
         return CustomMarshalString(s)

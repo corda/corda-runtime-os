@@ -2,6 +2,9 @@ package net.corda.httprpc.client.impl
 
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.HttpRpcConnectionListener
+import net.corda.httprpc.client.auth.credentials.CredentialsProvider
+import net.corda.httprpc.test.TestHealthCheckAPI
+import org.junit.jupiter.api.Test
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doThrow
@@ -9,9 +12,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import net.corda.httprpc.test.TestHealthCheckAPI
-import net.corda.httprpc.client.auth.credentials.CredentialsProvider
-import org.junit.jupiter.api.Test
 
 internal class HttpRpcConnectionListenerDistributorTest {
     private val credentialsProvider: CredentialsProvider = mock()
@@ -21,6 +21,7 @@ internal class HttpRpcConnectionListenerDistributorTest {
         doNothing().whenever(it).onDisconnect(argThat { this.credentialsProvider == credentialsProvider })
         doNothing().whenever(it).onPermanentFailure(argThat { this.credentialsProvider == credentialsProvider })
     }
+
     private fun <I : RpcOps> mockErrorListener() = mock<HttpRpcConnectionListener<I>>().also {
         doThrow(RuntimeException()).whenever(it).onConnect(argThat { this.credentialsProvider == credentialsProvider })
         doThrow(RuntimeException()).whenever(it).onDisconnect(argThat { this.credentialsProvider == credentialsProvider })
@@ -32,7 +33,7 @@ internal class HttpRpcConnectionListenerDistributorTest {
         val listener1 = mockListener<TestHealthCheckAPI>()
         val listener2 = mockListener<TestHealthCheckAPI>()
         val distributor = HttpRpcConnectionListenerDistributor(
-                listOf(listener1, listener2), credentialsProvider
+            listOf(listener1, listener2), credentialsProvider
         )
 
         distributor.onConnect()
@@ -49,7 +50,7 @@ internal class HttpRpcConnectionListenerDistributorTest {
         val listener1 = mockErrorListener<TestHealthCheckAPI>()
         val listener2 = mockListener<TestHealthCheckAPI>()
         val distributor = HttpRpcConnectionListenerDistributor(
-                listOf(listener1, listener2), credentialsProvider
+            listOf(listener1, listener2), credentialsProvider
         )
 
         distributor.onConnect()
@@ -63,7 +64,7 @@ internal class HttpRpcConnectionListenerDistributorTest {
         val listener1 = mockListener<TestHealthCheckAPI>()
         val listener2 = mockListener<TestHealthCheckAPI>()
         val distributor = HttpRpcConnectionListenerDistributor(
-                listOf(listener1, listener2), credentialsProvider
+            listOf(listener1, listener2), credentialsProvider
         )
         distributor.connectionOpt = mock()
 
@@ -79,7 +80,7 @@ internal class HttpRpcConnectionListenerDistributorTest {
         val listener1 = mockErrorListener<TestHealthCheckAPI>()
         val listener2 = mockListener<TestHealthCheckAPI>()
         val distributor = HttpRpcConnectionListenerDistributor(
-                listOf(listener1, listener2), credentialsProvider
+            listOf(listener1, listener2), credentialsProvider
         )
         distributor.connectionOpt = mock()
         distributor.onConnect()
@@ -87,9 +88,9 @@ internal class HttpRpcConnectionListenerDistributorTest {
         distributor.onDisconnect(throwable)
 
         verify(listener1, times(1)).onDisconnect(
-                argThat { this.credentialsProvider == credentialsProvider && this.throwableOpt === throwable })
+            argThat { this.credentialsProvider == credentialsProvider && this.throwableOpt === throwable })
         verify(listener2, times(1)).onDisconnect(
-                argThat { this.credentialsProvider == credentialsProvider && this.throwableOpt === throwable })
+            argThat { this.credentialsProvider == credentialsProvider && this.throwableOpt === throwable })
     }
 
     @Test
@@ -97,7 +98,7 @@ internal class HttpRpcConnectionListenerDistributorTest {
         val listener1 = mockListener<TestHealthCheckAPI>()
         val listener2 = mockListener<TestHealthCheckAPI>()
         val distributor = HttpRpcConnectionListenerDistributor(
-                listOf(listener1, listener2), credentialsProvider
+            listOf(listener1, listener2), credentialsProvider
         )
         distributor.connectionOpt = null
 

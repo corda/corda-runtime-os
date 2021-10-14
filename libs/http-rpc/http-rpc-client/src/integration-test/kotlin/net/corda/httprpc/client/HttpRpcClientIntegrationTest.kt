@@ -1,12 +1,10 @@
 package net.corda.httprpc.client
 
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.httprpc.client.config.HttpRpcClientConfig
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.HttpRpcServerImpl
 import net.corda.httprpc.test.CalendarRPCOps
 import net.corda.httprpc.test.CalendarRPCOpsImpl
-import net.corda.v5.base.util.seconds
-import net.corda.httprpc.client.config.HttpRpcClientConfig
 import net.corda.httprpc.test.CustomSerializationAPI
 import net.corda.httprpc.test.CustomSerializationAPIImpl
 import net.corda.httprpc.test.CustomString
@@ -17,6 +15,8 @@ import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utls.findFreePort
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterAll
@@ -41,8 +41,22 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
         @Suppress("Unused")
         fun setUpBeforeClass() {
             port = findFreePort()
-            val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost",  port), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
-            server = HttpRpcServerImpl(listOf(TestHealthCheckAPIImpl(), CustomSerializationAPIImpl(), NumberSequencesRPCOpsImpl(), CalendarRPCOpsImpl()), securityManager, httpRpcSettings, true).apply { start() } }
+            val httpRpcSettings = HttpRpcSettings(
+                NetworkHostAndPort("localhost", port),
+                context,
+                null,
+                null,
+                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+            )
+            server = HttpRpcServerImpl(
+                listOf(
+                    TestHealthCheckAPIImpl(),
+                    CustomSerializationAPIImpl(),
+                    NumberSequencesRPCOpsImpl(),
+                    CalendarRPCOpsImpl()
+                ), securityManager, httpRpcSettings, true
+            ).apply { start() }
+        }
 
         @AfterAll
         @JvmStatic
@@ -58,14 +72,14 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with accepted protocol version succeeds`() {
         val client = HttpRpcClient(
-                baseAddress = "http://localhost:$port/api/v1/",
-                TestHealthCheckAPI::class.java,
-                HttpRpcClientConfig()
-                        .enableSSL(false)
-                        .minimumServerProtocolVersion(1)
-                        .username(userAlice.username)
-                        .password(requireNotNull(userAlice.password)),
-                healthCheckInterval = 500
+            baseAddress = "http://localhost:$port/api/v1/",
+            TestHealthCheckAPI::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password)),
+            healthCheckInterval = 500
         )
 
         val connected = AtomicBoolean()
@@ -92,7 +106,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                 assertTrue(connected.get())
             }
 
-            with (connection.proxy) {
+            with(connection.proxy) {
                 assertEquals(3, this.plus(2L))
                 assertEquals(Unit::class.java, this.voidResponse()::class.java)
                 assertEquals(""""Pong for str = value"""", this.ping(TestHealthCheckAPI.PingPongData("value")))
@@ -111,19 +125,19 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `return list of complex types`() {
         val client = HttpRpcClient(
-                baseAddress = "http://localhost:$port/api/v1/",
-                TestHealthCheckAPI::class.java,
-                HttpRpcClientConfig()
-                        .enableSSL(false)
-                        .minimumServerProtocolVersion(1)
-                        .username(userAlice.username)
-                        .password(requireNotNull(userAlice.password)),
+            baseAddress = "http://localhost:$port/api/v1/",
+            TestHealthCheckAPI::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password)),
         )
 
         client.use {
             val connection = client.start()
 
-            with (connection.proxy) {
+            with(connection.proxy) {
                 val daysCount = 10
                 val year = 2021
                 val result = firstDaysOfTheYear(year, daysCount)
@@ -144,18 +158,18 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with accepted protocol version and custom serializers succeeds`() {
         val client = HttpRpcClient(
-                baseAddress = "http://localhost:$port/api/v1/",
-                CustomSerializationAPI::class.java,
-                HttpRpcClientConfig()
-                        .enableSSL(false)
-                        .minimumServerProtocolVersion(1)
-                        .username(userAlice.username)
-                        .password(requireNotNull(userAlice.password))
+            baseAddress = "http://localhost:$port/api/v1/",
+            CustomSerializationAPI::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password))
         )
 
         client.use {
             val connection = client.start()
-            with (connection.proxy) {
+            with(connection.proxy) {
                 assertEquals("custom custom test", this.printString(CustomString("test")).s)
             }
         }
@@ -165,20 +179,20 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with accepted protocol version and infinite durable streams call succeeds`() {
         val client = HttpRpcClient(
-                baseAddress = "http://localhost:$port/api/v1/",
-                NumberSequencesRPCOps::class.java,
-                HttpRpcClientConfig()
-                        .enableSSL(false)
-                        .minimumServerProtocolVersion(1)
-                        .username(userAlice.username)
-                        .password(requireNotNull(userAlice.password))
+            baseAddress = "http://localhost:$port/api/v1/",
+            NumberSequencesRPCOps::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password))
         )
 
         client.use {
             val connection = client.start()
-            with (connection.proxy) {
+            with(connection.proxy) {
                 val cursor = this.retrieve(NumberTypeEnum.EVEN).build()
-                with (cursor.poll(100, 100.seconds)) {
+                with(cursor.poll(100, 100.seconds)) {
                     assertEquals(100, values.size)
                     assert(values.first() == 0L)
                     assert(values.last() == 198L)
@@ -186,7 +200,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     cursor.commit(this)
                 }
 
-                with (cursor.poll(200, 100.seconds)) {
+                with(cursor.poll(200, 100.seconds)) {
                     assertEquals(200, values.size)
                     assert(values.first() == 200L)
                     assert(values.last() == 598L)
@@ -195,7 +209,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     cursor.commit(positionedValues[2].position) // 204
                 }
 
-                with (cursor.poll(2, 100.seconds)) {
+                with(cursor.poll(2, 100.seconds)) {
                     assertEquals(2, values.size)
                     assert(values.first() == 206L)
                     assert(values.last() == 208L)
@@ -205,7 +219,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
 
                 // different cursors on the same function have different positions
                 val otherCursor = this.retrieve(NumberTypeEnum.EVEN).build()
-                with (otherCursor.poll(100, 100.seconds)) {
+                with(otherCursor.poll(100, 100.seconds)) {
                     assertEquals(100, values.size)
                     assert(values.first() == 0L)
                     assert(values.last() == 198L)
@@ -220,20 +234,20 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with accepted protocol version and finite durable streams call succeeds`() {
         val client = HttpRpcClient(
-                baseAddress = "http://localhost:$port/api/v1/",
-                CalendarRPCOps::class.java,
-                HttpRpcClientConfig()
-                        .enableSSL(false)
-                        .minimumServerProtocolVersion(1)
-                        .username(userAlice.username)
-                        .password(requireNotNull(userAlice.password))
+            baseAddress = "http://localhost:$port/api/v1/",
+            CalendarRPCOps::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password))
         )
 
         client.use {
             val connection = client.start()
-            with (connection.proxy) {
+            with(connection.proxy) {
                 val cursor = this.daysOfTheYear(2020).build()
-                with (cursor.poll(100, 100.seconds)) {
+                with(cursor.poll(100, 100.seconds)) {
                     assertEquals(100, values.size)
                     assertEquals(CalendarRPCOps.CalendarDay(DayOfWeek.WEDNESDAY, "2020-01-01"), values.first())
                     assertEquals(CalendarRPCOps.CalendarDay(DayOfWeek.THURSDAY, "2020-04-09"), values.last())
@@ -241,7 +255,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     // no commit
                 }
 
-                with (cursor.poll(300, 100.seconds)) {
+                with(cursor.poll(300, 100.seconds)) {
                     assertEquals(300, values.size)
                     assertEquals(CalendarRPCOps.CalendarDay(DayOfWeek.WEDNESDAY, "2020-01-01"), values.first())
                     assertEquals(CalendarRPCOps.CalendarDay(DayOfWeek.MONDAY, "2020-10-26"), values.last())
@@ -249,7 +263,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                     cursor.commit(this)
                 }
 
-                with (cursor.poll(100, 100.seconds)) {
+                with(cursor.poll(100, 100.seconds)) {
                     assertEquals(66, values.size)
                     assertEquals(CalendarRPCOps.CalendarDay(DayOfWeek.TUESDAY, "2020-10-27"), values.first())
                     assertEquals(CalendarRPCOps.CalendarDay(DayOfWeek.THURSDAY, "2020-12-31"), values.last())
@@ -264,18 +278,18 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with less than rpc version since but valid version for the resource fails only on the unsupported call`() {
         val client = HttpRpcClient(
-                baseAddress = "http://localhost:$port/api/v1/",
-                TestHealthCheckAPI::class.java,
-                HttpRpcClientConfig()
-                        .enableSSL(false)
-                        .minimumServerProtocolVersion(1)
-                        .username(userAlice.username)
-                        .password(requireNotNull(userAlice.password))
+            baseAddress = "http://localhost:$port/api/v1/",
+            TestHealthCheckAPI::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(1)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password))
         )
 
         client.use {
             val connection = client.start()
-            with (connection.proxy) {
+            with(connection.proxy) {
                 assertEquals(3, this.plus(2L))
                 assertEquals(Unit::class.java, this.voidResponse()::class.java)
                 assertEquals(""""Pong for str = value"""", this.ping(TestHealthCheckAPI.PingPongData("value")))
@@ -290,13 +304,13 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with lower protocol version than minimum expected fails`() {
         val client = HttpRpcClient(
-                baseAddress = "http://localhost:$port/api/v1/",
-                TestHealthCheckAPI::class.java,
-                HttpRpcClientConfig()
-                        .enableSSL(false)
-                        .minimumServerProtocolVersion(3)
-                        .username(userAlice.username)
-                        .password(requireNotNull(userAlice.password))
+            baseAddress = "http://localhost:$port/api/v1/",
+            TestHealthCheckAPI::class.java,
+            HttpRpcClientConfig()
+                .enableSSL(false)
+                .minimumServerProtocolVersion(3)
+                .username(userAlice.username)
+                .password(requireNotNull(userAlice.password))
         )
 
         assertThatThrownBy { client.start() }.isInstanceOf(IllegalArgumentException::class.java)

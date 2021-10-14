@@ -3,10 +3,10 @@ package net.corda.httprpc.client.impl
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.HttpRpcConnection
 import net.corda.httprpc.client.HttpRpcConnectionListener
+import net.corda.httprpc.client.auth.credentials.CredentialsProvider
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.httprpc.client.auth.credentials.CredentialsProvider
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -14,19 +14,19 @@ import java.util.concurrent.atomic.AtomicBoolean
  * and disconnection events to interested listeners ([HttpRpcConnectionListener]).
  */
 class HttpRpcConnectionListenerDistributor<I : RpcOps>
-(private val listeners: Iterable<HttpRpcConnectionListener<I>>, private val credentialsProvider: CredentialsProvider) {
+    (private val listeners: Iterable<HttpRpcConnectionListener<I>>, private val credentialsProvider: CredentialsProvider) {
     companion object {
         private val log = contextLogger()
 
         private data class HttpRpcConnectionContextImpl<I : RpcOps>(
-                override val credentialsProvider: CredentialsProvider,
-                override val connectionOpt: HttpRpcConnection<I>?,
-                override val throwableOpt: Throwable?
-        ): HttpRpcConnectionListener.HttpRpcConnectionContext<I>
+            override val credentialsProvider: CredentialsProvider,
+            override val connectionOpt: HttpRpcConnection<I>?,
+            override val throwableOpt: Throwable?
+        ) : HttpRpcConnectionListener.HttpRpcConnectionContext<I>
     }
 
     @Volatile
-    internal var connectionOpt : HttpRpcConnection<I>? = null
+    internal var connectionOpt: HttpRpcConnection<I>? = null
 
     private val connected = AtomicBoolean()
 

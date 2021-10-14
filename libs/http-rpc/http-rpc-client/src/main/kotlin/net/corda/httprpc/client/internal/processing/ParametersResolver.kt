@@ -7,16 +7,16 @@ data class WebRequest<T>(val path: String, val body: T? = null, val queryParamet
 data class WebResponse<T>(val body: T?, val headers: Map<String, String>, val responseStatus: Int, val responseStatusText: String?)
 
 fun Method.parametersFrom(args: Array<out Any?>?, extraBodyParameters: Map<String, Any?> = emptyMap()): ResolvedParameters =
-        ResolvedParameters(
-                args?.let { this.bodyParametersFrom(args, extraBodyParameters) },
-                args?.let { this.pathParametersFrom(it) } ?: emptyMap(),
-                args?.let { this.queryParametersFrom(it) } ?: emptyMap()
-        )
+    ResolvedParameters(
+        args?.let { this.bodyParametersFrom(args, extraBodyParameters) },
+        args?.let { this.pathParametersFrom(it) } ?: emptyMap(),
+        args?.let { this.queryParametersFrom(it) } ?: emptyMap()
+    )
 
 fun ResolvedParameters.toWebRequest(rawPath: String) = WebRequest<Any>(
-        rawPath.replacePathParameters(pathParams).replace("/+".toRegex(), "/"),
-        body = body,
-        queryParameters = queryParams
+    rawPath.replacePathParameters(pathParams).replace("/+".toRegex(), "/"),
+    body = body,
+    queryParameters = queryParams
 )
 
 fun String.encodeParam(): String = URLEncoder.encode(this, "UTF-8")

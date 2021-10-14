@@ -10,10 +10,10 @@ interface AuthenticationConfig {
     /**
      * @return an AuthenticationScheme instance
      */
-    fun createScheme() : AuthenticationScheme
+    fun createScheme(): AuthenticationScheme
 
     /**
      * @return Credentials used for authentication
      */
-    fun getCredentialsProvider() : CredentialsProvider
+    fun getCredentialsProvider(): CredentialsProvider
 }

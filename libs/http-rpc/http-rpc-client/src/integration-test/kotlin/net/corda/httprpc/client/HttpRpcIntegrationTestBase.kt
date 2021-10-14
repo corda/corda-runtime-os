@@ -3,7 +3,6 @@ package net.corda.httprpc.client
 import net.corda.httprpc.security.read.impl.RPCSecurityManagerFactoryStubImpl
 import net.corda.httprpc.server.HttpRpcServer
 import net.corda.httprpc.server.config.models.HttpRpcContext
-import java.net.ServerSocket
 
 abstract class HttpRpcIntegrationTestBase {
     internal companion object {

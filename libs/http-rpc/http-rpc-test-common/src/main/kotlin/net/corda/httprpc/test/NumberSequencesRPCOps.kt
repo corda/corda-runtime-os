@@ -12,9 +12,9 @@ enum class NumberTypeEnum {
 }
 
 @HttpRpcResource(
-        name = "net.corda.httprpc.server.impl.rpcops.NumberSequencesRPCOps",
-        description = "Number Sequences RPC Ops",
-        path = "numberseq"
+    name = "net.corda.httprpc.server.impl.rpcops.NumberSequencesRPCOps",
+    description = "Number Sequences RPC Ops",
+    path = "numberseq"
 )
 interface NumberSequencesRPCOps : RpcOps {
     @HttpRpcPOST

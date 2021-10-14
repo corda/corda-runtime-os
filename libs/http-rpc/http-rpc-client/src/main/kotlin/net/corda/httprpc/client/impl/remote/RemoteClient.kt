@@ -10,17 +10,17 @@ import kong.unirest.UnirestException
 import kong.unirest.apache.ApacheClient
 import kong.unirest.jackson.JacksonObjectMapper
 import net.corda.common.json.serialization.formatAsJson
-import net.corda.httprpc.client.internal.objectMapper
 import net.corda.httprpc.client.auth.RequestContext
-import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.trace
 import net.corda.httprpc.client.exceptions.InternalErrorException
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.httprpc.client.exceptions.PermissionException
 import net.corda.httprpc.client.exceptions.RequestErrorException
+import net.corda.httprpc.client.internal.objectMapper
 import net.corda.httprpc.client.internal.processing.WebRequest
 import net.corda.httprpc.client.internal.processing.WebResponse
 import net.corda.httprpc.tools.HttpVerb
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
 import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy
 import org.apache.http.impl.client.HttpClients
@@ -43,6 +43,7 @@ class RemoteUnirestClient(override val baseAddress: String, private val enableSs
     internal companion object {
         private val log = contextLogger()
     }
+
     init {
         Unirest.config().objectMapper = JacksonObjectMapper(objectMapper)
     }
@@ -70,8 +71,10 @@ class RemoteUnirestClient(override val baseAddress: String, private val enableSs
     }
 
     @Suppress("ComplexMethod", "ThrowsCount")
-    private fun <T, R> doCall(verb: HttpVerb, webRequest: WebRequest<T>, context: RequestContext,
-                              remoteCallFn: HttpRequest<*>.() -> HttpResponse<R>): WebResponse<R> where R : Any {
+    private fun <T, R> doCall(
+        verb: HttpVerb, webRequest: WebRequest<T>, context: RequestContext,
+        remoteCallFn: HttpRequest<*>.() -> HttpResponse<R>
+    ): WebResponse<R> where R : Any {
         val path = baseAddress + webRequest.path
         log.trace { """Do call "$verb $path".""" }
         addSslParams()
@@ -81,8 +84,8 @@ class RemoteUnirestClient(override val baseAddress: String, private val enableSs
             HttpVerb.POST -> Unirest.post(path)
         }
 
-        request.header("accept","application/json")
-        request.header("accept","text/plain")
+        request.header("accept", "application/json")
+        request.header("accept", "text/plain")
 
         context.authenticationScheme.authenticate(context.credentials, request, context)
 
@@ -96,7 +99,7 @@ class RemoteUnirestClient(override val baseAddress: String, private val enableSs
         }
         try {
             val response = request.remoteCallFn()
-            if (!response.isSuccess || response.parsingError.isPresent){
+            if (!response.isSuccess || response.parsingError.isPresent) {
                 val errorResponseJson = response.mapError(String::class.java).formatAsJson()
                 when (response.status) {
                     HttpStatus.BAD_REQUEST -> throw RequestErrorException(errorResponseJson)
@@ -109,27 +112,27 @@ class RemoteUnirestClient(override val baseAddress: String, private val enableSs
                 }
             }
 
-            return WebResponse(response.body, response.headers.all().associateBy({ it.name }, { it.value }),
-                    response.status, response.statusText)
-                    .also { log.trace { """Do call "$verb $path" completed.""" } }
-
+            return WebResponse(
+                response.body, response.headers.all().associateBy({ it.name }, { it.value }),
+                response.status, response.statusText
+            )
+                .also { log.trace { """Do call "$verb $path" completed.""" } }
         } catch (e: UnirestException) {
             throw InternalErrorException(e.message ?: "No message provided")
         }
-
     }
 
     private fun addSslParams() {
         log.trace { "Add Ssl params." }
         if (enableSsl) {
             val sslContext: SSLContext = SSLContexts.custom()
-                    .loadTrustMaterial(TrustAllStrategy())
-                    .build()
+                .loadTrustMaterial(TrustAllStrategy())
+                .build()
 
             val httpClient = HttpClients.custom()
-                    .setSSLContext(sslContext)
-                    .setSSLHostnameVerifier(NoopHostnameVerifier())
-                    .build()
+                .setSSLContext(sslContext)
+                .setSSLHostnameVerifier(NoopHostnameVerifier())
+                .build()
 
             Unirest.config().let { config ->
                 config.httpClient(ApacheClient.builder(httpClient).apply(config))

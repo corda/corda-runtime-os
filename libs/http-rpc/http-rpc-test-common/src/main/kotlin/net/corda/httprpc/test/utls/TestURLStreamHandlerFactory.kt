@@ -9,11 +9,12 @@ import java.net.URL
 import java.net.URLConnection
 import java.net.URLStreamHandler
 import java.net.URLStreamHandlerFactory
-import java.util.*
+import java.util.Hashtable
 
 internal class TestURLStreamHandlerFactory(content: Map<String, String>) : URLStreamHandlerFactory, Closeable {
     companion object {
         const val PROTOCOL = "mock"
+
         @Suppress("TooGenericExceptionThrown", "TooGenericExceptionCaught")
         private fun forceSetURLStreamHandlerFactory(factory: URLStreamHandlerFactory?) {
             try {
@@ -46,7 +47,7 @@ internal class TestURLStreamHandlerFactory(content: Map<String, String>) : URLSt
     override fun createURLStreamHandler(protocol: String): URLStreamHandler? {
         return if (PROTOCOL == protocol) object : URLStreamHandler() {
             override fun openConnection(url: URL): URLConnection? {
-                return if(dummyContent.containsKey(url.toString())) {
+                return if (dummyContent.containsKey(url.toString())) {
                     dummyContent.getValue(url.toString())
                 } else {
                     null

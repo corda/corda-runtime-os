@@ -29,8 +29,8 @@ interface TestHealthCheckAPI : RpcOps {
 
     @HttpRpcGET(path = "hello2/{name}", title = "Hello2", description = "Hello endpoint")
     fun hello2(
-            @HttpRpcQueryParameter(name = "id", description = "id", required = false) queryParam: String?,
-            @HttpRpcPathParameter(name = "name", description = "The name") pathParam: String
+        @HttpRpcQueryParameter(name = "id", description = "id", required = false) queryParam: String?,
+        @HttpRpcPathParameter(name = "name", description = "The name") pathParam: String
     ): String
 
     @HttpRpcGET(path = "hello/{name}", title = "Hello", description = "Hello endpoint")

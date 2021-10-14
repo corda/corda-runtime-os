@@ -9,6 +9,6 @@ import net.corda.v5.base.annotations.DoNotImplement
  */
 @DoNotImplement
 interface HttpRpcConnection<out I : RpcOps> {
-    val proxy : I
+    val proxy: I
     val serverProtocolVersion: Int
 }

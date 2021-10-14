@@ -10,7 +10,6 @@ class NumberSequencesRPCOpsImpl : NumberSequencesRPCOps, PluggableRPCOps<NumberS
     override val targetInterface: Class<NumberSequencesRPCOps>
         get() = NumberSequencesRPCOps::class.java
 
-
     override val protocolVersion = 1000
 
     override fun retrieve(type: NumberTypeEnum): DurableCursorBuilder<Long> {

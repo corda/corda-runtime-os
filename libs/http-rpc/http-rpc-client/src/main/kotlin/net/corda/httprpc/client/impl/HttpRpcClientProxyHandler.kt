@@ -5,19 +5,18 @@ import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.annotations.RPCSinceVersion
-import net.corda.httprpc.client.impl.remote.RemoteClient
-import net.corda.httprpc.client.impl.stream.HttpRpcFiniteDurableCursorClientBuilderImpl
-import net.corda.v5.base.stream.returnsDurableCursorBuilder
-import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.trace
 import net.corda.httprpc.client.auth.RequestContext
 import net.corda.httprpc.client.config.AuthenticationConfig
+import net.corda.httprpc.client.impl.remote.RemoteClient
+import net.corda.httprpc.client.impl.stream.HttpRpcFiniteDurableCursorClientBuilderImpl
 import net.corda.httprpc.client.internal.processing.endpointHttpVerb
 import net.corda.httprpc.client.internal.processing.parametersFrom
 import net.corda.httprpc.client.internal.processing.toWebRequest
 import net.corda.httprpc.tools.annotations.extensions.path
 import net.corda.httprpc.tools.staticExposedGetMethods
-import java.lang.UnsupportedOperationException
+import net.corda.v5.base.stream.returnsDurableCursorBuilder
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 
@@ -30,10 +29,10 @@ import java.lang.reflect.Method
  * @property rpcOpsClass The proxied interface class.
  */
 internal class HttpRpcClientProxyHandler<I : RpcOps>(
-        private val client: RemoteClient,
-        private val authenticationConfig: AuthenticationConfig,
-        private val rpcOpsClass: Class<I>
-): InvocationHandler {
+    private val client: RemoteClient,
+    private val authenticationConfig: AuthenticationConfig,
+    private val rpcOpsClass: Class<I>
+) : InvocationHandler {
 
     private companion object {
         private val log = contextLogger()
@@ -44,8 +43,7 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
     fun setServerProtocolVersion(version: Int) {
         if (serverProtocolVersion == null) {
             serverProtocolVersion = version
-        }
-        else {
+        } else {
             throw IllegalStateException("setServerProtocolVersion called, but the protocol version was already set!")
         }
     }
@@ -58,7 +56,8 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
             val sinceVersion = method.getAnnotation(RPCSinceVersion::class.java)?.version ?: 0
             if (sinceVersion > serverProtocolVersion) {
                 throw UnsupportedOperationException(
-                        "Method $method was added in RPC protocol version $sinceVersion but the server is running $serverProtocolVersion")
+                    "Method $method was added in RPC protocol version $sinceVersion but the server is running $serverProtocolVersion"
+                )
             }
         }
     }
@@ -70,22 +69,24 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
         if (!isExemptFromChecks) {
             if (method.annotations.none { it is HttpRpcGET || it is HttpRpcPOST }) {
                 throw UnsupportedOperationException(
-                        "Http RPC proxy can not make remote calls for functions not annotated with HttpRpcGET," +
-                                " HttpRpcPOST or known as implicitly exposed.")
+                    "Http RPC proxy can not make remote calls for functions not annotated with HttpRpcGET," +
+                            " HttpRpcPOST or known as implicitly exposed."
+                )
             }
 
             checkServerProtocolVersion(method)
         }
 
         val resourceName = rpcOpsClass.getAnnotation(HttpRpcResource::class.java)?.path(rpcOpsClass)?.toLowerCase()
-                ?: throw UnsupportedOperationException(
-                        "Http RPC proxy can not make remote calls for interfaces not annotated with HttpRpcResource.")
+            ?: throw UnsupportedOperationException(
+                "Http RPC proxy can not make remote calls for interfaces not annotated with HttpRpcResource."
+            )
         val endpointName = method.endpointPath
         val rawPath = "$resourceName/$endpointName".toLowerCase().replace("/+".toRegex(), "/")
 
         if (method.returnsDurableCursorBuilder()) {
             return HttpRpcFiniteDurableCursorClientBuilderImpl(
-                    client, method, rawPath, args, authenticationConfig
+                client, method, rawPath, args, authenticationConfig
             ).also { log.trace { """Invoke "${method.name}" completed.""" } }
         }
 
@@ -108,10 +109,10 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
                     is HttpRpcGET -> it.path(this)
                     is HttpRpcPOST -> it.path(this)
                     else -> if (staticExposedGetMethods.contains(this.name)) {
-                                this.name
-                            } else {
-                                throw IllegalArgumentException("Unknown endpoint path")
-                            }
+                        this.name
+                    } else {
+                        throw IllegalArgumentException("Unknown endpoint path")
+                    }
                 }
             }
 }

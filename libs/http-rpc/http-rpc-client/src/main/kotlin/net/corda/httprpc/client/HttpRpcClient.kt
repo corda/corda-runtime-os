@@ -1,6 +1,7 @@
 package net.corda.httprpc.client
 
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.client.config.HttpRpcClientConfig
 import net.corda.httprpc.client.impl.HttpRpcClientProxyHandler
 import net.corda.httprpc.client.impl.HttpRpcConnectionListenerDistributor
 import net.corda.httprpc.client.impl.remote.RemoteUnirestClient
@@ -9,7 +10,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
-import net.corda.httprpc.client.config.HttpRpcClientConfig
 import org.slf4j.Logger
 import java.lang.reflect.Proxy
 import java.time.Duration
@@ -27,26 +27,26 @@ import kotlin.concurrent.scheduleAtFixedRate
  * @property healthCheckInterval The interval on which health check calls to the server will happen, ensuring connectivity.
  */
 @Suppress("LongParameterList")
-class HttpRpcClient<I : RpcOps> internal constructor (
-        private val baseAddress: String,
-        private val rpcOpsClass: Class<I>,
-        private val clientConfig: HttpRpcClientConfig,
-        private val healthCheckInterval: Long,
-        private val proxyGenerator: (rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>) -> I
+class HttpRpcClient<I : RpcOps> internal constructor(
+    private val baseAddress: String,
+    private val rpcOpsClass: Class<I>,
+    private val clientConfig: HttpRpcClientConfig,
+    private val healthCheckInterval: Long,
+    private val proxyGenerator: (rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>) -> I
 ) : AutoCloseable {
 
     constructor(
-            baseAddress: String,
-            rpcOpsClass: Class<I>,
-            clientConfig: HttpRpcClientConfig
-    ): this(baseAddress, rpcOpsClass, clientConfig, defaultHealthCheckInterval, Companion::defaultProxyGenerator)
+        baseAddress: String,
+        rpcOpsClass: Class<I>,
+        clientConfig: HttpRpcClientConfig
+    ) : this(baseAddress, rpcOpsClass, clientConfig, defaultHealthCheckInterval, Companion::defaultProxyGenerator)
 
     constructor(
-            baseAddress: String,
-            rpcOpsClass: Class<I>,
-            clientConfig: HttpRpcClientConfig,
-            healthCheckInterval: Long
-    ): this(baseAddress, rpcOpsClass, clientConfig, healthCheckInterval, Companion::defaultProxyGenerator)
+        baseAddress: String,
+        rpcOpsClass: Class<I>,
+        clientConfig: HttpRpcClientConfig,
+        healthCheckInterval: Long
+    ) : this(baseAddress, rpcOpsClass, clientConfig, healthCheckInterval, Companion::defaultProxyGenerator)
 
     private companion object {
         private val log = contextLogger()
@@ -54,7 +54,7 @@ class HttpRpcClient<I : RpcOps> internal constructor (
         private const val defaultHealthCheckInterval = 10000L
 
         private fun <I : RpcOps> defaultProxyGenerator(rpcOpsClass: Class<I>, proxyHandler: HttpRpcClientProxyHandler<I>): I =
-                uncheckedCast(Proxy.newProxyInstance(rpcOpsClass.classLoader, arrayOf(rpcOpsClass), proxyHandler))
+            uncheckedCast(Proxy.newProxyInstance(rpcOpsClass.classLoader, arrayOf(rpcOpsClass), proxyHandler))
 
         private fun <T> Logger.logElapsedTime(label: String, body: () -> T): T = logElapsedTime(label, this, body)
 
@@ -65,14 +65,12 @@ class HttpRpcClient<I : RpcOps> internal constructor (
             @Suppress("TooGenericExceptionCaught")
             try {
                 return body()
-            }
-            catch (th: Throwable) {
+            } catch (th: Throwable) {
                 failed = true
                 throw th
-            }
-            finally {
+            } finally {
                 val elapsed = Duration.ofNanos(System.nanoTime() - now).toMillis()
-                val msg = (if(failed) "Failed " else "") + "$label took $elapsed msec"
+                val msg = (if (failed) "Failed " else "") + "$label took $elapsed msec"
                 logger.info(msg)
             }
         }
@@ -80,26 +78,30 @@ class HttpRpcClient<I : RpcOps> internal constructor (
 
     private val listeners: MutableSet<HttpRpcConnectionListener<I>> = CopyOnWriteArraySet()
     private val connectionEventDistributor = HttpRpcConnectionListenerDistributor(
-            listeners, clientConfig.authenticationConfig.getCredentialsProvider())
+        listeners, clientConfig.authenticationConfig.getCredentialsProvider()
+    )
     private var serverProtocolVersion: Int? = null
     private lateinit var healthCheckTimer: Timer
+
     @VisibleForTesting
     internal lateinit var ops: I
 
     @Suppress("TooGenericExceptionCaught")
-    fun start() : HttpRpcConnection<I> {
+    fun start(): HttpRpcConnection<I> {
         log.trace { "Start." }
         return log.logElapsedTime("Http Rpc client") {
             val proxyHandler = HttpRpcClientProxyHandler(
-                    RemoteUnirestClient(baseAddress, clientConfig.enableSSL), clientConfig.authenticationConfig, rpcOpsClass
+                RemoteUnirestClient(baseAddress, clientConfig.enableSSL), clientConfig.authenticationConfig, rpcOpsClass
             )
             try {
                 ops = proxyGenerator(rpcOpsClass, proxyHandler)
                 serverProtocolVersion = ops.protocolVersion
                 if (serverProtocolVersion!! < clientConfig.minimumServerProtocolVersion) {
-                    throw IllegalArgumentException("Requested minimum protocol version " +
-                            "(${clientConfig.minimumServerProtocolVersion}) is higher" +
-                            " than the server's supported protocol version ($serverProtocolVersion)")
+                    throw IllegalArgumentException(
+                        "Requested minimum protocol version " +
+                                "(${clientConfig.minimumServerProtocolVersion}) is higher" +
+                                " than the server's supported protocol version ($serverProtocolVersion)"
+                    )
                 }
                 proxyHandler.setServerProtocolVersion(serverProtocolVersion!!)
 
@@ -124,12 +126,12 @@ class HttpRpcClient<I : RpcOps> internal constructor (
         }.also { log.trace { "Start completed." } }
     }
 
-    fun addConnectionListener(listener: HttpRpcConnectionListener<I>) : Boolean {
+    fun addConnectionListener(listener: HttpRpcConnectionListener<I>): Boolean {
         log.trace { """"Add connection listener "${listener.javaClass.simpleName}".""" }
         return listeners.add(listener)
     }
 
-    fun removeConnectionListener(listener: HttpRpcConnectionListener<I>) : Boolean {
+    fun removeConnectionListener(listener: HttpRpcConnectionListener<I>): Boolean {
         log.trace { """Remove connection listener "${listener.javaClass.simpleName}".""" }
         return listeners.remove(listener)
     }
@@ -152,21 +154,23 @@ class HttpRpcClient<I : RpcOps> internal constructor (
             }
         }
         return timer
-                .also { log.trace { "Schedule periodic health check completed." } }
+            .also { log.trace { "Schedule periodic health check completed." } }
     }
 
     @Suppress("TooGenericExceptionThrown", "TooGenericExceptionCaught")
     private fun healthCheck(): Boolean =
-            try {
-                if (ops.protocolVersion != serverProtocolVersion) {
-                    log.warn("Protocol version previously retrieved (${ops.protocolVersion}) does not match" +
-                            " the initial protocol version ($serverProtocolVersion)")
-                }
-                connectionEventDistributor.onConnect()
-                true
-            } catch (throwable: Throwable) {
-                log.error("Error when performing health check call", throwable)
-                connectionEventDistributor.onDisconnect(throwable)
-                false
+        try {
+            if (ops.protocolVersion != serverProtocolVersion) {
+                log.warn(
+                    "Protocol version previously retrieved (${ops.protocolVersion}) does not match" +
+                            " the initial protocol version ($serverProtocolVersion)"
+                )
             }
+            connectionEventDistributor.onConnect()
+            true
+        } catch (throwable: Throwable) {
+            log.error("Error when performing health check call", throwable)
+            connectionEventDistributor.onDisconnect(throwable)
+            false
+        }
 }

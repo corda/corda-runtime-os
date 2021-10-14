@@ -26,8 +26,8 @@ val objectMapper = jacksonObjectMapper().apply {
 }
 
 // required because jackson can't deserialize to abstract type (interface)
-internal class PositionedValueDeserializer(private val valueType: JavaType? = null)
-    : JsonDeserializer<Cursor.PollResult.PositionedValue<*>>(), ContextualDeserializer {
+internal class PositionedValueDeserializer(private val valueType: JavaType? = null) :
+    JsonDeserializer<Cursor.PollResult.PositionedValue<*>>(), ContextualDeserializer {
 
     override fun createContextual(ctxt: DeserializationContext, property: BeanProperty?): JsonDeserializer<*> {
         val newValueType = ctxt.contextualType.containedType(0)
@@ -37,7 +37,8 @@ internal class PositionedValueDeserializer(private val valueType: JavaType? = nu
 
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Cursor.PollResult.PositionedValue<*> {
         val jacksonType = ctxt.typeFactory.constructParametricType(
-                DurableCursorTransferObject.Companion.PositionedValueImpl::class.java, valueType)
+            DurableCursorTransferObject.Companion.PositionedValueImpl::class.java, valueType
+        )
         return ctxt.findRootValueDeserializer(jacksonType).deserialize(p, ctxt) as Cursor.PollResult.PositionedValue<*>
     }
 }
@@ -57,7 +58,7 @@ internal object SecureHashDeserializer : JsonDeserializer<SecureHash>() {
         log.trace { "Deserialize." }
         try {
             return uncheckedCast(SecureHash.create(parser.text))
-                    .also { log.trace { "Deserialize completed." } }
+                .also { log.trace { "Deserialize completed." } }
         } catch (e: Exception) {
             "Invalid hash ${parser.text}: ${e.message}".let {
                 log.error(it)

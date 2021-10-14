@@ -10,7 +10,7 @@ import java.lang.reflect.Type
  * This helper class exists to operate on `:base-internal` classes which will not be visible in the caller module.
  */
 object TypeUtils {
-    fun parameterizePollResult(itemType: Type) : ParameterizedType {
+    fun parameterizePollResult(itemType: Type): ParameterizedType {
         return TypeUtils.parameterize(DurableCursorTransferObject.Companion.PollResultImpl::class.java, itemType)
     }
 

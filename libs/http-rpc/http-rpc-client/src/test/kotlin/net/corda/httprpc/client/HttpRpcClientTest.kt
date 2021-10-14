@@ -1,8 +1,13 @@
 package net.corda.httprpc.client
 
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.client.config.HttpRpcClientConfig
 import net.corda.httprpc.client.impl.HttpRpcClientProxyHandler
 import net.corda.httprpc.test.TestHealthCheckAPI
+import net.corda.test.util.eventually
+import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doReturn
@@ -12,11 +17,6 @@ import org.mockito.kotlin.mockingDetails
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import net.corda.test.util.eventually
-import net.corda.httprpc.client.config.HttpRpcClientConfig
-import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
@@ -40,12 +40,12 @@ class HttpRpcClientTest {
     @Test
     fun `should start health checking server after start is called`() {
         val client = HttpRpcClient(
-                baseAddress = "",
-                rpcOpsClass = TestHealthCheckAPI::class.java,
-                clientConfig = HttpRpcClientConfig()
-                        .minimumServerProtocolVersion(1),
-                healthCheckInterval = 100,
-                proxyGenerator = this::mockProxyGenerator
+            baseAddress = "",
+            rpcOpsClass = TestHealthCheckAPI::class.java,
+            clientConfig = HttpRpcClientConfig()
+                .minimumServerProtocolVersion(1),
+            healthCheckInterval = 100,
+            proxyGenerator = this::mockProxyGenerator
         )
 
         client.use {
@@ -67,12 +67,12 @@ class HttpRpcClientTest {
     @Test
     fun `instantiating a client with higher minimum server protocol version throws exception`() {
         val client = HttpRpcClient(
-                baseAddress = "",
-                rpcOpsClass = TestHealthCheckAPI::class.java,
-                clientConfig = HttpRpcClientConfig()
-                        .minimumServerProtocolVersion(4),
-                healthCheckInterval = 100,
-                proxyGenerator = this::mockProxyGenerator
+            baseAddress = "",
+            rpcOpsClass = TestHealthCheckAPI::class.java,
+            clientConfig = HttpRpcClientConfig()
+                .minimumServerProtocolVersion(4),
+            healthCheckInterval = 100,
+            proxyGenerator = this::mockProxyGenerator
         )
 
         val exception = assertThrows<IllegalArgumentException> {
@@ -84,12 +84,12 @@ class HttpRpcClientTest {
     @Test
     fun `instantiating a client with equal minimum server protocol version doesn't throw exception`() {
         val client = HttpRpcClient(
-                baseAddress = "",
-                rpcOpsClass = TestHealthCheckAPI::class.java,
-                clientConfig = HttpRpcClientConfig()
-                        .minimumServerProtocolVersion(2),
-                healthCheckInterval = 100,
-                proxyGenerator = this::mockProxyGenerator
+            baseAddress = "",
+            rpcOpsClass = TestHealthCheckAPI::class.java,
+            clientConfig = HttpRpcClientConfig()
+                .minimumServerProtocolVersion(2),
+            healthCheckInterval = 100,
+            proxyGenerator = this::mockProxyGenerator
         )
 
         client.use {
@@ -101,12 +101,12 @@ class HttpRpcClientTest {
     @Test
     fun `connecting listener to the client and then starting it makes messages be transmitted successfully`() {
         val client = HttpRpcClient(
-                baseAddress = "",
-                rpcOpsClass = TestHealthCheckAPI::class.java,
-                clientConfig = HttpRpcClientConfig()
-                        .minimumServerProtocolVersion(1),
-                healthCheckInterval = 100,
-                proxyGenerator = this::mockProxyGenerator
+            baseAddress = "",
+            rpcOpsClass = TestHealthCheckAPI::class.java,
+            clientConfig = HttpRpcClientConfig()
+                .minimumServerProtocolVersion(1),
+            healthCheckInterval = 100,
+            proxyGenerator = this::mockProxyGenerator
         )
 
         val listener = mock<HttpRpcConnectionListener<TestHealthCheckAPI>>()
@@ -128,12 +128,12 @@ class HttpRpcClientTest {
     @Test
     fun `connecting listener to the client after starting it makes messages to be transmitted successfully`() {
         val client = HttpRpcClient(
-                baseAddress = "",
-                rpcOpsClass = TestHealthCheckAPI::class.java,
-                clientConfig = HttpRpcClientConfig()
-                        .minimumServerProtocolVersion(1),
-                healthCheckInterval = 100,
-                proxyGenerator = this::mockProxyGenerator
+            baseAddress = "",
+            rpcOpsClass = TestHealthCheckAPI::class.java,
+            clientConfig = HttpRpcClientConfig()
+                .minimumServerProtocolVersion(1),
+            healthCheckInterval = 100,
+            proxyGenerator = this::mockProxyGenerator
         )
 
         val listener = mock<HttpRpcConnectionListener<TestHealthCheckAPI>>()
@@ -150,12 +150,12 @@ class HttpRpcClientTest {
     @Test
     fun `connecting listener to the client and then starting it but failing to connect makes error messages be transmitted successfully`() {
         val client = HttpRpcClient(
-                baseAddress = "",
-                rpcOpsClass = TestHealthCheckAPI::class.java,
-                clientConfig = HttpRpcClientConfig()
-                        .minimumServerProtocolVersion(1),
-                healthCheckInterval = 100,
-                proxyGenerator = this::mockErrorProxyGenerator
+            baseAddress = "",
+            rpcOpsClass = TestHealthCheckAPI::class.java,
+            clientConfig = HttpRpcClientConfig()
+                .minimumServerProtocolVersion(1),
+            healthCheckInterval = 100,
+            proxyGenerator = this::mockErrorProxyGenerator
         )
 
         val listener = mock<HttpRpcConnectionListener<TestHealthCheckAPI>>()

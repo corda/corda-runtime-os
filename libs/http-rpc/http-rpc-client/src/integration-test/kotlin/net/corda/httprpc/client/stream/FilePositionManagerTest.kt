@@ -1,5 +1,6 @@
 package net.corda.httprpc.client.stream
 
+import net.corda.utilities.div
 import net.corda.v5.base.stream.PositionManager
 import org.assertj.core.api.AbstractThrowableAssert
 import org.assertj.core.api.Assertions
@@ -13,7 +14,6 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import net.corda.utilities.div
 
 class FilePositionManagerTest {
 
@@ -97,5 +97,7 @@ class FilePositionManagerTest {
             assertTrue { fpm.get() <= maxPos }
         }
     }
-    inline fun <reified TYPE : Throwable> AbstractThrowableAssert<*, *>.isInstanceOf(): AbstractThrowableAssert<*, *> = isInstanceOf(TYPE::class.java)
+
+    inline fun <reified TYPE : Throwable> AbstractThrowableAssert<*, *>.isInstanceOf(): AbstractThrowableAssert<*, *> =
+        isInstanceOf(TYPE::class.java)
 }

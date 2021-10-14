@@ -6,7 +6,6 @@ class CustomSerializationAPIImpl : CustomSerializationAPI, PluggableRPCOps<Custo
     override val targetInterface: Class<CustomSerializationAPI>
         get() = CustomSerializationAPI::class.java
 
-
     override val protocolVersion: Int
         get() = 2
 
