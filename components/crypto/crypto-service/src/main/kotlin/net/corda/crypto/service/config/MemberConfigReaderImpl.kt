@@ -2,8 +2,10 @@ package net.corda.crypto.service.config
 
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
+import net.corda.data.config.Configuration
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
@@ -14,16 +16,18 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
-@Component(service = [MemberConfigPersistence::class])
-class MemberConfigPersistenceImpl  @Activate constructor(
+@Component(service = [MemberConfigReader::class])
+class MemberConfigReaderImpl  @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory
-) : MemberConfigPersistence, Lifecycle, CryptoLifecycleComponent {
+) : MemberConfigReader, Lifecycle, CryptoLifecycleComponent {
     companion object {
         private val logger: Logger = contextLogger()
     }
+
+    private var subscription: CompactedSubscription<String, Configuration>? = null
 
     private var impl = Impl(
         subscriptionFactory,
@@ -57,8 +61,6 @@ class MemberConfigPersistenceImpl  @Activate constructor(
         currentImpl.closeGracefully()
     }
 
-    override fun put(memberId: String, entity: CryptoMemberConfig) = impl.put(memberId, entity)
-
     override fun get(memberId: String): CryptoMemberConfig = impl.get(memberId)
 
     private class Impl(
@@ -67,10 +69,6 @@ class MemberConfigPersistenceImpl  @Activate constructor(
         private val config: CryptoLibraryConfig,
         private val logger: Logger
     ) : AutoCloseable {
-        fun put(memberId: String, entity: CryptoMemberConfig) {
-            TODO("Not yet implemented")
-        }
-
         fun get(memberId: String): CryptoMemberConfig {
             TODO("Not yet implemented")
             /*
