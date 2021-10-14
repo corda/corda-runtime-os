@@ -17,6 +17,7 @@ import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
@@ -46,6 +47,15 @@ class VerifierTests {
         contractCpk = cpk("test.cpk.contract", junitTestDir)
         split1Cpk = cpk("test.cpk.split1", junitTestDir)
         split2Cpk = cpk("test.cpk.split2", junitTestDir)
+    }
+
+    @AfterEach
+    fun teardown() {
+        flowsCpk.close()
+        workflowCpk.close()
+        contractCpk.close()
+        split1Cpk.close()
+        split2Cpk.close()
     }
 
     private fun cpk(propertyName: String, rootDir: Path): CPK {

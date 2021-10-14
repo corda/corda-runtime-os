@@ -72,13 +72,19 @@ class ConfigReaderImpl(
     }
 
     override fun registerCallback(configListener: ConfigListener): AutoCloseable {
-        val sub = ConfigListenerSubscription(this)
-        configUpdates[sub] = configListener
-        if (snapshotReceived) {
-            val configs = configurationRepository.getConfigurations()
-            configListener.onUpdate(configs.keys, configs)
+        /*
+         * A lock is used here as a temporary fix.
+         * The start/restart semantics will be revisited and this will be addressed properly as part of CORE-2759 (also see CORE-2781).
+         */
+        lock.withLock {
+            val sub = ConfigListenerSubscription(this)
+            configUpdates[sub] = configListener
+            if (snapshotReceived) {
+                val configs = configurationRepository.getConfigurations()
+                configListener.onUpdate(configs.keys, configs)
+            }
+            return sub
         }
-        return sub
     }
 
     private fun unregisterCallback(sub: ConfigListenerSubscription) {
