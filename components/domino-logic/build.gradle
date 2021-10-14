@@ -14,12 +14,6 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    // Log4J: logging framework (with SLF4J bindings) - TEMPORARY UNTIL I FIGURE OUT LOGGING IN THIS PROJECT
-    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-    implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
-    // For async logging
-    implementation "com.lmax:disruptor:$disruptorVersion"
-
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'
