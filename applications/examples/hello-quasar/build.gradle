@@ -19,3 +19,6 @@ dependencies {
 
 description 'Quasar fiber example'
 
+osgiRun {
+    log4jConfigurationFile = project.layout.projectDirectory.file('conf/log4j2.xml')
+}

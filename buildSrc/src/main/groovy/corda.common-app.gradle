@@ -1,4 +1,5 @@
 import java.nio.file.Files
+import java.util.concurrent.Callable
 import java.util.jar.JarFile
 
 import groovy.transform.TupleConstructor
@@ -166,13 +167,16 @@ class JavaAgent implements Serializable {
 
 class OsgiRun {
 
-
     final List<JavaAgent> javaAgents = new ArrayList<JavaAgent>()
     final MapProperty<String, String> frameworkProperties
+    final RegularFileProperty log4jConfigurationFile
 
     @Inject
-    OsgiRun(ObjectFactory objects) {
+    OsgiRun(Project project, ObjectFactory objects) {
         frameworkProperties = objects.mapProperty(String.class, String.class).convention(new HashMap<>())
+        Project osgiBootstrapProject = project.project(':osgi-framework-bootstrap')
+        log4jConfigurationFile = objects.fileProperty()
+                .convention(osgiBootstrapProject.layout.projectDirectory.file("conf/log4j2.xml"))
     }
 
     def agent(String className, String args) {
@@ -271,10 +275,13 @@ def appJar = tasks.register('appJar', Jar) {
     into("META-INF/") {
         from(javaAgentFileTask)
     }
-    from{ configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    from {
+        configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
     from(createSystemBundlesFile)
     from(cordaAssembleSystemPackagesExtraTask)
     from(writeFrameworkPropertyFile)
+    from(osgiRun.log4jConfigurationFile)
     into("bundles") {
         from(jarTask)
         from(configurations.runtimeClasspath - configurations.systemPackages) {
