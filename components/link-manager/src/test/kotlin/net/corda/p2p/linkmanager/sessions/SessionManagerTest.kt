@@ -91,8 +91,8 @@ class SessionManagerTest {
             MAX_MESSAGE_SIZE,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             longPeriodMilliSec,
-            100,
-            500
+            50,
+            150
         )
         val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
         val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
@@ -847,22 +847,27 @@ class SessionManagerTest {
     @Test
     fun `when a data message is sent, heartbeats are sent, if these are acknowledged the session does not time out`() {
         val heartbeatsBeforeTimeout = configWithHeartbeat.sessionTimeoutMilliSecs / configWithHeartbeat.heartbeatMessagePeriodMilliSecs - 1
-        val publishLatch = CountDownLatch(heartbeatsBeforeTimeout.toInt() - 1)
+        val publishLatch = CountDownLatch(2 * heartbeatsBeforeTimeout.toInt() - 1)
 
         val messages = mutableListOf<AuthenticatedDataMessage>()
+        var sessionManager: SessionManager? = null
         fun callback(records: List<Record<*, *>>) {
             val record = records.single()
             assertEquals(Schema.LINK_OUT_TOPIC, record.topic)
             val message = (record.value as LinkOutMessage).payload as AuthenticatedDataMessage
             messages.add(message)
-            sessionManager.messageAcknowledged(message.header.sessionId)
+            if (sessionManager != null) {
+                sessionManager!!.messageAcknowledged(message.header.sessionId)
+            } else {
+                fail("sessionManager should not be null.")
+            }
             publishLatch.countDown()
         }
 
         //First time we throw an exception so nothing gets published.
         val publisher = CallbackPublisher(::callback)
         whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(publisher)
-        val sessionManager = SessionManagerImpl(
+        sessionManager = SessionManagerImpl(
             configWithHeartbeat,
             networkMap,
             cryptoService,
