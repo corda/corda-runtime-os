@@ -10,7 +10,9 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.impl.InMemoryEntityManagerConfiguration
 import net.corda.osgi.api.Application
+import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
+import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -22,8 +24,8 @@ import picocli.CommandLine
 class ConfigSubscriptionApp @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
+    @Reference(service = Shutdown::class)
+    private val shutDownService: Shutdown,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = EntityManagerFactoryFactory::class)
@@ -42,47 +44,58 @@ class ConfigSubscriptionApp @Activate constructor(
         InMemoryEntityManagerConfiguration("cluster-config"),
     )
 
-    // TODO: add helpRequested use case?
     override fun startup(args: Array<String>) {
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
 
-        val instanceId = 1
-        var configAdminEventSub: ConfigAppSubscription? = null
+        if (parameters.helpRequested) {
+            CommandLine.usage(CliParameters(), System.out)
+            shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
+        } else {
+            val instanceId = 1
+            var configAdminEventSub: ConfigAppSubscription? = null
 
-        val dbConnection = PostgresDataSourceFactory().create(
-            parameters.dbUrl,
-            parameters.dbUser,
-            parameters.dbPass)
-
-        val config = ConfigFactory.parseMap(
-            mapOf(
-                ConfigConstants.KAFKA_BOOTSTRAP_SERVER to parameters.kafka,
-                ConfigConstants.TOPIC_PREFIX_CONFIG_KEY to ConfigConstants.TOPIC_PREFIX
+            val dbConnection = PostgresDataSourceFactory().create(
+                parameters.dbUrl,
+                parameters.dbUser,
+                parameters.dbPass
             )
-        )
 
-        lifeCycleCoordinator = coordinatorFactory.createCoordinator<String>(
-        ) { event: LifecycleEvent, _: LifecycleCoordinator ->
-            log.info("LifecycleEvent received: $event")
-            when (event) {
-                is StartEvent -> {
-                    consoleLogger.info("Starting kafka subscriptions from ${parameters.kafka}")
-                    configAdminEventSub = ConfigAppSubscription(subscriptionFactory, config, 1, dbConnection.connection, entityManagerFactory)
-                    configAdminEventSub!!.start()
-                }
-                is StopEvent -> {
-                    configAdminEventSub!!.stop()
-                }
-                else -> {
-                    log.error("$event unexpected!")
+            val config = ConfigFactory.parseMap(
+                mapOf(
+                    ConfigConstants.KAFKA_BOOTSTRAP_SERVER to parameters.kafka,
+                    ConfigConstants.TOPIC_PREFIX_CONFIG_KEY to ConfigConstants.TOPIC_PREFIX
+                )
+            )
+
+            lifeCycleCoordinator = coordinatorFactory.createCoordinator<String>(
+            ) { event: LifecycleEvent, _: LifecycleCoordinator ->
+                log.info("LifecycleEvent received: $event")
+                when (event) {
+                    is StartEvent -> {
+                        consoleLogger.info("Starting kafka subscriptions from ${parameters.kafka}")
+                        configAdminEventSub = ConfigAppSubscription(
+                            subscriptionFactory,
+                            config,
+                            1,
+                            dbConnection.connection,
+                            entityManagerFactory
+                        )
+                        configAdminEventSub!!.start()
+                    }
+                    is StopEvent -> {
+                        configAdminEventSub!!.stop()
+                    }
+                    else -> {
+                        log.error("$event unexpected!")
+                    }
                 }
             }
-        }
 
-        log.info("Starting life cycle coordinator")
-        lifeCycleCoordinator!!.start()
-        consoleLogger.info("Config admin application started, finished publishing")
+            log.info("Starting life cycle coordinator")
+            lifeCycleCoordinator!!.start()
+            consoleLogger.info("Config admin application started, finished publishing")
+        }
     }
 
     override fun shutdown() {
