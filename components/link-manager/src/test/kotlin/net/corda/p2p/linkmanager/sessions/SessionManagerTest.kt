@@ -91,8 +91,8 @@ class SessionManagerTest {
             MAX_MESSAGE_SIZE,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             longPeriodMilliSec,
-            50,
-            150
+            100,
+            500
         )
         val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
         val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
