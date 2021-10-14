@@ -94,6 +94,7 @@ class SandboxLoader @Activate constructor(
         group2 = createSandboxGroupFor(cpk3)
         assertThat(group2.sandboxes).hasSize(1)
 
+        println()
         val sandbox1 = group1.getSandbox(cpk1.metadata.id)
         val sandbox2 = group1.getSandbox(cpk2.metadata.id)
         val sandbox3 = group2.getSandbox(cpk3.metadata.id)
@@ -149,7 +150,7 @@ class SandboxLoader @Activate constructor(
     }
 
     private fun createSandboxGroupFor(vararg cpks: CPK): SandboxGroup {
-        return sandboxCreationService.createSandboxGroup(cpks.map { it.metadata.hash })
+        return sandboxCreationService.createSandboxGroup(cpks.map { it.metadata.hash }, securityDomain = "joel")
     }
 
     private fun <T, U : T> getServiceFor(serviceType: Class<T>, bundleClass: Class<U>): T {

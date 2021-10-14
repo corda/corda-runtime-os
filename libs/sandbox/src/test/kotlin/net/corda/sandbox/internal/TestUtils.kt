@@ -28,19 +28,21 @@ fun randomSecureHash(): SecureHash {
     return SecureHash(digest.algorithm, digest.digest(randomBytes))
 }
 
-/** Generates a mock [Bundle] with [bundleSymbolicName] that contains the given [classes]. */
+/** Generates a mock [Bundle] with [bundleSymbolicName] and [bundleLocation] that contains the given [klass]. */
 fun mockBundle(
     bundleSymbolicName: String? = nextInt().toString(),
-    classes: Collection<Class<*>> = emptySet()
+    klass: Class<*>? = null,
+    bundleLocation: String = nextInt().toString()
 ) = mock<Bundle>().apply {
-        whenever(bundleId).thenReturn(nextLong())
-        whenever(symbolicName).thenReturn(bundleSymbolicName)
-        whenever(version).thenReturn(Version.parseVersion("${abs(nextInt())}.${abs(nextInt())}"))
-        whenever(loadClass(any())).then { answer ->
-            val className = answer.arguments.single()
-            classes.find { klass -> klass.name == className } ?: throw ClassNotFoundException()
-        }
+    whenever(bundleId).thenReturn(nextLong())
+    whenever(symbolicName).thenReturn(bundleSymbolicName)
+    whenever(version).thenReturn(Version.parseVersion("${abs(nextInt())}.${abs(nextInt())}"))
+    whenever(loadClass(any())).then { answer ->
+        val requestedClass = answer.arguments.single()
+        if (klass?.name == requestedClass) klass else throw ClassNotFoundException()
     }
+    whenever(location).thenReturn(bundleLocation)
+}
 
 /** Generates a mock [CPK]. */
 fun mockCpk(): CPK {
