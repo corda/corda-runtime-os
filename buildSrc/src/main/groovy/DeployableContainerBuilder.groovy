@@ -62,7 +62,7 @@ class DeployableContainerBuilder extends DefaultTask {
 
     @Input
     final Property<String> targetImageName =
-            project.objects.property(String).convention("engineering-docker.software.r3.com/${project.name}")
+            project.objects.property(String).convention("engineering-docker-dev.software.r3.com/${project.name}")
 
     @Input
     final Property<String> targetImageTag =
@@ -77,7 +77,6 @@ class DeployableContainerBuilder extends DefaultTask {
     def updateImage() {
 
         String overrideFilePath = overrideFile.getAsFile().get().getPath()
-        logger.quiet("Publishing '${targetImageName.get()}:${targetImageTag.get()}' ${remotePublish.get() ? "remotely" : "locally"} with '$overrideFilePath', from base '${baseImageName.get()}:${targetImageTag.get()}'")
 
         RegistryImage baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
 
@@ -102,9 +101,10 @@ class DeployableContainerBuilder extends DefaultTask {
         }
         builder.setEntrypoint("java", "-jar", CONTAINER_LOCATION + overrideFile.getAsFile().get().getName())
 
-        if (!remotePublish.get()) {
-            logger.quiet("Property jibRemotePublish is false, publishing locally")
+        logger.quiet("Publishing '${targetImageName.get()}:${targetImageTag.get()}' and '${targetImageName.get()}:${project.version}'" +
+                " ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with '$overrideFilePath', from base '${baseImageName.get()}:${targetImageTag.get()}'")
 
+        if (!remotePublish.get()) {
             builder.containerize(
                     Containerizer.to(DockerDaemonImage.named("${targetImageName.get()}:${targetImageTag.get()}"))
             )
