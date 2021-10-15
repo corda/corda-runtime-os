@@ -60,6 +60,7 @@ class AppSimulator @Activate constructor(
         const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
         const val KAFKA_BOOTSTRAP_SERVER_KEY = "messaging.kafka.common.bootstrap.servers"
         const val PRODUCER_CLIENT_ID = "messaging.kafka.producer.client.id"
+        const val DELIVERED_MSG_TOPIC = "app.received_msg"
 
         const val DB_PARAMS_PREFIX = "dbParams"
         const val LOAD_GEN_PARAMS_PREFIX = "loadGenerationParams"
@@ -74,7 +75,7 @@ class AppSimulator @Activate constructor(
 
     @Volatile
     private var stopped: Boolean = false
-    private val subscriptions = mutableListOf<Subscription<String, AppMessage>>()
+    private val subscriptions = mutableListOf<Subscription<*, *>>()
     private val writerThreads = mutableListOf<Thread>()
 
     private val random = Random()
@@ -124,23 +125,30 @@ class AppSimulator @Activate constructor(
         val receiveTopic = parameters.receiveTopic ?: Schema.P2P_IN_TOPIC
         val simulatorConfig = ConfigFactory.parseFile(parameters.simulatorConfig).withFallback(DEFAULT_CONFIG)
         val clients = simulatorConfig.getInt(PARALLEL_CLIENTS_KEY)
-        val dbParams = readDbParams(simulatorConfig)
-        connectToDb(dbParams)
+        val dbParams = readDbParams(simulatorConfig)?.also { connectToDb(it) }
 
         val simulatorMode = simulatorConfig.getEnum(SimulationMode::class.java, "simulatorMode")
         when(simulatorMode) {
             SimulationMode.SENDER -> {
                 val loadGenerationParams = readLoadGenParams(simulatorConfig)
-                executeSender(loadGenerationParams, sendTopic, kafkaProperties, clients)
+                executeSender(dbParams, loadGenerationParams, sendTopic, kafkaProperties, clients)
             }
             SimulationMode.RECEIVER -> {
                 startReceiver(receiveTopic, kafkaProperties, clients)
+            }
+            SimulationMode.DB_SINK -> {
+                if (dbParams == null) {
+                    logError("dbParams configuration option is mandatory for sink mode.")
+                    shutdownOSGiFramework()
+                    return
+                }
+                startDbSink(kafkaProperties, clients)
             }
             else -> throw IllegalStateException("Invalid value for simulator mode: $simulatorMode")
         }
     }
 
-    private fun executeSender(loadGenParams: LoadGenerationParams, sendTopic: String, kafkaProperties: Properties, clients: Int) {
+    private fun executeSender(dbParams: DBParams?, loadGenParams: LoadGenerationParams, sendTopic: String, kafkaProperties: Properties, clients: Int) {
         val senderId = UUID.randomUUID().toString()
         val kafkaBoostrapServers = kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()
         logInfo("Using sender ID: $senderId")
@@ -160,12 +168,14 @@ class AppSimulator @Activate constructor(
                         val records = messageWithIds.map { (messageId, message) ->
                             Record(sendTopic, messageId, message)
                         }
-                        val now = Instant.now()
                         val futures = publisher.publish(records)
-                        val messageSentEvents = messageWithIds.map { (messageId, _) ->
-                            MessageSentEvent(senderId, messageId, now)
+
+                        if (dbParams != null) {
+                            val messageSentEvents = messageWithIds.map { (messageId, _) ->
+                                MessageSentEvent(senderId, messageId)
+                            }
+                            writeSentMessagesToDb(messageSentEvents)
                         }
-                        writeSentMessagesToDb(messageSentEvents)
                         futures.forEach { it.get() }
                         messagesSent += loadGenParams.batchSize
 
@@ -194,21 +204,35 @@ class AppSimulator @Activate constructor(
 
     private fun startReceiver(receiveTopic: String, kafkaProperties: Properties, clients: Int) {
         (1..clients).forEach { client ->
-            val subscriptionConfig = SubscriptionConfig("app-simulator", receiveTopic, 1)
+            val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", receiveTopic, 1)
             val kafkaConfig = ConfigFactory.empty()
                 .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
                 .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-receiver-$client"))
-            val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig, MessageProcessor(), kafkaConfig, null)
+            val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
+                InboundMessageProcessor(DELIVERED_MSG_TOPIC), kafkaConfig, null)
             subscription.start()
+            subscriptions.add(subscription)
         }
         logInfo("Started consuming messages fom $receiveTopic. When you want to stop the consumption, you can do so using Ctrl+C.")
+    }
+
+    private fun startDbSink(kafkaProperties: Properties, clients: Int) {
+        (1..clients).forEach { client ->
+            val subscriptionConfig = SubscriptionConfig("app-simulator-sink", DELIVERED_MSG_TOPIC, 1)
+            val kafkaConfig = ConfigFactory.empty()
+                .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
+                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-sink-$client"))
+            val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig, DBSinkProcessor(), kafkaConfig, null)
+            subscription.start()
+            subscriptions.add(subscription)
+        }
+        logInfo("Started forwarding messages to the DB. When you want to stop it, you can do so using Ctrl+C.")
     }
 
     private fun writeSentMessagesToDb(messages: List<MessageSentEvent>) {
         messages.forEach { messageSentEvent ->
             writeSentStmt!!.setString(1, messageSentEvent.sender)
             writeSentStmt!!.setString(2, messageSentEvent.messageId)
-            writeSentStmt!!.setTimestamp(3, Timestamp.from(messageSentEvent.sentTime))
             writeSentStmt!!.addBatch()
         }
         writeSentStmt!!.executeBatch()
@@ -231,7 +255,7 @@ class AppSimulator @Activate constructor(
         val randomData = ByteArray(messageSize).apply {
             random.nextBytes(this)
         }
-        val payload = MessagePayload(senderId, randomData)
+        val payload = MessagePayload(senderId, randomData, Instant.now())
         val message = AuthenticatedMessage(messageHeader, ByteBuffer.wrap(objectMapper.writeValueAsBytes(payload)))
         return messageId to AppMessage(message)
     }
@@ -247,13 +271,17 @@ class AppSimulator @Activate constructor(
         org.postgresql.Driver()
         dbConnection = DriverManager.getConnection("jdbc:postgresql://${dbParams.host}/${dbParams.db}", properties)
         dbConnection!!.autoCommit = false
-        writeSentStmt = dbConnection!!.prepareStatement("INSERT INTO sent_messages (sender_id, message_id, sent_time) " +
-                "VALUES (?, ?, ?) on conflict do nothing")
-        writeReceivedStmt = dbConnection!!.prepareStatement("INSERT INTO received_messages (sender_id, message_id, received_time) " +
-                "VALUES (?, ?, ?) on conflict do nothing")
+        writeSentStmt = dbConnection!!.prepareStatement("INSERT INTO sent_messages (sender_id, message_id) " +
+                "VALUES (?, ?) on conflict do nothing")
+        writeReceivedStmt = dbConnection!!.prepareStatement("INSERT INTO received_messages (sender_id, message_id, sent_timestamp, received_timestamp, delivery_latency_ms) " +
+                "VALUES (?, ?, ?, ?, ?) on conflict do nothing")
     }
 
-    private fun readDbParams(config: Config): DBParams {
+    private fun readDbParams(config: Config): DBParams? {
+        if (!config.hasPath(DB_PARAMS_PREFIX)) {
+            return null
+        }
+
         return DBParams(
             config.getString("$DB_PARAMS_PREFIX.username"),
             config.getString("$DB_PARAMS_PREFIX.password"),
@@ -309,7 +337,7 @@ class AppSimulator @Activate constructor(
         consoleLogger.error(error)
     }
 
-    private inner class MessageProcessor: EventLogProcessor<String, AppMessage> {
+    private inner class InboundMessageProcessor(val destinationTopic: String): EventLogProcessor<String, AppMessage> {
 
         override val keyClass: Class<String>
             get() = String::class.java
@@ -318,12 +346,30 @@ class AppSimulator @Activate constructor(
 
         override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<*, *>> {
             val now = Instant.now()
-            val messageReceivedEvents = events.map {
+            return events.map {
                 val authenticatedMessage = it.value!!.message as AuthenticatedMessage
                 val payload = objectMapper.readValue<MessagePayload>(authenticatedMessage.payload.array())
-                MessageReceivedEvent(payload.sender, authenticatedMessage.header.messageId, now)
+                val messageReceivedEvent = MessageReceivedEvent(payload.sender, authenticatedMessage.header.messageId, payload.sendTimestamp, now, Duration.between(payload.sendTimestamp, now))
+                Record(destinationTopic, messageReceivedEvent.messageId, objectMapper.writeValueAsString(messageReceivedEvent))
             }
+        }
+
+    }
+
+    private inner class DBSinkProcessor: EventLogProcessor<String, String> {
+
+        override val keyClass: Class<String>
+            get() = String::class.java
+        override val valueClass: Class<String>
+            get() = String::class.java
+
+        override fun onNext(events: List<EventLogRecord<String, String>>): List<Record<*, *>> {
+            val messageReceivedEvents = events.map {
+                objectMapper.readValue<MessageReceivedEvent>(it.value!!)
+            }
+
             writeReceivedMessagesToDB(messageReceivedEvents)
+
             return emptyList()
         }
 
@@ -331,7 +377,9 @@ class AppSimulator @Activate constructor(
             messages.forEach { messageReceivedEvent ->
                 writeReceivedStmt!!.setString(1, messageReceivedEvent.sender)
                 writeReceivedStmt!!.setString(2, messageReceivedEvent.messageId)
-                writeReceivedStmt!!.setTimestamp(3, Timestamp.from(messageReceivedEvent.receivedTime))
+                writeReceivedStmt!!.setTimestamp(3, Timestamp.from(messageReceivedEvent.sendTimestamp))
+                writeReceivedStmt!!.setTimestamp(4, Timestamp.from(messageReceivedEvent.receiveTimestamp))
+                writeReceivedStmt!!.setLong(5, messageReceivedEvent.deliveryLatency.toMillis())
                 writeReceivedStmt!!.addBatch()
             }
             writeReceivedStmt!!.executeBatch()
@@ -368,7 +416,8 @@ enum class LoadGenerationType {
 
 enum class SimulationMode {
     SENDER,
-    RECEIVER
+    RECEIVER,
+    DB_SINK
 }
 
 data class DBParams(val username: String, val password: String, val host: String, val db: String)
@@ -388,6 +437,6 @@ data class LoadGenerationParams(val peer: HoldingIdentity,
     }
 }
 
-data class MessagePayload(val sender: String, val payload: ByteArray)
-data class MessageSentEvent(val sender: String, val messageId: String, val sentTime: Instant)
-data class MessageReceivedEvent(val sender: String, val messageId: String, val receivedTime: Instant)
+data class MessagePayload(val sender: String, val payload: ByteArray, val sendTimestamp: Instant)
+data class MessageSentEvent(val sender: String, val messageId: String)
+data class MessageReceivedEvent(val sender: String, val messageId: String, val sendTimestamp: Instant, val receiveTimestamp: Instant, val deliveryLatency: Duration)
