@@ -5,7 +5,7 @@
 -runsystempackages: \
     sun.security.x509
 -runrequires: \
-	bnd.identity;id='osgi-integration-tests-tests',\
+	bnd.identity;id='security-manager-tests',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='org.apache.felix.framework.security',\
@@ -36,4 +36,4 @@
 	org.osgi.test.junit5;version='[1.0.0,1.0.1)',\
 	org.osgi.util.function;version='[1.1.0,1.1.1)',\
 	org.osgi.util.promise;version='[1.1.1,1.1.2)',\
-	osgi-integration-tests-tests;version='[5.0.0,5.0.1)'
+	security-manager-tests;version='[5.0.0,5.0.1)'
