@@ -108,12 +108,14 @@ The configuration should have the following form:
         db: "corda"
     },
     parallelClients: 1
-	simulatorMode: "DB_SINK"
+    simulatorMode: "DB_SINK"
 }
 ```
 
 The following configuration options are optional:
 * `parallelClients`: the number of parallel clients/threads consuming messages from Kafka. Default: 1.
+
+In this mode, the tool will run until explicitly stopped with Ctrl+C.
 
 ## Database metadata
 
