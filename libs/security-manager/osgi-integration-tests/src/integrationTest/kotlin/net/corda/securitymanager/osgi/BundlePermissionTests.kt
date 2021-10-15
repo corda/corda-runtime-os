@@ -8,21 +8,19 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.framework.Bundle
-import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.framework.FrameworkUtil
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.net.URL
 import java.security.AccessControlException
-import kotlin.math.abs
 import kotlin.random.Random
 
 /** Tests the permissions of sandboxed bundles. */
 @ExtendWith(ServiceExtension::class)
 class BundlePermissionTests {
     companion object {
-        private const val SANDBOX_BUNDLE_PREFIX = "sandbox/"
-        private const val TEST_BUNDLE_LOCATION_PREFIX = "reference:"
+        private const val SANDBOX_SECURITY_DOMAIN_PREFIX = "sandbox/"
+        private const val REFERENCE_PREFIX = "reference:"
 
         @InjectService(timeout = 1000)
         lateinit var unsandboxedOsgiInvoker: OsgiInvoker
@@ -40,18 +38,15 @@ class BundlePermissionTests {
         /** Returns a sandboxed [Bundle] installed from the same source as the bundle containing [classFromBundle].  */
         @Suppress("unchecked_cast")
         private fun <T> createSandboxedBundle(classFromBundle: Class<T>): Bundle {
-            // We retrieve the location of the existing bundle that contains `OsgiInvokerImpl`.
+            // We retrieve the location of the unsandboxed bundle that contains `OsgiInvokerImpl`.
             val unsandboxedBundle = FrameworkUtil.getBundle(classFromBundle)
-            val unsandboxedBundleLocation = URL(unsandboxedBundle.location.removePrefix(TEST_BUNDLE_LOCATION_PREFIX))
-            val sandboxedBundleLocation = "$SANDBOX_BUNDLE_PREFIX${abs(Random.nextInt())}"
+            val unsandboxedBundleLocation = URL(unsandboxedBundle.location.removePrefix(REFERENCE_PREFIX))
 
-            // We install a fresh copy of the bundle into a sandbox, retrieving its contents from its original
-            // location.
-            val systemContext = unsandboxedBundle.bundleContext.getBundle(SYSTEM_BUNDLE_ID).bundleContext
+            // We install a copy of the unsandboxed bundle into a sandbox.
+            val sandboxedBundleLocation = "$SANDBOX_SECURITY_DOMAIN_PREFIX${Random.nextInt()}"
             val sandboxedBundle = unsandboxedBundleLocation.openStream().use { inputStream ->
-                systemContext.installBundle(sandboxedBundleLocation, inputStream)
-            }
-            sandboxedBundle.start()
+                unsandboxedBundle.bundleContext.installBundle(sandboxedBundleLocation, inputStream)
+            }.apply { start() }
 
             return sandboxedBundle
         }
@@ -59,12 +54,9 @@ class BundlePermissionTests {
         /** Retrieves a service implementing [serviceInterface] from [bundle]. */
         @Suppress("unchecked_cast")
         private fun <T> retrieveServiceFromBundle(bundle: Bundle, serviceInterface: Class<T>): T {
-            val sandboxedBundleContext = bundle.bundleContext
-            val sandboxedOsgiInvokerServiceReference = sandboxedBundleContext
-                    .getAllServiceReferences(serviceInterface.name, null)
-                    .firstOrNull { serviceReference -> serviceReference.bundle === bundle }
-                    ?: fail("Could not retrieve service for interface $serviceInterface.")
-            return sandboxedBundleContext.getService(sandboxedOsgiInvokerServiceReference) as T
+            val serviceRef = bundle.registeredServices.firstOrNull { service -> service.bundle == bundle }
+                ?: fail("Could not retrieve service for interface $serviceInterface from bundle $bundle.")
+            return bundle.bundleContext.getService(serviceRef) as T
         }
     }
 
