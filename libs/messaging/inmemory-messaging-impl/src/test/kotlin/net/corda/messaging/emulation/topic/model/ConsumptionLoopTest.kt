@@ -231,4 +231,20 @@ class ConsumptionLoopTest {
 
         verify(partitionOne, times(1)).getRecordsFrom(16, 10)
     }
+
+    @Test
+    fun `run will wait for phase change is there are no records`() {
+        whenever(group.currentPhase())
+            .thenReturn(5)
+            .thenReturn(6)
+        whenever(group.isConsuming(consumer))
+            .thenReturn(true)
+            .thenReturn(true)
+            .thenReturn(false)
+
+        loop.run()
+
+        verify(group).waitForPhaseChange(5)
+        verify(group).waitForPhaseChange(6)
+    }
 }
