@@ -1,5 +1,6 @@
-package net.corda.securitymanager
+package net.corda.securitymanager.internal
 
+import net.corda.securitymanager.SecurityManagerException
 import org.osgi.framework.AdminPermission
 import org.osgi.framework.AdminPermission.EXECUTE
 import org.osgi.framework.AdminPermission.EXTENSIONLIFECYCLE
@@ -7,9 +8,6 @@ import org.osgi.framework.AdminPermission.LIFECYCLE
 import org.osgi.framework.AdminPermission.RESOLVE
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.cm.ConfigurationAdmin
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import org.osgi.service.condpermadmin.BundleLocationCondition
 import org.osgi.service.condpermadmin.ConditionInfo
 import org.osgi.service.condpermadmin.ConditionalPermissionAdmin
@@ -19,15 +17,11 @@ import org.osgi.service.permissionadmin.PermissionAdmin
 import org.osgi.service.permissionadmin.PermissionInfo
 import java.security.AllPermission
 
-/** Sets up permissions for the Corda OSGi framework. */
-@Suppress("unused")
-@Component(immediate = true)
-class CordaSecurityManager @Activate constructor(
-        @Reference
-        permissionAdmin: PermissionAdmin,
-        @Reference
-        conditionalPermissionAdmin: ConditionalPermissionAdmin
-) {
+/** A [CordaSecurityManager] that grants sandbox code a very limited set of permissions. */
+class RestrictiveSecurityManager(
+    private val permissionAdmin: PermissionAdmin,
+    private val conditionalPermissionAdmin: ConditionalPermissionAdmin
+) : CordaSecurityManager {
 
     companion object {
         // The admin permissions disallowed for sandboxed bundles.
@@ -36,7 +30,8 @@ class CordaSecurityManager @Activate constructor(
         // The standard filter for identifying sandbox bundles based on their location.
         private const val SANDBOX_BUNDLE_FILTER = "sandbox/*"
 
-        private val sandboxAdminPermInfo = PermissionInfo(AdminPermission::class.java.name, "*", SANDBOX_ADMIN_PERMISSIONS)
+        private val sandboxAdminPermInfo =
+            PermissionInfo(AdminPermission::class.java.name, "*", SANDBOX_ADMIN_PERMISSIONS)
         private val allPermInfo = PermissionInfo(AllPermission::class.java.name, "*", "*")
     }
 
@@ -52,7 +47,7 @@ class CordaSecurityManager @Activate constructor(
      *  Note that these permissions work in tandem with the OSGi hooks defined in the `sandbox` module. Those
      *  hooks provide additional security (e.g. by preventing a sandboxed bundles from seeing specific services)
      */
-    init {
+    override fun start() {
         grantConfigAdminPermissions(permissionAdmin)
         restrictSandboxBundlePermissions(conditionalPermissionAdmin)
     }
@@ -60,23 +55,26 @@ class CordaSecurityManager @Activate constructor(
     /** Grants all permissions to the [ConfigurationAdmin] service. */
     private fun grantConfigAdminPermissions(permissionAdmin: PermissionAdmin) {
         permissionAdmin.setPermissions(
-                FrameworkUtil.getBundle(ConfigurationAdmin::class.java).location,
-                arrayOf(allPermInfo))
+            FrameworkUtil.getBundle(ConfigurationAdmin::class.java).location,
+            arrayOf(allPermInfo)
+        )
     }
 
     /** Denies specific admin permissions to the bundles matching the [SANDBOX_BUNDLE_FILTER]. */
     private fun restrictSandboxBundlePermissions(conditionalPermissionAdmin: ConditionalPermissionAdmin) {
         val denyAdminPermissions = conditionalPermissionAdmin.newConditionalPermissionInfo(
-                null,
-                arrayOf(ConditionInfo(BundleLocationCondition::class.java.name, arrayOf(SANDBOX_BUNDLE_FILTER))),
-                arrayOf(sandboxAdminPermInfo),
-                DENY)
+            null,
+            arrayOf(ConditionInfo(BundleLocationCondition::class.java.name, arrayOf(SANDBOX_BUNDLE_FILTER))),
+            arrayOf(sandboxAdminPermInfo),
+            DENY
+        )
 
         val grantAllPermissions = conditionalPermissionAdmin.newConditionalPermissionInfo(
-                null,
-                null,
-                arrayOf(allPermInfo),
-                ALLOW)
+            null,
+            null,
+            arrayOf(allPermInfo),
+            ALLOW
+        )
 
         val condPermUpdate = conditionalPermissionAdmin.newConditionalPermissionUpdate()
         val condPerms = condPermUpdate.conditionalPermissionInfos
@@ -90,6 +88,3 @@ class CordaSecurityManager @Activate constructor(
             throw SecurityManagerException("Unable to commit updated bundle permissions.")
     }
 }
-
-/** Thrown if an exception occurs related to security management. */
-class SecurityManagerException(message: String, cause: Throwable? = null) : SecurityException(message, cause)

@@ -1,5 +1,6 @@
 package net.corda.securitymanager.osgi
 
+import net.corda.securitymanager.SecurityManagerService
 import net.corda.securitymanager.localpermissions.LocalPermissions
 import net.corda.securitymanager.osgiinvoker.OsgiInvoker
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
@@ -26,12 +27,15 @@ class BundlePermissionTests {
         private const val TEST_BUNDLE_LOCATION_PREFIX = "reference:"
 
         @InjectService(timeout = 1000)
-        lateinit var unsandboxedOsgiInvoker: OsgiInvoker
+        lateinit var securityManagerService: SecurityManagerService
 
-        lateinit var sandboxedOsgiInvoker: OsgiInvoker
+        @InjectService(timeout = 1000)
+        lateinit var unsandboxedOsgiInvoker: OsgiInvoker
 
         @InjectService(timeout = 1000)
         lateinit var unsandboxedLocalPermissions: LocalPermissions
+
+        lateinit var sandboxedOsgiInvoker: OsgiInvoker
 
         lateinit var sandboxedLocalPermisions: LocalPermissions
 
@@ -43,7 +47,10 @@ class BundlePermissionTests {
             sandboxedOsgiInvoker = retrieveServiceFromBundle(sandboxedOsgiInvokerBundle, OsgiInvoker::class.java)
 
             val sandboxedLocalPermissionsBundle = createSandboxedBundle(unsandboxedLocalPermissions::class.java)
-            sandboxedLocalPermisions = retrieveServiceFromBundle(sandboxedLocalPermissionsBundle, LocalPermissions::class.java)
+            sandboxedLocalPermisions =
+                retrieveServiceFromBundle(sandboxedLocalPermissionsBundle, LocalPermissions::class.java)
+
+            securityManagerService.start()
         }
 
         /** Returns a sandboxed [Bundle] installed from the same source as the bundle containing [classFromBundle].  */
@@ -70,9 +77,9 @@ class BundlePermissionTests {
         private fun <T> retrieveServiceFromBundle(bundle: Bundle, serviceInterface: Class<T>): T {
             val sandboxedBundleContext = bundle.bundleContext
             val sandboxedOsgiInvokerServiceReference = sandboxedBundleContext
-                    .getAllServiceReferences(serviceInterface.name, null)
-                    .firstOrNull { serviceReference -> serviceReference.bundle === bundle }
-                    ?: fail("Could not retrieve service for interface $serviceInterface.")
+                .getAllServiceReferences(serviceInterface.name, null)
+                .firstOrNull { serviceReference -> serviceReference.bundle === bundle }
+                ?: fail("Could not retrieve service for interface $serviceInterface.")
             return sandboxedBundleContext.getService(sandboxedOsgiInvokerServiceReference) as T
         }
     }
