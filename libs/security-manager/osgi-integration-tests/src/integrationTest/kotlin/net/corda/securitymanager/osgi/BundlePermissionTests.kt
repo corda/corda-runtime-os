@@ -85,14 +85,14 @@ class BundlePermissionTests {
     }
 
     @Test
-    fun `unsandboxed bundle does not have execute permissions`() {
+    fun `unsandboxed bundle has execute permissions`() {
         assertDoesNotThrow {
             unsandboxedOsgiInvoker.startBundle()
         }
     }
 
     @Test
-    fun `unsandboxed bundle does not have lifecycle permissions`() {
+    fun `unsandboxed bundle has lifecycle permissions`() {
         assertDoesNotThrow {
             unsandboxedOsgiInvoker.installBundle()
         }
@@ -120,7 +120,7 @@ class BundlePermissionTests {
     }
 
     @Test
-    fun `unsandboxed bundle does not have resolve permissions`() {
+    fun `unsandboxed bundle has resolve permissions`() {
         assertDoesNotThrow {
             unsandboxedOsgiInvoker.refreshBundles()
         }
