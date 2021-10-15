@@ -17,7 +17,7 @@ import kotlin.random.Random
 
 /** Tests the permissions of sandboxed bundles. */
 @ExtendWith(ServiceExtension::class)
-class BundlePermissionTests {
+class SandboxPermissionTests {
     companion object {
         private const val SANDBOX_SECURITY_DOMAIN_PREFIX = "sandbox/"
         private const val REFERENCE_PREFIX = "reference:"
@@ -57,69 +57,6 @@ class BundlePermissionTests {
             val serviceRef = bundle.registeredServices.firstOrNull { service -> service.bundle == bundle }
                 ?: fail("Could not retrieve service for interface $serviceInterface from bundle $bundle.")
             return bundle.bundleContext.getService(serviceRef) as T
-        }
-    }
-
-    @Test
-    fun `unsandboxed bundle has context permissions`() {
-        assertDoesNotThrow {
-            unsandboxedOsgiInvoker.getBundleContext()
-        }
-    }
-
-    @Test
-    fun `unsandboxed bundle has execute permissions`() {
-        assertDoesNotThrow {
-            unsandboxedOsgiInvoker.startBundle()
-        }
-    }
-
-    @Test
-    fun `unsandboxed bundle has lifecycle permissions`() {
-        assertDoesNotThrow {
-            unsandboxedOsgiInvoker.installBundle()
-        }
-    }
-
-    @Test
-    fun `unsandboxed bundle has listener permissions`() {
-        assertDoesNotThrow {
-            unsandboxedOsgiInvoker.addListener()
-        }
-    }
-
-    @Test
-    fun `unsandboxed bundle has class permissions`() {
-        assertDoesNotThrow {
-            unsandboxedOsgiInvoker.loadClass()
-        }
-    }
-
-    @Test
-    fun `unsandboxed bundle has metadata permissions`() {
-        assertDoesNotThrow {
-            unsandboxedOsgiInvoker.getLocation()
-        }
-    }
-
-    @Test
-    fun `unsandboxed bundle has resolve permissions`() {
-        assertDoesNotThrow {
-            unsandboxedOsgiInvoker.refreshBundles()
-        }
-    }
-
-    @Test
-    fun `unsandboxed bundle has adapt permissions`() {
-        assertDoesNotThrow {
-            unsandboxedOsgiInvoker.adaptBundle()
-        }
-    }
-
-    @Test
-    fun `unsandboxed bundle has service permissions`() {
-        assertDoesNotThrow {
-            unsandboxedOsgiInvoker.getService()
         }
     }
 
