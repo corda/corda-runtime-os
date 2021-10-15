@@ -11,7 +11,7 @@ Docker Compose configuration in the `deploy` folder. This sets up:
 - Single Kafka broker
 - Cluster DB (Postgres)
 - App DB (Postgres)
-- Kafdrop: UI for KafkaF
+- Kafdrop: UI for Kafka
 
 ### Start network:
 

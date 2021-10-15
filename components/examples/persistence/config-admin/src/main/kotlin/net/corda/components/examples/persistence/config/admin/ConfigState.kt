@@ -8,7 +8,7 @@ import javax.persistence.Id
 data class ConfigState(
     @Id
     @Column
-    val key: String,
+    val name: String,
     @Column
     val value: String,
 )
