@@ -44,10 +44,7 @@ class ConfigReader @Activate constructor(
             configurationReadService.registerForUpdates { changedKeys, config ->
                 logger.info("New configuration received for $changedKeys")
                 logger.info(config.entries.joinToString { "${it.key} = ${it.value.root().render()}" })
-                configurationReadService.stop()
             }
-            while (configurationReadService.isRunning) { Thread.sleep(1000) }
-            shutdownOSGiFramework()
         }
     }
 
