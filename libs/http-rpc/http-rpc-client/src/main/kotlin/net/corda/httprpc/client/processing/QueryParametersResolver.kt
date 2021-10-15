@@ -1,4 +1,4 @@
-package net.corda.httprpc.client.internal.processing
+package net.corda.httprpc.client.processing
 
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.tools.annotations.extensions.name

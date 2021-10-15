@@ -3,11 +3,11 @@ package net.corda.httprpc.client.impl.stream
 import net.corda.httprpc.client.auth.RequestContext
 import net.corda.httprpc.client.config.AuthenticationConfig
 import net.corda.httprpc.client.impl.remote.RemoteClient
-import net.corda.httprpc.client.internal.InMemoryPositionManager
-import net.corda.httprpc.client.internal.processing.endpointHttpVerb
-import net.corda.httprpc.client.internal.processing.parametersFrom
-import net.corda.httprpc.client.internal.processing.toWebRequest
-import net.corda.httprpc.client.internal.stream.TypeUtils
+import net.corda.httprpc.client.processing.endpointHttpVerb
+import net.corda.httprpc.client.processing.parametersFrom
+import net.corda.httprpc.client.processing.toWebRequest
+import net.corda.httprpc.client.stream.InMemoryPositionManager
+import net.corda.httprpc.client.stream.TypeUtils
 import net.corda.v5.base.stream.Cursor
 import net.corda.v5.base.stream.FiniteDurableCursor
 import net.corda.v5.base.stream.FiniteDurableCursorBuilder

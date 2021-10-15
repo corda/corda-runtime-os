@@ -3,9 +3,9 @@ package net.corda.httprpc.client.impl
 import net.corda.httprpc.client.config.EmptyAuthenticationConfig
 import net.corda.httprpc.client.impl.remote.RemoteUnirestClient
 import net.corda.httprpc.client.impl.stream.HttpRpcFiniteDurableCursorClientBuilderImpl
-import net.corda.httprpc.client.internal.processing.WebRequest
-import net.corda.httprpc.client.internal.processing.WebResponse
-import net.corda.httprpc.client.internal.processing.encodeParam
+import net.corda.httprpc.client.processing.WebRequest
+import net.corda.httprpc.client.processing.WebResponse
+import net.corda.httprpc.client.processing.encodeParam
 import net.corda.httprpc.test.CalendarRPCOps
 import net.corda.httprpc.test.CustomSerializationAPI
 import net.corda.httprpc.test.CustomString

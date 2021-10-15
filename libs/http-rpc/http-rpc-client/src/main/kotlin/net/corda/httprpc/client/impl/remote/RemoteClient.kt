@@ -15,9 +15,9 @@ import net.corda.httprpc.client.exceptions.InternalErrorException
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.httprpc.client.exceptions.PermissionException
 import net.corda.httprpc.client.exceptions.RequestErrorException
-import net.corda.httprpc.client.internal.objectMapper
-import net.corda.httprpc.client.internal.processing.WebRequest
-import net.corda.httprpc.client.internal.processing.WebResponse
+import net.corda.httprpc.client.processing.WebRequest
+import net.corda.httprpc.client.processing.WebResponse
+import net.corda.httprpc.client.serialization.objectMapper
 import net.corda.httprpc.tools.HttpVerb
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
@@ -33,13 +33,13 @@ import javax.net.ssl.SSLContext
  * after potentially deserializing.
  *
  */
-interface RemoteClient {
+internal interface RemoteClient {
     fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, responseType: Type, context: RequestContext): WebResponse<Any>
     fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, context: RequestContext): WebResponse<String>
     val baseAddress: String
 }
 
-class RemoteUnirestClient(override val baseAddress: String, private val enableSsl: Boolean = false) : RemoteClient {
+internal class RemoteUnirestClient(override val baseAddress: String, private val enableSsl: Boolean = false) : RemoteClient {
     internal companion object {
         private val log = contextLogger()
     }

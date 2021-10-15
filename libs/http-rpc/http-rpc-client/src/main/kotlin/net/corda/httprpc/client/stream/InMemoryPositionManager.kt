@@ -1,4 +1,4 @@
-package net.corda.httprpc.client.internal
+package net.corda.httprpc.client.stream
 
 import net.corda.v5.base.stream.PositionManager
 import java.util.concurrent.atomic.AtomicLong

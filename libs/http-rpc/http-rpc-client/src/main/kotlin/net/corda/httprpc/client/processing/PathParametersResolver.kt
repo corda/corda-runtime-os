@@ -1,4 +1,4 @@
-package net.corda.httprpc.client.internal.processing
+package net.corda.httprpc.client.processing
 
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.tools.annotations.extensions.name
@@ -11,7 +11,7 @@ internal fun Method.pathParametersFrom(allParameters: Array<out Any?>): Map<Stri
         .filter { it.first.annotations.any { annotation -> annotation is HttpRpcPathParameter } }
         .associate { it.first.getAnnotation(HttpRpcPathParameter::class.java).name(it.first) to it.second.toString().encodeParam() }
 
-fun String.replacePathParameters(pathParams: Map<String, String>): String {
+internal fun String.replacePathParameters(pathParams: Map<String, String>): String {
     var replacedString = this
     pathParams.forEach {
         replacedString = replacedString.replace(it.key.asPathParam, it.value)

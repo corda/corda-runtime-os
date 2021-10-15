@@ -9,9 +9,9 @@ import net.corda.httprpc.client.auth.RequestContext
 import net.corda.httprpc.client.config.AuthenticationConfig
 import net.corda.httprpc.client.impl.remote.RemoteClient
 import net.corda.httprpc.client.impl.stream.HttpRpcFiniteDurableCursorClientBuilderImpl
-import net.corda.httprpc.client.internal.processing.endpointHttpVerb
-import net.corda.httprpc.client.internal.processing.parametersFrom
-import net.corda.httprpc.client.internal.processing.toWebRequest
+import net.corda.httprpc.client.processing.endpointHttpVerb
+import net.corda.httprpc.client.processing.parametersFrom
+import net.corda.httprpc.client.processing.toWebRequest
 import net.corda.httprpc.tools.annotations.extensions.path
 import net.corda.httprpc.tools.staticExposedGetMethods
 import net.corda.v5.base.stream.returnsDurableCursorBuilder

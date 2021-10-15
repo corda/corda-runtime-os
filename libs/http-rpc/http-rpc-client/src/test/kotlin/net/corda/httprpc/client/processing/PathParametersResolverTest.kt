@@ -1,4 +1,4 @@
-package net.corda.httprpc.client.internal.processing
+package net.corda.httprpc.client.processing
 
 import net.corda.httprpc.test.TestHealthCheckAPI
 import org.junit.jupiter.api.Test

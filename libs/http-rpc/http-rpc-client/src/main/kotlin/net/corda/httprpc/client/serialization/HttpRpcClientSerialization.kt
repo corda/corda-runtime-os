@@ -1,4 +1,4 @@
-package net.corda.httprpc.client.internal
+package net.corda.httprpc.client.serialization
 
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonParser
@@ -17,7 +17,7 @@ import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
 
-val objectMapper = jacksonObjectMapper().apply {
+internal val objectMapper = jacksonObjectMapper().apply {
     val module = SimpleModule("Durable cursor related")
     module.addDeserializer(Cursor.PollResult.PositionedValue::class.java, PositionedValueDeserializer())
     module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)

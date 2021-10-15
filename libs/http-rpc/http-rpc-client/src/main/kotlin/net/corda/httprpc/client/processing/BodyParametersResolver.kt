@@ -1,9 +1,9 @@
-package net.corda.httprpc.client.internal.processing
+package net.corda.httprpc.client.processing
 
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
-import net.corda.httprpc.client.internal.objectMapper
+import net.corda.httprpc.client.serialization.objectMapper
 import net.corda.httprpc.tools.annotations.extensions.name
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
