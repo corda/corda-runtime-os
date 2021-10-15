@@ -18,6 +18,14 @@ configurations {
     integrationTestApi.extendsFrom testApi
     integrationTestCompileOnly.extendsFrom testCompileOnly
     integrationTestImplementation.extendsFrom testImplementation
+
+    all {
+        resolutionStrategy {
+            dependencySubstitution {
+                substitute module('de.javakaffee:kryo-serializers') with project(':libs:serialization:kryo-serializers')
+            }
+        }
+    }
 }
 
 dependencies {
