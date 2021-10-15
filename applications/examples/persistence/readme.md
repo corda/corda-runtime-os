@@ -18,7 +18,7 @@ Docker Compose configuration in the `deploy` folder. This sets up:
 In `applications/examples/persistence/deploy`:
 
 ```shell
-docker-compose up
+docker compose up
 ```
 
 ### Create Kafka topics:

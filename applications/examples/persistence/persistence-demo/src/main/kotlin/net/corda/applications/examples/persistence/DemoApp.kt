@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 @Component
-class DBDemoApp @Activate constructor(
+class DemoApp @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = Shutdown::class)
@@ -79,7 +79,7 @@ class DBDemoApp @Activate constructor(
 
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
-                coordinatorFactory.createCoordinator<DBDemoApp>(
+                coordinatorFactory.createCoordinator<DemoApp>(
                 ) { event: LifecycleEvent, _: LifecycleCoordinator ->
                     log.info("LifecycleEvent received: $event")
                     when (event) {
