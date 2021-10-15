@@ -5,6 +5,6 @@ interface CordaSecurityManager {
     /** Start enforcing the permissions associated with this [CordaSecurityManager]. */
     fun start()
 
-    /** Stop enforcing the permissions associated with this [CordaSecurityManager]. */
+    /** Perform any clean-up required before replacing this [CordaSecurityManager] with another. */
     fun stop()
 }

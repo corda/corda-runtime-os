@@ -21,11 +21,6 @@ class SecurityManagerServiceImpl @Activate constructor(
 ) : SecurityManagerService {
     companion object {
         private val log = contextLogger()
-
-        // A security policy granting all permissions.
-        val allPermissionsPolicy = object : Policy() {
-            override fun getPermissions(codesource: CodeSource) = Permissions().apply { add(AllPermission()) }
-        }
     }
 
     // The currently-running Corda security manager.
@@ -33,7 +28,7 @@ class SecurityManagerServiceImpl @Activate constructor(
 
     @Suppress("unused")
     override fun start(isDiscoveryMode: Boolean) {
-        if (securityManager != null) stop()
+        securityManager?.stop()
 
         securityManager = if (isDiscoveryMode) {
             log.info("Starting discovery Corda security manager. This is not secure in production.")
@@ -44,13 +39,5 @@ class SecurityManagerServiceImpl @Activate constructor(
         }
 
         securityManager?.start()
-    }
-
-    /** Stops the current Corda security manager, reverting to a security manager granting all permissions. */
-    private fun stop() {
-        securityManager?.stop()
-        securityManager = null
-        Policy.setPolicy(allPermissionsPolicy)
-        System.setSecurityManager(SecurityManager())
     }
 }
