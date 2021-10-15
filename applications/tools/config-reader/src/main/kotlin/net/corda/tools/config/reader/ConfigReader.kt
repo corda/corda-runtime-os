@@ -16,7 +16,7 @@ import picocli.CommandLine
 import java.io.File
 
 @Suppress("SpreadOperator")
-@Component(immediate = true)
+@Component
 class ConfigReader @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private var configurationReadService: ConfigurationReadService,
@@ -31,20 +31,22 @@ class ConfigReader @Activate constructor(
     }
 
     override fun startup(args: Array<String>) {
+        logger.info("Starting Config Reader")
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
         if (parameters.helpRequested) {
             CommandLine.usage(CliParameters(), System.out)
             shutdownOSGiFramework()
         } else {
+            configurationReadService.start()
             val conf = smartConfigFactory.create(ConfigFactory.parseFile(parameters.configurationFile))
             configurationReadService.bootstrapConfig(conf)
             configurationReadService.registerForUpdates { changedKeys, config ->
                 logger.info("New configuration received for $changedKeys")
-                logger.info("Full configuration: $config")
+                logger.info(config.entries.joinToString { "${it.key} = ${it.value.root().render()}" })
+                configurationReadService.stop()
             }
-            configurationReadService.start()
-            while (!configurationReadService.isRunning) { Thread.sleep(100) }
+            while (configurationReadService.isRunning) { Thread.sleep(1000) }
             shutdownOSGiFramework()
         }
     }
