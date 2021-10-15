@@ -4,4 +4,7 @@ package net.corda.securitymanager.internal
 interface CordaSecurityManager {
     /** Start enforcing the permissions associated with this [CordaSecurityManager]. */
     fun start()
+
+    /** Stop enforcing the permissions associated with this [CordaSecurityManager]. */
+    fun stop()
 }

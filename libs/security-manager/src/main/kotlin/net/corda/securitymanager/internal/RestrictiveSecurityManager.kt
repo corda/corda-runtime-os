@@ -8,6 +8,9 @@ import org.osgi.framework.AdminPermission.LIFECYCLE
 import org.osgi.framework.AdminPermission.RESOLVE
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.cm.ConfigurationAdmin
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import org.osgi.service.condpermadmin.BundleLocationCondition
 import org.osgi.service.condpermadmin.ConditionInfo
 import org.osgi.service.condpermadmin.ConditionalPermissionAdmin
@@ -18,8 +21,11 @@ import org.osgi.service.permissionadmin.PermissionInfo
 import java.security.AllPermission
 
 /** A [CordaSecurityManager] that grants sandbox code a very limited set of permissions. */
-class RestrictiveSecurityManager(
+@Component(service = [RestrictiveSecurityManager::class])
+class RestrictiveSecurityManager @Activate constructor(
+    @Reference
     private val permissionAdmin: PermissionAdmin,
+    @Reference
     private val conditionalPermissionAdmin: ConditionalPermissionAdmin
 ) : CordaSecurityManager {
 
@@ -50,6 +56,13 @@ class RestrictiveSecurityManager(
     override fun start() {
         grantConfigAdminPermissions(permissionAdmin)
         restrictSandboxBundlePermissions(conditionalPermissionAdmin)
+    }
+
+    /** Clears any permissions from the [ConditionalPermissionAdmin]. */
+    override fun stop() {
+        val condPermUpdate = conditionalPermissionAdmin.newConditionalPermissionUpdate()
+        condPermUpdate.conditionalPermissionInfos.clear()
+        if (!condPermUpdate.commit()) throw SecurityManagerException("Unable to commit updated bundle permissions.")
     }
 
     /** Grants all permissions to the [ConfigurationAdmin] service. */
@@ -84,7 +97,6 @@ class RestrictiveSecurityManager(
         condPerms.add(denyAdminPermissions)
         condPerms.add(grantAllPermissions)
 
-        if (!condPermUpdate.commit())
-            throw SecurityManagerException("Unable to commit updated bundle permissions.")
+        if (!condPermUpdate.commit()) throw SecurityManagerException("Unable to commit updated bundle permissions.")
     }
 }
