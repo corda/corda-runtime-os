@@ -2,6 +2,8 @@ package net.corda.applications.examples.persistence
 
 import com.typesafe.config.ConfigFactory
 import net.corda.components.examples.persistence.cluster.admin.RunClusterAdminEventSubscription
+import net.corda.components.examples.persistence.config.admin.ConfigAppSubscription
+import net.corda.components.examples.persistence.config.admin.ConfigState
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -11,6 +13,9 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.orm.DbEntityManagerConfiguration
+import net.corda.orm.DdlManage
+import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
@@ -32,6 +37,8 @@ class DemoApp @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = LiquibaseSchemaMigrator::class)
     private val schemaMigrator: LiquibaseSchemaMigrator,
+    @Reference(service = EntityManagerFactoryFactory::class)
+    private val entityManagerFactoryFactory: EntityManagerFactoryFactory
 ) : Application {
 
     companion object {
@@ -52,6 +59,7 @@ class DemoApp @Activate constructor(
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
             var clusterAdminEventSub: RunClusterAdminEventSubscription? = null
+            var configAdminEventSub: ConfigAppSubscription? = null
 
             val config = ConfigFactory.parseMap(
                 mapOf(
@@ -63,6 +71,11 @@ class DemoApp @Activate constructor(
                 parameters.dbUrl,
                 parameters.dbUser,
                 parameters.dbPass)
+            val entityManagerFactory = entityManagerFactoryFactory.create(
+                "cluster-config",
+                listOf(ConfigState::class.java),
+                DbEntityManagerConfiguration(dbSource, false, false, DdlManage.NONE),
+            )
 
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
@@ -80,10 +93,19 @@ class DemoApp @Activate constructor(
                                 schemaMigrator,
                                 consoleLogger,
                             )
+                            configAdminEventSub = ConfigAppSubscription(
+                                subscriptionFactory,
+                                config,
+                                1,
+                                entityManagerFactory
+                            )
+
                             clusterAdminEventSub?.start()
+                            configAdminEventSub?.start()
                         }
                         is StopEvent -> {
                             clusterAdminEventSub?.stop()
+                            configAdminEventSub?.stop()
                         }
                         else -> {
                             log.error("$event unexpected!")

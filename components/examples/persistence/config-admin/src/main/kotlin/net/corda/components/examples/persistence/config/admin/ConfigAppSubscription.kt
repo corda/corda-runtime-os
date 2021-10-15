@@ -6,18 +6,15 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.v5.base.util.contextLogger
-import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
-import java.sql.Connection
 import javax.persistence.EntityManagerFactory
 
 @Component
-class ConfigAppSubscription @Activate constructor(
+class ConfigAppSubscription(
     private val subscriptionFactory: SubscriptionFactory,
     private var config: Config,
     private val instanceId: Int,
-    private val dbConnection: Connection,
     private val entityManagerFactory: EntityManagerFactory,
     private val delayOnNext: Long = 0,
     ) : Lifecycle {
@@ -44,7 +41,7 @@ class ConfigAppSubscription @Activate constructor(
     override fun start() {
         if (!isRunning) {
             log.info("Creating durable subscription")
-            val processor = ConfigDurableProcessor(outputEventTopic, dbConnection, entityManagerFactory, log)
+            val processor = ConfigDurableProcessor(outputEventTopic, entityManagerFactory, log)
             subscription = subscriptionFactory.createDurableSubscription(
                 // config-event
                 SubscriptionConfig(groupName, inputTopic, instanceId),

@@ -5,11 +5,10 @@ import javax.persistence.Entity
 import javax.persistence.Id
 
 @Entity
-data class ClusterConfig(
+data class ConfigState(
     @Id
     @Column
     val key: String,
     @Column
-    val name: String,
-) {
-}
+    val value: String,
+)

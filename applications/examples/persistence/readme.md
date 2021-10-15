@@ -11,14 +11,14 @@ Docker Compose configuration in the `deploy` folder. This sets up:
 - Single Kafka broker
 - Cluster DB (Postgres)
 - App DB (Postgres)
-- Kafdrop: UI for Kafka
+- Kafdrop: UI for KafkaF
 
 ### Start network:
 
 In `applications/examples/persistence/deploy`:
 
 ```shell
-docker compose up
+docker-compose up
 ```
 
 ### Create Kafka topics:
@@ -62,4 +62,10 @@ gradle clean assemble
 
 ```shell
 java -jar persistence-demo-publisher/build/bin/corda-persistence-demo-publisher-5.0.0.0-SNAPSHOT.jar cluster-admin --kafka localhost:9093
+```
+
+### Config Admin Message
+
+```shell
+java -jar persistence-demo-publisher/build/bin/corda-persistence-demo-publisher-5.0.0.0-SNAPSHOT.jar config-admin --kafka localhost:9093
 ```

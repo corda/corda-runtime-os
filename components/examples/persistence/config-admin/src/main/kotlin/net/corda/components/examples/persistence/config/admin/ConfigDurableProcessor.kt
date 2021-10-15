@@ -2,25 +2,15 @@ package net.corda.components.examples.persistence.config.admin
 
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.orm.impl.InMemoryEntityManagerConfiguration
-import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import java.sql.Connection
 import javax.persistence.EntityManagerFactory
 
 class ConfigDurableProcessor(
     private val outputEventTopic: String,
-    private val dbConnection: Connection,
     private val entityManagerFactory: EntityManagerFactory,
     private val logger: Logger,
 ) :
     DurableProcessor<String, String> {
-
-    private companion object {
-        val log: Logger = contextLogger()
-        val consoleLogger: Logger = LoggerFactory.getLogger("Console")
-    }
 
     var counter = 1
 
@@ -41,10 +31,10 @@ class ConfigDurableProcessor(
             val key = event.key
             val eventRecord = event.value
 
-            val configRecord = ClusterConfig(key, eventRecord!!)
+            val configRecord = ConfigState(key, eventRecord!!)
             em.persist(configRecord)
 
-            log.info("Durable sub processing key/value  ${key}/${eventRecord}")
+            logger.info("Durable sub processing key/value  ${key}/${eventRecord}")
             // config-state
             outputRecords.add(Record(outputEventTopic, key, eventRecord))
             counter++
