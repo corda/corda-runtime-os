@@ -1,5 +1,7 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.lifecycle.domino.logic.ConfigurationAwareLeafTile
+
 /**
  * This interface represents a component that has knowledge about the identities that are hosted locally.
  *
