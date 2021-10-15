@@ -23,6 +23,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.atomic.AtomicBoolean
 
 class InternalTileTest {
     private val handler = argumentCaptor<LifecycleEventHandler>()
@@ -37,6 +38,18 @@ class InternalTileTest {
     private inner class Tile(
         override val children: Collection<DominoTile>,
     ) : InternalTile(factory)
+    private inner class TileWithResources(
+        override val children: Collection<DominoTile>,
+    ) : InternalTile(factory) {
+        var resourceCreated = false
+        override fun createResources() {
+            resourceCreated = true
+        }
+
+        fun createResource(resource: AutoCloseable) {
+            resources.keep(resource)
+        }
+    }
 
     @Nested
     inner class StartTileTests {
@@ -476,6 +489,59 @@ class InternalTileTest {
             val tile = Tile(children)
 
             tile.close()
+        }
+    }
+    @Nested
+    inner class WithResourcesTest {
+        @Test
+        fun `start will create the resources`() {
+            val children = listOf<DominoTile>(
+                mock {
+                    on { state } doReturn DominoTile.State.Started
+                    on { isRunning } doReturn true
+                },
+                mock {
+                    on { state } doReturn DominoTile.State.Started
+                    on { isRunning } doReturn true
+                },
+                mock {
+                    on { state } doReturn DominoTile.State.Started
+                    on { isRunning } doReturn true
+                },
+            )
+            val tile = TileWithResources(children)
+
+            tile.start()
+
+            assertThat(tile.resourceCreated).isTrue
+        }
+
+        @Test
+        fun `stop will close the resources`() {
+            val children = listOf<DominoTile>(
+                mock {
+                    on { state } doReturn DominoTile.State.Started
+                    on { isRunning } doReturn true
+                },
+                mock {
+                    on { state } doReturn DominoTile.State.Started
+                    on { isRunning } doReturn true
+                },
+                mock {
+                    on { state } doReturn DominoTile.State.Started
+                    on { isRunning } doReturn true
+                },
+            )
+            val tile = TileWithResources(children)
+            val closed = AtomicBoolean(false)
+            tile.start()
+            tile.createResource {
+                closed.set(true)
+            }
+
+            tile.stop()
+
+            assertThat(closed).isTrue
         }
     }
 }

@@ -5,6 +5,7 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.v5.base.util.contextLogger
 
 abstract class InternalTile(coordinatorFactory: LifecycleCoordinatorFactory) : DominoTile(coordinatorFactory) {
@@ -28,6 +29,18 @@ abstract class InternalTile(coordinatorFactory: LifecycleCoordinatorFactory) : D
         }
 
         startKidsIfNeeded()
+    }
+
+    protected val resources = ResourcesHolder()
+
+    /**
+     *
+     */
+    protected open fun createResources() {}
+
+    override fun started() {
+        createResources()
+        super.started()
     }
 
     override fun handleEvent(event: LifecycleEvent): Boolean {
@@ -70,6 +83,7 @@ abstract class InternalTile(coordinatorFactory: LifecycleCoordinatorFactory) : D
     }
 
     override fun stopTile(dueToError: Boolean) {
+        resources.close()
         children.forEach {
             if (it.state != State.StoppedDueToError) {
                 it.stop()

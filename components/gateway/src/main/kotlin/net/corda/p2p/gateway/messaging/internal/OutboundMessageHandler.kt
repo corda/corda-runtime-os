@@ -5,7 +5,7 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.InternalTileWithResources
+import net.corda.lifecycle.domino.logic.InternalTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -42,7 +42,7 @@ internal class OutboundMessageHandler(
 ) : EventLogProcessor<String, LinkOutMessage>,
     Lifecycle,
     HttpEventListener,
-    InternalTileWithResources(lifecycleCoordinatorFactory) {
+    InternalTile(lifecycleCoordinatorFactory) {
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
     }
