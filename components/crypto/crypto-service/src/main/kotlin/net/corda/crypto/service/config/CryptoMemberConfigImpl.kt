@@ -26,7 +26,8 @@ class CryptoMemberConfigImpl(
         }
     }
 
-    override val default: CryptoServiceConfig get() = getInstance(getConfig(DEFAULT_CATEGORY_KEY))
+    override val default: CryptoServiceConfig get() =
+        getInstance(getOptionalConfig(DEFAULT_CATEGORY_KEY) ?: CryptoConfigMap(emptyMap()))
 
     override fun getCategory(category: String): CryptoServiceConfig {
         val raw = getOptionalConfig(category)

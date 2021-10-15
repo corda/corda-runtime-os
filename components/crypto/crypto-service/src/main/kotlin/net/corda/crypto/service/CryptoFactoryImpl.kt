@@ -40,6 +40,7 @@ import org.slf4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CryptoFactory::class])
+@Suppress("LongParameterList")
 class CryptoFactoryImpl @Activate constructor(
     @Reference(service = MemberConfigReader::class)
     private val memberConfigReader: MemberConfigReader,
