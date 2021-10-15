@@ -3,7 +3,6 @@ package net.corda.securitymanager.osgi
 import net.corda.securitymanager.SecurityManagerService
 import net.corda.securitymanager.localpermissions.LocalPermissions
 import net.corda.securitymanager.osgiinvoker.OsgiInvoker
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -15,10 +14,6 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.net.URL
-import java.security.AllPermission
-import java.security.CodeSource
-import java.security.Permissions
-import java.security.Policy
 import kotlin.math.abs
 import kotlin.random.Random
 

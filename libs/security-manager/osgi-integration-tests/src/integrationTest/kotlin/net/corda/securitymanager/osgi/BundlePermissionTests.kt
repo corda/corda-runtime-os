@@ -3,7 +3,6 @@ package net.corda.securitymanager.osgi
 import net.corda.securitymanager.SecurityManagerService
 import net.corda.securitymanager.localpermissions.LocalPermissions
 import net.corda.securitymanager.osgiinvoker.OsgiInvoker
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.fail
