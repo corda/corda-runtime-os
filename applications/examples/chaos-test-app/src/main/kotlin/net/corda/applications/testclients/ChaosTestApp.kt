@@ -8,10 +8,10 @@ import net.corda.components.examples.config.reader.ConfigReader.Companion.MESSAG
 import net.corda.components.examples.config.reader.ConfigReceivedEvent
 import net.corda.components.examples.config.reader.MessagingConfigUpdateEvent
 import net.corda.components.examples.negatingdurable.RunNegatingDurableSub
+import net.corda.components.examples.durable.RunDurableSub
 import net.corda.components.examples.pubsub.RunPubSub
-// import net.corda.components.examples.stateevent.RunStateEventSub
-import net.corda.libs.configuration.read.factory.ConfigReadServiceFactory
-//import net.corda.libs.configuration.read.factory.ConfigReaderFactory
+import net.corda.components.examples.stateevent.RunStateEventSub
+import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -38,13 +38,13 @@ enum class LifeCycleState {
 }
 
 @Component
-class TestApp @Activate constructor(
+class ChaosTestApp @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = ConfigReadServiceFactory::class)
-    private var configReadServiceFactory: ConfigReadServiceFactory,
+    @Reference(service = ConfigReaderFactory::class)
+    private var configReaderFactory: ConfigReaderFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory
 ) : Application {
@@ -71,9 +71,10 @@ class TestApp @Activate constructor(
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
             // All are LifeCycle objects
-            var negatingDurableSub: RunNegatingDurableSub? = null
+            var durableSub: RunDurableSub? = null
+            //var negatingDurableSub: RunNegatingDurableSub? = null
             var pubsubSub: RunPubSub? = null
-            //var stateEventSub: RunStateEventSub? = null
+            var stateEventSub: RunStateEventSub? = null
             var configReader: ConfigReader? = null
 
             val instanceId = parameters.instanceId.toInt()
@@ -82,7 +83,7 @@ class TestApp @Activate constructor(
             var state: LifeCycleState = LifeCycleState.UNINITIALIZED
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
-                coordinatorFactory.createCoordinator<TestApp>() { event: LifecycleEvent, _: LifecycleCoordinator ->
+                coordinatorFactory.createCoordinator<ChaosTestApp>() { event: LifecycleEvent, _: LifecycleCoordinator ->
                     log.info("LifecycleEvent received: $event")
                     when (event) {
                         is StartEvent -> {
@@ -94,7 +95,9 @@ class TestApp @Activate constructor(
                             if (state == LifeCycleState.STARTINGCONFIG) {
                                 state = LifeCycleState.STARTINGMESSAGING
                                 val config = bootstrapConfig.withFallback(event.currentConfigurationSnapshot[MESSAGING_CONFIG]!!)
-                                if( parameters.clientType == "NegatingDurable" ) {
+
+                                /*
+                                //if( parameters.clientType == "NegatingDurable" ) {
                                     println("Running NegatingDurable")
                                     negatingDurableSub =
                                         RunNegatingDurableSub(
@@ -104,7 +107,21 @@ class TestApp @Activate constructor(
                                             parameters.durableKillProcessOnRecord.toInt(),
                                             parameters.durableProcessorDelay.toLong()
                                         )
+                                negatingDurableSub?.start()
+                                //}
+                                 */
+                                if( parameters.clientType == "Durable") {
+                                    durableSub =
+                                        RunDurableSub(
+                                            subscriptionFactory,
+                                            config,
+                                            instanceId,
+                                            parameters.durableKillProcessOnRecord.toInt(),
+                                            parameters.durableProcessorDelay.toLong()
+                                        )
+                                    durableSub?.start()
                                 }
+
                                 /*
                                 stateEventSub = RunStateEventSub(
                                     instanceId,
@@ -113,29 +130,32 @@ class TestApp @Activate constructor(
                                     parameters.stateEventKillProcessOnRecord.toInt(),
                                     parameters.stateEventProcessorDelay.toLong()
                                 )
+                                stateEventSub?.start()
+
                                  */
+
                                 if(parameters.clientType == "Sub") {
                                     println("Running RunPubSub")
                                     pubsubSub = RunPubSub(subscriptionFactory, config)
+                                    pubsubSub?.start()
                                 }
-                                negatingDurableSub?.start()
-                                // stateEventSub?.start()
-                                pubsubSub?.start()
                                 consoleLogger.info("Received config from kafka, started subscriptions")
                             }
                         }
                         is MessagingConfigUpdateEvent -> {
                             state = LifeCycleState.REINITMESSAGING
                             val config = bootstrapConfig.withFallback(event.currentConfigurationSnapshot[MESSAGING_CONFIG]!!)
-                            //stateEventSub?.reStart(config)
+                            stateEventSub?.reStart(config)
                             pubsubSub?.reStart(config)
-                            negatingDurableSub?.reStart(config)
+                            //negatingDurableSub?.reStart(config)
+                            durableSub?.reStart(config)
                             consoleLogger.info("Received config update from kafka, restarted subscriptions")
                         }
                         is StopEvent -> {
                             configReader?.stop()
-                            negatingDurableSub?.stop()
-                            //stateEventSub?.stop()
+                            //negatingDurableSub?.stop()
+                            durableSub?.stop()
+                            stateEventSub?.stop()
                             pubsubSub?.stop()
                             shutdown()
                         }
@@ -144,7 +164,7 @@ class TestApp @Activate constructor(
                         }
                     }
                 }
-            configReader = ConfigReader(lifeCycleCoordinator!!, configReadServiceFactory)
+            configReader = ConfigReader(lifeCycleCoordinator!!, configReaderFactory)
 
             log.info("Starting life cycle coordinator")
             lifeCycleCoordinator!!.start()
@@ -229,9 +249,10 @@ class CliParameters {
 
     @CommandLine.Option(
         names = ["--clientType"],
-        description = ["Specify which client we want, currently the choice is one of {NegatingDurable,Sub}"]
+        description = ["Specify list of clients we want to run, currently the choice is  {NegatingDurable,Sub}"]
     )
-    var clientType: String = "0"
+    // var clientType = HashSet<String>()
+    var clientType = "0"
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false
