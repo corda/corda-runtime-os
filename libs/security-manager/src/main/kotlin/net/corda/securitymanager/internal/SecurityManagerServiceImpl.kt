@@ -33,7 +33,7 @@ class SecurityManagerServiceImpl @Activate constructor(
 
     @Suppress("unused")
     override fun start(isDiscoveryMode: Boolean) {
-        securityManager?.stop()
+        if (securityManager != null) stop()
 
         securityManager = if (isDiscoveryMode) {
             log.info("Starting discovery Corda security manager. This is not secure in production.")
