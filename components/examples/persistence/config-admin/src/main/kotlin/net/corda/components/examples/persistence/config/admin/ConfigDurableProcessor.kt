@@ -12,8 +12,6 @@ class ConfigDurableProcessor(
 ) :
     DurableProcessor<String, String> {
 
-    var counter = 1
-
     override val keyClass: Class<String>
         get() = String::class.java
     override val valueClass: Class<String>
@@ -37,7 +35,6 @@ class ConfigDurableProcessor(
             logger.info("Durable sub processing key/value  ${key}/${eventRecord}")
             // config-state
             outputRecords.add(Record(outputEventTopic, key, eventRecord))
-            counter++
         }
 
         em.transaction.commit()
