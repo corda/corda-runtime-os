@@ -7,13 +7,13 @@ description 'Config Admin Component'
 
 dependencies {
     implementation "net.corda:corda-base"
-    api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     compileOnly "org.osgi:osgi.annotation"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    api "javax.persistence:javax.persistence-api"
+    compileOnly "javax.persistence:javax.persistence-api"
 
     implementation "info.picocli:picocli:$picocliVersion"
 
@@ -24,4 +24,10 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
 
+}
+
+tasks.named('jar', Jar) {
+    bnd '''\
+DynamicImport-Package: org.hibernate.proxy
+'''
 }
