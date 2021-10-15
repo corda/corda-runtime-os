@@ -5,10 +5,6 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.security.AllPermission
-import java.security.CodeSource
-import java.security.Permissions
-import java.security.Policy
 
 /** An implementation of [SecurityManagerService]. */
 @Suppress("unused")
