@@ -11,17 +11,14 @@ class PublicKeySerializationTests {
         // Generate new key for testing
         val publicKey = KeyPairGenerator.getInstance("RSA").genKeyPair().public
 
-        // Setup PublicKeySerializer with mock CipherSchemeMetadata
-        val cipherSchemeMetadata: CipherSchemeMetadata = org.mockito.kotlin.mock<CipherSchemeMetadata>().also {
-            whenever(it.decodePublicKey(eq(publicKey.encoded))).thenReturn(publicKey)
-        }
-        val publicKeySerializer = PublicKeySerializer(cipherSchemeMetadata)
+        val publicKeySerializer = PublicKeySerializer()
 
-        // Build serialization factory
-        val serializerFactory = SerializerFactoryBuilder.build(AllWhitelist)
-        serializerFactory.register(publicKeySerializer, true)
+        // Convert to proxy object
+        val proxy = publicKeySerializer.toProxy(publicKey)
 
-        // Run public key through serialization/deserialization and compare
-        ReusableSerialiseDeserializeAssert.serializeDeserializeAssert(publicKey, serializerFactory)
+        // Convert back to public key
+        val keyAfterConversion = publicKeySerializer.fromProxy(proxy)
+
+        assertEquals(publicKey, keyAfterConversion)
     }
 }
