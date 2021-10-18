@@ -14,6 +14,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -125,7 +126,8 @@ abstract class DominoTile(
         }
     }
 
-    protected open fun handleEvent(event: LifecycleEvent): Boolean {
+    @VisibleForTesting
+    internal open fun handleEvent(event: LifecycleEvent): Boolean {
         return when (event) {
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
@@ -202,7 +204,7 @@ abstract class DominoTile(
         }
     }
 
-    open fun startTile() {
+    internal open fun startTile() {
         if (registrations == null) {
             registrations = children.map {
                 it.name
@@ -234,7 +236,7 @@ abstract class DominoTile(
         }
     }
 
-    open fun stopTile(dueToError: Boolean) {
+    internal open fun stopTile(dueToError: Boolean) {
         resources.close()
         children.forEach {
             if (it.state != State.StoppedDueToError) {
