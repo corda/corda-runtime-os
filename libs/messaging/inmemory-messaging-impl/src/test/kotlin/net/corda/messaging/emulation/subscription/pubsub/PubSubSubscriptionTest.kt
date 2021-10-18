@@ -31,7 +31,7 @@ class PubSubSubscriptionTest {
         on { createConsumption(any()) } doReturn consumeLifeCycle
     }
 
-    private val pubSubSubscription = PubSubSubscription(config, processor, executor, topicService)
+    private val pubSubSubscription = PubSubSubscription(config, processor, executor, topicService, null)
 
     @Test
     fun `isRunning return false if was not started`() {
@@ -109,7 +109,7 @@ class PubSubSubscriptionTest {
 
     @Test
     fun `processRecords send to processor in no executor`() {
-        val subscription = PubSubSubscription(config, processor, null, topicService)
+        val subscription = PubSubSubscription(config, processor, null, topicService, null)
         val record = Record<String, Number>("topic", "key6", 3)
         val records = listOf(
             RecordMetadata(
@@ -126,7 +126,7 @@ class PubSubSubscriptionTest {
 
     @Test
     fun `processRecords ignore invalid keys and values`() {
-        val subscription = PubSubSubscription(config, processor, null, topicService)
+        val subscription = PubSubSubscription(config, processor, null, topicService, null)
         val record1 = Record("topic", "key6", "3")
         val record2 = Record<Int, Number>("topic", 4, 4)
         val record3 = Record<String, Number>("topic", "key6", null)

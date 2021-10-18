@@ -109,7 +109,8 @@ class DeliveryTrackerTest {
                 any(),
                 any(),
                 any(),
-                any()
+                any(),
+                anyOrNull()
             ))
             .thenReturn(mockSubscription)
 
@@ -128,7 +129,8 @@ class DeliveryTrackerTest {
                 anyOrNull(),
                 processorCaptor.capture(),
                 anyOrNull(),
-                listenerCaptor.capture()
+                listenerCaptor.capture(),
+                anyOrNull()
             )
         return Triple(tracker, processorCaptor.firstValue , listenerCaptor.firstValue)
     }

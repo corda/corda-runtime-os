@@ -23,6 +23,7 @@ class EventLogSubscriptionTest {
         processor = mock(),
         partitionAssignmentListener = null,
         topicService = topic,
+        null
     )
 
     @Test

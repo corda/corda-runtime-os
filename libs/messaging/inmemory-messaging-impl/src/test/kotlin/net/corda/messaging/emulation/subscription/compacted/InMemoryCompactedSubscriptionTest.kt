@@ -40,7 +40,8 @@ class InMemoryCompactedSubscriptionTest {
     private val subscription = InMemoryCompactedSubscription(
         subscriptionConfig,
         processor,
-        topic
+        topic,
+        null
     )
 
     @Test
@@ -192,7 +193,8 @@ class InMemoryCompactedSubscriptionTest {
         val subscription = InMemoryCompactedSubscription(
             subscriptionConfig,
             processor,
-            topic
+            topic,
+            null
         )
         subscription.start()
 

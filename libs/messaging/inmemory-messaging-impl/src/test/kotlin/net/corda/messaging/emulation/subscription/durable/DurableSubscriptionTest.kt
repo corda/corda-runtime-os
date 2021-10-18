@@ -34,7 +34,7 @@ class DurableSubscriptionTest {
     private val topicService = mock<TopicService> {
         on { createConsumption(any()) } doReturn runningConsumption
     }
-    private val subscription = DurableSubscription(subscriptionConfig, processor, null, topicService)
+    private val subscription = DurableSubscription(subscriptionConfig, processor, null, topicService, null)
 
     @Test
     fun `first start will start a consumption`() {
