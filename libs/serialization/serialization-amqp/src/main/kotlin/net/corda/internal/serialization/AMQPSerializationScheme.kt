@@ -41,7 +41,6 @@ import net.corda.utilities.toSynchronised
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.ByteSequence
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.serialization.ClassWhitelist
 import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
