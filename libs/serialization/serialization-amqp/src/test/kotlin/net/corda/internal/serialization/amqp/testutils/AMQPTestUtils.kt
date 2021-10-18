@@ -1,7 +1,7 @@
 package net.corda.internal.serialization.amqp.testutils
 
 import net.corda.internal.serialization.AllWhitelist
-import net.corda.internal.serialization.EmptyWhitelist
+import net.corda.internal.serialization.TestMutableWhiteList
 import net.corda.internal.serialization.amqp.AMQPSerializer
 import net.corda.internal.serialization.amqp.BytesAndSchemas
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
@@ -64,7 +64,7 @@ fun testDefaultFactoryWithWhitelist(
     descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
         DefaultDescriptorBasedSerializerRegistry()
 ) =
-    SerializerFactoryBuilder.build(EmptyWhitelist, descriptorBasedSerializerRegistry)
+    SerializerFactoryBuilder.build(TestMutableWhiteList(), descriptorBasedSerializerRegistry)
 
 class TestSerializationOutput(
     private val verbose: Boolean,

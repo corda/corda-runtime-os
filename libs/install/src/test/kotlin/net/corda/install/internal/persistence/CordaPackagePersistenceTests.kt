@@ -9,6 +9,7 @@ import net.corda.packaging.util.UncloseableInputStream
 import net.corda.packaging.util.ZipTweaker
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -45,7 +46,7 @@ class CordaPackagePersistenceTests {
     private lateinit var flowsCpk : CPK
     private lateinit var workflowCpk : CPK
     private lateinit var contractCpk : CPK
-    private lateinit var cordaPackagePersistence : CordaPackagePersistence
+    private lateinit var cordaPackagePersistence : CordaPackageFileBasedPersistenceImpl
 
     @BeforeEach
     fun setup(@TempDir junitTestDir : Path) {
@@ -58,6 +59,14 @@ class CordaPackagePersistenceTests {
         testCpbLocation = junitTestDir.resolve("test.cpb")
         configurationAdmin = createMockConfigurationAdmin(baseDirectory = junitTestDir.resolve("baseDirectory").toString())
         cordaPackagePersistence = CordaPackageFileBasedPersistenceImpl(configurationAdmin, emptyList(), emptyList())
+    }
+
+    @AfterEach
+    fun teardown() {
+        cordaPackagePersistence.close()
+        flowsCpk.close()
+        workflowCpk.close()
+        contractCpk.close()
     }
 
     private fun pathOf(propertyName: String): Path {
@@ -77,7 +86,9 @@ class CordaPackagePersistenceTests {
         assertEquals(loadedCpk.metadata, cpkById?.metadata)
 
         val cpkRetrievedByHash = cordaPackagePersistence.get(workflowCpk.metadata.hash)
-        assertEquals(loadedCpk, cpkRetrievedByHash)
+        assertNotNull(cpkRetrievedByHash)
+        assertEquals(loadedCpk.metadata.id, cpkRetrievedByHash!!.metadata.id)
+        assertEquals(loadedCpk.metadata.hash, cpkRetrievedByHash.metadata.hash)
     }
 
     @Test
@@ -121,9 +132,11 @@ class CordaPackagePersistenceTests {
     fun `The CPK file is persisted without altering it`() {
         val md = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
         cordaPackagePersistence.putCpk(DigestInputStream(Files.newInputStream(workflowCpkLocation), md))
-        val cpkPersistence2 = CordaPackageFileBasedPersistenceImpl(configurationAdmin, emptyList(), emptyList())
-        val cpkRetrievedByHash = cpkPersistence2.get(SecureHash(DigestAlgorithmName.SHA2_256.name, md.digest()))
-        assertNotNull(cpkRetrievedByHash)
+        cordaPackagePersistence.close()
+        CordaPackageFileBasedPersistenceImpl(configurationAdmin, emptyList(), emptyList()).use { cpkPersistence2 ->
+            val cpkRetrievedByHash = cpkPersistence2.get(SecureHash(DigestAlgorithmName.SHA2_256.name, md.digest()))
+            assertNotNull(cpkRetrievedByHash)
+        }
     }
 
     @Test

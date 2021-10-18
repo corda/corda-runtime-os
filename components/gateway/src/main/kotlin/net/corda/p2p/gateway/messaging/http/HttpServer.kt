@@ -3,7 +3,6 @@ package net.corda.p2p.gateway.messaging.http
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelInitializer
-import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
@@ -11,13 +10,11 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.timeout.IdleStateHandler
 import net.corda.lifecycle.Lifecycle
-import net.corda.p2p.gateway.messaging.SslConfiguration
-import org.slf4j.LoggerFactory
-import java.lang.IllegalStateException
-import java.net.BindException
+import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.v5.base.util.contextLogger
 import java.net.SocketAddress
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.KeyManagerFactory
 import kotlin.concurrent.withLock
@@ -32,17 +29,15 @@ import kotlin.concurrent.withLock
  * responsible for validating these messages, only the request headers. Once a request is checks out, its body is sent upstream
  * and a response is sent back to the client. The response body is empty unless it follows a session handshake request,
  * in which case the body will contain additional information.
- *
- * @param host [String] value representing a host name or IP address used when binding the server
- * @param port port number used when binding the server
- * @param sslConfig the configuration to be used for the one-way TLS handshake
  */
-class HttpServer(private val host: String,
-                 private val port: Int,
-                 private val sslConfig: SslConfiguration) : Lifecycle, HttpEventListener {
+class HttpServer(
+    private val eventListener: HttpEventListener,
+    private val configuration: GatewayConfiguration,
+) : Lifecycle,
+    HttpEventListener {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(HttpServer::class.java)
+        private val logger = contextLogger()
 
         /**
          * Default number of thread to use for the worker group
@@ -55,70 +50,9 @@ class HttpServer(private val host: String,
         private const val SERVER_IDLE_TIME_SECONDS = 5
     }
 
-    private val lock = ReentrantLock()
-    private var bossGroup: EventLoopGroup? = null
-    private var workerGroup: EventLoopGroup? = null
-    private var serverChannel: Channel? = null
     private val clientChannels = ConcurrentHashMap<SocketAddress, Channel>()
-
-    private var started = false
-    override val isRunning: Boolean
-        get() = started
-
-    private val eventListeners = CopyOnWriteArrayList<HttpEventListener>()
-
-    /**
-     * @throws BindException if the server cannot bind to the address provided in the constructor
-     */
-    override fun start() {
-        lock.withLock {
-            logger.info("Starting HTTP Server")
-            bossGroup = NioEventLoopGroup(1)
-            workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS)
-
-            val server = ServerBootstrap()
-            server.group(bossGroup, workerGroup).channel(NioServerSocketChannel::class.java)
-                .childHandler(ServerChannelInitializer(this))
-            logger.info("Trying to bind to $host:$port")
-            val channelFuture = server.bind(host, port).sync()
-            logger.info("Listening on port $port")
-            serverChannel = channelFuture.channel()
-            started = true
-        }
-    }
-
-    override fun stop() {
-        lock.withLock {
-            try {
-                logger.info("Stopping HTTP server")
-                serverChannel?.close()
-                serverChannel = null
-
-                workerGroup?.shutdownGracefully()
-                workerGroup?.terminationFuture()?.sync()
-
-                bossGroup?.shutdownGracefully()
-                bossGroup?.terminationFuture()?.sync()
-
-                workerGroup = null
-                bossGroup = null
-            } finally {
-                started = false
-                logger.info("HTTP server stopped")
-            }
-        }
-    }
-
-    /**
-     * Adds an [HttpEventListener] which upstream services can provide to receive updates on important events.
-     */
-    fun addListener(eventListener: HttpEventListener) {
-        eventListeners.add(eventListener)
-    }
-
-    fun removeListener(eventListener: HttpEventListener) {
-        eventListeners.remove(eventListener)
-    }
+    private val lock = ReentrantLock()
+    private val shutdownSequence = ConcurrentLinkedDeque<()->Unit>()
 
     /**
      * Writes the given message to the channel corresponding to the recipient address. This method should be called
@@ -143,34 +77,96 @@ class HttpServer(private val host: String,
 
     override fun onOpen(event: HttpConnectionEvent) {
         clientChannels[event.channel.remoteAddress()] = event.channel
-        eventListeners.forEach { it.onOpen(event) }
+        eventListener.onOpen(event)
     }
 
     override fun onClose(event: HttpConnectionEvent) {
         clientChannels.remove(event.channel.remoteAddress())
-        eventListeners.forEach { it.onClose(event) }
+        eventListener.onClose(event)
     }
 
     override fun onMessage(message: HttpMessage) {
-        eventListeners.forEach { it.onMessage(message) }
+        eventListener.onMessage(message)
     }
 
-    private class ServerChannelInitializer(private val parent: HttpServer) : ChannelInitializer<SocketChannel>() {
+    private inner class ServerChannelInitializer : ChannelInitializer<SocketChannel>() {
 
         private val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
 
         init {
-            parent.sslConfig.run {
+            configuration.sslConfig.run {
                 keyManagerFactory.init(this.keyStore, this.keyStorePassword.toCharArray())
             }
         }
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createServerSslHandler(parent.sslConfig.keyStore, keyManagerFactory))
+            pipeline.addLast("sslHandler", createServerSslHandler(configuration.sslConfig.keyStore, keyManagerFactory))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
-            pipeline.addLast(HttpChannelHandler(parent, logger))
+            pipeline.addLast(HttpChannelHandler(this@HttpServer, logger))
+        }
+    }
+
+    override val isRunning: Boolean
+        get() {
+            lock.withLock {
+                return shutdownSequence.isNotEmpty()
+            }
+        }
+
+    override fun stop() {
+        lock.withLock {
+            shutdownSequence.forEach {
+                @Suppress("TooGenericExceptionCaught")
+                try {
+                    it.invoke()
+                } catch (e: Throwable) {
+                    logger.warn("Could not stop HTTP server", e)
+                }
+            }
+
+            shutdownSequence.clear()
+        }
+    }
+
+    override fun start() {
+        lock.withLock {
+            if (shutdownSequence.isEmpty()) {
+                logger.info("Starting HTTP Server")
+                val bossGroup = NioEventLoopGroup(1).also {
+                    shutdownSequence.addFirst {
+                        it.shutdownGracefully()
+                        it.terminationFuture().sync()
+                    }
+                }
+                val workerGroup = NioEventLoopGroup(NUM_SERVER_THREADS).also {
+                    shutdownSequence.addFirst {
+                        it.shutdownGracefully()
+                        it.terminationFuture().sync()
+                    }
+                }
+
+                val server = ServerBootstrap()
+                server.group(bossGroup, workerGroup).channel(NioServerSocketChannel::class.java)
+                    .childHandler(ServerChannelInitializer())
+                val host = configuration.hostAddress
+                val port = configuration.hostPort
+                logger.info("Trying to bind to $host:$port")
+                val channelFuture = server.bind(host, port).sync()
+                logger.info("Listening on port $port")
+                channelFuture.channel().also { serverChannel ->
+                    shutdownSequence.addFirst {
+                        if (serverChannel.isOpen) {
+                            serverChannel.close().sync()
+                        }
+                    }
+                }
+                shutdownSequence.addFirst {
+                    clientChannels.clear()
+                }
+                logger.info("HTTP Server started")
+            }
         }
     }
 }
