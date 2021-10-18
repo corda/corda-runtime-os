@@ -2,7 +2,7 @@ package net.corda.lifecycle.domino.logic.util
 
 import com.typesafe.config.ConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.LeafTile
+import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -14,7 +14,7 @@ class PublisherWithDominoLogic(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val publisherId: String,
 ) :
-    LeafTile(coordinatorFactory) {
+    DominoTile(coordinatorFactory) {
 
     @Volatile
     private var publisher: Publisher? = null
@@ -28,8 +28,6 @@ class PublisherWithDominoLogic(
             }
             it.start()
         }
-
-        started()
     }
 
     fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {

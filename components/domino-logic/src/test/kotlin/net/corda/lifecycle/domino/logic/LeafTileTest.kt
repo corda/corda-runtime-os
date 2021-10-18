@@ -30,7 +30,7 @@ class LeafTileTest {
     @Test
     fun `startTile called createResource`() {
         var createResourceCalled = 0
-        val tile = object : LeafTile(factory) {
+        val tile = object : DominoTile(factory) {
             override fun createResources() {
                 createResourceCalled ++
             }
@@ -43,7 +43,7 @@ class LeafTileTest {
 
     @Test
     fun `startTile will set error if created resource failed`() {
-        val tile = object : LeafTile(factory) {
+        val tile = object : DominoTile(factory) {
             override fun createResources() {
                 throw IOException("")
             }
@@ -57,7 +57,7 @@ class LeafTileTest {
     @Test
     fun `stopTile will close all the resources`() {
         val actions = mutableListOf<Int>()
-        val tile = object : LeafTile(factory) {
+        val tile = object : DominoTile(factory) {
             override fun createResources() {
                 resources.keep {
                     actions.add(1)
@@ -84,7 +84,7 @@ class LeafTileTest {
     @Test
     fun `stopTile will ignore error during stop`() {
         val actions = mutableListOf<Int>()
-        val tile = object : LeafTile(factory) {
+        val tile = object : DominoTile(factory) {
             override fun createResources() {
                 resources.keep {
                     actions.add(1)
@@ -111,7 +111,7 @@ class LeafTileTest {
     @Test
     fun `stopTile will not run the same actions again`() {
         val actions = mutableListOf<Int>()
-        val tile = object : LeafTile(factory) {
+        val tile = object : DominoTile(factory) {
             override fun createResources() {
                 resources.keep {
                     actions.add(1)
@@ -133,7 +133,7 @@ class LeafTileTest {
 
     @Test
     fun `handleEvent can handle unknown event`() {
-        val tile = object : LeafTile(factory) {
+        val tile = object : DominoTile(factory) {
             override fun createResources() {
             }
         }

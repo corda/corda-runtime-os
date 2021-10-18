@@ -1,7 +1,7 @@
 package net.corda.p2p.gateway.messaging.session
 
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.LeafTile
+import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -14,7 +14,7 @@ class SessionPartitionMapperImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
 ) : SessionPartitionMapper,
-    LeafTile(
+    DominoTile(
         lifecycleCoordinatorFactory
     ) {
     companion object {

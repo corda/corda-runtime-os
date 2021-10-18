@@ -4,7 +4,6 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.InternalTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -37,7 +36,7 @@ internal class InboundMessageHandler(
     subscriptionFactory: SubscriptionFactory,
 ) :
     HttpEventListener,
-    InternalTile(lifecycleCoordinatorFactory) {
+    DominoTile(lifecycleCoordinatorFactory) {
 
     companion object {
         private val logger = contextLogger()

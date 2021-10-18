@@ -13,7 +13,7 @@ abstract class ConfigurationAwareTile<C>(
     private val key: String,
     private val configFactory: (Config) -> C
 ) :
-    InternalTile(coordinatorFactory) {
+    DominoTile(coordinatorFactory) {
 
     companion object {
         private val logger = contextLogger()

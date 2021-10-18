@@ -37,10 +37,10 @@ class InternalTileTest {
     }
     private inner class Tile(
         override val children: Collection<DominoTile>,
-    ) : InternalTile(factory)
+    ) : DominoTile(factory)
     private inner class TileWithResources(
         override val children: Collection<DominoTile>,
-    ) : InternalTile(factory) {
+    ) : DominoTile(factory) {
         var resourceCreated = false
         override fun createResources() {
             resourceCreated = true

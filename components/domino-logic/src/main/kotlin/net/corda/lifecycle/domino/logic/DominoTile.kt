@@ -9,8 +9,11 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -35,7 +38,9 @@ abstract class DominoTile(
         StoppedDueToError,
         StoppedByParent
     }
-    val name = LifecycleCoordinatorName(
+    // This needs to be open so that `startTile will register to follow all the tiles on the first run` and `startTile will not register to
+    // follow any tile for the second time` pass (as they set this variable). This should be fixed (maybe mockito-inline fixes this).
+    open val name = LifecycleCoordinatorName(
         javaClass.simpleName,
         instancesIndex.compute(javaClass.simpleName) { _, last ->
             if (last == null) {
@@ -80,6 +85,10 @@ abstract class DominoTile(
     }
 
     protected val coordinator = coordinatorFactory.createCoordinator(name, EventHandler())
+    protected val resources = ResourcesHolder()
+    open val children: Collection<DominoTile> = emptySet()
+    @Volatile
+    private var registrations: Collection<RegistrationHandle>? = null
 
     private val currentState = AtomicReference(State.Created)
 
@@ -92,7 +101,14 @@ abstract class DominoTile(
         get() = state == State.Started
 
     protected open fun started() {
-        updateState(State.Started)
+        @Suppress("TooGenericExceptionCaught")
+        try {
+            resources.close()
+            createResources()
+            updateState(State.Started)
+        } catch (e: Throwable) {
+            gotError(e)
+        }
     }
     private fun updateState(newState: State) {
         val oldState = currentState.getAndSet(newState)
@@ -109,7 +125,26 @@ abstract class DominoTile(
         }
     }
 
-    open fun handleEvent(event: LifecycleEvent): Boolean = false
+    protected open fun handleEvent(event: LifecycleEvent): Boolean {
+        return when (event) {
+            is RegistrationStatusChangeEvent -> {
+                if (event.status == LifecycleStatus.UP) {
+                    startKidsIfNeeded()
+                } else {
+                    val errorKids = children.filter { it.state == State.StoppedDueToError }
+                    if (errorKids.isEmpty()) {
+                        stop()
+                    } else {
+                        gotError(Exception("Had error in ${errorKids.map { it.name }}"))
+                    }
+                }
+                true
+            }
+            else -> {
+                false
+            }
+        }
+    }
 
     fun callFromCoordinator(callback: () -> Unit) {
         coordinator.postEvent(CallFromCoordinator(callback))
@@ -167,10 +202,56 @@ abstract class DominoTile(
         }
     }
 
-    protected abstract fun startTile()
-    protected abstract fun stopTile(dueToError: Boolean)
+    open fun startTile() {
+        if (registrations == null) {
+            registrations = children.map {
+                it.name
+            }.map {
+                coordinator.followStatusChangesByName(setOf(it))
+            }
+            logger.info("Created $name with ${children.map { it.name }}")
+        }
+
+        startKidsIfNeeded()
+    }
+
+
+    private fun startKidsIfNeeded() {
+        if (children.map { it.state }.contains(State.StoppedDueToError)) {
+            children.filter {
+                it.state != State.StoppedDueToError
+            }.forEach {
+                it.stop()
+            }
+        } else {
+            children.forEach {
+                it.start()
+            }
+
+            if (children.all { it.isRunning }) {
+                started()
+            }
+        }
+    }
+
+    open fun stopTile(dueToError: Boolean) {
+        resources.close()
+        children.forEach {
+            if (it.state != State.StoppedDueToError) {
+                it.stop()
+            }
+        }
+    }
+
+    /**
+     * Override this if your tile needs to create and destroy resources (e.g. a thread pool) when starting and stopping, respectively.
+     */
+    open fun createResources() {}
 
     override fun close() {
+        registrations?.forEach {
+            it.close()
+        }
         controlLock.write {
             isOpen.set(false)
 
@@ -183,9 +264,17 @@ abstract class DominoTile(
                 logger.debug("Could not close coordinator", e)
             }
         }
+        children.reversed().forEach {
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                it.close()
+            } catch (e: Throwable) {
+                logger.warn("Could not close $it", e)
+            }
+        }
     }
 
     override fun toString(): String {
-        return "$name: $state"
+        return "$name: $state: $children"
     }
 }
