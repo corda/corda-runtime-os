@@ -7,16 +7,27 @@ runtime OS framework.
 ## Common App Plugin
 
 The **Common App** plugin specifies the set of Gradle tasks, the common configurations and dependencies to build a
-self-sufficient bootable JAR from the module of the application. The built bootable JAR is the form application is
-distributed.
+self-sufficient bootable JAR from the module of the application. 
+The resulting bootable JAR is intended to be the main distribution artifact of the application.
 
-The bootable JAR embeds the [Apache Felix](https://felix.apache.org/)
-[OSGi Release 7](http://docs.osgi.org/specification/osgi.core/7.0.0/ch01.html) framework, and the OSGi bundles the
-application needs to run. At runtime, the bootable JAR starts Felix and activates the bundles zipped inside itself.
+The Gradle project to which this plugin is applied is supposed to assemble an OSGi bundle, 
+that bundle replaces the output of conventional `jar` task from the 
+[Java plugin](https://docs.gradle.org/current/userguide/java_plugin.html).
+The plugin sticks to the convention that whatever you put in the `src/main/{java,groovy,kotlin,resources}` folder
+ends up in the artifact produced by the jar task, which is, again, the OSGi bundle being developed in the project.
 
-The **Common App** plugin depends on the code in the `osgi-framework-bootstrap` module to bootstrap and control the
-Felix framework, to activate bundles and to stop the application at runtime.
+For a bundle to run, it needs to be installed in an OSGi framework and all of its dependencies needs to be installed
+as well. This plugin provides the user with an `appJar` task that uses a predefined framework bootstrapper
+from the `:osgi-framework-bootstrap` subproject as the **main class** of an executable jar that contains 
+the current project's bundle and all of its dependencies in a `bundles` folder inside the jar itself.
 
+The bootable JAR also embeds the [Apache Felix](https://felix.apache.org/)
+[OSGi Release 7](http://docs.osgi.org/specification/osgi.core/7.0.0/ch01.html) framework. 
+When launched, the bootable JAR starts Felix and activates the bundles it embeds in the `bundles` folder.
+
+
+> :warning: The **Common App** plugin depends on the code in the `osgi-framework-bootstrap` module to
+> bootstrap and control the Felix framework, to activate bundles and to stop the application at runtime.
 
 ### How to apply the plugin
 
@@ -129,6 +140,16 @@ if the module depends on `net.corda:corda-base`.
 The application logs in a single flow according the time of generations all events, either logged by OSGi bundles, Felix
 or the code bootstrapping and controlling Felix.
 
+#### Changing the logger configuration
+
+The plugin defaults to the `log4j2.xml` configuration file in `osgi-framework-bootstrap/conf/log4j2.xml`, 
+but this can be overriden with 
+
+```groovy
+osgiRun {
+    log4jConfigurationFile = layout.projectDirectory.file('relative/path/to/your/custom/log4j2.xml')
+}
+```
 
 ### How to define the entry point of an application
 
