@@ -29,22 +29,38 @@ class ConfigAdminProcessor(
 
         logger.info("Update config values")
         val em = entityManagerFactory.createEntityManager()
-        em.transaction.begin()
+        try {
+            em.transaction.begin()
 
-        for (event in events) {
-            val eventKey = event.key
-            val eventRecord = event.value!!
-            val configState = ConfigState(eventRecord.key, eventRecord.value, eventRecord.version)
-            logger.info("Persisting config (event: $eventKey): $configState")
-            em.merge(configState)
+            for (event in events) {
+                val eventKey = event.key
+                val eventRecord = event.value
+                if (null != eventRecord) {
+                    val configState = ConfigState(eventRecord.key, eventRecord.value, eventRecord.version)
+                    logger.info("Persisting config (event: $eventKey): $configState")
+                    em.merge(configState)
 
-            // config-state
-            outputRecords.add(Record(outputEventTopic, eventRecord.key,
-                Configuration(eventRecord.value, eventRecord.version.toString())))
+                    // config-state
+                    outputRecords.add(
+                        Record(
+                            outputEventTopic, eventRecord.key,
+                            Configuration(eventRecord.value, eventRecord.version.toString())
+                        )
+                    )
+                } else {
+                    @Suppress("ForbiddenComment")
+                    // TODO: what do we do with "un-processable" messages?
+                    //  skipping for now, but need a longer term solution to this
+                    logger.error("Skipping Null message for $eventKey.")
+                }
+            }
+
+            em.transaction.commit()
+            logger.info("Config values committed")
         }
-
-        em.transaction.commit()
-        logger.info("Config values committed")
+        finally {
+            em.close()
+        }
 
         return outputRecords
     }
