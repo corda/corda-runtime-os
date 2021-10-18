@@ -50,7 +50,6 @@ class Gateway(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         subscriptionFactory,
-        publisherFactory,
     )
 
     override val children: Collection<DominoTile> = listOf(inboundMessageHandler, outboundMessageProcessor)
