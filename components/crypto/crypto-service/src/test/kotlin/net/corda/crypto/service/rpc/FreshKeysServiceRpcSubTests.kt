@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -28,7 +29,12 @@ class FreshKeysServiceRpcSubTests {
         subscriptionFactory = mock()
         cryptoFactory = mock()
         whenever(
-            subscriptionFactory.createRPCSubscription<WireFreshKeysRequest, WireFreshKeysResponse>(any(), any(), any())
+            subscriptionFactory.createRPCSubscription<WireFreshKeysRequest, WireFreshKeysResponse>(
+                any(),
+                any(),
+                any(),
+                anyOrNull()
+            )
         ).thenReturn(sub)
     }
 
@@ -46,13 +52,13 @@ class FreshKeysServiceRpcSubTests {
         assertTrue(freshKeysRpc.isRunning)
         Mockito
             .verify(subscriptionFactory, times(1))
-            .createRPCSubscription<WireFreshKeysRequest, WireFreshKeysResponse>(any(), any(), any())
+            .createRPCSubscription<WireFreshKeysRequest, WireFreshKeysResponse>(any(), any(), any(), anyOrNull())
         Mockito.verify(sub, times(1)).start()
         Mockito.verify(sub, never()).stop()
         freshKeysRpc.handleConfigEvent(mock())
         Mockito
             .verify(subscriptionFactory, times(2))
-            .createRPCSubscription<WireFreshKeysRequest, WireFreshKeysResponse>(any(), any(), any())
+            .createRPCSubscription<WireFreshKeysRequest, WireFreshKeysResponse>(any(), any(), any(), anyOrNull())
         Mockito.verify(sub, times(2)).start()
         Mockito.verify(sub, times(1)).stop()
         freshKeysRpc.stop()

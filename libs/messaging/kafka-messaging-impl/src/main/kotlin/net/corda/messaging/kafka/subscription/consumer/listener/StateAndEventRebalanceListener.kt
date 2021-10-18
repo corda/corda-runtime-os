@@ -13,6 +13,7 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
     private val config: StateAndEventConfig,
     private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,

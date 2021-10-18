@@ -44,6 +44,8 @@ import kotlin.concurrent.withLock
  * @property partitionAssignmentListener a callback listener that reacts to reassignments of partitions.
  *
  */
+
+@Suppress("LongParameterList")
 class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
     private val config: Config,
     private val consumerBuilder: ConsumerBuilder<K, V>,

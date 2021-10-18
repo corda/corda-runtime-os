@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -28,7 +29,12 @@ class SigningServiceRpcSubTests {
         subscriptionFactory = mock()
         cryptoFactory = mock()
         whenever(
-            subscriptionFactory.createRPCSubscription<WireSigningRequest, WireSigningResponse>(any(), any(), any())
+            subscriptionFactory.createRPCSubscription<WireSigningRequest, WireSigningResponse>(
+                any(),
+                any(),
+                any(),
+                anyOrNull()
+            )
         ).thenReturn(sub)
     }
 
@@ -46,13 +52,13 @@ class SigningServiceRpcSubTests {
         assertTrue(signingRpc.isRunning)
         Mockito
             .verify(subscriptionFactory, times(1))
-            .createRPCSubscription<WireSigningRequest, WireSigningResponse>(any(), any(), any())
+            .createRPCSubscription<WireSigningRequest, WireSigningResponse>(any(), any(), any(), anyOrNull())
         Mockito.verify(sub, times(1)).start()
         Mockito.verify(sub, never()).stop()
         signingRpc.handleConfigEvent(mock())
         Mockito
             .verify(subscriptionFactory, times(2))
-            .createRPCSubscription<WireSigningRequest, WireSigningResponse>(any(), any(), any())
+            .createRPCSubscription<WireSigningRequest, WireSigningResponse>(any(), any(), any(), anyOrNull())
         Mockito.verify(sub, times(2)).start()
         Mockito.verify(sub, times(1)).stop()
         signingRpc.stop()

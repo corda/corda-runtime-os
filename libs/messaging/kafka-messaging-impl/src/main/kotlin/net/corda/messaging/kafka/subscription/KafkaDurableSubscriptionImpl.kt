@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory
  * @property partitionAssignmentListener a callback listener that reacts to reassignments of partitions.
  *
  */
+
+@Suppress("LongParameterList")
 class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     private val config: Config,
     private val consumerBuilder: ConsumerBuilder<K, V>,

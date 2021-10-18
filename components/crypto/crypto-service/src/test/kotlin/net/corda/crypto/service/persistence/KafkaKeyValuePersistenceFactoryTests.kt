@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.UUID
@@ -27,7 +28,8 @@ class KafkaKeyValuePersistenceFactoryTests {
             subscriptionFactory.createCompactedSubscription(
                 any(),
                 any<CompactedProcessor<String, SigningPersistentKeyInfo>>(),
-                any()
+                any(),
+                anyOrNull()
             )
         ).thenReturn(sub)
         whenever(
@@ -56,7 +58,8 @@ class KafkaKeyValuePersistenceFactoryTests {
             subscriptionFactory.createCompactedSubscription(
                 any(),
                 any<CompactedProcessor<*, *>>(),
-                any()
+                any(),
+                anyOrNull()
             )
         ).thenReturn(sub)
         whenever(
