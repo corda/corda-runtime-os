@@ -3,7 +3,7 @@ package net.corda.messaging.api.subscription.listener
 import net.corda.lifecycle.LifecycleEvent
 
 /**
- * Client hooks that can be injected into any subscription subscription.
+ * Client hooks that can be injected into any subscription.
  * This API allows for the client to be notified of all the lifecycle state changes instead of just polling the
  * [isRunning] boolean of the subscription
  */
