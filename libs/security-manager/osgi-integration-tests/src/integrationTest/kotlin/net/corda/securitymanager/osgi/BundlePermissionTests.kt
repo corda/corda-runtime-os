@@ -2,11 +2,13 @@ package net.corda.securitymanager.osgi
 
 import net.corda.securitymanager.localpermissions.LocalPermissions
 import net.corda.securitymanager.osgiinvoker.OsgiInvoker
+import net.corda.securitymanager.osgiinvokerimpl.OsgiInvokerImpl
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.framework.Bundle
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
@@ -78,130 +80,36 @@ class BundlePermissionTests {
     }
 
     @Test
-    fun `unsandboxed bundle has context permissions`() {
+    fun `unsandboxed bundle has general permissions`() {
         assertDoesNotThrow {
-            unsandboxedOsgiInvoker.getBundleContext()
+            // A `RuntimePermission` is used here as a stand-in for testing all the various permissions and actions.
+            unsandboxedOsgiInvoker.performActionRequiringRuntimePermission()
         }
     }
 
     @Test
-    fun `unsandboxed bundle does not have execute permissions`() {
+    fun `sandboxed bundle does not have general permissions`() {
+        assertThrows<AccessControlException> {
+            // A `RuntimePermission` is used here as a stand-in for testing all the various permissions and actions.
+            sandboxedOsgiInvoker.performActionRequiringRuntimePermission()
+        }
+    }
+
+    @Test
+    fun `sandboxed bundle has service get permissions`() {
         assertDoesNotThrow {
-            unsandboxedOsgiInvoker.startBundle()
+            sandboxedOsgiInvoker.performActionRequiringServiceGetPermission()
         }
     }
 
     @Test
-    fun `unsandboxed bundle does not have lifecycle permissions`() {
+    fun `sandboxed bundle has service register permissions`() {
         assertDoesNotThrow {
-            unsandboxedOsgiInvoker.installBundle()
+            sandboxedOsgiInvoker.performActionRequiringServiceRegisterPermission()
         }
     }
 
-    @Test
-    fun `unsandboxed bundle has listener permissions`() {
-        assertDoesNotThrow {
-            unsandboxedOsgiInvoker.addListener()
-        }
-    }
-
-    @Test
-    fun `unsandboxed bundle has class permissions`() {
-        assertDoesNotThrow {
-            unsandboxedOsgiInvoker.loadClass()
-        }
-    }
-
-    @Test
-    fun `unsandboxed bundle has metadata permissions`() {
-        assertDoesNotThrow {
-            unsandboxedOsgiInvoker.getLocation()
-        }
-    }
-
-    @Test
-    fun `unsandboxed bundle does not have resolve permissions`() {
-        assertDoesNotThrow {
-            unsandboxedOsgiInvoker.refreshBundles()
-        }
-    }
-
-    @Test
-    fun `unsandboxed bundle has adapt permissions`() {
-        assertDoesNotThrow {
-            unsandboxedOsgiInvoker.adaptBundle()
-        }
-    }
-
-    @Test
-    fun `unsandboxed bundle has service permissions`() {
-        assertDoesNotThrow {
-            unsandboxedOsgiInvoker.getService()
-        }
-    }
-
-    @Test
-    fun `sandboxed bundle has context permissions`() {
-        assertDoesNotThrow {
-            sandboxedOsgiInvoker.getBundleContext()
-        }
-    }
-
-    @Test
-    fun `sandboxed bundle does not have execute permissions`() {
-        assertThrows(AccessControlException::class.java) {
-            sandboxedOsgiInvoker.startBundle()
-        }
-    }
-
-    @Test
-    fun `sandboxed bundle does not have lifecycle permissions`() {
-        assertThrows(AccessControlException::class.java) {
-            sandboxedOsgiInvoker.installBundle()
-        }
-    }
-
-    @Test
-    fun `sandboxed bundle has listener permissions`() {
-        assertDoesNotThrow {
-            sandboxedOsgiInvoker.addListener()
-        }
-    }
-
-    @Test
-    fun `sandboxed bundle has class permissions`() {
-        assertDoesNotThrow {
-            sandboxedOsgiInvoker.loadClass()
-        }
-    }
-
-    @Test
-    fun `sandboxed bundle has metadata permissions`() {
-        assertDoesNotThrow {
-            sandboxedOsgiInvoker.getLocation()
-        }
-    }
-
-    @Test
-    fun `sandboxed bundle does not have resolve permissions`() {
-        assertThrows(AccessControlException::class.java) {
-            sandboxedOsgiInvoker.refreshBundles()
-        }
-    }
-
-    @Test
-    fun `sandboxed bundle has adapt permissions`() {
-        assertDoesNotThrow {
-            sandboxedOsgiInvoker.adaptBundle()
-        }
-    }
-
-    @Test
-    fun `sandboxed bundle has service permissions`() {
-        assertDoesNotThrow {
-            sandboxedOsgiInvoker.getService()
-        }
-    }
+    // TODO - The following tests are removed as part of a separate PR, so aren't updated here.
 
     @Test
     fun `sandboxed local permissions bundle has context permissions`() {

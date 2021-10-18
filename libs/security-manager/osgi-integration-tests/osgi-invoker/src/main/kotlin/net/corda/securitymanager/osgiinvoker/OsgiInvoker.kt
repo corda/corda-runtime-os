@@ -1,22 +1,12 @@
 package net.corda.securitymanager.osgiinvoker
 
+// TODO - Rename - no longer just used to invoke OSGi permissions.
+// TODO - Update description.
 /** Used to test whether the bundle has permission to invoke various OSGi methods. */
 interface OsgiInvoker {
-    fun getBundleContext()
+    fun performActionRequiringRuntimePermission()
 
-    fun startBundle()
+    fun performActionRequiringServiceGetPermission()
 
-    fun installBundle()
-
-    fun addListener()
-
-    fun loadClass()
-
-    fun getLocation()
-
-    fun refreshBundles()
-
-    fun adaptBundle()
-
-    fun getService()
+    fun performActionRequiringServiceRegisterPermission()
 }
