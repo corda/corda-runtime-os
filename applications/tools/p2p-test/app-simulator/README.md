@@ -29,7 +29,7 @@ The simulator configuration file differs depending on the mode.
 
 ### Sender mode
 
-In this mode, the tool will generate messages to the topic p2p will process them from (`p2p.out`). You can customise the topic messages will be sent to using the CLI argument `--send-topic`, e.g.:
+In this mode, the tool will generate messages to the topic the p2p layer will process them from (`p2p.out`). You can customise the topic messages will be sent to using the CLI argument `--send-topic`, e.g.:
 ```
 java -jar applications/tools/p2p-test/app-simulator/build/bin/corda-app-simulator-5.0.0.0-SNAPSHOT.jar --kafka ~/Desktop/kafka.properties --simulator-config ~/Desktop/simulator.conf --send-topic my.topic
 ```
@@ -76,7 +76,7 @@ The following configuration options are optional:
 
 ### Receiver mode
 
-In this mode, the tool will consume messages from the default topic where p2p delivers messages (`p2p.in`). You can customise the topic messages will be sent to using the CLI argument `--receive-topic`, e.g.:
+In this mode, the tool will consume messages from the default topic where the p2p layer delivers messages (`p2p.in`). You can customise the topic messages will be sent to using the CLI argument `--receive-topic`, e.g.:
 ```
 java -jar applications/tools/p2p-test/app-simulator/build/bin/corda-app-simulator-5.0.0.0-SNAPSHOT.jar --kafka ~/Desktop/kafka.properties --simulator-config ~/Desktop/simulator.conf --receive-topic my.topic
 ```

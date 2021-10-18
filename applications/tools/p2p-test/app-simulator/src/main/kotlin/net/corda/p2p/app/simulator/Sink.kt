@@ -38,7 +38,7 @@ class Sink(private val subscriptionFactory: SubscriptionFactory,
 
     fun start() {
         (1..clients).forEach { client ->
-            val subscriptionConfig = SubscriptionConfig("app-simulator-sink", AppSimulator.DELIVERED_MSG_TOPIC, 1)
+            val subscriptionConfig = SubscriptionConfig("app-simulator-sink", AppSimulator.DELIVERED_MSG_TOPIC, client)
             val kafkaConfig = ConfigFactory.empty()
                 .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
                 .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-sink-$client"))

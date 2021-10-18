@@ -38,7 +38,7 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
 
     fun start() {
         (1..clients).forEach { client ->
-            val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", receiveTopic, 1)
+            val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", receiveTopic, client)
             val kafkaConfig = ConfigFactory.empty()
                 .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
                 .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-receiver-$client"))
