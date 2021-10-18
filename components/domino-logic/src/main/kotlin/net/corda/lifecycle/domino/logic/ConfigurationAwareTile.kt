@@ -69,6 +69,7 @@ abstract class ConfigurationAwareTile<C>(
     override fun stopTile(dueToError: Boolean) {
         super.stopTile(dueToError)
         if (!dueToError) {
+            lastConfiguration = null
             registration?.close()
             registration = null
         }

@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.CorDappCustomSerializer
 import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.Companion.serializeDeserializeAssert
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.registerCustomSerializers
@@ -61,8 +60,8 @@ class AnonymousClassTest {
 
     private val factoryWithSerializersRegistered = testDefaultFactory().also {
         registerCustomSerializers(it)
-        it.registerExternal(CorDappCustomSerializer(SerializerForInterface(), true))
-        it.registerExternal(CorDappCustomSerializer(SerializerForAbstractClass(), true))
+        it.register(SerializerForInterface(), true)
+        it.register(SerializerForAbstractClass(), true)
     }
 
     class ProxyClass

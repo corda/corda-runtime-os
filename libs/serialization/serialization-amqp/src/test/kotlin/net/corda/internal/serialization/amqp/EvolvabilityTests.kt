@@ -18,6 +18,7 @@ import java.net.URI
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.fail
 
 // To regenerate any of the binary test files do the following
@@ -34,7 +35,7 @@ class EvolvabilityTests {
     // When regenerating the test files this needs to be set to the file system location of the resource files
     @Suppress("UNUSED")
     var localPath: URI = projectRootDir.toUri().resolve(
-        "serialization-internal/src/test/resources/net/corda/internal/serialization/amqp"
+        "libs/serialization/serialization-amqp/src/test/resources/net/corda/internal/serialization/amqp"
     )
 
     @Test
@@ -272,7 +273,7 @@ class EvolvabilityTests {
         )
 
         val factory = testDefaultFactory().apply {
-            register(InstantSerializer(this))
+            register(InstantSerializer(), true)
         }
 
         // Uncomment to regenerate test case
@@ -284,9 +285,10 @@ class EvolvabilityTests {
         //                 10,
         //                 Instant.now(),
         //                 9,
-        //                 mapOf("A" to listOf(1, 2, 3), "B" to listOf (4, 5, 6)))).bytes)
+        //                 mapOf("A" to listOf(1, 2, 3), "B" to listOf (4, 5, 6))), testSerializationContext).bytes)
 
         val url = EvolvabilityTests::class.java.getResource(resource)
+        assertNotNull(url)
         DeserializationInput(factory).deserialize(SerializedBytes<NetworkParametersExample>(url.readBytes()))
     }
 

@@ -2,9 +2,9 @@ package net.corda.httprpc.server.impl.apigen.processing
 
 import net.corda.httprpc.durablestream.DurableStreamContext
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
-import net.corda.httprpc.server.impl.rpcops.TestHealthCheckAPI
 import net.corda.httprpc.server.impl.apigen.models.InvocationMethod
-import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
+import net.corda.httprpc.test.TestHealthCheckAPI
+import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import javax.security.auth.login.FailedLoginException

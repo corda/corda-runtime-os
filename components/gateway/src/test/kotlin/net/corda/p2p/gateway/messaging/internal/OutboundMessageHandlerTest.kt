@@ -6,11 +6,8 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.processor.EventLogProcessor
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.LinkInMessage
@@ -20,18 +17,15 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.app.HoldingIdentity
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
-import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
-import net.corda.p2p.crypto.CommonHeader
-import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpMessage
-import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
@@ -59,9 +53,6 @@ class OutboundMessageHandlerTest {
     }
 
     private val configurationReaderService = mock<ConfigurationReadService>()
-    private val publisherFactory = mock<PublisherFactory> {
-        on { createPublisher(any(), any()) } doReturn mock()
-    }
     private val subscription = mock<Subscription<String, LinkOutMessage>>()
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on {
@@ -74,33 +65,28 @@ class OutboundMessageHandlerTest {
         } doReturn subscription
     }
     private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java)
-    private val p2pInPublisher = mockConstruction(PublisherWithDominoLogic::class.java)
 
     private val handler = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         subscriptionFactory,
-        publisherFactory,
     )
 
     @AfterEach
     fun cleanUp() {
         connectionManager.close()
-        p2pInPublisher.close()
     }
 
     @Test
     fun `children return all the children`() {
         assertThat(handler.children).containsExactlyInAnyOrder(
             connectionManager.constructed().first(),
-            p2pInPublisher.constructed().first(),
         )
     }
 
     @Test
     fun `start will start a subscription`() {
         whenever(connectionManager.constructed().first().isRunning).doReturn(true)
-        whenever(p2pInPublisher.constructed().first().isRunning).doReturn(true)
 
         handler.start()
 
@@ -295,100 +281,33 @@ class OutboundMessageHandlerTest {
     }
 
     @Test
-    fun `onMessage will publish a record with the message`() {
-        startHandler()
-        val content = AuthenticatedEncryptedDataMessage.newBuilder()
-            .apply {
-                header = CommonHeader(MessageType.DATA, 0, "", 1, 1)
-                encryptedPayload = ByteBuffer.wrap(byteArrayOf())
-                authTag = ByteBuffer.wrap(byteArrayOf())
-            }.build()
-        val payload = LinkInMessage(content)
+    fun `onMessage will handle OK message without exception`() {
         val message = HttpMessage(
             statusCode = HttpResponseStatus.OK,
-            payload = payload.toByteBuffer().array(),
+            payload = ByteArray(0),
             source = InetSocketAddress("www.r3.com", 30),
             destination = InetSocketAddress("www.r3.com", 31),
         )
-
-        handler.onMessage(message)
-
-        verify(p2pInPublisher.constructed().first()).publish(listOf(Record(LINK_IN_TOPIC, "key", message)))
+        assertDoesNotThrow {
+            handler.onMessage(message)
+        }
     }
 
     @Test
-    fun `onMessage will not publish anything to the publisher if the handler is not ready`() {
-        val content = AuthenticatedEncryptedDataMessage.newBuilder()
-            .apply {
-                header = CommonHeader(MessageType.DATA, 0, "", 1, 1)
-                encryptedPayload = ByteBuffer.wrap(byteArrayOf())
-                authTag = ByteBuffer.wrap(byteArrayOf())
-            }.build()
-        val payload = LinkInMessage(content)
-        val message = HttpMessage(
-            statusCode = HttpResponseStatus.OK,
-            payload = payload.toByteBuffer().array(),
-            source = InetSocketAddress("www.r3.com", 30),
-            destination = InetSocketAddress("www.r3.com", 31),
-        )
-
-        handler.onMessage(message)
-
-        verify(p2pInPublisher.constructed().first(), never()).publish(any())
-    }
-
-    @Test
-    fun `onMessage will not publish error message`() {
-        val content = AuthenticatedEncryptedDataMessage.newBuilder()
-            .apply {
-                header = CommonHeader(MessageType.DATA, 0, "", 1, 1)
-                encryptedPayload = ByteBuffer.wrap(byteArrayOf())
-                authTag = ByteBuffer.wrap(byteArrayOf())
-            }.build()
-        val payload = LinkInMessage(content)
+    fun `onMessage will handle Error message without exception`() {
         val message = HttpMessage(
             statusCode = HttpResponseStatus.BAD_REQUEST,
-            payload = payload.toByteBuffer().array(),
+            payload = ByteArray(0),
             source = InetSocketAddress("www.r3.com", 30),
             destination = InetSocketAddress("www.r3.com", 31),
         )
-
-        handler.onMessage(message)
-
-        verify(p2pInPublisher.constructed().first(), never()).publish(any())
-    }
-
-    @Test
-    fun `onMessage will not publish empty payload`() {
-        val message = HttpMessage(
-            statusCode = HttpResponseStatus.OK,
-            payload = byteArrayOf(),
-            source = InetSocketAddress("www.r3.com", 30),
-            destination = InetSocketAddress("www.r3.com", 31),
-        )
-
-        handler.onMessage(message)
-
-        verify(p2pInPublisher.constructed().first(), never()).publish(any())
-    }
-
-    @Test
-    fun `onMessage will not publish bad payload`() {
-        val message = HttpMessage(
-            statusCode = HttpResponseStatus.OK,
-            payload = byteArrayOf(1, 2, 3),
-            source = InetSocketAddress("www.r3.com", 30),
-            destination = InetSocketAddress("www.r3.com", 31),
-        )
-
-        handler.onMessage(message)
-
-        verify(p2pInPublisher.constructed().first(), never()).publish(any())
+        assertDoesNotThrow {
+            handler.onMessage(message)
+        }
     }
 
     private fun startHandler() {
         whenever(connectionManager.constructed().first().isRunning).doReturn(true)
-        whenever(p2pInPublisher.constructed().first().isRunning).doReturn(true)
         handler.start()
     }
 }

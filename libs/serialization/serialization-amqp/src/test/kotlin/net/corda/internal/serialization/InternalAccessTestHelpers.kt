@@ -19,6 +19,17 @@ fun Type.accessAsClass(): Class<*> = asClass()
 fun <T> ifThrowsAppend(strToAppendFn: () -> String, block: () -> T): T =
     net.corda.internal.serialization.amqp.ifThrowsAppend(strToAppendFn, block)
 
-object EmptyWhitelist : ClassWhitelist {
+object AlwaysEmptyWhitelist : ClassWhitelist {
     override fun hasListed(type: Class<*>): Boolean = false
+}
+
+class TestMutableWhiteList : MutableClassWhitelist {
+
+    private var whiteList = mutableSetOf<Class<*>>()
+
+    override fun add(entry: Class<*>) {
+        whiteList.add(entry)
+    }
+
+    override fun hasListed(type: Class<*>): Boolean = whiteList.contains(type)
 }
