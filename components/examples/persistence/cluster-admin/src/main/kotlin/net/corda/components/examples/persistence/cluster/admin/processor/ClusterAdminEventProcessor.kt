@@ -1,5 +1,6 @@
 package net.corda.components.examples.persistence.cluster.admin.processor
 
+import net.corda.components.examples.persistence.config.admin.ConfigState
 import net.corda.data.poc.persistence.ClusterAdminEvent
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
@@ -24,9 +25,9 @@ class ClusterAdminEventProcessor(
         // TODO: I don't think this should be taken from this package
         val dbChange = ClassloaderChangeLog(linkedSetOf(
             ClassloaderChangeLog.ChangeLogResourceFiles(
-                this::class.java.packageName,
+                ConfigState::class.java.packageName,
                 listOf("migration/db.changelog-master.xml"),
-                classLoader = this::class.java.classLoader)
+                classLoader = ConfigState::class.java.classLoader)
         ))
         schemaMigrator.updateDb(dbConnection, dbChange)
         return emptyList()

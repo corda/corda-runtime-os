@@ -14,16 +14,16 @@ class ConfigAdminCommand(
     shutDownService: Shutdown
 ) : CommandBase(shutDownService), Runnable {
     companion object {
-        const val TOPIC_NAME = "config-admin-event"
+        const val TOPIC_NAME = "config-event"
     }
     override fun run() {
         call {
             println("Publishing config-admin event to $kafka/${ConfigConstants.TOPIC_PREFIX}$TOPIC_NAME")
             val publisher = KafkaPublisher(kafka, publisherFactory)
             val key = UUID.randomUUID().toString()
-            val msg = "config-admin-event"
+            val msg = "foo"
             publisher
-                .publish("config-admin-event", key, msg)
+                .publish(TOPIC_NAME, key, msg)
                 .get()
             println("Published: $msg with key $key")
         }

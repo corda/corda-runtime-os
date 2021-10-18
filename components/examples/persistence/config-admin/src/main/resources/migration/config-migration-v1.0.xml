@@ -4,7 +4,7 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
     <changeSet author="R3.Corda" id="config-migration-v1.0">
-        <createTable tableName="config_state">
+        <createTable tableName="cluster_config">
             <column name="name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -12,6 +12,6 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey columnNames="name" constraintName="config_pk" tableName="config"/>
+        <addPrimaryKey columnNames="name" constraintName="config_pk" tableName="cluster_config"/>
     </changeSet>
 </databaseChangeLog>
