@@ -1,9 +1,14 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.AllWhitelist
+import net.corda.internal.serialization.AlwaysEmptyWhitelist
 import net.corda.internal.serialization.CordaSerializationEncoding
-import net.corda.internal.serialization.EmptyWhitelist
 import net.corda.internal.serialization.SnappyEncodingWhitelist
+import net.corda.internal.serialization.amqp.custom.BigDecimalSerializer
+import net.corda.internal.serialization.amqp.custom.CurrencySerializer
+import net.corda.internal.serialization.amqp.custom.InputStreamSerializer
+import net.corda.internal.serialization.amqp.custom.StackTraceElementSerializer
+import net.corda.internal.serialization.amqp.custom.ThrowableSerializer
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
@@ -46,6 +51,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.IOException
+import java.io.InputStream
 import java.io.NotSerializableException
 import java.math.BigDecimal
 import java.security.KeyPairGenerator
@@ -357,14 +363,14 @@ class SerializationOutputTests {
     fun `test whitelist`() {
         val obj = Woo2(4)
         assertThrows<NotSerializableException> {
-            serdes(obj, SerializerFactoryBuilder.build(EmptyWhitelist))
+            serdes(obj, SerializerFactoryBuilder.build(AlwaysEmptyWhitelist))
         }
     }
 
     @Test
     fun `test annotation whitelisting`() {
         val obj = AnnotatedWoo(5)
-        serdes(obj, SerializerFactoryBuilder.build(EmptyWhitelist))
+        serdes(obj, SerializerFactoryBuilder.build(AlwaysEmptyWhitelist))
     }
 
     @Test
@@ -502,11 +508,11 @@ class SerializationOutputTests {
 
         // Build serialization factory
         val serializerFactory = SerializerFactoryBuilder.build(AllWhitelist)
-        serializerFactory.register(publicKeySerializer)
+        serializerFactory.register(publicKeySerializer, true)
 
         // Build deserialization factory
         val freshDeserializationFactory = SerializerFactoryBuilder.build(AllWhitelist)
-        freshDeserializationFactory.register(publicKeySerializer)
+        freshDeserializationFactory.register(publicKeySerializer, true)
 
         // Run public key through serialization/deserialization and compare
         serdes(publicKey, serializerFactory, freshDeserializationFactory)
@@ -515,22 +521,24 @@ class SerializationOutputTests {
     @Test
     fun `test annotation is inherited`() {
         val obj = InheritAnnotation("blah")
-        serdes(obj, SerializerFactoryBuilder.build(EmptyWhitelist))
+        serdes(obj, SerializerFactoryBuilder.build(AlwaysEmptyWhitelist))
     }
 
     @Test
     fun `generics from java are supported`() {
         val obj = DummyOptional<String>("YES")
-        serdes(obj, SerializerFactoryBuilder.build(EmptyWhitelist))
+        serdes(obj, SerializerFactoryBuilder.build(AlwaysEmptyWhitelist))
     }
 
     @Test
     fun `test throwables serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.ThrowableSerializer(factory))
+        factory.register(ThrowableSerializer(factory), true)
+        factory.register(StackTraceElementSerializer(), true)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.ThrowableSerializer(factory2))
+        factory2.register(ThrowableSerializer(factory2), true)
+        factory2.register(StackTraceElementSerializer(), true)
 
         val t = IllegalAccessException("message").fillInStackTrace()
 
@@ -549,10 +557,12 @@ class SerializationOutputTests {
     @SuppressWarnings("TooGenericExceptionCaught")
     fun `test complex throwables serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.ThrowableSerializer(factory))
+        factory.register(ThrowableSerializer(factory), true)
+        factory.register(StackTraceElementSerializer(), true)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.ThrowableSerializer(factory2))
+        factory2.register(ThrowableSerializer(factory2), true)
+        factory2.register(StackTraceElementSerializer(), true)
 
         try {
             try {
@@ -578,10 +588,12 @@ class SerializationOutputTests {
     @SuppressWarnings("TooGenericExceptionCaught")
     fun `test suppressed throwables serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.ThrowableSerializer(factory))
+        factory.register(ThrowableSerializer(factory), true)
+        factory.register(StackTraceElementSerializer(), true)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.ThrowableSerializer(factory2))
+        factory2.register(ThrowableSerializer(factory2), true)
+        factory2.register(StackTraceElementSerializer(), true)
 
         try {
             try {
@@ -600,10 +612,12 @@ class SerializationOutputTests {
     @Test
     fun `test flow corda exception subclasses serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.ThrowableSerializer(factory))
+        factory.register(ThrowableSerializer(factory), true)
+        factory.register(StackTraceElementSerializer(), true)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.ThrowableSerializer(factory2))
+        factory2.register(ThrowableSerializer(factory2), true)
+        factory2.register(StackTraceElementSerializer(), true)
 
         val obj = FlowException("message").fillInStackTrace()
         serdesThrowableWithInternalInfo(obj, factory, factory2)
@@ -737,10 +751,10 @@ class SerializationOutputTests {
     @Test
     fun `test toString custom serializer`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.BigDecimalSerializer)
+        factory.register(BigDecimalSerializer, true)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.BigDecimalSerializer)
+        factory2.register(BigDecimalSerializer, true)
 
         val obj = BigDecimals(BigDecimal.TEN, BigDecimal.TEN)
         val objCopy = serdes(obj, factory, factory2)
@@ -752,10 +766,10 @@ class SerializationOutputTests {
     @Test
     fun `test byte arrays not reference counted`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.BigDecimalSerializer)
+        factory.register(BigDecimalSerializer, true)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.BigDecimalSerializer)
+        factory2.register(BigDecimalSerializer, true)
 
         val bytes = ByteArray(1)
         val obj = ByteArrays(bytes, bytes)
@@ -778,13 +792,13 @@ class SerializationOutputTests {
     @Test
     fun `test InputStream serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(net.corda.internal.serialization.amqp.custom.InputStreamSerializer)
+        factory.register(InputStreamSerializer, true)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(net.corda.internal.serialization.amqp.custom.InputStreamSerializer)
+        factory2.register(InputStreamSerializer, true)
         val bytes = ByteArray(10) { it.toByte() }
         val obj = bytes.inputStream()
-        val obj2 = serdes(obj, factory, factory2, expectedEqual = false, expectDeserializedEqual = false)
+        val obj2 = serdes<InputStream>(obj, factory, factory2, expectedEqual = false, expectDeserializedEqual = false)
         val obj3 = bytes.inputStream()  // Can't use original since the stream pointer has moved.
         assertEquals(obj3.available(), obj2.available())
         assertEquals(obj3.read(), obj2.read())
@@ -822,8 +836,8 @@ class SerializationOutputTests {
         data class C(val a: Amount<Currency>)
 
         val factory = testDefaultFactoryNoEvolution()
-        factory.register(net.corda.internal.serialization.amqp.custom.BigDecimalSerializer)
-        factory.register(net.corda.internal.serialization.amqp.custom.CurrencySerializer)
+        factory.register(BigDecimalSerializer, true)
+        factory.register(CurrencySerializer, true)
 
         val c = C(Amount(100, BigDecimal("1.5"), Currency.getInstance("USD")))
 

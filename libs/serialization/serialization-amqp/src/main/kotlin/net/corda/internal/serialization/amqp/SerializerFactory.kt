@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.addToWhitelist
+import net.corda.v5.serialization.SerializationCustomSerializer
 import java.io.NotSerializableException
 import javax.annotation.concurrent.ThreadSafe
 
@@ -30,8 +31,16 @@ class ComposedSerializerFactory(
         override val customSerializerNames: List<String>
                 get() = customSerializerRegistry.customSerializerNames
 
-        override fun registerExternal(customSerializer: CorDappCustomSerializer) {
+        override fun register(
+                customSerializer: SerializationCustomSerializer<*, *>,
+                withInheritance: Boolean
+        ) {
+                customSerializerRegistry.register(customSerializer, withInheritance)
+                addToWhitelist(listOf(customSerializer.serializerTypes().proxyType.asClass()))
+        }
+
+        override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>) {
                 customSerializerRegistry.registerExternal(customSerializer)
-                addToWhitelist(listOf(customSerializer.proxyType.asClass()))
+                addToWhitelist(listOf(customSerializer.serializerTypes().proxyType.asClass()))
         }
 }
