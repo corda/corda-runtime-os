@@ -68,8 +68,7 @@ pipeline {
         }
         stage('Wait for network') {
             steps {
-                // Cheat for now until I add a proper wait command to the cli
-                sh 'sleep 120'
+                sh './corda-cli/bin/corda-cli cluster wait -n ${NAME_SPACE}'
             }
         }
         stage('Forward ports and run the tests') {
