@@ -24,8 +24,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
-    implementation "net.corda:corda-crypto"
-    implementation "net.corda:corda-cipher-suite"
 
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-serialization"
