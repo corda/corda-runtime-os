@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.internal
 
+import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -19,10 +20,12 @@ import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
+import net.corda.p2p.gateway.messaging.http.HttpMessage
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
@@ -34,6 +37,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.net.InetSocketAddress
 import java.net.URI
 import java.nio.ByteBuffer
 
@@ -274,6 +278,32 @@ class OutboundMessageHandlerTest {
         )
 
         verify(connectionManager.constructed().first(), never()).acquire(any())
+    }
+
+    @Test
+    fun `onMessage will handle OK message without exception`() {
+        val message = HttpMessage(
+            statusCode = HttpResponseStatus.OK,
+            payload = ByteArray(0),
+            source = InetSocketAddress("www.r3.com", 30),
+            destination = InetSocketAddress("www.r3.com", 31),
+        )
+        assertDoesNotThrow {
+            handler.onMessage(message)
+        }
+    }
+
+    @Test
+    fun `onMessage will handle Error message without exception`() {
+        val message = HttpMessage(
+            statusCode = HttpResponseStatus.BAD_REQUEST,
+            payload = ByteArray(0),
+            source = InetSocketAddress("www.r3.com", 30),
+            destination = InetSocketAddress("www.r3.com", 31),
+        )
+        assertDoesNotThrow {
+            handler.onMessage(message)
+        }
     }
 
     private fun startHandler() {
