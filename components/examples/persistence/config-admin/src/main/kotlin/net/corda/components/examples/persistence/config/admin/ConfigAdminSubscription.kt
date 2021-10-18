@@ -2,6 +2,7 @@ package net.corda.components.examples.persistence.config.admin
 
 import com.typesafe.config.Config
 import net.corda.components.examples.persistence.config.admin.processor.ConfigAdminProcessor
+import net.corda.data.poc.persistence.ConfigAdminEvent
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -25,7 +26,7 @@ class ConfigAdminSubscription(
         const val outputEventTopic = "config-state"
     }
 
-    private var subscription: Subscription<String, String>? = null
+    private var subscription: Subscription<String, ConfigAdminEvent>? = null
 
     override val isRunning: Boolean
         get() = subscription?.isRunning ?: false

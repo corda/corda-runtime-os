@@ -13,4 +13,6 @@ data class ConfigState(
     val name: String,
     @Column
     val value: String,
+    @Column
+    val version: Int,
 )

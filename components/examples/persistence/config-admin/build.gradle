@@ -6,21 +6,18 @@ plugins {
 description 'Config Admin Component'
 
 dependencies {
-    implementation "net.corda:corda-base"
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-
-    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    compileOnly "javax.persistence:javax.persistence-api"
 
-    implementation "info.picocli:picocli:$picocliVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation 'net.corda:corda-base'
+    implementation "net.corda:corda-avro-schema:$cordaApiVersion"
 
     implementation project(":libs:db:db-orm")
     implementation project(":libs:db:db-orm-impl")
 
-    implementation project(":osgi-framework-api")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
 
