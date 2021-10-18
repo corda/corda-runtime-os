@@ -1,11 +1,12 @@
-package net.corda.components.examples.persistence.config.admin
+package net.corda.components.examples.persistence.config.admin.processor
 
+import net.corda.components.examples.persistence.config.admin.ConfigState
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import org.slf4j.Logger
 import javax.persistence.EntityManagerFactory
 
-class ConfigDurableProcessor(
+class ConfigAdminProcessor(
     private val outputEventTopic: String,
     private val entityManagerFactory: EntityManagerFactory,
     private val logger: Logger,
@@ -18,26 +19,32 @@ class ConfigDurableProcessor(
         get() = String::class.java
 
     override fun onNext(events: List<Record<String, String>>): List<Record<*, *>> {
+        logger.info("Received ${events.map { it.key + "/" + it.value }}")
         val outputRecords = mutableListOf<Record<*, *>>()
 
-        val em = entityManagerFactory.createEntityManager()
+        if(events.isEmpty())
+            return emptyList()
 
+        logger.info("Update config values")
+        val em = entityManagerFactory.createEntityManager()
         em.transaction.begin()
 
         for (event in events) {
-
+            // TODO: use proper Record
             val key = event.key
             val eventRecord = event.value
 
-            val configRecord = ConfigState(key, eventRecord!!)
-            em.persist(configRecord)
+            logger.info("Persisting config: $key/$eventRecord")
 
-            logger.info("Durable sub processing key/value  ${key}/${eventRecord}")
+            val configRecord = ConfigState(key, eventRecord!!)
+            em.merge(configRecord)
+
             // config-state
             outputRecords.add(Record(outputEventTopic, key, eventRecord))
         }
 
         em.transaction.commit()
+        logger.info("Config values committed")
 
         return outputRecords
     }

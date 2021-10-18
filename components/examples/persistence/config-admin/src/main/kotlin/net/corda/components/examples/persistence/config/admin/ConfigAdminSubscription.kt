@@ -1,26 +1,25 @@
 package net.corda.components.examples.persistence.config.admin
 
 import com.typesafe.config.Config
+import net.corda.components.examples.persistence.config.admin.processor.ConfigAdminProcessor
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import javax.persistence.EntityManagerFactory
 
 @Component
-class ConfigAppSubscription(
+class ConfigAdminSubscription(
     private val subscriptionFactory: SubscriptionFactory,
     private var config: Config,
     private val instanceId: Int,
     private val entityManagerFactory: EntityManagerFactory,
-    private val delayOnNext: Long = 0,
+    private val logger: Logger,
     ) : Lifecycle {
 
     private companion object {
-        val log: Logger = contextLogger()
         const val groupName = "configAdminEventsGroup"
         const val inputTopic = "config-event"
         const val outputEventTopic = "config-state"
@@ -32,7 +31,7 @@ class ConfigAppSubscription(
         get() = subscription?.isRunning ?: false
 
     fun reStart(newConfig: Config) {
-        log.info("Restarting durable subscription")
+        logger.info("Restarting durable subscription for $inputTopic")
         stop()
         config = newConfig
         start()
@@ -40,8 +39,8 @@ class ConfigAppSubscription(
 
     override fun start() {
         if (!isRunning) {
-            log.info("Creating durable subscription")
-            val processor = ConfigDurableProcessor(outputEventTopic, entityManagerFactory, log)
+            logger.info("Creating durable subscription for $inputTopic")
+            val processor = ConfigAdminProcessor(outputEventTopic, entityManagerFactory, logger)
             subscription = subscriptionFactory.createDurableSubscription(
                 // config-event
                 SubscriptionConfig(groupName, inputTopic, instanceId),
@@ -49,13 +48,13 @@ class ConfigAppSubscription(
                 config,
                 null
             )
-            log.info("Starting durable subscription")
+            logger.info("Starting durable subscription for $inputTopic")
             subscription?.start()
         }
     }
 
     override fun stop() {
-        log.info("Stopping durable sub")
+        logger.info("Stopping durable sub")
         subscription?.stop()
     }
 }

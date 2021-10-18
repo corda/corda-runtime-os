@@ -22,6 +22,10 @@ class ClusterAdminEventProcessor(
 
     override fun onNext(events: List<Record<String, ClusterAdminEvent>>): List<Record<*, *>> {
         logger.info("Received ${events.map { it.key + "/" + it.value!!.type }}")
+
+        // HACK: for now, for the demo app, there is only one type of event and we can always run it, so
+        //  we don't actually care about multiple events.
+
         // TODO: I don't think this should be taken from this package
         val dbChange = ClassloaderChangeLog(linkedSetOf(
             ClassloaderChangeLog.ChangeLogResourceFiles(
@@ -30,6 +34,7 @@ class ClusterAdminEventProcessor(
                 classLoader = ConfigState::class.java.classLoader)
         ))
         schemaMigrator.updateDb(dbConnection, dbChange)
+        logger.info("${events.map { it.key }} Schema migration completed")
         return emptyList()
     }
 }

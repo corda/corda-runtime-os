@@ -27,8 +27,8 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
 
-    implementation project(":components:examples:persistence:cluster-admin")
     implementation project(":components:examples:persistence:config-admin")
+    implementation project(":components:examples:persistence:cluster-admin")
 
     runtimeOnly project(":libs:db:db-admin-impl")
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")

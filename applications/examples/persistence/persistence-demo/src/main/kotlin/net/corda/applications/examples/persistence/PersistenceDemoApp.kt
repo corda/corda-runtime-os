@@ -2,7 +2,7 @@ package net.corda.applications.examples.persistence
 
 import com.typesafe.config.ConfigFactory
 import net.corda.components.examples.persistence.cluster.admin.RunClusterAdminEventSubscription
-import net.corda.components.examples.persistence.config.admin.ConfigAppSubscription
+import net.corda.components.examples.persistence.config.admin.ConfigAdminSubscription
 import net.corda.components.examples.persistence.config.admin.ConfigState
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.core.PostgresDataSourceFactory
@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 @Component
-class DemoApp @Activate constructor(
+class PersistenceDemoApp @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = Shutdown::class)
@@ -59,7 +59,7 @@ class DemoApp @Activate constructor(
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
             var clusterAdminEventSub: RunClusterAdminEventSubscription? = null
-            var configAdminEventSub: ConfigAppSubscription? = null
+            var configAdminEventSub: ConfigAdminSubscription? = null
 
             val config = ConfigFactory.parseMap(
                 mapOf(
@@ -79,7 +79,7 @@ class DemoApp @Activate constructor(
 
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
-                coordinatorFactory.createCoordinator<DemoApp>(
+                coordinatorFactory.createCoordinator<PersistenceDemoApp>(
                 ) { event: LifecycleEvent, _: LifecycleCoordinator ->
                     log.info("LifecycleEvent received: $event")
                     when (event) {
@@ -93,11 +93,12 @@ class DemoApp @Activate constructor(
                                 schemaMigrator,
                                 consoleLogger,
                             )
-                            configAdminEventSub = ConfigAppSubscription(
+                            configAdminEventSub = ConfigAdminSubscription(
                                 subscriptionFactory,
                                 config,
                                 1,
-                                entityManagerFactory
+                                entityManagerFactory,
+                                consoleLogger,
                             )
 
                             clusterAdminEventSub?.start()
