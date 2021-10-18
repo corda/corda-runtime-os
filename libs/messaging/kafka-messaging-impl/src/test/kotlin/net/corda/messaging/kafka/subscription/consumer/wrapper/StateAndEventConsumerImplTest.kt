@@ -40,7 +40,14 @@ class StateAndEventConsumerImplTest {
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
         val consumer =
-            StateAndEventConsumerImpl(stateAndEventConfig, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+            StateAndEventConsumerImpl(
+                stateAndEventConfig,
+                eventConsumer,
+                stateConsumer,
+                partitionState,
+                stateAndEventListener,
+                null
+            )
         consumer.close()
 
         verify(eventConsumer, times(1)).close(any())
@@ -62,7 +69,14 @@ class StateAndEventConsumerImplTest {
             ), mutableMapOf(partitionId to Long.MAX_VALUE)
         )
         val consumer =
-            StateAndEventConsumerImpl(stateAndEventConfig, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+            StateAndEventConsumerImpl(
+                stateAndEventConfig,
+                eventConsumer,
+                stateConsumer,
+                partitionState,
+                stateAndEventListener,
+                null
+            )
         val valueKey1 = consumer.getInMemoryStateValue("key1")
         assertThat(valueKey1).isEqualTo("value1")
         val valueKey2 = consumer.getInMemoryStateValue("key2")
@@ -78,7 +92,14 @@ class StateAndEventConsumerImplTest {
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
         val consumer =
-            StateAndEventConsumerImpl(stateAndEventConfig, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+            StateAndEventConsumerImpl(
+                stateAndEventConfig,
+                eventConsumer,
+                stateConsumer,
+                partitionState,
+                stateAndEventListener,
+                null
+            )
 
         consumer.updateInMemoryStatePostCommit(
             mutableMapOf(partitionId to mutableMapOf("key1" to null, "key2" to "value2")),
@@ -101,7 +122,14 @@ class StateAndEventConsumerImplTest {
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
         val consumer =
-            StateAndEventConsumerImpl(stateAndEventConfig, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+            StateAndEventConsumerImpl(
+                stateAndEventConfig,
+                eventConsumer,
+                stateConsumer,
+                partitionState,
+                stateAndEventListener,
+                null
+            )
 
         consumer.pollAndUpdateStates(true)
 
@@ -119,7 +147,14 @@ class StateAndEventConsumerImplTest {
             mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1"))),
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
-        val consumer = StateAndEventConsumerImpl(stateAndEventConfig, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+        val consumer = StateAndEventConsumerImpl(
+            stateAndEventConfig,
+            eventConsumer,
+            stateConsumer,
+            partitionState,
+            stateAndEventListener,
+            null
+        )
 
         consumer.pollAndUpdateStates(false)
 
@@ -137,9 +172,20 @@ class StateAndEventConsumerImplTest {
             mutableMapOf(partitionId to mutableMapOf("key1" to Pair(Long.MIN_VALUE, "value1"))),
             mutableMapOf(partitionId to Long.MAX_VALUE)
         )
-        val consumer = StateAndEventConsumerImpl(stateAndEventConfig, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+        val consumer = StateAndEventConsumerImpl(
+            stateAndEventConfig,
+            eventConsumer,
+            stateConsumer,
+            partitionState,
+            stateAndEventListener,
+            null
+        )
         val latch = CountDownLatch(1)
-        consumer.waitForFunctionToFinish({ while(latch.count > 0) { Thread.sleep(10)} }, 200L, "test ")
+        consumer.waitForFunctionToFinish({
+            while (latch.count > 0) {
+                Thread.sleep(10)
+            }
+        }, 200L, "test ")
         latch.countDown()
 
         verify(eventConsumer, times(1)).assignment()
@@ -154,8 +200,10 @@ class StateAndEventConsumerImplTest {
     @Test
     fun testResetPollPosition() {
         val (stateAndEventListener, eventConsumer, stateConsumer, _) = setupMocks()
-        val consumer = StateAndEventConsumerImpl(stateAndEventConfig, eventConsumer, stateConsumer, StateAndEventPartitionState
-            (mutableMapOf(), mutableMapOf()), stateAndEventListener)
+        val consumer = StateAndEventConsumerImpl(
+            stateAndEventConfig, eventConsumer, stateConsumer, StateAndEventPartitionState
+                (mutableMapOf(), mutableMapOf()), stateAndEventListener,null
+        )
 
         consumer.resetPollInterval()
 

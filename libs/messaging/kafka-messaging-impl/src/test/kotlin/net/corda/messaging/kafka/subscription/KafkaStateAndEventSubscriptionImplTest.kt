@@ -111,7 +111,9 @@ class KafkaStateAndEventSubscriptionImplTest {
             stateAndEventConfig,
             builder,
             mock(),
-            avroSchemaRegistry
+            avroSchemaRegistry,
+            null,
+            null
         )
 
         subscription.start()
@@ -137,7 +139,9 @@ class KafkaStateAndEventSubscriptionImplTest {
             stateAndEventConfig,
             builder,
             mock(),
-            avroSchemaRegistry
+            avroSchemaRegistry,
+            null,
+            null
         )
 
         subscription.start()
@@ -183,7 +187,9 @@ class KafkaStateAndEventSubscriptionImplTest {
             stateAndEventConfig,
             builder,
             mock(),
-            avroSchemaRegistry
+            avroSchemaRegistry,
+            null,
+            null
         )
 
         subscription.start()
@@ -227,7 +233,9 @@ class KafkaStateAndEventSubscriptionImplTest {
             stateAndEventConfig,
             builder,
             mock(),
-            avroSchemaRegistry
+            avroSchemaRegistry,
+            null,
+            null
         )
 
         subscription.start()
@@ -280,7 +288,9 @@ class KafkaStateAndEventSubscriptionImplTest {
             shortWaitProcessorConfig,
             builder,
             mock(),
-            avroSchemaRegistry
+            avroSchemaRegistry,
+            null,
+            null
         )
 
         subscription.start()

@@ -105,7 +105,8 @@ class KafkaRPCSubscriptionImplTest {
             consumerBuilder,
             processor,
             serializer,
-            deserializer
+            deserializer,
+            null
         )
 
         subscription.start()
@@ -129,7 +130,8 @@ class KafkaRPCSubscriptionImplTest {
             consumerBuilder,
             processor,
             serializer,
-            deserializer
+            deserializer,
+            null
         )
 
         subscription.start()
@@ -157,7 +159,8 @@ class KafkaRPCSubscriptionImplTest {
             consumerBuilder,
             processor,
             serializer,
-            deserializer
+            deserializer,
+            null
         )
 
         subscription.start()

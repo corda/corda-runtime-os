@@ -10,6 +10,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
@@ -23,7 +24,7 @@ import kotlin.concurrent.write
 
 class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
     private val config: Config,
-    private val consumerBuilder: CordaKafkaConsumerBuilderImpl<K, V>,
+    private val consumerBuilder: ConsumerBuilder<K, V>,
     private val keyClass: Class<K>,
     private val valueClass: Class<V>,
     private val lifecycleListener: LifecycleListener?

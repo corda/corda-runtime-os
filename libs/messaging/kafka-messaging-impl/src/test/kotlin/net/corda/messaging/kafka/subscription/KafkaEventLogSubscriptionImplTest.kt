@@ -81,6 +81,7 @@ class KafkaEventLogSubscriptionImplTest {
             consumerBuilder,
             producerBuilder,
             processor,
+            null,
             null
         )
         kafkaEventLogSubscription.start()
@@ -109,6 +110,7 @@ class KafkaEventLogSubscriptionImplTest {
             consumerBuilder,
             producerBuilder,
             processor,
+            null,
             null
         )
 
@@ -133,6 +135,7 @@ class KafkaEventLogSubscriptionImplTest {
             consumerBuilder,
             producerBuilder,
             processor,
+            null,
             null
         )
 
@@ -166,6 +169,7 @@ class KafkaEventLogSubscriptionImplTest {
             consumerBuilder,
             producerBuilder,
             processor,
+            null,
             null
         )
 
@@ -201,6 +205,7 @@ class KafkaEventLogSubscriptionImplTest {
             consumerBuilder,
             producerBuilder,
             processor,
+            null,
             null
         )
 
@@ -228,6 +233,7 @@ class KafkaEventLogSubscriptionImplTest {
             consumerBuilder,
             producerBuilder,
             processor,
+            null,
             null
         )
 

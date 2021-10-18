@@ -77,7 +77,7 @@ class KafkaPubSubSubscriptionImplTest {
     @Test
     fun testPubSubConsumer() {
         kafkaPubSubSubscription =
-            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService)
+            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, null)
         kafkaPubSubSubscription.start()
 
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -94,7 +94,7 @@ class KafkaPubSubSubscriptionImplTest {
     fun testPubSubConsumerWithExecutor() {
         executorService = Executors.newFixedThreadPool(1)
         kafkaPubSubSubscription =
-            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService)
+            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, null)
 
         kafkaPubSubSubscription.start()
 
@@ -122,7 +122,7 @@ class KafkaPubSubSubscriptionImplTest {
 
         doThrow(CordaMessageAPIFatalException::class).whenever(mockCordaConsumer).commitSyncOffsets(any(), anyOrNull())
         kafkaPubSubSubscription =
-            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService)
+            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, null)
 
         kafkaPubSubSubscription.start()
         @Suppress("EmptyWhileBlock")
@@ -147,7 +147,7 @@ class KafkaPubSubSubscriptionImplTest {
         )
 
         kafkaPubSubSubscription =
-            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService)
+            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, null)
 
         kafkaPubSubSubscription.start()
         @Suppress("EmptyWhileBlock")
@@ -174,7 +174,7 @@ class KafkaPubSubSubscriptionImplTest {
         whenever(mockCordaConsumer.poll()).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
 
         kafkaPubSubSubscription =
-            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService)
+            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, null)
 
         kafkaPubSubSubscription.start()
         @Suppress("EmptyWhileBlock")
@@ -208,7 +208,7 @@ class KafkaPubSubSubscriptionImplTest {
 
         kafkaPubSubSubscription = KafkaPubSubSubscriptionImpl(
             config, consumerBuilder,
-            processor, executorService
+            processor, executorService, null
         )
 
         kafkaPubSubSubscription.start()
@@ -237,7 +237,7 @@ class KafkaPubSubSubscriptionImplTest {
 
         kafkaPubSubSubscription = KafkaPubSubSubscriptionImpl(
             config, consumerBuilder,
-            processor, executorService
+            processor, executorService, null
         )
 
         kafkaPubSubSubscription.start()
