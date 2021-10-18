@@ -71,10 +71,13 @@ class PersistenceDemoApp @Activate constructor(
                 parameters.dbUrl,
                 parameters.dbUser,
                 parameters.dbPass)
+
+            // NOTE: "for real", this would probably be pushed into the component rather than getting an EMF here,
+            //  as the component knows what needs to/can be persisted
             val entityManagerFactory = entityManagerFactoryFactory.create(
                 "cluster-config",
                 listOf(ConfigState::class.java),
-                DbEntityManagerConfiguration(dbSource, false, false, DdlManage.NONE),
+                DbEntityManagerConfiguration(dbSource),
             )
 
             log.info("Creating life cycle coordinator")
