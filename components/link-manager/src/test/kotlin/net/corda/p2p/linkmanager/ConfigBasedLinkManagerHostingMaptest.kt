@@ -4,10 +4,16 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleEventHandler
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
@@ -24,6 +30,16 @@ class ConfigBasedLinkManagerHostingMaptest {
             latch.countDown()
             mock
         }
+    }
+
+    private val lifecycleEventHandler = argumentCaptor<LifecycleEventHandler>()
+    private val coordinator = mock<LifecycleCoordinator> {
+        on { postEvent(any()) } doAnswer {
+            lifecycleEventHandler.lastValue.processEvent(it.getArgument(0) as LifecycleEvent, mock)
+        }
+    }
+    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
+        on { createCoordinator(any(), lifecycleEventHandler.capture()) } doReturn coordinator
     }
 
     private val alice = LinkManagerNetworkMap.HoldingIdentity("O=Alice, L=London, C=GB", "group1")
@@ -45,7 +61,7 @@ class ConfigBasedLinkManagerHostingMaptest {
         """
     )
 
-    private val hostingMap = ConfigBasedLinkManagerHostingMap(configReadService)
+    private val hostingMap = ConfigBasedLinkManagerHostingMap(configReadService, lifecycleCoordinatorFactory)
 
     @Test
     fun `locally hosted identities received via configuration are parsed properly and advised on lookups`() {
