@@ -180,7 +180,6 @@ fun registerCustomSerializers(factory: SerializerFactory) {
         register(BitSetSerializer(), true)
         register(EnumSetSerializer(), true)
         register(X500PrincipalSerializer(), true)
-        register(PrivateKeySerializer(), true)
     }
 }
 
