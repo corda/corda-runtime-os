@@ -14,7 +14,6 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.DbEntityManagerConfiguration
-import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -136,6 +135,7 @@ class CliParameters {
     )
     var kafka: String = "kafka:9092"
 
+    @Suppress("ForbiddenComment")
     // TODO: cluster DB config should maybe be taken from the Kafka message instead of passed in?
     @CommandLine.Option(
         names = ["-j", "--jdbc-url"],
