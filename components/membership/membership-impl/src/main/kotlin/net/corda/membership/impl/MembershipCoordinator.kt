@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.MembershipGroupFactory
-import net.corda.membership.MembershipGroupInfoLookupServiceProvider
+import net.corda.membership.MembershipGroupStorageFactory
 import net.corda.membership.impl.lifecycle.AbstractMembershipCoordinator
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -17,15 +17,15 @@ class MembershipCoordinator @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = MembershipGroupFactory::class)
-    private val factory: MembershipGroupFactory,
-    @Reference(service = MembershipGroupInfoLookupServiceProvider::class)
-    private val provider: MembershipGroupInfoLookupServiceProvider
+    private val membershipGroupFactory: MembershipGroupFactory,
+    @Reference(service = MembershipGroupStorageFactory::class)
+    private val membershipGroupStorageFactory: MembershipGroupStorageFactory
 ) : AbstractMembershipCoordinator(
     LifecycleCoordinatorName.forComponent<MembershipCoordinator>(),
     coordinatorFactory,
     configurationReadService,
     listOf(
-        factory,
-        provider
+        membershipGroupFactory,
+        membershipGroupStorageFactory
     )
 )

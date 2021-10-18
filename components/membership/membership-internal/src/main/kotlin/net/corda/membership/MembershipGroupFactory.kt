@@ -1,12 +1,13 @@
 package net.corda.membership
 
 /**
- * Provides access to instances of memebrship services.
+ * Provides read-only access to instances of membership group service factory.
  */
 interface MembershipGroupFactory {
     /**
-     * Returns a singleton instance of [MembershipGroupLookupService]
+     * Returns a singleton instance of [MembershipGroupServiceFactory]
      */
-    fun getLookupService(): MembershipGroupInfoLookupService
+    fun getMembershipGroupServiceFactory(): MembershipGroupServiceFactory
 }
+
 

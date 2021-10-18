@@ -1,22 +1,18 @@
 package net.corda.membership.impl
 
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.MembershipGroupFactory
-import net.corda.membership.MembershipGroupServiceFactory
-import net.corda.membership.MembershipGroupServiceFactoryProvider
+import net.corda.membership.MembershipGroupStorageServiceFactory
+import net.corda.membership.MembershipGroupStorageServiceFactoryProvider
 import net.corda.membership.config.MembershipConfig
 import net.corda.membership.lifecycle.MembershipLifecycleComponent
 import net.corda.v5.base.util.contextLogger
-import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
-@Component(service = [MembershipGroupFactory::class])
-class MembershipGroupFactoryImpl @Activate constructor(
-    @Reference(service = MembershipGroupServiceFactoryProvider::class)
-    private val providers: List<MembershipGroupServiceFactoryProvider>
-) : Lifecycle, MembershipGroupFactory, MembershipLifecycleComponent {
+@Component(service = [MembershipGroupStorageServiceFactoryProvider::class])
+class MembershipGroupStorageServiceFactoryProviderImpl(
+    override val name: String
+    ) : Lifecycle, MembershipGroupStorageServiceFactoryProvider, MembershipLifecycleComponent {
     companion object {
         private val logger: Logger = contextLogger()
     }
@@ -37,7 +33,7 @@ class MembershipGroupFactoryImpl @Activate constructor(
         TODO("Not yet implemented")
     }
 
-    override fun getMembershipGroupServiceFactory(): MembershipGroupServiceFactory {
+    override fun create(): MembershipGroupStorageServiceFactory {
         TODO("Not yet implemented")
     }
 }

@@ -1,12 +1,13 @@
 package net.corda.membership
 
 import net.corda.v5.application.identity.CordaX500Name
-import net.corda.v5.application.node.MemberInfo
+import net.corda.v5.membership.identity.MemberInfo
 
 /**
- * Provides group information for a specific group and member. The view of group information may vary
+ * Provides group information for a specific group and member. The view of group information may vary based on the
+ * requesting member.
  */
-interface MembershipGroupInfoService {
+interface MembershipGroupService {
     /**
      * The ID of the group for which this service provides functionality for.
      */
@@ -25,7 +26,7 @@ interface MembershipGroupInfoService {
     /**
      * Looks up a group member of the specified group by the public key SHA-256 hash
      * belonging to the member.
-     * If the member is not found then the null value is returned.
+     * Returns null if the member is not found.
      *
      * @param lookupMember Public key hash as a ByteArray for the member to lookup.
      */
@@ -34,9 +35,9 @@ interface MembershipGroupInfoService {
     /**
      * Looks up a group member of the specified group by the public key SHA-256 hash
      * belonging to the member.
-     * If the member is not found then the null value is returned.
+     * Returns null if the member is not found.
      *
-     * @param lookupMember CordaX500Name of the member to lookup.
+     * @param lookupMember [CordaX500Name] of the member to look up.
      */
     fun lookupMember(lookupMember: CordaX500Name): MemberInfo?
 }
