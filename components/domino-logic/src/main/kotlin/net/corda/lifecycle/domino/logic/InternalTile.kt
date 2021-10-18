@@ -13,7 +13,7 @@ abstract class InternalTile(coordinatorFactory: LifecycleCoordinatorFactory) : D
         private val logger = contextLogger()
     }
 
-    abstract val children: Collection<DominoTile>
+    open val children: Collection<DominoTile> = emptySet()
 
     @Volatile
     private var registrations: Collection<RegistrationHandle>? = null

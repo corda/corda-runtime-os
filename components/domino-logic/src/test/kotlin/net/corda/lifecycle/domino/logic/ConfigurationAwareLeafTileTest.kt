@@ -45,7 +45,7 @@ class ConfigurationAwareLeafTileTest {
     private val key = "key"
 
     private data class Configuration(val data: Int)
-    private inner class Tile : ConfigurationAwareLeafTile<Configuration>(
+    private inner class Tile : ConfigurationAwareTile<Configuration>(
         factory,
         service,
         key,
@@ -257,7 +257,7 @@ class ConfigurationAwareLeafTileTest {
             handler.onNewConfiguration(setOf(key), mapOf(key to config))
             registration
         }
-        val tile = object : ConfigurationAwareLeafTile<Configuration>(
+        val tile = object : ConfigurationAwareTile<Configuration>(
             factory,
             service,
             key,
@@ -277,7 +277,7 @@ class ConfigurationAwareLeafTileTest {
 
     @Test
     fun `startTile will not register more than once`() {
-        val tile = object : ConfigurationAwareLeafTile<Configuration>(
+        val tile = object : ConfigurationAwareTile<Configuration>(
             factory,
             service,
             key,
@@ -298,7 +298,7 @@ class ConfigurationAwareLeafTileTest {
 
     @Test
     fun `stopTile will close the registration`() {
-        val tile = object : ConfigurationAwareLeafTile<Configuration>(
+        val tile = object : ConfigurationAwareTile<Configuration>(
             factory,
             service,
             key,

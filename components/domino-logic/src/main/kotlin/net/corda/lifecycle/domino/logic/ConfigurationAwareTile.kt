@@ -7,13 +7,13 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.v5.base.util.contextLogger
 
-abstract class ConfigurationAwareLeafTile<C>(
+abstract class ConfigurationAwareTile<C>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReaderService: ConfigurationReadService,
     private val key: String,
     private val configFactory: (Config) -> C
 ) :
-    DominoTile(coordinatorFactory) {
+    InternalTile(coordinatorFactory) {
 
     companion object {
         private val logger = contextLogger()
@@ -21,8 +21,6 @@ abstract class ConfigurationAwareLeafTile<C>(
 
     @Volatile
     private var lastConfiguration: C? = null
-
-    protected val resources = ResourcesHolder()
 
     private inner class Handler : ConfigurationHandler {
         override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, Config>) {
@@ -62,13 +60,14 @@ abstract class ConfigurationAwareLeafTile<C>(
     abstract fun applyNewConfiguration(newConfiguration: C, oldConfiguration: C?)
 
     override fun startTile() {
+        super.startTile()
         if (registration == null) {
             registration = configurationReaderService.registerForUpdates(Handler())
         }
     }
 
     override fun stopTile(dueToError: Boolean) {
-        resources.close()
+        super.stopTile(dueToError)
         if (!dueToError) {
             registration?.close()
             registration = null

@@ -7,7 +7,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GPOUP_ID
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_X500_NAME
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.ConfigurationAwareLeafTile
+import net.corda.lifecycle.domino.logic.ConfigurationAwareTile
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap
 class ConfigBasedLinkManagerHostingMap(
     configReadService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory): LinkManagerHostingMap,
-    ConfigurationAwareLeafTile<Set<LinkManagerNetworkMap.HoldingIdentity>>(
+    ConfigurationAwareTile<Set<LinkManagerNetworkMap.HoldingIdentity>>(
         coordinatorFactory,
         configReadService,
         CONFIG_KEY,
