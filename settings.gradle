@@ -53,6 +53,7 @@ pluginManagement {
         id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.jpa' version kotlinVersion
         id 'net.corda.plugins.cordapp-cpk' version cordaGradlePluginsVersion
+        id 'net.corda.plugins.cordapp-cpb' version cordaGradlePluginsVersion
         id 'net.corda.plugins.quasar-utils' version cordaGradlePluginsVersion
         id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish' version internalPublishVersion
         id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion
@@ -92,6 +93,15 @@ include 'components:kafka-config-read'
 include 'components:kafka-config-write'
 include 'components:kafka-topic-admin'
 include 'components:gateway'
+include 'components:install:install'
+include 'components:install:test-resources:contract-cpk'
+include 'components:install:test-resources:workflow-cpk'
+include 'components:install:file-based-install-service'
+include 'components:install:install-legacy'
+include 'components:install:install-legacy:split-packages-one'
+include 'components:install:install-legacy:split-packages-one:library-one'
+include 'components:install:install-legacy:split-packages-two'
+include 'components:install:install-legacy:split-packages-two:library-two'
 include 'components:link-manager'
 include 'components:domino-logic'
 include 'components:membership:membership-impl'
@@ -138,11 +148,6 @@ include 'libs:http-rpc:ssl-cert-read'
 include 'libs:http-rpc:http-rpc-common'
 include 'libs:http-rpc:http-rpc-client'
 include 'libs:http-rpc:http-rpc-test-common'
-include 'libs:install'
-include 'libs:install:split-packages-one'
-include 'libs:install:split-packages-one:library-one'
-include 'libs:install:split-packages-two'
-include 'libs:install:split-packages-two:library-two'
 include 'libs:kafka-utils:topic-admin'
 include 'libs:kafka-utils:topic-admin-impl'
 include 'libs:kotlin-reflection'

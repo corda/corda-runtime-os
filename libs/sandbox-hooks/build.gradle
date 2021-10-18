@@ -33,7 +33,7 @@ dependencies {
 
     integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    integrationTestImplementation project(":libs:install")
+    integrationTestImplementation project(":components:install:install-legacy")
     integrationTestImplementation "net.corda:corda-application"
     integrationTestImplementation 'net.corda:corda-packaging'
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
