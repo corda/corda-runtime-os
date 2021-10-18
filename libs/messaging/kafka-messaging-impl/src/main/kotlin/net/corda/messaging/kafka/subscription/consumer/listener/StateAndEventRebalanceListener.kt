@@ -1,5 +1,6 @@
 package net.corda.messaging.kafka.subscription.consumer.listener
 
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
@@ -18,6 +19,7 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
     private val stateAndEventConsumer: StateAndEventConsumer<K, S, E>,
     private val partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
+    private val lifecycleListener: LifecycleListener?
 ) : ConsumerRebalanceListener {
 
     private val log = LoggerFactory.getLogger(config.loggerName)

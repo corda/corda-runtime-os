@@ -25,7 +25,12 @@ class StubNetworkMapTest {
     private var clientProcessor: CompactedProcessor<String, NetworkMapEntry>? = null
 
     private val subscriptionFactory = mock<SubscriptionFactory> {
-        on { createCompactedSubscription(any(), any<CompactedProcessor<String, KeyPairEntry>>(), any()) } doAnswer { invocation ->
+        on { createCompactedSubscription(
+            any(),
+            any<CompactedProcessor<String, KeyPairEntry>>(),
+            any(),
+            any()
+        ) } doAnswer { invocation ->
             @Suppress("UNCHECKED_CAST")
             clientProcessor = invocation.arguments[1] as CompactedProcessor<String, NetworkMapEntry>
             mock()

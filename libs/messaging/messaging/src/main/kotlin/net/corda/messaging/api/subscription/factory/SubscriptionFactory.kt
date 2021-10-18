@@ -16,6 +16,7 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import java.util.concurrent.ExecutorService
 
@@ -43,13 +44,15 @@ interface SubscriptionFactory {
      * @param executor This will allow for the threading model to be controlled by the subscriber. If null processor will
      * execute on the same thread as the consumer.
      * @param nodeConfig Configuration to override the default settings for the subscription
+     * @param lifecycleListener optional listener to be notified of any lifecycle events as they happen
      * @return A [Subscription] with key (of type [K]) and value (of type [V]) to manage lifecycle.
      */
     fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService?,
-        nodeConfig: Config = ConfigFactory.empty()
+        nodeConfig: Config = ConfigFactory.empty(),
+        lifecycleListener: LifecycleListener? = null
     ): Subscription<K, V>
 
     /**
@@ -66,13 +69,15 @@ interface SubscriptionFactory {
      * @param processor This provides the callback mechanism for feed updates (see [CompactedProcessor])
      * @param nodeConfig Configuration to override the default settings for the subscription
      * @param partitionAssignmentListener a listener that reacts to partition assignment and revocations.
+     * @param lifecycleListener optional listener to be notified of any lifecycle events as they happen
      * @return A [Subscription] with key (of type [K]) and value (of type [V]) to manage lifecycle.
      */
     fun <K : Any, V : Any> createDurableSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
         nodeConfig: Config = ConfigFactory.empty(),
-        partitionAssignmentListener: PartitionAssignmentListener?
+        partitionAssignmentListener: PartitionAssignmentListener?,
+        lifecycleListener: LifecycleListener? = null
     ): Subscription<K, V>
 
     /**
@@ -85,12 +90,14 @@ interface SubscriptionFactory {
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param processor This provides the callback mechanism for feed updates (see [CompactedProcessor])
      * @param nodeConfig Configuration to override the default settings for the subscription
+     * @param lifecycleListener optional listener to be notified of any lifecycle events as they happen
      * @return A subscription to manage lifecycle.
      */
     fun <K : Any, V : Any> createCompactedSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: CompactedProcessor<K, V>,
         nodeConfig: Config = ConfigFactory.empty(),
+        lifecycleListener: LifecycleListener? = null
     ): CompactedSubscription<K, V>
 
     /**
@@ -111,13 +118,15 @@ interface SubscriptionFactory {
      * @param processor This provides the callback mechanism for feed updates (see [StateAndEventProcessor])
      * @param nodeConfig Configuration to override the default settings for the subscription
      * @param stateAndEventListener listener to give client access to the in-memory map of states
+     * @param lifecycleListener optional listener to be notified of any lifecycle events as they happen
      * @return A [StateAndEventSubscription] to manage lifecycle.
      */
     fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
         nodeConfig: Config = ConfigFactory.empty(),
-        stateAndEventListener: StateAndEventListener<K, S>? = null
+        stateAndEventListener: StateAndEventListener<K, S>? = null,
+        lifecycleListener: LifecycleListener? = null
     ): StateAndEventSubscription<K, S, E>
 
     /**
@@ -126,24 +135,28 @@ interface SubscriptionFactory {
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
      * @param partitionAssignmentListener a listener that reacts to partition assignment and revocations.
+     * @param lifecycleListener optional listener to be notified of any lifecycle events as they happen
      */
     fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
         nodeConfig: Config = ConfigFactory.empty(),
-        partitionAssignmentListener: PartitionAssignmentListener?
+        partitionAssignmentListener: PartitionAssignmentListener?,
+        lifecycleListener: LifecycleListener? = null
     ): Subscription<K, V>
 
     /**
      * Creates a random access subscription.
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
+     * @param lifecycleListener optional listener to be notified of any lifecycle events as they happen
      */
     fun <K : Any, V : Any> createRandomAccessSubscription(
         subscriptionConfig: SubscriptionConfig,
         nodeConfig: Config = ConfigFactory.empty(),
         keyClass: Class<K>,
-        valueClass: Class<V>
+        valueClass: Class<V>,
+        lifecycleListener: LifecycleListener? = null
     ): RandomAccessSubscription<K, V>
 
     /**
@@ -162,10 +175,12 @@ interface SubscriptionFactory {
      * @param rpcConfig Define the mandatory params for creating a subscription.
      * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
      * @param responderProcessor processor in charge of handling incoming requests
+     * @param lifecycleListener optional listener to be notified of any lifecycle events as they happen
      */
     fun <TREQ : Any, TRESP : Any> createRPCSubscription(
         rpcConfig: RPCConfig<TREQ, TRESP>,
         nodeConfig: Config = ConfigFactory.empty(),
-        responderProcessor: RPCResponderProcessor<TREQ, TRESP>
+        responderProcessor: RPCResponderProcessor<TREQ, TRESP>,
+        lifecycleListener: LifecycleListener? = null
     ): RPCSubscription<TREQ, TRESP>
 }

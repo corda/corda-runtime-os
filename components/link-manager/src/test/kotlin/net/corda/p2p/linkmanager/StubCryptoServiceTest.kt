@@ -20,7 +20,12 @@ class StubCryptoServiceTest {
     private var clientProcessor: CompactedProcessor<String, KeyPairEntry>? = null
 
     private val subscriptionFactory = mock<SubscriptionFactory>() {
-        on { createCompactedSubscription(any(), any<CompactedProcessor<String, KeyPairEntry>>(), any()) } doAnswer { invocation ->
+        on { createCompactedSubscription(
+            any(),
+            any<CompactedProcessor<String, KeyPairEntry>>(),
+            any(),
+            any()
+        ) } doAnswer { invocation ->
             @Suppress("UNCHECKED_CAST")
             clientProcessor = invocation.arguments[1] as CompactedProcessor<String, KeyPairEntry>
             mock()

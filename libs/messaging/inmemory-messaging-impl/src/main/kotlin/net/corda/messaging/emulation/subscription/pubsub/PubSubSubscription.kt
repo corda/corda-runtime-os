@@ -3,6 +3,7 @@ package net.corda.messaging.emulation.subscription.pubsub
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
@@ -26,6 +27,7 @@ class PubSubSubscription<K : Any, V : Any>(
     private val processor: PubSubProcessor<K, V>,
     private val executor: ExecutorService?,
     private val topicService: TopicService,
+    private val lifecycleListener: LifecycleListener?
 ) : Subscription<K, V> {
 
     companion object {

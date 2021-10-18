@@ -3,6 +3,7 @@ package net.corda.messaging.emulation.subscription.compacted
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
@@ -17,6 +18,7 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
     private val subscriptionConfig: SubscriptionConfig,
     internal val processor: CompactedProcessor<K, V>,
     private val topicService: TopicService,
+    private val lifecycleListener: LifecycleListener?
 ) : CompactedSubscription<K, V> {
 
     private val knownValues = ConcurrentHashMap<K, V>()

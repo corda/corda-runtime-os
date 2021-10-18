@@ -4,6 +4,7 @@ import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.v5.base.util.contextLogger
@@ -25,6 +26,7 @@ class EventLogSubscription<K : Any, V : Any>(
     internal val processor: EventLogProcessor<K, V>,
     internal val partitionAssignmentListener: PartitionAssignmentListener?,
     internal val topicService: TopicService,
+    private val lifecycleListener: LifecycleListener?
 ) : Subscription<K, V> {
 
     companion object {

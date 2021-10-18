@@ -105,7 +105,12 @@ class DeliveryTrackerTest {
         val subscriptionFactory = Mockito.mock(SubscriptionFactory::class.java)
         val mockSubscription = MockStateAndEventSubscription<String, AuthenticatedMessageDeliveryState, AppMessageMarker>()
         Mockito.`when`(subscriptionFactory
-            .createStateAndEventSubscription<String, AuthenticatedMessageDeliveryState, AppMessageMarker>(any(), any(), any(), any()))
+            .createStateAndEventSubscription<String, AuthenticatedMessageDeliveryState, AppMessageMarker>(
+                any(),
+                any(),
+                any(),
+                any()
+            ))
             .thenReturn(mockSubscription)
 
         val tracker = DeliveryTracker(
@@ -119,7 +124,12 @@ class DeliveryTrackerTest {
         val listenerCaptor = argumentCaptor<StateAndEventListener<String, AuthenticatedMessageDeliveryState>>()
 
         Mockito.verify(subscriptionFactory)
-            .createStateAndEventSubscription(anyOrNull(), processorCaptor.capture(), anyOrNull(), listenerCaptor.capture())
+            .createStateAndEventSubscription(
+                anyOrNull(),
+                processorCaptor.capture(),
+                anyOrNull(),
+                listenerCaptor.capture()
+            )
         return Triple(tracker, processorCaptor.firstValue , listenerCaptor.firstValue)
     }
 

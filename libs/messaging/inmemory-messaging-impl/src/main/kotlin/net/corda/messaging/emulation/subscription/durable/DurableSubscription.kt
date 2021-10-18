@@ -4,6 +4,7 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
@@ -16,7 +17,8 @@ internal class DurableSubscription<K : Any, V : Any>(
     internal val subscriptionConfig: SubscriptionConfig,
     private val processor: DurableProcessor<K, V>,
     internal val partitionAssignmentListener: PartitionAssignmentListener?,
-    private val topicService: TopicService
+    private val topicService: TopicService,
+    private val lifecycleListener: LifecycleListener?
 ) : Subscription<K, V> {
     companion object {
         private val log = contextLogger()

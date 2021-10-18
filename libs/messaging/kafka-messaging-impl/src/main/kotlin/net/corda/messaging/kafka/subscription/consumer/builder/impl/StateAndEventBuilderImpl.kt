@@ -1,5 +1,6 @@
 package net.corda.messaging.kafka.subscription.consumer.builder.impl
 
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
@@ -24,6 +25,7 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
     private val eventConsumerBuilder: ConsumerBuilder<K, E>,
     private val producerBuilder: ProducerBuilder,
     private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,
+    private val lifecycleListener: LifecycleListener?
 ) : StateAndEventBuilder<K, S, E> {
 
     private val log = LoggerFactory.getLogger(this::class.java)
@@ -42,16 +44,25 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
         val eventConsumer = eventConsumerBuilder.createDurableConsumer(config.eventConsumerConfig, kClazz, eClazz)
         validateConsumers(config, stateConsumer, eventConsumer)
 
-        val partitionState = StateAndEventPartitionState(mutableMapOf<Int, MutableMap<K, Pair<Long, S>>>(), mutableMapOf())
+        val partitionState =
+            StateAndEventPartitionState(mutableMapOf<Int, MutableMap<K, Pair<Long, S>>>(), mutableMapOf())
 
         val stateAndEventConsumer =
-            StateAndEventConsumerImpl(config, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+            StateAndEventConsumerImpl(
+                config,
+                eventConsumer,
+                stateConsumer,
+                partitionState,
+                stateAndEventListener,
+                lifecycleListener
+            )
         val rebalanceListener = StateAndEventRebalanceListener(
             config,
             mapFactory,
             stateAndEventConsumer,
             partitionState,
-            stateAndEventListener
+            stateAndEventListener,
+            lifecycleListener
         )
         return Pair(stateAndEventConsumer, rebalanceListener)
     }
@@ -65,8 +76,10 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
         val eventTopic = Topic(topicPrefix, config.eventTopic)
         val stateTopic = Topic(topicPrefix, config.stateTopic)
         val consumerThreadStopTimeout = config.consumerThreadStopTimeout
-        val statePartitions = stateConsumer.getPartitions(stateTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
-        val eventPartitions = eventConsumer.getPartitions(eventTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
+        val statePartitions =
+            stateConsumer.getPartitions(stateTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
+        val eventPartitions =
+            eventConsumer.getPartitions(eventTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
         if (statePartitions.size != eventPartitions.size) {
             val errorMsg = "Mismatch between state and event partitions."
             log.debug {

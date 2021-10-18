@@ -11,6 +11,7 @@ import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
@@ -37,7 +38,8 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
     private val consumerBuilder: ConsumerBuilder<String, RPCRequest>,
     private val responderProcessor: RPCResponderProcessor<TREQ, TRESP>,
     private val serializer: CordaAvroSerializer<TRESP>,
-    private val deserializer: CordaAvroDeserializer<TREQ>
+    private val deserializer: CordaAvroDeserializer<TREQ>,
+    private val lifecycleListener: LifecycleListener?
 ) : RPCSubscription<TREQ, TRESP> {
 
     private val log = LoggerFactory.getLogger(

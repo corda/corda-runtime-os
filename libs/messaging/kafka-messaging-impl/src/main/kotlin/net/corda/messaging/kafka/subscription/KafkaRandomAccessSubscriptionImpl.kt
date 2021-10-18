@@ -5,11 +5,12 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RandomAccessSubscription
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
-import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
+import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.v5.base.util.seconds
@@ -22,9 +23,10 @@ import kotlin.concurrent.write
 
 class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
     private val config: Config,
-    private val consumerBuilder: ConsumerBuilder<K, V>,
+    private val consumerBuilder: CordaKafkaConsumerBuilderImpl<K, V>,
     private val keyClass: Class<K>,
-    private val valueClass: Class<V>
+    private val valueClass: Class<V>,
+    private val lifecycleListener: LifecycleListener?
 ): RandomAccessSubscription<K, V> {
 
     private val log = LoggerFactory.getLogger(

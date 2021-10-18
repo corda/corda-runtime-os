@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription.consumer.wrapper.impl
 
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
@@ -23,7 +24,8 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override val eventConsumer: CordaKafkaConsumer<K, E>,
     override val stateConsumer: CordaKafkaConsumer<K, S>,
     private val partitionState: StateAndEventPartitionState<K, S>,
-    private val stateAndEventListener: StateAndEventListener<K, S>?
+    private val stateAndEventListener: StateAndEventListener<K, S>?,
+    private val lifecycleListener: LifecycleListener?
 ) : StateAndEventConsumer<K, S, E>, AutoCloseable {
 
     companion object {

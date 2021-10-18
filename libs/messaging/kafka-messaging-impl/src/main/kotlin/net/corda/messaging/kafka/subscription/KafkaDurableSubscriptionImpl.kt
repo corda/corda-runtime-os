@@ -7,6 +7,7 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
@@ -36,7 +37,8 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val producerBuilder: ProducerBuilder,
     private val processor: DurableProcessor<K, V>,
-    private val partitionAssignmentListener: PartitionAssignmentListener?
+    private val partitionAssignmentListener: PartitionAssignmentListener?,
+    private val lifecycleListener: LifecycleListener?
 ) : Subscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
@@ -44,7 +46,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     )
 
     private val subscription = KafkaEventLogSubscriptionImpl(config, consumerBuilder, producerBuilder,
-        ForwardingEventLogProcessor(processor), partitionAssignmentListener)
+        ForwardingEventLogProcessor(processor), partitionAssignmentListener, lifecycleListener)
 
     override fun start() {
         subscription.start()

@@ -6,6 +6,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
@@ -48,7 +49,8 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val producerBuilder: ProducerBuilder,
     private val processor: EventLogProcessor<K, V>,
-    private val partitionAssignmentListener: PartitionAssignmentListener?
+    private val partitionAssignmentListener: PartitionAssignmentListener?,
+    private val lifecycleListener: LifecycleListener?
 ): Subscription<K, V> {
 
     private val log = LoggerFactory.getLogger(

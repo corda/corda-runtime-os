@@ -133,7 +133,10 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
             override val stateValueClass = State::class.java
             override val eventValueClass = Event::class.java
         }
-        val subscription = subscriptionFactory.createStateAndEventSubscription(subscriptionConfig, processor = processor)
+        val subscription = subscriptionFactory.createStateAndEventSubscription(
+            subscriptionConfig,
+            processor = processor
+        )
         subscription.start()
 
         val anotherProcessor = object : StateAndEventProcessor<String, String, String> {
@@ -147,7 +150,10 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
             override val stateValueClass = String::class.java
             override val eventValueClass = String::class.java
         }
-        val anotherSubscription = subscriptionFactory.createStateAndEventSubscription(anotherSubscriptionConfig, processor = anotherProcessor)
+        val anotherSubscription = subscriptionFactory.createStateAndEventSubscription(
+            anotherSubscriptionConfig,
+            processor = anotherProcessor
+        )
         subscription.start()
         anotherSubscription.start()
 
