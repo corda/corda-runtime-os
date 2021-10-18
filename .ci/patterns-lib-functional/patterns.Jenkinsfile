@@ -29,6 +29,8 @@ pipeline {
         CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
         CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
         CORDA_USE_CACHE = "corda-remotes"
+        KUBECONFIG=credentials("e2e-tests-credentials")
+        CORDA_CLI_USER_HOME="/tmp/corda-cli-home"
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
         NAME_SPACE = "pat-${UUID.randomUUID().toString()}"
@@ -43,9 +45,12 @@ pipeline {
     stages {
         stage('Prepare') {
             steps {
-               sh 'mkdir -p "${GRADLE_USER_HOME}"'
-               // This is very bad
-               sh "curl -u '${CORDA_ARTIFACTORY_USERNAME}:${CORDA_ARTIFACTORY_PASSWORD}' https://software.r3.com/artifactory/engineering-tools-maven-unstable/net/corda/cli/corda-cli/[RELEASE]/corda-cli-[RELEASE]-install.sh\\;source.branch+=bmcm%2FNOTICK%2FTest-kafka-deployment | bash"
+                sh 'mkdir -p "${GRADLE_USER_HOME}"'
+                // This is very bad
+                sh "curl -u '${CORDA_ARTIFACTORY_USERNAME}:${CORDA_ARTIFACTORY_PASSWORD}' https://software.r3.com/artifactory/engineering-tools-maven-unstable/net/corda/cli/corda-cli-developer/[RELEASE]/corda-cli-developer-[RELEASE].tar\\;source.branch+=bmcm%2FNOTICK%2FTest-kafka-deployment --output ./corda-cli.tar"
+                sh "rm -rf ./corda-cli && mkdir ./corda-cli"
+                sh "tar -C ./corda-cli --strip 1 -xf ./corda-cli.tar"
+                sh "./corda-cli/bin/corda-cli -v"
             }
         }
         stage('Build') {
@@ -55,8 +60,8 @@ pipeline {
         }
         stage('Setup network') {
             steps {
-                sh 'corda-cli cluster config k8s "${NAME_SPACE}"'
-                sh 'corda-cli cluster deploy -n "${NAME_SPACE}" -f .ci/patterns-lib-functional/cluster-definition.yml | kubectl apply -f -'
+                sh './corda-cli/bin/corda-cli cluster config k8s "${NAME_SPACE}"'
+                sh './corda-cli/bin/corda-cli cluster deploy -n "${NAME_SPACE}" -f .ci/patterns-lib-functional/cluster-definition.yml | kubectl apply -f -'
             }
         }
         stage('Wait for network') {
@@ -68,10 +73,10 @@ pipeline {
         stage('Forward ports and run the tests') {
             steps {
                 sh '''
-                    nohup corda-cli cluster forward -n "${NAME_SPACE}" > forward.txt 2>&1 &
+                    nohup ./corda-cli/bin/corda-cli cluster forward -n "${NAME_SPACE}" > forward.txt 2>&1 &
                     procno=$! #remember process number started in background
                     trap "kill -9 ${procno}" EXIT
-                    ./gradlew cleanKafkaIntegrationTest kafkaIntegrationTest
+                    ./gradlew kafkaIntegrationTest
                 '''
             }
             post {
@@ -82,6 +87,7 @@ pipeline {
                           echo "${POD}"
                           kubectl --namespace="${NAME_SPACE}" logs "${POD}" | tee build/${POD}-logs.txt
                         done
+                        kubectl delete ns "${NAME_SPACE}"
                     '''
                 }
             }
