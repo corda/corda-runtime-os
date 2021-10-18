@@ -18,6 +18,8 @@ pipeline {
         }
     }
 
+    triggers { cron('*/30 * * * *') }
+
     parameters {
         string(defaultValue: "",
             description: 'Up Stream project name',
