@@ -69,6 +69,7 @@ class OutboundMessageHandlerTest {
                 any(),
                 any<EventLogProcessor<String, LinkOutMessage>>(),
                 any(),
+                anyOrNull(),
                 anyOrNull()
             )
         } doReturn subscription

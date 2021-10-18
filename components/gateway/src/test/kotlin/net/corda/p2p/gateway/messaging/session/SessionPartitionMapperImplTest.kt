@@ -15,6 +15,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -38,7 +39,7 @@ class SessionPartitionMapperImplTest {
     private val subscription = mock<CompactedSubscription<String, SessionPartitions>>()
 
     private val subscriptionFactory = mock<SubscriptionFactory> {
-        on { createCompactedSubscription(any(), processor.capture(), any()) } doReturn subscription
+        on { createCompactedSubscription(any(), processor.capture(), any(), anyOrNull()) } doReturn subscription
     }
 
     @Test
