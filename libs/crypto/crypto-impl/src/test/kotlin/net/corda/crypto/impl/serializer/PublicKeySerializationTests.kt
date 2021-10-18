@@ -1,12 +1,8 @@
-package net.corda.internal.serialization.amqp
+package net.corda.crypto.impl.serializer
 
-import net.corda.internal.serialization.AllWhitelist
-import net.corda.internal.serialization.custom.PublicKeySerializer
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
+import kotlin.test.assertEquals
 
 class PublicKeySerializationTests {
     @Test
@@ -28,5 +24,4 @@ class PublicKeySerializationTests {
         // Run public key through serialization/deserialization and compare
         ReusableSerialiseDeserializeAssert.serializeDeserializeAssert(publicKey, serializerFactory)
     }
-
 }

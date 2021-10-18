@@ -1,4 +1,4 @@
-package net.corda.internal.serialization.custom
+package net.corda.crypto.impl.serializer
 
 import net.corda.v5.serialization.SerializationCustomSerializer
 import java.security.PrivateKey
