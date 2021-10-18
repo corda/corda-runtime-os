@@ -3,7 +3,7 @@ package net.corda.p2p.gateway.messaging
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationAwareLeafTile
-import net.corda.p2p.gateway.Gateway.Companion.CONFIG_KEY
+import net.corda.p2p.gateway.GatewayImpl.Companion.CONFIG_KEY
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpEventListener

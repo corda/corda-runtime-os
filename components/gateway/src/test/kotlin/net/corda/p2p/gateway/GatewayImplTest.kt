@@ -9,10 +9,10 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 
-class GatewayTest {
+class GatewayImplTest {
     @Test
     fun `children contains inbound message handler and outbound message processor`() {
-        val gateway = Gateway(
+        val gateway = GatewayImpl(
             mock(),
             mock {
                 on { createEventLogSubscription(any(), any<OutboundMessageHandler>(), any(), anyOrNull()) } doReturn mock()

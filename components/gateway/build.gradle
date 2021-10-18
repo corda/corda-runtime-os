@@ -1,9 +1,25 @@
 plugins {
     id 'corda.common-library'
     id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.osgi-test-conventions'
 }
 
 description 'P2P gateway component'
+
+sourceSets {
+    nonOsgiIntegrationTest {
+        java {
+            srcDirs += [ 'src/non-osgi-integration-test/java' ]
+        }
+        kotlin {
+            srcDirs += [ 'src/non-osgi-integration-test/kotlin' ]
+        }
+        resources {
+            srcDirs = [ 'src/non-osgi-integration-test/resources' ]
+            srcDirs += [ 'src/integration-test/resources' ]
+        }
+    }
+}
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -48,17 +64,37 @@ dependencies {
     integrationTestImplementation project(":libs:configuration:configuration-write-impl")
 }
 
-sourceSets {
-    integrationTest {
-        compileClasspath += main.output + test.output
-        runtimeClasspath += main.output + test.output
+kotlin {
+    target {
+        java
+        compilations.nonOsgiIntegrationTest {
+            associateWith compilations.main
+
+            configurations {
+                nonOsgiIntegrationTestApi.extendsFrom integrationTestApi
+                nonOsgiIntegrationTestImplementation.extendsFrom integrationTestImplementation
+                nonOsgiIntegrationTestRuntimeOnly.extendsFrom integrationTestRuntimeOnly
+
+                [ nonOsgiIntegrationTestCompileClasspath, nonOsgiIntegrationTestRuntimeClasspath ].forEach { cfg ->
+                    configureKotlinForOSGi(cfg)
+                }
+            }
+        }
     }
 }
 
-tasks.register('integrationTest', Test) {
-    description = "Runs integration tests."
-    final String hostsFilePath = new File(project.sourceSets["integrationTest"].output.resourcesDir.absolutePath, "hosts").absolutePath
+tasks.register('nonOsgiIntegrationTest', Test) {
+    description = 'Runs non-OSGI integration tests.'
+    group = 'verification'
+    def hostsFilePath = new File(project.sourceSets['nonOsgiIntegrationTest'].output.resourcesDir.absolutePath, 'hosts').absolutePath
     jvmArgs "-Djdk.net.hosts.file=$hostsFilePath"
-    testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
-    classpath = project.sourceSets["integrationTest"].runtimeClasspath
+    testClassesDirs = project.sourceSets['nonOsgiIntegrationTest'].output.classesDirs
+    classpath = project.sourceSets['nonOsgiIntegrationTest'].runtimeClasspath
+}
+
+tasks.named('check') {
+    dependsOn nonOsgiIntegrationTest
+}
+tasks.named('integrationTest') {
+    dependsOn nonOsgiIntegrationTest
 }
