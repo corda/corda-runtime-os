@@ -91,6 +91,9 @@ pipeline {
                         kubectl delete ns "${NAME_SPACE}"
                     '''
                 }
+                success {
+                    sh './gradlew cleanKafkaIntegrationTest'
+                }
             }
         }
     }
