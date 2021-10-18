@@ -495,30 +495,6 @@ class SerializationOutputTests {
     }
 
     @Test
-    fun `test custom serializers on public key`() {
-
-        // Generate new key for testing
-        val publicKey = KeyPairGenerator.getInstance("RSA").genKeyPair().public
-
-        // Setup PublicKeySerializer with mock CipherSchemeMetadata
-        val cipherSchemeMetadata: CipherSchemeMetadata = mock<CipherSchemeMetadata>().also {
-            whenever(it.decodePublicKey(eq(publicKey.encoded))).thenReturn(publicKey)
-        }
-        val publicKeySerializer = PublicKeySerializer(cipherSchemeMetadata)
-
-        // Build serialization factory
-        val serializerFactory = SerializerFactoryBuilder.build(AllWhitelist)
-        serializerFactory.register(publicKeySerializer, true)
-
-        // Build deserialization factory
-        val freshDeserializationFactory = SerializerFactoryBuilder.build(AllWhitelist)
-        freshDeserializationFactory.register(publicKeySerializer, true)
-
-        // Run public key through serialization/deserialization and compare
-        serdes(publicKey, serializerFactory, freshDeserializationFactory)
-    }
-
-    @Test
     fun `test annotation is inherited`() {
         val obj = InheritAnnotation("blah")
         serdes(obj, SerializerFactoryBuilder.build(AlwaysEmptyWhitelist))
