@@ -42,6 +42,7 @@ class Sender(private val publisherFactory: PublisherFactory,
             "VALUES (?, ?) on conflict do nothing")
 
     private val writerThreads = mutableListOf<Thread>()
+    @Volatile
     private var stopped = false
 
     fun start() {
