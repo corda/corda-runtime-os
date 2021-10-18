@@ -1,7 +1,7 @@
-package net.corda.membership.impl
+package net.corda.membership.impl.read
 
-import net.corda.membership.MembershipGroupService
-import net.corda.membership.MembershipGroupServiceFactory
+import net.corda.membership.read.MembershipGroupService
+import net.corda.membership.read.MembershipGroupServiceFactory
 import net.corda.v5.membership.identity.MemberX500Name
 
 class MembershipGroupServiceFactoryImpl : MembershipGroupServiceFactory {

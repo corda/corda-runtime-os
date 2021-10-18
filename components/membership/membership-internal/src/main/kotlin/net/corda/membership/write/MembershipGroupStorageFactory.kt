@@ -1,7 +1,7 @@
-package net.corda.membership
+package net.corda.membership.write
 
 /**
- * Provides read-only access to instances of membership group storage service factory.
+ * Provides API to update stored member data via instances of membership group storage service factory.
  */
 interface MembershipGroupStorageFactory {
     /**

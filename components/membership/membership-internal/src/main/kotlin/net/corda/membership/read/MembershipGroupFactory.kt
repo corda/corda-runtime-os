@@ -1,7 +1,7 @@
-package net.corda.membership
+package net.corda.membership.read
 
 /**
- * Provides read-only access to instances of membership group service factory.
+ * Provides read-only access to membership data via instances of membership group service factory.
  */
 interface MembershipGroupFactory {
     /**
@@ -9,5 +9,3 @@ interface MembershipGroupFactory {
      */
     fun getMembershipGroupServiceFactory(): MembershipGroupServiceFactory
 }
-
-

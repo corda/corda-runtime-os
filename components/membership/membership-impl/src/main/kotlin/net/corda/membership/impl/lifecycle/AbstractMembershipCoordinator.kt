@@ -29,7 +29,7 @@ abstract class AbstractMembershipCoordinator(
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
-    private var coordinator = coordinatorFactory.createCoordinator(coordinatorName) { event, _ ->
+    private val coordinator = coordinatorFactory.createCoordinator(coordinatorName) { event, _ ->
         handleEvent(event)
     }
 

@@ -1,7 +1,8 @@
-package net.corda.membership
+package net.corda.membership.read
 
-import net.corda.v5.application.identity.CordaX500Name
+import net.corda.membership.GroupPolicy
 import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.membership.identity.MemberX500Name
 
 /**
  * Provides group information for a specific group and member. The view of group information may vary based on the
@@ -16,7 +17,7 @@ interface MembershipGroupService {
     /**
      * The member for which this group information is visible for.
      */
-    val requestingMember: CordaX500Name
+    val requestingMember: MemberX500Name
 
     /**
      * The group policy information for this group.
@@ -33,11 +34,11 @@ interface MembershipGroupService {
     fun lookupMember(lookupMember: ByteArray): MemberInfo?
 
     /**
-     * Looks up a group member of the specified group by the public key SHA-256 hash
+     * Looks up a group member of the specified group by the MemberX500Name
      * belonging to the member.
      * Returns null if the member is not found.
      *
-     * @param lookupMember [CordaX500Name] of the member to look up.
+     * @param name [MemberX500Name] of the member to look up.
      */
-    fun lookupMember(lookupMember: CordaX500Name): MemberInfo?
+    fun lookupMember(name: MemberX500Name): MemberInfo?
 }

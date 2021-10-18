@@ -1,4 +1,4 @@
-package net.corda.membership
+package net.corda.membership.write
 
 import net.corda.v5.membership.identity.MemberX500Name
 
@@ -7,7 +7,8 @@ import net.corda.v5.membership.identity.MemberX500Name
  */
 interface MembershipGroupStorageServiceFactory {
     /**
-     * TODO
+     * Returns a group storage service providing APIs to update group information for the specified group as viewed by
+     * the specified member.
      *
      * @param groupId String containing the group identifier.
      * @param name MemberX500Name of the member requesting the group policy.

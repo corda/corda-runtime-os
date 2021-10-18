@@ -1,13 +1,13 @@
-package net.corda.membership.impl
+package net.corda.membership.impl.read
 
 import net.corda.membership.GroupPolicy
-import net.corda.membership.MembershipGroupService
-import net.corda.v5.application.identity.CordaX500Name
+import net.corda.membership.read.MembershipGroupService
 import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.membership.identity.MemberX500Name
 
 class MembershipGroupServiceImpl(
     override val groupId: String,
-    override val requestingMember: CordaX500Name,
+    override val requestingMember: MemberX500Name,
     override val policy: GroupPolicy
 ) : MembershipGroupService {
 
@@ -15,7 +15,7 @@ class MembershipGroupServiceImpl(
         TODO("Not yet implemented")
     }
 
-    override fun lookupMember(lookupMember: CordaX500Name): MemberInfo? {
+    override fun lookupMember(name: MemberX500Name): MemberInfo? {
         TODO("Not yet implemented")
     }
 }

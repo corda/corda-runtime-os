@@ -1,21 +1,23 @@
-package net.corda.membership.impl
+package net.corda.membership.impl.write
 
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.MembershipGroupServiceFactory
-import net.corda.membership.MembershipGroupServiceFactoryProvider
+import net.corda.membership.write.MembershipGroupStorageServiceFactory
+import net.corda.membership.write.MembershipGroupStorageServiceFactoryProvider
 import net.corda.membership.config.MembershipConfig
 import net.corda.membership.lifecycle.MembershipLifecycleComponent
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 
-@Component(service = [MembershipGroupServiceFactoryProvider::class])
-class MembershipGroupServiceFactoryProviderImpl(
-    override val name: String
-) : Lifecycle, MembershipGroupServiceFactoryProvider, MembershipLifecycleComponent {
+@Component(service = [MembershipGroupStorageServiceFactoryProvider::class])
+class MembershipGroupStorageServiceFactoryDefaultProviderImpl : Lifecycle, MembershipGroupStorageServiceFactoryProvider,
+    MembershipLifecycleComponent {
     companion object {
         private val logger: Logger = contextLogger()
+        const val PROVIDER_NAME = "default"
     }
+
+    override val name: String get() = PROVIDER_NAME
 
     override var isRunning: Boolean = false
 
@@ -33,7 +35,7 @@ class MembershipGroupServiceFactoryProviderImpl(
         TODO("Not yet implemented")
     }
 
-    override fun create(): MembershipGroupServiceFactory {
+    override fun create(): MembershipGroupStorageServiceFactory {
         TODO("Not yet implemented")
     }
 }

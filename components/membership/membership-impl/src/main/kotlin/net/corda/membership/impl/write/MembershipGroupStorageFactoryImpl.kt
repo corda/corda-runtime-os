@@ -1,20 +1,26 @@
-package net.corda.membership.impl
+package net.corda.membership.impl.write
 
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.MembershipGroupStorageFactory
-import net.corda.membership.MembershipGroupStorageServiceFactory
-import net.corda.membership.MembershipGroupStorageServiceFactoryProvider
+import net.corda.membership.write.MembershipGroupStorageFactory
+import net.corda.membership.write.MembershipGroupStorageServiceFactory
+import net.corda.membership.write.MembershipGroupStorageServiceFactoryProvider
 import net.corda.membership.config.MembershipConfig
 import net.corda.membership.lifecycle.MembershipLifecycleComponent
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality
+import org.osgi.service.component.annotations.ReferencePolicyOption
 import org.slf4j.Logger
 
 @Component(service = [MembershipGroupStorageFactory::class])
 class MembershipGroupStorageFactoryImpl @Activate constructor(
-    @Reference(service = MembershipGroupStorageServiceFactoryProvider::class)
+    @Reference(
+        service = MembershipGroupStorageServiceFactoryProvider::class,
+        cardinality = ReferenceCardinality.AT_LEAST_ONE,
+        policyOption = ReferencePolicyOption.GREEDY
+    )
     private val providers: List<MembershipGroupStorageServiceFactoryProvider>
 ) : Lifecycle, MembershipGroupStorageFactory, MembershipLifecycleComponent {
     companion object {

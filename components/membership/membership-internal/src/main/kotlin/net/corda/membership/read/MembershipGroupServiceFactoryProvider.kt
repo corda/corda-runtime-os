@@ -1,4 +1,4 @@
-package net.corda.membership
+package net.corda.membership.read
 
 /**
  * Creates an instance of [MembershipGroupServiceFactory].

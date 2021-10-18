@@ -1,4 +1,4 @@
-package net.corda.membership
+package net.corda.membership.read
 
 import net.corda.v5.membership.identity.MemberX500Name
 

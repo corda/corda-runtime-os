@@ -1,4 +1,4 @@
-package net.corda.membership
+package net.corda.membership.write
 
 /**
  * Creates an instance of [MembershipGroupStorageServiceFactory].

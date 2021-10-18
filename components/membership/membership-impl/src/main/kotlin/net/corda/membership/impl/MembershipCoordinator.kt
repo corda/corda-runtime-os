@@ -3,8 +3,8 @@ package net.corda.membership.impl
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.membership.MembershipGroupFactory
-import net.corda.membership.MembershipGroupStorageFactory
+import net.corda.membership.read.MembershipGroupFactory
+import net.corda.membership.write.MembershipGroupStorageFactory
 import net.corda.membership.impl.lifecycle.AbstractMembershipCoordinator
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
