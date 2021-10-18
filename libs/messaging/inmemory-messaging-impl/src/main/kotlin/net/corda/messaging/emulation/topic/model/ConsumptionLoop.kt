@@ -39,36 +39,37 @@ internal class ConsumptionLoop(
     }
 
     private fun processRecords(records: Map<Partition, Collection<RecordMetadata>>) {
-        if (records.isNotEmpty()) {
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                consumer.handleRecords(
-                    records
-                        .values
-                        .flatten()
-                )
-                commitRecords(records)
-            } catch (e: Exception) {
-                val recordsAsString = records.values
+        @Suppress("TooGenericExceptionCaught")
+        try {
+            consumer.handleRecords(
+                records
+                    .values
                     .flatten()
-                    .joinToString {
-                        "${it.partition}/${it.offset}"
-                    }
-                logger.warn(
-                    "Error processing records for consumer ${consumer.groupName}, topic ${consumer.groupName}. " +
-                        "Will try again records ($recordsAsString)",
-                    e
-                )
-            }
-        } else {
-            group.waitForData()
+            )
+            commitRecords(records)
+        } catch (e: Exception) {
+            val recordsAsString = records.values
+                .flatten()
+                .joinToString {
+                    "${it.partition}/${it.offset}"
+                }
+            logger.warn(
+                "Error processing records for consumer ${consumer.groupName}, topic ${consumer.groupName}. " +
+                    "Will try again records ($recordsAsString)",
+                e
+            )
         }
     }
 
     override fun run() {
         while (group.isConsuming(consumer)) {
+            val phase = group.currentPhase()
             val records = readRecords()
-            processRecords(records)
+            if (records.isNotEmpty()) {
+                processRecords(records)
+            } else {
+                group.waitForPhaseChange(phase)
+            }
         }
     }
 
