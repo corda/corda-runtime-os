@@ -25,16 +25,10 @@ class DiscoveryPermissionTests {
     @Test
     fun `discovery mode grants all OSGi permissions`() {
         assertDoesNotThrow {
-            sandboxLoader.sandboxedOsgiInvoker.apply {
-                getBundleContext()
-                startBundle()
-                installBundle()
-                addListener()
-                loadClass()
-                getLocation()
-                refreshBundles()
-                adaptBundle()
-                getService()
+            sandboxLoader.sandboxedInvoker.apply {
+                performActionRequiringRuntimePermission()
+                performActionRequiringServiceGetPermission()
+                performActionRequiringServiceRegisterPermission()
             }
         }
     }

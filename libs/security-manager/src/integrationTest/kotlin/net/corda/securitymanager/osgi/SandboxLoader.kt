@@ -1,7 +1,7 @@
 package net.corda.securitymanager.osgi
 
 import net.corda.securitymanager.SecurityManagerService
-import net.corda.securitymanager.osgiinvoker.OsgiInvoker
+import net.corda.securitymanager.invoker.Invoker
 import org.junit.jupiter.api.Assertions
 import org.osgi.framework.Bundle
 import org.osgi.framework.Constants
@@ -19,7 +19,7 @@ class SandboxLoader @Activate constructor(
     @Reference
     val securityManagerService: SecurityManagerService,
     @Reference
-    val unsandboxedOsgiInvoker: OsgiInvoker
+    val unsandboxedInvoker: Invoker
 ) {
     companion object {
         private const val SANDBOX_SECURITY_DOMAIN_PREFIX = "sandbox/"
@@ -58,10 +58,11 @@ class SandboxLoader @Activate constructor(
         }
     }
 
-    // An `OsgiInvoker` from a sandboxed bundle.
-    val sandboxedOsgiInvoker: OsgiInvoker
+    // An `Invoker` from a sandboxed bundle.
+    val sandboxedInvoker: Invoker
+
     init {
-        val sandboxedOsgiInvokerBundle = createSandboxedBundle(unsandboxedOsgiInvoker::class.java)
-        sandboxedOsgiInvoker = retrieveServiceFromBundle(sandboxedOsgiInvokerBundle, OsgiInvoker::class.java)
+        val sandboxedOsgiInvokerBundle = createSandboxedBundle(unsandboxedInvoker::class.java)
+        sandboxedInvoker = retrieveServiceFromBundle(sandboxedOsgiInvokerBundle, Invoker::class.java)
     }
 }

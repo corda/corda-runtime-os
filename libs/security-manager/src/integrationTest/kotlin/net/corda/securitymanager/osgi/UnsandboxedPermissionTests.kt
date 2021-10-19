@@ -15,18 +15,12 @@ class UnsandboxedPermissionTests {
     }
 
     @Test
-    fun `unsandboxed bundle has all OSGi permissions`() {
+    fun `unsandboxed bundle has all permissions`() {
         assertDoesNotThrow {
-            sandboxLoader.unsandboxedOsgiInvoker.apply {
-                getBundleContext()
-                startBundle()
-                installBundle()
-                addListener()
-                loadClass()
-                getLocation()
-                refreshBundles()
-                adaptBundle()
-                getService()
+            sandboxLoader.unsandboxedInvoker.apply {
+                performActionRequiringRuntimePermission()
+                performActionRequiringServiceGetPermission()
+                performActionRequiringServiceRegisterPermission()
             }
         }
     }

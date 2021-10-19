@@ -17,7 +17,7 @@ dependencies {
     implementation "net.corda:corda-base"
 
     integrationTestImplementation project(":libs:security-manager")
-    integrationTestImplementation project(":libs:security-manager:osgi-invoker-impl")
+    integrationTestImplementation project(":libs:security-manager:invoker-impl")
     integrationTestImplementation 'org.slf4j:slf4j-api'
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion"
