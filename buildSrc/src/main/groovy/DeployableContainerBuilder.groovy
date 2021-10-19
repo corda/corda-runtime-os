@@ -2,8 +2,6 @@ package net.corda.gradle
 
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
@@ -14,7 +12,10 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import com.google.cloud.tools.jib.api.*
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath
+import java.nio.file.StandardCopyOption;
 
+
+import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.Instant
 
@@ -33,6 +34,7 @@ class DeployableContainerBuilder extends DefaultTask {
     private static final String KAFKA_FILE_LOCATION = CONTAINER_LOCATION + KAFKA_PROPERTIES
     private String defaultUsername = System.getenv("CORDA_ARTIFACTORY_USERNAME") ?: project.findProperty('cordaArtifactoryUsername') ?: System.getProperty('corda.artifactory.username')
     private String defaultPassword = System.getenv("CORDA_ARTIFACTORY_PASSWORD") ?: project.findProperty('cordaArtifactoryPassword') ?: System.getProperty('corda.artifactory.password')
+    private String gitVersion = "git rev-parse --verify --short HEAD".execute().text
 
     @PathSensitive(PathSensitivity.RELATIVE)
     @InputFile
@@ -76,13 +78,15 @@ class DeployableContainerBuilder extends DefaultTask {
     @TaskAction
     def updateImage() {
 
-        String overrideFilePath = overrideFile.getAsFile().get().getPath()
+        String jarLocation = "${project.buildDir}/tmp/containerization/${project.name}.jar"
+        Files.createDirectories(Paths.get("${project.buildDir}/tmp/containerization/"))
+        Files.copy(Paths.get(overrideFile.getAsFile().get().getPath()), Paths.get(jarLocation), StandardCopyOption.REPLACE_EXISTING)
 
         RegistryImage baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
 
         JibContainerBuilder builder = Jib.from(baseImage)
                 .setCreationTime(Instant.now())
-                .addLayer(Arrays.asList(Paths.get(overrideFilePath)), AbsoluteUnixPath.get(CONTAINER_LOCATION))
+                .addLayer(Arrays.asList(Paths.get(jarLocation)), AbsoluteUnixPath.get(CONTAINER_LOCATION))
 
         File projectKafkaFile = new File("${project.getProjectDir()}/$KAFKA_PROPERTIES")
         List<String> javaArgs = new ArrayList<>(arguments.get())
@@ -94,31 +98,34 @@ class DeployableContainerBuilder extends DefaultTask {
             javaArgs.addAll("--kafka", KAFKA_FILE_LOCATION)
         }
 
-        builder.addLayer(Arrays.asList(Paths.get(projectKafkaFile.getPath())), AbsoluteUnixPath.get(CONTAINER_LOCATION))
-
         if (arguments.isPresent() && !arguments.get().isEmpty()) {
             builder.setProgramArguments(javaArgs)
         }
-        builder.setEntrypoint("java", "-jar", CONTAINER_LOCATION + overrideFile.getAsFile().get().getName())
+        builder.setEntrypoint("java", "-jar", CONTAINER_LOCATION + project.name+".jar")
 
         logger.quiet("Publishing '${targetImageName.get()}:${targetImageTag.get()}' and '${targetImageName.get()}:${project.version}'" +
-                " ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with '$overrideFilePath', from base '${baseImageName.get()}:${targetImageTag.get()}'")
+                " ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with '${project.name}.jar', from base '${baseImageName.get()}:${targetImageTag.get()}'")
 
         if (!remotePublish.get()) {
-            builder.containerize(
-                    Containerizer.to(DockerDaemonImage.named("${targetImageName.get()}:${targetImageTag.get()}"))
-            )
-            builder.containerize(
-                    Containerizer.to(DockerDaemonImage.named("${targetImageName.get()}:${project.version}"))
-            )
+            tagContainerForLocal(builder, targetImageTag.get())
+            tagContainerForLocal(builder, project.version)
+            tagContainerForLocal(builder, gitVersion)
         } else {
-            builder.containerize(
-                    Containerizer.to(RegistryImage.named("${targetImageName.get()}:${targetImageTag.get()}")
-                            .addCredential(registryUsername.get(), registryPassword.get())))
-
-            builder.containerize(
-                    Containerizer.to(RegistryImage.named("${targetImageName.get()}:${project.version}")
-                            .addCredential(registryUsername.get(), registryPassword.get())))
+            tagContainerForRemote(builder, targetImageTag.get())
+            tagContainerForRemote(builder, project.version)
+            tagContainerForRemote(builder, gitVersion)
         }
+    }
+
+    private JibContainer tagContainerForLocal(JibContainerBuilder builder, String tag) {
+        builder.containerize(
+                Containerizer.to(DockerDaemonImage.named("${targetImageName.get()}:${tag}"))
+        )
+    }
+
+    private JibContainer tagContainerForRemote(JibContainerBuilder builder, String tag) {
+        builder.containerize(
+                Containerizer.to(RegistryImage.named("${targetImageName.get()}:${tag}")
+                        .addCredential(registryUsername.get(), registryPassword.get())))
     }
 }
