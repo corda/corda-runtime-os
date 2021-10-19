@@ -3,6 +3,7 @@ package net.corda.messaging.emulation.topic.model
 import net.corda.messaging.emulation.properties.SubscriptionConfiguration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
 
@@ -19,15 +20,20 @@ internal class ConsumerGroup(
     private val partitionStrategy = firstConsumer.partitionStrategy
     private val offsetStrategy = firstConsumer.offsetStrategy
 
+    private val phase = AtomicInteger(0)
     private val newData = lock.writeLock().newCondition()
 
     internal val pollSizePerPartition = (subscriptionConfig.maxPollSize / partitions.size).coerceAtLeast(1)
 
     class DuplicateConsumerException : Exception("Can not consume the same consumer twice")
 
-    internal fun waitForData() {
+    internal fun currentPhase() = phase.get()
+
+    internal fun waitForPhaseChange(knownPhase: Int) {
         lock.write {
-            newData.await(1, TimeUnit.HOURS)
+            if (phase.get() == knownPhase) {
+                newData.await(1, TimeUnit.HOURS)
+            }
         }
     }
 
@@ -66,8 +72,7 @@ internal class ConsumerGroup(
         lock.write {
             val loop = consumers[consumer] ?: throw IllegalStateException("No such consumer")
             addPartitionsToLoop(loop, partitions)
-
-            newData.signalAll()
+            wakeUp()
         }
     }
 
@@ -79,7 +84,7 @@ internal class ConsumerGroup(
             val loop = consumers[consumer] ?: throw IllegalStateException("No such consumer")
             loop.removePartitions(partitions)
 
-            newData.signalAll()
+            wakeUp()
         }
     }
 
@@ -89,6 +94,7 @@ internal class ConsumerGroup(
 
     internal fun wakeUp() {
         lock.write {
+            phase.incrementAndGet()
             newData.signalAll()
         }
     }
@@ -112,7 +118,7 @@ internal class ConsumerGroup(
                 addPartitionsToLoop(loop, partitions)
             }
 
-            newData.signalAll()
+            wakeUp()
         }
     }
 
@@ -139,7 +145,7 @@ internal class ConsumerGroup(
             consumersWithoutAssignedPartitions.forEach { consumerAndLoop ->
                 consumerAndLoop.value.removePartitions(consumerAndLoop.value.partitions)
             }
-            newData.signalAll()
+            wakeUp()
         }
     }
 

@@ -6,6 +6,7 @@ import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
+import java.io.InputStream
 import java.net.URL
 import java.nio.charset.Charset
 import kotlin.test.assertNotNull
@@ -24,7 +25,7 @@ class InputStreamTest {
         val byteArray = "ABC".toByteArray(Charset.defaultCharset())
 
         ByteArrayInputStream(byteArray).use {
-            val deserializedInputStream = serializeDeserialize(it)
+            val deserializedInputStream = serializeDeserialize<InputStream>(it)
             assertArrayEquals(byteArray, deserializedInputStream.readAllBytes())
         }
     }

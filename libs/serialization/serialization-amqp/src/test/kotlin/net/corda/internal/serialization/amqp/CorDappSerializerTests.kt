@@ -23,7 +23,7 @@ class CorDappSerializerTests {
             serializers: List<SerializationCustomSerializer<*, *>>
     ) = SerializerFactoryBuilder.build(AllWhitelist).apply {
         serializers.forEach {
-            registerExternal(CorDappCustomSerializer(it))
+            registerExternal(it)
         }
     }
 
@@ -35,11 +35,7 @@ class CorDappSerializerTests {
     }
 
     // Standard proxy serializer used internally, here for comparison purposes
-    class InternalProxySerializer(factory: SerializerFactory) :
-            CustomSerializer.Proxy<NeedsProxy, InternalProxySerializer.Proxy>(
-                    NeedsProxy::class.java,
-                    InternalProxySerializer.Proxy::class.java,
-                    factory) {
+    class InternalProxySerializer : SerializationCustomSerializer<NeedsProxy, InternalProxySerializer.Proxy> {
         data class Proxy(val proxy_a_: String)
 
         override fun toProxy(obj: NeedsProxy): Proxy {
@@ -59,8 +55,8 @@ class CorDappSerializerTests {
 
         val msg = "help"
 
-        proxyFactory.registerExternal(CorDappCustomSerializer(NeedsProxyProxySerializer()))
-        internalProxyFactory.register(InternalProxySerializer(internalProxyFactory))
+        proxyFactory.registerExternal(NeedsProxyProxySerializer())
+        internalProxyFactory.register(InternalProxySerializer(), true)
 
         val needsProxy = NeedsProxy(msg)
 
@@ -82,7 +78,7 @@ class CorDappSerializerTests {
         data class A(val a: Int, val b: NeedsProxy)
 
         val factory = testDefaultFactory()
-        factory.registerExternal(CorDappCustomSerializer(NeedsProxyProxySerializer()))
+        factory.registerExternal(NeedsProxyProxySerializer())
 
         val tv1 = 100
         val tv2 = "pants schmants"
@@ -110,7 +106,7 @@ class CorDappSerializerTests {
 
         val whitelist = WL()
         val factory = SerializerFactoryBuilder.build(whitelist)
-        factory.registerExternal(CorDappCustomSerializer(NeedsProxyProxySerializer()))
+        factory.registerExternal(NeedsProxyProxySerializer())
 
         val tv1 = 100
         val tv2 = "pants schmants"
@@ -137,7 +133,7 @@ class CorDappSerializerTests {
 
         val whitelist = WL()
         val factory = SerializerFactoryBuilder.build(whitelist)
-        factory.registerExternal(CorDappCustomSerializer(NeedsProxyProxySerializer()))
+        factory.registerExternal(NeedsProxyProxySerializer())
 
         val tv1 = 100
         val tv2 = "pants schmants"
@@ -167,7 +163,7 @@ class CorDappSerializerTests {
 
         val whitelist = WL()
         val factory = SerializerFactoryBuilder.build(whitelist)
-        factory.registerExternal(CorDappCustomSerializer(NeedsProxyProxySerializer()))
+        factory.registerExternal(NeedsProxyProxySerializer())
 
         val tv1 = 100
         val tv2 = "pants schmants"

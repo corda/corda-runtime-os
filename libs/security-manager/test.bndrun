@@ -5,13 +5,12 @@
 -runsystempackages: \
     sun.security.x509
 -runrequires: \
-	bnd.identity;id='osgi-integration-tests-tests',\
+	bnd.identity;id='security-manager-tests',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='org.apache.felix.framework.security',\
     bnd.identity;id='net.corda.security-manager',\
-    bnd.identity;id='net.corda.osgi-invoker-impl',\
-    bnd.identity;id='net.corda.local-permissions-impl'
+    bnd.identity;id='net.corda.osgi-invoker-impl'
 -runstartlevel: \
     order=sortbynameversion,\
     begin=-1
@@ -25,8 +24,6 @@
 	junit-platform-commons;version='[1.7.2,1.7.3)',\
 	junit-platform-engine;version='[1.7.2,1.7.3)',\
 	junit-platform-launcher;version='[1.7.2,1.7.3)',\
-	net.corda.local-permissions;version='[5.0.0,5.0.1)',\
-	net.corda.local-permissions-impl;version='[5.0.0,5.0.1)',\
 	net.corda.osgi-invoker;version='[5.0.0,5.0.1)',\
 	net.corda.osgi-invoker-impl;version='[5.0.0,5.0.1)',\
 	net.corda.security-manager;version='[5.0.0,5.0.1)',\
@@ -39,4 +36,4 @@
 	org.osgi.test.junit5;version='[1.0.0,1.0.1)',\
 	org.osgi.util.function;version='[1.1.0,1.1.1)',\
 	org.osgi.util.promise;version='[1.1.1,1.1.2)',\
-	osgi-integration-tests-tests;version='[5.0.0,5.0.1)'
+	security-manager-tests;version='[5.0.0,5.0.1)'

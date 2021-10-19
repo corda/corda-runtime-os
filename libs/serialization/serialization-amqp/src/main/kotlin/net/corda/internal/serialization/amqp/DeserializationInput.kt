@@ -101,7 +101,7 @@ class DeserializationInput constructor(
             return generator()
         } catch (amqp: AMQPNotSerializableException) {
             amqp.log("Deserialize", logger)
-            throw NotSerializableException(amqp.mitigation)
+            throw NotSerializableException(amqp.mitigation).apply { initCause(amqp) }
         } catch (nse: NotSerializableException) {
             throw nse
         } catch (e: Exception) {
