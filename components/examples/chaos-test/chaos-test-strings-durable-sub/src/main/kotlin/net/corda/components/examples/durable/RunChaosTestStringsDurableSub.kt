@@ -2,7 +2,6 @@ package net.corda.components.examples.durable
 
 import com.typesafe.config.Config
 import net.corda.components.examples.durable.processor.ChaosTestStringsDurableProcessor
-// import net.corda.data.demo.DemoRecord
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory

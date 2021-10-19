@@ -1,6 +1,5 @@
 package net.corda.components.examples.durable.processor
 
-// import net.corda.data.demo.DemoRecord
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
