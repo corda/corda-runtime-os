@@ -5,7 +5,7 @@ import java.util.UUID
 
 /** Information about the sandbox that can be mapped to and from a unique OSGi bundle location. */
 @Suppress("ThrowsCount")
-data class SandboxLocation(val id: UUID, val source: String) {
+data class SandboxLocation(val securityDomain: String, val id: UUID, val source: String) {
     companion object {
         fun fromString(string: String): SandboxLocation {
             val components = string.split('/')
@@ -13,22 +13,18 @@ data class SandboxLocation(val id: UUID, val source: String) {
             if (components.size != 3) {
                 throw SandboxException(
                     "Sandbox bundle location had incorrect format: $string. Expected " +
-                            "\"sandbox/{sandbox-id}/{sandbox-source}\"."
+                            "\"{security-domain}/{sandbox-id}/{sandbox-source}\"."
                 )
             }
-
-            if (components[0] != "sandbox") throw SandboxException(
-                "Sandbox bundle location had incorrect format: $string. Expected first component to be \"sandbox\"."
-            )
 
             val sandboxId = try {
                 UUID.fromString(components[1])
             } catch (e: IllegalArgumentException) {
                 throw SandboxException("Sandbox ID ${components[1]} was not a valid UUID.")
             }
-            return SandboxLocation(sandboxId, components[2])
+            return SandboxLocation(components[0], sandboxId, components[2])
         }
     }
 
-    override fun toString() = "sandbox/$id/$source"
+    override fun toString() = "$securityDomain/$id/$source"
 }
