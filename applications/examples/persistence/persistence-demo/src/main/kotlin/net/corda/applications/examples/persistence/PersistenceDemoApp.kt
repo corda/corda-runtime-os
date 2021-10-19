@@ -2,6 +2,8 @@ package net.corda.applications.examples.persistence
 
 import com.typesafe.config.ConfigFactory
 import net.corda.components.examples.persistence.cluster.admin.RunClusterAdminEventSubscription
+import net.corda.components.examples.persistence.config.admin.ConfigAdminSubscription
+import net.corda.components.examples.persistence.config.admin.ConfigState
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -11,6 +13,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.orm.DbEntityManagerConfiguration
+import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
@@ -23,7 +27,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 @Component
-class DemoApp @Activate constructor(
+class PersistenceDemoApp @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = Shutdown::class)
@@ -32,6 +36,8 @@ class DemoApp @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = LiquibaseSchemaMigrator::class)
     private val schemaMigrator: LiquibaseSchemaMigrator,
+    @Reference(service = EntityManagerFactoryFactory::class)
+    private val entityManagerFactoryFactory: EntityManagerFactoryFactory
 ) : Application {
 
     companion object {
@@ -52,6 +58,7 @@ class DemoApp @Activate constructor(
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
             var clusterAdminEventSub: RunClusterAdminEventSubscription? = null
+            var configAdminEventSub: ConfigAdminSubscription? = null
 
             val config = ConfigFactory.parseMap(
                 mapOf(
@@ -64,9 +71,17 @@ class DemoApp @Activate constructor(
                 parameters.dbUser,
                 parameters.dbPass)
 
+            // NOTE: "for real", this would probably be pushed into the component rather than getting an EMF here,
+            //  as the component knows what needs to/can be persisted
+            val entityManagerFactory = entityManagerFactoryFactory.create(
+                "cluster-config",
+                listOf(ConfigState::class.java),
+                DbEntityManagerConfiguration(dbSource),
+            )
+
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
-                coordinatorFactory.createCoordinator<DemoApp>(
+                coordinatorFactory.createCoordinator<PersistenceDemoApp>(
                 ) { event: LifecycleEvent, _: LifecycleCoordinator ->
                     log.info("LifecycleEvent received: $event")
                     when (event) {
@@ -80,10 +95,20 @@ class DemoApp @Activate constructor(
                                 schemaMigrator,
                                 consoleLogger,
                             )
+                            configAdminEventSub = ConfigAdminSubscription(
+                                subscriptionFactory,
+                                config,
+                                1,
+                                entityManagerFactory,
+                                consoleLogger,
+                            )
+
                             clusterAdminEventSub?.start()
+                            configAdminEventSub?.start()
                         }
                         is StopEvent -> {
                             clusterAdminEventSub?.stop()
+                            configAdminEventSub?.stop()
                         }
                         else -> {
                             log.error("$event unexpected!")
@@ -110,6 +135,7 @@ class CliParameters {
     )
     var kafka: String = "kafka:9092"
 
+    @Suppress("ForbiddenComment")
     // TODO: cluster DB config should maybe be taken from the Kafka message instead of passed in?
     @CommandLine.Option(
         names = ["-j", "--jdbc-url"],
