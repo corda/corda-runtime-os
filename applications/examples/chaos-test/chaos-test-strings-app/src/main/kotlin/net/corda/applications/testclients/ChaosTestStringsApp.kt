@@ -59,7 +59,7 @@ class ChaosTestApp @Activate constructor(
 
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
 
-    @Suppress("SpreadOperator")
+    @Suppress("ComplexMethod", "SpreadOperator")
     override fun startup(args: Array<String>) {
         consoleLogger.info("Starting demo application...")
         val parameters = CliParameters()
