@@ -11,7 +11,6 @@ import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
-import net.corda.v5.base.util.toHex
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -35,7 +34,6 @@ import java.util.NavigableSet
 import java.util.TreeSet
 import java.util.UUID.randomUUID
 import kotlin.random.Random.Default.nextBytes
-import kotlin.random.Random.Default.nextInt
 
 /** Tests of [SandboxServiceImpl]. */
 class SandboxServiceImplTests {
@@ -636,8 +634,8 @@ class SandboxServiceImplTests {
 private data class CpkAndContents(
     val cordappClass: Class<*>,
     val libraryClass: Class<*>,
-    val cordappBundleName: String? = "${nextInt()}",
-    val libraryBundleName: String? = "${nextInt()}",
+    val cordappBundleName: String? = "${random.nextInt()}",
+    val libraryBundleName: String? = "${random.nextInt()}",
     private val cpkDependencies: NavigableSet<CPK.Identifier> = emptyNavigableSet()
 ) {
     val bundleNames = setOf(cordappBundleName, libraryBundleName)
@@ -648,18 +646,18 @@ private data class CpkAndContents(
         cpkDependencies: NavigableSet<CPK.Identifier>
     ) = object : CPK {
         override val metadata = object : CPK.Metadata {
-            override val id = CPK.Identifier.newInstance(nextBytes(ByteArray(8)).toHex(), "1.0", null)
+            override val id = CPK.Identifier.newInstance(random.nextInt().toString(), "1.0", null)
             override val type = CPK.Type.UNKNOWN
             override val manifest = object : CPK.Manifest {
                 override val cpkFormatVersion = CPK.FormatVersion.parse("0.0")
             }
             override val hash = SecureHash(HASH_ALGORITHM, nextBytes(HASH_LENGTH))
-            // We use `nextInt` to generate random values here.
-            override val mainBundle = Paths.get("${nextInt()}.jar").toString()
-            override val libraries = listOf(Paths.get("lib/${nextInt()}.jar").toString())
+            // We use `random.nextInt` to generate random values here.
+            override val mainBundle = Paths.get("${random.nextInt()}.jar").toString()
+            override val libraries = listOf(Paths.get("lib/${random.nextInt()}.jar").toString())
             override val cordappManifest = mock<CordappManifest>().apply {
                 whenever(bundleSymbolicName).thenAnswer { cordappBundleName }
-                whenever(bundleVersion).thenAnswer { "${nextInt()}" }
+                whenever(bundleVersion).thenAnswer { "${random.nextInt()}" }
             }
             override val dependencies = cpkDependencies
             override val cordappCertificates: Set<Certificate> = emptySet()
