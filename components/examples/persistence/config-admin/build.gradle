@@ -1,7 +1,9 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
 }
+
+description 'Config Admin Component'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -13,14 +15,16 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation "net.corda:corda-avro-schema:$cordaApiVersion"
 
-    implementation project(":libs:db:db-admin")
-    implementation project(":libs:db:db-admin-impl")
-    implementation project(":libs:messaging:messaging")
-    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:db:db-orm")
+    implementation project(":libs:db:db-orm-impl")
 
-    // reference this to be able to pick up the liquibase files
-    //  TODO: is this the right thing? Where should liquibase files come from in the "real" worker?
-    implementation project(":components:examples:persistence:config-admin")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:messaging:messaging")
+
 }
 
-description 'Cluster Admin Component'
+tasks.named('jar', Jar) {
+    bnd '''\
+DynamicImport-Package: org.hibernate.proxy
+'''
+}

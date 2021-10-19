@@ -16,7 +16,7 @@ import java.util.UUID.randomUUID
 class CpkSandboxImplTests {
     @Test
     fun `can load class from CorDapp bundles in CPK sandbox`() {
-        val cordappBundle = mockBundle(classes = setOf(String::class.java))
+        val cordappBundle = mockBundle(klass = String::class.java)
         val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), cordappBundle, emptySet())
 
         assertEquals(String::class.java, sandbox.loadClassFromCordappBundle(String::class.java.name))
@@ -25,7 +25,7 @@ class CpkSandboxImplTests {
     @Test
     fun `cannot load class from other bundles in CPK sandbox`() {
         val cordappBundle = mockBundle()
-        val otherBundle = mockBundle(classes = setOf(Int::class.java))
+        val otherBundle = mockBundle(klass = Int::class.java)
         val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), cordappBundle, setOf(otherBundle))
 
         assertThrows<SandboxException> {
@@ -47,8 +47,8 @@ class CpkSandboxImplTests {
 
     @Test
     fun `correctly indicates whether the CPK sandbox's CorDapp bundle contains a given class`() {
-        val cordappBundle = mockBundle(classes = setOf(String::class.java))
-        val otherBundle = mockBundle(classes = setOf(Int::class.java))
+        val cordappBundle = mockBundle(klass = String::class.java)
+        val otherBundle = mockBundle(klass = Int::class.java)
 
         val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), cordappBundle, setOf(otherBundle))
 
