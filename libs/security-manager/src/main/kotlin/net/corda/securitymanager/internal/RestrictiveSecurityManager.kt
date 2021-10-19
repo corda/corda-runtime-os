@@ -65,6 +65,23 @@ class RestrictiveSecurityManager @Activate constructor(
         if (!condPermUpdate.commit()) throw SecurityManagerException("Unable to commit updated bundle permissions.")
     }
 
+    override fun grantPermission(filter: String, permInfos: List<PermissionInfo>) {
+        val condPermUpdate = conditionalPermissionAdmin.newConditionalPermissionUpdate()
+
+        val condPerms = permInfos.map { permInfo ->
+            conditionalPermissionAdmin.newConditionalPermissionInfo(
+                null,
+                arrayOf(ConditionInfo(BundleLocationCondition::class.java.name, arrayOf(filter))),
+                arrayOf(permInfo),
+                DENY
+            )
+        }
+        // The ordering of the permissions in the list is important. Permissions earlier in the list take priority.
+        condPermUpdate.conditionalPermissionInfos.addAll(0, condPerms)
+
+        if (!condPermUpdate.commit()) throw SecurityManagerException("Unable to commit updated bundle permissions.")
+    }
+
     /** Grants all permissions to the [ConfigurationAdmin] service. */
     private fun grantConfigAdminPermissions(permissionAdmin: PermissionAdmin) {
         permissionAdmin.setPermissions(

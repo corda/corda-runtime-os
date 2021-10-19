@@ -1,6 +1,7 @@
 package net.corda.securitymanager.internal
 
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.permissionadmin.PermissionInfo
 
 // TODO - CORE-2828: Update [DiscoverySecurityManager] to write out updated permissions file.
 
@@ -13,10 +14,11 @@ import org.osgi.service.component.annotations.Component
  * This security manager is not secure in production.
  */
 @Component(service = [DiscoverySecurityManager::class])
-class DiscoverySecurityManager: CordaSecurityManager, SecurityManager() {
+class DiscoverySecurityManager : CordaSecurityManager, SecurityManager() {
     override fun start() {
         System.setSecurityManager(this)
     }
 
     override fun stop() = Unit
+    override fun grantPermission(filter: String, permInfos: List<PermissionInfo>) = Unit
 }

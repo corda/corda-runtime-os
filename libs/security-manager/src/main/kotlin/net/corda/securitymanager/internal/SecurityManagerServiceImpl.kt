@@ -1,10 +1,12 @@
 package net.corda.securitymanager.internal
 
+import net.corda.securitymanager.SecurityManagerException
 import net.corda.securitymanager.SecurityManagerService
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.permissionadmin.PermissionInfo
 
 /** An implementation of [SecurityManagerService]. */
 @Suppress("unused")
@@ -32,8 +34,11 @@ class SecurityManagerServiceImpl @Activate constructor(
         } else {
             log.info("Starting restrictive Corda security manager.")
             restrictiveSecurityManager
-        }
+        }.apply { start() }
+    }
 
-        securityManager?.start()
+    override fun grantPermission(filter: String, permInfos: List<PermissionInfo>) {
+        securityManager?.grantPermission(filter, permInfos)
+            ?: throw SecurityManagerException("No Corda security manager is currently running.")
     }
 }
