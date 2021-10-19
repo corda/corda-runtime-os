@@ -68,7 +68,6 @@ dependencyResolutionManagement {
 
 rootProject.name = 'corda-runtime-os'
 include 'applications:examples:demo-app'
-include 'applications:examples:chaos-test-app'
 include 'applications:examples:chaos-test:chaos-test-strings-pub-app'
 include 'applications:examples:chaos-test:chaos-test-strings-app'
 include 'applications:examples:demo-publisher'
