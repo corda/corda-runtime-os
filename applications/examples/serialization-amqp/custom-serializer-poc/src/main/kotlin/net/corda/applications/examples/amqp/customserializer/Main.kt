@@ -24,10 +24,15 @@ val cordappCustomSerializers = listOf<SerializationCustomSerializer<*, *>>(Custo
 
 fun main() {
     differentSerializersPerSandboxGroup()
+    println("------------------------------------------------")
     platformTakesPriority()
+    println("------------------------------------------------")
     logMessageIfAttemptToReplacePlatform()
+    println("------------------------------------------------")
     registerInternalSerializers()
+    println("------------------------------------------------")
     registerCorDappSerializers()
+    println("------------------------------------------------")
 
 
     val factory = serializerFactory(internalCustomSerializers, cordappCustomSerializers)
@@ -118,7 +123,19 @@ private fun differentSerializersPerSandboxGroup() {
 }
 
 private fun platformTakesPriority() {
+    println("Check that platform serialisers take priority over CorDapp serialisers")
 
+    val factory = serializerFactory(listOf(CustomSerializerA(), CustomSerializerA()), emptyList())
+    val output = SerializationOutput(factory)
+    val input = DeserializationInput(factory)
+
+    val obj = NeedsCustomSerializerExampleA(5)
+
+    val serializedBytes = output.serialize(obj, AMQP_STORAGE_CONTEXT)
+    val result = input.deserialize(serializedBytes, AMQP_STORAGE_CONTEXT)
+
+    println("Original object: $obj")
+    println("Deserialised object: $result")
 }
 
 private fun logMessageIfAttemptToReplacePlatform() {
