@@ -12,7 +12,7 @@ abstract class ConfigurationAwareTile<C>(
     private val key: String,
     private val configFactory: (Config) -> C
 ) :
-    DominoTile(coordinatorFactory) {
+    DominoTile(coordinatorFactory, true) {
 
     companion object {
         private val logger = contextLogger()
@@ -59,10 +59,10 @@ abstract class ConfigurationAwareTile<C>(
     abstract fun applyNewConfiguration(newConfiguration: C, oldConfiguration: C?)
 
     override fun startTile() {
-        super.startTile()
         if (registration == null) {
             registration = configurationReaderService.registerForUpdates(Handler())
         }
+        super.startTile()
     }
 
     override fun stopTile(dueToError: Boolean) {
