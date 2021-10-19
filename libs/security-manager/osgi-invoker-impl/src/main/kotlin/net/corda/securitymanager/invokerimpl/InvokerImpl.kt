@@ -14,15 +14,18 @@ class InvokerImpl: Invoker {
     }
 
     override fun performActionRequiringRuntimePermission() {
+        // Triggers a security check against the `getenv.{variable name}` permission target.
         System.getenv()
     }
 
     override fun performActionRequiringServiceGetPermission() {
+        // Triggers a security check against the OSGi `ServicePermission.GET` action.
         val serviceReference = bundleContext.getServiceReference(Any::class.java)
         bundleContext.getService(serviceReference)
     }
 
     override fun performActionRequiringServiceRegisterPermission() {
+        // Triggers a security check against the OSGi `ServicePermission.REGISTER` action.
         bundleContext.registerService(Any::class.java, Any(), null)
     }
 }
