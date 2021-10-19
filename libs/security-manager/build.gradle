@@ -1,5 +1,6 @@
 plugins {
     id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
     id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 description 'Corda Security Manager'
@@ -12,4 +13,9 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    integrationTestImplementation project(":libs:security-manager")
+    integrationTestImplementation project(":libs:security-manager:osgi-invoker-impl")
+    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion"
 }

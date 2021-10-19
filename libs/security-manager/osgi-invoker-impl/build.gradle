@@ -10,5 +10,5 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     compileOnly "org.osgi:osgi.core"
 
-    api project(":libs:security-manager:osgi-integration-tests:osgi-invoker")
+    api project(":libs:security-manager:osgi-invoker")
 }

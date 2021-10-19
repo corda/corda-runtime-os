@@ -13,10 +13,8 @@ import org.osgi.service.condpermadmin.ConditionalPermissionAdmin
 /** An implementation of the [OsgiInvoker] interface. */
 @Component
 @Suppress("unused")
-class OsgiInvokerImpl @Activate constructor(private val context: BundleContext): OsgiInvoker {
-    companion object {
-        private val bundle = FrameworkUtil.getBundle(this::class.java)
-    }
+class OsgiInvokerImpl @Activate constructor(private val bundleContext: BundleContext): OsgiInvoker {
+    private val bundle = FrameworkUtil.getBundle(this::class.java)
     
     override fun getBundleContext() {
         bundle.bundleContext
@@ -27,11 +25,11 @@ class OsgiInvokerImpl @Activate constructor(private val context: BundleContext):
     }
 
     override fun installBundle() {
-        context.installBundle(bundle.location)
+        bundleContext.installBundle(bundle.location)
     }
 
     override fun addListener() {
-        context.addBundleListener(SynchronousBundleListener { })
+        bundleContext.addBundleListener(SynchronousBundleListener { })
     }
 
     override fun loadClass() {
@@ -43,7 +41,7 @@ class OsgiInvokerImpl @Activate constructor(private val context: BundleContext):
     }
 
     override fun refreshBundles() {
-        val frameworkWiring = context.getBundle(SYSTEM_BUNDLE_ID).adapt(FrameworkWiring::class.java)
+        val frameworkWiring = bundleContext.getBundle(SYSTEM_BUNDLE_ID).adapt(FrameworkWiring::class.java)
         frameworkWiring.refreshBundles(null)
     }
 
@@ -52,7 +50,7 @@ class OsgiInvokerImpl @Activate constructor(private val context: BundleContext):
     }
 
     override fun getService() {
-        val serviceReference = context.getServiceReference(ConditionalPermissionAdmin::class.java)
-        context.getService(serviceReference)
+        val serviceReference = bundleContext.getServiceReference(ConditionalPermissionAdmin::class.java)
+        bundleContext.getService(serviceReference)
     }
 }
