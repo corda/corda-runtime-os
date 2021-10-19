@@ -24,6 +24,7 @@ import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.gateway.Gateway
+import net.corda.p2p.gateway.GatewayFactory
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
@@ -66,7 +67,11 @@ class GatewayOsgiTest {
         lateinit var configurationReadService: ConfigurationReadService
 
         @InjectService(timeout = 4000)
-        lateinit var gateway: Gateway
+        lateinit var gatewayFactory: GatewayFactory
+
+        private val gateway by lazy {
+            gatewayFactory.createGateway(ConfigFactory.empty())
+        }
 
         @InjectService(timeout = 4000)
         lateinit var configWriterFactory: ConfigWriterFactory

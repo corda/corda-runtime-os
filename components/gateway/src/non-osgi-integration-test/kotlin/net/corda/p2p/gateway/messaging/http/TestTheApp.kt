@@ -66,6 +66,8 @@ class TestTheApp : TestBase() {
             "3123",
             "--host",
             "www.alice.net",
+            "-k",
+            "localhost:9192"
         )
 
         println("Starting the application")

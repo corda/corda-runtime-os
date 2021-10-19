@@ -7,6 +7,7 @@ import net.corda.libs.configuration.write.factory.ConfigWriterFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.gateway.Gateway
+import net.corda.p2p.gateway.GatewayFactory
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -20,10 +21,12 @@ class GatewayApp @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = ConfigWriterFactory::class)
     private val configWriterFactory: ConfigWriterFactory,
-    @Reference(service = Gateway::class)
-    private val gateway: Gateway,
+    @Reference(service = GatewayFactory::class)
+    private val gatewayFactory: GatewayFactory,
 
 ) : Application {
+    private var gateway: Gateway? = null
+
     override fun startup(args: Array<String>) {
         val arguments = CliArguments.parse(args)
 
@@ -48,11 +51,13 @@ class GatewayApp @Activate constructor(
             )
 
             println("Starting gateway")
-            gateway.start()
+            gateway = gatewayFactory.createGateway(arguments.kafkaConfigurationConfig).also { gateway ->
+                gateway.start()
 
-            while (!gateway.isRunning) {
-                println("Waiting for gateway to start...")
-                Thread.sleep(1000)
+                while (!gateway.isRunning) {
+                    println("Waiting for gateway to start...")
+                    Thread.sleep(1000)
+                }
             }
 
             println("Gateway is running - HTTP server is ${arguments.hostname}:${arguments.port}")
@@ -60,6 +65,6 @@ class GatewayApp @Activate constructor(
     }
 
     override fun shutdown() {
-        gateway.close()
+        gateway?.close()
     }
 }

@@ -61,6 +61,8 @@ class GatewayTest : TestBase() {
 
     private val sessionId = "session-1"
 
+    private val nodeConfig = ConfigFactory.empty()
+
     private class Node(private val name: String) {
         private val topicService = TopicServiceImpl()
         val subscriptionFactory = InMemSubscriptionFactory(topicService)
@@ -122,6 +124,7 @@ class GatewayTest : TestBase() {
             alice.subscriptionFactory,
             alice.publisherFactory,
             lifecycleCoordinatorFactory,
+            nodeConfig,
         ).use {
             it.startAndWaitForStarted()
             val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null)
@@ -205,6 +208,7 @@ class GatewayTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 lifecycleCoordinatorFactory,
+                nodeConfig,
             ).use { gateway ->
                 gateway.start()
 
@@ -272,6 +276,7 @@ class GatewayTest : TestBase() {
             alice.subscriptionFactory,
             alice.publisherFactory,
             lifecycleCoordinatorFactory,
+            nodeConfig,
         ).use {
             it.startAndWaitForStarted()
             val responseReceived = CountDownLatch(clientNumber)
@@ -364,6 +369,7 @@ class GatewayTest : TestBase() {
             alice.subscriptionFactory,
             alice.publisherFactory,
             lifecycleCoordinatorFactory,
+            nodeConfig,
         ).use {
             startTime = Instant.now().toEpochMilli()
             it.startAndWaitForStarted()
@@ -434,13 +440,15 @@ class GatewayTest : TestBase() {
                 createConfigurationServiceFor(GatewayConfiguration(aliceGatewayAddress.host, aliceGatewayAddress.port, chipSslConfig)),
                 alice.subscriptionFactory,
                 alice.publisherFactory,
-                lifecycleCoordinatorFactory
+                lifecycleCoordinatorFactory,
+                nodeConfig,
             ),
             GatewayImpl(
                 createConfigurationServiceFor(GatewayConfiguration(bobGatewayAddress.host, bobGatewayAddress.port, daleSslConfig)),
                 bob.subscriptionFactory,
                 bob.publisherFactory,
-                lifecycleCoordinatorFactory
+                lifecycleCoordinatorFactory,
+                nodeConfig,
             )
         ).onEach {
             it.startAndWaitForStarted()
@@ -494,6 +502,7 @@ class GatewayTest : TestBase() {
             alice.subscriptionFactory,
             alice.publisherFactory,
             lifecycleCoordinatorFactory,
+            nodeConfig,
         ).use { gateway ->
             configPublisher.publishConfig(
                 GatewayConfiguration(

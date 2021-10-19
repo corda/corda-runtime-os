@@ -21,6 +21,7 @@ class GatewayImplTest {
                 on { createPublisher(any(), any()) } doReturn mock()
             },
             mock(),
+            mock(),
         )
 
         val children = gateway.children
