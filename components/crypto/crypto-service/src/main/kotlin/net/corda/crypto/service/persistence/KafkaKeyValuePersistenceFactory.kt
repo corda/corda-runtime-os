@@ -22,15 +22,13 @@ class KafkaKeyValuePersistenceFactory constructor(
     private val config: CryptoLibraryConfig,
 ) : KeyValuePersistenceFactory, AutoCloseable {
 
-    private val signingProxy = KafkaProxy(
-        SigningPersistentKeyInfo::class.java,
+    private val signingProxy = KafkaSigningKeyProxy(
         subscriptionFactory = subscriptionFactory,
         publisherFactory = publisherFactory,
         config = config.mngCache
     )
 
-    private val cryptoProxy = KafkaProxy(
-        DefaultCryptoPersistentKeyInfo::class.java,
+    private val cryptoProxy = KafkaDefaultCryptoKeyProxy(
         subscriptionFactory = subscriptionFactory,
         publisherFactory = publisherFactory,
         config = config.keyCache

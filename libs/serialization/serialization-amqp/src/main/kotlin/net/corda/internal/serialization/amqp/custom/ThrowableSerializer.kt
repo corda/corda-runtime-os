@@ -1,7 +1,6 @@
 package net.corda.internal.serialization.amqp.custom
 
 import net.corda.internal.serialization.amqp.CommonPropertyNames
-import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.LocalSerializerFactory
 import net.corda.internal.serialization.amqp.PropertyReader
 import net.corda.internal.serialization.model.LocalConstructorInformation
@@ -10,25 +9,18 @@ import net.corda.internal.serialization.osgi.TypeResolver
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.exceptions.CordaThrowable
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SerializationFactory
 import java.io.NotSerializableException
 
 @Suppress("LongParameterList")
 class ThrowableSerializer(
-    factory: LocalSerializerFactory
-) : CustomSerializer.Proxy<Throwable, ThrowableSerializer.ThrowableProxy>(
-    Throwable::class.java,
-    ThrowableProxy::class.java,
-    factory
-) {
+    private val factory: LocalSerializerFactory
+) : SerializationCustomSerializer<Throwable, ThrowableSerializer.ThrowableProxy> {
 
     companion object {
         private val logger = contextLogger()
     }
-
-    override val revealSubclassesInSchema: Boolean = true
-
-    override val additionalSerializers: Iterable<CustomSerializer<out Any>> = listOf(StackTraceElementSerializer(factory))
 
     private val LocalTypeInformation.constructor: LocalConstructorInformation get() = when (this) {
         is LocalTypeInformation.NonComposable ->
@@ -115,13 +107,3 @@ class ThrowableSerializer(
     )
 }
 
-class StackTraceElementSerializer(factory: LocalSerializerFactory) :
-    CustomSerializer.Proxy<StackTraceElement, StackTraceElementSerializer.StackTraceElementProxy>(
-        StackTraceElement::class.java, StackTraceElementProxy::class.java, factory
-    ) {
-    override fun toProxy(obj: StackTraceElement): StackTraceElementProxy = StackTraceElementProxy(obj.className, obj.methodName, obj.fileName, obj.lineNumber)
-
-    override fun fromProxy(proxy: StackTraceElementProxy): StackTraceElement = StackTraceElement(proxy.declaringClass, proxy.methodName, proxy.fileName, proxy.lineNumber)
-
-    data class StackTraceElementProxy(val declaringClass: String, val methodName: String, val fileName: String?, val lineNumber: Int)
-}

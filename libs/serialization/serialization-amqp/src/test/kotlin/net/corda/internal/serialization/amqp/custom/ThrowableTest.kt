@@ -11,7 +11,7 @@ class ThrowableTest {
     @Test
     fun cordaRuntimeException() {
         val instance = CordaRuntimeException("TEST")
-        val deserialize = serializeDeserialize(instance)
+        val deserialize = serializeDeserialize<Throwable>(instance)
 
         Assertions.assertAll(
             { assertEquals<Class<Throwable>>(instance.javaClass, deserialize.javaClass) },
@@ -28,7 +28,7 @@ class ThrowableTest {
         class TestException(override val message: String) : CordaRuntimeException(message)
 
         val instance = TestException("TEST")
-        val deserialize = serializeDeserialize(instance)
+        val deserialize = serializeDeserialize<Throwable>(instance)
 
         Assertions.assertAll(
             { assertEquals<Class<Throwable>>(instance.javaClass, deserialize.javaClass) },

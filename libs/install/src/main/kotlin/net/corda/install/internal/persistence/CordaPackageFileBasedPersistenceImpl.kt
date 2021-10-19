@@ -13,6 +13,7 @@ import net.corda.v5.crypto.SecureHash
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.AT_LEAST_ONE
 import org.osgi.service.component.annotations.ReferencePolicyOption.GREEDY
@@ -20,6 +21,7 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.util.Collections.unmodifiableSet
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
@@ -38,7 +40,7 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
         private val standaloneVerifiers: List<StandaloneCpkVerifier>,
         @Reference(cardinality = AT_LEAST_ONE, policyOption = GREEDY)
         private val groupVerifiers: List<GroupCpkVerifier>
-) : CordaPackagePersistence {
+) : CordaPackagePersistence, AutoCloseable {
 
     /** Represents a group of CPKs, keyed in various ways. */
     private data class StoredArchives(
@@ -82,18 +84,20 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
             cpksById: MutableMap<CPK.Identifier, CPK>,
             cpksByHash: MutableMap<SecureHash, CPK>,
             cpk : CPK) {
-        val previous = cpksById.put(cpk.metadata.id, cpk)
-        if(previous != null) {
-            /**
-             * Restore the previous entry.
-             * It is possible for there to be multiple CPKs with the same id, e.g. they have been recompiled with EC signatures.
-             * Their hash will be different, but id the same.
-             * In this case we assume the first CPK to be stored is the one we want in the cpksById map. And all of them get stored in
-             * the [StoredArchives.cpksByHash] map.
-             */
-            cpksById[previous.metadata.id] = previous
-        }
-        cpksByHash[cpk.metadata.hash] = cpk
+        /**
+         * Restore the previous entry.
+         * It is possible for there to be multiple CPKs with the same id, e.g. they have been recompiled with EC signatures.
+         * Their hash will be different, but id the same.
+         * In this case we assume the first CPK to be stored is the one we want in the cpksById map. And all of them get stored in
+         * the [StoredArchives.cpksByHash] map.
+         */
+        val res1 = cpksById.computeIfAbsent(cpk.metadata.id) { cpk }
+        val res2 = cpksByHash.computeIfAbsent(cpk.metadata.hash)  { cpk }
+        /**
+         * If both [res1] and [res2] are different instances, that means cpk was not added to any
+         * of our maps and need to be closed to prevent it from being leaked
+         */
+        if(!(cpk === res1 || cpk === res2)) cpk.close()
     }
 
     override fun putCpk(inputStream : InputStream) : CPK {
@@ -109,15 +113,27 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
              }
         } catch (ex : Exception) {
             teeStream.close()
-            Files.walk(expansionLocation).sorted(Comparator.reverseOrder()).forEach(Files::delete)
+            Files.delete(tmpFile)
             throw ex
         }
         addCpk(storedArchives.cpksById, storedArchives.cpksByHash, cpk)
-        //This class is going to be completely rewritten in a subsequent commit,
-        // commenting this line just make the code compile as it won't be possible to extract
-        // the cached file location of a CPK
-        Files.move(tmpFile, tmpFile.parent.resolve(cpk.metadata.hash.toHexString() + ".cpk"))
+        try {
+            Files.move(tmpFile, tmpFile.parent.resolve(cpk.metadata.hash.toHexString() + ".cpk"), StandardCopyOption.ATOMIC_MOVE)
+        } catch (ex : FileAlreadyExistsException) {
+            //If a file with the same name already exists, we assume it is exactly the same file as the filename
+            // matches the SHA256 hash of its content, hence we just remove the temporary file
+            Files.delete(tmpFile)
+        }
         return cpk
+    }
+
+    @Deactivate
+    override fun close() {
+        storedArchives.cpbsById.values.forEach(CPI::close)
+        storedArchives.cpksById.values.forEach(CPK::close)
+        storedArchives.cpksByHash.values.forEach(CPK::close)
+        //wipe the expansion directory when the component is deactivated
+        if(Files.exists(expansionDirectory)) Files.walk(expansionDirectory).sorted(Comparator.reverseOrder()).forEach(Files::delete)
     }
 
     /** Returns the [Path] representing the node's CPK directory. */
@@ -144,15 +160,11 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
                 ?: throw CpkInstallationException("Node's base directory could not be established for extracting CPB/CPK files.")
         return Paths.get(baseDirectoryString).resolve(EXTRACTION_DIRECTORY).also {
             Files.createDirectories(it)
-            //wipe the expansion directory when the process terminates
-            Runtime.getRuntime().addShutdownHook(Thread {
-                if(Files.exists(it)) Files.walk(it).sorted(Comparator.reverseOrder()).forEach(Files::delete)
-            })
         }
     }
 
     /**
-     * Creates [Cpk]s from the CPK files stored on disk and returns a [StoredArchives] object.
+     * Creates [CPK]s from the CPK files stored on disk and returns a [StoredArchives] object.
      *
      * Skips verification, as this was already performed when the CPKs were originally installed/fetched.
      *
