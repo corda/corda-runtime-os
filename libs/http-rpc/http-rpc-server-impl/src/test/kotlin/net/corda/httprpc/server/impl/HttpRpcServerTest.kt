@@ -12,8 +12,8 @@ import net.corda.httprpc.server.impl.internal.HttpRpcServerInternal.Companion.SS
 import net.corda.httprpc.server.impl.rpcops.NonCordaSerializableAPI
 import net.corda.httprpc.server.impl.rpcops.impl.MultipleParamAnnotationApiImpl
 import net.corda.httprpc.server.impl.rpcops.impl.NonCordaSerializableAPIImpl
-import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
 import net.corda.httprpc.server.impl.security.SecurityManagerRPCImpl
+import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.tools.annotations.validation.ParameterBodyCordaSerializableAnnotationValidator
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.assertj.core.api.Assertions.assertThatThrownBy

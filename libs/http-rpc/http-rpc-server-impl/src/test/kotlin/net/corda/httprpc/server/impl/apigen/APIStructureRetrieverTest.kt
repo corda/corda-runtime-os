@@ -8,11 +8,11 @@ import net.corda.httprpc.server.impl.apigen.models.GenericParameterizedType
 import net.corda.httprpc.server.impl.apigen.models.ParameterType
 import net.corda.httprpc.server.impl.apigen.processing.APIStructureRetriever
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
-import net.corda.httprpc.server.impl.rpcops.CalendarRPCOps
-import net.corda.httprpc.server.impl.rpcops.impl.CalendarRPCOpsImpl
-import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
 import net.corda.httprpc.server.impl.rpcops.impl.TestRPCAPIAnnotatedImpl
 import net.corda.httprpc.server.impl.rpcops.impl.TestRPCAPIImpl
+import net.corda.httprpc.test.CalendarRPCOps
+import net.corda.httprpc.test.CalendarRPCOpsImpl
+import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull

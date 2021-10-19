@@ -1,7 +1,6 @@
 package net.corda.httprpc.server.impl.apigen.processing
 
 import io.swagger.v3.oas.models.media.ArraySchema
-import net.corda.httprpc.server.impl.rpcops.TestHealthCheckAPI
 import net.corda.httprpc.server.impl.apigen.models.Endpoint
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
@@ -20,8 +19,9 @@ import net.corda.httprpc.server.impl.apigen.processing.openapi.toOpenApiPath
 import net.corda.httprpc.server.impl.apigen.processing.openapi.toOperation
 import net.corda.httprpc.server.impl.apigen.processing.openapi.toRequestBody
 import net.corda.httprpc.server.impl.apigen.processing.openapi.toValidMethodName
-import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
 import net.corda.httprpc.server.impl.utils.getHealthCheckApiTestResource
+import net.corda.httprpc.test.TestHealthCheckAPI
+import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue

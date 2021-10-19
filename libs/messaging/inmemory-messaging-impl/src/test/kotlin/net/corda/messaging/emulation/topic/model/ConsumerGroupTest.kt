@@ -238,10 +238,19 @@ class ConsumerGroupTest {
     }
 
     @Test
-    fun `waitForData will wait for a signal`() {
-        group.waitForData()
+    fun `waitForPhaseChange will wait for phase if not the same`() {
+        val phase = group.currentPhase()
+        group.waitForPhaseChange(phase)
 
         verify(sleeper).await(any(), any())
+    }
+
+    @Test
+    fun `waitForPhaseChange will not wait if phase changed`() {
+        val phase = group.currentPhase()
+        group.waitForPhaseChange(phase - 1)
+
+        verify(sleeper, never()).await(any(), any())
     }
 
     @Test
@@ -249,6 +258,15 @@ class ConsumerGroupTest {
         group.wakeUp()
 
         verify(sleeper).signalAll()
+    }
+
+    @Test
+    fun `wakeUp will change the phase`() {
+        val phase = group.currentPhase()
+
+        group.wakeUp()
+
+        assertThat(group.currentPhase()).isNotEqualTo(phase)
     }
 
     @Test

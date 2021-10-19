@@ -1,6 +1,6 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.EmptyWhitelist
+import net.corda.internal.serialization.AlwaysEmptyWhitelist
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvelope
@@ -291,10 +291,10 @@ class EnumTests {
     @Test
     fun deserializeCustomisedEnum() {
         val input = CustomEnumWrapper(CustomEnum.ONE)
-        val factory1 = SerializerFactoryBuilder.build(EmptyWhitelist)
+        val factory1 = SerializerFactoryBuilder.build(AlwaysEmptyWhitelist)
         val serialized = TestSerializationOutput(VERBOSE, factory1).serialize(input)
 
-        val factory2 = SerializerFactoryBuilder.build(EmptyWhitelist)
+        val factory2 = SerializerFactoryBuilder.build(AlwaysEmptyWhitelist)
         val output = DeserializationInput(factory2).deserialize(serialized)
 
         assertEquals(input, output)

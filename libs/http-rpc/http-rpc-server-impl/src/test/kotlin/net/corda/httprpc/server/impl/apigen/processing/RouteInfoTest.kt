@@ -4,8 +4,8 @@ import net.corda.httprpc.server.impl.apigen.models.Endpoint
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.InvocationMethod
 import net.corda.httprpc.server.impl.apigen.models.ResponseBody
-import net.corda.httprpc.server.impl.rpcops.TestHealthCheckAPI
-import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
+import net.corda.httprpc.test.TestHealthCheckAPI
+import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.reflect.jvm.javaMethod
