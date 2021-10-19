@@ -1,6 +1,6 @@
 package net.corda.securitymanager.osgi
 
-import net.corda.securitymanager.osgiinvoker.OsgiInvoker
+import net.corda.securitymanager.invoker.Invoker
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -23,22 +23,22 @@ class SandboxPermissionTests {
         private const val REFERENCE_PREFIX = "reference:"
 
         @InjectService(timeout = 1000)
-        lateinit var unsandboxedOsgiInvoker: OsgiInvoker
+        lateinit var unsandboxedInvoker: Invoker
 
-        lateinit var sandboxedOsgiInvoker: OsgiInvoker
+        lateinit var sandboxedInvoker: Invoker
 
         @Suppress("unused")
         @JvmStatic
         @BeforeAll
         fun setup() {
-            val sandboxedOsgiInvokerBundle = createSandboxedBundle(unsandboxedOsgiInvoker::class.java)
-            sandboxedOsgiInvoker = retrieveServiceFromBundle(sandboxedOsgiInvokerBundle, OsgiInvoker::class.java)
+            val sandboxedOsgiInvokerBundle = createSandboxedBundle(unsandboxedInvoker::class.java)
+            sandboxedInvoker = retrieveServiceFromBundle(sandboxedOsgiInvokerBundle, Invoker::class.java)
         }
 
         /** Returns a sandboxed [Bundle] installed from the same source as the bundle containing [classFromBundle].  */
         @Suppress("unchecked_cast")
         private fun <T> createSandboxedBundle(classFromBundle: Class<T>): Bundle {
-            // We retrieve the location of the unsandboxed bundle that contains `OsgiInvokerImpl`.
+            // We retrieve the location of the unsandboxed bundle that contains `InvokerImpl`.
             val unsandboxedBundle = FrameworkUtil.getBundle(classFromBundle)
             val unsandboxedBundleLocation = URL(unsandboxedBundle.location.removePrefix(REFERENCE_PREFIX))
 
@@ -64,21 +64,21 @@ class SandboxPermissionTests {
     fun `sandboxed bundle does not have general permissions`() {
         assertThrows<AccessControlException> {
             // A `RuntimePermission` is used here as a stand-in for testing all the various permissions and actions.
-            sandboxedOsgiInvoker.performActionRequiringRuntimePermission()
+            sandboxedInvoker.performActionRequiringRuntimePermission()
         }
     }
 
     @Test
     fun `sandboxed bundle has service get permissions`() {
         assertDoesNotThrow {
-            sandboxedOsgiInvoker.performActionRequiringServiceGetPermission()
+            sandboxedInvoker.performActionRequiringServiceGetPermission()
         }
     }
 
     @Test
     fun `sandboxed bundle has service register permissions`() {
         assertDoesNotThrow {
-            sandboxedOsgiInvoker.performActionRequiringServiceRegisterPermission()
+            sandboxedInvoker.performActionRequiringServiceRegisterPermission()
         }
     }
 }

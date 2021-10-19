@@ -1,15 +1,14 @@
-package net.corda.securitymanager.osgiinvokerimpl
+package net.corda.securitymanager.invokerimpl
 
-import net.corda.securitymanager.osgiinvoker.OsgiInvoker
+import net.corda.securitymanager.invoker.Invoker
 import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Component
 
-// TODO - Rename - no longer just used to invoke OSGi permissions.
-/** An implementation of the [OsgiInvoker] interface. */
+/** An implementation of the [Invoker] interface. */
 @Component
 @Suppress("unused")
-class OsgiInvokerImpl: OsgiInvoker {
+class InvokerImpl: Invoker {
     private companion object {
         private val bundleContext: BundleContext = FrameworkUtil.getBundle(this::class.java).bundleContext
     }
