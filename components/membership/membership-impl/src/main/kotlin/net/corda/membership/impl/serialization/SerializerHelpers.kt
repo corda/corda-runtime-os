@@ -1,14 +1,21 @@
 package net.corda.membership.impl
 
 import net.corda.data.WireKeyValuePair
-import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.membership.identity.KeyValueStore
+import net.corda.v5.membership.identity.MGMContext
+import net.corda.v5.membership.identity.MemberContext
 import net.corda.v5.membership.identity.MemberInfo
+import java.util.SortedMap
 
-fun toMemberInfo(memberContext: KeyValueStore, mgmContext: KeyValueStore): MemberInfo {
+/**
+ * Recreates [MemberInfo] with [MemberContext] and [MGMContext] after avro deserialization.
+ */
+fun toMemberInfo(memberContext: MemberContext, mgmContext: MGMContext): MemberInfo {
     return MemberInfoImpl(memberContext, mgmContext)
 }
 
+/**
+ * Validates the order of the key, we are making sure they are not tampered with.
+ */
 fun validateKeyOrder(original: List<WireKeyValuePair>) {
     val originalKeys = original.map { it.key }
     val sortedKeys = originalKeys.sortedBy { it }
@@ -17,9 +24,12 @@ fun validateKeyOrder(original: List<WireKeyValuePair>) {
     }
 }
 
-fun List<WireKeyValuePair>.toKeyValueStore(keyEncodingService: KeyEncodingService): KeyValueStore {
+/**
+ * Recreates the sorted map structure after deserialization.
+ */
+fun List<WireKeyValuePair>.toSortedMap(): SortedMap<String, String?> {
     // before returning the ordered map, do the validation of ordering
     // (to avoid malicious attacks where extra data is attached to the end of the context)
     validateKeyOrder(this)
-    return KeyValueStoreImpl(this.associate { it.key to it.value }.toSortedMap(), keyEncodingService)
+    return this.associate { it.key to it.value }.toSortedMap()
 }

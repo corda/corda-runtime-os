@@ -7,6 +7,7 @@ import net.corda.v5.application.identity.PartyAndReference
 import net.corda.v5.base.types.OpaqueBytes
 import java.security.PublicKey
 
+// TODO find a better place for this class
 class AnonymousPartyImpl(override val owningKey: PublicKey) : AnonymousParty {
     override fun nameOrNull(): CordaX500Name? = null
     override fun ref(bytes: OpaqueBytes): PartyAndReference = PartyAndReference(this, bytes)

@@ -1,10 +1,15 @@
 package net.corda.membership.impl
 
-import net.corda.v5.application.identity.*
+import net.corda.v5.application.identity.AbstractParty
+import net.corda.v5.application.identity.AnonymousParty
+import net.corda.v5.application.identity.CordaX500Name
+import net.corda.v5.application.identity.Party
+import net.corda.v5.application.identity.PartyAndReference
 import net.corda.v5.base.types.OpaqueBytes
 import java.security.PublicKey
 import java.security.cert.X509Certificate
 
+// TODO find a better place for this class
 class PartyImpl(override val name: CordaX500Name, override val owningKey: PublicKey) : Party {
     constructor(certificate: X509Certificate)
             : this(CordaX500Name.build(certificate.subjectX500Principal), certificate.publicKey)

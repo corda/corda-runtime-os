@@ -9,19 +9,22 @@ import net.corda.membership.impl.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.impl.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.impl.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.impl.MemberInfoExtension.Companion.softwareVersion
-import net.corda.v5.membership.identity.*
+import net.corda.v5.membership.identity.MGMContext
+import net.corda.v5.membership.identity.MemberContext
+import net.corda.v5.membership.identity.MemberInfo
+import net.corda.v5.membership.identity.MemberX500Name
 import java.security.PublicKey
 
 class MemberInfoImpl(
-    override val memberProvidedContext: KeyValueStore,
-    override val mgmProvidedContext: KeyValueStore
+    override val memberProvidedContext: MemberContext,
+    override val mgmProvidedContext: MGMContext
 ) : MemberInfo {
 
     init {
-        require(endpoints.isNotEmpty()) { "Node must have at least one address" }
-        require(platformVersion > 0) { "Platform version must be at least 1" }
-        require(softwareVersion.isNotEmpty()) { "Node software version must not be blank" }
-        require(owningKey in identityKeys) { "Identity key must be in the key list" }
+        require(endpoints.isNotEmpty()) { "Node must have at least one address." }
+        require(platformVersion > 0) { "Platform version must be at least 1." }
+        require(softwareVersion.isNotEmpty()) { "Node software version must not be blank." }
+        require(owningKey in identityKeys) { "Identity key must be in the key list." }
     }
 
     override val name: MemberX500Name get() = memberProvidedContext.parse(PARTY_NAME)

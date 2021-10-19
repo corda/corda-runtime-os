@@ -1,6 +1,5 @@
 package net.corda.membership.impl
 
-import net.corda.membership.impl.serialization.EndpointInfoStringConverter
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
@@ -84,7 +83,7 @@ class MemberInfoExtension {
         /**  List of P2P endpoints for member's node. */
         @JvmStatic
         val MemberInfo.endpoints: List<EndpointInfo>
-            get() = memberProvidedContext.parseList(ENDPOINTS, EndpointInfoStringConverter())
+            get() = memberProvidedContext.parseList(ENDPOINTS)
 
         /** Corda-Release-Version. */
         @JvmStatic
