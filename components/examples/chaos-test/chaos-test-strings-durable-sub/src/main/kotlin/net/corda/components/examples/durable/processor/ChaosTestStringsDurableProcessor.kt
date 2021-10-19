@@ -47,9 +47,9 @@ class ChaosTestStringsDurableProcessor(
             val eventRecord = event.value
             val newEventRecord = "durable-processed(${event.value})"
 
-            log.info("Durable sub processing key/value  ${key}/(in:${eventRecord},out:${newEventRecord})")
-            outputRecords.add(Record(outputEventTopic, key, eventRecord))
-            outputRecords.add(Record(outputPubSubTopic, key, eventRecord))
+            log.info("Durable sub processing key/value ${key}/(in:${eventRecord},out:${newEventRecord})")
+            outputRecords.add(Record(outputEventTopic, key, newEventRecord))
+            outputRecords.add(Record(outputPubSubTopic, key, newEventRecord))
         }
 
         return outputRecords
