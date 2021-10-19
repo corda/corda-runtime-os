@@ -1,6 +1,6 @@
 package net.corda.securitymanager
 
-/** A service for starting and stopping a Corda security manager. */
+/** A service for starting a Corda security manager. */
 interface SecurityManagerService {
     /**
      * Starts either the discovery or the restrictive security manager, based on the `isDiscoveryMode` flag.
