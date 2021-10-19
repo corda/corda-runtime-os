@@ -1,8 +1,11 @@
-package net.corda.securitymanager
+package net.corda.securitymanager.internal
 
-import net.corda.securitymanager.CordaSecurityManager.Companion.capabilityPermission
-import net.corda.securitymanager.CordaSecurityManager.Companion.packagePermission
-import net.corda.securitymanager.CordaSecurityManager.Companion.servicePermission
+import net.corda.securitymanager.ALL
+import net.corda.securitymanager.CAPABILITY_PERMISSION_NAME
+import net.corda.securitymanager.PACKAGE_PERMISSION_NAME
+import net.corda.securitymanager.SANDBOX_SECURITY_DOMAIN_FILTER
+import net.corda.securitymanager.SERVICE_PERMISSION_NAME
+import net.corda.securitymanager.SecurityManagerException
 import org.osgi.framework.CapabilityPermission.PROVIDE
 import org.osgi.framework.CapabilityPermission.REQUIRE
 import org.osgi.framework.FrameworkUtil
@@ -23,15 +26,15 @@ import org.osgi.service.permissionadmin.PermissionAdmin
 import org.osgi.service.permissionadmin.PermissionInfo
 import java.security.AllPermission
 
-/** Sets up permissions for the Corda OSGi framework. */
+/** A [CordaSecurityManager] that grants sandbox code a very limited set of permissions. */
 @Suppress("unused")
-@Component(immediate = true)
-class CordaSecurityManager @Activate constructor(
+@Component(service = [RestrictiveSecurityManager::class])
+class RestrictiveSecurityManager @Activate constructor(
     @Reference
-    permissionAdmin: PermissionAdmin,
+    private val permissionAdmin: PermissionAdmin,
     @Reference
-    conditionalPermissionAdmin: ConditionalPermissionAdmin
-) {
+    private val conditionalPermissionAdmin: ConditionalPermissionAdmin
+) : CordaSecurityManager {
     companion object {
         private val allPermInfo = PermissionInfo(AllPermission::class.java.name, ALL, ALL)
         private val packagePermission = PermissionInfo(PACKAGE_PERMISSION_NAME, ALL, "$EXPORTONLY,$IMPORT")
@@ -45,14 +48,21 @@ class CordaSecurityManager @Activate constructor(
      *  * Grants all permissions to the `ConfigurationAdmin` service. For reasons unknown, the permissive Java
      *   security policy that is applied on framework start-up is not extended to this service
      *
-     * * Denies all permissions to sandbox bundles, except some minimal permissions required to set up OSGi bundles
+     *  * Denies all permissions to sandbox bundles, except some minimal permissions required to set up OSGi bundles
      *
      *  These permissions work in tandem with the OSGi hooks defined in the `sandbox` module to prevent sandbox bundles
      *  from performing illegal actions.
      */
-    init {
+    override fun start() {
         grantConfigAdminPermissions(permissionAdmin)
         restrictSandboxBundlePermissions(conditionalPermissionAdmin)
+    }
+
+    /** Clears any permissions from the [ConditionalPermissionAdmin]. */
+    override fun stop() {
+        val condPermUpdate = conditionalPermissionAdmin.newConditionalPermissionUpdate()
+        condPermUpdate.conditionalPermissionInfos.clear()
+        if (!condPermUpdate.commit()) throw SecurityManagerException("Unable to commit updated bundle permissions.")
     }
 
     /** Grants all permissions to the [ConfigurationAdmin] service. */
@@ -102,10 +112,6 @@ class CordaSecurityManager @Activate constructor(
         condPerms.add(denyAllPermissionsToSandboxes)
         condPerms.add(grantAllPermissions)
 
-        if (!condPermUpdate.commit())
-            throw SecurityManagerException("Unable to commit updated bundle permissions.")
+        if (!condPermUpdate.commit()) throw SecurityManagerException("Unable to commit updated bundle permissions.")
     }
 }
-
-/** Thrown if an exception occurs related to security management. */
-class SecurityManagerException(message: String, cause: Throwable? = null) : SecurityException(message, cause)
