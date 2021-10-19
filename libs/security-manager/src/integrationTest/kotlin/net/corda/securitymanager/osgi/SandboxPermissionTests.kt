@@ -31,8 +31,8 @@ class SandboxPermissionTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            val sandboxedOsgiInvokerBundle = createSandboxedBundle(unsandboxedInvoker::class.java)
-            sandboxedInvoker = retrieveServiceFromBundle(sandboxedOsgiInvokerBundle, Invoker::class.java)
+            val sandboxedInvokerBundle = createSandboxedBundle(unsandboxedInvoker::class.java)
+            sandboxedInvoker = retrieveServiceFromBundle(sandboxedInvokerBundle, Invoker::class.java)
         }
 
         /** Returns a sandboxed [Bundle] installed from the same source as the bundle containing [classFromBundle].  */
