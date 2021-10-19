@@ -1,6 +1,7 @@
-package net.corda.membership.impl
+package net.corda.membership.impl.serialization
 
 import net.corda.data.WireKeyValuePair
+import net.corda.membership.impl.MemberInfoImpl
 import net.corda.v5.membership.identity.MGMContext
 import net.corda.v5.membership.identity.MemberContext
 import net.corda.v5.membership.identity.MemberInfo

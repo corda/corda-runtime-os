@@ -2,7 +2,6 @@ package net.corda.membership.impl.serialization
 
 import net.corda.v5.membership.identity.MemberX500Name
 import net.corda.v5.membership.identity.parser.ConversionContext
-import net.corda.v5.membership.identity.parser.CustomConversionContext
 import net.corda.v5.membership.identity.parser.CustomObjectConverter
 import net.corda.v5.membership.identity.parser.ObjectConverter
 import org.osgi.service.component.annotations.Component
@@ -24,7 +23,7 @@ open class ObjectConverterImpl(
         cardinality = ReferenceCardinality.OPTIONAL,
         policyOption = ReferencePolicyOption.GREEDY
     )
-    val customConverters: List<CustomObjectConverter>
+    val customConverters: List<CustomObjectConverter<out Any>>
 ) : ObjectConverter {
     private val converters = customConverters.associateBy { it.type }.toMutableMap()
 
@@ -33,15 +32,14 @@ open class ObjectConverterImpl(
         val converter = converters[clazz]
         return if(converter != null) {
             converter.convert(
-                CustomConversionContext(
+                ConversionContext(
                     context.store,
                     context.storeClass,
-                    context.key,
-                    this
+                    context.key
                 )
             ) as T
         } else {
-            val value = context.value()
+            val value = context.value
             return if (value == null) {
                 null
             } else {
@@ -58,12 +56,5 @@ open class ObjectConverterImpl(
                 }
             }
         }
-    }
-
-    /**
-     * Function to register custom converter class.
-     */
-    override fun registerConverter(converter: CustomObjectConverter) {
-        converters[converter.type] = converter
     }
 }

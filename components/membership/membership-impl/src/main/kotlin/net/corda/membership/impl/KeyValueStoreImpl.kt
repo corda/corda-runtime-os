@@ -20,8 +20,6 @@ open class KeyValueStoreImpl(
     override operator fun get(key: String): String? = properties[key]
 
     @Transient
-    override val keys: Set<String> = properties.keys
-    @Transient
     override val entries: Set<Map.Entry<String, String?>> = properties.entries
 
     /**
@@ -31,9 +29,8 @@ open class KeyValueStoreImpl(
     override fun <T> parse(key: String, clazz: Class<out T>): T {
 
         // 1. Check if value already is in our cache, if yes, return that value
-        val cachedValue = cache[key]
-        cachedValue?.let {
-            return cachedValue as? T  ?: throw ClassCastException("Casting failed for $cachedValue at $key.")
+        cache[key]?.let {
+            return it as? T  ?: throw ClassCastException("Casting failed for $it at $key.")
         }
 
         // 2. Check if value exists in entries, if not, throw exception since impossible to convert
@@ -57,31 +54,28 @@ open class KeyValueStoreImpl(
 
     /**
      * Function for reading and parsing the list of String values to a list of actual objects.
-     */
-    /*
-        corda.endpoints.1.url = localhost
-        corda.endpoints.1.protocolVersion = 1
-        corda.endpoints.2.url = localhost
-        corda.endpoints.2.protocolVersion = 1
-        corda.endpoints.3.url = localhost
-        corda.endpoints.3.protocolVersion = 1
+     *
+     * Here is an example how a list will look like in the MemberInfo:
+     *  corda.endpoints.1.url = localhost
+     *  corda.endpoints.1.protocolVersion = 1
+     *  corda.endpoints.2.url = localhost
+     *  corda.endpoints.2.protocolVersion = 1
+     *  corda.endpoints.3.url = localhost
+     *  corda.endpoints.3.protocolVersion = 1
      */
     @Suppress("UNCHECKED_CAST")
     override fun <T> parseList(
         itemKeyPrefix: String,
         clazz: Class<out T>
     ): List<T> {
-        // remove the "." at the end to make the cache keys nicer and standardized
         // 1. Check if list already in cache, if yes, return that list
-        val simplePrefix = simplifySearchKeyPrefix(itemKeyPrefix)
-        val tmp = cache[simplePrefix]
-        if(tmp != null) {
-            return tmp as? List<T> ?: throw ClassCastException("Casting failed for $tmp at $simplePrefix.")
+        // normalise prefix, add "." at the end to make processing easier and make usage foolproof
+        val normalisedPrefix = normaliseSearchKeyPrefix(itemKeyPrefix)
+        cache[normalisedPrefix]?.let {
+            return it as? List<T> ?: throw ClassCastException("Casting failed for $it at $normalisedPrefix prefix.")
         }
 
         // 2. Check the matching elements in entries
-        // add "." at the end to make processing easier
-        val normalisedPrefix = normaliseSearchKeyPrefix(itemKeyPrefix)
         val matchingEntries = entries.filter { it.key.startsWith(normalisedPrefix) }
 
         // 3. If no matching elements in entries, return emptylist since it's impossible to cast if not exist
@@ -120,7 +114,7 @@ open class KeyValueStoreImpl(
             converter.convert(ConversionContext(KeyValueStoreImpl(it.second.toSortedMap(), converter), this::class.java, itemKeyPrefix), clazz)
                 ?: throw IllegalStateException("Error while converting $itemKeyPrefix prefix.")
         }
-        cache[simplePrefix] = result
+        cache[normalisedPrefix] = result
         return result
     }
 
@@ -153,12 +147,11 @@ open class KeyValueStoreImpl(
     override fun equals(other: Any?): Boolean {
         if (other == null || other !is KeyValueStoreImpl) return false
         if (this === other) return true
-        return properties == other.properties && keys == other.keys && entries == other.entries
+        return properties == other.properties && entries == other.entries
     }
 
     override fun hashCode(): Int {
         var result = properties.hashCode()
-        result = 31 * result + keys.hashCode()
         result = 31 * result + entries.hashCode()
         return result
     }
@@ -168,13 +161,6 @@ open class KeyValueStoreImpl(
             return itemKeyPrefix
         }
         return "$itemKeyPrefix."
-    }
-
-    private fun simplifySearchKeyPrefix(itemKeyPrefix: String): String {
-        if (!itemKeyPrefix.endsWith(".")) {
-            return itemKeyPrefix
-        }
-        return itemKeyPrefix.dropLast(1)
     }
 }
 

@@ -23,6 +23,8 @@ import net.corda.membership.impl.serialization.EndpointInfoConverter
 import net.corda.membership.impl.serialization.ObjectConverterImpl
 import net.corda.membership.impl.serialization.PartyConverter
 import net.corda.membership.impl.serialization.PublicKeyConverter
+import net.corda.membership.impl.serialization.toMemberInfo
+import net.corda.membership.impl.serialization.toSortedMap
 import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.application.identity.Party
 import net.corda.v5.cipher.suite.KeyEncodingService
@@ -31,7 +33,7 @@ import net.corda.v5.membership.identity.MemberInfo
 import net.corda.v5.membership.identity.ValueNotFoundException
 import net.corda.v5.membership.identity.parse
 import net.corda.v5.membership.identity.parseList
-import net.corda.v5.membership.identity.parser.CustomConversionContext
+import net.corda.v5.membership.identity.parser.ConversionContext
 import net.corda.v5.membership.identity.parser.CustomObjectConverter
 import org.apache.avro.file.DataFileReader
 import org.apache.avro.file.DataFileWriter
@@ -44,6 +46,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.whenever
+import org.osgi.service.component.annotations.Component
 import java.io.File
 import java.security.PublicKey
 import java.time.Instant
@@ -70,7 +73,8 @@ class MemberInfoTest {
             listOf(
                 PartyConverter(),
                 EndpointInfoConverter(),
-                PublicKeyConverter(keyEncodingService)
+                PublicKeyConverter(keyEncodingService),
+                TestStringConverter()
             )
         )
 
@@ -211,7 +215,6 @@ class MemberInfoTest {
 
     @Test
     fun `extension function and parser to retrieve list of custom objects works`() {
-        converter.registerConverter(TestStringConverter())
         assertEquals(testObjects, memberInfo?.testObjects)
     }
 
@@ -275,15 +278,15 @@ data class DummyObject(val text: String)
 
 data class TestObject(val number: Int, val text: String)
 
-class TestStringConverter : CustomObjectConverter {
-    override val type: Class<*>
+@Component(service = [CustomObjectConverter::class])
+class TestStringConverter : CustomObjectConverter<TestObject> {
+    override val type: Class<TestObject>
         get() = TestObject::class.java
 
-    override fun convert(context: CustomConversionContext): TestObject {
+    override fun convert(context: ConversionContext): TestObject {
         return TestObject(
             context.store["number"]?.toInt() ?: throw NullPointerException(),
             context.store["text"] ?: throw NullPointerException()
         )
     }
-
 }

@@ -9,7 +9,7 @@ import net.corda.membership.impl.PartyImpl
 import net.corda.membership.impl.parse
 import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.application.identity.Party
-import net.corda.v5.membership.identity.parser.CustomConversionContext
+import net.corda.v5.membership.identity.parser.ConversionContext
 import net.corda.v5.membership.identity.parser.CustomObjectConverter
 import org.osgi.service.component.annotations.Component
 
@@ -17,16 +17,16 @@ import org.osgi.service.component.annotations.Component
  * Converter class, converting from String to [Party] object.
  */
 @Component(service = [CustomObjectConverter::class])
-class PartyConverter : CustomObjectConverter {
+class PartyConverter : CustomObjectConverter<Party> {
     companion object {
         private const val PARTY = "corda.party"
         private const val NOTARY_SERVICE_PARTY = "corda.notaryServiceParty"
     }
 
-    override val type: Class<*>
+    override val type: Class<Party>
         get() = Party::class.java
 
-    override fun convert(context: CustomConversionContext): Party {
+    override fun convert(context: ConversionContext): Party {
         return when(context.storeClass) {
             MemberContextImpl::class.java -> {
                 when(context.key) {
