@@ -23,8 +23,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
+@Suppress("TooManyFunctions")
 abstract class DominoTile(
     coordinatorFactory: LifecycleCoordinatorFactory,
+    private val startAsynchronously: Boolean = false
 ) : Lifecycle {
     companion object {
         private val logger = contextLogger()
@@ -102,15 +104,9 @@ abstract class DominoTile(
         get() = state == State.Started
 
     protected open fun started() {
-        @Suppress("TooGenericExceptionCaught")
-        try {
-            resources.close()
-            createResources()
-            updateState(State.Started)
-        } catch (e: Throwable) {
-            gotError(e)
-        }
+       updateState(State.Started)
     }
+
     private fun updateState(newState: State) {
         val oldState = currentState.getAndSet(newState)
         if (newState != oldState) {
@@ -231,9 +227,20 @@ abstract class DominoTile(
             }
 
             if (children.all { it.isRunning }) {
-                started()
+                @Suppress("TooGenericExceptionCaught")
+                try {
+                    createResourcesAndStart()
+                } catch (e: Throwable) {
+                    gotError(e)
+                }
             }
         }
+    }
+
+    private fun createResourcesAndStart() {
+        resources.close()
+        createResources()
+        if (!startAsynchronously) started()
     }
 
     internal open fun stopTile(dueToError: Boolean) {

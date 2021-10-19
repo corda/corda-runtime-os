@@ -15,17 +15,19 @@ class SessionPartitionMapperImpl(
     subscriptionFactory: SubscriptionFactory,
 ) : SessionPartitionMapper,
     DominoTile(
-        lifecycleCoordinatorFactory
+        lifecycleCoordinatorFactory,
+        true
     ) {
     companion object {
         const val CONSUMER_GROUP_ID = "session_partitions_mapper"
     }
 
     private val sessionPartitionsMapping = ConcurrentHashMap<String, List<Int>>()
+    private val processor = SessionPartitionProcessor()
 
     private val sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS),
-        SessionPartitionProcessor()
+        processor
     )
 
     override fun getPartitions(sessionId: String): List<Int>? {
