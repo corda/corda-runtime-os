@@ -33,6 +33,15 @@ To run the application use:
       --trustStorePassword=<trustStorePassword>
                           The trust store password (default: password)
 ```
+## TODO:
+When https://r3-cev.atlassian.net/browse/CORE-2820 is ready we need to remove the configuration writer and the configuration arguments:
+* `keyStore`
+* `keyStorePassword`
+* `port`
+* `host`
+* `revocationCheck`
+* `trustStore`
+* `trustStorePassword`
 
 ## Example
 1. Before starting the application, run a kafka cluster. See examples in [here](../../libs/messaging/kafka-messaging-impl/src/kafka-integration-test/README.md).

@@ -12,6 +12,9 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import kotlin.concurrent.thread
 
 @Component
 class GatewayApp @Activate constructor(
@@ -25,6 +28,9 @@ class GatewayApp @Activate constructor(
     private val gatewayFactory: GatewayFactory,
 
 ) : Application {
+    companion object {
+        private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
+    }
     private var gateway: Gateway? = null
 
     override fun startup(args: Array<String>) {
@@ -50,21 +56,24 @@ class GatewayApp @Activate constructor(
                 arguments.gatewayConfiguration
             )
 
-            println("Starting gateway")
+            consoleLogger.info("Starting gateway")
             gateway = gatewayFactory.createGateway(arguments.kafkaConfigurationConfig).also { gateway ->
                 gateway.start()
 
-                while (!gateway.isRunning) {
-                    println("Waiting for gateway to start...")
-                    Thread.sleep(1000)
+                thread(isDaemon = true) {
+                    while (!gateway.isRunning) {
+                        consoleLogger.info("Waiting for gateway to start...")
+                        Thread.sleep(1000)
+                    }
+                    consoleLogger.info("Gateway is running - HTTP server is ${arguments.hostname}:${arguments.port}")
                 }
             }
-
-            println("Gateway is running - HTTP server is ${arguments.hostname}:${arguments.port}")
         }
     }
 
     override fun shutdown() {
+        consoleLogger.info("Closing gateway")
         gateway?.close()
+        consoleLogger.info("Gateway closed")
     }
 }

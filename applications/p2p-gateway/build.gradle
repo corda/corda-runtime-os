@@ -28,8 +28,6 @@ dependencies {
 
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
-    // Replace the `kafka-messaging-impl` with inmemory-messaging-impl to test without Kafka
-    // runtimeOnly project(":libs:messaging:inmemory-messaging-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly project(":libs:configuration:configuration-read-impl")
