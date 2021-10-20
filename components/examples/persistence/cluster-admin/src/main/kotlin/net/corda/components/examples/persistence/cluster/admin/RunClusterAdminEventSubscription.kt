@@ -34,7 +34,7 @@ class RunClusterAdminEventSubscription(
 
     override fun start() {
         if (!isRunning) {
-            logger.info("Creating durable subscription")
+            logger.info("Creating durable subscription for $inputTopic")
             val processor = ClusterAdminEventProcessor(dbConnection, schemaMigrator, logger)
             subscription = subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(groupName, inputTopic, instanceId),
@@ -43,13 +43,13 @@ class RunClusterAdminEventSubscription(
                 null
             )
 
-            logger.info("Starting durable subscription")
+            logger.info("Starting durable subscription for $inputTopic")
             subscription?.start()
         }
     }
 
     override fun stop() {
-        logger.info("Stopping durable sub")
+        logger.info("Stopping durable sub for $inputTopic")
         subscription?.stop()
     }
 }
