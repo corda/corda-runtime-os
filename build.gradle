@@ -52,7 +52,7 @@ allprojects {
 
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
-            allWarningsAsErrors = false
+            allWarningsAsErrors = true
             languageVersion = '1.4'
             apiVersion = '1.4'
             jvmTarget = javaVersion

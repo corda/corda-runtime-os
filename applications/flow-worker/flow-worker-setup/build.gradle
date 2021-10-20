@@ -39,4 +39,4 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 }
 
-description 'Flow Worker Setup'
+description 'Flow Worker Setup Tool'

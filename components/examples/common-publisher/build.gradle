@@ -17,4 +17,4 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
 }
 
-description 'Common code for flow worker setup and main app'
+description 'Resuable Publisher Component'
