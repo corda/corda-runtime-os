@@ -6,8 +6,9 @@ import java.security.MessageDigest
 import java.security.cert.Certificate
 import java.util.Arrays
 
-internal val secureHashComparator = Comparator.comparing(SecureHash::algorithm)
-    .then { h1, h2 -> Arrays.compare(h1?.bytes, h2?.bytes) }
+internal val secureHashComparator = Comparator.nullsFirst(
+    Comparator.comparing(SecureHash::algorithm)
+        .then { h1, h2 -> Arrays.compare(h1?.bytes, h2?.bytes) })
 
 /**
  * Compute the [SecureHash] of a [ByteArray] using the specified [DigestAlgorithmName]

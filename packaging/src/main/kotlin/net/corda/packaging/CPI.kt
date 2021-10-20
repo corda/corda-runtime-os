@@ -2,6 +2,7 @@ package net.corda.packaging
 
 import net.corda.packaging.internal.CPIBuilder
 import net.corda.packaging.internal.CPIIdentifierImpl
+import net.corda.packaging.internal.CPIIdentityImpl
 import net.corda.packaging.internal.CPILoader
 import net.corda.packaging.internal.jarSignatureVerificationEnabledByDefault
 import net.corda.v5.crypto.SecureHash
@@ -87,6 +88,11 @@ interface CPI : AutoCloseable {
          * The unique identifier of a Corda network
          */
         val groupId : String
+
+        companion object {
+            @JvmStatic
+            fun newInstance(name : X500Principal, groupId : String): Identity = CPIIdentityImpl(name, groupId)
+        }
     }
 
     /**

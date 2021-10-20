@@ -7,7 +7,6 @@ import net.corda.packaging.VersionComparator
 import net.corda.v5.crypto.SecureHash
 import java.io.IOException
 import java.security.cert.Certificate
-import java.util.Arrays
 import java.util.NavigableSet
 import java.util.jar.JarFile
 
@@ -17,9 +16,6 @@ internal data class CPKIdentifierImpl(
     override val signerSummaryHash: SecureHash?) : CPK.Identifier {
 
     companion object {
-        val secureHashComparator = Comparator.nullsFirst(
-            Comparator.comparing(SecureHash::algorithm)
-            .then { h1, h2 -> Arrays.compare(h1?.bytes, h2?.bytes) })
         private val identifierComparator = Comparator.comparing(CPK.Identifier::name)
             .thenComparing(CPK.Identifier::version, VersionComparator())
             .thenComparing(CPK.Identifier::signerSummaryHash, secureHashComparator)

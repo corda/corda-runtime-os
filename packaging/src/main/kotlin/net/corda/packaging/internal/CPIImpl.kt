@@ -13,9 +13,9 @@ import javax.security.auth.x500.X500Principal
 internal data class CPIIdentityImpl(override val name: X500Principal,
                       override val groupId: String) : CPI.Identity {
 
-    private companion object {
-        private val comparator : Comparator<CPI.Identity> = Comparator.comparing(CPI.Identity::groupId)
-            .thenComparing { identity -> identity.name.name }
+    internal companion object {
+        internal val comparator : Comparator<CPI.Identity> =
+            Comparator.comparing(CPI.Identity::groupId).thenComparing { identity -> identity.name.name }
     }
 
     override fun compareTo(other: CPI.Identity) = comparator.compare(this, other)
@@ -32,6 +32,7 @@ data class CPIIdentifierImpl(
         private val identifierComparator = Comparator.comparing(CPI.Identifier::name)
             .thenComparing(CPI.Identifier::version, VersionComparator())
             .thenComparing(CPI.Identifier::signerSummaryHash, secureHashComparator)
+            .thenComparing(CPI.Identifier::identity, Comparator.nullsFirst(CPIIdentityImpl.comparator))
     }
 
     override fun compareTo(other: CPI.Identifier) = identifierComparator.compare(this, other)
