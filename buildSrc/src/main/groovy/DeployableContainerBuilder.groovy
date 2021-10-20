@@ -35,7 +35,7 @@ class DeployableContainerBuilder extends DefaultTask {
     private String defaultUsername = System.getenv("CORDA_ARTIFACTORY_USERNAME") ?: project.findProperty('cordaArtifactoryUsername') ?: System.getProperty('corda.artifactory.username')
     private String defaultPassword = System.getenv("CORDA_ARTIFACTORY_PASSWORD") ?: project.findProperty('cordaArtifactoryPassword') ?: System.getProperty('corda.artifactory.password')
     private String gitVersion = "git rev-parse --verify --short HEAD".execute().text
-    private String targetRepo="engineering-docker-dev.software.r3.com"
+    private String targetRepo="engineering-docker-dev.software.r3.com/${project.name}"
 
     @PathSensitive(PathSensitivity.RELATIVE)
     @InputFile
@@ -106,7 +106,7 @@ class DeployableContainerBuilder extends DefaultTask {
                 " ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with '${project.name}.jar', from base '${baseImageName.get()}:${targetImageTag.get()}'")
 
         if (releaseCandidate.get()) {
-            targetRepo = "engineering-docker-release.software.r3.com"
+            targetRepo = "engineering-docker-release.software.r3.com/${project.name}"
         }
         if (!remotePublish.get()) {
             tagContainerForLocal(builder, targetImageTag.get())
