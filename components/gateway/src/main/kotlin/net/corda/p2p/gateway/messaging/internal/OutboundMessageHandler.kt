@@ -14,7 +14,7 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
-import net.corda.p2p.gateway.GatewayImpl.Companion.CONSUMER_GROUP_ID
+import net.corda.p2p.gateway.Gateway.Companion.CONSUMER_GROUP_ID
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpEventListener

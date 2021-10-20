@@ -18,7 +18,7 @@ import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
-import net.corda.p2p.gateway.GatewayImpl.Companion.PUBLISHER_ID
+import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer

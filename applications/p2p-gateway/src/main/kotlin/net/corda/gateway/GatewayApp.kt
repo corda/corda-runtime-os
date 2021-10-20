@@ -4,10 +4,12 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
 import net.corda.libs.configuration.write.factory.ConfigWriterFactory
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.p2p.gateway.Gateway
-import net.corda.p2p.gateway.GatewayFactory
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -17,6 +19,7 @@ import org.slf4j.LoggerFactory
 import kotlin.concurrent.thread
 
 @Component
+@Suppress("LongParameterList")
 class GatewayApp @Activate constructor(
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
@@ -24,9 +27,12 @@ class GatewayApp @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = ConfigWriterFactory::class)
     private val configWriterFactory: ConfigWriterFactory,
-    @Reference(service = GatewayFactory::class)
-    private val gatewayFactory: GatewayFactory,
-
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : Application {
     companion object {
         private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
@@ -57,7 +63,13 @@ class GatewayApp @Activate constructor(
             )
 
             consoleLogger.info("Starting gateway")
-            gateway = gatewayFactory.createGateway(arguments.kafkaConfigurationConfig).also { gateway ->
+            gateway = Gateway(
+                configurationReadService,
+                subscriptionFactory,
+                publisherFactory,
+                lifecycleCoordinatorFactory,
+                arguments.kafkaConfigurationConfig
+            ).also { gateway ->
                 gateway.start()
 
                 thread(isDaemon = true) {

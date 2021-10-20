@@ -119,7 +119,7 @@ class GatewayTest : TestBase() {
         alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
         val serverAddress = URI.create("http://www.alice.net:10000")
         val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
-        GatewayImpl(
+        Gateway(
             createConfigurationServiceFor(GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig),),
             alice.subscriptionFactory,
             alice.publisherFactory,
@@ -203,7 +203,7 @@ class GatewayTest : TestBase() {
         ).use { recipientServer ->
             listenToOutboundMessages.server = recipientServer
             recipientServer.startAndWaitForStarted()
-            GatewayImpl(
+            Gateway(
                 configPublisher.readerService,
                 alice.subscriptionFactory,
                 alice.publisherFactory,
@@ -271,7 +271,7 @@ class GatewayTest : TestBase() {
         val serverAddress = URI.create("http://www.alice.net:10000")
         val clients = mutableListOf<HttpClient>()
         alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
-        GatewayImpl(
+        Gateway(
             createConfigurationServiceFor(GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig)),
             alice.subscriptionFactory,
             alice.publisherFactory,
@@ -364,7 +364,7 @@ class GatewayTest : TestBase() {
         var startTime: Long
         var endTime: Long
         val gatewayAddress = Pair("localhost", 10000)
-        GatewayImpl(
+        Gateway(
             createConfigurationServiceFor(GatewayConfiguration(gatewayAddress.first, gatewayAddress.second, aliceSslConfig)),
             alice.subscriptionFactory,
             alice.publisherFactory,
@@ -436,14 +436,14 @@ class GatewayTest : TestBase() {
         val startTime = Instant.now().toEpochMilli()
         // Start the gateways and let them run until all messages have been processed
         val gateways = listOf(
-            GatewayImpl(
+            Gateway(
                 createConfigurationServiceFor(GatewayConfiguration(aliceGatewayAddress.host, aliceGatewayAddress.port, chipSslConfig)),
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 lifecycleCoordinatorFactory,
                 nodeConfig,
             ),
-            GatewayImpl(
+            Gateway(
                 createConfigurationServiceFor(GatewayConfiguration(bobGatewayAddress.host, bobGatewayAddress.port, daleSslConfig)),
                 bob.subscriptionFactory,
                 bob.publisherFactory,
@@ -497,7 +497,7 @@ class GatewayTest : TestBase() {
     fun `Gateway can recover from bad configuration`() {
         val configPublisher = ConfigPublisher()
         val host = "www.alice.net"
-        GatewayImpl(
+        Gateway(
             configPublisher.readerService,
             alice.subscriptionFactory,
             alice.publisherFactory,
