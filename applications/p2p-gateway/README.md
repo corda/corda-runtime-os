@@ -16,6 +16,8 @@ To run the application use:
                           The config topic name (default: ConfigTopic)
   -h, --help              Display help and exit
       --host=<hostname>   The name of the HTTP host (default: localhost)
+  -i, --instance-id=<instanceId>
+                          The unique instance ID (default to random number)
   -k, --kafka-servers=<kafkaServers>
                           The kafka servers (default: localhost:9092)
       --keyStore=<keyStoreFile>

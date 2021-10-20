@@ -85,8 +85,10 @@ class GatewayApp @Activate constructor(
     }
 
     override fun shutdown() {
-        consoleLogger.info("Closing gateway")
-        gateway?.close()
-        consoleLogger.info("Gateway closed")
+        if (gateway != null) {
+            consoleLogger.info("Closing gateway")
+            gateway?.close()
+            consoleLogger.info("Gateway closed")
+        }
     }
 }
