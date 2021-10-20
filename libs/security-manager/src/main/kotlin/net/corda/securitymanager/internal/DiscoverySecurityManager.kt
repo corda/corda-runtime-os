@@ -22,6 +22,6 @@ class DiscoverySecurityManager : CordaSecurityManager, SecurityManager() {
     }
 
     override fun stop() = Unit
-    override fun grantPermission(filter: String, perms: Collection<Permission>) = Unit
-    override fun denyPermission(filter: String, perms: Collection<Permission>) = Unit
+    override fun grantPermissions(filter: String, perms: Collection<Permission>) = Unit
+    override fun denyPermissions(filter: String, perms: Collection<Permission>) = Unit
 }
