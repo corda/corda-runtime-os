@@ -7,6 +7,7 @@ import net.corda.internal.serialization.amqp.DuplicateCustomSerializerException
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
+import net.corda.v5.serialization.MissingSerializerException
 import net.corda.v5.serialization.SerializationCustomSerializer
 
 // Requirements:
@@ -87,7 +88,7 @@ private fun differentSerializersPerSandboxGroup() {
     var worked = false
     try {
         outputA.serialize(objB, AMQP_STORAGE_CONTEXT)
-    } catch (e: Exception) {
+    } catch (e: MissingSerializerException) {
         println("SUCCESS - Environment A does not have serializer from environment B")
         worked = true
     } finally {
@@ -98,7 +99,7 @@ private fun differentSerializersPerSandboxGroup() {
 
     try {
         outputB.serialize(objA, AMQP_STORAGE_CONTEXT)
-    } catch (e: Exception) {
+    } catch (e: MissingSerializerException) {
         println("SUCCESS - Environment B does not have serializer from environment A")
         worked = true
     } finally {
