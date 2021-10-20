@@ -9,7 +9,14 @@ interface SecurityManagerService {
      *
      * Replaces the existing Corda security manager, if one is already installed.
      */
-    fun start(isDiscoveryMode: Boolean = false)
+    fun start()
+
+    /**
+     * Starts the discovery security manager.
+     *
+     * Replaces the existing Corda security manager, if one is already installed.
+     */
+    fun startDiscoveryMode()
 
     /**
      * Grants the [perms] to the bundles matching the [filter].

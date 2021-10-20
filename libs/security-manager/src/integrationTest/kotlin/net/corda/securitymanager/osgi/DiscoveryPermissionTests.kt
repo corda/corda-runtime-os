@@ -18,7 +18,7 @@ class DiscoveryPermissionTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            sandboxLoader.securityManagerService.start(isDiscoveryMode = true)
+            sandboxLoader.securityManagerService.startDiscoveryMode()
         }
     }
 

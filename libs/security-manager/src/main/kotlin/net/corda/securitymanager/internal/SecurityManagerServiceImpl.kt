@@ -24,16 +24,16 @@ class SecurityManagerServiceImpl @Activate constructor(
     // The currently-running Corda security manager.
     private var securityManager: CordaSecurityManager? = null
 
-    override fun start(isDiscoveryMode: Boolean) {
+    override fun start() {
         securityManager?.stop()
+        log.info("Starting restrictive Corda security manager.")
+        securityManager = restrictiveSecurityManager.apply { start() }
+    }
 
-        securityManager = if (isDiscoveryMode) {
-            log.info("Starting discovery Corda security manager. This is not secure in production.")
-            discoverySecurityManager
-        } else {
-            log.info("Starting restrictive Corda security manager.")
-            restrictiveSecurityManager
-        }.apply { start() }
+    override fun startDiscoveryMode() {
+        securityManager?.stop()
+        log.info("Starting discovery Corda security manager. This is not secure in production.")
+        securityManager = discoverySecurityManager
     }
 
     override fun grantPermission(filter: String, perms: Collection<Permission>) {
