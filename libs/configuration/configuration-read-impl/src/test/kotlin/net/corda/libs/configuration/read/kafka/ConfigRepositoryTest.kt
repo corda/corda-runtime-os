@@ -1,5 +1,7 @@
 package net.corda.libs.configuration.read.kafka
 
+import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.read.kafka.ConfigRepository.Companion.BOOTSTRAP_KEY
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -9,7 +11,7 @@ class ConfigRepositoryTest {
 
     @BeforeEach
     fun beforeEach() {
-        configRepository = ConfigRepository()
+        configRepository = ConfigRepository(ConfigFactory.empty())
     }
 
     @Test
@@ -31,9 +33,10 @@ class ConfigRepositoryTest {
 
         val returnedConfig = configRepository.getConfigurations()
 
-        Assertions.assertThat(returnedConfig.keys).isEqualTo(configMap.keys)
+        Assertions.assertThat(returnedConfig.keys).isEqualTo(configMap.keys + BOOTSTRAP_KEY)
         Assertions.assertThat(returnedConfig["corda.database"]?.getDouble("componentVersion")).isEqualTo(5.7)
         Assertions.assertThat(returnedConfig["corda.security"]?.getDouble("componentVersion")).isEqualTo(5.5)
+        Assertions.assertThat(returnedConfig[BOOTSTRAP_KEY]).isNotNull
     }
 
 

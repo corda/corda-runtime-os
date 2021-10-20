@@ -5,9 +5,7 @@ import com.esotericsoftware.kryo.KryoSerializable
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import net.corda.data.flow.event.FlowEvent
-import net.corda.serialization.CheckpointSerializationService
 import net.corda.serialization.CheckpointSerializer
-import net.corda.v5.application.services.serialization.SerializationService
 import java.time.Clock
 import java.util.concurrent.CompletableFuture
 

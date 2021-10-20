@@ -32,7 +32,7 @@ class ConfigReaderImplTest {
         }
 
         configUpdateUtil = ConfigListenerTestUtil()
-        configRepository = ConfigRepository()
+        configRepository = ConfigRepository(ConfigFactory.empty())
         configReader = ConfigReaderImpl(configRepository, subscriptionFactory, config)
         Mockito.`when`(
             subscriptionFactory.createCompactedSubscription(
@@ -170,9 +170,11 @@ class ConfigReaderImplTest {
 
         Assertions.assertThat(lambdaFlag).isTrue
         Assertions.assertThat(changedKeys.size)
-            .isEqualTo(1)
+            .isEqualTo(2)
         Assertions.assertThat(configSnapshot["corda.database"])
             .isEqualTo(configRepository.getConfigurations()["corda.database"])
+        Assertions.assertThat(configSnapshot["corda.boot"])
+            .isEqualTo(configRepository.getConfigurations()["corda.boot"])
     }
 
     @Test

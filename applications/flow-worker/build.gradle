@@ -1,6 +1,6 @@
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
-    id 'corda.common-app'
+    id 'corda.quasar-app'
 }
 
 dependencies {
@@ -8,14 +8,14 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    implementation "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
-
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'
+
+    implementation project(":applications:flow-worker:common")
 
     implementation project(":osgi-framework-api")
     implementation project(":libs:messaging:messaging")
@@ -39,10 +39,7 @@ dependencies {
     runtimeOnly project(":libs:serialization:serialization-kryo")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
 
-    runtimeOnly project(":components:sandbox:sandbox-service-impl")
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
-
-    runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"

@@ -1,0 +1,24 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'net.corda.plugins.cordapp-cpk'
+    id 'net.corda.plugins.cordapp-cpb'
+    id 'net.corda.plugins.quasar-utils'
+}
+
+cordapp {
+    targetPlatformVersion platformVersion as Integer
+    minimumPlatformVersion platformVersion as Integer
+    workflow {
+        name "Corda Hello World"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordapp "net.corda:corda-flows:$cordaDevPreviewVersion"
+}
+
+jar {
+    archiveBaseName = 'corda-helloworld-cpb'
+}

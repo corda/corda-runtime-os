@@ -9,6 +9,7 @@ import net.corda.data.flow.StateMachineState
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.identity.HoldingIdentity
 import net.corda.dependency.injection.DependencyInjectionService
+import net.corda.flow.manager.FlowMetaData
 import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.flow.statemachine.factory.FlowStateMachineFactory
 import net.corda.sandbox.SandboxGroup
@@ -16,8 +17,6 @@ import net.corda.serialization.CheckpointSerializer
 import net.corda.serialization.CheckpointSerializerBuilder
 import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.application.services.serialization.SerializationService
-import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -28,7 +27,7 @@ import java.nio.ByteBuffer
 
 class FlowManagerImplTest {
 
-    class TestFlow: Flow<Unit> {
+    class TestFlow(val jsonArg: String): Flow<Unit> {
         override fun call() {
         }
     }
@@ -63,10 +62,11 @@ class FlowManagerImplTest {
         )
         val checkpoint = Checkpoint(flowKey, ByteBuffer.allocate(1), stateMachineState)
         val eventsOut = listOf(FlowEvent(flowKey, rpcFlowResult))
-        val serialized = SerializedBytes<String>("Test".toByteArray())
+        val serialized = "Test".toByteArray()
+        val topic = "Topic1"
 
         doReturn(TestFlow::class.java).`when`(sandboxGroup).loadClassFromCordappBundle(any(), eq(Flow::class.java))
-        doReturn(stateMachine).`when`(flowStateMachineFactory).createStateMachine(any(), any(), any(), any())
+        doReturn(stateMachine).`when`(flowStateMachineFactory).createStateMachine(any(), any(), any(), any(),  any(),  any())
         doReturn(Pair(checkpoint, eventsOut)).`when`(stateMachine).waitForCheckpoint()
         doReturn(checkpointSerializerBuilder).`when`(checkpointSerializerBuilderFactory).createCheckpointSerializerBuilder(any())
         doReturn(checkpointSerializer).`when`(checkpointSerializerBuilder).build()
@@ -79,18 +79,18 @@ class FlowManagerImplTest {
         )
 
         val result = flowManager.startInitiatingFlow(
-            mock(),
-            flowName,
-            flowKey,
-            "",
-            mock(),
-            emptyList()
+            FlowMetaData(flowName, flowKey, "jsonArg"),
+            "clientId",
+            topic,
+            "cpiId123",
+            sandboxGroup
         )
 
         assertThat(result.checkpoint).isEqualTo(checkpoint)
         assertThat(result.events.size).isEqualTo(1)
-        assertThat(result.events.first().key).isEqualTo(flowName)
-        assertThat(result.events.first().topic).isEqualTo("")
-        assertThat(result.events.first().value).isEqualTo(serialized.bytes)
+        assertThat(result.events.first().key).isEqualTo(flowKey)
+        assertThat(result.events.first().topic).isEqualTo(topic)
+        assertThat(result.events.first().value?.flowKey).isEqualTo(flowKey)
+        assertThat(result.events.first().value?.payload).isEqualTo(rpcFlowResult)
     }
 }
