@@ -17,6 +17,10 @@ dependencies {
     implementation project(":libs:db:db-admin-impl")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
+
+    // reference this to be able to pick up the liquibase files
+    //  TODO: is this the right thing? Where should liquibase files come from in the "real" worker?
+    implementation project(":components:examples:persistence:config-admin")
 }
 
 description 'Cluster Admin Component'

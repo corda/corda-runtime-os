@@ -70,6 +70,7 @@ abstract class ConfigurationAwareLeafTile<C>(
     override fun stopTile(dueToError: Boolean) {
         resources.close()
         if (!dueToError) {
+            lastConfiguration = null
             registration?.close()
             registration = null
         }
