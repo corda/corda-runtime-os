@@ -18,7 +18,7 @@ class UnsandboxedPermissionTests {
     fun `unsandboxed bundle has all permissions`() {
         assertDoesNotThrow {
             sandboxLoader.unsandboxedInvoker.apply {
-                performActionRequiringRuntimePermission()
+                performActionRequiringGetEnvRuntimePermission()
                 performActionRequiringServiceGetPermission()
                 performActionRequiringServiceRegisterPermission()
             }

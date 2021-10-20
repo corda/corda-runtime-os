@@ -26,7 +26,7 @@ class SandboxLoader @Activate constructor(
         private const val TEST_BUNDLE_LOCATION_PREFIX = "reference:"
     }
 
-    // TODO - Describe.
+    /** Returns an [Invoker] from a sandboxed [Bundle]. */
     internal fun getSandboxedInvoker(): Invoker {
         val sandboxedOsgiInvokerBundle = createSandboxedBundle(unsandboxedInvoker::class.java)
         return retrieveServiceFromBundle(sandboxedOsgiInvokerBundle, Invoker::class.java)

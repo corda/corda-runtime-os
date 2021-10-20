@@ -1,6 +1,6 @@
 package net.corda.securitymanager.internal
 
-import org.osgi.service.permissionadmin.PermissionInfo
+import java.security.Permission
 
 /** Common interface for all Corda security managers. */
 interface CordaSecurityManager {
@@ -10,6 +10,6 @@ interface CordaSecurityManager {
     /** Perform any clean-up required before replacing this [CordaSecurityManager] with another. */
     fun stop()
 
-    /** Grants the permissions described by the [permInfos] to the bundles matching the [filter]. */
-    fun grantPermission(filter: String, permInfos: List<PermissionInfo>)
+    /** Grants the permissions described by the [perms] to the bundles matching the [filter]. */
+    fun grantPermission(filter: String, perms: Collection<Permission>)
 }

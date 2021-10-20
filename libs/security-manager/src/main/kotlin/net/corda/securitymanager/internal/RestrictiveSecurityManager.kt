@@ -20,14 +20,15 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.condpermadmin.BundleLocationCondition
 import org.osgi.service.condpermadmin.ConditionInfo
 import org.osgi.service.condpermadmin.ConditionalPermissionAdmin
+import org.osgi.service.condpermadmin.ConditionalPermissionInfo
 import org.osgi.service.condpermadmin.ConditionalPermissionInfo.ALLOW
 import org.osgi.service.condpermadmin.ConditionalPermissionInfo.DENY
 import org.osgi.service.permissionadmin.PermissionAdmin
 import org.osgi.service.permissionadmin.PermissionInfo
 import java.security.AllPermission
+import java.security.Permission
 
 /** A [CordaSecurityManager] that grants sandbox code a very limited set of permissions. */
-@Suppress("unused")
 @Component(service = [RestrictiveSecurityManager::class])
 class RestrictiveSecurityManager @Activate constructor(
     @Reference
@@ -40,6 +41,8 @@ class RestrictiveSecurityManager @Activate constructor(
         private val packagePermission = PermissionInfo(PACKAGE_PERMISSION_NAME, ALL, "$EXPORTONLY,$IMPORT")
         private val capabilityPermission = PermissionInfo(CAPABILITY_PERMISSION_NAME, ALL, "$REQUIRE,$PROVIDE")
         private val servicePermission = PermissionInfo(SERVICE_PERMISSION_NAME, ALL, "$GET,$REGISTER")
+        private val sandboxBundleConditionInfo =
+            ConditionInfo(BundleLocationCondition::class.java.name, arrayOf(SANDBOX_SECURITY_DOMAIN_FILTER))
     }
 
     /**
@@ -60,27 +63,18 @@ class RestrictiveSecurityManager @Activate constructor(
 
     /** Clears any permissions from the [ConditionalPermissionAdmin]. */
     override fun stop() {
-        val condPermUpdate = conditionalPermissionAdmin.newConditionalPermissionUpdate()
-        condPermUpdate.conditionalPermissionInfos.clear()
-        if (!condPermUpdate.commit()) throw SecurityManagerException("Unable to commit updated bundle permissions.")
+        updateConditionalPerms(emptySet())
     }
 
-    // TODO: Refactor the shared logic for updating cond perms.
-    override fun grantPermission(filter: String, permInfos: List<PermissionInfo>) {
-        val condPermUpdate = conditionalPermissionAdmin.newConditionalPermissionUpdate()
+    override fun grantPermission(filter: String, perms: Collection<Permission>) {
+        val permInfos = perms.map { perm -> PermissionInfo(perm::class.java.name, perm.name, perm.actions) }
+        val conditionInfo = ConditionInfo(BundleLocationCondition::class.java.name, arrayOf(filter))
 
-        val condPerms = permInfos.map { permInfo ->
-            conditionalPermissionAdmin.newConditionalPermissionInfo(
-                null,
-                arrayOf(ConditionInfo(BundleLocationCondition::class.java.name, arrayOf(filter))),
-                arrayOf(permInfo),
-                ALLOW
-            )
-        }
-        // The ordering of the permissions in the list is important. Permissions earlier in the list take priority.
-        condPermUpdate.conditionalPermissionInfos.addAll(0, condPerms)
+        val condPermInfo = conditionalPermissionAdmin.newConditionalPermissionInfo(
+            null, arrayOf(conditionInfo), permInfos.toTypedArray(), ALLOW
+        )
 
-        if (!condPermUpdate.commit()) throw SecurityManagerException("Unable to commit updated bundle permissions.")
+        updateConditionalPerms(setOf(condPermInfo), clear = false)
     }
 
     /** Grants all permissions to the [ConfigurationAdmin] service. */
@@ -100,35 +94,35 @@ class RestrictiveSecurityManager @Activate constructor(
         //  * Importing and exporting packages
         //  * Requiring and providing OSGi capabilities
         //  * Retrieving and registering services
+        val osgiSetupPerms = arrayOf(packagePermission, capabilityPermission, servicePermission)
         val grantOsgiSetupPerms = conditionalPermissionAdmin.newConditionalPermissionInfo(
-            null,
-            arrayOf(ConditionInfo(BundleLocationCondition::class.java.name, arrayOf(SANDBOX_SECURITY_DOMAIN_FILTER))),
-            arrayOf(packagePermission, capabilityPermission, servicePermission),
-            ALLOW
+            null, arrayOf(sandboxBundleConditionInfo), osgiSetupPerms, ALLOW
         )
 
         val denyAllPermissionsToSandboxes = conditionalPermissionAdmin.newConditionalPermissionInfo(
-            null,
-            arrayOf(ConditionInfo(BundleLocationCondition::class.java.name, arrayOf(SANDBOX_SECURITY_DOMAIN_FILTER))),
-            arrayOf(allPermInfo),
-            DENY
+            null, arrayOf(sandboxBundleConditionInfo), arrayOf(allPermInfo), DENY
         )
 
         val grantAllPermissions = conditionalPermissionAdmin.newConditionalPermissionInfo(
-            null,
-            null,
-            arrayOf(allPermInfo),
-            ALLOW
+            null, null, arrayOf(allPermInfo), ALLOW
         )
 
+        updateConditionalPerms(listOf(grantOsgiSetupPerms, denyAllPermissionsToSandboxes, grantAllPermissions))
+    }
+
+    /**
+     * Adds the [perms] to the start of [ConditionalPermissionAdmin]'s permissions list.
+     *
+     * If [clear] is set, the existing permissions are cleared first.
+     */
+    private fun updateConditionalPerms(perms: Collection<ConditionalPermissionInfo>, clear: Boolean = true) {
         val condPermUpdate = conditionalPermissionAdmin.newConditionalPermissionUpdate()
         val condPerms = condPermUpdate.conditionalPermissionInfos
-        condPerms.clear()
+
+        if (clear) condPerms.clear()
 
         // The ordering of the permissions in the list is important. Permissions earlier in the list take priority.
-        condPerms.add(grantOsgiSetupPerms)
-        condPerms.add(denyAllPermissionsToSandboxes)
-        condPerms.add(grantAllPermissions)
+        condPerms.addAll(0, perms)
 
         if (!condPermUpdate.commit()) throw SecurityManagerException("Unable to commit updated bundle permissions.")
     }

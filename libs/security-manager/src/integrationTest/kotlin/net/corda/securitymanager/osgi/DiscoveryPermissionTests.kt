@@ -27,7 +27,7 @@ class DiscoveryPermissionTests {
         val sandboxedInvoker = sandboxLoader.getSandboxedInvoker()
         assertDoesNotThrow {
             sandboxedInvoker.apply {
-                performActionRequiringRuntimePermission()
+                performActionRequiringGetEnvRuntimePermission()
                 performActionRequiringServiceGetPermission()
                 performActionRequiringServiceRegisterPermission()
             }

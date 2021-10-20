@@ -7,6 +7,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.permissionadmin.PermissionInfo
+import java.security.Permission
 
 /** An implementation of [SecurityManagerService]. */
 @Suppress("unused")
@@ -24,7 +25,6 @@ class SecurityManagerServiceImpl @Activate constructor(
     // The currently-running Corda security manager.
     private var securityManager: CordaSecurityManager? = null
 
-    @Suppress("unused")
     override fun start(isDiscoveryMode: Boolean) {
         securityManager?.stop()
 
@@ -37,8 +37,8 @@ class SecurityManagerServiceImpl @Activate constructor(
         }.apply { start() }
     }
 
-    override fun grantPermission(filter: String, permInfos: List<PermissionInfo>) {
-        securityManager?.grantPermission(filter, permInfos)
+    override fun grantPermission(filter: String, perms: Collection<Permission>) {
+        securityManager?.grantPermission(filter, perms)
             ?: throw SecurityManagerException("No Corda security manager is currently running.")
     }
 }

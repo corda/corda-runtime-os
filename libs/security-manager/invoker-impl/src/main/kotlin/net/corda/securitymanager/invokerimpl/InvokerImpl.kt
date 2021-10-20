@@ -13,20 +13,20 @@ class InvokerImpl: Invoker {
         private val bundleContext: BundleContext = FrameworkUtil.getBundle(this::class.java).bundleContext
     }
 
-    override fun performActionRequiringRuntimePermission() {
-        // Triggers a security check against the `getenv.{variable name}` permission target.
-        // TODO - Make a constant.
+    override fun performActionRequiringGetEnvRuntimePermission() {
         System.getenv("ENV_VAR")
     }
 
+    override fun performActionRequiringGetProtectionDomainRuntimePermission() {
+        Any::class.java.protectionDomain
+    }
+
     override fun performActionRequiringServiceGetPermission() {
-        // Triggers a security check against the OSGi `ServicePermission.GET` action.
         val serviceReference = bundleContext.getServiceReference(Any::class.java)
         bundleContext.getService(serviceReference)
     }
 
     override fun performActionRequiringServiceRegisterPermission() {
-        // Triggers a security check against the OSGi `ServicePermission.REGISTER` action.
         bundleContext.registerService(Any::class.java, Any(), null)
     }
 }

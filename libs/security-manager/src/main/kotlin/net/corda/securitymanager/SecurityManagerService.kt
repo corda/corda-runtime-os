@@ -1,6 +1,6 @@
 package net.corda.securitymanager
 
-import org.osgi.service.permissionadmin.PermissionInfo
+import java.security.Permission
 
 /** A service for starting a Corda security manager. */
 interface SecurityManagerService {
@@ -12,11 +12,9 @@ interface SecurityManagerService {
     fun start(isDiscoveryMode: Boolean = false)
 
     /**
-     * Grants the permissions described by the [permInfos] to the bundles matching the [filter].
+     * Grants the [perms] to the bundles matching the [filter].
      *
      * Throws [SecurityManagerException] if no Corda security manager is currently running.
      */
-    // TODO - Take collection, not list.
-    // TODO - Take `Permission`, not `PermissionInfo`
-    fun grantPermission(filter: String, permInfos: List<PermissionInfo>)
+    fun grantPermission(filter: String, perms: Collection<Permission>)
 }
