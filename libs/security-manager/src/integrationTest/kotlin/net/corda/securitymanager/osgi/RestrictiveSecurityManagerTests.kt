@@ -11,9 +11,9 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.security.AccessControlException
 
-// TODO: In a new file, test that can switch between security managers.
+// TODO - In a new file, test that can switch between security managers.
 
-/** Tests the permissions of sandboxed bundles. */
+/** Tests the `RestrictiveSecurityManager`. */
 @ExtendWith(ServiceExtension::class)
 class RestrictiveSecurityManagerTests {
     companion object {
@@ -43,7 +43,7 @@ class RestrictiveSecurityManagerTests {
     fun `no permissions are denied by default`() {
         assertDoesNotThrow {
             // This permission stands in for all permissions.
-            System.getenv("ENV_VAR")
+            System.getenv()
         }
     }
 
@@ -52,7 +52,7 @@ class RestrictiveSecurityManagerTests {
         securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
 
         assertThrows<AccessControlException> {
-            System.getenv("ENV_VAR")
+            System.getenv()
         }
     }
 
@@ -61,7 +61,7 @@ class RestrictiveSecurityManagerTests {
         securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm, getProtectionDomainPerm))
 
         assertThrows<AccessControlException> {
-            System.getenv("ENV_VAR")
+            System.getenv()
         }
         assertThrows<AccessControlException> {
             Any::class.java.protectionDomain
@@ -74,7 +74,7 @@ class RestrictiveSecurityManagerTests {
         securityManagerService.denyPermissions(bundleLocation, setOf(getProtectionDomainPerm))
 
         assertThrows<AccessControlException> {
-            System.getenv("ENV_VAR")
+            System.getenv()
         }
         assertThrows<AccessControlException> {
             Any::class.java.protectionDomain
@@ -88,7 +88,7 @@ class RestrictiveSecurityManagerTests {
         securityManagerService.grantPermissions(bundleLocation, setOf(getEnvPerm))
 
         assertDoesNotThrow {
-            System.getenv("ENV_VAR")
+            System.getenv()
         }
     }
 
@@ -99,7 +99,7 @@ class RestrictiveSecurityManagerTests {
         securityManagerService.grantPermissions(bundleLocation, setOf(getEnvPerm, getProtectionDomainPerm))
 
         assertDoesNotThrow {
-            System.getenv("ENV_VAR")
+            System.getenv()
             Any::class.java.protectionDomain
         }
     }
@@ -111,7 +111,7 @@ class RestrictiveSecurityManagerTests {
         securityManagerService.grantPermissions(bundleLocation, setOf(getProtectionDomainPerm))
 
         assertDoesNotThrow {
-            System.getenv("ENV_VAR")
+            System.getenv()
             Any::class.java.protectionDomain
         }
     }
@@ -123,7 +123,7 @@ class RestrictiveSecurityManagerTests {
         securityManagerService.denyPermissions(wildcardLocation, setOf(getEnvPerm))
 
         assertThrows<AccessControlException> {
-            System.getenv("ENV_VAR")
+            System.getenv()
         }
     }
 
@@ -136,7 +136,7 @@ class RestrictiveSecurityManagerTests {
         securityManagerService.grantPermissions(wildcardLocation, setOf(getEnvPerm))
 
         assertDoesNotThrow {
-            System.getenv("ENV_VAR")
+            System.getenv()
         }
     }
 
@@ -145,7 +145,7 @@ class RestrictiveSecurityManagerTests {
         securityManagerService.denyPermissions("non-matching-filter", setOf(getEnvPerm))
 
         assertDoesNotThrow {
-            System.getenv("ENV_VAR")
+            System.getenv()
         }
     }
 
@@ -155,7 +155,7 @@ class RestrictiveSecurityManagerTests {
         securityManagerService.grantPermissions("non-matching-filter", setOf(getEnvPerm))
 
         assertThrows<AccessControlException> {
-            System.getenv("ENV_VAR")
+            System.getenv()
         }
     }
 
@@ -167,7 +167,7 @@ class RestrictiveSecurityManagerTests {
         securityManagerService.start()
 
         assertDoesNotThrow {
-            System.getenv("ENV_VAR")
+            System.getenv()
         }
     }
 }

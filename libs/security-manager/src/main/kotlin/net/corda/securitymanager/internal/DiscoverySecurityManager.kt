@@ -5,13 +5,11 @@ import java.security.Permission
 
 // TODO - CORE-2828: Update [DiscoverySecurityManager] to write out updated permissions file.
 
-// TODO - Does it make sense anymore for this to share an interface with RestrictiveSecurityManager? Not much is shared.
-
 /**
  * A [CordaSecurityManager] that grants sandbox code all permissions.
  *
- * While active, for any permission check that would fail under the [RestrictiveSecurityManager], it writes out the
- * corresponding permission to an updated permissions file.
+ * While active, for any permission check performed by user code, it writes out the corresponding permission to an
+ * updated permissions file.
  *
  * This security manager is not secure in production.
  */

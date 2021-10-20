@@ -33,9 +33,7 @@ class RestrictiveSecurityManager @Activate constructor(
     }
 
     /** Clears any permissions from the [ConditionalPermissionAdmin]. */
-    override fun stop() {
-        updateConditionalPerms(emptySet())
-    }
+    override fun stop() = updateConditionalPerms(emptySet())
 
     override fun grantPermissions(filter: String, perms: Collection<Permission>) =
         modifyPermissions(filter, perms, grant = true)
@@ -45,7 +43,7 @@ class RestrictiveSecurityManager @Activate constructor(
 
     /**
      * Grants or denies the permissions described by the [perms] to the bundles matching the [filter], based on whether
-     * [grant] is true.
+     * [grant] is set.
      */
     private fun modifyPermissions(filter: String, perms: Collection<Permission>, grant: Boolean) {
         val action = if (grant) ALLOW else DENY
