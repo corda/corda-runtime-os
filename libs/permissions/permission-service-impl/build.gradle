@@ -1,0 +1,24 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Configuration Read API'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    
+    implementation project(":libs:messaging:messaging")
+
+    implementation project(":libs:lifecycle:lifecycle")
+
+    implementation project(":libs:permissions:permission-service")
+
+    implementation "net.corda:corda-avro-schema:5.0.0.17-SNAPSHOT"
+}
