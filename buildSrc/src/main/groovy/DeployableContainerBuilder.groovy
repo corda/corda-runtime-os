@@ -35,6 +35,7 @@ class DeployableContainerBuilder extends DefaultTask {
     private String defaultUsername = System.getenv("CORDA_ARTIFACTORY_USERNAME") ?: project.findProperty('cordaArtifactoryUsername') ?: System.getProperty('corda.artifactory.username')
     private String defaultPassword = System.getenv("CORDA_ARTIFACTORY_PASSWORD") ?: project.findProperty('cordaArtifactoryPassword') ?: System.getProperty('corda.artifactory.password')
     private String gitVersion = "git rev-parse --verify --short HEAD".execute().text
+    private String targetRepo="engineering-docker-dev.software.r3.com"
 
     @PathSensitive(PathSensitivity.RELATIVE)
     @InputFile
@@ -51,6 +52,9 @@ class DeployableContainerBuilder extends DefaultTask {
             project.objects.property(Boolean).convention(false)
 
     @Input
+    final Property<Boolean> releaseCandidate =
+            project.objects.property(Boolean).convention(false)
+    @Input
     final Property<String> baseImageName =
             project.objects.property(String).convention('azul/zulu-openjdk-alpine')
 
@@ -63,10 +67,6 @@ class DeployableContainerBuilder extends DefaultTask {
             project.objects.listProperty(String)
 
     @Input
-    final Property<String> targetImageName =
-            project.objects.property(String).convention("engineering-docker-dev.software.r3.com/${project.name}")
-
-    @Input
     final Property<String> targetImageTag =
             project.objects.property(String).convention('latest')
 
@@ -77,7 +77,6 @@ class DeployableContainerBuilder extends DefaultTask {
 
     @TaskAction
     def updateImage() {
-
         String jarLocation = "${project.buildDir}/tmp/containerization/${project.name}.jar"
         Files.createDirectories(Paths.get("${project.buildDir}/tmp/containerization/"))
         Files.copy(Paths.get(overrideFile.getAsFile().get().getPath()), Paths.get(jarLocation), StandardCopyOption.REPLACE_EXISTING)
@@ -103,9 +102,12 @@ class DeployableContainerBuilder extends DefaultTask {
         }
         builder.setEntrypoint("java", "-jar", CONTAINER_LOCATION + project.name+".jar")
 
-        logger.quiet("Publishing '${targetImageName.get()}:${targetImageTag.get()}' and '${targetImageName.get()}:${project.version}'" +
+        logger.quiet("Publishing '${targetRepo}:${targetImageTag.get()}' and '${targetRepo}:${project.version}'" +
                 " ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with '${project.name}.jar', from base '${baseImageName.get()}:${targetImageTag.get()}'")
 
+        if (releaseCandidate.get()) {
+            targetRepo = "engineering-docker-release.software.r3.com"
+        }
         if (!remotePublish.get()) {
             tagContainerForLocal(builder, targetImageTag.get())
             tagContainerForLocal(builder, project.version)
@@ -119,13 +121,13 @@ class DeployableContainerBuilder extends DefaultTask {
 
     private JibContainer tagContainerForLocal(JibContainerBuilder builder, String tag) {
         builder.containerize(
-                Containerizer.to(DockerDaemonImage.named("${targetImageName.get()}:${tag}"))
+                Containerizer.to(DockerDaemonImage.named("${targetRepo}:${tag}"))
         )
     }
 
     private JibContainer tagContainerForRemote(JibContainerBuilder builder, String tag) {
         builder.containerize(
-                Containerizer.to(RegistryImage.named("${targetImageName.get()}:${tag}")
+                Containerizer.to(RegistryImage.named("${targetRepo}:${tag}")
                         .addCredential(registryUsername.get(), registryPassword.get())))
     }
 }
