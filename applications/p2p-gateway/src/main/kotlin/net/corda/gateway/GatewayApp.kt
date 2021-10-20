@@ -43,7 +43,7 @@ class GatewayApp @Activate constructor(
             )
             writer.updateConfiguration(
                 CordaConfigurationKey(
-                    "gateway-app",
+                    "p2p-gateway",
                     CordaConfigurationVersion("p2p", 1, 0),
                     CordaConfigurationVersion("gateway", 1, 0)
                 ),

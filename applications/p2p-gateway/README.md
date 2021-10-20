@@ -3,16 +3,14 @@ A standalone Gateway application
 
 ## Building
 To build run:
-`./gradlew :applications:gateway-app:clean :applications:gateway-app:appJar`
-This will create an executable jar in `applications/gateway-app/build/bin/` 
+`./gradlew :applications:p2p-gateway:clean :applications:p2p-gateway:appJar`
+This will create an executable jar in `applications/p2p-gateway/build/bin/` 
 
 ## Running
 To run the application use:
-`java -jar ./applications/gateway-app/build/bin/corda-gateway-app-5.0.0.0-SNAPSHOT.jar`
+`java -jar ./applications/p2p-gateway/build/bin/corda-p2p-gateway-5.0.0.0-SNAPSHOT.jar`
 
 ### Command arguments:
-* `-h`, `--help`              Display help and exit
-* `--config-topic-name` - The config topic name (default: `ConfigTopic`)
 ```
       --config-topic-name=<configTopicName>
                           The config topic name (default: ConfigTopic)
@@ -42,7 +40,7 @@ To run the application use:
 ```bash
 java \
   -Djdk.net.hosts.file=./components/gateway/src/integration-test/resources/hosts \
-  -jar ./applications/gateway-app/build/bin/corda-gateway-app-5.0.0.0-SNAPSHOT.jar \
+  -jar ./applications/p2p-gateway/build/bin/corda-p2p-gateway-5.0.0.0-SNAPSHOT.jar \
   --keyStore ./components/gateway/src/integration-test/resources/sslkeystore_alice.jks \
   --trustStore ./components/gateway/src/integration-test/resources/truststore.jks \
   --port 3123 \
