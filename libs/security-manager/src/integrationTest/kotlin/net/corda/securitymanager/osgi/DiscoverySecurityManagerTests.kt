@@ -4,14 +4,25 @@ import net.corda.securitymanager.SecurityManagerService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import org.osgi.framework.FrameworkUtil
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.security.AccessControlException
 
 /** Tests the `DiscoverySecurityManager`. */
 @ExtendWith(ServiceExtension::class)
 class DiscoverySecurityManagerTests {
     companion object {
+        private const val WILDCARD = "*"
+        private const val GET_ENV_TARGET = "getenv.$WILDCARD"
+
+        // The permission to get any environment variable.
+        private val getEnvPerm = RuntimePermission(GET_ENV_TARGET, null)
+
+        private val bundleLocation = FrameworkUtil.getBundle(this::class.java).location
+
         @InjectService(timeout = 1000)
         lateinit var securityManagerService: SecurityManagerService
     }
@@ -19,16 +30,23 @@ class DiscoverySecurityManagerTests {
     @Suppress("unused")
     @BeforeEach
     fun reset() {
-        securityManagerService.start()
+        securityManagerService.startDiscoveryMode()
     }
 
     @Test
-    fun `discovery mode grants all OSGi permissions`() {
+    fun `no permissions are denied by default`() {
         assertDoesNotThrow {
             // This permission stands in for all permissions.
             System.getenv()
         }
     }
 
-    // TODO - More tests around trying to deny perms, etc.
+    @Test
+    fun `denying permissions has no effect`() {
+        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
+
+        assertDoesNotThrow {
+            System.getenv()
+        }
+    }
 }

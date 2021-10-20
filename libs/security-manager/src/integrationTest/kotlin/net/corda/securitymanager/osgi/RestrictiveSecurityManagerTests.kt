@@ -21,13 +21,13 @@ class RestrictiveSecurityManagerTests {
         private const val GET_ENV_TARGET = "getenv.$WILDCARD"
         private const val GET_PROTECTION_DOMAIN_TARGET = "getProtectionDomain"
 
-        private val bundleLocation = FrameworkUtil.getBundle(this::class.java).location
-
         // The permission to get any environment variable.
         private val getEnvPerm = RuntimePermission(GET_ENV_TARGET, null)
 
         // The permission to get a class's protection domain.
         private val getProtectionDomainPerm = RuntimePermission(GET_PROTECTION_DOMAIN_TARGET, null)
+
+        private val bundleLocation = FrameworkUtil.getBundle(this::class.java).location
 
         @InjectService(timeout = 1000)
         lateinit var securityManagerService: SecurityManagerService
