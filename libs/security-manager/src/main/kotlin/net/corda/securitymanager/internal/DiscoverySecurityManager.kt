@@ -1,7 +1,6 @@
 package net.corda.securitymanager.internal
 
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.permissionadmin.PermissionInfo
 import java.security.Permission
 
 // TODO - CORE-2828: Update [DiscoverySecurityManager] to write out updated permissions file.
