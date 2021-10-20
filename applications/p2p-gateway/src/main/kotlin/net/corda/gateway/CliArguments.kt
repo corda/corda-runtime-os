@@ -17,11 +17,16 @@ internal class CliArguments {
             return try {
                 InetAddress.getLocalHost().hostName
             } catch (e: UnknownHostException) {
+                // getLocalHost might fail if the local host name can not be
+                // resolved (for example, when custom hosts file is used)
                 @Suppress("TooGenericExceptionCaught")
                 return try {
                     ProcessBuilder()
                         .command("hostname")
-                        .start().inputStream.bufferedReader().readText()
+                        .start()
+                        .inputStream
+                        .bufferedReader()
+                        .readText()
                 } catch (e: Exception) {
                     "localhost"
                 }

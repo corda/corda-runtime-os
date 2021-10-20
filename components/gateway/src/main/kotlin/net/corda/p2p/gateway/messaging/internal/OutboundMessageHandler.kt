@@ -24,6 +24,7 @@ import net.corda.p2p.schema.Schema
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
+import kotlin.random.Random
 
 /**
  * This is an implementation of an [EventLogProcessor] used to consume messages from a P2P message subscription. The received
@@ -49,7 +50,7 @@ internal class OutboundMessageHandler(
     )
 
     private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC, 1),
+        SubscriptionConfig(CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC, Random.nextInt()),
         this,
         nodeConfiguration,
         null
