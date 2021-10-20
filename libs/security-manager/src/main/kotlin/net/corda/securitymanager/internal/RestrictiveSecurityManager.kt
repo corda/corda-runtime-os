@@ -1,18 +1,7 @@
 package net.corda.securitymanager.internal
 
-import net.corda.securitymanager.ALL
-import net.corda.securitymanager.CAPABILITY_PERMISSION_NAME
-import net.corda.securitymanager.PACKAGE_PERMISSION_NAME
-import net.corda.securitymanager.SANDBOX_SECURITY_DOMAIN_FILTER
-import net.corda.securitymanager.SERVICE_PERMISSION_NAME
 import net.corda.securitymanager.SecurityManagerException
-import org.osgi.framework.CapabilityPermission.PROVIDE
-import org.osgi.framework.CapabilityPermission.REQUIRE
 import org.osgi.framework.FrameworkUtil
-import org.osgi.framework.PackagePermission.EXPORTONLY
-import org.osgi.framework.PackagePermission.IMPORT
-import org.osgi.framework.ServicePermission.GET
-import org.osgi.framework.ServicePermission.REGISTER
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -28,6 +17,8 @@ import org.osgi.service.permissionadmin.PermissionInfo
 import java.security.AllPermission
 import java.security.Permission
 
+// TODO - Does this name even make sense anymore?
+
 /** A [CordaSecurityManager] that grants sandbox code a very limited set of permissions. */
 @Component(service = [RestrictiveSecurityManager::class])
 class RestrictiveSecurityManager @Activate constructor(
@@ -38,11 +29,6 @@ class RestrictiveSecurityManager @Activate constructor(
 ) : CordaSecurityManager {
     companion object {
         private val allPermInfo = PermissionInfo(AllPermission::class.java.name, ALL, ALL)
-        private val packagePermission = PermissionInfo(PACKAGE_PERMISSION_NAME, ALL, "$EXPORTONLY,$IMPORT")
-        private val capabilityPermission = PermissionInfo(CAPABILITY_PERMISSION_NAME, ALL, "$REQUIRE,$PROVIDE")
-        private val servicePermission = PermissionInfo(SERVICE_PERMISSION_NAME, ALL, "$GET,$REGISTER")
-        private val sandboxBundleConditionInfo =
-            ConditionInfo(BundleLocationCondition::class.java.name, arrayOf(SANDBOX_SECURITY_DOMAIN_FILTER))
     }
 
     /**
@@ -51,6 +37,7 @@ class RestrictiveSecurityManager @Activate constructor(
      *  * Grants all permissions to the `ConfigurationAdmin` service. For reasons unknown, the permissive Java
      *   security policy that is applied on framework start-up is not extended to this service
      *
+     * // TODO - Update.
      *  * Denies all permissions to sandbox bundles, except some minimal permissions required to set up OSGi bundles
      *
      *  These permissions work in tandem with the OSGi hooks defined in the `sandbox` module to prevent sandbox bundles
@@ -77,6 +64,18 @@ class RestrictiveSecurityManager @Activate constructor(
         updateConditionalPerms(setOf(condPermInfo), clear = false)
     }
 
+    // TODO - Refactor into shared logic with the above.
+    override fun denyPermission(filter: String, perms: Collection<Permission>) {
+        val permInfos = perms.map { perm -> PermissionInfo(perm::class.java.name, perm.name, perm.actions) }
+        val conditionInfo = ConditionInfo(BundleLocationCondition::class.java.name, arrayOf(filter))
+
+        val condPermInfo = conditionalPermissionAdmin.newConditionalPermissionInfo(
+            null, arrayOf(conditionInfo), permInfos.toTypedArray(), DENY
+        )
+
+        updateConditionalPerms(setOf(condPermInfo), clear = false)
+    }
+
     /** Grants all permissions to the [ConfigurationAdmin] service. */
     private fun grantConfigAdminPermissions(permissionAdmin: PermissionAdmin) {
         permissionAdmin.setPermissions(
@@ -85,29 +84,17 @@ class RestrictiveSecurityManager @Activate constructor(
         )
     }
 
+    // TODO: Update description and method name.
     /**
      * Denies all permissions to bundles matching the [SANDBOX_SECURITY_DOMAIN_FILTER], except some minimal permissions
      * required to set up OSGi bundles (i.e. [packagePermission], [capabilityPermission] and [servicePermission]).
      */
     private fun restrictSandboxBundlePermissions(conditionalPermissionAdmin: ConditionalPermissionAdmin) {
-        // These are the permissions required to set up OSGi bundles correctly:
-        //  * Importing and exporting packages
-        //  * Requiring and providing OSGi capabilities
-        //  * Retrieving and registering services
-        val osgiSetupPerms = arrayOf(packagePermission, capabilityPermission, servicePermission)
-        val grantOsgiSetupPerms = conditionalPermissionAdmin.newConditionalPermissionInfo(
-            null, arrayOf(sandboxBundleConditionInfo), osgiSetupPerms, ALLOW
-        )
-
-        val denyAllPermissionsToSandboxes = conditionalPermissionAdmin.newConditionalPermissionInfo(
-            null, arrayOf(sandboxBundleConditionInfo), arrayOf(allPermInfo), DENY
-        )
-
         val grantAllPermissions = conditionalPermissionAdmin.newConditionalPermissionInfo(
             null, null, arrayOf(allPermInfo), ALLOW
         )
 
-        updateConditionalPerms(listOf(grantOsgiSetupPerms, denyAllPermissionsToSandboxes, grantAllPermissions))
+        updateConditionalPerms(setOf(grantAllPermissions))
     }
 
     /**

@@ -40,4 +40,9 @@ class SecurityManagerServiceImpl @Activate constructor(
         securityManager?.grantPermission(filter, perms)
             ?: throw SecurityManagerException("No Corda security manager is currently running.")
     }
+
+    override fun denyPermission(filter: String, perms: Collection<Permission>) {
+        securityManager?.denyPermission(filter, perms)
+            ?: throw SecurityManagerException("No Corda security manager is currently running.")
+    }
 }

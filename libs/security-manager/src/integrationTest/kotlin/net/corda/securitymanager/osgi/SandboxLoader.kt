@@ -1,6 +1,5 @@
 package net.corda.securitymanager.osgi
 
-import net.corda.securitymanager.SecurityManagerService
 import net.corda.securitymanager.invoker.Invoker
 import org.junit.jupiter.api.Assertions
 import org.osgi.framework.Bundle
@@ -17,14 +16,14 @@ import kotlin.random.Random
 @Component(service = [SandboxLoader::class])
 class SandboxLoader @Activate constructor(
     @Reference
-    val securityManagerService: SecurityManagerService,
-    @Reference
     val unsandboxedInvoker: Invoker
 ) {
     companion object {
         private const val SANDBOX_SECURITY_DOMAIN_PREFIX = "sandbox/"
         private const val TEST_BUNDLE_LOCATION_PREFIX = "reference:"
     }
+
+    val sandboxedInvoker = getSandboxedInvoker()
 
     /** Returns an [Invoker] from a sandboxed [Bundle]. */
     internal fun getSandboxedInvoker(): Invoker {

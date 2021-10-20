@@ -5,6 +5,8 @@ import java.security.Permission
 
 // TODO - CORE-2828: Update [DiscoverySecurityManager] to write out updated permissions file.
 
+// TODO - Does it make sense anymore for this to share an interface with RestrictiveSecurityManager? Not much is shared.
+
 /**
  * A [CordaSecurityManager] that grants sandbox code all permissions.
  *
@@ -21,4 +23,5 @@ class DiscoverySecurityManager : CordaSecurityManager, SecurityManager() {
 
     override fun stop() = Unit
     override fun grantPermission(filter: String, perms: Collection<Permission>) = Unit
+    override fun denyPermission(filter: String, perms: Collection<Permission>) = Unit
 }

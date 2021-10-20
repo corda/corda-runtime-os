@@ -8,7 +8,6 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
 
     compileOnly "org.osgi:org.osgi.service.component.annotations"
-    compileOnly "org.osgi:osgi.core"
 
     api project(":libs:security-manager:invoker")
 }

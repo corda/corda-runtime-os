@@ -1,0 +1,173 @@
+package net.corda.securitymanager.osgi
+
+import net.corda.securitymanager.SecurityManagerService
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
+import org.osgi.framework.FrameworkUtil
+import org.osgi.test.common.annotation.InjectService
+import org.osgi.test.junit5.service.ServiceExtension
+import java.security.AccessControlException
+
+// TODO: In a new file, test that can switch between security managers.
+
+/** Tests the permissions of sandboxed bundles. */
+@ExtendWith(ServiceExtension::class)
+class RestrictiveSecurityManagerTests {
+    companion object {
+        private const val WILDCARD = "*"
+        private const val GET_ENV_TARGET = "getenv.$WILDCARD"
+        private const val GET_PROTECTION_DOMAIN_TARGET = "getProtectionDomain"
+
+        private val bundleLocation = FrameworkUtil.getBundle(this::class.java).location
+
+        // The permission to get any environment variable.
+        private val getEnvPerm = RuntimePermission(GET_ENV_TARGET, null)
+
+        // The permission to get a class's protection domain.
+        private val getProtectionDomainPerm = RuntimePermission(GET_PROTECTION_DOMAIN_TARGET, null)
+
+        @InjectService(timeout = 1000)
+        lateinit var securityManagerService: SecurityManagerService
+    }
+
+    @Suppress("unused")
+    @BeforeEach
+    fun reset() {
+        securityManagerService.start()
+    }
+
+    @Test
+    fun `no permissions are denied by default`() {
+        assertDoesNotThrow {
+            // This permission stands in for all permissions.
+            System.getenv("ENV_VAR")
+        }
+    }
+
+    @Test
+    fun `specific permissions can be denied`() {
+        securityManagerService.denyPermission(bundleLocation, setOf(getEnvPerm))
+
+        assertThrows<AccessControlException> {
+            System.getenv("ENV_VAR")
+        }
+    }
+
+    @Test
+    fun `multiple permissions can be denied at once`() {
+        securityManagerService.denyPermission(bundleLocation, setOf(getEnvPerm, getProtectionDomainPerm))
+
+        assertThrows<AccessControlException> {
+            System.getenv("ENV_VAR")
+        }
+        assertThrows<AccessControlException> {
+            Any::class.java.protectionDomain
+        }
+    }
+
+    @Test
+    fun `multiple permissions can be denied in sequence`() {
+        securityManagerService.denyPermission(bundleLocation, setOf(getEnvPerm))
+        securityManagerService.denyPermission(bundleLocation, setOf(getProtectionDomainPerm))
+
+        assertThrows<AccessControlException> {
+            System.getenv("ENV_VAR")
+        }
+        assertThrows<AccessControlException> {
+            Any::class.java.protectionDomain
+        }
+    }
+
+    @Test
+    fun `specific permissions can be granted`() {
+        // We deny a permission, then re-grant it.
+        securityManagerService.denyPermission(bundleLocation, setOf(getEnvPerm))
+        securityManagerService.grantPermission(bundleLocation, setOf(getEnvPerm))
+
+        assertDoesNotThrow {
+            System.getenv("ENV_VAR")
+        }
+    }
+
+    @Test
+    fun `multiple permissions can be granted at once`() {
+        // We deny permissions, then re-grant them.
+        securityManagerService.denyPermission(bundleLocation, setOf(getEnvPerm, getProtectionDomainPerm))
+        securityManagerService.grantPermission(bundleLocation, setOf(getEnvPerm, getProtectionDomainPerm))
+
+        assertDoesNotThrow {
+            System.getenv("ENV_VAR")
+            Any::class.java.protectionDomain
+        }
+    }
+
+    @Test
+    fun `multiple permissions can be granted in sequence`() {
+        securityManagerService.denyPermission(bundleLocation, setOf(getEnvPerm, getProtectionDomainPerm))
+        securityManagerService.grantPermission(bundleLocation, setOf(getEnvPerm))
+        securityManagerService.grantPermission(bundleLocation, setOf(getProtectionDomainPerm))
+
+        assertDoesNotThrow {
+            System.getenv("ENV_VAR")
+            Any::class.java.protectionDomain
+        }
+    }
+
+    @Test
+    fun `specific permissions can be denied using wildcards`() {
+        val wildcardLocation = bundleLocation.dropLast(5) + WILDCARD
+
+        securityManagerService.denyPermission(wildcardLocation, setOf(getEnvPerm))
+
+        assertThrows<AccessControlException> {
+            System.getenv("ENV_VAR")
+        }
+    }
+
+    @Test
+    fun `specific permissions can be granted using wildcards`() {
+        val wildcardLocation = bundleLocation.dropLast(5) + WILDCARD
+
+        // We deny a permission, then re-grant it.
+        securityManagerService.denyPermission(bundleLocation, setOf(getEnvPerm))
+        securityManagerService.grantPermission(wildcardLocation, setOf(getEnvPerm))
+
+        assertDoesNotThrow {
+            System.getenv("ENV_VAR")
+        }
+    }
+
+    @Test
+    fun `denied permissions do not affect bundles not matching the filter`() {
+        securityManagerService.denyPermission("non-matching-filter", setOf(getEnvPerm))
+
+        assertDoesNotThrow {
+            System.getenv("ENV_VAR")
+        }
+    }
+
+    @Test
+    fun `granted permissions do not affect bundles not matching the filter`() {
+        securityManagerService.denyPermission(bundleLocation, setOf(getEnvPerm))
+        securityManagerService.grantPermission("non-matching-filter", setOf(getEnvPerm))
+
+        assertThrows<AccessControlException> {
+            System.getenv("ENV_VAR")
+        }
+    }
+
+    @Test
+    fun `permissions are reset once the security manager is restarted`() {
+        securityManagerService.denyPermission(bundleLocation, setOf(getEnvPerm))
+
+        // This stops the existing `RestrictiveSecurityManager`, and starts a new one.
+        securityManagerService.start()
+
+        assertDoesNotThrow {
+            System.getenv("ENV_VAR")
+        }
+    }
+}

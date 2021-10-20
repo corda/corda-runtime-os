@@ -1,6 +1,8 @@
 package net.corda.securitymanager.osgi
 
+import net.corda.securitymanager.SecurityManagerService
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
@@ -9,28 +11,25 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 /** Tests the permissions of sandboxed bundles in discovery mode. */
 @ExtendWith(ServiceExtension::class)
-class DiscoveryPermissionTests {
+class DiscoverySecurityManagerTests {
     companion object {
         @InjectService(timeout = 1000)
-        lateinit var sandboxLoader: SandboxLoader
+        lateinit var securityManagerService: SecurityManagerService
+    }
 
-        @Suppress("unused")
-        @JvmStatic
-        @BeforeAll
-        fun setup() {
-            sandboxLoader.securityManagerService.startDiscoveryMode()
-        }
+    @Suppress("unused")
+    @BeforeEach
+    fun reset() {
+        securityManagerService.start()
     }
 
     @Test
     fun `discovery mode grants all OSGi permissions`() {
-        val sandboxedInvoker = sandboxLoader.getSandboxedInvoker()
         assertDoesNotThrow {
-            sandboxedInvoker.apply {
-                performActionRequiringGetEnvRuntimePermission()
-                performActionRequiringServiceGetPermission()
-                performActionRequiringServiceRegisterPermission()
-            }
+            // This permission stands in for all permissions.
+            System.getenv("ENV_VAR")
         }
     }
+
+    // TODO - More tests around trying to deny perms.
 }

@@ -12,4 +12,7 @@ interface CordaSecurityManager {
 
     /** Grants the permissions described by the [perms] to the bundles matching the [filter]. */
     fun grantPermission(filter: String, perms: Collection<Permission>)
+
+    /** Denies the permissions described by the [perms] to the bundles matching the [filter]. */
+    fun denyPermission(filter: String, perms: Collection<Permission>)
 }

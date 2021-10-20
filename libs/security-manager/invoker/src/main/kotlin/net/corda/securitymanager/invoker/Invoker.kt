@@ -1,16 +1,7 @@
 package net.corda.securitymanager.invoker
 
-/** Used to test whether a bundle has the permissions to perform various actions. */
+/** Used to execute actions within the context of the bundle containing the implementation of this interface. */
 interface Invoker {
-    /** Triggers a permission check against the `getenv.{variable name}` permission target. */
-    fun performActionRequiringGetEnvRuntimePermission()
-
-    /** Triggers a permission check against the `getProtectionDomain` permission target. */
-    fun performActionRequiringGetProtectionDomainRuntimePermission()
-
-    /** Triggers a permission check against the OSGi `ServicePermission.GET` action. */
-    fun performActionRequiringServiceGetPermission()
-
-    /** Triggers a permission check against the OSGi `ServicePermission.REGISTER` action. */
-    fun performActionRequiringServiceRegisterPermission()
+    /** Executes the provided lambda. */
+    fun performAction(lambda: () -> Unit)
 }
