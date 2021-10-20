@@ -24,8 +24,9 @@ class DiscoveryPermissionTests {
 
     @Test
     fun `discovery mode grants all OSGi permissions`() {
+        val sandboxedInvoker = sandboxLoader.getSandboxedInvoker()
         assertDoesNotThrow {
-            sandboxLoader.sandboxedInvoker.apply {
+            sandboxedInvoker.apply {
                 performActionRequiringRuntimePermission()
                 performActionRequiringServiceGetPermission()
                 performActionRequiringServiceRegisterPermission()

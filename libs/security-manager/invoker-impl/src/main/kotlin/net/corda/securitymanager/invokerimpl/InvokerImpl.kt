@@ -15,7 +15,8 @@ class InvokerImpl: Invoker {
 
     override fun performActionRequiringRuntimePermission() {
         // Triggers a security check against the `getenv.{variable name}` permission target.
-        System.getenv()
+        // TODO - Make a constant.
+        System.getenv("ENV_VAR")
     }
 
     override fun performActionRequiringServiceGetPermission() {

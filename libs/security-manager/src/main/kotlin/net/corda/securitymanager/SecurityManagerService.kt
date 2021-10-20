@@ -16,5 +16,7 @@ interface SecurityManagerService {
      *
      * Throws [SecurityManagerException] if no Corda security manager is currently running.
      */
+    // TODO - Take collection, not list.
+    // TODO - Take `Permission`, not `PermissionInfo`
     fun grantPermission(filter: String, permInfos: List<PermissionInfo>)
 }

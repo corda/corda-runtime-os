@@ -65,6 +65,7 @@ class RestrictiveSecurityManager @Activate constructor(
         if (!condPermUpdate.commit()) throw SecurityManagerException("Unable to commit updated bundle permissions.")
     }
 
+    // TODO: Refactor the shared logic for updating cond perms.
     override fun grantPermission(filter: String, permInfos: List<PermissionInfo>) {
         val condPermUpdate = conditionalPermissionAdmin.newConditionalPermissionUpdate()
 
@@ -73,7 +74,7 @@ class RestrictiveSecurityManager @Activate constructor(
                 null,
                 arrayOf(ConditionInfo(BundleLocationCondition::class.java.name, arrayOf(filter))),
                 arrayOf(permInfo),
-                DENY
+                ALLOW
             )
         }
         // The ordering of the permissions in the list is important. Permissions earlier in the list take priority.
