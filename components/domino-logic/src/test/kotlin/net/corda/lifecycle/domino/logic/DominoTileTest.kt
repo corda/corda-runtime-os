@@ -66,16 +66,6 @@ class DominoTileTest {
     }
 
     @Test
-    fun `start will not start the coordinator if started`() {
-        val tile = Tile()
-        tile.sendStarted()
-
-        tile.start()
-
-        verify(coordinator, never()).start()
-    }
-
-    @Test
     fun `start will not start the tile if started`() {
         val tile = Tile()
         tile.sendStarted()
@@ -86,16 +76,6 @@ class DominoTileTest {
     }
 
     @Test
-    fun `start will not start the coordinator if stopped`() {
-        val tile = Tile()
-        tile.stop()
-
-        tile.start()
-
-        verify(coordinator, never()).start()
-    }
-
-    @Test
     fun `start start the tile if stopped`() {
         val tile = Tile()
         tile.stop()
@@ -103,16 +83,6 @@ class DominoTileTest {
         tile.start()
 
         assertThat(tile.started).isEqualTo(1)
-    }
-
-    @Test
-    fun `start will not start the coordinator if errored`() {
-        val tile = Tile()
-        tile.sendError(Exception(""))
-
-        tile.start()
-
-        verify(coordinator, never()).start()
     }
 
     @Test

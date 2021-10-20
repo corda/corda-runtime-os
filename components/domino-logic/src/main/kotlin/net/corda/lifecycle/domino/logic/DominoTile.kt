@@ -58,21 +58,8 @@ abstract class DominoTile(
 
     override fun start() {
         logger.info("Starting $name")
-        when (state) {
-            State.Created -> {
-                coordinator.start()
-                coordinator.postEvent(StartTile)
-            }
-            State.Started -> {
-                // Do nothing
-            }
-            State.StoppedByParent -> {
-                coordinator.postEvent(StartTile)
-            }
-            State.StoppedDueToError -> {
-                logger.warn("Can not start $name, it was stopped due to an error")
-            }
-        }
+        coordinator.start()
+        coordinator.postEvent(StartTile)
     }
 
     override fun stop() {
@@ -155,21 +142,27 @@ abstract class DominoTile(
                     gotError(event.cause)
                 }
                 is StartEvent -> {
-                    // Do Nothing
+                    // Do nothing
                 }
                 is StopEvent -> {
                     // Do nothing
                 }
                 is StopTile -> {
-                    stopTile(event.dueToError)
-                    if (event.dueToError) {
-                        updateState(State.StoppedDueToError)
-                    } else {
-                        updateState(State.StoppedByParent)
+                    if (state != State.StoppedByParent) {
+                        stopTile(event.dueToError)
+                        if (event.dueToError) {
+                            updateState(State.StoppedDueToError)
+                        } else {
+                            updateState(State.StoppedByParent)
+                        }
                     }
                 }
                 is StartTile -> {
-                    startTile()
+                    when (state) {
+                        State.Created, State.StoppedByParent -> startTile()
+                        State.Started -> {} // Do nothing
+                        State.StoppedDueToError -> logger.warn("Can not start $name, it was stopped due to an error")
+                    }
                 }
                 is CallFromCoordinator -> {
                     event.callback.invoke()
