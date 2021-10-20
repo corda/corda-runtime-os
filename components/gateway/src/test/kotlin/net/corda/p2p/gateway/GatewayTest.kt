@@ -22,6 +22,7 @@ class GatewayTest {
             },
             mock(),
             mock(),
+            1,
         )
 
         val children = gateway.children

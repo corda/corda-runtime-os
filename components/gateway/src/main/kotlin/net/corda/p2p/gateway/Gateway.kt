@@ -21,12 +21,14 @@ import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
  * to the internal messaging system.
  *
  */
+@Suppress("LongParameterList")
 class Gateway(
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     nodeConfiguration: Config,
+    instanceId: Int,
 ) : InternalTile(
     lifecycleCoordinatorFactory,
 ) {
@@ -49,6 +51,7 @@ class Gateway(
         configurationReaderService,
         subscriptionFactory,
         nodeConfiguration,
+        instanceId,
     )
 
     override val children: Collection<DominoTile> = listOf(inboundMessageHandler, outboundMessageProcessor)

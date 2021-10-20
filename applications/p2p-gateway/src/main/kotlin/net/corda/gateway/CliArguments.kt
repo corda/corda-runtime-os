@@ -10,6 +10,7 @@ import picocli.CommandLine.Option
 import java.io.File
 import java.net.InetAddress
 import java.net.UnknownHostException
+import kotlin.random.Random
 
 internal class CliArguments {
     companion object {
@@ -72,7 +73,13 @@ internal class CliArguments {
     )
     var topicPrefix = "gateway"
 
-    val kafkaConfigurationConfig: Config by lazy {
+    @Option(
+        names = ["-i", "--instance-id"],
+        description = ["The unique instance ID (default to random number)"]
+    )
+    var instanceId = Random.nextInt()
+
+    val kafkaNodeConfiguration: Config by lazy {
         ConfigFactory.empty()
             .withValue(
                 "messaging.kafka.common.bootstrap.servers",

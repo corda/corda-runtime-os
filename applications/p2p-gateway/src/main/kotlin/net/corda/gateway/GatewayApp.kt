@@ -47,11 +47,11 @@ class GatewayApp @Activate constructor(
         } else {
 
             configurationReadService.start()
-            configurationReadService.bootstrapConfig(arguments.kafkaConfigurationConfig)
+            configurationReadService.bootstrapConfig(arguments.kafkaNodeConfiguration)
 
             val writer = configWriterFactory.createWriter(
                 arguments.configTopicName,
-                arguments.kafkaConfigurationConfig
+                arguments.kafkaNodeConfiguration
             )
             writer.updateConfiguration(
                 CordaConfigurationKey(
@@ -68,7 +68,8 @@ class GatewayApp @Activate constructor(
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
-                arguments.kafkaConfigurationConfig
+                arguments.kafkaNodeConfiguration,
+                arguments.instanceId,
             ).also { gateway ->
                 gateway.start()
 

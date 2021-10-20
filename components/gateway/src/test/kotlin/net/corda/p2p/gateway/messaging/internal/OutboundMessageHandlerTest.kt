@@ -72,6 +72,7 @@ class OutboundMessageHandlerTest {
         configurationReaderService,
         subscriptionFactory,
         ConfigFactory.empty(),
+        2,
     )
 
     @AfterEach
