@@ -182,7 +182,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val outputRecords = mutableListOf<Record<*, *>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
 
-        log.trace { "Processing events(size: ${events.size})" }
+        log.info ("${config.loggerName} LORCAN 4: Processing events(size: ${events.size})" )
         for (event in events) {
             stateAndEventConsumer.resetPollInterval()
             processEvent(event, outputRecords, updatedStates)
