@@ -33,7 +33,7 @@ class ConfigRepositoryTest {
 
         val returnedConfig = configRepository.getConfigurations()
 
-        Assertions.assertThat(returnedConfig.keys).isEqualTo(configMap.keys + BOOTSTRAP_KEY)
+        Assertions.assertThat(returnedConfig.keys).isEqualTo(configMap.keys)
         Assertions.assertThat(returnedConfig["corda.database"]?.getDouble("componentVersion")).isEqualTo(5.7)
         Assertions.assertThat(returnedConfig["corda.security"]?.getDouble("componentVersion")).isEqualTo(5.5)
         Assertions.assertThat(returnedConfig[BOOTSTRAP_KEY]).isNotNull

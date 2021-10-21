@@ -16,12 +16,12 @@ import net.corda.flow.statemachine.HousekeepingState
 import net.corda.flow.statemachine.NonSerializableState
 import net.corda.flow.statemachine.factory.FlowStateMachineFactory
 import net.corda.flow.statemachine.impl.FlowStateMachineImpl
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.records.Record
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.CheckpointSerializer
 import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
@@ -104,7 +104,7 @@ class FlowManagerImpl @Activate constructor(
         val flowStateMachine = checkpointSerializer?.deserialize(
             lastCheckpoint.fiber.array(),
             FlowStateMachineImpl::class.java
-        ) ?: throw CordaMessageAPIIntermittentException("CheckpointSerializer is null!")
+        ) ?: throw CordaRuntimeException("CheckpointSerializer is null!")
 
         val flowState = lastCheckpoint.flowState
         val flowEvents = flowState.eventQueue
