@@ -1,7 +1,7 @@
 package net.corda.crypto.impl.serializer
 
 import net.corda.crypto.impl.CipherSchemeMetadataProviderImpl
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.serialization.SerializationCustomSerializer
 import java.security.PublicKey
 
@@ -10,8 +10,8 @@ import java.security.PublicKey
  */
 class PublicKeySerializer : SerializationCustomSerializer<PublicKey, ByteArray> {
 
-    private val cipherSchemeMetadata: CipherSchemeMetadata by lazy { CipherSchemeMetadataProviderImpl().getInstance() }
+    private val keyEncodingService: KeyEncodingService by lazy { CipherSchemeMetadataProviderImpl().getInstance() }
 
     override fun toProxy(obj: PublicKey): ByteArray = obj.encoded
-    override fun fromProxy(proxy: ByteArray): PublicKey = cipherSchemeMetadata.decodePublicKey(proxy)
+    override fun fromProxy(proxy: ByteArray): PublicKey = keyEncodingService.decodePublicKey(proxy)
 }
