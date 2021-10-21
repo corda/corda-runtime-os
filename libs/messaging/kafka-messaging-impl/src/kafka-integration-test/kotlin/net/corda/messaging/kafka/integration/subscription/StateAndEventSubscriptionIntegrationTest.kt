@@ -216,7 +216,7 @@ class StateAndEventSubscriptionIntegrationTest {
         //fail slowly on first record. allow time for subscription to be stopped to force rebalance
         val stateEventSub2 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC4-group", EVENT_TOPIC4, 2),
-            TestStateEventProcessor(onNextLatch2, true, true, EVENTSTATE_OUTPUT4, 40000),
+            TestStateEventProcessor(onNextLatch2, true, true, EVENTSTATE_OUTPUT4, 70000),
             longWaitProcessorConfig
         )
 
