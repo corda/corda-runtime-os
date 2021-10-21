@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'HTTP RPC Permissions component'
+description 'Permissions component'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'

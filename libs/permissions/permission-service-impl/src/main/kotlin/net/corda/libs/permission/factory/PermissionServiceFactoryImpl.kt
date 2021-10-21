@@ -1,6 +1,7 @@
 package net.corda.libs.permission.factory
 import com.typesafe.config.Config
 import net.corda.libs.permission.PermissionServiceImpl
+import net.corda.libs.permission.PermissionsTopicProcessor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -12,6 +13,6 @@ class PermissionServiceFactoryImpl @Activate constructor(
         private val subscriptionFactory: SubscriptionFactory
 ): PermissionServiceFactory {
     override fun createPermissionService(bootstrapConfig: Config): PermissionServiceImpl {
-        return PermissionServiceImpl(subscriptionFactory, bootstrapConfig)
+        return PermissionServiceImpl(subscriptionFactory, bootstrapConfig, PermissionsTopicProcessor())
     }
 }
