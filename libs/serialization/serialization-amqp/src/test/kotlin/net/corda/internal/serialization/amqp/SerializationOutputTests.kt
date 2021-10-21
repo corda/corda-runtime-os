@@ -2,6 +2,7 @@ package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.AlwaysEmptyWhitelist
+import net.corda.internal.serialization.CordaSerializationEncoding
 import net.corda.internal.serialization.SnappyEncodingWhitelist
 import net.corda.internal.serialization.amqp.custom.BigDecimalSerializer
 import net.corda.internal.serialization.amqp.custom.CurrencySerializer
@@ -13,11 +14,13 @@ import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.internal.serialization.custom.PublicKeySerializer
+import net.corda.internal.serialization.encodingNotPermittedFormat
 import net.corda.v5.application.flows.FlowException
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.serialization.EncodingWhitelist
 import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.annotations.ConstructorForDeserialization
 import org.apache.qpid.proton.amqp.Decimal128
@@ -32,6 +35,8 @@ import org.apache.qpid.proton.codec.DecoderImpl
 import org.apache.qpid.proton.codec.EncoderImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.assertj.core.api.Assertions.catchThrowable
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNotSame
@@ -40,6 +45,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito.doReturn
+import org.mockito.Mockito.mock
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -799,21 +806,6 @@ class SerializationOutputTests {
     @CordaSerializable
     data class Amount<T : Any>(val quantity: Long, val displayTokenSize: BigDecimal, val token: T)
 
-    /*
-    //(due to CORE-2855)
-    fun `compression has the desired effect`() {
-        val factory = testDefaultFactory()
-        val data = ByteArray(12345).also { Random(0).nextBytes(it) }.let { it + it }
-        val compressed = SerializationOutput(factory).serialize(data, CordaSerializationEncoding.SNAPPY)
-        assertEquals(.5, compressed.size.toDouble() / data.size, .03)
-
-        val encodingWhitelist = mock(EncodingWhitelist::class.java)
-        doReturn(true).whenever(encodingWhitelist).acceptEncoding(CordaSerializationEncoding.SNAPPY)
-        assertArrayEquals(data, DeserializationInput(factory).deserialize(
-            compressed, testSerializationContext.withEncodingWhitelist(encodingWhitelist)
-        ))
-    }*/
-
     //
     // Example stacktrace that this test is trying to reproduce
     //
@@ -844,8 +836,21 @@ class SerializationOutputTests {
         SerializationOutput(factory).serialize(c)
     }
 
-    /*@Test
-    //(due to CORE-2855)
+    @Test
+    fun `compression has the desired effect`() {
+        val factory = testDefaultFactory()
+        val data = ByteArray(12345).also { Random(0).nextBytes(it) }.let { it + it }
+        val compressed = SerializationOutput(factory).serialize(data, CordaSerializationEncoding.SNAPPY)
+        assertEquals(.5, compressed.size.toDouble() / data.size, .03)
+
+        val encodingWhitelist = mock(EncodingWhitelist::class.java)
+        doReturn(true).whenever(encodingWhitelist).acceptEncoding(CordaSerializationEncoding.SNAPPY)
+        assertArrayEquals(data, DeserializationInput(factory).deserialize(
+            compressed, testSerializationContext.withEncodingWhitelist(encodingWhitelist)
+        ))
+    }
+
+    @Test
     fun `a particular encoding can be banned for deserialization`() {
         val factory = testDefaultFactory()
         val encodingWhitelist = mock(EncodingWhitelist::class.java)
@@ -856,7 +861,7 @@ class SerializationOutputTests {
             assertSame(NotSerializableException::class.java, javaClass)
             assertEquals(encodingNotPermittedFormat.format(CordaSerializationEncoding.SNAPPY), message)
         }
-    }*/
+    }
 
     @Test
     fun nestedObjects() {
@@ -984,8 +989,7 @@ class SerializationOutputTests {
         }
     }
 
-    /*@Test
-    //(due to CORE-2855)
+    @Test
     fun `compression reduces number of bytes significantly`() {
         val ser = SerializationOutput(SerializerFactoryBuilder.build(AllWhitelist))
         val obj = ByteArray(20000)
@@ -995,7 +999,7 @@ class SerializationOutputTests {
         // Different than Corda 4, because this includes the Metadata element.
         assertEquals(20075, uncompressedSize)
         assertEquals(1022, compressedSize)
-    }*/
+    }
 
     // JDK11: backwards compatibility function to deal with StacktraceElement comparison pre-JPMS
     private fun deepEquals(a: Any?, b: Any?): Boolean {
