@@ -12,18 +12,18 @@ import java.util.*
 class RPCConsumerRebalanceListener<TRESP>(
     private val topic: String,
     private val groupName: String,
-    private val tracker: FutureTracker<TRESP>,
     private val lifecycleListener: LifecycleListener?
 ) : ConsumerRebalanceListener {
 
     private val partitions = mutableListOf<TopicPartition>()
+    private var tracker:FutureTracker<TRESP>? = null
 
     companion object {
         private val log: Logger = contextLogger()
     }
 
     override fun onPartitionsRevoked(partitions: MutableCollection<TopicPartition>) {
-        tracker.removePartitions(partitions.toList())
+        tracker?.removePartitions(partitions.toList())
         this.partitions.removeAll(partitions)
         if (partitions.isEmpty()){
             lifecycleListener?.onUpdate(LifecycleStatus.DOWN)
@@ -33,10 +33,10 @@ class RPCConsumerRebalanceListener<TRESP>(
     }
 
     override fun onPartitionsAssigned(partitions: MutableCollection<TopicPartition>) {
-        if (partitions.isEmpty()){
+        if (this.partitions.isEmpty()){
             lifecycleListener?.onUpdate(LifecycleStatus.UP)
         }
-        tracker.addPartitions(partitions.toList())
+        tracker?.addPartitions(partitions.toList())
         this.partitions.addAll(partitions)
         val partitionIds = partitions.map { it.partition() }.joinToString(",")
         log.info("Consumer group name $groupName for topic $topic partition assigned: $partitionIds.")
@@ -44,5 +44,9 @@ class RPCConsumerRebalanceListener<TRESP>(
 
     fun getPartitions(): List<TopicPartition> {
         return Collections.unmodifiableList(partitions)
+    }
+
+    fun setTracker(tracker: FutureTracker<TRESP>) {
+        this.tracker = tracker
     }
 }

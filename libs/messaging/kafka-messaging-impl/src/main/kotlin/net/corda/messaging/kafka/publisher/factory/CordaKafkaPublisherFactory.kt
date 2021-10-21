@@ -11,6 +11,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
+import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.GROUP
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_PUBLISHER
@@ -21,6 +22,7 @@ import net.corda.messaging.kafka.publisher.CordaKafkaPublisherImpl
 import net.corda.messaging.kafka.publisher.CordaKafkaRPCSenderImpl
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
+import net.corda.messaging.kafka.subscription.consumer.listener.RPCConsumerRebalanceListener
 import net.corda.messaging.kafka.utils.ConfigUtils.Companion.resolvePublisherConfiguration
 import net.corda.messaging.kafka.utils.toConfig
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -80,12 +82,21 @@ class CordaKafkaPublisherFactory @Activate constructor(
         val serializer = CordaAvroSerializer<TREQ>(avroSchemaRegistry)
         val deserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, rpcConfig.responseType)
 
+        val topicPrefix = publisherConfig.getString(ConfigProperties.TOPIC_PREFIX)
+        val responseTopic = publisherConfig.getString(ConfigProperties.RESPONSE_TOPIC)
+        val partitionListener = RPCConsumerRebalanceListener<TRESP>(
+            "$topicPrefix$responseTopic",
+            "RPC Response listener",
+            lifecycleListener
+        )
+
         return CordaKafkaRPCSenderImpl(
             publisherConfig,
             publisher,
             consumerBuilder,
             serializer,
             deserializer,
+            partitionListener,
             lifecycleListener
         )
     }

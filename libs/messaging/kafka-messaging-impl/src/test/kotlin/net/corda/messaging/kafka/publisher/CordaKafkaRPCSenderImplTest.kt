@@ -3,24 +3,25 @@ package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.publish
 import com.typesafe.config.Config
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.publisher.CordaKafkaRPCSenderImpl
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
+import net.corda.messaging.kafka.subscription.consumer.listener.RPCConsumerRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.test.util.eventually
 import net.corda.v5.base.concurrent.getOrThrow
-import net.corda.v5.base.util.millis
-import net.corda.v5.base.util.seconds
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -40,6 +41,10 @@ class CordaKafkaRPCSenderImplTest {
 
     private val config: Config = createStandardTestConfig().getConfig(ConfigProperties.PATTERN_RPC_SENDER)
 
+    private lateinit var lifecycleListener: TestLifecycleListener
+    private lateinit var partitionListener: RPCConsumerRebalanceListener<String>
+
+
     private val okResponse = listOf<ConsumerRecordAndMeta<String, RPCResponse>>(
         ConsumerRecordAndMeta(
             TOPIC_PREFIX,
@@ -57,6 +62,7 @@ class CordaKafkaRPCSenderImplTest {
             )
         )
     )
+
 
     private val schemaRegistry: AvroSchemaRegistry = mock<AvroSchemaRegistry>().also {
         whenever(it.serialize(any())).thenReturn(ByteBuffer.wrap("test".encodeToByteArray()))
@@ -78,21 +84,35 @@ class CordaKafkaRPCSenderImplTest {
             listOf(TopicPartition(ConfigProperties.TOPIC, 0))
         }.whenever(kafkaConsumer).getPartitions(any(), any())
 
-        cordaSenderImpl = CordaKafkaRPCSenderImpl(config, publisher, consumerBuilder, serializer, deserializer, null)
+        lifecycleListener = TestLifecycleListener()
+        partitionListener = RPCConsumerRebalanceListener("test", "test", lifecycleListener)
+        cordaSenderImpl =
+            CordaKafkaRPCSenderImpl(
+                config,
+                publisher,
+                consumerBuilder,
+                serializer,
+                deserializer,
+                partitionListener,
+                lifecycleListener
+            )
 
+        assertEquals(lifecycleListener.currentStatus, LifecycleStatus.DOWN)
         cordaSenderImpl.start()
-        while (!cordaSenderImpl.isRunning) {
-            Thread.sleep(10)
-        }
 
-        eventually(5.seconds, 5.millis) {
-            verify(kafkaConsumer, times(1)).subscribe(eq(listOf("topic.resp")), any())
-        }
+        partitionListener.onPartitionsAssigned(mutableListOf(TopicPartition("test", 0)))
+
+        assertEquals(lifecycleListener.currentStatus, LifecycleStatus.UP)
+        verify(kafkaConsumer, times(1)).subscribe(eq(listOf("topic.resp")), any())
+
     }
 
     @Test
     fun `test send request finishes exceptionally due to lack of partitions`() {
-        cordaSenderImpl = CordaKafkaRPCSenderImpl(mock(), mock(), mock(), serializer, deserializer, null)
+        lifecycleListener = TestLifecycleListener()
+        partitionListener = RPCConsumerRebalanceListener("test", "test", lifecycleListener)
+        cordaSenderImpl =
+            CordaKafkaRPCSenderImpl(mock(), mock(), mock(), serializer, deserializer, partitionListener, lifecycleListener)
 
         val future = cordaSenderImpl.sendRequest("test")
         assertThrows<CordaRPCAPISenderException> { future.getOrThrow() }
@@ -111,4 +131,14 @@ class CordaKafkaRPCSenderImplTest {
             .beginningOffsets(any())
         return Pair(kafkaConsumer, consumerBuilder)
     }
+
+    private class TestLifecycleListener : LifecycleListener {
+        var currentStatus = LifecycleStatus.DOWN
+
+        override fun onUpdate(lifecycleStatus: LifecycleStatus) {
+            currentStatus = lifecycleStatus
+        }
+
+    }
+
 }
