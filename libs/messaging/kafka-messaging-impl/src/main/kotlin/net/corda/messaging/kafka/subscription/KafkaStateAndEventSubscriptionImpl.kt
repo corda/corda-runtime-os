@@ -202,7 +202,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         outputRecords: MutableList<Record<*, *>>,
         updatedStates: MutableMap<Int, MutableMap<K, S?>>
     ) {
-        log.trace { "Processing event: $event" }
+        log.info ( "Processing event: $event" )
         val key = event.record.key()
         val state = stateAndEventConsumer.getInMemoryStateValue(key)
         val partitionId = event.record.partition()
