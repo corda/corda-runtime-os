@@ -628,6 +628,14 @@ class SandboxServiceImplTests {
             assertTrue(bundle.location.startsWith(customSecurityDomain))
         }
     }
+
+    @Test
+    fun `a sandbox's security domain cannot contain a forward slash`() {
+        val customSecurityDomain = "custom/sec_domain"
+        assertThrows<SandboxException> {
+            sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash), securityDomain = customSecurityDomain)
+        }
+    }
 }
 
 /** For testing, associates a [CPK] with its bundles, the classes within those, and its CPK dependencies. */
