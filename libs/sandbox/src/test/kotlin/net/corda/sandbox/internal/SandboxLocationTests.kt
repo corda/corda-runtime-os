@@ -27,7 +27,7 @@ class SandboxLocationTests {
     }
 
     @Test
-    fun `can handle sandbox location where the final component contains forward-slashes`() {
+    fun `can handle sandbox location where the final component contains forward slashes`() {
         val source = "separated/by/slashes"
         val sandboxLocation = SandboxLocation(validSecurityDomain, validUUID, source)
         val sandboxLocationFromString = SandboxLocation.fromString("$validSecurityDomain/$validUUID/$source")
