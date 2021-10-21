@@ -67,19 +67,21 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     override fun pollAndUpdateStates(syncPartitions: Boolean) {
         if (stateConsumer.assignment().isEmpty()) {
-            log.trace { "State consumer has no partitions assigned." }
+            log.info("State consumer has no partitions assigned." )
             return
         }
 
         val partitionsSynced = mutableSetOf<TopicPartition>()
         val states = stateConsumer.poll()
+        log.info ( "States size: ${states.size}" )
         for (state in states) {
-            log.trace { "Updating state: $state" }
+            log.info ( "Updating state: $state" )
             updateInMemoryState(state.record)
             partitionsSynced.addAll(getSyncedEventPartitions())
         }
 
         if (syncPartitions && partitionsSynced.isNotEmpty()) {
+            log.info ( "partitionsSynced: $partitionsSynced" )
             resumeConsumerAndExecuteListener(partitionsSynced)
         }
     }
@@ -113,7 +115,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     private fun resumeConsumerAndExecuteListener(partitionsSynced: Set<TopicPartition>) {
         log.debug { "State consumer is up to date for $partitionsSynced.  Resuming event feed." }
-        log.info("LORCAN 1: resuming partitions $partitionsSynced")
+        log.info("${config.loggerName} LORCAN 1: resuming partitions $partitionsSynced")
         eventConsumer.resume(partitionsSynced)
 
         stateAndEventListener?.let { listener ->
@@ -141,7 +143,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     private fun pauseEventConsumerAndWaitForFutureToFinish(future: CompletableFuture<*>, timeout: Long) {
         val assignment = eventConsumer.assignment() - eventConsumer.paused()
-        log.info("LORCAN 2: Pausing partitions $assignment")
+        log.info("${config.loggerName} LORCAN 2: Pausing partitions $assignment")
         eventConsumer.pause(assignment)
         val maxWaitTime = System.currentTimeMillis() + timeout
         var done = future.isDone
@@ -152,7 +154,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             pollAndUpdateStates(false)
             done = future.isDone
         }
-        log.info("LORCAN 2: resuming partitions $assignment")
+        log.info("${config.loggerName} LORCAN 2: resuming partitions $assignment")
         eventConsumer.resume(assignment)
     }
 
@@ -198,12 +200,12 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override fun resetPollInterval() {
         if (System.currentTimeMillis() > pollIntervalCutoff) {
             val assignment = eventConsumer.assignment() - eventConsumer.paused()
-            log.info("LORCAN 3: Pausing partitions $assignment")
+            log.info("${config.loggerName} LORCAN 3: Pausing partitions $assignment")
             eventConsumer.pause(assignment)
             eventConsumer.poll(PAUSED_POLL_TIMEOUT)
             stateConsumer.poll(PAUSED_POLL_TIMEOUT)
             pollIntervalCutoff = getNextPollIntervalCutoff()
-            log.info("LORCAN 3: Resuming partitions $assignment")
+            log.info("${config.loggerName} LORCAN 3: Resuming partitions $assignment")
             eventConsumer.resume(assignment)
         }
     }
