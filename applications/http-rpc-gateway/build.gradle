@@ -1,11 +1,7 @@
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-app'
-    id 'com.google.cloud.tools.jib'
 }
-
-import static org.apache.tools.ant.taskdefs.condition.Os.*
-
 
 description 'HTTP RPC Gateway Application'
 
@@ -53,8 +49,6 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 }
-
-
 
 tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
     description "Builds the docker image for the deployable OSGi application"
