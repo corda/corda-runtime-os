@@ -40,6 +40,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.MESSAGING
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -197,6 +198,7 @@ class StateAndEventSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(120)
     fun `create topics, start 2 statevent sub, trigger rebalance and verify completion of all records`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC4_TEMPLATE)
 
@@ -223,9 +225,14 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher.publish(getDemoRecords(EVENT_TOPIC4, 5, 6)).forEach { it.get() }
 
         stateEventSub2.start()
+        assertTrue(onNextLatch2.await(100, TimeUnit.SECONDS))
+
         stateEventSub1.start()
 
-        assertTrue(onNextLatch2.await(100, TimeUnit.SECONDS))
+        //wait until start processing
+        while (onNextLatch1.count == 30L) {
+            Thread.sleep(100)
+        }
 
         //trigger rebalance
         stateEventSub2.stop()
