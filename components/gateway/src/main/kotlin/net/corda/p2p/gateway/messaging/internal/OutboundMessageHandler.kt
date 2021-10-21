@@ -1,6 +1,6 @@
 package net.corda.p2p.gateway.messaging.internal
 
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.Config
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.Lifecycle
@@ -14,7 +14,7 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
-import net.corda.p2p.gateway.Gateway
+import net.corda.p2p.gateway.Gateway.Companion.CONSUMER_GROUP_ID
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
@@ -33,6 +33,8 @@ internal class OutboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
+    nodeConfiguration: Config,
+    instanceId: Int,
 ) : EventLogProcessor<String, LinkOutMessage>,
     Lifecycle,
     HttpEventListener,
@@ -48,9 +50,9 @@ internal class OutboundMessageHandler(
     )
 
     private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(Gateway.CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC),
+        SubscriptionConfig(CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC, instanceId),
         this,
-        ConfigFactory.empty(),
+        nodeConfiguration,
         null
     )
 
