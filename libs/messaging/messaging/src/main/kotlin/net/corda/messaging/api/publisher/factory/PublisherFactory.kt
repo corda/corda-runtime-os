@@ -6,6 +6,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 
 /**
  * Interface for creating publishers of events. Only used for producers of events. Not used by consumers.
@@ -41,6 +42,7 @@ interface PublisherFactory {
     fun <TREQ: Any, TRESP: Any> createRPCSender(
         rpcConfig: RPCConfig<TREQ, TRESP>,
         nodeConfig: Config = ConfigFactory.empty(),
+        lifecycleListener: LifecycleListener? = null
     ): RPCSender<TREQ, TRESP>
 
 

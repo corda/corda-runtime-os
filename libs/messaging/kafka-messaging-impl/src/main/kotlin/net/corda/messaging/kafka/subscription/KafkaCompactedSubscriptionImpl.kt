@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -61,6 +62,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
+            lifecycleListener?.onUpdate(LifecycleStatus.DOWN)
         }
     }
 
@@ -103,6 +105,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
+                lifecycleListener?.onUpdate(LifecycleStatus.UP)
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
@@ -110,6 +113,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                     }
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
+                        lifecycleListener?.onUpdate(LifecycleStatus.ERROR)
                         stop()
                     }
                 }

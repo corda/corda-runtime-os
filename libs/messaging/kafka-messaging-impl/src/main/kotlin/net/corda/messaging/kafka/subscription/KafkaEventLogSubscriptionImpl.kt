@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -112,6 +113,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
+            lifecycleListener?.onUpdate(LifecycleStatus.DOWN)
         }
     }
 
@@ -149,6 +151,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                     }
                 }
                 attempts = 0
+                lifecycleListener?.onUpdate(LifecycleStatus.UP)
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
@@ -162,6 +165,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                             "Failed to read and process records from topic $topic, group $groupName, producerClientId $producerClientId. " +
                                     "Attempts: $attempts. Closing subscription.", ex
                         )
+                        lifecycleListener?.onUpdate(LifecycleStatus.ERROR)
                         stop()
                     }
                 }

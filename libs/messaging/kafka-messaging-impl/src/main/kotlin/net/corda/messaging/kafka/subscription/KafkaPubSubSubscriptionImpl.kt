@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.PubSubProcessor
@@ -104,6 +105,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
             }
             executor?.shutdown()
             thread?.join(consumerThreadStopTimeout)
+            lifecycleListener?.onUpdate(LifecycleStatus.DOWN)
         }
     }
 
@@ -129,6 +131,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
+                lifecycleListener?.onUpdate(LifecycleStatus.UP)
             } catch (ex: CordaMessageAPIIntermittentException) {
                 log.warn(
                     "PubSubConsumer from group $groupName failed to read and process records from topic $topic, " +
@@ -139,6 +142,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
                     "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic. " +
                             "Fatal error occurred. Closing subscription.", ex
                 )
+                lifecycleListener?.onUpdate(LifecycleStatus.ERROR)
                 stop()
             } catch (ex: Exception) {
                 log.error(
@@ -146,6 +150,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
                             "attempts: $attempts. " +
                             "Unexpected error occurred. Closing subscription.", ex
                 )
+                lifecycleListener?.onUpdate(LifecycleStatus.ERROR)
                 stop()
             }
         }

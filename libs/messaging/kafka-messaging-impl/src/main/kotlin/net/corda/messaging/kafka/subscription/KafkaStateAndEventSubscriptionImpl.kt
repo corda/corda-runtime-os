@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -101,6 +102,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
+            lifecycleListener?.onUpdate(LifecycleStatus.DOWN)
         }
     }
 
@@ -122,6 +124,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 eventConsumer = stateAndEventConsumer.eventConsumer
                 eventConsumer.subscribeToTopic(rebalanceListener)
 
+                lifecycleListener?.onUpdate(LifecycleStatus.UP)
+
                 while (!stopped) {
                     stateAndEventConsumer.pollAndUpdateStates(true)
                     processEvents()
@@ -141,6 +145,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                                     "producerClientId $producerClientId. Attempts: $attempts. Closing " +
                                     "subscription.", ex
                         )
+                        lifecycleListener?.onUpdate(LifecycleStatus.ERROR)
                         stop()
                     }
                 }

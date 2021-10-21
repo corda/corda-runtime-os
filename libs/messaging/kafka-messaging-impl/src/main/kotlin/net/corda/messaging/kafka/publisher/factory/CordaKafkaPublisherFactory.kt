@@ -9,6 +9,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.GROUP
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_PRODUCER
@@ -57,7 +58,8 @@ class CordaKafkaPublisherFactory @Activate constructor(
 
     override fun <TREQ : Any, TRESP : Any> createRPCSender(
         rpcConfig: RPCConfig<TREQ, TRESP>,
-        nodeConfig: Config
+        nodeConfig: Config,
+        lifecycleListener: LifecycleListener?
     ): RPCSender<TREQ, TRESP> {
 
         val publisherConfiguration = ConfigFactory.empty()
@@ -83,7 +85,8 @@ class CordaKafkaPublisherFactory @Activate constructor(
             publisher,
             consumerBuilder,
             serializer,
-            deserializer
+            deserializer,
+            lifecycleListener
         )
     }
 }

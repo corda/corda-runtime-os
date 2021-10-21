@@ -78,7 +78,7 @@ class CordaKafkaRPCSenderImplTest {
             listOf(TopicPartition(ConfigProperties.TOPIC, 0))
         }.whenever(kafkaConsumer).getPartitions(any(), any())
 
-        cordaSenderImpl = CordaKafkaRPCSenderImpl(config, publisher, consumerBuilder, serializer, deserializer)
+        cordaSenderImpl = CordaKafkaRPCSenderImpl(config, publisher, consumerBuilder, serializer, deserializer, null)
 
         cordaSenderImpl.start()
         while (!cordaSenderImpl.isRunning) {
@@ -92,7 +92,7 @@ class CordaKafkaRPCSenderImplTest {
 
     @Test
     fun `test send request finishes exceptionally due to lack of partitions`() {
-        cordaSenderImpl = CordaKafkaRPCSenderImpl(mock(), mock(), mock(), serializer, deserializer)
+        cordaSenderImpl = CordaKafkaRPCSenderImpl(mock(), mock(), mock(), serializer, deserializer, null)
 
         val future = cordaSenderImpl.sendRequest("test")
         assertThrows<CordaRPCAPISenderException> { future.getOrThrow() }

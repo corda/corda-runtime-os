@@ -2,6 +2,7 @@ package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigValueFactory
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RandomAccessSubscription
@@ -54,6 +55,7 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
                 consumer!!.assignPartitionsManually(allPartitions)
                 assignedPartitions = allPartitions
                 running = true
+                lifecycleListener?.onUpdate(LifecycleStatus.UP)
             }
         }
     }
@@ -65,6 +67,7 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
                 running = false
             }
         }
+        lifecycleListener?.onUpdate(LifecycleStatus.DOWN)
     }
 
     @Synchronized

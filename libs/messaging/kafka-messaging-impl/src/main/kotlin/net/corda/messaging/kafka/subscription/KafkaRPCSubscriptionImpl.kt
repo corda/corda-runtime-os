@@ -5,6 +5,7 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -87,6 +88,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
+            lifecycleListener?.onUpdate(LifecycleStatus.DOWN)
         }
     }
 
@@ -108,6 +110,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
+                lifecycleListener?.onUpdate(LifecycleStatus.UP)
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
@@ -115,6 +118,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
                     }
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
+                        lifecycleListener?.onUpdate(LifecycleStatus.ERROR)
                         stop()
                     }
                 }

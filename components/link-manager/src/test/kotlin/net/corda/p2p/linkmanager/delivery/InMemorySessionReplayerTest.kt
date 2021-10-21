@@ -7,6 +7,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
@@ -96,7 +97,8 @@ class InMemorySessionReplayerTest {
 
             override fun <TREQ : Any, TRESP : Any> createRPCSender(
                 rpcConfig: RPCConfig<TREQ, TRESP>,
-                nodeConfig: Config
+                nodeConfig: Config,
+                lifecycleListener: LifecycleListener?
             ): RPCSender<TREQ, TRESP> {
                 fail("createRPCSender should not be used in this test.")
             }
@@ -183,7 +185,8 @@ class InMemorySessionReplayerTest {
 
             override fun <TREQ : Any, TRESP : Any> createRPCSender(
                 rpcConfig: RPCConfig<TREQ, TRESP>,
-                nodeConfig: Config
+                nodeConfig: Config,
+                lifecycleListener: LifecycleListener?
             ): RPCSender<TREQ, TRESP> {
                 fail("createRPCSender should not be used in this test.")
             }
@@ -252,7 +255,8 @@ class InMemorySessionReplayerTest {
 
             override fun <TREQ : Any, TRESP : Any> createRPCSender(
                 rpcConfig: RPCConfig<TREQ, TRESP>,
-                nodeConfig: Config
+                nodeConfig: Config,
+                lifecycleListener: LifecycleListener?
             ): RPCSender<TREQ, TRESP> {
                 fail("createRPCSender should not be used in this test.")
             }
@@ -299,7 +303,8 @@ class InMemorySessionReplayerTest {
 
             override fun <TREQ : Any, TRESP : Any> createRPCSender(
                 rpcConfig: RPCConfig<TREQ, TRESP>,
-                nodeConfig: Config
+                nodeConfig: Config,
+                lifecycleListener: LifecycleListener?
             ): RPCSender<TREQ, TRESP> {
                 fail("createRPCSender should not be used in this test.")
             }
@@ -345,7 +350,8 @@ class InMemorySessionReplayerTest {
 
             override fun <TREQ : Any, TRESP : Any> createRPCSender(
                 rpcConfig: RPCConfig<TREQ, TRESP>,
-                nodeConfig: Config
+                nodeConfig: Config,
+                lifecycleListener: LifecycleListener?
             ): RPCSender<TREQ, TRESP> {
                 fail("createRPCSender should not be used in this test.")
             }
