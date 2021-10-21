@@ -5,9 +5,9 @@ import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
 import net.corda.crypto.service.persistence.KafkaInfrastructure.Companion.KEY_CACHE_TOPIC_NAME
+import net.corda.crypto.service.persistence.KafkaInfrastructure.Companion.wait
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.util.UUID
@@ -71,11 +71,10 @@ class KafkaDefaultCryptoKeysPersistenceSnapshotTests {
         (defaultPersistence as AutoCloseable).close()
     }
 
-    @Disabled
     @Test
     @Timeout(5)
     fun `Should load snapshot and get default crypto cache value`() {
-        val cachedRecord1 = defaultPersistence.get(original1.alias)
+        val cachedRecord1 = defaultPersistence.wait(original1.alias)
         assertNotNull(cachedRecord1)
         assertEquals(original1.memberId, cachedRecord1.memberId)
         val cachedRecord2 = defaultPersistence.get(original2.alias)
