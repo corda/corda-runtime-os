@@ -3,14 +3,11 @@ package net.corda.messaging.db.persistence
 import net.corda.messaging.db.util.DbUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
+import org.junit.BeforeClass
+import org.junit.jupiter.api.*
 import java.sql.DriverManager
 import java.time.Instant
+
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class DbAccessProviderTestBase {
@@ -39,11 +36,22 @@ abstract class DbAccessProviderTestBase {
 
     abstract fun getPassword(): String
 
+    abstract fun nameOfCallingClass(): String
+
+    abstract fun dbNullOrBlank(): Boolean
+
+    @BeforeClass
+    fun checkIfTestsShouldBeSkipped() {
+        if (nameOfCallingClass() == "DbAccessProviderPostgresTest" ||
+            nameOfCallingClass() == "DbAccessProviderSQLServerTest") {
+            org.junit.Assume.assumeTrue(!dbNullOrBlank());
+        }
+    }
+
     @BeforeAll
     fun setupBeforeAllTests() {
         startDatabase()
         createTables()
-
         dbAccessProvider = DBAccessProviderImpl(getJdbcUrl(), getUsername(), getPassword(), getDbType(), 5)
         dbAccessProvider.start()
     }
