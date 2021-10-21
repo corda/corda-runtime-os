@@ -26,6 +26,7 @@ class PermissionServiceImpl(
     override fun authorizeUser(requestId: String, requestUrl: String, loginName: String, timeoutTimestamp: Instant): Boolean {
 
         val user = processor.getUser(loginName) ?: return false
+        println(user)
 
         //Return true for now if the user exist in the local Map
         return true

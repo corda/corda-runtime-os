@@ -3,10 +3,12 @@ package net.corda.libs.permission
 import net.corda.data.permissions.User
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.v5.base.annotations.VisibleForTesting
 
 class PermissionsTopicProcessor : CompactedProcessor<String, User> {
 
-    private var userData: Map<String, User> = mutableMapOf()
+    @VisibleForTesting
+    var userData: Map<String, User> = mutableMapOf()
 
     fun getUser(id: String) = userData[id]
 
@@ -22,6 +24,13 @@ class PermissionsTopicProcessor : CompactedProcessor<String, User> {
             oldValue: User?,
             currentData: Map<String, User>
     ) {
-        userData = userData.plus(Pair(newRecord.key, newRecord.value!!))
+        val user = newRecord.value
+        val userLogin = newRecord.key
+
+        userData = if (user == null) {
+            userData.minus(userLogin)
+        } else {
+            userData.plus(Pair(userLogin, user))
+        }
     }
 }
