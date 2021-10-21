@@ -21,7 +21,7 @@ class RestrictiveSecurityManager @Activate constructor(
     private val conditionalPermissionAdmin: ConditionalPermissionAdmin
 ) : CordaSecurityManager {
     companion object {
-        private val allPermInfo = PermissionInfo(AllPermission::class.java.name, ALL, ALL)
+        private val allPermInfo = PermissionInfo(AllPermission::class.java.name, "*", "*")
     }
 
     /** Grants all permissions to all bundles. */

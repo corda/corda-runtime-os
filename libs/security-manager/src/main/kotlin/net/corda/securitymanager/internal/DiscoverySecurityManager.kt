@@ -11,7 +11,7 @@ import java.security.Permission
  * While active, for any permission check performed by user code, it writes out the corresponding permission to an
  * updated permissions file.
  *
- * This security manager is not secure in production.
+ * This security manager is not secure for production use.
  */
 @Component(service = [DiscoverySecurityManager::class])
 class DiscoverySecurityManager : CordaSecurityManager, SecurityManager() {

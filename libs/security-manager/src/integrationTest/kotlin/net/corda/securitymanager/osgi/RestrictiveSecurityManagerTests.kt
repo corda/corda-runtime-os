@@ -11,16 +11,10 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.security.AccessControlException
 
-// TODO - In a new file, test that can switch between security managers.
-
 /** Tests the `RestrictiveSecurityManager`. */
 @ExtendWith(ServiceExtension::class)
 class RestrictiveSecurityManagerTests {
     companion object {
-        private const val WILDCARD = "*"
-        private const val GET_ENV_TARGET = "getenv.$WILDCARD"
-        private const val GET_PROTECTION_DOMAIN_TARGET = "getProtectionDomain"
-
         // The permission to get any environment variable.
         private val getEnvPerm = RuntimePermission(GET_ENV_TARGET, null)
 
@@ -165,6 +159,18 @@ class RestrictiveSecurityManagerTests {
 
         // This stops the existing `RestrictiveSecurityManager`, and starts a new one.
         securityManagerService.start()
+
+        assertDoesNotThrow {
+            System.getenv()
+        }
+    }
+
+    @Test
+    fun `permissions are reset once the security manager is switched to the discovery security manager`() {
+        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
+
+        // This stops the existing `RestrictiveSecurityManager`, and starts the `DiscoverySecurityManager`.
+        securityManagerService.startDiscoveryMode()
 
         assertDoesNotThrow {
             System.getenv()

@@ -2,7 +2,17 @@ package net.corda.securitymanager
 
 import java.security.Permission
 
-/** A service for starting a Corda security manager. */
+/**
+ * A service for starting a Corda security manager.
+ *
+ * There are two Corda security managers:
+ *
+ *  * The `RestrictiveSecurityManager`, which provides control over what permissions are granted or denied
+ *  * The `DiscoverySecurityManager`, which grants sandbox code all permissions. While active, for any permission check
+ *    performed by user code, it writes out the corresponding permission to an updated permissions file
+ *
+ * The `DiscoverySecurityManager` is not secure for production use.
+ */
 interface SecurityManagerService {
     /**
      * Starts either the discovery or the restrictive security manager, based on the `isDiscoveryMode` flag.

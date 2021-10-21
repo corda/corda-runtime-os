@@ -4,20 +4,15 @@ import net.corda.securitymanager.SecurityManagerService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.framework.FrameworkUtil
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.security.AccessControlException
 
 /** Tests the `DiscoverySecurityManager`. */
 @ExtendWith(ServiceExtension::class)
 class DiscoverySecurityManagerTests {
     companion object {
-        private const val WILDCARD = "*"
-        private const val GET_ENV_TARGET = "getenv.$WILDCARD"
-
         // The permission to get any environment variable.
         private val getEnvPerm = RuntimePermission(GET_ENV_TARGET, null)
 
