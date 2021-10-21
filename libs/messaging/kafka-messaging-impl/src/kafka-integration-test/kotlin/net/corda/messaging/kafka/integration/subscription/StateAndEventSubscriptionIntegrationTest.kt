@@ -26,8 +26,8 @@ import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPI
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC6
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC6_TEMPLATE
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
-import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.getDemoRecords
+import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.getStringRecords
 import net.corda.messaging.kafka.integration.listener.TestStateAndEventListenerStrings
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
@@ -106,7 +106,7 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher.publish(getDemoRecords(EVENT_TOPIC1, 5, 2)).forEach { it.get() }
 
         assertTrue(onNextLatch1.await(30, TimeUnit.SECONDS))
-        assertTrue(onNextLatch2.await(10, TimeUnit.SECONDS))
+        assertTrue(onNextLatch2.await(40, TimeUnit.SECONDS))
 
         stateEventSub1.stop()
         stateEventSub2.stop()
@@ -227,7 +227,7 @@ class StateAndEventSubscriptionIntegrationTest {
         stateEventSub1.start()
         stateEventSub2.start()
 
-        assertTrue(onNextLatch2.await(50, TimeUnit.SECONDS))
+        assertTrue(onNextLatch2.await(100, TimeUnit.SECONDS))
 
         //trigger rebalance
         stateEventSub2.stop()
