@@ -90,7 +90,7 @@ internal class LifecycleProcessor(
                 }
             }
             is NewRegistration -> {
-                state.registrations[event.registration] = Unit
+                state.registrations.add(event.registration)
                 event.registration.updateCoordinatorStatus(coordinator, state.status)
                 true
             }
@@ -99,7 +99,7 @@ internal class LifecycleProcessor(
                 true
             }
             is TrackRegistration -> {
-                state.trackedRegistrations[event.registration] = Unit
+                state.trackedRegistrations.add(event.registration)
                 true
             }
             is StopTrackingRegistration -> {
@@ -136,7 +136,7 @@ internal class LifecycleProcessor(
     private fun processStartEvent(event: StartEvent, coordinator: LifecycleCoordinator): Boolean {
         return if (!state.isRunning) {
             state.isRunning = true
-            state.trackedRegistrations.keys.forEach { it.notifyCurrentStatus() }
+            state.trackedRegistrations.forEach { it.notifyCurrentStatus() }
             // If there was previously an error, clear this now.
             updateStatus(coordinator, LifecycleStatus.DOWN, STARTED_REASON)
             runUserEventHandler(event, coordinator)
@@ -179,6 +179,7 @@ internal class LifecycleProcessor(
 
     private fun processClose(coordinator: LifecycleCoordinator): Boolean {
         state.isRunning = false
+        state.registrations.forEach { it.close() }
         registry.removeCoordinator(coordinator.name)
         return true
     }
@@ -189,7 +190,7 @@ internal class LifecycleProcessor(
      */
     private fun updateStatus(coordinator: LifecycleCoordinator, newStatus: LifecycleStatus, reason: String) {
         state.status = newStatus
-        state.registrations.keys.forEach { it.updateCoordinatorStatus(coordinator, newStatus) }
+        state.registrations.forEach { it.updateCoordinatorStatus(coordinator, newStatus) }
         registry.updateStatus(coordinator.name, newStatus, reason)
     }
 

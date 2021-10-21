@@ -35,13 +35,13 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @param name The name of the component for this lifecycle coordinator.
  * @param batchSize max number of events processed in a single [processEvents] call.
  * @param registry The registry this coordinator has been registered with. Used to update status for monitoring purposes
- * @param lifeCycleProcessor The user event handler for lifecycle events.
+ * @param lifecycleEventHandler The user event handler for lifecycle events.
  */
 class LifecycleCoordinatorImpl(
     override val name: LifecycleCoordinatorName,
     batchSize: Int,
     private val registry: LifecycleRegistryCoordinatorAccess,
-    lifeCycleProcessor: LifecycleEventHandler,
+    lifecycleEventHandler: LifecycleEventHandler,
 ) : LifecycleCoordinator {
 
     companion object {
@@ -75,12 +75,12 @@ class LifecycleCoordinatorImpl(
     /**
      * The event queue and timer state for this lifecycle processor.
      */
-    private val lifecycleState = LifecycleStateManager(batchSize)
+    internal val lifecycleState = LifecycleStateManager(batchSize)
 
     /**
      * The processor for this coordinator.
      */
-    private val processor = LifecycleProcessor(name, lifecycleState, registry, lifeCycleProcessor)
+    private val processor = LifecycleProcessor(name, lifecycleState, registry, lifecycleEventHandler)
 
     /**
      * `true` if [processEvents] is executing. This is used to ensure only one attempt at processing the event queue is
@@ -97,6 +97,7 @@ class LifecycleCoordinatorImpl(
      * shut down.
      */
     private val _isClosed = AtomicBoolean(false)
+    private val _isClosing = AtomicBoolean(false)
 
     /**
      * Process a batch of events in the event queue.
@@ -156,6 +157,17 @@ class LifecycleCoordinatorImpl(
         if (_isClosed.get()) {
             logger.error("An attempt was made to use coordinator $name after it has been closed. Event: $event")
             throw LifecycleException("No events can be posted to a closed coordinator. Event: $event")
+        }
+        if (_isClosing.get()) {
+            when (event) {
+                is StopEvent,
+                is CloseCoordinator -> {
+                }
+                else -> {
+                    logger.warn("Only stop and close events can be posted to a closing coordinator. Ignoring event: $event")
+                    return
+                }
+            }
         }
         lifecycleState.postEvent(event)
         scheduleIfRequired()
@@ -251,17 +263,8 @@ class LifecycleCoordinatorImpl(
     }
 
     override fun close() {
+        _isClosing.set(true)
         logger.trace { "$name: Closing coordinator" }
-        if (!lifecycleState.registrationsEmpty()) {
-            logger.error(
-                "Attempt made to close coordinator $name with outstanding registrations. " +
-                        "Registrations must be closed before closing the coordinator."
-            )
-            throw LifecycleException(
-                "Attempt made to close coordinator $name with outstanding registrations. " +
-                        "Close all registrations involving this coordinator first."
-            )
-        }
         stop()
         postEvent(CloseCoordinator())
         _isClosed.set(true)
