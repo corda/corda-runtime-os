@@ -54,9 +54,7 @@ class FlowService @Activate constructor(
     private val coordinator = coordinatorFactory.createCoordinator<FlowService>(::eventHandler)
 
     private var registration: RegistrationHandle? = null
-
     private var configHandle: AutoCloseable? = null
-
     private var executor: FlowExecutor? = null
 
     private var bootstrapConfig: Config? = null
