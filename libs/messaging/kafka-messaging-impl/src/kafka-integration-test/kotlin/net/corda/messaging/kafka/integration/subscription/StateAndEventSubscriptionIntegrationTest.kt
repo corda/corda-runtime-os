@@ -84,17 +84,16 @@ class StateAndEventSubscriptionIntegrationTest {
     fun `create topic with two partitions, start two statevent sub, publish records with two keys, no outputs`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC1_TEMPLATE)
 
-        val onNextLatch1 = CountDownLatch(5)
+        val stateAndEventLatch = CountDownLatch(10)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC1-group", EVENT_TOPIC1, 1),
-            TestStateEventProcessor(onNextLatch1, false),
+            TestStateEventProcessor(stateAndEventLatch, false),
             kafkaConfig
         )
 
-        val onNextLatch2 = CountDownLatch(5)
         val stateEventSub2 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC1-group", EVENT_TOPIC1, 2),
-            TestStateEventProcessor(onNextLatch2, true),
+            TestStateEventProcessor(stateAndEventLatch, true),
             kafkaConfig
         )
 
@@ -105,8 +104,7 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getDemoRecords(EVENT_TOPIC1, 5, 2)).forEach { it.get() }
 
-        assertTrue(onNextLatch1.await(30, TimeUnit.SECONDS))
-        assertTrue(onNextLatch2.await(40, TimeUnit.SECONDS))
+        assertTrue(stateAndEventLatch.await(40, TimeUnit.SECONDS))
 
         stateEventSub1.stop()
         stateEventSub2.stop()
