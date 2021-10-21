@@ -1,0 +1,12 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-app'
+}
+
+description 'Type Evolution AMQP serializer Proof of Concept'
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-serialization"
+    implementation project(':libs:serialization:serialization-amqp')
+}
