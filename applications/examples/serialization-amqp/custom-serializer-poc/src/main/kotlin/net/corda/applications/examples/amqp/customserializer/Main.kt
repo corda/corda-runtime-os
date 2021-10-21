@@ -12,8 +12,8 @@ import net.corda.v5.serialization.SerializationCustomSerializer
 
 // Requirements:
 // - Serialisation can support different serializers per sandbox group
-//   - CorDapp provided - This module
-//   - Platform provided - Public/Private key
+//   - CorDapp provided
+//   - Platform provided
 // - Platform takes priority over CorDapp provided
 // - Log message warning written if CorDapp attempts to replace platform serializer
 // - Register the list of internal serializers for use by the sandbox
@@ -108,6 +108,9 @@ private fun differentSerializersPerSandboxGroup() {
     }
 }
 
+/**
+ * Prove that we can't replace the platform serialisers
+ */
 private fun platformTakesPriority() {
     println("REQUIREMENT - Check that platform serialisers take priority over CorDapp serialisers")
     println("Difference from my earlier expectation - Throws exception instead of priority/log message")
@@ -136,16 +139,25 @@ private fun platformTakesPriority() {
 
 }
 
+/**
+ * Prove that we notify the end user when they try to override platform serialiser
+ */
 private fun logMessageIfAttemptToReplacePlatform() {
     println("REQUIREMENT - Log message warning written if CorDapp attempts to replace platform serializer")
     println("- Throws exception instead")
 }
 
+/**
+ * Have a method of registering platform serialisers
+ */
 private fun registerInternalSerializers() {
     println("REQUIREMENT - Register the list of internal serializers for use by the sandbox")
     println("- See configureSerialization for example")
 }
 
+/**
+ * Have a method of registering CorDapp serialisers
+ */
 private fun registerCorDappSerializers() {
     println("REQUIREMENT - Register the list of CorDapp custom serializers for use by the sandbox")
     println("- See configureSerialization for example")
