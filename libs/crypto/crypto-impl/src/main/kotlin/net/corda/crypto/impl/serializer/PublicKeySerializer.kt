@@ -12,8 +12,10 @@ import java.security.PublicKey
  * A serializer that writes out a public key in X.509 format.
  */
 @Component(service = [SerializationCustomSerializer::class])
-class PublicKeySerializer @Activate constructor(@Reference private val cryptoLibraryFactory: CryptoLibraryFactory)
-    : SerializationCustomSerializer<PublicKey, ByteArray> {
+class PublicKeySerializer @Activate constructor(
+    @Reference(service = CryptoLibraryFactory::class)
+    private val cryptoLibraryFactory: CryptoLibraryFactory
+) : SerializationCustomSerializer<PublicKey, ByteArray> {
 
     private val keyEncodingService: KeyEncodingService by lazy { cryptoLibraryFactory.getKeyEncodingService() }
 
