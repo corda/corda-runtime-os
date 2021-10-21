@@ -84,7 +84,7 @@ class StateAndEventSubscriptionIntegrationTest {
     fun `create topic with two partitions, start two statevent sub, publish records with two keys, no outputs`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC1_TEMPLATE)
 
-        val stateAndEventLatch = CountDownLatch(10)
+        val stateAndEventLatch = CountDownLatch(30)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC1-group", EVENT_TOPIC1, 1),
             TestStateEventProcessor(stateAndEventLatch, false),
@@ -102,7 +102,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        publisher.publish(getDemoRecords(EVENT_TOPIC1, 5, 2)).forEach { it.get() }
+        publisher.publish(getDemoRecords(EVENT_TOPIC1, 5, 6)).forEach { it.get() }
 
         assertTrue(stateAndEventLatch.await(40, TimeUnit.SECONDS))
 
@@ -200,7 +200,7 @@ class StateAndEventSubscriptionIntegrationTest {
     fun `create topics, start 2 statevent sub, trigger rebalance and verify completion of all records`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC4_TEMPLATE)
 
-        val onNextLatch1 = CountDownLatch(10)
+        val onNextLatch1 = CountDownLatch(30)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC4-group", EVENT_TOPIC4, 1),
             TestStateEventProcessor(onNextLatch1, true, false, EVENTSTATE_OUTPUT4),
@@ -220,10 +220,10 @@ class StateAndEventSubscriptionIntegrationTest {
 
         publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC4)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        publisher.publish(getDemoRecords(EVENT_TOPIC4, 5, 2)).forEach { it.get() }
+        publisher.publish(getDemoRecords(EVENT_TOPIC4, 5, 6)).forEach { it.get() }
 
-        stateEventSub1.start()
         stateEventSub2.start()
+        stateEventSub1.start()
 
         assertTrue(onNextLatch2.await(100, TimeUnit.SECONDS))
 
