@@ -113,7 +113,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     private fun resumeConsumerAndExecuteListener(partitionsSynced: Set<TopicPartition>) {
         log.debug { "State consumer is up to date for $partitionsSynced.  Resuming event feed." }
-        log.info("LORCAN 1: Pausing partitions $partitionsSynced")
+        log.info("LORCAN 1: resuming partitions $partitionsSynced")
         eventConsumer.resume(partitionsSynced)
 
         stateAndEventListener?.let { listener ->
@@ -152,7 +152,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             pollAndUpdateStates(false)
             done = future.isDone
         }
-        log.info("LORCAN 2: Pausing partitions $assignment")
+        log.info("LORCAN 2: resuming partitions $assignment")
         eventConsumer.resume(assignment)
     }
 
