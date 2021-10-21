@@ -50,6 +50,7 @@ class CommonPublisher (
                 publisher?.close()
                 publisher = publisherFactory.createPublisher(PublisherConfig(clientId, instanceId), config)
                 coordinator.updateStatus(LifecycleStatus.UP, "Publisher created")
+                isRunning = true
             }
             is StopEvent -> {
                 publisher?.close()
