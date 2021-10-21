@@ -17,10 +17,10 @@ class DiscoverySecurityManagerTests {
         private val getEnvPerm = RuntimePermission(GET_ENV_TARGET, null)
 
         private val bundleLocation = FrameworkUtil.getBundle(this::class.java).location
-
-        @InjectService(timeout = 1000)
-        lateinit var securityManagerService: SecurityManagerService
     }
+
+    @InjectService(timeout = 1000)
+    lateinit var securityManagerService: SecurityManagerService
 
     @Suppress("unused")
     @BeforeEach
