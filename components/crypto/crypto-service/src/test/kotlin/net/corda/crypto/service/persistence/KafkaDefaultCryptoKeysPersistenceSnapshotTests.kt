@@ -8,7 +8,6 @@ import net.corda.crypto.service.persistence.KafkaInfrastructure.Companion.KEY_CA
 import net.corda.crypto.service.persistence.KafkaInfrastructure.Companion.wait
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.util.UUID
