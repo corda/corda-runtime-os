@@ -51,8 +51,6 @@ class FlowService @Activate constructor(
         private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<FlowService>(::eventHandler)
-
     private var registration: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
     private var executor: FlowExecutor? = null
@@ -60,6 +58,8 @@ class FlowService @Activate constructor(
     private var bootstrapConfig: Config? = null
     private var messagingConfig: Config? = null
     private var flowConfig: Config? = null
+
+    private val coordinator = coordinatorFactory.createCoordinator<FlowService>(::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         consoleLogger.info("FlowService received: $event")
