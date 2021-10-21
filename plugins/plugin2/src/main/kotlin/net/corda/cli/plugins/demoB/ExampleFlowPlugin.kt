@@ -34,7 +34,7 @@ class ExampleFlowPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 @CommandLine.Command(name = "start", description = ["Starts a flow on the connected node."])
 class StartFlowCommand(): Runnable {
     override fun run() {
-        print("Status: Connected")
+        println("Status: Connected")
     }
 }
 

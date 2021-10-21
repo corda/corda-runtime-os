@@ -35,13 +35,13 @@ class ExampleNodePlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 @CommandLine.Command(name = "status", description = ["Prints the status of the connected node."])
 class NodeStatusCommand(): Runnable {
     override fun run() {
-        print("Status: Connected")
+        println("Status: Connected")
     }
 }
 
 @CommandLine.Command(name = "address", description = ["Prints the address of the connected node."])
 class NodeAddressCommand(): Runnable {
     override fun run() {
-        print("Addr: 1.1.1.1")
+        println("Address: 1.1.1.1")
     }
 }

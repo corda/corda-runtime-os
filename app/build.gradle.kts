@@ -27,6 +27,7 @@ tasks.named<JavaExec>("run") {
 }
 
 tasks.register<Jar>("fatJar") {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     dependsOn(tasks.named("compileKotlin"))
 //    archiveClassifier.set("fat")
 

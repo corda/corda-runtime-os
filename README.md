@@ -57,6 +57,10 @@ Commands:
 Note that for manually running the application jar in `app/build/libs/corda-cli.jar` the property
 pf4j.pluginsDir for example using the parameter `-Dpf4j.pluginsDir=<absolute path to plugins dir>` when running Java.
 
+## Script file
+
+In the script directory there is a windows cmd shell command script that can be called after a gradlew Build. `corda-cli.cmd node address` etc
+
 ## The Plugins
 
 ### Node Plugin
