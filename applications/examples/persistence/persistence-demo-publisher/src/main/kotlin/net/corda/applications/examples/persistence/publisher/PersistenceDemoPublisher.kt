@@ -24,6 +24,7 @@ class PersistenceDemoPublisher @Activate constructor(
         val parameters = CliParameters(shutDownService)
         val cli = CommandLine(parameters)
         cli.addSubcommand(ClusterAdminCommand(publisherFactory, shutDownService))
+        cli.addSubcommand(ConfigAdminCommand(publisherFactory, shutDownService))
         cli.execute(*args)
     }
 

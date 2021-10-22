@@ -46,6 +46,22 @@ class KafkaInfrastructure {
                 )
             )
         )
+
+        inline fun <reified V : IHaveMemberId, E : IHaveMemberId> KeyValuePersistence<V, E>.wait(
+            key: String,
+            timeout: Duration = Duration.ofSeconds(2),
+            retryDelay: Duration = Duration.ofMillis(50),
+        ): V {
+            val end = Instant.now().plus(timeout)
+            do {
+                val value = this.get(key)
+                if(value != null) {
+                    return value
+                }
+                Thread.sleep(retryDelay.toMillis())
+            } while(Instant.now() < end)
+            fail("Failed to wait for '$key'")
+        }
     }
 
     private val topicService: TopicService = TopicServiceImpl()
@@ -103,15 +119,5 @@ class KafkaInfrastructure {
         )[0].get()
         persistence?.wait(key)
         pub.close()
-    }
-
-    inline fun <reified V : IHaveMemberId, E : IHaveMemberId> KeyValuePersistence<V, E>.wait(key: String) {
-        val started = Instant.now()
-        while (get(key) == null) {
-            Thread.sleep(100)
-            if (Duration.between(started, Instant.now()).seconds > 2) {
-                fail("Failed to wait for '$key'")
-            }
-        }
     }
 }
