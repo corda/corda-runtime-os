@@ -1,8 +1,6 @@
 package net.corda.tools.kafka
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
+import com.typesafe.config.*
 import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.osgi.api.Application
@@ -59,7 +57,26 @@ class KafkaConfigUploader @Activate constructor(
             val topicTemplate = parameters.topicTemplate
             if (topicTemplate != null) {
                 logger.info("Creating topics")
-                topicAdmin.createTopics(kafkaConnectionProperties, topicTemplate.readText())
+                var configText=topicTemplate.readText()
+
+                if (parameters.numberOfThreads != null) {
+                    val template = ConfigFactory.parseString(topicTemplate.readText())
+                    val topicTemplateList = template.getObjectList("topics")
+                    val newTopics = mutableListOf<ConfigObject>()
+                    topicTemplateList.forEach { topicTemplateItem ->
+                        val topicTemplateConfig = topicTemplateItem.toConfig()
+                        newTopics.add(topicTemplateItem)
+                        val topicName = topicTemplateConfig.getString("topicName")
+                        for (i in 1..parameters.numberOfThreads.toInt()) {
+                            val copy =
+                                topicTemplateItem.withValue("topicName", ConfigValueFactory.fromAnyRef("$topicName-$i"))
+                            newTopics.add(copy)
+                        }
+                    }
+                    val copy = template.withValue("topics", ConfigValueFactory.fromIterable(newTopics))
+                    configText = copy.root().render(ConfigRenderOptions.concise())
+                }
+                topicAdmin.createTopics(kafkaConnectionProperties, configText)
                 logger.info("Topics created")
                 consoleLogger.info("Topic creation completed")
             }
@@ -128,6 +145,12 @@ class CliParameters {
 
     @CommandLine.Option(names = ["--config"], description = ["File containing configuration to be stored"])
     var configurationFile: File? = null
+
+    @CommandLine.Option(
+        names = ["--numberOfThreads"],
+        description = ["Number of threads to use. total records sent = numberOfThreads * numberOfKeys * numberOfRecords"]
+    )
+    lateinit var numberOfThreads: String
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false

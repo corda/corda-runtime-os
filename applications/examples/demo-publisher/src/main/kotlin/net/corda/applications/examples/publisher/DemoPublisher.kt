@@ -56,18 +56,29 @@ class DemoPublisher @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutdownOSGiFramework()
         } else {
-            val instanceId = parameters.instanceId?.toInt()
             var publisher: RunPublisher? = null
+            var publisherThreads : List<Thread?>? = null
 
             lifeCycleCoordinator = coordinatorFactory.createCoordinator<DemoPublisher>(
             ) { event: LifecycleEvent, _: LifecycleCoordinator ->
                 log.info("LifecycleEvent received: $event")
                 when (event) {
                     is StartEvent -> {
-                        publisher!!.start()
+                        if (publisherThreads != null) {
+                            publisherThreads?.forEach() {
+                                println("starting thread $it")
+                                it!!.start()
+                            }
+                        } else
+                            publisher!!.start()
                     }
                     is StopEvent -> {
-                        publisher?.stop()
+                        if (publisherThreads != null) {
+                            publisherThreads?.forEach() {
+                                it!!.interrupt()
+                            }
+                        } else
+                            publisher?.stop()
                         shutdownOSGiFramework()
                     }
                     else -> {
@@ -75,15 +86,34 @@ class DemoPublisher @Activate constructor(
                     }
                 }
             }
-
-            publisher = RunPublisher(
-                lifeCycleCoordinator!!,
-                publisherFactory,
-                instanceId,
-                parameters.numberOfRecords.toInt(),
-                parameters.numberOfKeys.toInt(),
-                getBootstrapConfig(getKafkaPropertiesFromFile(parameters.kafkaProperties))
-            )
+            if (parameters.numberOfThreads != null) {
+                val threadCount = parameters.numberOfThreads.toInt()
+                publisherThreads = List<Thread?>(threadCount) {
+                    Thread() {
+                        println(Thread.currentThread().name + " started")
+                        val publisher = RunPublisher(
+                            lifeCycleCoordinator!!,
+                            publisherFactory,
+                            parameters.instanceId?.toInt(),
+                            parameters.numberOfRecords.toInt(),
+                            parameters.numberOfKeys.toInt(),
+                            getBootstrapConfig(getKafkaPropertiesFromFile(parameters.kafkaProperties))
+                        )
+                        publisher.mtClientId = "publisher$it"
+                        publisher.mtPublisherTopic = "PublisherTopic$it"
+                        publisher.start()
+                    }
+                }
+            } else {
+                publisher = RunPublisher(
+                    lifeCycleCoordinator!!,
+                    publisherFactory,
+                    parameters.instanceId?.toInt(),
+                    parameters.numberOfRecords.toInt(),
+                    parameters.numberOfKeys.toInt(),
+                    getBootstrapConfig(getKafkaPropertiesFromFile(parameters.kafkaProperties))
+                )
+            }
 
             lifeCycleCoordinator!!.start()
             consoleLogger.info("Finished publishing")
@@ -153,6 +183,12 @@ class CliParameters {
         description = ["Number of keys to use. total records sent = numberOfKeys * numberOfRecords"]
     )
     lateinit var numberOfKeys: String
+
+    @CommandLine.Option(
+        names = ["--numberOfThreads"],
+        description = ["Number of threads to use. total records sent = numberOfThreads * numberOfKeys * numberOfRecords"]
+    )
+    lateinit var numberOfThreads: String
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false

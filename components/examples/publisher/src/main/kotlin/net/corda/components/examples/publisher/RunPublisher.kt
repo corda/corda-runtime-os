@@ -33,11 +33,13 @@ class RunPublisher (
     }
 
     override var isRunning: Boolean = false
+    var mtClientId : String = clientId
+    var mtPublisherTopic : String = publisherTopic
 
     override fun start() {
         if (!isRunning) {
             isRunning = true
-            val pubConfig = PublisherConfig(clientId, instanceId)
+            val pubConfig = PublisherConfig(mtClientId, instanceId)
             log.info("Instantiating publisher...")
             publisher = publisherFactory.createPublisher(pubConfig, config)
 
@@ -45,7 +47,7 @@ class RunPublisher (
                 val records = mutableListOf<Record<*, *>>()
                 val key = "key$i"
                 for (j in 1..numberOfRecords) {
-                    records.add(Record(publisherTopic, key, DemoRecord(j)))
+                    records.add(Record(mtPublisherTopic, key, DemoRecord(j)))
                 }
                 log.info("Publishing records with key $key...")
                 publisher?.publish(records)
