@@ -44,4 +44,8 @@ class DbAccessProviderOracleTest: DbAccessProviderTestBase() {
     override fun nameOfCallingClass(): String {
         return "DbAccessProviderOracleTest";
     }
+
+    override fun dbNullOrBlank(): Boolean {
+        return System.getProperty("oracleServer").isNullOrBlank();
+    }
 }
