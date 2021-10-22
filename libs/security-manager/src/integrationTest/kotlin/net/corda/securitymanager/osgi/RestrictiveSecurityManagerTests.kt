@@ -135,6 +135,21 @@ class RestrictiveSecurityManagerTests {
     }
 
     @Test
+    fun `later permissions overwrite earlier permissions`() {
+        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
+
+        securityManagerService.grantPermissions(bundleLocation, setOf(getEnvPerm))
+        assertDoesNotThrow {
+            System.getenv()
+        }
+
+        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
+        assertThrows<AccessControlException> {
+            System.getenv()
+        }
+    }
+
+    @Test
     fun `denied permissions do not affect bundles not matching the filter`() {
         securityManagerService.denyPermissions("non-matching-filter", setOf(getEnvPerm))
 
