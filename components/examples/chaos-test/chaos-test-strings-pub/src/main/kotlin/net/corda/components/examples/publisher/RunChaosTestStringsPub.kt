@@ -21,7 +21,9 @@ class RunChaosTestStringsPub(
     private val numberOfRecords: Int,
     private val numberOfKeys: Int,
     private val config: Config,
-    private val msgPrefix: String
+    private val msgPrefix: String,
+    private val msgDelayMs: Long,
+    private val logPubMsgs: Boolean
 ) : Lifecycle {
 
     private var publisher: Publisher? = null
@@ -38,17 +40,22 @@ class RunChaosTestStringsPub(
         if (!isRunning) {
             isRunning = true
             val pubConfig = PublisherConfig(clientId, instanceId)
-            log.info("Instantiating publisher...")
+            log.info("Instantiating publisher (msgDelayMs=$msgDelayMs)...")
             publisher = publisherFactory.createPublisher(pubConfig, config)
 
             for (i in 1..numberOfKeys) {
-                val records = mutableListOf<Record<*, *>>()
                 val key = "key$i"
-                for (j in 1..numberOfRecords) {
-                    records.add(Record(publisherTopic, key, "$msgPrefix$j"))
-                }
                 log.info("Publishing records with key $key...")
-                publisher?.publish(records)
+                for (j in 1..numberOfRecords) {
+                    val records = mutableListOf<Record<*, *>>()
+                    val msg = "$msgPrefix$j"
+                    if(logPubMsgs) { log.info("$key:$msg") }
+                    records.add(Record(publisherTopic, key, msg))
+                    publisher?.publish(records)
+                    if(msgDelayMs > 0) {
+                        Thread.sleep(msgDelayMs)
+                    }
+                }
             }
 
             log.info("Publishing complete.")

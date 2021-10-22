@@ -58,24 +58,23 @@ class ChaosTestStringsPubApp @Activate constructor(
         } else {
             val instanceId = parameters.instanceId?.toInt()
             var publisher: RunChaosTestStringsPub? = null
-            val msgPrefix = parameters.msgPrefix
 
-            lifeCycleCoordinator = coordinatorFactory.createCoordinator<ChaosTestStringsPubApp>(
-            ) { event: LifecycleEvent, _: LifecycleCoordinator ->
-                log.info("LifecycleEvent received: $event")
-                when (event) {
-                    is StartEvent -> {
-                        publisher!!.start()
-                    }
-                    is StopEvent -> {
-                        publisher?.stop()
-                        shutdownOSGiFramework()
-                    }
-                    else -> {
-                        log.error("$event unexpected!")
+            lifeCycleCoordinator =
+                coordinatorFactory.createCoordinator<ChaosTestStringsPubApp>() { event: LifecycleEvent, _: LifecycleCoordinator ->
+                    log.info("LifecycleEvent received: $event")
+                    when (event) {
+                        is StartEvent -> {
+                            publisher!!.start()
+                        }
+                        is StopEvent -> {
+                            publisher?.stop()
+                            shutdownOSGiFramework()
+                        }
+                        else -> {
+                            log.error("$event unexpected!")
+                        }
                     }
                 }
-            }
 
             publisher = RunChaosTestStringsPub(
                 lifeCycleCoordinator!!,
@@ -84,7 +83,9 @@ class ChaosTestStringsPubApp @Activate constructor(
                 parameters.numberOfRecords.toInt(),
                 parameters.numberOfKeys.toInt(),
                 getBootstrapConfig(getKafkaPropertiesFromFile(parameters.kafkaProperties)),
-                msgPrefix
+                parameters.msgPrefix,
+                parameters.msgDelayMs,
+                parameters.logPubMsgs
             )
 
             lifeCycleCoordinator!!.start()
@@ -121,7 +122,7 @@ class ChaosTestStringsPubApp @Activate constructor(
             }
             log.error(
                 "No $path property found! " +
-                        "Pass property in via --kafka properties file or via -D$path"
+                    "Pass property in via --kafka properties file or via -D$path"
             )
             shutdown()
         }
@@ -137,7 +138,6 @@ class ChaosTestStringsPubApp @Activate constructor(
         kafkaConnectionProperties.load(FileInputStream(kafkaPropertiesFile))
         return kafkaConnectionProperties
     }
-
 }
 
 class CliParameters {
@@ -161,6 +161,18 @@ class CliParameters {
         description = ["Message prefix string"]
     )
     var msgPrefix = "ChaosTestMessage"
+
+    @CommandLine.Option(
+        names = ["--msgDelayMs"],
+        description = ["Optional delay between publishing messages in ms"]
+    )
+    var msgDelayMs: Long = 0
+
+    @CommandLine.Option(
+        names = ["--logPubMsgs"],
+        description = ["Added published messages to INFO logging level. This could be very verbose!"]
+    )
+    var logPubMsgs: Boolean = false
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false
