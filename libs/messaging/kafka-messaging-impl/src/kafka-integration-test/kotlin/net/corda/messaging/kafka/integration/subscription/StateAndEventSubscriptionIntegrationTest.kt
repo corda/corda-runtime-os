@@ -26,8 +26,8 @@ import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPI
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC6
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.EVENT_TOPIC6_TEMPLATE
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
-import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.getDemoRecords
+import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.getStringRecords
 import net.corda.messaging.kafka.integration.listener.TestStateAndEventListenerStrings
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
@@ -40,6 +40,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.MESSAGING
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -84,17 +85,16 @@ class StateAndEventSubscriptionIntegrationTest {
     fun `create topic with two partitions, start two statevent sub, publish records with two keys, no outputs`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC1_TEMPLATE)
 
-        val onNextLatch1 = CountDownLatch(5)
+        val stateAndEventLatch = CountDownLatch(10)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC1-group", EVENT_TOPIC1, 1),
-            TestStateEventProcessor(onNextLatch1, false),
+            TestStateEventProcessor(stateAndEventLatch, false),
             kafkaConfig
         )
 
-        val onNextLatch2 = CountDownLatch(5)
         val stateEventSub2 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC1-group", EVENT_TOPIC1, 2),
-            TestStateEventProcessor(onNextLatch2, true),
+            TestStateEventProcessor(stateAndEventLatch, true),
             kafkaConfig
         )
 
@@ -105,8 +105,7 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getDemoRecords(EVENT_TOPIC1, 5, 2)).forEach { it.get() }
 
-        assertTrue(onNextLatch1.await(30, TimeUnit.SECONDS))
-        assertTrue(onNextLatch2.await(10, TimeUnit.SECONDS))
+        assertTrue(stateAndEventLatch.await(40, TimeUnit.SECONDS))
 
         stateEventSub1.stop()
         stateEventSub2.stop()
@@ -199,10 +198,11 @@ class StateAndEventSubscriptionIntegrationTest {
     }
 
     @Test
+    @Timeout(180)
     fun `create topics, start 2 statevent sub, trigger rebalance and verify completion of all records`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC4_TEMPLATE)
 
-        val onNextLatch1 = CountDownLatch(10)
+        val onNextLatch1 = CountDownLatch(30)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC4-group", EVENT_TOPIC4, 1),
             TestStateEventProcessor(onNextLatch1, true, false, EVENTSTATE_OUTPUT4),
@@ -216,24 +216,29 @@ class StateAndEventSubscriptionIntegrationTest {
         //fail slowly on first record. allow time for subscription to be stopped to force rebalance
         val stateEventSub2 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC4-group", EVENT_TOPIC4, 2),
-            TestStateEventProcessor(onNextLatch2, true, true, EVENTSTATE_OUTPUT4, 40000),
+            TestStateEventProcessor(onNextLatch2, true, true, EVENTSTATE_OUTPUT4, 70000),
             longWaitProcessorConfig
         )
 
         publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC4)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        publisher.publish(getDemoRecords(EVENT_TOPIC4, 5, 2)).forEach { it.get() }
+        publisher.publish(getDemoRecords(EVENT_TOPIC4, 5, 6)).forEach { it.get() }
+
+        stateEventSub2.start()
+        assertTrue(onNextLatch2.await(150, TimeUnit.SECONDS))
 
         stateEventSub1.start()
-        stateEventSub2.start()
 
-        assertTrue(onNextLatch2.await(50, TimeUnit.SECONDS))
+        //wait until start processing
+        while (onNextLatch1.count == 30L) {
+            Thread.sleep(100)
+        }
 
         //trigger rebalance
         stateEventSub2.stop()
 
         //assert first sub picks up all the work
-        assertTrue(onNextLatch1.await(200, TimeUnit.SECONDS))
+        assertTrue(onNextLatch1.await(180, TimeUnit.SECONDS))
 
         stateEventSub1.stop()
 
@@ -288,7 +293,7 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getStringRecords(EVENT_TOPIC5, 5, 2)).forEach { it.get() }
 
-        assertTrue(stateAndEventLatch.await(60, TimeUnit.SECONDS))
+        assertTrue(stateAndEventLatch.await(120, TimeUnit.SECONDS))
         assertTrue(durableLatch.await(30, TimeUnit.SECONDS))
         assertTrue(deadLetterLatch.await(30, TimeUnit.SECONDS))
 
