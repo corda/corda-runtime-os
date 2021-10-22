@@ -28,12 +28,8 @@ import java.security.AllPermission
 
 /** A [CordaSecurityManager] that grants sandbox code a very limited set of permissions. */
 @Suppress("unused")
-@Component(service = [RestrictiveSecurityManager::class])
-class RestrictiveSecurityManager @Activate constructor(
-    @Reference
-    private val permissionAdmin: PermissionAdmin,
-    @Reference
-    private val conditionalPermissionAdmin: ConditionalPermissionAdmin
+class RestrictiveSecurityManager(
+    permissionAdmin: PermissionAdmin, private val conditionalPermissionAdmin: ConditionalPermissionAdmin
 ) : CordaSecurityManager {
     companion object {
         private val allPermInfo = PermissionInfo(AllPermission::class.java.name, ALL, ALL)
@@ -53,7 +49,7 @@ class RestrictiveSecurityManager @Activate constructor(
      *  These permissions work in tandem with the OSGi hooks defined in the `sandbox` module to prevent sandbox bundles
      *  from performing illegal actions.
      */
-    override fun start() {
+    init {
         grantConfigAdminPermissions(permissionAdmin)
         restrictSandboxBundlePermissions(conditionalPermissionAdmin)
     }

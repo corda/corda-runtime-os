@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
+import org.osgi.framework.FrameworkUtil
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 
@@ -18,7 +19,8 @@ class DiscoveryPermissionTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            sandboxLoader.securityManagerService.start(isDiscoveryMode = true)
+            val bundleLocation = FrameworkUtil.getBundle(this::class.java).location
+            sandboxLoader.securityManagerService.startDiscoveryMode(setOf(bundleLocation))
         }
     }
 
@@ -32,4 +34,7 @@ class DiscoveryPermissionTests {
             }
         }
     }
+
+    // TODO - Add tests of logging.
+    // TODO - Add tests of multiple prefixes.
 }
