@@ -210,7 +210,7 @@ class StateAndEventSubscriptionIntegrationTest {
         )
 
         val longWaitProcessorConfig = kafkaConfig
-            .withValue("$MESSAGING_KAFKA.${CONSUMER_PROCESSOR_TIMEOUT}", ConfigValueFactory.fromAnyRef(30000))
+            .withValue("$MESSAGING_KAFKA.${CONSUMER_PROCESSOR_TIMEOUT}", ConfigValueFactory.fromAnyRef(50000))
         val onNextLatch2 = CountDownLatch(1)
 
         //fail slowly on first record. allow time for subscription to be stopped to force rebalance
