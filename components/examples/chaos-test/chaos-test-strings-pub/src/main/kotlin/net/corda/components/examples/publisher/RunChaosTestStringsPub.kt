@@ -36,28 +36,31 @@ class RunChaosTestStringsPub(
 
     override var isRunning: Boolean = false
 
+    private fun publish() {
+        for (i in 1..numberOfKeys) {
+            val key = "key$i"
+            log.info("Publishing records with key $key...")
+            for (j in 1..numberOfRecords) {
+                val records = mutableListOf<Record<*, *>>()
+                val msg = "$msgPrefix$j"
+                if (logPubMsgs) {
+                    log.info("$key:$msg")
+                }
+                records.add(Record(publisherTopic, key, msg))
+                publisher?.publish(records)
+                if (msgDelayMs > 0) {
+                    Thread.sleep(msgDelayMs)
+                }
+            }
+        }
+    }
     override fun start() {
         if (!isRunning) {
             isRunning = true
             val pubConfig = PublisherConfig(clientId, instanceId)
             log.info("Instantiating publisher (msgDelayMs=$msgDelayMs)...")
             publisher = publisherFactory.createPublisher(pubConfig, config)
-
-            for (i in 1..numberOfKeys) {
-                val key = "key$i"
-                log.info("Publishing records with key $key...")
-                for (j in 1..numberOfRecords) {
-                    val records = mutableListOf<Record<*, *>>()
-                    val msg = "$msgPrefix$j"
-                    if(logPubMsgs) { log.info("$key:$msg") }
-                    records.add(Record(publisherTopic, key, msg))
-                    publisher?.publish(records)
-                    if(msgDelayMs > 0) {
-                        Thread.sleep(msgDelayMs)
-                    }
-                }
-            }
-
+            publish()
             log.info("Publishing complete.")
             isRunning = false
             lifeCycleCoordinator.stop()
