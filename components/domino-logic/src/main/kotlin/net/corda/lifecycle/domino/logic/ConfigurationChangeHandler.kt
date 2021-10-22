@@ -4,22 +4,23 @@ import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.v5.base.util.contextLogger
 
 abstract class ConfigurationAwareTile<C>(
-    coordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReaderService: ConfigurationReadService,
     private val key: String,
     private val configFactory: (Config) -> C
-) :
-    DominoTile(coordinatorFactory, true) {
-
+) {
     companion object {
         private val logger = contextLogger()
     }
 
     @Volatile
     private var lastConfiguration: C? = null
+
+    @Volatile
+    private var configSet = false
 
     private inner class Handler : ConfigurationHandler {
         override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, Config>) {
@@ -28,14 +29,13 @@ abstract class ConfigurationAwareTile<C>(
                 if (newConfiguration != null) {
                     callFromCoordinator {
                         applyNewConfiguration(newConfiguration)
+                        configSet = true
+                        return@callFromCoordinator configSet
                     }
                 }
             }
         }
     }
-
-    @Volatile
-    private var registration: AutoCloseable? = null
 
     private fun applyNewConfiguration(newConfiguration: Config) {
         @Suppress("TooGenericExceptionCaught")
@@ -46,9 +46,8 @@ abstract class ConfigurationAwareTile<C>(
                 logger.info("Configuration had not changed $name")
                 return
             } else {
-                applyNewConfiguration(configuration, lastConfiguration)
+                applyNewConfiguration(configuration, lastConfiguration, resources)
                 lastConfiguration = configuration
-                started()
                 logger.info("Reconfigured $name")
             }
         } catch (e: Throwable) {
@@ -56,21 +55,6 @@ abstract class ConfigurationAwareTile<C>(
         }
     }
 
-    abstract fun applyNewConfiguration(newConfiguration: C, oldConfiguration: C?)
+    abstract fun applyNewConfiguration(newConfiguration: C, oldConfiguration: C?, resources: ResourcesHolder)
 
-    override fun startTile() {
-        if (registration == null) {
-            registration = configurationReaderService.registerForUpdates(Handler())
-        }
-        super.startTile()
-    }
-
-    override fun stopTile(dueToError: Boolean) {
-        super.stopTile(dueToError)
-        if (!dueToError) {
-            lastConfiguration = null
-            registration?.close()
-            registration = null
-        }
-    }
 }

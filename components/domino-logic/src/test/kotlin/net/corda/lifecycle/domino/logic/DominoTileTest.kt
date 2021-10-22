@@ -9,8 +9,11 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -21,278 +24,298 @@ import org.mockito.kotlin.verify
 import java.io.IOException
 
 class DominoTileTest {
-    private val handler = argumentCaptor<LifecycleEventHandler>()
-    private val coordinator = mock<LifecycleCoordinator> {
-        on { postEvent(any()) } doAnswer {
-            handler.lastValue.processEvent(it.getArgument(0) as LifecycleEvent, mock)
-        }
-    }
-    private val factory = mock<LifecycleCoordinatorFactory> {
-        on { createCoordinator(any(), handler.capture()) } doReturn coordinator
-    }
-    inner class Tile : DominoTile(factory) {
-        var started = 0
-        var stopped = 0
-        var handledEvent: LifecycleEvent? = null
-        override fun startTile() {
-            started ++
-        }
 
-        override fun stopTile(dueToError: Boolean) {
-            stopped ++
-        }
+//    private val handler = argumentCaptor<LifecycleEventHandler>()
+//    private val coordinator = mock<LifecycleCoordinator> {
+//        on { postEvent(any()) } doAnswer {
+//            handler.lastValue.processEvent(it.getArgument(0) as LifecycleEvent, mock)
+//        }
+//    }
+//    private val factory = mock<LifecycleCoordinatorFactory> {
+//        on { createCoordinator(any(), handler.capture()) } doReturn coordinator
+//    }
+//
+//    @Nested
+//    inner class SimpleLeafTileTests {
+//
+//        inner class Tile : DominoTile(factory)
+//
+//        @Test
+//        fun `start will update the status to started`() {
+//            val tile = Tile()
+//
+//            tile.start()
+//
+//            assertThat(tile.state).isEqualTo(DominoTile.State.Started)
+//        }
+//
+//        @Test
+//        fun `start will start the coordinator if not started`() {
+//            val tile = Tile()
+//
+//            tile.start()
+//
+//            verify(coordinator).start()
+//        }
+//
+//
+//        @Test
+//        fun `stop will update the status to stopped`() {
+//            val tile = Tile()
+//            tile.stop()
+//
+//            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
+//        }
+//
+//        @Test
+//        fun `stop will update the status the tile is started`() {
+//            val tile = Tile()
+//            tile.start()
+//
+//            tile.stop()
+//
+//            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
+//        }
+//
+//        @Test
+//        fun `isRunning will return true if state is started`() {
+//            val tile = Tile()
+//            tile.start()
+//
+//            assertThat(tile.isRunning).isTrue
+//        }
+//
+//        @Test
+//        fun `isRunning will return false if state is not started`() {
+//            val tile = Tile()
+//            tile.gotError(Exception(""))
+//
+//            assertThat(tile.isRunning).isFalse
+//        }
+//
+//        @Test
+//        fun `start will not update the coordinator state from error to up`() {
+//            val tile = Tile()
+//            tile.gotError(Exception(""))
+//
+//            tile.start()
+//
+//            verify(coordinator).updateStatus(LifecycleStatus.ERROR)
+//        }
+//
+//        @Test
+//        fun `sendError will update the coordinator state from up to error`() {
+//            val tile = Tile()
+//            tile.start()
+//
+//            tile.gotError(Exception(""))
+//
+//            verify(coordinator).updateStatus(LifecycleStatus.ERROR)
+//        }
+//
+//        @Test
+//        fun `stop will update the coordinator state from up to down`() {
+//            val tile = Tile()
+//            tile.start()
+//
+//            tile.stop()
+//
+//            verify(coordinator).updateStatus(LifecycleStatus.DOWN)
+//        }
+//
+//        @Test
+//        fun `processEvent will set as error if the event is error`() {
+//            val tile = Tile()
+//            tile.start()
+//
+//            handler.lastValue.processEvent(ErrorEvent(Exception("")), coordinator)
+//
+//            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+//        }
+
+        //TODO: We can't verify this anymore (what we should instead verify that children/external components don't start/stop
+        //When this happens
+//    @Test
+//    fun `processEvent will not start the tile the second time`() {
+//        val tile = Tile()
+//        tile.start()
+//
+//        handler.lastValue.processEvent(StartEvent(), coordinator)
+//
+//        assertThat(tile.started).isEqualTo(0)
+//    }
+//
+//        @Test
+//        fun `handleEvent can handle unknown event`() {
+//            val tile = Tile()
+//            val event = RegistrationStatusChangeEvent(
+//                mock(),
+//                LifecycleStatus.UP
+//            )
+//            tile.start()
+//
+//            assertDoesNotThrow {
+//                handler.lastValue.processEvent(event, coordinator)
+//            }
+//        }
+//
+//        @Test
+//        fun `processEvent will ignore the stop event`() {
+//            Tile()
+//
+//            handler.lastValue.processEvent(StopEvent(), coordinator)
+//        }
+//
+//        @Test
+//        fun `processEvent will ignore unexpected event`() {
+//            Tile()
+//
+//            handler.lastValue.processEvent(
+//                object : LifecycleEvent {},
+//                coordinator
+//            )
+//        }
+//
+//        @Test
+//        fun `onError will set state to error`() {
+//            val tile = Tile()
+//            tile.start()
+//
+//            tile.gotError(IOException(""))
+//
+//            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+//        }
+//
+//        @Test
+//        fun `close will not change the tiles state`() {
+//            val tile = Tile()
+//
+//            tile.close()
+//
+//            assertThat(tile.state).isEqualTo(DominoTile.State.Created)
+//        }
+//
+//        @Test
+//        fun `close will close the coordinator`() {
+//            val tile = Tile()
+//
+//            tile.close()
+//
+//            verify(coordinator).close()
+//        }
+//
+//        @Test
+//        fun `withLifecycleLock return the invocation value`() {
+//            val tile = Tile()
+//
+//            val data = tile.withLifecycleLock {
+//                33
+//            }
+//
+//            assertThat(data).isEqualTo(33)
+//        }
+//    }
+//
+//    @Nested
+//    inner class LeafTileWithResourcesTests {
+//
+//        @Test
+//        fun `startTile called createResource`() {
+//            var createResourceCalled = 0
+//            val tile = object : DominoTile(factory) {
+//                override fun createResources(resources: ResourcesHolder) {
+//                    createResourceCalled ++
+//                }
+//            }
+//
+//            tile.start()
+//
+//            assertThat(createResourceCalled).isEqualTo(1)
+//        }
+//
+//        @Test
+//        fun `startTile will set error if created resource failed`() {
+//            val tile = object : DominoTile(factory) {
+//                override fun createResources(resources: ResourcesHolder) {
+//                    throw IOException("")
+//                }
+//            }
+//
+//            tile.start()
+//
+//            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+//        }
+//
+//        @Test
+//        fun `stopTile will close all the resources`() {
+//            val actions = mutableListOf<Int>()
+//            val tile = object : DominoTile(factory) {
+//                override fun createResources(resources: ResourcesHolder) {
+//                    resources.keep {
+//                        actions.add(1)
+//                    }
+//                    resources.keep {
+//                        actions.add(2)
+//                    }
+//                    resources.keep {
+//                        actions.add(3)
+//                    }
+//                }
+//            }
+//
+//            tile.start()
+//
+//            tile.stop()
+//
+//            assertThat(actions).isEqualTo(listOf(3, 2, 1))
+//        }
+//
+//        @Test
+//        fun `stopTile will ignore error during stop`() {
+//            val actions = mutableListOf<Int>()
+//            val tile = object : DominoTile(factory) {
+//                override fun createResources(resources: ResourcesHolder) {
+//                    resources.keep {
+//                        actions.add(1)
+//                    }
+//                    resources.keep {
+//                        throw IOException("")
+//                    }
+//                    resources.keep {
+//                        actions.add(3)
+//                    }
+//                }
+//            }
+//            tile.start()
+//
+//            tile.stop()
+//
+//            assertThat(actions).isEqualTo(listOf(3, 1))
+//        }
+//
+//        @Test
+//        fun `stopTile will not run the same actions again`() {
+//            val actions = mutableListOf<Int>()
+//            val tile = object : DominoTile(factory) {
+//                override fun createResources(resources: ResourcesHolder) {
+//                    resources.keep {
+//                        actions.add(1)
+//                    }
+//                }
+//            }
+//
+//            tile.start()
+//            tile.stop()
+//            tile.stop()
+//            tile.stop()
+//
+//            assertThat(actions).isEqualTo(listOf(1))
+//        }
+//    }
+//
+//    @Nested
+//    inner class TileWithChildrenTests {
+//
+//    }
 
-        fun sendError(e: Exception) {
-            gotError(e)
-        }
-
-        fun sendStarted() {
-            started()
-        }
-
-        override fun handleEvent(event: LifecycleEvent): Boolean {
-            handledEvent = event
-            return false
-        }
-    }
-
-    @Test
-    fun `start will start the coordinator if not started`() {
-        val tile = Tile()
-
-        tile.start()
-
-        verify(coordinator).start()
-    }
-
-    @Test
-    fun `start will not start the tile if started`() {
-        val tile = Tile()
-        tile.sendStarted()
-
-        tile.start()
-
-        assertThat(tile.started).isEqualTo(0)
-    }
-
-    @Test
-    fun `start start the tile if stopped`() {
-        val tile = Tile()
-        tile.stop()
-
-        tile.start()
-
-        assertThat(tile.started).isEqualTo(1)
-    }
-
-    @Test
-    fun `start will not start the tile if errored`() {
-        val tile = Tile()
-        tile.sendError(Exception(""))
-
-        tile.start()
-
-        assertThat(tile.started).isEqualTo(0)
-    }
-
-    @Test
-    fun `stop will stop the tile is started`() {
-        val tile = Tile()
-        tile.sendStarted()
-
-        tile.stop()
-
-        assertThat(tile.stopped).isEqualTo(1)
-    }
-
-    @Test
-    fun `stop will not stop the tile is stopped`() {
-        val tile = Tile()
-        tile.stop()
-
-        tile.stop()
-
-        assertThat(tile.stopped).isEqualTo(1)
-    }
-
-    @Test
-    fun `stop will update the status the tile is started`() {
-        val tile = Tile()
-        tile.sendStarted()
-
-        tile.stop()
-
-        assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
-    }
-
-    @Test
-    fun `isRunning will return true if state is started`() {
-        val tile = Tile()
-        tile.sendStarted()
-
-        assertThat(tile.isRunning).isTrue
-    }
-
-    @Test
-    fun `isRunning will return false if state is not started`() {
-        val tile = Tile()
-        tile.sendError(Exception(""))
-
-        assertThat(tile.isRunning).isFalse
-    }
-
-    @Test
-    fun `updateState will update the coordinator state from down to up`() {
-        val tile = Tile()
-        tile.sendError(Exception(""))
-
-        tile.sendStarted()
-
-        verify(coordinator).updateStatus(LifecycleStatus.UP)
-    }
-
-    @Test
-    fun `updateState will update the coordinator state from up to error`() {
-        val tile = Tile()
-        tile.sendStarted()
-
-        tile.sendError(Exception(""))
-
-        verify(coordinator).updateStatus(LifecycleStatus.ERROR)
-    }
-
-    @Test
-    fun `updateState will update the coordinator state from up to down`() {
-        val tile = Tile()
-        tile.sendStarted()
-
-        tile.stop()
-
-        verify(coordinator).updateStatus(LifecycleStatus.DOWN)
-    }
-
-    @Test
-    fun `processEvent will set as error if the event is error`() {
-        val tile = Tile()
-        tile.sendStarted()
-
-        handler.lastValue.processEvent(ErrorEvent(Exception("")), coordinator)
-
-        assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
-    }
-
-    @Test
-    fun `processEvent will not start the tile the second time`() {
-        val tile = Tile()
-        tile.sendStarted()
-
-        handler.lastValue.processEvent(StartEvent(), coordinator)
-
-        assertThat(tile.started).isEqualTo(0)
-    }
-
-    @Test
-    fun `processEvent will ignore the stop event`() {
-        Tile()
-
-        handler.lastValue.processEvent(StopEvent(), coordinator)
-    }
-
-    @Test
-    fun `processEvent will call implementation for any other event`() {
-        val tile = Tile()
-        val event = RegistrationStatusChangeEvent(
-            mock(),
-            LifecycleStatus.UP
-        )
-
-        handler.lastValue.processEvent(
-            event,
-            coordinator
-        )
-
-        assertThat(tile.handledEvent).isEqualTo(event)
-    }
-
-    @Test
-    fun `processEvent will ignore unexpected event`() {
-        Tile()
-
-        handler.lastValue.processEvent(
-            object : LifecycleEvent {},
-            coordinator
-        )
-    }
-
-    @Test
-    fun `onError will set state to error`() {
-        val tile = Tile()
-        tile.sendStarted()
-
-        tile.sendError(IOException(""))
-
-        assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
-    }
-
-    @Test
-    fun `onError will stop the tile`() {
-        val tile = Tile()
-        tile.sendStarted()
-
-        tile.sendError(IOException(""))
-
-        assertThat(tile.stopped).isEqualTo(1)
-    }
-
-    @Test
-    fun `onError so nothing if state is errored`() {
-        val tile = Tile()
-        tile.sendError(Exception(""))
-
-        tile.sendError(IOException(""))
-
-        assertThat(tile.stopped).isEqualTo(1)
-    }
-
-    @Test
-    fun `close will stop the tile`() {
-        val tile = Tile()
-
-        tile.close()
-
-        assertThat(tile.stopped).isEqualTo(1)
-    }
-
-    @Test
-    fun `close will close the coordinator`() {
-        val tile = Tile()
-
-        tile.close()
-
-        verify(coordinator).close()
-    }
-
-    @Test
-    fun `Tile will not handle any event after it had been closed`() {
-        val tile = Tile()
-        val event = object : LifecycleEvent {
-        }
-
-        tile.close()
-
-        handler.lastValue.processEvent(event, coordinator)
-
-        assertThat(tile.handledEvent).isNull()
-    }
-
-    @Test
-    fun `withLifecycleLock return the invocation value`() {
-        val tile = Tile()
-
-        val data = tile.withLifecycleLock {
-            33
-        }
-
-        assertThat(data).isEqualTo(33)
-    }
 }

@@ -503,7 +503,7 @@ class GatewayTest : TestBase() {
                 )
             )
             gateway.startAndWaitForStarted()
-            assertThat(gateway.state).isEqualTo(DominoTile.State.Started)
+            assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.Started)
 
             // -20 is invalid port, serer should fail
             configPublisher.publishConfig(
@@ -514,7 +514,7 @@ class GatewayTest : TestBase() {
                 )
             )
             eventually(duration = 20.seconds) {
-                assertThat(gateway.state).isEqualTo(DominoTile.State.StoppedDueToError)
+                assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToError)
             }
             assertThrows<ConnectException> {
                 Socket(host, 10001).close()
@@ -528,7 +528,7 @@ class GatewayTest : TestBase() {
                 )
             )
             eventually(duration = 20.seconds) {
-                assertThat(gateway.state).isEqualTo(DominoTile.State.Started)
+                assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.Started)
             }
             assertDoesNotThrow {
                 Socket(host, 10002).close()
@@ -536,7 +536,7 @@ class GatewayTest : TestBase() {
 
             configPublisher.publishBadConfig()
             eventually(duration = 20.seconds) {
-                assertThat(gateway.state).isEqualTo(DominoTile.State.StoppedDueToError)
+                assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToError)
             }
             assertThrows<ConnectException> {
                 Socket(host, 10002).close()

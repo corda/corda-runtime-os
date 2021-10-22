@@ -5,6 +5,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
@@ -40,6 +41,7 @@ class SessionPartitionMapperImplTest {
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on { createCompactedSubscription(any(), processor.capture(), any()) } doReturn subscription
     }
+    private val resourcesHolder = mock<ResourcesHolder>()
 
     @Test
     fun `session partition mapping is calculated successfully`() {
@@ -85,7 +87,7 @@ class SessionPartitionMapperImplTest {
     fun `createResources will start the subscription`() {
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory)
 
-        sessionPartitionMapper.createResources()
+        sessionPartitionMapper.createResources(resourcesHolder)
 
         verify(subscription).start()
     }
@@ -94,7 +96,7 @@ class SessionPartitionMapperImplTest {
     fun `stop will stop the subscription`() {
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory)
 
-        sessionPartitionMapper.createResources()
+        sessionPartitionMapper.createResources(resourcesHolder)
         sessionPartitionMapper.stop()
 
         verify(subscription).stop()

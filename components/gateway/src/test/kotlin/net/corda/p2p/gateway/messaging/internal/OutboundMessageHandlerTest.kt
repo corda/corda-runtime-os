@@ -77,12 +77,12 @@ class OutboundMessageHandlerTest {
         connectionManager.close()
     }
 
-    @Test
-    fun `children return all the children`() {
-        assertThat(handler.children).containsExactlyInAnyOrder(
-            connectionManager.constructed().first(),
-        )
-    }
+//    @Test
+//    fun `children return all the children`() {
+//        assertThat(handler.children).containsExactlyInAnyOrder(
+//            connectionManager.constructed().first(),
+//        )
+//    }
 
     @Test
     fun `start will start a subscription`() {

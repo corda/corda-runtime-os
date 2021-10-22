@@ -2,8 +2,11 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.ConfigurationAwareTile
+import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
@@ -15,19 +18,18 @@ import kotlin.concurrent.write
 
 class ReconfigurableHttpServer(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    configurationReaderService: ConfigurationReadService,
+    private val configurationReaderService: ConfigurationReadService,
     private val listener: HttpEventListener,
-) :
-    ConfigurationAwareTile<GatewayConfiguration>(
-        lifecycleCoordinatorFactory,
-        configurationReaderService,
-        Gateway.CONFIG_KEY,
-        { it.toGatewayConfiguration() }
-    ) {
+) : Lifecycle {
+
+    override val isRunning: Boolean
+        get() = dominoTile.isRunning
 
     @Volatile
     private var httpServer: HttpServer? = null
     private val serverLock = ReentrantReadWriteLock()
+
+    val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler())
 
     companion object {
         private val logger = contextLogger()
@@ -40,29 +42,52 @@ class ReconfigurableHttpServer(
         }
     }
 
-    override fun applyNewConfiguration(newConfiguration: GatewayConfiguration, oldConfiguration: GatewayConfiguration?) {
-        if (newConfiguration.hostPort == oldConfiguration?.hostPort) {
-            logger.info("New server configuration for $name on the same port, HTTP server will have to go down")
-            serverLock.write {
-                val oldServer = httpServer
-                httpServer = null
-                oldServer?.stop()
+    inner class ReconfigurableHttpServerConfigChangeHandler : ConfigurationChangeHandler<GatewayConfiguration>(
+        configurationReaderService,
+        Gateway.CONFIG_KEY,
+        { it.toGatewayConfiguration() }
+    ) {
+        override fun applyNewConfiguration(
+            newConfiguration: GatewayConfiguration,
+            oldConfiguration: GatewayConfiguration?,
+            resources: ResourcesHolder
+        ) {
+            val name = this@ReconfigurableHttpServer::class.java.simpleName
+            if (newConfiguration.hostPort == oldConfiguration?.hostPort) {
+                logger.info("New server configuration for $name on the same port, HTTP server will have to go down")
+                serverLock.write {
+                    val oldServer = httpServer
+                    httpServer = null
+                    oldServer?.stop()
+                    val newServer = HttpServer(listener, newConfiguration)
+                    newServer.start()
+                    resources.keep(newServer::stop)
+                    httpServer = newServer
+                }
+            } else {
+                logger.info("New server configuration, $name will be connected to ${newConfiguration.hostAddress}:${newConfiguration.hostPort}")
                 val newServer = HttpServer(listener, newConfiguration)
                 newServer.start()
                 resources.keep(newServer::stop)
-                httpServer = newServer
+                serverLock.write {
+                    val oldServer = httpServer
+                    httpServer = null
+                    oldServer?.stop()
+                    httpServer = newServer
+                }
             }
-        } else {
-            logger.info("New server configuration, $name will be connected to ${newConfiguration.hostAddress}:${newConfiguration.hostPort}")
-            val newServer = HttpServer(listener, newConfiguration)
-            newServer.start()
-            resources.keep(newServer::stop)
-            serverLock.write {
-                val oldServer = httpServer
-                httpServer = null
-                oldServer?.stop()
-                httpServer = newServer
-            }
+        }
+    }
+
+    override fun start() {
+        if (!isRunning) {
+            dominoTile.start()
+        }
+    }
+
+    override fun stop() {
+        if (isRunning) {
+            dominoTile.stop()
         }
     }
 }

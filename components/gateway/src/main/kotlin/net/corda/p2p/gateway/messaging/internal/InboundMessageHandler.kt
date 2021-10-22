@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
@@ -34,24 +35,26 @@ internal class InboundMessageHandler(
     configurationReaderService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
-) :
-    HttpEventListener,
-    DominoTile(lifecycleCoordinatorFactory) {
+) : HttpEventListener, Lifecycle {
 
     companion object {
         private val logger = contextLogger()
     }
 
+    override val isRunning: Boolean
+        get() = dominoTile.isRunning
+
     private var p2pInPublisher = PublisherWithDominoLogic(publisherFactory, lifecycleCoordinatorFactory, PUBLISHER_ID)
     private val sessionPartitionMapper = SessionPartitionMapperImpl(lifecycleCoordinatorFactory, subscriptionFactory)
     private val server = ReconfigurableHttpServer(lifecycleCoordinatorFactory, configurationReaderService, this)
+    val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, children = listOf(sessionPartitionMapper.dominoTile, p2pInPublisher.dominoTile, server.dominoTile))
 
     /**
      * Handler for direct P2P messages. The payload is deserialized and then published to the ingress topic.
      * A session init request has additional handling as the Gateway needs to generate a secret and share it
      */
     override fun onMessage(message: HttpMessage) {
-        withLifecycleLock { handleMessage(message) }
+        dominoTile.withLifecycleLock { handleMessage(message) }
     }
     private fun handleMessage(message: HttpMessage) {
         if (!isRunning) {
@@ -121,9 +124,19 @@ internal class InboundMessageHandler(
         }
     }
 
+    override fun start() {
+        if (!isRunning) {
+            dominoTile.start()
+        }
+    }
+
+    override fun stop() {
+        if (isRunning) {
+            dominoTile.stop()
+        }
+    }
+
     private fun generateKey(): String {
         return UUID.randomUUID().toString()
     }
-
-    override val children: Collection<DominoTile> = listOf(sessionPartitionMapper, p2pInPublisher, server)
 }

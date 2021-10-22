@@ -6,6 +6,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -33,19 +34,21 @@ internal class OutboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
-) : EventLogProcessor<String, LinkOutMessage>,
-    Lifecycle,
-    HttpEventListener,
-    DominoTile(lifecycleCoordinatorFactory) {
+) : EventLogProcessor<String, LinkOutMessage>, Lifecycle, HttpEventListener {
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
     }
+
+    override val isRunning: Boolean
+        get() = dominoTile.isRunning
 
     private val connectionManager = ReconfigurableConnectionManager(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         this,
     )
+
+    val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, children = listOf(connectionManager.dominoTile), createResources = ::createResources)
 
     private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig(Gateway.CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC),
@@ -56,7 +59,7 @@ internal class OutboundMessageHandler(
 
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
-        withLifecycleLock {
+        dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("Can not handle events")
             }
@@ -102,8 +105,21 @@ internal class OutboundMessageHandler(
     override val valueClass: Class<LinkOutMessage>
         get() = LinkOutMessage::class.java
 
-    override val children = listOf(connectionManager)
-    override fun createResources() {
+
+
+    override fun start() {
+        if (!isRunning) {
+            dominoTile.start()
+        }
+    }
+
+    override fun stop() {
+        if (isRunning) {
+            dominoTile.stop()
+        }
+    }
+
+    private fun createResources(resources: ResourcesHolder) {
         resources.keep(p2pMessageSubscription::stop)
         p2pMessageSubscription.start()
     }
