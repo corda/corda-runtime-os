@@ -24,5 +24,7 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
+
+    testRuntimeOnly 'org.osgi:osgi.core'
 }
 
