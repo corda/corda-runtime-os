@@ -2,6 +2,7 @@ package net.corda.gradle
 
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.ProjectLayout
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
@@ -35,8 +36,13 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     private static final String CONTAINER_LOCATION = "/opt/override/"
     private static final String KAFKA_PROPERTIES = "kafka.properties"
     private static final String KAFKA_FILE_LOCATION = CONTAINER_LOCATION + KAFKA_PROPERTIES
+    private final String projectName = project.name
+    private final String projectDir = project.projectDir
+    private final String buildDir = project.buildDir
+    private final String version = project.version
+
     private String gitVersion = "git rev-parse --verify --short HEAD".execute().text
-    private String targetRepo="engineering-docker-dev.software.r3.com/corda-os-${project.name}"
+    private String targetRepo="engineering-docker-dev.software.r3.com/corda-os-${projectName}"
 
     @Inject
     protected abstract ProviderFactory getProviderFactory();
@@ -90,11 +96,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     @TaskAction
     def updateImage() {
 
-        println("gitVersion ${gitVersion}")
-        println("registryPassword ${registryPassword.get()}")
-
-        String jarLocation = "${project.buildDir}/tmp/containerization/${project.name}.jar"
-        Files.createDirectories(Paths.get("${project.buildDir}/tmp/containerization/"))
+        String jarLocation = "${buildDir}/tmp/containerization/${projectName}.jar"
+        Files.createDirectories(Paths.get("${buildDir}/tmp/containerization/"))
         Files.copy(Paths.get(overrideFile.getAsFile().get().getPath()), Paths.get(jarLocation), StandardCopyOption.REPLACE_EXISTING)
 
         RegistryImage baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
@@ -103,12 +106,12 @@ abstract class DeployableContainerBuilder extends DefaultTask {
                 .setCreationTime(Instant.now())
                 .addLayer(Arrays.asList(Paths.get(jarLocation)), AbsoluteUnixPath.get(CONTAINER_LOCATION))
 
-        File projectKafkaFile = new File("${project.getProjectDir()}/$KAFKA_PROPERTIES")
+        File projectKafkaFile = new File("${projectDir}/$KAFKA_PROPERTIES")
         List<String> javaArgs = new ArrayList<>(arguments.get())
 
         // copy kafka file to container if file exists and pass as java arguments
-        if (new File("${project.getProjectDir()}/" + KAFKA_PROPERTIES).exists()) {
-            logger.quiet("Kafka file found copying ${project.getProjectDir()}$KAFKA_PROPERTIES to " + CONTAINER_LOCATION + " inside container")
+        if (new File("${projectDir}/" + KAFKA_PROPERTIES).exists()) {
+            logger.quiet("Kafka file found copying ${projectDir}$KAFKA_PROPERTIES to " + CONTAINER_LOCATION + " inside container")
             builder.addLayer(Arrays.asList(Paths.get(projectKafkaFile.getPath())), AbsoluteUnixPath.get(CONTAINER_LOCATION))
             javaArgs.addAll("--kafka", KAFKA_FILE_LOCATION)
         }
@@ -116,21 +119,21 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         if (arguments.isPresent() && !arguments.get().isEmpty()) {
             builder.setProgramArguments(javaArgs)
         }
-        builder.setEntrypoint("java", "-jar", CONTAINER_LOCATION + project.name+".jar")
+        builder.setEntrypoint("java", "-jar", CONTAINER_LOCATION + projectName +".jar")
 
-        logger.quiet("Publishing '${targetRepo}:${targetImageTag.get()}' and '${targetRepo}:${project.version}'" +
-                " ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with '${project.name}.jar', from base '${baseImageName.get()}:${targetImageTag.get()}'")
+        logger.quiet("Publishing '${targetRepo}:${targetImageTag.get()}' and '${targetRepo}:${version}'" +
+                " ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with '${projectName}.jar', from base '${baseImageName.get()}:${targetImageTag.get()}'")
 
         if (releaseCandidate.get()) {
-            targetRepo = "engineering-docker-release.software.r3.com/corda-os-${project.name}"
+            targetRepo = "engineering-docker-release.software.r3.com/corda-os-${projectName}"
         }
         if (!remotePublish.get()) {
             tagContainerForLocal(builder, targetImageTag.get())
-            tagContainerForLocal(builder, project.version)
+            tagContainerForLocal(builder, version)
             tagContainerForLocal(builder, gitVersion)
         } else {
             tagContainerForRemote(builder, targetImageTag.get())
-            tagContainerForRemote(builder, project.version)
+            tagContainerForRemote(builder, version)
             tagContainerForRemote(builder, gitVersion)
         }
     }
