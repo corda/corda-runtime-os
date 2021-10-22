@@ -2,9 +2,9 @@ package net.corda.flow.statemachine.impl
 
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
 import net.corda.data.flow.Checkpoint
-import net.corda.data.flow.FlowError
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.RPCFlowResult
 import net.corda.data.flow.StateMachineState
@@ -134,7 +134,7 @@ class FlowStateMachineImpl<R>(
                     logic.javaClass.name,
                     null,
                     SecureHash(),
-                    FlowError(
+                    ExceptionEnvelope(
                         resultOrError.exception.cause.toString(),
                         resultOrError.exception.message
                     )
