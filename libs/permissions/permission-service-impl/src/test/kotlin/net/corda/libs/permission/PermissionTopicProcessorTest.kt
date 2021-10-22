@@ -1,5 +1,7 @@
+package net.corda.libs.permission
+
 import net.corda.data.permissions.User
-import net.corda.libs.permission.PermissionsTopicProcessor
+
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
 import net.corda.messaging.api.records.Record

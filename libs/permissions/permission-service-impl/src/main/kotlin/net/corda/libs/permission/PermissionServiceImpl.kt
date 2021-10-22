@@ -1,15 +1,13 @@
 package net.corda.libs.permission
 
-import com.typesafe.config.Config
+import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.User
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import java.time.Instant
 
 class PermissionServiceImpl(
         private val subscriptionFactory: SubscriptionFactory,
-        private val boostrapConfig: Config,
         private val processor: PermissionsTopicProcessor
 ) : PermissionService {
 
@@ -23,13 +21,15 @@ class PermissionServiceImpl(
 
     private var subscription: CompactedSubscription<String, User>? = null
 
-    override fun authorizeUser(requestId: String, requestUrl: String, loginName: String, timeoutTimestamp: Instant): Boolean {
+    override fun authorizeUser(requestId: String, loginName: String, permission: String): Boolean {
 
         val user = processor.getUser(loginName) ?: return false
-        println(user)
 
-        //Return true for now if the user exist in the local Map
-        return true
+        if (!user.enabled) return false
+
+        val permissionRequested = PermissionUrl.fromUrl(permission).permissionRequested
+
+        return user.roles.flatMap { it.permissions }.any { it.type == PermissionType.ALLOW && it.permissionString == permissionRequested }
     }
 
     override val isRunning: Boolean
@@ -43,8 +43,7 @@ class PermissionServiceImpl(
                                         CONSUMER_GROUP,
                                         USER_PERMISSION_TOPIC
                                 ),
-                                processor,
-                                boostrapConfig
+                                processor
                         )
                 subscription!!.start()
                 stopped = false

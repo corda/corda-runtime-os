@@ -13,6 +13,6 @@ class PermissionServiceFactoryImpl @Activate constructor(
         private val subscriptionFactory: SubscriptionFactory
 ): PermissionServiceFactory {
     override fun createPermissionService(bootstrapConfig: Config): PermissionServiceImpl {
-        return PermissionServiceImpl(subscriptionFactory, bootstrapConfig, PermissionsTopicProcessor())
+        return PermissionServiceImpl(subscriptionFactory, PermissionsTopicProcessor())
     }
 }
