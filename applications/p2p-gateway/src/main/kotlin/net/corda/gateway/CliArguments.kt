@@ -1,8 +1,9 @@
 package net.corda.gateway
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.v5.base.util.toBase64
 import picocli.CommandLine
@@ -79,8 +80,9 @@ internal class CliArguments {
     )
     var instanceId = Random.nextInt()
 
-    val kafkaNodeConfiguration: Config by lazy {
-        ConfigFactory.empty()
+    val kafkaNodeConfiguration: SmartConfig by lazy {
+        // TODO: inject secrets provider or SmartConfig factory
+        SmartConfigImpl(ConfigFactory.empty()
             .withValue(
                 "messaging.kafka.common.bootstrap.servers",
                 ConfigValueFactory.fromAnyRef(kafkaServers)
@@ -92,6 +94,7 @@ internal class CliArguments {
                 "messaging.topic.prefix",
                 ConfigValueFactory.fromAnyRef(topicPrefix)
             )
+        )
     }
 
     @Option(
@@ -136,7 +139,9 @@ internal class CliArguments {
     )
     var revocationCheck = RevocationConfigMode.OFF
 
-    val gatewayConfiguration: Config by lazy {
+    val gatewayConfiguration: SmartConfig by lazy {
+        // TODO: inject secrets provider or SmartConfig factory
+        SmartConfigImpl(
         ConfigFactory.empty()
             .withValue(
                 "hostAddress",
@@ -174,5 +179,6 @@ internal class CliArguments {
                 "sslConfig.revocationCheck.mode",
                 ConfigValueFactory.fromAnyRef(revocationCheck.toString())
             )
+        )
     }
 }

@@ -1,8 +1,9 @@
 package net.corda.libs.configuration.read.kafka
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.data.config.Configuration
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -18,7 +19,7 @@ import kotlin.concurrent.withLock
 class ConfigReaderImpl(
     private val configurationRepository: ConfigRepository,
     private val subscriptionFactory: SubscriptionFactory,
-    private val boostrapConfig: Config
+    private val boostrapConfig: SmartConfig
 ) : ConfigReader, CompactedProcessor<String, Configuration> {
 
     companion object {
@@ -97,9 +98,10 @@ class ConfigReaderImpl(
         get() = Configuration::class.java
 
     override fun onSnapshot(currentData: Map<String, Configuration>) {
-        val configMap = mutableMapOf<String, Config>()
+        val configMap = mutableMapOf<String, SmartConfig>()
         for (config in currentData) {
-            configMap[config.key] = ConfigFactory.parseString(config.value.value)
+            // TODO: inject the secrets lookup service, or SmartConfig factory
+            configMap[config.key] = SmartConfigImpl(ConfigFactory.parseString(config.value.value))
         }
         configurationRepository.storeConfiguration(configMap)
         snapshotReceived = true
@@ -112,7 +114,8 @@ class ConfigReaderImpl(
         oldValue: Configuration?,
         currentData: Map<String, Configuration>
     ) {
-        val config = ConfigFactory.parseString(newRecord.value?.value)
+        // TODO: inject the secrets lookup service, or SmartConfig factory
+        val config = SmartConfigImpl(ConfigFactory.parseString(newRecord.value?.value))
         configurationRepository.updateConfiguration(newRecord.key, config)
         val tempConfigMap = configurationRepository.getConfigurations()
         configUpdates.forEach { it.value.onUpdate(setOf(newRecord.key), tempConfigMap) }

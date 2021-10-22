@@ -2,6 +2,7 @@ package net.corda.tools.kafka.reader
 
 import com.typesafe.config.ConfigFactory
 import net.corda.comp.kafka.config.read.KafkaConfigRead
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
@@ -34,7 +35,8 @@ class KafkaConfigReader @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutdownOSGiFramework()
         } else {
-            configReader.start(ConfigFactory.parseFile(parameters.configurationFile))
+            // TODO: inject the secrets provider
+            configReader.start(SmartConfigImpl(ConfigFactory.parseFile(parameters.configurationFile)))
             logger.info("____________________________SLEEP______________________________________")
             while (!configReader.isRunning) { Thread.sleep(100) }
             shutdownOSGiFramework()

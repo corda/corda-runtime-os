@@ -7,13 +7,6 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValue
 import com.typesafe.config.ConfigValueType
 
-interface SmartConfigValue : ConfigValue {
-    /**
-     * Returns an instance of [SmartConfigValue] that never reveals secrets.
-     */
-    fun toSafeConfig(): SmartConfigValue
-}
-
 class SmartConfigValueImpl(
     private val typeSafeConfigValue: ConfigValue,
     private val secretsLookupService: SecretsLookupService = noopSecretsLookupService

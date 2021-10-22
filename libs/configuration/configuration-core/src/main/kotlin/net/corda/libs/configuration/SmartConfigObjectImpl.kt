@@ -44,16 +44,16 @@ class SmartConfigObjectImpl(
         return toSafeConfig().render()
     }
 
-    override fun toConfig(): Config? =
+    override fun toConfig(): Config =
         SmartConfigImpl(typeSafeConfigObject.toConfig(), secretsLookupService)
 
-    override fun withOnlyKey(key: String?): ConfigObject? =
+    override fun withOnlyKey(key: String?): ConfigObject =
         SmartConfigObjectImpl(typeSafeConfigObject.withOnlyKey(key), secretsLookupService)
 
-    override fun withoutKey(key: String?): ConfigObject? =
+    override fun withoutKey(key: String?): ConfigObject =
         SmartConfigObjectImpl(typeSafeConfigObject.withoutKey(key), secretsLookupService)
 
-    override fun withValue(key: String?, value: ConfigValue?): ConfigObject? =
+    override fun withValue(key: String?, value: ConfigValue?): ConfigObject =
         SmartConfigObjectImpl(typeSafeConfigObject.withValue(key, value), secretsLookupService)
 
     override val entries: MutableSet<MutableMap.MutableEntry<String, ConfigValue>>
@@ -67,20 +67,22 @@ class SmartConfigObjectImpl(
 
     override fun unwrapped(): Map<String?, Any?>? = typeSafeConfigObject.unwrapped()
 
-    override fun atPath(path: String?): Config = SmartConfigImpl(typeSafeConfigObject.atPath(path))
+    override fun atPath(path: String?): Config =
+        SmartConfigImpl(typeSafeConfigObject.atPath(path), secretsLookupService)
 
-    override fun atKey(key: String?): Config = SmartConfigImpl(typeSafeConfigObject.atPath(key))
+    override fun atKey(key: String?): Config =
+        SmartConfigImpl(typeSafeConfigObject.atPath(key), secretsLookupService)
 
-    override fun withFallback(other: ConfigMergeable?): ConfigObject? =
+    override fun withFallback(other: ConfigMergeable?): ConfigObject =
         SmartConfigObjectImpl(typeSafeConfigObject.withFallback(other), secretsLookupService)
 
     override fun origin(): ConfigOrigin {
-        TODO("Not yet implemented")
+        return typeSafeConfigObject.origin()
     }
 
     override fun valueType(): ConfigValueType = typeSafeConfigObject.valueType()
 
-    override fun withOrigin(origin: ConfigOrigin?): ConfigObject? =
+    override fun withOrigin(origin: ConfigOrigin?): ConfigObject =
         SmartConfigObjectImpl(typeSafeConfigObject.withOrigin(origin), secretsLookupService)
 
     override fun clear() = typeSafeConfigObject.clear()

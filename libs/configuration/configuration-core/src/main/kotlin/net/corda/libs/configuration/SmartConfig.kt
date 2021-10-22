@@ -19,5 +19,7 @@ interface SmartConfig : Config {
      * Returns an instance of [SmartConfig] that never reveals secrets.
      */
     fun toSafeConfig(): Config
+    
+    override fun getConfig(path: String?): SmartConfig
 }
 

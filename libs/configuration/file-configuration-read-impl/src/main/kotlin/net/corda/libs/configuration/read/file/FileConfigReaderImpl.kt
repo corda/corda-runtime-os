@@ -4,6 +4,8 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -75,8 +77,8 @@ class FileConfigReaderImpl(
         }
     }
 
-    private fun parseConfigFile(): Config {
-        return try {
+    private fun parseConfigFile(): SmartConfig {
+        val conf = try {
             val parseOptions = ConfigParseOptions.defaults().setAllowMissing(false)
             val configFilePath = bootstrapConfig.getString(CONFIG_FILE_NAME)
             ConfigFactory.parseURL(File(configFilePath).toURI().toURL(), parseOptions).resolve()
@@ -88,6 +90,8 @@ class FileConfigReaderImpl(
             log.error(e.message, e)
             ConfigFactory.empty()
         }
+        // TODO: inject secrets provider or SmartConfig Factory
+        return SmartConfigImpl(conf)
     }
 
     private class ConfigListenerSubscription(private val configUpdates: MutableMap<ConfigListenerSubscription, ConfigListener>) :

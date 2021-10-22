@@ -1,6 +1,7 @@
 package net.corda.libs.configuration.read.kafka.factory
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.libs.configuration.read.kafka.ConfigReaderImpl
@@ -16,7 +17,8 @@ class ConfigReaderFactoryImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory
 ) : ConfigReaderFactory {
 
-    override fun createReader(bootstrapConfig: Config): ConfigReader {
-        return ConfigReaderImpl(ConfigRepository(), subscriptionFactory, bootstrapConfig)
+    override fun createReader(bootstrapConfig: SmartConfig): ConfigReader {
+        // TODO: inject the secrets lookup service
+        return ConfigReaderImpl(ConfigRepository(), subscriptionFactory, SmartConfigImpl(bootstrapConfig))
     }
 }
