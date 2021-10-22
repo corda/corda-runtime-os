@@ -2,15 +2,17 @@ package net.corda.applications.examples.amqp.typeevolution
 
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.AllWhitelist
+import net.corda.internal.serialization.AlwaysAcceptEncodingWhitelist
+import net.corda.internal.serialization.SerializationContextImpl
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
-import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefault
-import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefaults
+import net.corda.internal.serialization.amqp.amqpMagic
+import net.corda.v5.base.types.ByteSequence
+import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.annotations.CordaSerializationTransformRename
 import net.corda.v5.serialization.annotations.CordaSerializationTransformRenames
 import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
-import java.io.File
 
 val factory = SerializerFactoryBuilder.build(AllWhitelist)
 val output = SerializationOutput(factory)
@@ -18,8 +20,26 @@ val input = DeserializationInput(factory)
 
 fun main() {
 //    saveResourceFiles()
-    val resource = AddNullableProperty::class.java.getResource("addNullableProperty.bin")
-    println(resource)
+
+//    val context = SerializationContextImpl(
+//        amqpMagic,
+//        AddNullableProperty::class.java.getClassLoader(),
+//        AllWhitelist,
+//        emptyMap(),
+//        true,
+//        SerializationContext.UseCase.Storage,
+//        null,
+//        AlwaysAcceptEncodingWhitelist
+//    )
+
+    println("AddNullableProperty = " + (input.deserialize(ByteSequence.of(AddNullableProperty::class.java.getResource("addNullableProperty.bin")!!.readBytes()), AddNullableProperty::class.java, AMQP_STORAGE_CONTEXT) == AddNullableProperty(10, null)))
+    println("AddNonNullableProperty = " + (input.deserialize(ByteSequence.of(AddNullableProperty::class.java.getResource("addNonNullableProperty.bin")!!.readBytes()), AddNonNullableProperty::class.java, AMQP_STORAGE_CONTEXT) == AddNonNullableProperty(10, 0)))
+    println("MultipleEvolutions = " + (input.deserialize(ByteSequence.of(AddNullableProperty::class.java.getResource("multipleEvolutions.bin")!!.readBytes()), MultipleEvolutions::class.java, AMQP_STORAGE_CONTEXT) == MultipleEvolutions(10, 0, 0)))
+    println("MultipleEvolutions = " + (input.deserialize(ByteSequence.of(AddNullableProperty::class.java.getResource("multipleEvolutions-2.bin")!!.readBytes()), MultipleEvolutions::class.java, AMQP_STORAGE_CONTEXT) == MultipleEvolutions(10, 20, 0)))
+    println("RemovingProperties = " + (input.deserialize(ByteSequence.of(AddNullableProperty::class.java.getResource("removingProperties.bin")!!.readBytes()), RemovingProperties::class.java, AMQP_STORAGE_CONTEXT) == RemovingProperties(1)))
+    println("ReorderConstructorParameters = " + (input.deserialize(ByteSequence.of(AddNullableProperty::class.java.getResource("reorderConstructorParameters.bin")!!.readBytes()), ReorderConstructorParameters::class.java, AMQP_STORAGE_CONTEXT) == ReorderConstructorParameters(2, 1)))
+//    println("RenameEnum = " + (input.deserialize(ByteSequence.of(AddNullableProperty::class.java.getResource("renameEnum.bin")!!.readBytes()), RenameEnum::class.java, AMQP_STORAGE_CONTEXT)))
+    println("AddEnumValue = " + (input.deserialize(ByteSequence.of(AddNullableProperty::class.java.getResource("addEnumValue.bin")!!.readBytes()), AddEnumValue::class.java, AMQP_STORAGE_CONTEXT) == AddEnumValue.A))
 }
 
 // Before
