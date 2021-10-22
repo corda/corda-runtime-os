@@ -225,7 +225,7 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher.publish(getDemoRecords(EVENT_TOPIC4, 5, 6)).forEach { it.get() }
 
         stateEventSub2.start()
-        assertTrue(onNextLatch2.await(150, TimeUnit.SECONDS))
+        assertTrue(onNextLatch2.await(40, TimeUnit.SECONDS))
 
         stateEventSub1.start()
 
