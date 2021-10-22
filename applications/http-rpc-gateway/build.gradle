@@ -56,10 +56,10 @@ tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) 
     arguments = ["--instanceId", "1"]
 
     if (project.hasProperty('jibRemotePublish')) {
-        remotePublish = project.jibRemotePublish.toBoolean()
+        remotePublish = jibRemotePublish.toBoolean()
     }
 
     if (project.hasProperty('releaseCandidate')) {
-        releaseCandidate = project.releaseCandidate.toBoolean()
+        releaseCandidate = releaseCandidate.toBoolean()
     }
 }

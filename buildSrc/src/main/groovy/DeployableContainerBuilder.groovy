@@ -5,6 +5,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.PathSensitive
@@ -12,6 +13,8 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import com.google.cloud.tools.jib.api.*
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath
+
+import javax.inject.Inject
 import java.nio.file.StandardCopyOption;
 
 
@@ -27,25 +30,34 @@ import java.time.Instant
  * '"--kafka", "/opt/override/kafka.properties"' also passed to the 'java -Jar' entrypoint as additional arguments.
  * Future iterations will use a more modular layered approach.
  */
-class DeployableContainerBuilder extends DefaultTask {
+abstract class DeployableContainerBuilder extends DefaultTask {
 
     private static final String CONTAINER_LOCATION = "/opt/override/"
     private static final String KAFKA_PROPERTIES = "kafka.properties"
     private static final String KAFKA_FILE_LOCATION = CONTAINER_LOCATION + KAFKA_PROPERTIES
-    private String defaultUsername = System.getenv("CORDA_ARTIFACTORY_USERNAME") ?: project.findProperty('cordaArtifactoryUsername') ?: System.getProperty('corda.artifactory.username')
-    private String defaultPassword = System.getenv("CORDA_ARTIFACTORY_PASSWORD") ?: project.findProperty('cordaArtifactoryPassword') ?: System.getProperty('corda.artifactory.password')
     private String gitVersion = "git rev-parse --verify --short HEAD".execute().text
     private String targetRepo="engineering-docker-dev.software.r3.com/corda-${project.name}"
+
+    @Inject
+    protected abstract ProviderFactory getProviderFactory();
 
     @PathSensitive(PathSensitivity.RELATIVE)
     @InputFile
     final RegularFileProperty overrideFile = project.objects.fileProperty().convention(project.tasks.appJar.archiveFile)
 
     @Input
-    final Property<String> registryUsername = project.objects.property(String).convention(defaultUsername)
+    final Property<String> registryUsername = project.objects.property(String).
+            convention(getProviderFactory().environmentVariable("CORDA_ARTIFACTORY_USERNAME")
+                    .orElse(getProviderFactory().gradleProperty("cordaArtifactoryUsername"))
+                    .orElse(getProviderFactory().gradleProperty("corda.artifactory.username"))
+            )
 
     @Input
-    final Property<String> registryPassword = project.objects.property(String).convention(defaultPassword)
+    final Property<String> registryPassword = project.objects.property(String).
+            convention(getProviderFactory().environmentVariable("CORDA_ARTIFACTORY_PASSWORD")
+                    .orElse(getProviderFactory().gradleProperty("cordaArtifactoryPassword"))
+                    .orElse(getProviderFactory().gradleProperty("corda.artifactory.password"))
+            )
 
     @Input
     final Property<Boolean> remotePublish =
@@ -77,6 +89,10 @@ class DeployableContainerBuilder extends DefaultTask {
 
     @TaskAction
     def updateImage() {
+
+        println("gitVersion ${gitVersion}")
+        println("registryPassword ${registryPassword.get()}")
+
         String jarLocation = "${project.buildDir}/tmp/containerization/${project.name}.jar"
         Files.createDirectories(Paths.get("${project.buildDir}/tmp/containerization/"))
         Files.copy(Paths.get(overrideFile.getAsFile().get().getPath()), Paths.get(jarLocation), StandardCopyOption.REPLACE_EXISTING)
