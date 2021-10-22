@@ -9,4 +9,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-serialization"
     implementation project(':libs:serialization:serialization-amqp')
+    implementation "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"
+    implementation "org.ow2.asm:asm:$asmVersion"
 }
