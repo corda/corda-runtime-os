@@ -33,7 +33,7 @@ class SecurityManagerServiceImpl @Activate constructor(
     override fun startDiscoveryMode() {
         securityManager?.stop()
         log.info("Starting discovery Corda security manager. This is not secure in production.")
-        securityManager = discoverySecurityManager
+        securityManager = discoverySecurityManager.apply { start() }
     }
 
     override fun grantPermissions(filter: String, perms: Collection<Permission>) {
