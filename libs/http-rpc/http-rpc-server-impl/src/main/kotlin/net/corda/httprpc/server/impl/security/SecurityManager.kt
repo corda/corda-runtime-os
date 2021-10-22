@@ -17,7 +17,7 @@ interface HttpRpcSecurityManager {
     fun authorize(authenticatedUser: AuthorizingSubject, method: Method): Boolean
 }
 
-internal class SecurityManagerRPCImpl(private val providers: Set<AuthenticationProvider>) : HttpRpcSecurityManager {
+internal class SecurityManagerRPCImpl(private val providers: Set<AuthenticationProvider>) : HttpRpcSecurityManager {that
     private companion object {
         private val log = contextLogger()
     }

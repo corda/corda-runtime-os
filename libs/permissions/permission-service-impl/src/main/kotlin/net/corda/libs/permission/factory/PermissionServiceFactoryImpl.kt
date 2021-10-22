@@ -12,7 +12,7 @@ class PermissionServiceFactoryImpl @Activate constructor(
         @Reference(service = SubscriptionFactory::class)
         private val subscriptionFactory: SubscriptionFactory
 ): PermissionServiceFactory {
-    override fun createPermissionService(bootstrapConfig: Config): PermissionServiceImpl {
+    override fun createPermissionService(): PermissionServiceImpl {
         return PermissionServiceImpl(subscriptionFactory, PermissionsTopicProcessor())
     }
 }
