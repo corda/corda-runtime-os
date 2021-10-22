@@ -1,5 +1,6 @@
 package net.corda.applications.examples.amqp.typeevolution
 
+import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
@@ -9,13 +10,16 @@ import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDef
 import net.corda.v5.serialization.annotations.CordaSerializationTransformRename
 import net.corda.v5.serialization.annotations.CordaSerializationTransformRenames
 import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
+import java.io.File
 
 val factory = SerializerFactoryBuilder.build(AllWhitelist)
 val output = SerializationOutput(factory)
 val input = DeserializationInput(factory)
 
 fun main() {
-
+    saveResourceFiles()
+    val resource = AddNullableProperty::class.java.getResource("addNullableProperty.bin")
+    println(resource)
 }
 
 // Add nullable property
@@ -67,3 +71,26 @@ enum class AddEnumValue {
 //enum class AddEnumValue {
 //    A, B
 //}
+
+
+
+
+// Save resource files
+fun saveResourceFiles() {
+    val addNullableProperty = AddNullableProperty(10)
+    val addNonNullableProperty = AddNonNullableProperty(10)
+    val multipleEvolutions = MultipleEvolutions(10)
+    val removingProperties = RemovingProperties(1, 2)
+    val reorderConstructorParameters = ReorderConstructorParameters(1, 2)
+    val renameEnum = RenameEnum.B
+    val addEnumValue = AddEnumValue.C
+
+
+    File("applications/examples/serialization-amqp/type-evolution-poc/src/main/resources/net/corda/applications/examples/amqp/typeevolution/addNullableProperty.bin").writeBytes(output.serialize(addNullableProperty, AMQP_STORAGE_CONTEXT).bytes)
+    File("applications/examples/serialization-amqp/type-evolution-poc/src/main/resources/net/corda/applications/examples/amqp/typeevolution/addNonNullableProperty.bin").writeBytes(output.serialize(addNonNullableProperty, AMQP_STORAGE_CONTEXT).bytes)
+    File("applications/examples/serialization-amqp/type-evolution-poc/src/main/resources/net/corda/applications/examples/amqp/typeevolution/multipleEvolutions.bin").writeBytes(output.serialize(multipleEvolutions, AMQP_STORAGE_CONTEXT).bytes)
+    File("applications/examples/serialization-amqp/type-evolution-poc/src/main/resources/net/corda/applications/examples/amqp/typeevolution/removingProperties.bin").writeBytes(output.serialize(removingProperties, AMQP_STORAGE_CONTEXT).bytes)
+    File("applications/examples/serialization-amqp/type-evolution-poc/src/main/resources/net/corda/applications/examples/amqp/typeevolution/reorderConstructorParameters.bin").writeBytes(output.serialize(reorderConstructorParameters, AMQP_STORAGE_CONTEXT).bytes)
+    File("applications/examples/serialization-amqp/type-evolution-poc/src/main/resources/net/corda/applications/examples/amqp/typeevolution/renameEnum.bin").writeBytes(output.serialize(renameEnum, AMQP_STORAGE_CONTEXT).bytes)
+    File("applications/examples/serialization-amqp/type-evolution-poc/src/main/resources/net/corda/applications/examples/amqp/typeevolution/addEnumValue.bin").writeBytes(output.serialize(addEnumValue, AMQP_STORAGE_CONTEXT).bytes)
+}
