@@ -36,7 +36,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     private static final String KAFKA_PROPERTIES = "kafka.properties"
     private static final String KAFKA_FILE_LOCATION = CONTAINER_LOCATION + KAFKA_PROPERTIES
     private String gitVersion = "git rev-parse --verify --short HEAD".execute().text
-    private String targetRepo="engineering-docker-dev.software.r3.com/corda-${project.name}"
+    private String targetRepo="engineering-docker-dev.software.r3.com/corda-os-${project.name}"
 
     @Inject
     protected abstract ProviderFactory getProviderFactory();
@@ -122,7 +122,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
                 " ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with '${project.name}.jar', from base '${baseImageName.get()}:${targetImageTag.get()}'")
 
         if (releaseCandidate.get()) {
-            targetRepo = "engineering-docker-release.software.r3.com/corda-${project.name}"
+            targetRepo = "engineering-docker-release.software.r3.com/corda-os-${project.name}"
         }
         if (!remotePublish.get()) {
             tagContainerForLocal(builder, targetImageTag.get())
