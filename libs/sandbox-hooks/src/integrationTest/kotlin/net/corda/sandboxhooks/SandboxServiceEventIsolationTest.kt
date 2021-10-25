@@ -1,6 +1,5 @@
 package net.corda.sandboxhooks
 
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -22,8 +21,11 @@ class SandboxServiceEventIsolationTest {
     fun sandboxGroupDoesNotReceiveServiceEventsFromOtherSandboxGroups() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
+
+        // This flow returns all service events visible to this bundle.
         val serviceEvents = sandboxLoader.runFlow<List<ServiceEvent>>(SERVICE_EVENT1_FLOW_CLASS, thisGroup)
-        assertThat(serviceEvents).isNotEmpty
+
+        assertTrue(serviceEvents.isNotEmpty())
         serviceEvents.forEach { event ->
             assertTrue { !sandboxLoader.containsBundle(event.serviceReference.bundle, otherGroup) }
         }

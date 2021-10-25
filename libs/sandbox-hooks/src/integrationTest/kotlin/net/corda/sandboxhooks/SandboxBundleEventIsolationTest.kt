@@ -27,9 +27,9 @@ class SandboxBundleEventIsolationTest {
         val bundleEvents = sandboxLoader.runFlow<List<BundleEvent>>(BUNDLE_EVENT1_FLOW_CLASS, thisGroup)
 
         assertThat(bundleEvents).isNotEmpty
-        bundleEvents.forEach { evt ->
-            assertTrue { !sandboxLoader.containsBundle(evt.bundle, otherGroup) }
-            assertTrue { !sandboxLoader.containsBundle(evt.origin, otherGroup) }
+        bundleEvents.forEach { event ->
+            assertTrue { !sandboxLoader.containsBundle(event.bundle, otherGroup) }
+            assertTrue { !sandboxLoader.containsBundle(event.origin, otherGroup) }
         }
     }
 }

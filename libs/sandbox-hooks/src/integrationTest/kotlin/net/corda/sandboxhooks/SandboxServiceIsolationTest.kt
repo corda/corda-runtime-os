@@ -51,15 +51,14 @@ class SandboxServiceIsolationTest {
     }
 
     @Test
-    fun testServicesForCPK1() {
+    fun sandboxCanSeeItsOwnServicesAndServicesInTheMainBundlesOfSandboxesInTheSameSandboxGroupOnly() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
         val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.metadata.id)
         val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.metadata.id)
         val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES1_FLOW_CLASS, thisGroup)
 
-        // CPK1 should be able to see its own services, and any
-        // services inside CPK2's "main" jar, but nothing from CPK3.
+        // CPK1 should be able to see its own services, and any services inside CPK2's "main" jar, but nothing from CPK3.
         assertThat(serviceClasses)
             .hasNoServiceFromGroup(otherGroup)
             .hasNoService(sandbox2.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS))
