@@ -1,0 +1,47 @@
+import aQute.bnd.gradle.Bundle
+
+plugins {
+    id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+description 'Corda Sandbox Hooks'
+
+configurations {
+    cpks {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
+dependencies {
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":libs:sandbox")
+
+    testCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+
+    cpks project(path: 'sandbox-cpk-one', configuration: 'cordaCPK')
+    cpks project(path: 'sandbox-cpk-two', configuration: 'cordaCPK')
+    cpks project(path: 'sandbox-cpk-three', configuration: 'cordaCPK')
+
+    integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+    integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    integrationTestImplementation project(":libs:install")
+    integrationTestImplementation "net.corda:corda-application"
+    integrationTestImplementation 'net.corda:corda-packaging'
+    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+}
+
+def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
+    from configurations.cpks
+}
+
+tasks.named('testingBundle', Bundle) {
+    dependsOn integrationTestResources
+}
