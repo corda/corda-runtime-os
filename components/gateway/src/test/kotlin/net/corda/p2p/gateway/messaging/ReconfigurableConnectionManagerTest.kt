@@ -35,9 +35,10 @@ class ReconfigurableConnectionManagerTest {
     private val listener = mock<HttpEventListener>()
     private val configuration = mock<GatewayConfiguration> {
         on { sslConfig } doReturn mock()
+        on { connectionConfig } doReturn mock()
     }
 
-    private val connectionManager = ReconfigurableConnectionManager(factory, service, listener) { manager }
+    private val connectionManager = ReconfigurableConnectionManager(factory, service, listener) { _, _ -> manager }
 
     @Test
     fun `acquire will throw an exception if configuration is not ready`() {
@@ -71,6 +72,7 @@ class ReconfigurableConnectionManagerTest {
 
         val secondConfiguration = mock<GatewayConfiguration> {
             on { sslConfig } doReturn mock()
+            on { connectionConfig } doReturn mock()
         }
         connectionManager.applyNewConfiguration(secondConfiguration, configuration)
 
@@ -80,11 +82,14 @@ class ReconfigurableConnectionManagerTest {
     @Test
     fun `applyNewConfiguration will not close the manager if same configuration`() {
         val sslConfiguration = mock<SslConfiguration>()
+        val connectionConfiguration = mock<ConnectionConfiguration>()
         val firstConfiguration = mock<GatewayConfiguration> {
             on { sslConfig } doReturn sslConfiguration
+            on { connectionConfig } doReturn connectionConfiguration
         }
         val secondConfiguration = mock<GatewayConfiguration> {
             on { sslConfig } doReturn sslConfiguration
+            on { connectionConfig } doReturn connectionConfiguration
         }
         connectionManager.start()
         connectionManager.applyNewConfiguration(firstConfiguration, null)

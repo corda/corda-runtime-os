@@ -45,6 +45,9 @@ data class ConnectionConfiguration(
      */
     val responseTimeout: Duration = Duration.ofSeconds(1),
 
+    /**
+     * Time after which a message is retried, when previously failed.
+     */
     val retryDelay: Duration = Duration.ofSeconds(5)
 )
 

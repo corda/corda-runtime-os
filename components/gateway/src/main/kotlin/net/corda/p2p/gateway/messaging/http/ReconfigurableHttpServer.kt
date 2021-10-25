@@ -33,6 +33,13 @@ class ReconfigurableHttpServer(
         private val logger = contextLogger()
     }
 
+    fun writeResponse(status: HttpResponseStatus, payload: ByteArray, address: SocketAddress) {
+        serverLock.read {
+            val server = httpServer ?: throw IllegalStateException("Server is not ready")
+            server.write(status, payload, address)
+        }
+    }
+
     fun writeResponse(status: HttpResponseStatus, address: SocketAddress) {
         serverLock.read {
             val server = httpServer ?: throw IllegalStateException("Server is not ready")

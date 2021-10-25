@@ -18,6 +18,9 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.app.HoldingIdentity
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
+import net.corda.p2p.gateway.GatewayMessage
+import net.corda.p2p.gateway.GatewayResponse
+import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
@@ -28,6 +31,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentCaptor
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -65,7 +69,10 @@ class OutboundMessageHandlerTest {
             )
         } doReturn subscription
     }
-    private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java)
+    private var connectionConfiguration = ConnectionConfiguration()
+    private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java) { mock, _ ->
+        whenever(mock.latestConnectionConfig).doReturn(connectionConfiguration)
+    }
 
     private val handler = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
@@ -134,6 +141,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onNext will write message to the client`() {
+        val sentMessages = mutableListOf<ByteArray>()
         startHandler()
         val payload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
@@ -147,7 +155,12 @@ class OutboundMessageHandlerTest {
             headers,
             payload,
         )
-        val client = mock<HttpClient>()
+        val client = mock<HttpClient>() {
+            on { write(any()) } doAnswer {
+                sentMessages.add(it.arguments[0] as ByteArray)
+                Unit
+            }
+        }
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
         handler.onNext(
@@ -157,7 +170,9 @@ class OutboundMessageHandlerTest {
             )
         )
 
-        verify(client).write(LinkInMessage(payload).toByteBuffer().array())
+        assertThat(sentMessages).hasSize(1)
+        val deserialisedMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(sentMessages.first()))
+        assertThat(deserialisedMessage.payload).isEqualTo(payload)
     }
 
     @Test
@@ -285,9 +300,10 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onMessage will handle OK message without exception`() {
+        val gatewayResponse = GatewayResponse("id")
         val message = HttpMessage(
             statusCode = HttpResponseStatus.OK,
-            payload = ByteArray(0),
+            payload = gatewayResponse.toByteBuffer().array(),
             source = InetSocketAddress("www.r3.com", 30),
             destination = InetSocketAddress("www.r3.com", 31),
         )
@@ -298,9 +314,10 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `onMessage will handle Error message without exception`() {
+        val gatewayResponse = GatewayResponse("id")
         val message = HttpMessage(
             statusCode = HttpResponseStatus.BAD_REQUEST,
-            payload = ByteArray(0),
+            payload = gatewayResponse.toByteBuffer().array(),
             source = InetSocketAddress("www.r3.com", 30),
             destination = InetSocketAddress("www.r3.com", 31),
         )

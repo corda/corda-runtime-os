@@ -19,6 +19,8 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
+import net.corda.p2p.gateway.GatewayMessage
+import net.corda.p2p.gateway.GatewayResponse
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.p2p.gateway.messaging.http.HttpMessage
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
@@ -56,6 +58,8 @@ internal class InboundMessageHandler(
     override fun onMessage(message: HttpMessage) {
         withLifecycleLock { handleMessage(message) }
     }
+
+    @Suppress("TooGenericExceptionCaught")
     private fun handleMessage(message: HttpMessage) {
         if (!isRunning) {
             logger.error("Received message from ${message.source}, while handler is stopped. Discarding it and returning error code.")
@@ -70,25 +74,26 @@ internal class InboundMessageHandler(
         }
 
         logger.debug("Processing request message from ${message.source}")
-        @Suppress("TooGenericExceptionCaught")
-        val p2pMessage = try {
-            LinkInMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
+        val (gatewayMessage, p2pMessage) = try {
+            val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
+            gatewayMessage to LinkInMessage(gatewayMessage.payload)
         } catch (e: Throwable) {
             logger.warn("Invalid message received. Cannot deserialize")
             logger.debug(e.stackTraceToString())
-            server.writeResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR, message.source)
+            server.writeResponse(HttpResponseStatus.BAD_REQUEST, message.source)
             return
         }
 
         logger.debug("Received message of type ${p2pMessage.schema.name}")
+        val response = GatewayResponse(gatewayMessage.id)
         when (p2pMessage.payload) {
             is UnauthenticatedMessage -> {
                 p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
-                server.writeResponse(HttpResponseStatus.OK, message.source)
+                server.writeResponse(HttpResponseStatus.OK, response.toByteBuffer().array(), message.source)
             }
             else -> {
                 val statusCode = processSessionMessage(p2pMessage)
-                server.writeResponse(statusCode, message.source)
+                server.writeResponse(statusCode, response.toByteBuffer().array(), message.source)
             }
         }
     }

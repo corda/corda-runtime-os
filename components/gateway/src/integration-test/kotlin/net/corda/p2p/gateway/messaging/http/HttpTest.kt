@@ -15,6 +15,7 @@ import net.corda.p2p.gateway.LoggingInterceptor
 import net.corda.p2p.gateway.TestBase
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.v5.base.util.seconds
 import org.apache.logging.log4j.Level
 import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.AfterEach
@@ -90,7 +91,8 @@ class HttpTest : TestBase() {
                 chipSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                clientListener
+                clientListener,
+                2.seconds
             ).use { client ->
                 client.start()
                 client.write(clientMessageContent.toByteArray(Charsets.UTF_8))
@@ -149,7 +151,8 @@ class HttpTest : TestBase() {
                         chipSslConfig,
                         threadPool,
                         threadPool,
-                        clientListener
+                        clientListener,
+                        2.seconds
                     )
                     httpClient.use {
                         httpClient.start()
@@ -206,7 +209,8 @@ class HttpTest : TestBase() {
                 bobSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                clientListener
+                clientListener,
+                2.seconds
             ).use { client ->
                 client.start()
                 client.write(hugePayload)
@@ -241,7 +245,8 @@ class HttpTest : TestBase() {
                 aliceSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                clientListener
+                clientListener,
+                2.seconds
             ).use { client ->
 
                 client.start()
@@ -277,7 +282,8 @@ class HttpTest : TestBase() {
                 c4sslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                clientListener
+                clientListener,
+                2.seconds
             ).use { client ->
 
                 client.start()
@@ -306,7 +312,8 @@ class HttpTest : TestBase() {
                 c4sslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                clientListener
+                clientListener,
+                2.seconds
             ).use { client ->
 
                 client.start()
@@ -338,7 +345,8 @@ class HttpTest : TestBase() {
                 daleSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                clientListener
+                clientListener,
+                2.seconds
             ).use { client ->
                 client.start()
                 client.write(ByteArray(0))
@@ -377,7 +385,8 @@ class HttpTest : TestBase() {
                 chipSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                clientListener
+                clientListener,
+                2.seconds
             ).use { client ->
                 client.start()
                 client.write(ByteArray(0))
@@ -415,7 +424,8 @@ class HttpTest : TestBase() {
                 chipSslConfig,
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
-                clientListener
+                clientListener,
+                2.seconds
             ).use { client ->
                 client.start()
                 client.write(ByteArray(0))

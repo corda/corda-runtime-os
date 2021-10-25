@@ -4,6 +4,7 @@ import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelInitializer
+import io.netty.channel.ChannelOption
 import io.netty.channel.EventLoop
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.socket.SocketChannel
@@ -16,7 +17,9 @@ import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.lang.IllegalStateException
 import java.net.URI
+import java.time.Duration
 import java.util.LinkedList
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.TrustManagerFactory
 import kotlin.concurrent.withLock
@@ -44,25 +47,16 @@ class HttpClient(
     private val writeGroup: EventLoopGroup,
     private val nettyGroup: EventLoopGroup,
     private val listener: HttpEventListener,
+    private val connectionTimeout: Duration
 ) : Lifecycle, HttpEventListener {
 
     companion object {
         private val logger = LoggerFactory.getLogger(HttpClient::class.java)
-
-        /**
-         * Number of attempts to send the message before giving up on failure.
-         */
-        private const val MESSAGE_TTL = 3
-
-        /**
-         * The channel will be closed if neither read nor write was performed for the specified period of time.
-         */
-        private const val CLIENT_IDLE_TIME_SECONDS = 5
     }
 
     private val lock = ReentrantLock()
 
-    private class Message(val payload: ByteArray, var ttl: Int)
+    private class Message(val payload: ByteArray)
 
     // All queue operations must be synchronized through writeProcessor.
     private val requestQueue = LinkedList<Message>()
@@ -75,6 +69,9 @@ class HttpClient(
 
     override val isRunning: Boolean
         get() = (writeProcessor != null)
+
+    @Volatile
+    private var explicitlyClosed: Boolean = false
 
     private val connectListener = ChannelFutureListener { future ->
         if (!future.isSuccess) {
@@ -92,12 +89,14 @@ class HttpClient(
                 return
             }
             writeProcessor = writeGroup.next()
+            connect()
         }
     }
 
     override fun stop() {
         lock.withLock {
             logger.info("Stopping HTTP client to ${destinationInfo.uri}")
+            explicitlyClosed = true
             clientChannel?.close()?.sync()
             writeProcessor = null
             logger.info("Stopped HTTP client ${destinationInfo.uri}")
@@ -110,23 +109,20 @@ class HttpClient(
      * @throws IllegalStateException if the connection is down
      */
     fun write(message: ByteArray) {
-        write(Message(message, ttl = MESSAGE_TTL), addToQueue = true)
+        write(Message(message))
     }
 
-    private fun write(message: Message, addToQueue: Boolean) {
+    private fun write(message: Message) {
         writeProcessor?.execute {
             val channel = clientChannel
-            // Connect on demand on the first message. Message itself will be queued and sent later.
-            if (channel == null && requestQueue.isEmpty()) {
-                connect()
-            }
-            if (channel != null) {
+
+            if (channel == null) {
+                // Queuing messages to be sent once connection is established.
+                requestQueue.offer(message)
+            } else {
                 val request = HttpHelper.createRequest(message.payload, destinationInfo.uri)
                 channel.writeAndFlush(request)
                 logger.debug("Sent HTTP request $request")
-            }
-            if (addToQueue) {
-                requestQueue.offer(message)
             }
         }
     }
@@ -137,7 +133,10 @@ class HttpClient(
         }
         logger.info("Connecting to ${destinationInfo.uri}")
         val bootstrap = Bootstrap()
-        bootstrap.group(nettyGroup).channel(NioSocketChannel::class.java).handler(ClientChannelInitializer())
+        bootstrap.group(nettyGroup)
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectionTimeout.toMillis().toInt())
+            .channel(NioSocketChannel::class.java)
+            .handler(ClientChannelInitializer())
         val clientFuture = bootstrap.connect(destinationInfo.uri.host, destinationInfo.uri.port)
         clientFuture.addListener(connectListener)
     }
@@ -145,8 +144,10 @@ class HttpClient(
     override fun onOpen(event: HttpConnectionEvent) {
         writeProcessor?.execute {
             clientChannel = event.channel
-            // Resend all undelivered messages.
-            requestQueue.forEach { write(it, addToQueue = false) }
+            // Send all queued messages.
+            while (requestQueue.isNotEmpty()) {
+                write(requestQueue.poll())
+            }
         }
         listener.onOpen(event)
     }
@@ -154,13 +155,9 @@ class HttpClient(
     override fun onClose(event: HttpConnectionEvent) {
         writeProcessor?.execute {
             clientChannel = null
-            // Reduce TTL of undelivered messages: they will be resent on the next connection if TTL > 0.
-            requestQueue.forEach { it.ttl-- }
-            requestQueue.removeIf { it.ttl <= 0 }
 
-            // Automatically reconnect if there are pending messages in queue.
-            if (requestQueue.isNotEmpty()) {
-                logger.info("${requestQueue.size} pending message(s) in queue for ${destinationInfo.uri}")
+            // If the connection wasn't explicitly closed on our side, we try to reconnect.
+            if (!explicitlyClosed) {
                 connect()
             }
         }
@@ -168,12 +165,6 @@ class HttpClient(
     }
 
     override fun onMessage(message: HttpMessage) {
-        writeProcessor?.execute {
-            if (clientChannel != null) {
-                // Remove first pending message from queue on the ack.
-                requestQueue.poll()
-            }
-        }
         listener.onMessage(message)
     }
 
@@ -198,7 +189,6 @@ class HttpClient(
                     trustManagerFactory
                 )
             )
-            pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, CLIENT_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpClientCodec())
             pipeline.addLast(HttpChannelHandler(this@HttpClient, logger))
         }
