@@ -7,5 +7,5 @@ import org.osgi.service.component.annotations.Component
 @Component(service = [BundleUtils::class])
 open class BundleUtils {
     /** Returns the location of the [klass]'s bundle. */
-    open fun getBundleLocation(klass: Class<*>): String? = FrameworkUtil.getBundle(klass).location
+    open fun getBundleLocation(klass: Class<*>): String? = FrameworkUtil.getBundle(klass)?.location
 }

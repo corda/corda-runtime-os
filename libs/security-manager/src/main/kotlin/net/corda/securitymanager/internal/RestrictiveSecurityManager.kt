@@ -14,9 +14,6 @@ import org.osgi.framework.PackagePermission.IMPORT
 import org.osgi.framework.ServicePermission.GET
 import org.osgi.framework.ServicePermission.REGISTER
 import org.osgi.service.cm.ConfigurationAdmin
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import org.osgi.service.condpermadmin.BundleLocationCondition
 import org.osgi.service.condpermadmin.ConditionInfo
 import org.osgi.service.condpermadmin.ConditionalPermissionAdmin

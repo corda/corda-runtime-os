@@ -49,8 +49,8 @@ class DiscoverySecurityManager(
 
         classContext.forEach { klass ->
             if (matchesAnyPrefix(klass)) {
-                // We print the permission as a `PermissionInfo` so that the permission is printed using the
-                // encoding in which it needs to be added to the CorDapp's `AdditionalPermissions` file.
+                // We log the permission as a `PermissionInfo` so that the permission is printed using the encoding in
+                // which it needs to be added to the CorDapp's `AdditionalPermissions` file.
                 val permissionInfo = PermissionInfo(perm::class.java.name, perm.name, perm.actions)
                 log.info("$klass requested permission $permissionInfo.")
                 // Once the permission is logged, we can return early.
