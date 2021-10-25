@@ -1,7 +1,7 @@
 package net.corda.kryoserialization
 
 import net.corda.install.InstallService
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.crypto.SecureHash
@@ -36,20 +36,20 @@ class SandboxManagementService {
     private val installService: InstallService = ServiceLocator.getInstallService()
     private val sandboxCreationService: SandboxCreationService = ServiceLocator.getSandboxCreationService()
 
-    val cpk1: Cpk = loadCPK(resourceName = CPK_ONE)
-    val cpk2: Cpk = loadCPK(resourceName = CPK_TWO)
+    val cpk1: CPK = loadCPK(resourceName = CPK_ONE)
+    val cpk2: CPK = loadCPK(resourceName = CPK_TWO)
     val group1: SandboxGroup = createSandboxGroupFor(cpk1)
     val group2: SandboxGroup = createSandboxGroupFor(cpk2)
 
     @Suppress("SameParameterValue")
-    private fun loadCPK(resourceName: String): Cpk {
+    private fun loadCPK(resourceName: String): CPK {
         val location = loadResource(resourceName)
         return location.toURL().openStream().buffered().use { source ->
             installService.loadCpk(hashOf(location, SHA256), source)
         }
     }
 
-    private fun createSandboxGroupFor(vararg cpks: Cpk): SandboxGroup {
-        return sandboxCreationService.createSandboxGroup(cpks.map(Cpk::cpkHash))
+    private fun createSandboxGroupFor(vararg cpks: CPK): SandboxGroup {
+        return sandboxCreationService.createSandboxGroup(cpks.map { it.metadata.hash })
     }
 }

@@ -1,15 +1,14 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.CryptoCategories
 import net.corda.crypto.SigningService
 import net.corda.crypto.createDevCertificate
 import net.corda.crypto.getSigner
-import net.corda.crypto.impl.stubs.MockCryptoFactory
+import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_CODE_NAME
-import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SignatureVerificationService
 import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.BeforeAll
@@ -26,7 +25,7 @@ import kotlin.test.assertTrue
 
 class KeyEncodingServiceTests {
     companion object {
-        private lateinit var memberId: String
+        private lateinit var factory: CryptoServicesTestFactory
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var keyEncoder: KeyEncodingService
 
@@ -37,8 +36,8 @@ class KeyEncodingServiceTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            memberId = UUID.randomUUID().toString()
             schemeMetadata = CipherSchemeMetadataProviderImpl().getInstance()
+            factory = CryptoServicesTestFactory(schemeMetadata)
             keyEncoder = schemeMetadata
         }
 
@@ -49,20 +48,13 @@ class KeyEncodingServiceTests {
 
         private fun getServices(
             defaultSignatureSchemeCodeName: String
-        ): Pair<SigningService, SignatureVerificationService> {
-            val factories = MockCryptoFactory(
-                defaultSignatureSchemeCodeName = defaultSignatureSchemeCodeName,
-                defaultFreshKeySignatureSchemeCodeName = defaultSignatureSchemeCodeName,
-                schemeMetadataOverride = schemeMetadata
-            )
-            return Pair(
-                factories.createSigningService(
-                    memberId = memberId,
-                    category = CryptoCategories.LEDGER
+        ): Pair<SigningService, SignatureVerificationService> =
+            Pair(
+                factory.createSigningService(
+                    schemeMetadata.findSignatureScheme(defaultSignatureSchemeCodeName)
                 ),
-                factories.createVerificationService()
+                factory.verifier
             )
-        }
     }
 
     @ParameterizedTest
@@ -150,13 +142,13 @@ class KeyEncodingServiceTests {
         val bobPublicKey = signer.generateKeyPair(newAlias())
         val charliePublicKey = signer.generateKeyPair(newAlias())
         val aliceAndBob = CompositeKey.Builder()
-                .addKey(alicePublicKey, 2)
-                .addKey(bobPublicKey, 1)
-                .build(threshold = 2)
+            .addKey(alicePublicKey, 2)
+            .addKey(bobPublicKey, 1)
+            .build(threshold = 2)
         val aliceAndBobOrCharlie = CompositeKey.Builder()
-                .addKey(aliceAndBob, 3)
-                .addKey(charliePublicKey, 2)
-                .build(threshold = 3)
+            .addKey(aliceAndBob, 3)
+            .addKey(charliePublicKey, 2)
+            .build(threshold = 3)
         val encoded = keyEncoder.encodeAsByteArray(aliceAndBobOrCharlie)
         val decoded = keyEncoder.decodePublicKey(encoded)
         assertEquals(decoded, aliceAndBobOrCharlie)
@@ -173,13 +165,13 @@ class KeyEncodingServiceTests {
         val bobPublicKey = signer.generateKeyPair(newAlias())
         val charliePublicKey = signer.generateKeyPair(newAlias())
         val aliceAndBob = CompositeKey.Builder()
-                .addKey(alicePublicKey, 2)
-                .addKey(bobPublicKey, 1)
-                .build(threshold = 2)
+            .addKey(alicePublicKey, 2)
+            .addKey(bobPublicKey, 1)
+            .build(threshold = 2)
         val aliceAndBobOrCharlie = CompositeKey.Builder()
-                .addKey(aliceAndBob, 3)
-                .addKey(charliePublicKey, 2)
-                .build(threshold = 3)
+            .addKey(aliceAndBob, 3)
+            .addKey(charliePublicKey, 2)
+            .build(threshold = 3)
         val encoded = keyEncoder.encodeAsString(aliceAndBobOrCharlie)
         val decoded = keyEncoder.decodePublicKey(encoded)
         assertEquals(decoded, aliceAndBobOrCharlie)
@@ -196,13 +188,13 @@ class KeyEncodingServiceTests {
         val bobPublicKey = signer.generateKeyPair(newAlias())
         val charliePublicKey = signer.generateKeyPair(newAlias())
         val aliceAndBob = CompositeKey.Builder()
-                .addKey(alicePublicKey, 2)
-                .addKey(bobPublicKey, 1)
-                .build(threshold = 2)
+            .addKey(alicePublicKey, 2)
+            .addKey(bobPublicKey, 1)
+            .build(threshold = 2)
         val aliceAndBobOrCharlie = CompositeKey.Builder()
-                .addKey(aliceAndBob, 3)
-                .addKey(charliePublicKey, 2)
-                .build(threshold = 3)
+            .addKey(aliceAndBob, 3)
+            .addKey(charliePublicKey, 2)
+            .build(threshold = 3)
         val caAlias = newAlias()
         val subjectAlias = newAlias()
         val pwdArray = "password".toCharArray()
@@ -211,12 +203,14 @@ class KeyEncodingServiceTests {
         keyStoreSave.load(null, pwdArray)
         signer.generateKeyPair(caAlias)
         jksFile.outputStream().use {
-            keyStoreSave.setCertificateEntry(subjectAlias, createDevCertificate(
+            keyStoreSave.setCertificateEntry(
+                subjectAlias, createDevCertificate(
                     issuer = X500Name("CN=ISSUER, O=o, L=L, ST=il, C=c"),
-                signer = signer.getSigner(schemeMetadata, caAlias),
+                    signer = signer.getSigner(schemeMetadata, caAlias),
                     subject = X500Name("CN=SUBJECT, O=o, L=L, ST=il, C=c"),
                     subjectPublicKey = aliceAndBobOrCharlie
-            ))
+                )
+            )
             keyStoreSave.store(it, pwdArray)
         }
         val keyStoreRead = KeyStore.getInstance("JKS")

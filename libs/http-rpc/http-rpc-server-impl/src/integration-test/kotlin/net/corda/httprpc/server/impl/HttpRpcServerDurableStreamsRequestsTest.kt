@@ -4,13 +4,13 @@ import net.corda.v5.base.util.NetworkHostAndPort
 
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.HttpRpcServerTestBase.Companion.findFreePort
-import net.corda.httprpc.server.impl.rpcops.impl.CalendarRPCOpsImpl
-import net.corda.httprpc.server.impl.rpcops.impl.CustomSerializationAPIImpl
-import net.corda.httprpc.server.impl.rpcops.impl.NumberSequencesRPCOpsImpl
-import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
 import net.corda.httprpc.server.impl.utils.compact
+import net.corda.httprpc.test.CalendarRPCOpsImpl
+import net.corda.httprpc.test.CustomSerializationAPIImpl
+import net.corda.httprpc.test.NumberSequencesRPCOpsImpl
+import net.corda.httprpc.test.TestHealthCheckAPIImpl
 
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll

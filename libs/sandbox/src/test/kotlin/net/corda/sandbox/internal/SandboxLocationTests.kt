@@ -4,37 +4,44 @@ import net.corda.sandbox.SandboxException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.net.URI
 import java.util.UUID.randomUUID
 
 class SandboxLocationTests {
+    private val validSecurityDomain = "secDomain"
     private val validUUID = randomUUID()
-    private val validURI = URI("testUri")
+    private val validURI = "testUri"
 
     @Test
     fun `sandbox location is stringified correctly`() {
-        val validSandboxLocationString = "sandbox/$validUUID/$validURI"
+        val sandboxLocation = SandboxLocation(validSecurityDomain, validUUID, validURI)
 
-        val sandboxLocation = SandboxLocation(validUUID, validURI)
-        assertEquals(validSandboxLocationString, sandboxLocation.toString())
+        assertEquals("$validSecurityDomain/$validUUID/$validURI", sandboxLocation.toString())
     }
 
     @Test
     fun `sandbox location is destringified correctly`() {
-        val sandboxLocation = SandboxLocation(validUUID, validURI)
-        val sandboxLocationFromString = SandboxLocation.fromString(sandboxLocation.toString())
+        val sandboxLocation = SandboxLocation(validSecurityDomain, validUUID, validURI)
+        val sandboxLocationFromString = SandboxLocation.fromString("$validSecurityDomain/$validUUID/$validURI")
 
         assertEquals(sandboxLocation, sandboxLocationFromString)
     }
 
     @Test
-    fun `throws if sandbox location has incorrect number of components`() {
+    fun `can handle sandbox location where the final component contains forward slashes`() {
+        val source = "separated/by/slashes"
+        val sandboxLocation = SandboxLocation(validSecurityDomain, validUUID, source)
+        val sandboxLocationFromString = SandboxLocation.fromString("$validSecurityDomain/$validUUID/$source")
+
+        assertEquals(sandboxLocation, sandboxLocationFromString)
+    }
+
+    @Test
+    fun `throws if sandbox location has insufficient components`() {
         val zeroComponents = ""
         val oneComponent = "sandbox/"
         val twoComponents = "sandbox/$validUUID"
-        val fourComponents = "sandbox/$validUUID/$validURI/suffix"
 
-        listOf(zeroComponents, oneComponent, twoComponents, fourComponents).forEach { sandboxLocationString ->
+        listOf(zeroComponents, oneComponent, twoComponents).forEach { sandboxLocationString ->
             assertThrows<SandboxException> {
                 SandboxLocation.fromString(sandboxLocationString)
             }
@@ -42,23 +49,9 @@ class SandboxLocationTests {
     }
 
     @Test
-    fun `throws if sandbox location has incorrect prefix`() {
-        assertThrows<SandboxException> {
-            SandboxLocation.fromString("notSandbox/$validUUID/$validURI")
-        }
-    }
-
-    @Test
     fun `throws if sandbox location has invalid UUID`() {
         assertThrows<SandboxException> {
             SandboxLocation.fromString("sandbox/badUUID/$validURI")
-        }
-    }
-
-    @Test
-    fun `throws if sandbox location has invalid URI`() {
-        assertThrows<SandboxException> {
-            SandboxLocation.fromString("sandbox/$validUUID/${URI("/badUri")}")
         }
     }
 }

@@ -1,8 +1,8 @@
 package net.corda.crypto.service.rpc
 
 import net.corda.crypto.FreshKeySigningService
-import net.corda.crypto.service.CryptoFactory
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
+import net.corda.crypto.service.CryptoFactory
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.data.WireKeyValuePair
 import net.corda.data.crypto.wire.WireNoContentValue
@@ -21,9 +21,9 @@ import net.corda.data.crypto.wire.freshkeys.WireFreshKeysSignWithSpec
 import net.corda.data.crypto.wire.signing.WireSigningGetSupportedSchemes
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureVerificationService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
@@ -55,20 +55,20 @@ import kotlin.test.assertTrue
 class FreshKeysServiceRpcProcessorTests {
     private class FreshKeySigningServiceWrapper(
         private val impl: FreshKeySigningService
-    ): FreshKeySigningService {
+    ) : FreshKeySigningService {
         companion object {
             val recordedContexts = ConcurrentHashMap<String, Map<String, String>>()
         }
 
         override fun freshKey(context: Map<String, String>): PublicKey {
-            if(context.containsKey("someId")) {
+            if (context.containsKey("someId")) {
                 recordedContexts[context.getValue("someId")] = context
             }
             return impl.freshKey(context)
         }
 
         override fun freshKey(externalId: UUID, context: Map<String, String>): PublicKey {
-            if(context.containsKey("someId")) {
+            if (context.containsKey("someId")) {
                 recordedContexts[context.getValue("someId")] = context
             }
             return impl.freshKey(externalId, context)
@@ -79,7 +79,7 @@ class FreshKeysServiceRpcProcessorTests {
             data: ByteArray,
             context: Map<String, String>
         ): DigitalSignature.WithKey {
-            if(context.containsKey("someId")) {
+            if (context.containsKey("someId")) {
                 recordedContexts[context.getValue("someId")] = context
             }
             return impl.sign(publicKey, data, context)
@@ -91,7 +91,7 @@ class FreshKeysServiceRpcProcessorTests {
             data: ByteArray,
             context: Map<String, String>
         ): DigitalSignature.WithKey {
-            if(context.containsKey("someId")) {
+            if (context.containsKey("someId")) {
                 recordedContexts[context.getValue("someId")] = context
             }
             return impl.sign(publicKey, signatureSpec, data, context)
@@ -179,17 +179,17 @@ class FreshKeysServiceRpcProcessorTests {
             val scheme = cryptoMocks.factories.defaultFreshKeySignatureScheme
             return when (scheme.algorithmName) {
                 "RSA" -> SignatureSpec(
-                        signatureName = "RSA/NONE/PKCS1Padding",
-                        customDigestName = DigestAlgorithmName.SHA2_512
-                    )
+                    signatureName = "RSA/NONE/PKCS1Padding",
+                    customDigestName = DigestAlgorithmName.SHA2_512
+                )
                 "EC" -> SignatureSpec(
-                        signatureName = "NONEwithECDSA",
-                        customDigestName = DigestAlgorithmName.SHA2_512
-                    )
+                    signatureName = "NONEwithECDSA",
+                    customDigestName = DigestAlgorithmName.SHA2_512
+                )
                 else -> SignatureSpec(
-                        signatureName = "NONEwith${scheme.algorithmName}",
-                        customDigestName = DigestAlgorithmName.SHA2_512
-                    )
+                    signatureName = "NONEwith${scheme.algorithmName}",
+                    customDigestName = DigestAlgorithmName.SHA2_512
+                )
             }
         }
 
@@ -208,9 +208,9 @@ class FreshKeysServiceRpcProcessorTests {
         }
 
         private fun get(publicKey: PublicKey): SigningPersistentKeyInfo? {
-            return cryptoMocks.signingPersistentKeyCache.data.values.firstOrNull {
-                it.first.publicKeyHash == "$memberId:${publicKey.sha256Bytes().toHexString()}"
-            }?.first
+            return cryptoMocks.factories.cryptoServices.signingPersistence.getValue(memberId).persistence.get(
+                "$memberId:${publicKey.sha256Bytes().toHexString()}"
+            )
         }
     }
 
@@ -322,7 +322,8 @@ class FreshKeysServiceRpcProcessorTests {
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     WireSignatureSpec(
                         "BAD-SIGNATURE-ALGORITHM",
-                        "BAD-DIGEST-ALGORITHM"),
+                        "BAD-DIGEST-ALGORITHM"
+                    ),
                     ByteBuffer.wrap(data),
                     emptyList()
                 )

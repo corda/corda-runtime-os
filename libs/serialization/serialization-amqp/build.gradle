@@ -24,8 +24,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
-    implementation "net.corda:corda-crypto"
-    implementation "net.corda:corda-cipher-suite"
 
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-serialization"
@@ -59,6 +57,7 @@ dependencies {
     integrationTestImplementation "net.corda:corda-application"
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+    integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

@@ -6,7 +6,7 @@ package net.corda.crypto
  */
 interface CryptoLibraryClientsFactoryProvider : AutoCloseable {
     /**
-     * Creates an instance of [CryptoLibraryClientsFactory]
+     * Gets an instance of [CryptoLibraryClientsFactory]
      */
-    fun create(memberId: String, requestingComponent: String): CryptoLibraryClientsFactory
+    fun get(memberId: String, requestingComponent: String): CryptoLibraryClientsFactory
 }

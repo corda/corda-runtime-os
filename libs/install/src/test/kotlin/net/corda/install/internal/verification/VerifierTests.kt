@@ -9,15 +9,15 @@ import net.corda.install.internal.verification.TestUtils.MANIFEST_DUMMY_FLOWS
 import net.corda.install.internal.verification.TestUtils.createDummyCpk
 import net.corda.install.internal.verification.TestUtils.createDummyParsedCordappManifest
 import net.corda.install.internal.verification.TestUtils.createMockConfigurationAdmin
+import net.corda.packaging.CPK
 import net.corda.packaging.CordappManifest.Companion.DEFAULT_MIN_PLATFORM_VERSION
-import net.corda.packaging.Cpk
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.getAllOnesHash
 import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
@@ -33,12 +33,12 @@ import java.security.cert.Certificate
 import java.util.TreeSet
 
 class VerifierTests {
-    private lateinit var flowsCpk : Cpk
-    private lateinit var workflowCpk : Cpk
-    private lateinit var contractCpk : Cpk
+    private lateinit var flowsCpk : CPK
+    private lateinit var workflowCpk : CPK
+    private lateinit var contractCpk : CPK
 
-    private lateinit var split1Cpk: Cpk
-    private lateinit var split2Cpk: Cpk
+    private lateinit var split1Cpk: CPK
+    private lateinit var split2Cpk: CPK
 
     @BeforeEach
     fun setup(@TempDir junitTestDir : Path) {
@@ -49,10 +49,19 @@ class VerifierTests {
         split2Cpk = cpk("test.cpk.split2", junitTestDir)
     }
 
-    private fun cpk(propertyName: String, rootDir: Path): Cpk.Expanded {
+    @AfterEach
+    fun teardown() {
+        flowsCpk.close()
+        workflowCpk.close()
+        contractCpk.close()
+        split1Cpk.close()
+        split2Cpk.close()
+    }
+
+    private fun cpk(propertyName: String, rootDir: Path): CPK {
         val location = Paths.get(System.getProperty(propertyName) ?: fail("Property '$propertyName' is not defined."))
         val expansionLocation = rootDir.resolve("expanded-${location.fileName}")
-        return Cpk.Expanded.from(Files.newInputStream(location), expansionLocation, location.toString(), true)
+        return CPK.from(Files.newInputStream(location), expansionLocation, location.toString(), true)
     }
 
     private val dummySigningKeyOne = object : PublicKey {
@@ -80,7 +89,7 @@ class VerifierTests {
     }
 
     /** Checks that the [cpks] passes all the verifiers, initialised with the provided [configAdmin]. */
-    private fun verifies(configAdmin: ConfigurationAdmin = createMockConfigurationAdmin(), cpks: Iterable<Cpk>) {
+    private fun verifies(configAdmin: ConfigurationAdmin = createMockConfigurationAdmin(), cpks: Iterable<CPK.Metadata>) {
         val verifiers = createAllVerifiers(configAdmin)
 
         verifiers.forEach { verifier ->
@@ -91,7 +100,7 @@ class VerifierTests {
     }
 
     /** Checks that the [cpks] fails at least one of the verifiers, initialised with the provided [configAdmin]. */
-    private fun doesNotVerify(configAdmin: ConfigurationAdmin = createMockConfigurationAdmin(), cpks: Iterable<Cpk>): Throwable {
+    private fun doesNotVerify(configAdmin: ConfigurationAdmin = createMockConfigurationAdmin(), cpks: Iterable<CPK.Metadata>): Throwable {
         val verifiers = createAllVerifiers(configAdmin)
 
         return assertThrows(CpkVerificationException::class.java) {
@@ -108,7 +117,6 @@ class VerifierTests {
         CordappInfoVerifier(),
         CordappSignatureVerifier(configAdmin, cryptoLibraryFactory),
         DependenciesMetVerifier(),
-        DuplicateCordappHashVerifier(),
         DuplicateCordappIdentifierVerifier(),
         DuplicateContractsVerifier(),
         DuplicateFlowsVerifier(),
@@ -117,7 +125,7 @@ class VerifierTests {
 
     @Test
     fun `a valid set of CPKs passes verification`() {
-        verifies(cpks = listOf(workflowCpk, flowsCpk, contractCpk))
+        verifies(cpks = sequenceOf(workflowCpk, flowsCpk, contractCpk).map(CPK::metadata).toList())
     }
 
     @Test
@@ -129,8 +137,8 @@ class VerifierTests {
     fun `throws if a CPK's major version is not supported`() {
         val maxSupportedVersions = SUPPORTED_CPK_FORMATS.last()
         val unsupportedCpkFormat =
-            Cpk.Manifest.CpkFormatVersion(maxSupportedVersions.major + 1, maxSupportedVersions.minor)
-        val cpkManifest = Cpk.Manifest.fromManifest(TestUtils.createDummyCpkManifest(unsupportedCpkFormat))
+            CPK.FormatVersion.parse("${maxSupportedVersions.major + 1}.${maxSupportedVersions.minor}")
+        val cpkManifest = CPK.Manifest.fromJarManifest(TestUtils.createDummyCpkManifest(unsupportedCpkFormat))
         val cpk = createDummyCpk(cpkManifest = cpkManifest)
         doesNotVerify(cpks = listOf(cpk))
     }
@@ -139,8 +147,8 @@ class VerifierTests {
     fun `throws if a CPK's minor version is not supported`() {
         val maxSupportedVersions = SUPPORTED_CPK_FORMATS.last()
         val unsupportedCpkFormat =
-            Cpk.Manifest.CpkFormatVersion(maxSupportedVersions.major, maxSupportedVersions.minor + 1)
-        val cpkManifest = Cpk.Manifest.fromManifest(TestUtils.createDummyCpkManifest(unsupportedCpkFormat))
+            CPK.FormatVersion.newInstance(maxSupportedVersions.major, maxSupportedVersions.minor + 1)
+        val cpkManifest = CPK.Manifest.fromJarManifest(TestUtils.createDummyCpkManifest(unsupportedCpkFormat))
         val cpk = createDummyCpk(cpkManifest = cpkManifest)
         doesNotVerify(cpks = listOf(cpk))
     }
@@ -244,17 +252,6 @@ class VerifierTests {
     }
 
     @Test
-    fun `throws if two CorDapps have the same hash`() {
-        val cpks =
-            (0..1).map {
-                createDummyCpk(
-                    cordappHash = hashingService.getAllOnesHash(DigestAlgorithmName.SHA2_256)
-                )
-            }
-        doesNotVerify(cpks = cpks)
-    }
-
-    @Test
     fun `throws if two CorDapps have the same identifier`() {
         val cpks = (0..1).map {
             createDummyCpk(
@@ -344,7 +341,7 @@ class VerifierTests {
             )
 
         // We create a dependency that exists, other than for an invalid symbolic name.
-        val badSymbolicNameDependency = Cpk.Identifier("badSymbolicName", cpkOne.id.version, cpkOne.id.signerSummaryHash)
+        val badSymbolicNameDependency = CPK.Identifier.newInstance("badSymbolicName", cpkOne.id.version, cpkOne.id.signerSummaryHash)
         val cpkTwo =
             createDummyCpk(dependencies = sequenceOf(badSymbolicNameDependency).toCollection(TreeSet()))
         doesNotVerify(cpks = listOf(cpkOne, cpkTwo))
@@ -359,7 +356,7 @@ class VerifierTests {
             )
 
         // We create a dependency that exists, other than for an invalid version.
-        val badVersionDependency = Cpk.Identifier(cpkOne.id.symbolicName, "badVersion", cpkOne.id.signerSummaryHash)
+        val badVersionDependency = CPK.Identifier.newInstance(cpkOne.id.name, "badVersion", cpkOne.id.signerSummaryHash)
         val cpkTwo = createDummyCpk(dependencies = sequenceOf(badVersionDependency).toCollection(TreeSet()))
 
         doesNotVerify(cpks = listOf(cpkOne, cpkTwo))
@@ -375,8 +372,8 @@ class VerifierTests {
 
         // We create a dependency that exists, other than for an invalid set of public key hashes.
         val invalidSignerSummaryHash = SecureHash("MD5", ByteArray(16))
-        val badSignersDependency = Cpk.Identifier(
-            cpkOne.id.symbolicName,
+        val badSignersDependency = CPK.Identifier.newInstance(
+            cpkOne.id.name,
             cpkOne.id.version,
             invalidSignerSummaryHash)
         val cpkTwo = createDummyCpk(dependencies = sequenceOf(badSignersDependency).toCollection(TreeSet()))
@@ -386,9 +383,9 @@ class VerifierTests {
 
     @Test
     fun `two CPKs that split an exported package do not verify`() {
-        val ex = doesNotVerify(cpks = listOf(split1Cpk, split2Cpk))
+        val ex = doesNotVerify(cpks = listOf(split1Cpk.metadata, split2Cpk.metadata))
         assertThat(ex)
-            .hasMessageStartingWith("Package 'com.example.split.bundle1' exported by CPK Identifier(")
-            .hasMessageContaining(" is already exported by CPK Identifier(")
+            .hasMessageStartingWith("Package 'com.example.split.bundle1' exported by CPK ")
+            .hasMessageContaining(" is already exported by CPK ")
     }
 }

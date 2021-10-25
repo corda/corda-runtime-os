@@ -8,15 +8,10 @@ import net.corda.crypto.impl.DigestServiceProviderImpl
 import net.corda.crypto.impl.FreshKeySigningServiceImpl
 import net.corda.crypto.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.impl.SigningServiceImpl
-import net.corda.crypto.impl.config.CryptoCacheConfig
-import net.corda.crypto.impl.dev.InMemoryPersistentCache
-import net.corda.crypto.impl.dev.InMemoryPersistentCacheFactory
-import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
+import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactory
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCacheImpl
-import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
 import net.corda.crypto.impl.persistence.SigningKeyCacheImpl
-import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoService
@@ -25,7 +20,9 @@ import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
 import java.util.UUID
 
-class CryptoServicesTestFactory : CipherSuiteFactory {
+class CryptoServicesTestFactory(
+    schemeMetadataOverride: CipherSchemeMetadata? = null
+) : CipherSuiteFactory {
     val wrappingKeyAlias = "wrapping-key-alias"
 
     val passphrase = "PASSPHRASE"
@@ -34,18 +31,10 @@ class CryptoServicesTestFactory : CipherSuiteFactory {
 
     val memberId: String = UUID.randomUUID().toString()
 
-    private val persistentCacheFactory = InMemoryPersistentCacheFactory()
-
-    val signingPersistentKeyCache = persistentCacheFactory.createSigningPersistentCache(
-        CryptoCacheConfig.default
-    ) as InMemoryPersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo>
-
-    val defaultPersistentKeyCache = persistentCacheFactory.createDefaultCryptoPersistentCache(
-        CryptoCacheConfig.default
-    ) as InMemoryPersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
+    val persistenceFactory = InMemoryKeyValuePersistenceFactory()
 
     val schemeMetadata: CipherSchemeMetadata =
-        CipherSchemeMetadataProviderImpl().getInstance()
+        schemeMetadataOverride ?: CipherSchemeMetadataProviderImpl().getInstance()
 
     val digest: DigestService by lazy {
         DigestServiceProviderImpl().getInstance(this)
@@ -60,13 +49,13 @@ class CryptoServicesTestFactory : CipherSuiteFactory {
         passphrase = passphrase,
         salt = salt,
         schemeMetadata = schemeMetadata,
-        persistence = defaultPersistentKeyCache
+        persistenceFactory = persistenceFactory
     )
 
     val signingKeyCache = SigningKeyCacheImpl(
         memberId = memberId,
         keyEncoder = schemeMetadata,
-        persistence = signingPersistentKeyCache
+        persistenceFactory = persistenceFactory
     )
 
     val cryptoService = DefaultCryptoService(
@@ -108,7 +97,7 @@ class CryptoServicesTestFactory : CipherSuiteFactory {
             passphrase = passphrase,
             salt = salt,
             schemeMetadata = schemeMetadata,
-            persistence = defaultPersistentKeyCache
+            persistenceFactory = persistenceFactory
         )
         return DefaultCryptoService(
             cache = cache,
@@ -121,7 +110,7 @@ class CryptoServicesTestFactory : CipherSuiteFactory {
         val cache = SigningKeyCacheImpl(
             memberId = UUID.randomUUID().toString(),
             keyEncoder = schemeMetadata,
-            persistence = signingPersistentKeyCache
+            persistenceFactory = persistenceFactory
         )
         return SigningServiceImpl(
             cache = cache,
@@ -138,7 +127,7 @@ class CryptoServicesTestFactory : CipherSuiteFactory {
         val cache = SigningKeyCacheImpl(
             memberId = UUID.randomUUID().toString(),
             keyEncoder = schemeMetadata,
-            persistence = signingPersistentKeyCache
+            persistenceFactory = persistenceFactory
         )
         return FreshKeySigningServiceImpl(
             cache = cache,

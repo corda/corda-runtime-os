@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
@@ -158,7 +159,10 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
                             rpcRequest.replyTopic,
                             rpcRequest.correlationKey,
                             ResponseStatus.CANCELLED,
-                            ("Cause:${error.cause.toString()}. Message: ${error.message}").encodeToByteArray()
+                            ExceptionEnvelope(
+                                error.javaClass.name,
+                                "Future was cancelled"
+                            ).toByteBuffer().array()
                         )
                     }
                     future.isCompletedExceptionally -> {
@@ -166,7 +170,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
                             rpcRequest.replyTopic,
                             rpcRequest.correlationKey,
                             ResponseStatus.FAILED,
-                            ("Cause:${error.cause.toString()}. Message: ${error.message}").encodeToByteArray()
+                            ExceptionEnvelope(error.javaClass.name, error.message).toByteBuffer().array()
                         )
                     }
                     else -> {
