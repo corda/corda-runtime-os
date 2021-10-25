@@ -50,7 +50,7 @@ class SandboxServiceIsolationTest {
         val otherGroup = sandboxLoader.group2
         val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.metadata.id)
         val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.metadata.id)
-        val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES1_FLOW_CLASS, thisGroup).onEach(::println)
+        val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES1_FLOW_CLASS, thisGroup)
 
         // CPK1 should be able to see its own services, and any
         // services inside CPK2's "main" jar, but nothing from CPK3.
@@ -70,7 +70,7 @@ class SandboxServiceIsolationTest {
         val otherGroup = sandboxLoader.group2
         val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.metadata.id)
         val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.metadata.id)
-        val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES2_FLOW_CLASS, thisGroup).onEach(::println)
+        val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES2_FLOW_CLASS, thisGroup)
 
         // CPK2 should be able to see its own services, and any
         // services inside CPK1's "main" jar, but nothing from CPK3.
@@ -89,7 +89,7 @@ class SandboxServiceIsolationTest {
         val thisGroup = sandboxLoader.group2
         val otherGroup = sandboxLoader.group1
         val sandbox3 = thisGroup.getSandbox(sandboxLoader.cpk3.metadata.id)
-        val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES3_FLOW_CLASS, thisGroup).onEach(::println)
+        val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES3_FLOW_CLASS, thisGroup)
 
         // CPK3 should be able to see its own services, but
         // no service belonging to either CPK1 or CPK2.

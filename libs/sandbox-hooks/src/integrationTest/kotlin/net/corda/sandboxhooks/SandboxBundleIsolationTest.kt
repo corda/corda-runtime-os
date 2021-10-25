@@ -46,10 +46,9 @@ class SandboxBundleIsolationTest {
         val thisGroup = sandboxLoader.group1
         val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.metadata.id)
         val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.metadata.id)
-        val bundles = sandboxLoader.runFlow<List<Bundle>>(BUNDLES1_FLOW_CLASS, thisGroup).onEach(::println)
+        val bundles = sandboxLoader.runFlow<List<Bundle>>(BUNDLES1_FLOW_CLASS, thisGroup)
 
-        // CPK1 should be able to see its own bundles, and
-        // CPK2's "main" jar bundle, but nothing from CPK3.
+        // CPK1 should be able to see its own bundles, and CPK2's "main" jar bundle, but nothing from CPK3.
         assertThat(bundles)
             .anyMatch { sandboxLoader.containsBundle(it, thisGroup) }
             .noneMatch { sandboxLoader.containsBundle(it, sandboxLoader.group2) }
@@ -67,10 +66,9 @@ class SandboxBundleIsolationTest {
         val thisGroup = sandboxLoader.group1
         val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.metadata.id)
         val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.metadata.id)
-        val bundles = sandboxLoader.runFlow<List<Bundle>>(BUNDLES2_FLOW_CLASS, thisGroup).onEach(::println)
+        val bundles = sandboxLoader.runFlow<List<Bundle>>(BUNDLES2_FLOW_CLASS, thisGroup)
 
-        // CPK2 should be able to see its own bundles, and
-        // CPK1's "main" jar bundle, but nothing from CPK3.
+        // CPK2 should be able to see its own bundles, and CPK1's "main" jar bundle, but nothing from CPK3.
         assertThat(bundles)
             .anyMatch { sandboxLoader.containsBundle(it, thisGroup) }
             .noneMatch { sandboxLoader.containsBundle(it, sandboxLoader.group2) }
@@ -87,10 +85,9 @@ class SandboxBundleIsolationTest {
     fun testBundlesForCPK3() {
         val thisGroup = sandboxLoader.group2
         val sandbox3 = thisGroup.getSandbox(sandboxLoader.cpk3.metadata.id)
-        val bundles = sandboxLoader.runFlow<List<Bundle>>(BUNDLES3_FLOW_CLASS, thisGroup).onEach(::println)
+        val bundles = sandboxLoader.runFlow<List<Bundle>>(BUNDLES3_FLOW_CLASS, thisGroup)
 
-        // CPK3 should be able to see its own bundles,
-        // but nothing from either CPK1 or CPK2.
+        // CPK3 should be able to see its own bundles, but nothing from either CPK1 or CPK2.
         assertThat(bundles)
             .anyMatch { sandboxLoader.containsBundle(it, thisGroup) }
             .noneMatch { sandboxLoader.containsBundle(it, sandboxLoader.group1) }

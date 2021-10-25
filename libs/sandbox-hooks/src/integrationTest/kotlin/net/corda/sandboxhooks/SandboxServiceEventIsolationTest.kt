@@ -41,7 +41,7 @@ class SandboxServiceEventIsolationTest {
     fun testServiceEventsForCPK1() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
-        val serviceEvents = sandboxLoader.runFlow<List<ServiceEvent>>(SERVICE_EVENT1_FLOW_CLASS, thisGroup).onEach(::println)
+        val serviceEvents = sandboxLoader.runFlow<List<ServiceEvent>>(SERVICE_EVENT1_FLOW_CLASS, thisGroup)
         assertThat(serviceEvents)
             .noneForSandboxGroup(otherGroup)
             .isNotEmpty
@@ -51,7 +51,7 @@ class SandboxServiceEventIsolationTest {
     fun testServiceEventsForCPK2() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
-        val serviceEvents = sandboxLoader.runFlow<List<ServiceEvent>>(SERVICE_EVENT2_FLOW_CLASS, thisGroup).onEach(::println)
+        val serviceEvents = sandboxLoader.runFlow<List<ServiceEvent>>(SERVICE_EVENT2_FLOW_CLASS, thisGroup)
         assertThat(serviceEvents)
             .noneForSandboxGroup(otherGroup)
             .isNotEmpty
@@ -61,7 +61,7 @@ class SandboxServiceEventIsolationTest {
     fun testServiceEventsForCPK3() {
         val thisGroup = sandboxLoader.group2
         val otherGroup = sandboxLoader.group1
-        val serviceEvents = sandboxLoader.runFlow<List<ServiceEvent>>(SERVICE_EVENT3_FLOW_CLASS, thisGroup).onEach(::println)
+        val serviceEvents = sandboxLoader.runFlow<List<ServiceEvent>>(SERVICE_EVENT3_FLOW_CLASS, thisGroup)
         assertThat(serviceEvents)
             .noneForSandboxGroup(otherGroup)
             .isNotEmpty
