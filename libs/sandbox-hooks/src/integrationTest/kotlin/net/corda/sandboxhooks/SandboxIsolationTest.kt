@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 
+/** Tests the isolation of sandboxes across sandbox groups. */
 @ExtendWith(ServiceExtension::class)
 class SandboxIsolationTest {
     companion object {

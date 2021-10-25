@@ -1,14 +1,14 @@
 package net.corda.sandboxhooks
 
-import net.corda.sandbox.SandboxGroup
-import org.assertj.core.api.AbstractListAssert
-import org.assertj.core.api.ObjectAssert
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.framework.BundleEvent
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 
+/** Tests the isolation of bundle events across sandbox groups. */
 @ExtendWith(ServiceExtension::class)
 class SandboxBundleEventIsolationTest {
     companion object {
@@ -16,31 +16,20 @@ class SandboxBundleEventIsolationTest {
 
         @InjectService(timeout = 1000)
         lateinit var sandboxLoader: SandboxLoader
-
-        fun assertThat(events: List<BundleEvent>) = BundleEventListAssertions(events)
-
-        class BundleEventListAssertions(events: List<BundleEvent>)
-            : AbstractListAssert<BundleEventListAssertions, List<BundleEvent>, BundleEvent, ObjectAssert<BundleEvent>>(events, BundleEventListAssertions::class.java) {
-            override fun toAssert(value: BundleEvent?, description: String?) = ObjectAssert(value!!) // Never called.
-
-            override fun newAbstractIterableAssert(iterable: Iterable<BundleEvent>): BundleEventListAssertions {
-                return BundleEventListAssertions(iterable as List<BundleEvent>)
-            }
-
-            fun noneForSandboxGroup(group: SandboxGroup): BundleEventListAssertions {
-                return noneMatch { evt -> sandboxLoader.containsBundle(evt.bundle, group) }
-                    .noneMatch { evt -> sandboxLoader.containsBundle(evt.origin, group) }
-            }
-        }
     }
 
     @Test
     fun sandboxGroupDoesNotReceiveBundleEventsFromOtherSandboxGroups() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
+
+        // This flow returns all bundle events visible to this bundle.
         val bundleEvents = sandboxLoader.runFlow<List<BundleEvent>>(BUNDLE_EVENT1_FLOW_CLASS, thisGroup)
-        assertThat(bundleEvents)
-            .noneForSandboxGroup(otherGroup)
-            .isNotEmpty
+
+        assertThat(bundleEvents).isNotEmpty
+        bundleEvents.forEach { evt ->
+            assertTrue { !sandboxLoader.containsBundle(evt.bundle, otherGroup) }
+            assertTrue { !sandboxLoader.containsBundle(evt.origin, otherGroup) }
+        }
     }
 }

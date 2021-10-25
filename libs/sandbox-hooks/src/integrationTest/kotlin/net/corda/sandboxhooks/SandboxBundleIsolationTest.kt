@@ -9,6 +9,7 @@ import org.osgi.framework.Bundle
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 
+/** Tests the isolation of bundles across sandbox groups. */
 @ExtendWith(ServiceExtension::class)
 class SandboxBundleIsolationTest {
     companion object {
@@ -45,7 +46,7 @@ class SandboxBundleIsolationTest {
         val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.metadata.id)
         val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.metadata.id)
 
-        // We retrieve all bundles visible to sandbox one.
+        // This flow returns all bundle events visible to this bundle.
         val bundles = sandboxLoader.runFlow<List<Bundle>>(BUNDLES1_FLOW_CLASS, thisGroup)
 
         // CPK1 should be able to see its own bundles, and CPK2's "main" jar bundle, but nothing from CPK3.

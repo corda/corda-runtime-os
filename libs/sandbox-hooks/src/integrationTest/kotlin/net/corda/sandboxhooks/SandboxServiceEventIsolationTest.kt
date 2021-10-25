@@ -1,14 +1,14 @@
 package net.corda.sandboxhooks
 
-import net.corda.sandbox.SandboxGroup
-import org.assertj.core.api.AbstractListAssert
-import org.assertj.core.api.ObjectAssert
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.framework.ServiceEvent
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 
+/** Tests the isolation of service events across sandbox groups. */
 @ExtendWith(ServiceExtension::class)
 class SandboxServiceEventIsolationTest {
     companion object {
@@ -16,23 +16,6 @@ class SandboxServiceEventIsolationTest {
 
         @InjectService(timeout = 1000)
         lateinit var sandboxLoader: SandboxLoader
-
-        fun assertThat(events: List<ServiceEvent>) = ServiceEventListAssertions(events)
-
-        class ServiceEventListAssertions(events: List<ServiceEvent>)
-            : AbstractListAssert<ServiceEventListAssertions, List<ServiceEvent>, ServiceEvent, ObjectAssert<ServiceEvent>>(events, ServiceEventListAssertions::class.java) {
-            override fun toAssert(value: ServiceEvent?, description: String?) = ObjectAssert(value!!) // Never called.
-
-            override fun newAbstractIterableAssert(iterable: Iterable<ServiceEvent>): ServiceEventListAssertions {
-                return ServiceEventListAssertions(iterable as List<ServiceEvent>)
-            }
-
-            fun noneForSandboxGroup(group: SandboxGroup): ServiceEventListAssertions {
-                return noneMatch { event ->
-                    sandboxLoader.containsBundle(event.serviceReference.bundle, group)
-                }
-            }
-        }
     }
 
     @Test
@@ -40,8 +23,9 @@ class SandboxServiceEventIsolationTest {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
         val serviceEvents = sandboxLoader.runFlow<List<ServiceEvent>>(SERVICE_EVENT1_FLOW_CLASS, thisGroup)
-        assertThat(serviceEvents)
-            .noneForSandboxGroup(otherGroup)
-            .isNotEmpty
+        assertThat(serviceEvents).isNotEmpty
+        serviceEvents.forEach { event ->
+            assertTrue { !sandboxLoader.containsBundle(event.serviceReference.bundle, otherGroup) }
+        }
     }
 }

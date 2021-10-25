@@ -11,6 +11,7 @@ import org.osgi.service.resolver.Resolver
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 
+/** Tests the isolation of services across sandbox groups. */
 @ExtendWith(ServiceExtension::class)
 class SandboxServiceIsolationTest {
     companion object {
