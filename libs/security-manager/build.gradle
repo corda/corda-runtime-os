@@ -10,7 +10,6 @@ dependencies {
 
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:osgi.core"
-    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -18,7 +17,6 @@ dependencies {
 
     integrationTestImplementation project(":libs:security-manager")
     integrationTestImplementation 'org.slf4j:slf4j-api'
-    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion"
     integrationTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
