@@ -1,5 +1,7 @@
 package net.corda.lifecycle.domino.logic
 
+import com.typesafe.config.Config
+import net.corda.configuration.read.ConfigurationHandler
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -14,7 +16,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -24,28 +25,52 @@ import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 @Suppress("TooManyFunctions")
-abstract class DominoTile(
+open class DominoTile private constructor(
+    instanceName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val startAsynchronously: Boolean = false
+    val createResources: (resources: ResourcesHolder) -> Any = {},
+    private val children: Collection<DominoTile> = emptySet(),
+    private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
+    private val asynchronousStart: Boolean = false
 ) : Lifecycle {
+
+    constructor(instanceName: String,
+                coordinatorFactory: LifecycleCoordinatorFactory,
+                createResources: (resources: ResourcesHolder) -> Any = {},
+                children: Collection<DominoTile> = emptySet()
+    ): this(instanceName, coordinatorFactory, createResources, children, configurationChangeHandler = null, asynchronousStart = false)
+
+    constructor(instanceName: String,
+                coordinatorFactory: LifecycleCoordinatorFactory,
+                asynchronousStart: Boolean,
+                createResources: (resources: ResourcesHolder) -> Any = {},
+                children: Collection<DominoTile> = emptySet()
+    ): this(instanceName, coordinatorFactory, createResources, children, configurationChangeHandler = null, asynchronousStart)
+
+    constructor(instanceName: String,
+                coordinatorFactory: LifecycleCoordinatorFactory,
+                configurationChangeHandler: ConfigurationChangeHandler<*>,
+                createResources: (resources: ResourcesHolder) -> Any = {},
+                children: Collection<DominoTile> = emptySet()
+    ): this(instanceName, coordinatorFactory, createResources, children, configurationChangeHandler, asynchronousStart = false)
+
     companion object {
         private val logger = contextLogger()
         private val instancesIndex = ConcurrentHashMap<String, Int>()
     }
     private object StartTile : LifecycleEvent
     private data class StopTile(val dueToError: Boolean) : LifecycleEvent
-    private class CallFromCoordinator(val callback: () -> Unit) : LifecycleEvent
+    private class ConfigUpdate(val callback: () -> ConfigUpdateResult) : LifecycleEvent
     enum class State {
         Created,
         Started,
         StoppedDueToError,
         StoppedByParent
     }
-    // This needs to be open so that `startTile will register to follow all the tiles on the first run` and `startTile will not register to
-    // follow any tile for the second time` pass (as they set this variable). This should be fixed (maybe mockito-inline fixes this).
-    open val name = LifecycleCoordinatorName(
-        javaClass.simpleName,
-        instancesIndex.compute(javaClass.simpleName) { _, last ->
+
+    private val name = LifecycleCoordinatorName(
+        instanceName,
+        instancesIndex.compute(instanceName) { _, last ->
             if (last == null) {
                 1
             } else {
@@ -56,13 +81,13 @@ abstract class DominoTile(
 
     private val controlLock = ReentrantReadWriteLock()
 
-    override fun start() {
+    final override fun start() {
         logger.info("Starting $name")
         coordinator.start()
         coordinator.postEvent(StartTile)
     }
 
-    override fun stop() {
+    final override fun stop() {
         if (state != State.StoppedByParent) {
             coordinator.postEvent(StopTile(false))
         }
@@ -74,9 +99,10 @@ abstract class DominoTile(
         }
     }
 
-    protected val coordinator = coordinatorFactory.createCoordinator(name, EventHandler())
-    protected val resources = ResourcesHolder()
-    open val children: Collection<DominoTile> = emptySet()
+    private val coordinator = coordinatorFactory.createCoordinator(name, EventHandler())
+    internal val resources = ResourcesHolder()
+    internal val configResources = ResourcesHolder()
+
     @Volatile
     private var registrations: Collection<RegistrationHandle>? = null
 
@@ -84,15 +110,58 @@ abstract class DominoTile(
 
     private val isOpen = AtomicBoolean(true)
 
+    private val waitForConfig = configurationChangeHandler != null
+    @Volatile
+    private var configReady = false
+    private var configRegistration : AutoCloseable? = null
+
+    private sealed class ConfigUpdateResult{
+        object Success: ConfigUpdateResult()
+        object NoUpdate: ConfigUpdateResult()
+        data class Error(val e: Throwable): ConfigUpdateResult()
+    }
+
+    private inner class Handler<C>(val configurationChangeHandler: ConfigurationChangeHandler<C>) : ConfigurationHandler {
+
+        @Volatile
+        private var lastConfiguration: C? = null
+
+        private fun applyNewConfiguration(newConfiguration: Config): ConfigUpdateResult {
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                val configuration = configurationChangeHandler.configFactory(newConfiguration)
+                logger.info("Got configuration $name")
+                return if (configuration == lastConfiguration) {
+                    logger.info("Configuration had not changed $name")
+                    ConfigUpdateResult.NoUpdate
+                } else {
+                    configurationChangeHandler.applyNewConfiguration(configuration, lastConfiguration, configResources)
+                    lastConfiguration = configuration
+                    logger.info("Reconfigured $name")
+                    ConfigUpdateResult.Success
+                }
+            } catch (e: Throwable) {
+                return ConfigUpdateResult.Error(e)
+            }
+        }
+
+        override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, Config>) {
+            if (changedKeys.contains(configurationChangeHandler.key)) {
+                val newConfiguration = config[configurationChangeHandler.key]
+                if (newConfiguration != null) {
+                    configUpdateFromCoordinator {
+                        applyNewConfiguration(newConfiguration)
+                    }
+                }
+            }
+        }
+    }
+
     val state: State
         get() = currentState.get()
 
     override val isRunning: Boolean
         get() = state == State.Started
-
-    protected open fun started() {
-       updateState(State.Started)
-    }
 
     private fun updateState(newState: State) {
         val oldState = currentState.getAndSet(newState)
@@ -109,30 +178,8 @@ abstract class DominoTile(
         }
     }
 
-    @VisibleForTesting
-    internal open fun handleEvent(event: LifecycleEvent): Boolean {
-        return when (event) {
-            is RegistrationStatusChangeEvent -> {
-                if (event.status == LifecycleStatus.UP) {
-                    startKidsIfNeeded()
-                } else {
-                    val errorKids = children.filter { it.state == State.StoppedDueToError }
-                    if (errorKids.isEmpty()) {
-                        stop()
-                    } else {
-                        gotError(Exception("Had error in ${errorKids.map { it.name }}"))
-                    }
-                }
-                true
-            }
-            else -> {
-                false
-            }
-        }
-    }
-
-    fun callFromCoordinator(callback: () -> Unit) {
-        coordinator.postEvent(CallFromCoordinator(callback))
+    private fun configUpdateFromCoordinator(callback: () -> ConfigUpdateResult) {
+        coordinator.postEvent(ConfigUpdate(callback))
     }
 
     private inner class EventHandler : LifecycleEventHandler {
@@ -149,29 +196,55 @@ abstract class DominoTile(
                 }
                 is StopTile -> {
                     if (state != State.StoppedByParent) {
-                        stopTile(event.dueToError)
+                        stopTile()
                         if (event.dueToError) {
                             updateState(State.StoppedDueToError)
                         } else {
+                            configResources.close()
                             updateState(State.StoppedByParent)
                         }
                     }
                 }
                 is StartTile -> {
                     when (state) {
-                        State.Created, State.StoppedByParent -> startTile()
+                        State.Created, State.StoppedByParent -> readyOrStartTile()
                         State.Started -> {} // Do nothing
                         State.StoppedDueToError -> logger.warn("Can not start $name, it was stopped due to an error")
                     }
                 }
-                is CallFromCoordinator -> {
-                    event.callback.invoke()
-                }
-                else -> {
-                    if (!handleEvent(event)) {
-                        logger.warn("Unexpected event $event")
+                is ConfigUpdate -> {
+                    when (event.callback.invoke()) {
+                        is ConfigUpdateResult.Error -> {
+                            configReady = false
+                            configResources.close()
+                            stopTile()
+                            updateState(State.StoppedDueToError)
+                        }
+                        ConfigUpdateResult.NoUpdate -> {}
+                        ConfigUpdateResult.Success -> {
+                            configReady = true
+                            when (state) {
+                                State.StoppedDueToError -> readyOrStartTile()
+                                State.StoppedByParent, State.Started -> {} // Do nothing
+                                State.Created -> updateState(State.Started)
+                            }
+                        }
                     }
                 }
+                is RegistrationStatusChangeEvent -> {
+                    if (event.status == LifecycleStatus.UP) {
+                        logger.info("RegistrationStatusChangeEvent $name going up.")
+                        readyOrStartTile()
+                    } else {
+                        val errorKids = children.filter { it.state == State.StoppedDueToError }
+                        if (errorKids.isEmpty()) {
+                            stop()
+                        } else {
+                            gotError(Exception("$name Had error in ${errorKids.map { it.name }}"))
+                        }
+                    }
+                }
+                else -> logger.warn("Unexpected event $event")
             }
         }
 
@@ -186,14 +259,14 @@ abstract class DominoTile(
         }
     }
 
-    protected open fun gotError(cause: Throwable) {
+    internal fun gotError(cause: Throwable) {
         logger.warn("Got error in $name", cause)
         if (state != State.StoppedDueToError) {
             coordinator.postEvent(StopTile(true))
         }
     }
 
-    internal open fun startTile() {
+    private fun readyOrStartTile() {
         if (registrations == null) {
             registrations = children.map {
                 it.name
@@ -202,7 +275,9 @@ abstract class DominoTile(
             }
             logger.info("Created $name with ${children.map { it.name }}")
         }
-
+        if (configRegistration == null) {
+            configRegistration = configurationChangeHandler?.configurationReaderService?.registerForUpdates(Handler(configurationChangeHandler))
+        }
         startKidsIfNeeded()
     }
 
@@ -232,11 +307,14 @@ abstract class DominoTile(
 
     private fun createResourcesAndStart() {
         resources.close()
-        createResources()
-        if (!startAsynchronously) started()
+        createResources(resources)
+        if (waitForConfig && !configReady || asynchronousStart) {
+            return
+        }
+        updateState(State.Started)
     }
 
-    internal open fun stopTile(dueToError: Boolean) {
+    private fun stopTile() {
         resources.close()
         children.forEach {
             if (it.state != State.StoppedDueToError) {
@@ -245,19 +323,20 @@ abstract class DominoTile(
         }
     }
 
-    /**
-     * Override this if your tile needs to create and destroy resources (e.g. a thread pool) when starting and stopping, respectively.
-     */
-    open fun createResources() {}
+    fun externalReady() {
+        updateState(State.Started)
+    }
 
     override fun close() {
         registrations?.forEach {
             it.close()
         }
+        configRegistration?.close()
+        configResources.close()
         controlLock.write {
             isOpen.set(false)
 
-            stopTile(false)
+            stopTile()
 
             try {
                 coordinator.close()

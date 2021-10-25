@@ -1,6 +1,7 @@
 package net.corda.lifecycle.domino.logic.util
 
 import com.typesafe.config.ConfigFactory
+import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.messaging.api.publisher.Publisher
@@ -12,14 +13,18 @@ import java.util.concurrent.CompletableFuture
 class PublisherWithDominoLogic(
     private val publisherFactory: PublisherFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val publisherId: String,
-) :
-    DominoTile(coordinatorFactory) {
+    private val publisherId: String
+) : Lifecycle {
+
+    override val isRunning: Boolean
+        get() = dominoTile.isRunning
 
     @Volatile
     private var publisher: Publisher? = null
 
-    override fun createResources() {
+    val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources)
+
+    fun createResources(resources: ResourcesHolder) {
         val publisherConfig = PublisherConfig(publisherId)
         publisher = publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty()).also {
             resources.keep {
@@ -31,14 +36,26 @@ class PublisherWithDominoLogic(
     }
 
     fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-        return withLifecycleLock {
+        return dominoTile.withLifecycleLock {
             publisher?.publishToPartition(records) ?: throw IllegalStateException("Publisher had not started")
         }
     }
 
     fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-        return withLifecycleLock {
+        return dominoTile.withLifecycleLock {
             publisher?.publish(records) ?: throw IllegalStateException("Publisher had not started")
+        }
+    }
+
+    override fun start() {
+        if (!isRunning) {
+            dominoTile.start()
+        }
+    }
+
+    override fun stop() {
+        if (isRunning) {
+            dominoTile.stop()
         }
     }
 }
