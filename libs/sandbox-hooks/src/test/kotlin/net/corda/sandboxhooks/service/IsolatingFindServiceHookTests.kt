@@ -1,8 +1,8 @@
 package net.corda.sandboxhooks.service
 
 import net.corda.sandbox.SandboxContextService
-import net.corda.sandboxhooks.HookTestUtils.Companion.mockBundleContext
-import net.corda.sandboxhooks.HookTestUtils.Companion.mockServiceReference
+import net.corda.sandboxhooks.mockBundleContext
+import net.corda.sandboxhooks.mockServiceReference
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

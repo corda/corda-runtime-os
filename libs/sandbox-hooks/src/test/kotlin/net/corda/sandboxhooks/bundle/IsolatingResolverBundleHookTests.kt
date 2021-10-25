@@ -2,9 +2,9 @@ package net.corda.sandboxhooks.bundle
 
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxContextService
-import net.corda.sandboxhooks.HookTestUtils.Companion.mockBundleCapability
-import net.corda.sandboxhooks.HookTestUtils.Companion.mockBundleRequirement
-import net.corda.sandboxhooks.HookTestUtils.Companion.mockBundleRevision
+import net.corda.sandboxhooks.mockBundleCapability
+import net.corda.sandboxhooks.mockBundleRequirement
+import net.corda.sandboxhooks.mockBundleRevision
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

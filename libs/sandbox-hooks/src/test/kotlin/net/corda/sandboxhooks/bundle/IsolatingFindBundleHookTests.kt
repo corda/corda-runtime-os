@@ -1,7 +1,7 @@
 package net.corda.sandboxhooks.bundle
 
 import net.corda.sandbox.SandboxContextService
-import net.corda.sandboxhooks.HookTestUtils.Companion.mockBundleContext
+import net.corda.sandboxhooks.mockBundleContext
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
