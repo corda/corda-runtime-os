@@ -5,7 +5,6 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -100,26 +99,21 @@ class RegistrationTest {
         harness.verifyDeliveredEvents(1, 0)
     }
 
-    @RepeatedTest(60)
-    fun `closing coordinator eventually closes all registrations`() {
+    @Test
+    fun `not closing coordinator a registration leads to an error state`() {
         val factory = LifecycleCoordinatorFactoryImpl()
         val coordinator = factory.createCoordinator(LifecycleCoordinatorName("a", "b")) { _, _ -> }
         coordinator.start()
 
-        val numberOfCoordinators = 4
-        (1..numberOfCoordinators).map {
-            factory.createCoordinator(LifecycleCoordinatorName("a $it", "b $it")) { _, _ -> }
-        }.map {
-            coordinator.followStatusChanges(setOf(it))
-//        }.onEach {
-//            it.close()
-        }
+        val tracked = factory.createCoordinator(LifecycleCoordinatorName("a 1", "b 1")) { _, _ -> }
+        tracked.start()
+        coordinator.followStatusChanges(setOf(tracked))
 
-        coordinator.close()
-
-        // Give the coordinator some time to close other registrations
+        tracked.close()
         Thread.sleep(1000)
-        assertThat((coordinator as LifecycleCoordinatorImpl).lifecycleState.registrationsEmpty()).isTrue
+        assertThat(tracked.status).isEqualTo(LifecycleStatus.DOWN)
+        assertThat(coordinator.status).isEqualTo(LifecycleStatus.ERROR)
+//        coordinator.close()
     }
 
     private inner class RegistrationTestHarness {

@@ -96,4 +96,9 @@ internal class Registration(
             coordinators.forEach { it.postEvent(CancelRegistration(this)) }
         }
     }
+
+    override fun toString(): String {
+        return "Registration(registeringCoordinator=${registeringCoordinator.name}," +
+                "coordinators=${coordinators.map { it.name }.joinToString()})"
+    }
 }

@@ -65,7 +65,13 @@ class LifecycleCoordinatorImpl(
          * By sharing a threadpool among coordinators, it should be possible to reduce resource usage when in a stable
          * state.
          */
-        private val executor = Executors.newScheduledThreadPool(MIN_THREADS) { runnable ->
+        private val executor = Executors.newCachedThreadPool() { runnable ->
+            val thread = Thread(runnable)
+            thread.isDaemon = true
+            thread
+        }
+
+        private val timerExecutor = Executors.newScheduledThreadPool(MIN_THREADS) { runnable ->
             val thread = Thread(runnable)
             thread.isDaemon = true
             thread
@@ -97,7 +103,6 @@ class LifecycleCoordinatorImpl(
      * shut down.
      */
     private val _isClosed = AtomicBoolean(false)
-    private val _isClosing = AtomicBoolean(false)
 
     /**
      * Process a batch of events in the event queue.
@@ -138,7 +143,7 @@ class LifecycleCoordinatorImpl(
      * This is invoked from the processor when processing a new timer set up event.
      */
     private fun createTimer(timerEvent: TimerEvent, delay: Long): ScheduledFuture<*> {
-        return executor.schedule({ postEvent(timerEvent) }, delay, TimeUnit.MILLISECONDS)
+        return timerExecutor.schedule({ postEvent(timerEvent) }, delay, TimeUnit.MILLISECONDS)
     }
 
     /**
@@ -157,17 +162,6 @@ class LifecycleCoordinatorImpl(
         if (_isClosed.get()) {
             logger.error("An attempt was made to use coordinator $name after it has been closed. Event: $event")
             throw LifecycleException("No events can be posted to a closed coordinator. Event: $event")
-        }
-        if (_isClosing.get()) {
-            when (event) {
-                is StopEvent,
-                is CloseCoordinator -> {
-                }
-                else -> {
-                    logger.warn("Only stop and close events can be posted to a closing coordinator. Ignoring event: $event")
-                    return
-                }
-            }
         }
         lifecycleState.postEvent(event)
         scheduleIfRequired()
@@ -263,7 +257,6 @@ class LifecycleCoordinatorImpl(
     }
 
     override fun close() {
-        _isClosing.set(true)
         logger.trace { "$name: Closing coordinator" }
         stop()
         postEvent(CloseCoordinator())

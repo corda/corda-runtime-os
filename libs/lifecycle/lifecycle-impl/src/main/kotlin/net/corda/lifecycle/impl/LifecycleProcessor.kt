@@ -179,7 +179,17 @@ internal class LifecycleProcessor(
 
     private fun processClose(coordinator: LifecycleCoordinator): Boolean {
         state.isRunning = false
-        state.registrations.forEach { it.close() }
+        state.trackedRegistrations.forEach {
+            logger.info("Closing $it")
+            println("Closing $it")
+            it.close()
+        }
+        state.trackedRegistrations.clear()
+        state.registrations.forEach {
+            logger.error("$it on ${coordinator.name} not closed.")
+            it.updateCoordinatorStatus(coordinator, LifecycleStatus.ERROR)
+        }
+        state.registrations.clear()
         registry.removeCoordinator(coordinator.name)
         return true
     }
