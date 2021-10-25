@@ -19,13 +19,13 @@ class SandboxBundlePrivateImplementationTest {
     }
 
     @Test
-    fun invokePrivateImplementationOfClass() {
+    fun canInvokePrivateImplementationOfClass() {
         val returnString = sandboxLoader.runFlow<String>(INVOKE_PRIVATE_IMPL_FLOW_CLASS, sandboxLoader.group1)
         assertEquals(PRIVATE_WRAPPER_RETURN_VALUE, returnString)
     }
 
     @Test
-    fun usePrivateImplementationOfClassAsGeneric() {
+    fun canUsePrivateImplementationOfClassAsGeneric() {
         val returnString = sandboxLoader.runFlow<String>(PRIVATE_IMPL_AS_GENERIC_FLOW_CLASS, sandboxLoader.group1)
         assertEquals(PRIVATE_WRAPPER_RETURN_VALUE, returnString)
     }

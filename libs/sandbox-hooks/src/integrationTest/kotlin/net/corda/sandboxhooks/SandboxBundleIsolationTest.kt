@@ -13,8 +13,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 class SandboxBundleIsolationTest {
     companion object {
         const val BUNDLES1_FLOW_CLASS = "com.example.sandbox.cpk1.BundlesOneFlow"
-        const val BUNDLES2_FLOW_CLASS = "com.example.sandbox.cpk2.BundlesTwoFlow"
-        const val BUNDLES3_FLOW_CLASS = "com.example.sandbox.cpk3.BundlesThreeFlow"
 
         @InjectService(timeout = 1000)
         lateinit var sandboxLoader: SandboxLoader
@@ -42,10 +40,12 @@ class SandboxBundleIsolationTest {
     }
 
     @Test
-    fun testBundlesForCPK1() {
+    fun sandboxCanSeeItsOwnBundlesAndMainBundlesInTheSameSandboxGroupOnly() {
         val thisGroup = sandboxLoader.group1
         val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.metadata.id)
         val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.metadata.id)
+
+        // We retrieve all bundles visible to sandbox one.
         val bundles = sandboxLoader.runFlow<List<Bundle>>(BUNDLES1_FLOW_CLASS, thisGroup)
 
         // CPK1 should be able to see its own bundles, and CPK2's "main" jar bundle, but nothing from CPK3.
@@ -57,45 +57,7 @@ class SandboxBundleIsolationTest {
             .existsOnlyInsideSandbox(sandboxLoader.cpk1.metadata.id.name, sandbox1)
             .existsOnlyInsideSandbox(sandboxLoader.cpk2.metadata.id.name, sandbox2)
 
-            // CPK1 can only see its own library bundle.
+            // Only CPK1 can see its own library bundle.
             .existsOnlyInsideSandbox(LIBRARY_BUNDLE_SYMBOLIC_NAME, sandbox1)
-    }
-
-    @Test
-    fun testBundlesForCPK2() {
-        val thisGroup = sandboxLoader.group1
-        val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.metadata.id)
-        val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.metadata.id)
-        val bundles = sandboxLoader.runFlow<List<Bundle>>(BUNDLES2_FLOW_CLASS, thisGroup)
-
-        // CPK2 should be able to see its own bundles, and CPK1's "main" jar bundle, but nothing from CPK3.
-        assertThat(bundles)
-            .anyMatch { sandboxLoader.containsBundle(it, thisGroup) }
-            .noneMatch { sandboxLoader.containsBundle(it, sandboxLoader.group2) }
-
-            // CPK2 can see both its own and CPK1's "main" bundles.
-            .existsOnlyInsideSandbox(sandboxLoader.cpk1.metadata.id.name, sandbox1)
-            .existsOnlyInsideSandbox(sandboxLoader.cpk2.metadata.id.name, sandbox2)
-
-            // CPK2 can only see its own library bundle.
-            .existsOnlyInsideSandbox(LIBRARY_BUNDLE_SYMBOLIC_NAME, sandbox2)
-    }
-
-    @Test
-    fun testBundlesForCPK3() {
-        val thisGroup = sandboxLoader.group2
-        val sandbox3 = thisGroup.getSandbox(sandboxLoader.cpk3.metadata.id)
-        val bundles = sandboxLoader.runFlow<List<Bundle>>(BUNDLES3_FLOW_CLASS, thisGroup)
-
-        // CPK3 should be able to see its own bundles, but nothing from either CPK1 or CPK2.
-        assertThat(bundles)
-            .anyMatch { sandboxLoader.containsBundle(it, thisGroup) }
-            .noneMatch { sandboxLoader.containsBundle(it, sandboxLoader.group1) }
-
-            // CPK3 can see its own "main" bundle.
-            .existsOnlyInsideSandbox(sandboxLoader.cpk3.metadata.id.name, sandbox3)
-
-            // CPK3 can only see its own library bundle
-            .existsOnlyInsideSandbox(LIBRARY_BUNDLE_SYMBOLIC_NAME, sandbox3)
     }
 }

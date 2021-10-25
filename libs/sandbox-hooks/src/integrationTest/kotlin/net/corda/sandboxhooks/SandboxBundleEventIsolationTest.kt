@@ -13,8 +13,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 class SandboxBundleEventIsolationTest {
     companion object {
         const val BUNDLE_EVENT1_FLOW_CLASS = "com.example.sandbox.cpk1.BundleEventOneFlow"
-        const val BUNDLE_EVENT2_FLOW_CLASS = "com.example.sandbox.cpk2.BundleEventTwoFlow"
-        const val BUNDLE_EVENT3_FLOW_CLASS = "com.example.sandbox.cpk3.BundleEventThreeFlow"
 
         @InjectService(timeout = 1000)
         lateinit var sandboxLoader: SandboxLoader
@@ -37,30 +35,10 @@ class SandboxBundleEventIsolationTest {
     }
 
     @Test
-    fun testBundleEventsForCPK1() {
+    fun sandboxGroupDoesNotReceiveBundleEventsFromOtherSandboxGroups() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
         val bundleEvents = sandboxLoader.runFlow<List<BundleEvent>>(BUNDLE_EVENT1_FLOW_CLASS, thisGroup)
-        assertThat(bundleEvents)
-            .noneForSandboxGroup(otherGroup)
-            .isNotEmpty
-    }
-
-    @Test
-    fun testBundleEventsForCPK2() {
-        val thisGroup = sandboxLoader.group1
-        val otherGroup = sandboxLoader.group2
-        val bundleEvents = sandboxLoader.runFlow<List<BundleEvent>>(BUNDLE_EVENT2_FLOW_CLASS, thisGroup)
-        assertThat(bundleEvents)
-            .noneForSandboxGroup(otherGroup)
-            .isNotEmpty
-    }
-
-    @Test
-    fun testBundleEventsForCPK3() {
-        val thisGroup = sandboxLoader.group2
-        val otherGroup = sandboxLoader.group1
-        val bundleEvents = sandboxLoader.runFlow<List<BundleEvent>>(BUNDLE_EVENT3_FLOW_CLASS, thisGroup)
         assertThat(bundleEvents)
             .noneForSandboxGroup(otherGroup)
             .isNotEmpty

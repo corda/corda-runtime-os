@@ -13,8 +13,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 class SandboxServiceEventIsolationTest {
     companion object {
         const val SERVICE_EVENT1_FLOW_CLASS = "com.example.sandbox.cpk1.ServiceEventOneFlow"
-        const val SERVICE_EVENT2_FLOW_CLASS = "com.example.sandbox.cpk2.ServiceEventTwoFlow"
-        const val SERVICE_EVENT3_FLOW_CLASS = "com.example.sandbox.cpk3.ServiceEventThreeFlow"
 
         @InjectService(timeout = 1000)
         lateinit var sandboxLoader: SandboxLoader
@@ -38,30 +36,10 @@ class SandboxServiceEventIsolationTest {
     }
 
     @Test
-    fun testServiceEventsForCPK1() {
+    fun sandboxGroupDoesNotReceiveServiceEventsFromOtherSandboxGroups() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
         val serviceEvents = sandboxLoader.runFlow<List<ServiceEvent>>(SERVICE_EVENT1_FLOW_CLASS, thisGroup)
-        assertThat(serviceEvents)
-            .noneForSandboxGroup(otherGroup)
-            .isNotEmpty
-    }
-
-    @Test
-    fun testServiceEventsForCPK2() {
-        val thisGroup = sandboxLoader.group1
-        val otherGroup = sandboxLoader.group2
-        val serviceEvents = sandboxLoader.runFlow<List<ServiceEvent>>(SERVICE_EVENT2_FLOW_CLASS, thisGroup)
-        assertThat(serviceEvents)
-            .noneForSandboxGroup(otherGroup)
-            .isNotEmpty
-    }
-
-    @Test
-    fun testServiceEventsForCPK3() {
-        val thisGroup = sandboxLoader.group2
-        val otherGroup = sandboxLoader.group1
-        val serviceEvents = sandboxLoader.runFlow<List<ServiceEvent>>(SERVICE_EVENT3_FLOW_CLASS, thisGroup)
         assertThat(serviceEvents)
             .noneForSandboxGroup(otherGroup)
             .isNotEmpty
