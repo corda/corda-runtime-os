@@ -10,6 +10,8 @@ import net.corda.internal.serialization.osgi.TypeResolver
 import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
+import net.corda.sandbox.internal.classtag.ClassTag
+import net.corda.sandbox.internal.classtag.EvolvableTagImplV1
 import net.corda.utilities.reflection.kotlinObjectInstance
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -147,11 +149,11 @@ class DefaultLocalSerializerFactory(
     override fun getTypeInformation(context: SerializationContext, metadata: Metadata, typeName: String): LocalTypeInformation? {
         return typesByName.getOrPut(typeName) {
             val localType = try {
-                val cpkIdentifierParts = metadata.getValue(typeName) as List<*>
+                val cpkIdentifierParts = metadata.getValue(typeName) as EvolvableTagImplV1
                 val cpkIdentifier = CPK.Identifier.newInstance(
-                    cpkIdentifierParts[0] as String,
-                    cpkIdentifierParts[1] as String,
-                    SecureHash.create(cpkIdentifierParts[4] as String)
+                    cpkIdentifierParts.classBundleName,
+                    "5.0.0.0-SNAPSHOT",
+                    cpkIdentifierParts.cpkSignerSummaryHash
                 )
                 (context.sandboxGroup as? SandboxGroup)?.loadClassFromCordappBundle(cpkIdentifier, typeName)
             } catch (_: SandboxException) {

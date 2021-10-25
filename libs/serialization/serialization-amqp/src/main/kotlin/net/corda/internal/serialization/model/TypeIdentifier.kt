@@ -272,14 +272,9 @@ sealed class TypeIdentifier {
 
     protected fun loadTypeFromMetadata(context: SerializationContext, metadata: Metadata): Class<*> {
         return if (metadata.containsKey(name)) {
-            val cpkIdentifierParts = metadata.getValue(name) as List<*>
-            val cpkIdentifier = CPK.Identifier.newInstance(
-                    cpkIdentifierParts[0] as String,
-                    cpkIdentifierParts[1] as String,
-                    SecureHash.create(cpkIdentifierParts[4] as String)
-            )
+            val serializedClassTag = metadata.getValue(name) as String
             try {
-                (context.sandboxGroup as? SandboxGroup)?.loadClassFromCordappBundle(cpkIdentifier, name) as Class<*>
+                (context.sandboxGroup as? SandboxGroup)?.getClass(name, serializedClassTag) as Class<*>
             } catch (ex: SandboxException) {
                 throw ClassNotFoundException("Unable to load CPK type $name", ex)
             }

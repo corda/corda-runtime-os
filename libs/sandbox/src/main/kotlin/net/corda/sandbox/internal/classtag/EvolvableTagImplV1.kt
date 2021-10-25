@@ -8,7 +8,7 @@ import net.corda.sandbox.internal.ClassTagV1
 import net.corda.v5.crypto.SecureHash
 
 /** Implements [EvolvableTag]. */
-internal class EvolvableTagImplV1(
+class EvolvableTagImplV1(
     isPublicClass: Boolean,
     classBundleName: String,
     cordappBundleName: String,

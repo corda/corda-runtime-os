@@ -7,6 +7,8 @@ import net.corda.internal.serialization.byteArrayOutput
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.internal.serialization.osgi.TypeResolver
 import net.corda.sandbox.CpkClassInfo
+import net.corda.sandbox.internal.classtag.ClassTag
+import net.corda.sandbox.internal.classtag.EvolvableTagImplV1
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SerializationContext
@@ -129,7 +131,16 @@ open class SerializationOutput constructor(
     }
 
     open fun writeMetadata(metadata: Metadata, data: Data) {
-        data.putObject(metadata)
+        data.putObject(convertToSerializableMetadata(metadata))
+    }
+
+    private fun convertToSerializableMetadata(metadata: Metadata): Metadata {
+        return Metadata().apply {
+            metadata.values.forEach { (key, value) ->
+                val serializedClassTag = (value as EvolvableTagImplV1).serialise()
+                this.values[key] = serializedClassTag
+            }
+        }
     }
 
     /**
@@ -139,15 +150,10 @@ open class SerializationOutput constructor(
         try {
             val classInfo = TypeResolver.getClassInfoFor(type.asClass())
             if (classInfo is CpkClassInfo && !metadata.containsKey(type.typeName)) {
+                // Transform into ClassTag and pass the serialized ClassTag to the blob instead of the string list
+                val classTag = convertClassInfoToClassTag(classInfo)
                 val key = type.typeName
-                val value = listOf(
-                    classInfo.classBundleName,
-                    classInfo.classBundleVersion.toString(),
-                    classInfo.cordappBundleName,
-                    classInfo.cordappBundleVersion.toString(),
-                    classInfo.cpkSignerSummaryHash.toString()
-                )
-                metadata.putValue(key, value)
+                metadata.putValue(key, classTag)
             }
         } catch (ex: ClassInfoException) {
             logger.trace {
@@ -162,6 +168,15 @@ open class SerializationOutput constructor(
                         "This code runs outside an OSGi framework. ${ex.message}"
             }
         }
+    }
+
+    private fun convertClassInfoToClassTag(classInfo: CpkClassInfo): ClassTag {
+        return EvolvableTagImplV1(
+            isPublicClass = false,
+            classBundleName = classInfo.classBundleName,
+            cordappBundleName = classInfo.cordappBundleName,
+            cpkSignerSummaryHash = classInfo.cpkSignerSummaryHash
+        )
     }
 
     @Suppress("TooGenericExceptionCaught")
