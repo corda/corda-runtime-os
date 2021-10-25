@@ -1,4 +1,4 @@
-package net.corda.securitymanager.osgi
+package net.corda.securitymanager.internal
 
 import net.corda.securitymanager.SecurityManagerService
 import net.corda.securitymanager.invoker.Invoker

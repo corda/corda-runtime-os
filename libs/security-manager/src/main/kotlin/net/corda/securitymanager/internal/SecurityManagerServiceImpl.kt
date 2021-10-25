@@ -15,7 +15,9 @@ class SecurityManagerServiceImpl @Activate constructor(
     @Reference
     private val permissionAdmin: PermissionAdmin,
     @Reference
-    private val conditionalPermissionAdmin: ConditionalPermissionAdmin
+    private val conditionalPermissionAdmin: ConditionalPermissionAdmin,
+    @Reference
+    private val bundleUtils: BundleUtils
 ) : SecurityManagerService {
     companion object {
         private val log = contextLogger()
@@ -34,6 +36,6 @@ class SecurityManagerServiceImpl @Activate constructor(
     override fun startDiscoveryMode(prefixes: Collection<String>) {
         cordaSecurityManager?.stop()
         log.info("Starting discovery Corda security manager. This is not secure in production.")
-        cordaSecurityManager = DiscoverySecurityManager(prefixes)
+        cordaSecurityManager = DiscoverySecurityManager(prefixes, bundleUtils)
     }
 }

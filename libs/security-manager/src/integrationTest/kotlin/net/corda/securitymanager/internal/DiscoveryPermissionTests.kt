@@ -1,4 +1,4 @@
-package net.corda.securitymanager.osgi
+package net.corda.securitymanager.internal
 
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -25,7 +25,7 @@ class DiscoveryPermissionTests {
     }
 
     @Test
-    fun `discovery mode grants all OSGi permissions`() {
+    fun `no permissions are denied by default`() {
         assertDoesNotThrow {
             sandboxLoader.sandboxedInvoker.apply {
                 performActionRequiringRuntimePermission()

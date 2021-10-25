@@ -6,8 +6,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.permissionadmin.PermissionInfo
 import java.security.Permission
 
-// TODO - CORE-2828: Update [DiscoverySecurityManager] to write out updated permissions file.
-
 /**
  * A [CordaSecurityManager] that grants sandbox code all permissions.
  *
@@ -17,7 +15,10 @@ import java.security.Permission
  * This security manager is not secure in production.
  */
 @Component(service = [DiscoverySecurityManager::class])
-class DiscoverySecurityManager(prefixes: Collection<String>) : CordaSecurityManager, SecurityManager() {
+class DiscoverySecurityManager(
+    prefixes: Collection<String>,
+    private val bundleUtils: BundleUtils
+) : CordaSecurityManager, SecurityManager() {
     companion object {
         private val log = contextLogger()
         private val discoverySecurityManagerClass = DiscoverySecurityManager::class.java
@@ -26,7 +27,7 @@ class DiscoverySecurityManager(prefixes: Collection<String>) : CordaSecurityMana
     // A set of bundle location prefixes.
     private val prefixes: Set<String>
 
-    // The security manager that will be replaced by this `DiscoverySecurityManager`.
+    // The security manager that this `DiscoverySecurityManager` replaces.
     private var defaultSecurityManager = System.getSecurityManager()
 
     init {
@@ -44,8 +45,8 @@ class DiscoverySecurityManager(prefixes: Collection<String>) : CordaSecurityMana
      * [prefixes].
      */
     override fun checkPermission(perm: Permission) {
-        // This ensures that any calls in `checkPermission` that themselves trigger a permission check don't cause
-        // a bottomless recursion.
+        // This check ensures that any calls in `checkPermission` that themselves trigger a permission check don't
+        // cause an infinite recursion.
         if (isRecursiveDiscoverySecurityManagerCall()) return
 
         classContext.forEach { klass ->
@@ -69,7 +70,7 @@ class DiscoverySecurityManager(prefixes: Collection<String>) : CordaSecurityMana
 
     /** Checks if the location of the bundle containing the [klass] matches any of the [prefixes]. */
     private fun matchesAnyPrefix(klass: Class<*>): Boolean {
-        val classBundleLocation = FrameworkUtil.getBundle(klass)?.location ?: return false
+        val classBundleLocation = bundleUtils.getBundleLocation(klass) ?: return false
         return prefixes.any { filter -> classBundleLocation.startsWith(filter) }
     }
 }

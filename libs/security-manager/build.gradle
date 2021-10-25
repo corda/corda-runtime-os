@@ -5,6 +5,18 @@ plugins {
 }
 description 'Corda Security Manager'
 
+configurations {
+    // TODO: Can I use another, more granular configuration here?
+    all {
+        resolutionStrategy {
+            dependencySubstitution {
+                // Reverts the project's substitution of Log4j for Logback, since Logback is required for this module's tests.
+                substitute module("ch.qos.logback:logback-classic") using module("ch.qos.logback:logback-classic:$logbackVersion")
+            }
+        }
+    }
+}
+
 dependencies {
     api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
 
@@ -16,9 +28,11 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
 
+    testRuntimeOnly "org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion"
+
     integrationTestImplementation project(":libs:security-manager")
     integrationTestImplementation project(":libs:security-manager:invoker-impl")
-    integrationTestImplementation 'org.slf4j:slf4j-api'
+    integrationTestImplementation "org.slf4j:slf4j-api"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion"
     integrationTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
