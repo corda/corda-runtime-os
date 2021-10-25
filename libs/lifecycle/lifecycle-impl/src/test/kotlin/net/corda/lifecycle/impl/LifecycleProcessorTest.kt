@@ -12,6 +12,7 @@ import net.corda.lifecycle.impl.LifecycleProcessor.Companion.ERRORED_REASON
 import net.corda.lifecycle.impl.LifecycleProcessor.Companion.STARTED_REASON
 import net.corda.lifecycle.impl.LifecycleProcessor.Companion.STOPPED_REASON
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -300,7 +301,7 @@ class LifecycleProcessorTest {
         state.postEvent(NewRegistration(registration))
         process(processor, coordinator = coordinator)
         verify(registration).updateCoordinatorStatus(coordinator, LifecycleStatus.DOWN)
-        assertEquals(mapOf(registration to Unit), state.registrations)
+        assertThat(state.registrations).containsExactly(registration)
         assertEquals(0, processedEvents)
     }
 
@@ -319,7 +320,7 @@ class LifecycleProcessorTest {
         state.registrations.add(registration)
         state.postEvent(CancelRegistration(registration))
         process(processor, coordinator = coordinator)
-        assertEquals(mapOf<Registration, Unit>(), state.registrations)
+        assertThat(state.registrations).isEmpty()
         assertEquals(0, processedEvents)
     }
 
@@ -443,7 +444,7 @@ class LifecycleProcessorTest {
         state.isRunning = running
         state.postEvent(TrackRegistration(registration))
         process(processor)
-        assertEquals(mapOf(registration to Unit), state.trackedRegistrations)
+        assertThat(state.trackedRegistrations).containsExactly(registration)
         assertEquals(0, processedEvents)
     }
 
@@ -460,7 +461,7 @@ class LifecycleProcessorTest {
         state.trackedRegistrations.add(registration)
         state.postEvent(StopTrackingRegistration(registration))
         process(processor)
-        assertEquals(mapOf<Registration, Unit>(), state.trackedRegistrations)
+        assertThat(state.registrations).isEmpty()
     }
 
     @Test
