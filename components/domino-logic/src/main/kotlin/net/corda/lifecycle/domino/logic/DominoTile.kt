@@ -17,6 +17,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.v5.base.util.contextLogger
+import java.lang.IllegalArgumentException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -324,6 +325,9 @@ open class DominoTile private constructor(
     }
 
     fun externalReady() {
+        if (!asynchronousStart) {
+            throw IllegalArgumentException("External ready can only be used with asynchronousStart.")
+        }
         updateState(State.Started)
     }
 

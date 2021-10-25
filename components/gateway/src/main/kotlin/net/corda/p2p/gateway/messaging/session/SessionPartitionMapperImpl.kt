@@ -26,7 +26,7 @@ class SessionPartitionMapperImpl(
 
     private val sessionPartitionsMapping = ConcurrentHashMap<String, List<Int>>()
     private val processor = SessionPartitionProcessor()
-    val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
+    val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory,true, ::createResources)
 
     private val sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS),
@@ -48,11 +48,8 @@ class SessionPartitionMapperImpl(
         override val valueClass: Class<SessionPartitions>
             get() = SessionPartitions::class.java
 
-        val latch = CountDownLatch(1)
-
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
-            latch.countDown()
             dominoTile.externalReady()
         }
 
@@ -71,7 +68,6 @@ class SessionPartitionMapperImpl(
 
     fun createResources(resources: ResourcesHolder) {
         sessionPartitionSubscription.start()
-        processor.latch.await()
         resources.keep {
             sessionPartitionSubscription.stop()
         }
