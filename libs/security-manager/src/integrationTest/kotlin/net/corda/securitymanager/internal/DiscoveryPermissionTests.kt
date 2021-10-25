@@ -34,7 +34,4 @@ class DiscoveryPermissionTests {
             }
         }
     }
-
-    // TODO - Add tests of logging.
-    // TODO - Add tests of multiple prefixes.
 }

@@ -1,7 +1,6 @@
 package net.corda.securitymanager.internal
 
 import net.corda.v5.base.util.contextLogger
-import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.permissionadmin.PermissionInfo
 import java.security.Permission
@@ -24,26 +23,25 @@ class DiscoverySecurityManager(
         private val discoverySecurityManagerClass = DiscoverySecurityManager::class.java
     }
 
-    // A set of bundle location prefixes.
+    // We log permissions for bundles whose location matches one of these prefixes.
     private val prefixes: Set<String>
 
-    // The security manager that this `DiscoverySecurityManager` replaces.
-    private var defaultSecurityManager = System.getSecurityManager()
+    // The security manager that this `DiscoverySecurityManager` replaces, if any.
+    private var previousSecurityManager: SecurityManager?
 
     init {
         this.prefixes = prefixes.toSet()
+        val previousSecurityManager = System.getSecurityManager()
         System.setSecurityManager(this)
+        this.previousSecurityManager = previousSecurityManager
     }
 
-    /** Resets the security manager to the one that was replaced by this [DiscoverySecurityManager]. */
+    /** Restores the security manager that was replaced by this [DiscoverySecurityManager]. */
     override fun stop() {
-        System.setSecurityManager(defaultSecurityManager)
+        System.setSecurityManager(previousSecurityManager)
     }
 
-    /**
-     * Logs the permission check if any class on the execution stack is from a bundle whose location matches one of the
-     * [prefixes].
-     */
+    /** Logs the [perm] if a class on the stack is from a bundle whose location matches one of the [prefixes]. */
     override fun checkPermission(perm: Permission) {
         // This check ensures that any calls in `checkPermission` that themselves trigger a permission check don't
         // cause an infinite recursion.
@@ -54,9 +52,8 @@ class DiscoverySecurityManager(
                 // We print the permission as a `PermissionInfo` so that the permission is printed using the
                 // encoding in which it needs to be added to the CorDapp's `AdditionalPermissions` file.
                 val permissionInfo = PermissionInfo(perm::class.java.name, perm.name, perm.actions)
-                // TODO - Get rid of this println - just used for testing.
-                println("$klass requested permission $permissionInfo.")
                 log.info("$klass requested permission $permissionInfo.")
+                // Once the permission is logged, we can return early.
                 return
             }
         }
