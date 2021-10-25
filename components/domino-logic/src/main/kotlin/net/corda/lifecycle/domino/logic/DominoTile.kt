@@ -62,10 +62,13 @@ open class DominoTile private constructor(
     private object StartTile : LifecycleEvent
     private data class StopTile(val dueToError: Boolean) : LifecycleEvent
     private class ConfigUpdate(val callback: () -> ConfigUpdateResult) : LifecycleEvent
+    private class ConfigApplied(val configUpdateResult: ConfigUpdateResult) : LifecycleEvent
+    private class ResourcesCreated: LifecycleEvent
     enum class State {
         Created,
         Started,
         StoppedDueToError,
+        StoppedDueToBadConfig,
         StoppedByParent
     }
 
@@ -114,12 +117,27 @@ open class DominoTile private constructor(
     private val waitForConfig = configurationChangeHandler != null
     @Volatile
     private var configReady = false
+    @Volatile
+    private var resourcesReady = false
     private var configRegistration : AutoCloseable? = null
 
-    private sealed class ConfigUpdateResult{
+    sealed class ConfigUpdateResult{
         object Success: ConfigUpdateResult()
         object NoUpdate: ConfigUpdateResult()
         data class Error(val e: Throwable): ConfigUpdateResult()
+    }
+
+
+    fun configApplied(configUpdateResult: ConfigUpdateResult) {
+        coordinator.postEvent(ConfigApplied(configUpdateResult))
+    }
+
+    fun resourcesStarted(withErrors: Boolean) {
+        if (withErrors) {
+            gotError(RuntimeException())
+        } else {
+            coordinator.postEvent(ResourcesCreated())
+        }
     }
 
     private inner class Handler<C>(val configurationChangeHandler: ConfigurationChangeHandler<C>) : ConfigurationHandler {
@@ -169,7 +187,7 @@ open class DominoTile private constructor(
         if (newState != oldState) {
             val status = when (newState) {
                 State.Started -> LifecycleStatus.UP
-                State.Created, State.StoppedByParent -> LifecycleStatus.DOWN
+                State.Created, State.StoppedByParent, State.StoppedDueToBadConfig -> LifecycleStatus.DOWN
                 State.StoppedDueToError -> LifecycleStatus.ERROR
             }
             controlLock.write {
@@ -214,22 +232,9 @@ open class DominoTile private constructor(
                     }
                 }
                 is ConfigUpdate -> {
-                    when (event.callback.invoke()) {
-                        is ConfigUpdateResult.Error -> {
-                            configReady = false
-                            configResources.close()
-                            stopTile()
-                            updateState(State.StoppedDueToError)
-                        }
-                        ConfigUpdateResult.NoUpdate -> {}
-                        ConfigUpdateResult.Success -> {
-                            configReady = true
-                            when (state) {
-                                State.StoppedDueToError -> readyOrStartTile()
-                                State.StoppedByParent, State.Started -> {} // Do nothing
-                                State.Created -> updateState(State.Started)
-                            }
-                        }
+                    when(state) {
+                        State.StoppedDueToError, State.StoppedByParent -> { }
+                        State.Started, State.StoppedDueToBadConfig -> { event.callback.invoke() }
                     }
                 }
                 is RegistrationStatusChangeEvent -> {
@@ -242,6 +247,28 @@ open class DominoTile private constructor(
                             stop()
                         } else {
                             gotError(Exception("$name Had error in ${errorKids.map { it.name }}"))
+                        }
+                    }
+                }
+                is ResourcesCreated -> {
+                    resourcesReady = true
+                    // check if children are started, config has been applied etc. and signal UP, if so.
+                    readyOrStartTile()
+                }
+                is ConfigApplied -> {
+                    when(event.configUpdateResult) {
+                        ConfigUpdateResult.Success -> {
+                            configReady = true
+                            when (state) {
+                                // check if children are started, config has been applied etc. and signal UP, if so.
+                                State.StoppedDueToBadConfig -> readyOrStartTile()
+                                State.StoppedDueToError, State.StoppedByParent, State.Started -> {} // Do nothing
+                                State.Created -> updateState(State.Started)
+                            }
+                        }
+                        is ConfigUpdateResult.Error -> {
+                            stopTile()
+                            updateState(State.StoppedDueToBadConfig)
                         }
                     }
                 }
@@ -309,14 +336,23 @@ open class DominoTile private constructor(
     private fun createResourcesAndStart() {
         resources.close()
         createResources(resources)
-        if (waitForConfig && !configReady || asynchronousStart) {
-            return
+        if (configRegistration == null) {
+            configRegistration = configurationChangeHandler?.configurationReaderService?.registerForUpdates(Handler(configurationChangeHandler))
         }
-        updateState(State.Started)
+        if (resourcesReady && configReady) {
+            updateState(State.Started)
+        }
     }
 
     private fun stopTile() {
         resources.close()
+        resourcesReady = false
+
+        configResources.close()
+        configRegistration?.close()
+        configRegistration = null
+        configReady = false
+        
         children.forEach {
             if (it.state != State.StoppedDueToError) {
                 it.stop()

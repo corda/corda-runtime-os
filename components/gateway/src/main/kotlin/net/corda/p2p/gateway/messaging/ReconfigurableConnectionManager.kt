@@ -58,6 +58,7 @@ class ReconfigurableConnectionManager(
                 manager = null
                 oldManager?.close()
                 manager = newManager
+                this@ReconfigurableConnectionManager.dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
             }
         }
     }

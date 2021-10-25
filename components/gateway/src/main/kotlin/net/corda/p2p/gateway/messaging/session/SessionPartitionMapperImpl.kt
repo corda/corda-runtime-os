@@ -50,6 +50,7 @@ class SessionPartitionMapperImpl(
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
+            dominoTile.resourcesStarted(false)
             dominoTile.externalReady()
         }
 
