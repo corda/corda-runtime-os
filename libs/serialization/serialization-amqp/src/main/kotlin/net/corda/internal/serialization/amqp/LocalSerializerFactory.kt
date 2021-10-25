@@ -149,13 +149,8 @@ class DefaultLocalSerializerFactory(
     override fun getTypeInformation(context: SerializationContext, metadata: Metadata, typeName: String): LocalTypeInformation? {
         return typesByName.getOrPut(typeName) {
             val localType = try {
-                val cpkIdentifierParts = metadata.getValue(typeName) as EvolvableTagImplV1
-                val cpkIdentifier = CPK.Identifier.newInstance(
-                    cpkIdentifierParts.classBundleName,
-                    "5.0.0.0-SNAPSHOT",
-                    cpkIdentifierParts.cpkSignerSummaryHash
-                )
-                (context.sandboxGroup as? SandboxGroup)?.loadClassFromCordappBundle(cpkIdentifier, typeName)
+                val serializedClassTag = metadata.getValue(typeName) as String
+                (context.sandboxGroup as? SandboxGroup)?.getClass(typeName, serializedClassTag)
             } catch (_: SandboxException) {
                 logger.trace { "Failed to load class $typeName from any sandboxes" }
                 null

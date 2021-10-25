@@ -131,16 +131,7 @@ open class SerializationOutput constructor(
     }
 
     open fun writeMetadata(metadata: Metadata, data: Data) {
-        data.putObject(convertToSerializableMetadata(metadata))
-    }
-
-    private fun convertToSerializableMetadata(metadata: Metadata): Metadata {
-        return Metadata().apply {
-            metadata.values.forEach { (key, value) ->
-                val serializedClassTag = (value as EvolvableTagImplV1).serialise()
-                this.values[key] = serializedClassTag
-            }
-        }
+        data.putObject(metadata)
     }
 
     /**
@@ -152,8 +143,9 @@ open class SerializationOutput constructor(
             if (classInfo is CpkClassInfo && !metadata.containsKey(type.typeName)) {
                 // Transform into ClassTag and pass the serialized ClassTag to the blob instead of the string list
                 val classTag = convertClassInfoToClassTag(classInfo)
+                val serializedClassTag = classTag.serialise()
                 val key = type.typeName
-                metadata.putValue(key, classTag)
+                metadata.putValue(key, serializedClassTag)
             }
         } catch (ex: ClassInfoException) {
             logger.trace {
