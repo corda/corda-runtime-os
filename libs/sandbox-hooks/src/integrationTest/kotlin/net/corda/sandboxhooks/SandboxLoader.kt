@@ -49,7 +49,7 @@ class SandboxLoader @Activate constructor(
         @Suppress("SameParameterValue")
         private fun hashOf(location: URI, algorithm: String): SecureHash {
             val digest = MessageDigest.getInstance(algorithm)
-            DigestInputStream(location.toURL().openStream(), digest).use(Companion::consume)
+            DigestInputStream(location.toURL().openStream(), digest).use(::consume)
             return SecureHash(algorithm, digest.digest())
         }
 

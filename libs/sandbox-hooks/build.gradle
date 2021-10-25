@@ -24,6 +24,7 @@ dependencies {
 
     testCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
 
     cpks project(path: 'sandbox-cpk-one', configuration: 'cordaCPK')
