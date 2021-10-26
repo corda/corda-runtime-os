@@ -12,7 +12,6 @@ import java.security.AllPermission
 import java.security.Permission
 
 /** A [CordaSecurityManager] that provides control over what permissions are granted or denied. */
-@Suppress("unused")
 class RestrictiveSecurityManager(
     private val conditionalPermissionAdmin: ConditionalPermissionAdmin
 ) : CordaSecurityManager {

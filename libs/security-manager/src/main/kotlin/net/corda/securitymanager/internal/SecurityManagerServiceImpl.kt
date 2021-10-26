@@ -25,7 +25,6 @@ class SecurityManagerServiceImpl @Activate constructor(
     // The current Corda security manager.
     private var cordaSecurityManager: CordaSecurityManager? = null
 
-    @Suppress("unused")
     override fun start() {
         cordaSecurityManager?.stop()
         log.info("Starting restrictive Corda security manager.")
