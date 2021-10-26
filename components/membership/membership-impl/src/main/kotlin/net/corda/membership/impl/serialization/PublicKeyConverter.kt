@@ -3,8 +3,8 @@ package net.corda.membership.impl.serialization
 import net.corda.membership.impl.MemberContextImpl
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_OWNING_KEY
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.membership.converter.ConversionContext
-import net.corda.v5.membership.converter.CustomPropertyConverter
+import net.corda.v5.membership.conversion.ConversionContext
+import net.corda.v5.membership.conversion.CustomPropertyConverter
 import org.osgi.service.component.annotations.Component
 import java.security.PublicKey
 

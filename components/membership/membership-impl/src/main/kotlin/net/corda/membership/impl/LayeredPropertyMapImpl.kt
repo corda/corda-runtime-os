@@ -1,10 +1,10 @@
 package net.corda.membership.impl
 
 import net.corda.data.WireKeyValuePair
-import net.corda.v5.membership.converter.ConversionContext
-import net.corda.v5.membership.converter.PropertyConverter
-import net.corda.v5.membership.properties.LayeredPropertyMap
-import net.corda.v5.membership.properties.ValueNotFoundException
+import net.corda.v5.membership.conversion.ConversionContext
+import net.corda.v5.membership.conversion.LayeredPropertyMap
+import net.corda.v5.membership.conversion.PropertyConverter
+import net.corda.v5.membership.conversion.ValueNotFoundException
 import java.lang.ClassCastException
 import java.util.SortedMap
 import java.util.concurrent.ConcurrentHashMap

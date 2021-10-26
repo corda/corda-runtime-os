@@ -28,13 +28,11 @@ import net.corda.membership.impl.serialization.toSortedMap
 import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.application.identity.Party
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.membership.converter.ConversionContext
-import net.corda.v5.membership.converter.CustomPropertyConverter
+import net.corda.v5.membership.conversion.ConversionContext
+import net.corda.v5.membership.conversion.CustomPropertyConverter
+import net.corda.v5.membership.conversion.ValueNotFoundException
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
-import net.corda.v5.membership.properties.ValueNotFoundException
-import net.corda.v5.membership.properties.parse
-import net.corda.v5.membership.properties.parseList
 import org.apache.avro.file.DataFileReader
 import org.apache.avro.file.DataFileWriter
 import org.apache.avro.io.DatumReader
@@ -223,12 +221,6 @@ class MemberInfoTest {
         assertTrue {
             memberInfo?.memberProvidedContext?.parseList<String>("dummyKey")?.isEmpty()!!
         }
-    }
-
-    @Test
-    fun `PartyConverter fails when invalid key is used`() {
-        val ex = assertFailsWith<IllegalArgumentException> { memberInfo?.dummyParty }
-        assertEquals("Unknown key '$DUMMY_KEY'.", ex.message)
     }
 
     @Test

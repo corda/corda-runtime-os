@@ -15,6 +15,7 @@ dependencies {
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-cipher-suite"
     implementation "net.corda:corda-membership"
+    implementation "net.corda:corda-membership-conversion"
     implementation "net.corda:corda-membership-identity"
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
 

@@ -1,16 +1,12 @@
 package net.corda.membership.impl.serialization
 
 import net.corda.membership.impl.MemberContextImpl
-import net.corda.membership.impl.MemberInfoExtension.Companion.NOTARY_SERVICE_PARTY_KEY
-import net.corda.membership.impl.MemberInfoExtension.Companion.NOTARY_SERVICE_PARTY_NAME
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_OWNING_KEY
 import net.corda.membership.impl.PartyImpl
 import net.corda.membership.impl.parse
 import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.application.identity.Party
-import net.corda.v5.membership.converter.ConversionContext
-import net.corda.v5.membership.converter.CustomPropertyConverter
+import net.corda.v5.membership.conversion.ConversionContext
+import net.corda.v5.membership.conversion.CustomPropertyConverter
 import org.osgi.service.component.annotations.Component
 
 /**
@@ -19,8 +15,8 @@ import org.osgi.service.component.annotations.Component
 @Component(service = [CustomPropertyConverter::class])
 class PartyConverter : CustomPropertyConverter<Party> {
     companion object {
-        private const val PARTY = "corda.party"
-        private const val NOTARY_SERVICE_PARTY = "corda.notaryServiceParty"
+        private const val NAME = "name"
+        private const val OWNING_KEY = "owningKey"
     }
 
     override val type: Class<Party>
@@ -29,17 +25,10 @@ class PartyConverter : CustomPropertyConverter<Party> {
     override fun convert(context: ConversionContext): Party {
         return when(context.storeClass) {
             MemberContextImpl::class.java -> {
-                when(context.key) {
-                    PARTY ->  PartyImpl(
-                        CordaX500Name(context.store.parse(PARTY_NAME)),
-                        context.store.parse(PARTY_OWNING_KEY)
-                    )
-                    NOTARY_SERVICE_PARTY -> PartyImpl(
-                        CordaX500Name.parse(context.store.parse(NOTARY_SERVICE_PARTY_NAME)),
-                        context.store.parse(NOTARY_SERVICE_PARTY_KEY)
-                    )
-                    else -> throw IllegalArgumentException("Unknown key '${context.key}'.")
-                }
+                PartyImpl(
+                    CordaX500Name(context.store.parse(context.key + "." + NAME)),
+                    context.store.parse(context.key + "." + OWNING_KEY)
+                )
             }
             else -> throw IllegalArgumentException("Unknown class '${context.store::class.java.name}'.")
         }

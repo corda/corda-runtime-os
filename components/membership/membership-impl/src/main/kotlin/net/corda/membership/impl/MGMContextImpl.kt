@@ -1,6 +1,6 @@
 package net.corda.membership.impl
 
-import net.corda.v5.membership.converter.PropertyConverter
+import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.v5.membership.identity.MGMContext
 import java.util.SortedMap
 

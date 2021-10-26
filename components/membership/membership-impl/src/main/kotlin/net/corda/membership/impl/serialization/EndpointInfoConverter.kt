@@ -2,8 +2,8 @@ package net.corda.membership.impl.serialization
 
 import net.corda.membership.impl.EndpointInfoImpl
 import net.corda.membership.impl.MemberContextImpl
-import net.corda.v5.membership.converter.ConversionContext
-import net.corda.v5.membership.converter.CustomPropertyConverter
+import net.corda.v5.membership.conversion.ConversionContext
+import net.corda.v5.membership.conversion.CustomPropertyConverter
 import net.corda.v5.membership.identity.EndpointInfo
 import org.osgi.service.component.annotations.Component
 
