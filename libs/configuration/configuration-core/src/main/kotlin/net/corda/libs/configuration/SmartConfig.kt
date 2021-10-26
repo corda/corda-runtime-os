@@ -9,6 +9,7 @@ import com.typesafe.config.ConfigValue
  * net.corda.libs.configuration.SmartConfig extends [Config] with additional metadata to support things like
  * Secrets.
  */
+@Suppress("TooManyFunctions")
 interface SmartConfig : Config {
 
     /**

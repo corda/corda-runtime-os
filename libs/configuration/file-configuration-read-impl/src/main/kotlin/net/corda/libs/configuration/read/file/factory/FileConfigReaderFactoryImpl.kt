@@ -6,7 +6,6 @@ import net.corda.libs.configuration.read.ConfigReader
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.libs.configuration.read.file.ConfigRepository
 import net.corda.libs.configuration.read.file.FileConfigReaderImpl
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

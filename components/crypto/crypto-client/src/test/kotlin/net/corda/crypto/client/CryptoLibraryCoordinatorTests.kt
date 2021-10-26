@@ -8,6 +8,7 @@ import net.corda.crypto.component.lifecycle.AbstractCryptoCoordinator
 import net.corda.crypto.impl.config.isDev
 import net.corda.crypto.impl.config.keyCache
 import net.corda.crypto.impl.config.mngCache
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -17,6 +18,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
+import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -26,6 +28,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 

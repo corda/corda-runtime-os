@@ -159,7 +159,7 @@ class DemoApp @Activate constructor(
     private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
 
-        // TODO: inject the secrets provider
+        // TODO - inject the secrets provider
         return smartConfigFactory.create(ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
             .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))

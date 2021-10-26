@@ -59,7 +59,7 @@ class ConfigReaderImplTest {
         val configMap = ConfigUtil.testConfigMap()
         val config = configMap["corda.database"]!!
         val avroConfig =
-            Configuration(config.root()?.render(ConfigRenderOptions.concise()), config.getString("componentVersion"))
+            Configuration(config.root().render(ConfigRenderOptions.concise()), config.getString("componentVersion"))
         configReader.onSnapshot(mapOf("corda.database" to avroConfig))
 
         Assertions.assertThat(configUpdateUtil.update).isTrue
@@ -72,7 +72,7 @@ class ConfigReaderImplTest {
         val configMap = ConfigUtil.testConfigMap()
         val config = configMap["corda.database"]!!
         val avroConfig =
-            Configuration(config.root()?.render(ConfigRenderOptions.concise()), config.getString("componentVersion"))
+            Configuration(config.root().render(ConfigRenderOptions.concise()), config.getString("componentVersion"))
         configReader.onSnapshot(mapOf("corda.database" to avroConfig))
 
         configReader.registerCallback(configUpdateUtil)
@@ -88,7 +88,7 @@ class ConfigReaderImplTest {
         val databaseConfig = configMap["corda.database"]!!
         val avroDatabaseConfig =
             Configuration(
-                databaseConfig.root()?.render(ConfigRenderOptions.concise()),
+                databaseConfig.root().render(ConfigRenderOptions.concise()),
                 databaseConfig.getString("componentVersion")
             )
 
@@ -103,7 +103,7 @@ class ConfigReaderImplTest {
         val securityConfig = configMap["corda.security"]!!
         val avroSecurityConfig =
             Configuration(
-                securityConfig.root()?.render(ConfigRenderOptions.concise()),
+                securityConfig.root().render(ConfigRenderOptions.concise()),
                 securityConfig.getString("componentVersion")
             )
 
@@ -122,7 +122,7 @@ class ConfigReaderImplTest {
         val databaseConfig = configMap["corda.database"]!!
         val avroDatabaseConfig =
             Configuration(
-                databaseConfig.root()?.render(ConfigRenderOptions.concise()),
+                databaseConfig.root().render(ConfigRenderOptions.concise()),
                 databaseConfig.getString("componentVersion")
             )
 
@@ -139,7 +139,7 @@ class ConfigReaderImplTest {
         val securityConfig = configMap["corda.security"]!!
         val avroSecurityConfig =
             Configuration(
-                securityConfig.root()?.render(ConfigRenderOptions.concise()),
+                securityConfig.root().render(ConfigRenderOptions.concise()),
                 securityConfig.getString("componentVersion")
             )
 
@@ -169,7 +169,7 @@ class ConfigReaderImplTest {
         val configMap = ConfigUtil.testConfigMap()
         val config = configMap["corda.database"]!!
         val avroConfig =
-            Configuration(config.root()?.render(ConfigRenderOptions.concise()), config.getString("componentVersion"))
+            Configuration(config.root().render(ConfigRenderOptions.concise()), config.getString("componentVersion"))
         configReader.onSnapshot(mapOf("corda.database" to avroConfig))
 
         Assertions.assertThat(lambdaFlag).isTrue
@@ -189,7 +189,7 @@ class ConfigReaderImplTest {
         val databaseConfig = configMap["corda.database"]!!
         val avroDatabaseConfig =
             Configuration(
-                databaseConfig.root()?.render(ConfigRenderOptions.concise()),
+                databaseConfig.root().render(ConfigRenderOptions.concise()),
                 databaseConfig.getString("componentVersion")
             )
 
@@ -207,7 +207,7 @@ class ConfigReaderImplTest {
         val securityConfig = configMap["corda.security"]!!
         val avroSecurityConfig =
             Configuration(
-                securityConfig.root()?.render(ConfigRenderOptions.concise()),
+                securityConfig.root().render(ConfigRenderOptions.concise()),
                 securityConfig.getString("componentVersion")
             )
 

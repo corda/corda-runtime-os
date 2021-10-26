@@ -296,6 +296,17 @@ class SmartConfigTest {
         assertThat(moreConfig.getString("rob")).isEqualTo("bob")
     }
 
+    @Test
+    fun `equals compares underlying config`() {
+        assertThat(smartConfig).isEqualTo(SmartConfigImpl(config, secretsLookupService))
+    }
+
+    @Test
+    fun `equals between smart and typesafe config`() {
+        // NOTE: confirm this is correct expected behaviour
+        assertThat(smartConfig).isEqualTo(config)
+    }
+
     enum class Snack {
         DONUTS,
         BISCUITS

@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
  */
 @Suppress("TooManyFunctions")
 class SmartConfigImpl(
-    private val typeSafeConfig: Config,
+    val typeSafeConfig: Config,
     private val secretsLookupService: SecretsLookupService = noopSecretsLookupService
 ) : SmartConfig {
     companion object{
@@ -30,7 +30,11 @@ class SmartConfigImpl(
     }
 
     override fun equals(other: Any?): Boolean {
-        return other is SmartConfig && typeSafeConfig == other
+        if(other is SmartConfigImpl)
+            return typeSafeConfig == other.typeSafeConfig
+        if(other is Config)
+            return typeSafeConfig == other
+        return false
     }
 
     override fun hashCode(): Int {
