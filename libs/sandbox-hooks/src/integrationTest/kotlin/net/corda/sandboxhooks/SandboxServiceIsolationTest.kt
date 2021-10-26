@@ -1,8 +1,7 @@
 package net.corda.sandboxhooks
 
 import net.corda.sandbox.SandboxGroup
-import org.assertj.core.api.AbstractListAssert
-import org.assertj.core.api.ObjectAssert
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.framework.FrameworkUtil
@@ -18,49 +17,58 @@ class SandboxServiceIsolationTest {
         @InjectService(timeout = 1000)
         lateinit var sandboxLoader: SandboxLoader
 
-        fun assertThat(classes: List<Class<out Any>>) = ServiceClassListAssertions(classes)
-
-        class ServiceClassListAssertions(classes: List<Class<out Any>>)
-            : AbstractListAssert<ServiceClassListAssertions, List<Class<out Any>>, Class<out Any>, ObjectAssert<Class<out Any>>>(classes, ServiceClassListAssertions::class.java) {
-            override fun toAssert(value: Class<out Any>?, description: String?) = ObjectAssert(value!!) // Never called.
-
-            override fun newAbstractIterableAssert(iterable: Iterable<Class<out Any>>): ServiceClassListAssertions {
-                return ServiceClassListAssertions(iterable as List<Class<out Any>>)
-            }
-
-            fun hasNoServiceFromGroup(group: SandboxGroup): ServiceClassListAssertions {
-                return noneMatch { svc -> containsClass(svc, group) }
-            }
-
-            fun hasNoService(serviceClass: Class<*>): ServiceClassListAssertions {
-                return noneMatch { svc -> serviceClass.isAssignableFrom(svc) }
-            }
-
-            fun hasService(serviceClass: Class<*>): ServiceClassListAssertions {
-                return anyMatch { svc -> serviceClass.isAssignableFrom(svc) }
-            }
-        }
-
-        fun containsClass(clazz: Class<*>, group: SandboxGroup): Boolean {
+        /** Checks whether [sandboxGroup] contains [clazz]. */
+        fun containsClass(sandboxGroup: SandboxGroup, clazz: Class<*>): Boolean {
             val bundle = FrameworkUtil.getBundle(clazz) ?: return false
-            return sandboxLoader.containsBundle(group, bundle)
+            return sandboxLoader.containsBundle(sandboxGroup, bundle)
         }
     }
+
+    /** Checks whether none of the [foundServices] are contained in the [sandboxGroup]. */
+    private fun hasNoServiceFromGroup(foundServices: Collection<Class<*>>, sandboxGroup: SandboxGroup) =
+        foundServices.none { service -> containsClass(sandboxGroup, service) }
+
+    /** Checks whether the [foundServices] contains all of the [serviceClasses]. */
+    private fun hasAllServices(foundServices: Collection<Class<*>>, serviceClasses: Collection<Class<*>>) =
+        serviceClasses.all { serviceClass ->
+            foundServices.any { service -> serviceClass.isAssignableFrom(service) }
+        }
+
+    /** Checks whether the [foundServices] contains none of the [serviceClasses]. */
+    private fun hasNoneServices(foundServices: Collection<Class<*>>, serviceClasses: Collection<Class<*>>) =
+        serviceClasses.all { serviceClass ->
+            foundServices.none { service -> serviceClass.isAssignableFrom(service) }
+        }
 
     @Test
     fun `sandbox can see its own services and main bundle services in the same sandbox group only`() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
-        val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES_FLOW_CPK_1, thisGroup)
+        val serviceClasses = sandboxLoader.runFlow<List<Class<*>>>(SERVICES_FLOW_CPK_1, thisGroup)
 
-        // CPK1 should be able to see its own services, and any services inside CPK2's "main" jar, but nothing from CPK3.
-        assertThat(serviceClasses)
-            .hasNoServiceFromGroup(otherGroup)
-            .hasNoService(sandboxLoader.sandbox2.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS))
-            .hasService(sandboxLoader.sandbox1.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS))
-            .hasService(ServiceComponentRuntime::class.java)
-            .hasService(Resolver::class.java)
-            .hasService(sandboxLoader.sandbox1.loadClassFromCordappBundle(SERVICES_FLOW_CPK_1))
-            .hasService(sandboxLoader.sandbox2.loadClassFromCordappBundle(SERVICES_FLOW_CPK_2))
+        // CPK 1 can see public services, services in its own sandbox, and services in the main bundle of other
+        // sandboxes in the same group.
+        assertTrue(
+            hasAllServices(
+                serviceClasses, setOf(
+                    ServiceComponentRuntime::class.java,
+                    Resolver::class.java,
+                    sandboxLoader.sandbox1.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS),
+                    sandboxLoader.sandbox1.loadClassFromCordappBundle(SERVICES_FLOW_CPK_1),
+                    sandboxLoader.sandbox2.loadClassFromCordappBundle(SERVICES_FLOW_CPK_2)
+                )
+            )
+        )
+
+        // CPK 1 cannot see any services from another sandbox group.
+        assertTrue(hasNoServiceFromGroup(serviceClasses, otherGroup))
+
+        // CPK 1 cannot see any library services from another sandbox in the same sandbox group.
+        assertTrue(
+            hasNoneServices(
+                serviceClasses,
+                setOf(sandboxLoader.sandbox2.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS))
+            )
+        )
     }
 }

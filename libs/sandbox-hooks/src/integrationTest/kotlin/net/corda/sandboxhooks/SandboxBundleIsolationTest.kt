@@ -16,10 +16,9 @@ class SandboxBundleIsolationTest {
         lateinit var sandboxLoader: SandboxLoader
 
         /**
-         * At least one of the provided bundles has the given [symbolicName] and is contained in the [sandbox].
-         *
-         * There is no bundle out of the provided bundles that has the given [symbolicName] but that is not
-         * contained in the [sandbox].
+         * Indicates whether at least one of the provided bundles has the given [symbolicName] and is contained in the
+         * [sandbox], and that there is no bundle out of the provided bundles that has the given [symbolicName] but
+         * that is not contained in the [sandbox].
          */
         fun bundlesWithGivenNameAreFromSandbox(bundles: List<Bundle>, symbolicName: String, sandbox: Sandbox): Boolean {
             return bundles.any { bundle ->

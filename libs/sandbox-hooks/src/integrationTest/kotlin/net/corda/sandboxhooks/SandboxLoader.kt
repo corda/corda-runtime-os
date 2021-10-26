@@ -56,7 +56,7 @@ class SandboxLoader @Activate constructor(
 
     val cpk1 = loadCPK(resourceName = CPK_ONE)
     val cpk2 = loadCPK(resourceName = CPK_TWO)
-    val cpk3 = loadCPK(resourceName = CPK_THREE)
+    private val cpk3 = loadCPK(resourceName = CPK_THREE)
 
     val group1 = createSandboxGroupFor(cpk1, cpk2)
     val group2 = createSandboxGroupFor(cpk3)
