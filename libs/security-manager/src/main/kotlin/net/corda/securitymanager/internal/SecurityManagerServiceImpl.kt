@@ -1,10 +1,12 @@
 package net.corda.securitymanager.internal
 
+import net.corda.securitymanager.SecurityManagerException
 import net.corda.securitymanager.SecurityManagerService
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.security.Permission
 
 /** An implementation of [SecurityManagerService]. */
 @Suppress("unused")
@@ -22,18 +24,25 @@ class SecurityManagerServiceImpl @Activate constructor(
     // The currently-running Corda security manager.
     private var securityManager: CordaSecurityManager? = null
 
-    @Suppress("unused")
-    override fun start(isDiscoveryMode: Boolean) {
+    override fun start() {
         securityManager?.stop()
+        log.info("Starting restrictive Corda security manager.")
+        securityManager = restrictiveSecurityManager.apply { start() }
+    }
 
-        securityManager = if (isDiscoveryMode) {
-            log.info("Starting discovery Corda security manager. This is not secure in production.")
-            discoverySecurityManager
-        } else {
-            log.info("Starting restrictive Corda security manager.")
-            restrictiveSecurityManager
-        }
+    override fun startDiscoveryMode() {
+        securityManager?.stop()
+        log.info("Starting discovery Corda security manager. This is not secure in production.")
+        securityManager = discoverySecurityManager.apply { start() }
+    }
 
-        securityManager?.start()
+    override fun grantPermissions(filter: String, perms: Collection<Permission>) {
+        securityManager?.grantPermissions(filter, perms)
+            ?: throw SecurityManagerException("No Corda security manager is currently running.")
+    }
+
+    override fun denyPermissions(filter: String, perms: Collection<Permission>) {
+        securityManager?.denyPermissions(filter, perms)
+            ?: throw SecurityManagerException("No Corda security manager is currently running.")
     }
 }
