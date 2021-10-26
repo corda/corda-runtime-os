@@ -6,9 +6,6 @@ import net.corda.internal.serialization.SectionId
 import net.corda.internal.serialization.byteArrayOutput
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.internal.serialization.osgi.TypeResolver
-import net.corda.sandbox.CpkClassInfo
-import net.corda.sandbox.internal.classtag.ClassTag
-import net.corda.sandbox.internal.classtag.EvolvableTagImplV1
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SerializationContext
