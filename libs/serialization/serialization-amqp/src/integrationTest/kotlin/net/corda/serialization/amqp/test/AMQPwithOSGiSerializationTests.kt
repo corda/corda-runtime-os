@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.cm.ConfigurationAdmin
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.NotSerializableException
 import java.net.URL
 import java.nio.file.Files
@@ -86,14 +88,13 @@ class AMQPwithOSGiSerializationTests {
                 cpkFile.toAbsolutePath()
             }.toList()
 
-            val tempFile = Files.createTempFile("dummy-cordapp-bundle", ".cpb")
             return try {
-                Files.newOutputStream(tempFile).use { outputStream ->
+                val byteArrayOutputStream = ByteArrayOutputStream()
+                byteArrayOutputStream.use { outputStream ->
                     CPI.assemble(outputStream, "dummy-cordapp-bundle", "1.0", cpks)
                 }
-                installService.loadCpb(Files.newInputStream(tempFile))
+                installService.loadCpb(ByteArrayInputStream(byteArrayOutputStream.toByteArray()))
             } finally {
-                Files.delete(tempFile)
                 cpks.map(Files::delete)
             }
         }
