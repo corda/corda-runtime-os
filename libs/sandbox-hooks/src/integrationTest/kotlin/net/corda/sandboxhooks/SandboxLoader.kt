@@ -35,6 +35,25 @@ class SandboxLoader @Activate constructor(
         private val baseDirectory = Paths.get(
             URI.create(System.getProperty("base.directory") ?: fail("base.directory property not found"))
         ).toAbsolutePath()
+
+        private fun loadResource(resourceName: String): URI {
+            return (this::class.java.classLoader.getResource(resourceName)
+                ?: fail("Failed to load $resourceName")).toURI()
+        }
+
+        @Suppress("SameParameterValue")
+        private fun hashOf(location: URI, algorithm: String): SecureHash {
+            val digest = MessageDigest.getInstance(algorithm)
+            DigestInputStream(location.toURL().openStream(), digest).use(::consume)
+            return SecureHash(algorithm, digest.digest())
+        }
+
+        private fun consume(input: InputStream) {
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            while (input.read(buffer) >= 0) {
+                continue
+            }
+        }
     }
 
     init {
@@ -80,28 +99,8 @@ class SandboxLoader @Activate constructor(
         }
     }
 
-    private fun loadResource(resourceName: String): URI {
-        return (this::class.java.classLoader.getResource(resourceName)
-            ?: fail("Failed to load $resourceName")).toURI()
-    }
-
-    @Suppress("SameParameterValue")
-    private fun hashOf(location: URI, algorithm: String): SecureHash {
-        val digest = MessageDigest.getInstance(algorithm)
-        DigestInputStream(location.toURL().openStream(), digest).use(::consume)
-        return SecureHash(algorithm, digest.digest())
-    }
-
-    private fun consume(input: InputStream) {
-        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-        while (input.read(buffer) >= 0) {
-            continue
-        }
-    }
-
-    private fun createSandboxGroupFor(vararg cpks: CPK): SandboxGroup {
-        return sandboxCreationService.createSandboxGroup(cpks.map { it.metadata.hash })
-    }
+    private fun createSandboxGroupFor(vararg cpks: CPK) =
+        sandboxCreationService.createSandboxGroup(cpks.map { it.metadata.hash })
 
     private fun <T, U : T> getServiceFor(serviceType: Class<T>, bundleClass: Class<U>): T {
         val context = FrameworkUtil.getBundle(bundleClass).bundleContext
@@ -116,7 +115,6 @@ class SandboxLoader @Activate constructor(
         return containsMethod.invoke(sandbox, bundle) as Boolean
     }
 
-    fun containsBundle(group: SandboxGroup, bundle: Bundle): Boolean {
-        return group.sandboxes.any { sandbox -> containsBundle(sandbox, bundle) }
-    }
+    fun containsBundle(group: SandboxGroup, bundle: Bundle) =
+        group.sandboxes.any { sandbox -> containsBundle(sandbox, bundle) }
 }
