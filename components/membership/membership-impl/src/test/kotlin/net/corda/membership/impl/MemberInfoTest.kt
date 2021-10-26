@@ -20,7 +20,7 @@ import net.corda.membership.impl.MemberInfoExtension.Companion.groupId
 import net.corda.membership.impl.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.impl.MemberInfoExtension.Companion.status
 import net.corda.membership.impl.serialization.EndpointInfoConverter
-import net.corda.membership.impl.serialization.ObjectConverterImpl
+import net.corda.membership.impl.serialization.PropertyConverterImpl
 import net.corda.membership.impl.serialization.PartyConverter
 import net.corda.membership.impl.serialization.PublicKeyConverter
 import net.corda.membership.impl.serialization.toMemberInfo
@@ -28,13 +28,13 @@ import net.corda.membership.impl.serialization.toSortedMap
 import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.application.identity.Party
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.membership.converter.ConversionContext
+import net.corda.v5.membership.converter.CustomPropertyConverter
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
-import net.corda.v5.membership.identity.ValueNotFoundException
-import net.corda.v5.membership.identity.parse
-import net.corda.v5.membership.identity.parseList
-import net.corda.v5.membership.identity.parser.ConversionContext
-import net.corda.v5.membership.identity.parser.CustomObjectConverter
+import net.corda.v5.membership.properties.ValueNotFoundException
+import net.corda.v5.membership.properties.parse
+import net.corda.v5.membership.properties.parseList
 import org.apache.avro.file.DataFileReader
 import org.apache.avro.file.DataFileWriter
 import org.apache.avro.io.DatumReader
@@ -69,7 +69,7 @@ class MemberInfoTest {
         private const val TEST_OBJECT_NUMBER = "custom.testObjects.%s.number"
         private const val TEST_OBJECT_TEXT = "custom.testObjects.%s.text"
 
-        private val converter = ObjectConverterImpl(
+        private val converter = PropertyConverterImpl(
             listOf(
                 PartyConverter(),
                 EndpointInfoConverter(),
@@ -278,8 +278,8 @@ data class DummyObject(val text: String)
 
 data class TestObject(val number: Int, val text: String)
 
-@Component(service = [CustomObjectConverter::class])
-class TestStringConverter : CustomObjectConverter<TestObject> {
+@Component(service = [CustomPropertyConverter::class])
+class TestStringConverter : CustomPropertyConverter<TestObject> {
     override val type: Class<TestObject>
         get() = TestObject::class.java
 

@@ -9,15 +9,15 @@ import net.corda.membership.impl.PartyImpl
 import net.corda.membership.impl.parse
 import net.corda.v5.application.identity.CordaX500Name
 import net.corda.v5.application.identity.Party
-import net.corda.v5.membership.identity.parser.ConversionContext
-import net.corda.v5.membership.identity.parser.CustomObjectConverter
+import net.corda.v5.membership.converter.ConversionContext
+import net.corda.v5.membership.converter.CustomPropertyConverter
 import org.osgi.service.component.annotations.Component
 
 /**
  * Converter class, converting from String to [Party] object.
  */
-@Component(service = [CustomObjectConverter::class])
-class PartyConverter : CustomObjectConverter<Party> {
+@Component(service = [CustomPropertyConverter::class])
+class PartyConverter : CustomPropertyConverter<Party> {
     companion object {
         private const val PARTY = "corda.party"
         private const val NOTARY_SERVICE_PARTY = "corda.notaryServiceParty"

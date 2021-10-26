@@ -3,8 +3,8 @@ package net.corda.membership.impl.serialization
 import net.corda.membership.impl.MemberContextImpl
 import net.corda.membership.impl.MemberInfoExtension.Companion.PARTY_OWNING_KEY
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.membership.identity.parser.ConversionContext
-import net.corda.v5.membership.identity.parser.CustomObjectConverter
+import net.corda.v5.membership.converter.ConversionContext
+import net.corda.v5.membership.converter.CustomPropertyConverter
 import org.osgi.service.component.annotations.Component
 import java.security.PublicKey
 
@@ -13,8 +13,8 @@ import java.security.PublicKey
  *
  * @property keyEncodingService to convert the strings into PublicKeys
  */
-@Component(service = [CustomObjectConverter::class])
-class PublicKeyConverter(private val keyEncodingService: KeyEncodingService): CustomObjectConverter<PublicKey> {
+@Component(service = [CustomPropertyConverter::class])
+class PublicKeyConverter(private val keyEncodingService: KeyEncodingService): CustomPropertyConverter<PublicKey> {
     override val type: Class<PublicKey>
         get() = PublicKey::class.java
 

@@ -21,7 +21,7 @@ class MemberInfoExtension {
 
         /** Key name for notary service property. */
         const val NOTARY_SERVICE_PARTY_NAME = "corda.notaryServiceParty.name"
-        const val NOTARY_SERVICE_PARTY_KEY = "corda.notaryServiceParty.key"
+        const val NOTARY_SERVICE_PARTY_KEY = "corda.notaryServiceParty.owningKey"
 
         /** Key name for serial property. */
         const val SERIAL = "corda.serial"

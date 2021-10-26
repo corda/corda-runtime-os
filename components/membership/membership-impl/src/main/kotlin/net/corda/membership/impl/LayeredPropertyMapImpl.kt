@@ -1,19 +1,19 @@
 package net.corda.membership.impl
 
 import net.corda.data.WireKeyValuePair
-import net.corda.v5.membership.identity.KeyValueStore
-import net.corda.v5.membership.identity.ValueNotFoundException
-import net.corda.v5.membership.identity.parser.ConversionContext
-import net.corda.v5.membership.identity.parser.ObjectConverter
+import net.corda.v5.membership.converter.ConversionContext
+import net.corda.v5.membership.converter.PropertyConverter
+import net.corda.v5.membership.properties.LayeredPropertyMap
+import net.corda.v5.membership.properties.ValueNotFoundException
 import java.lang.ClassCastException
 import java.util.SortedMap
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("MaxLineLength")
-open class KeyValueStoreImpl(
+open class LayeredPropertyMapImpl(
     private val properties: SortedMap<String, String?>,
-    private val converter: ObjectConverter
-): KeyValueStore {
+    private val converter: PropertyConverter
+): LayeredPropertyMap {
 
     private val cache = ConcurrentHashMap<String, Any?>()
 
@@ -111,7 +111,10 @@ open class KeyValueStoreImpl(
             // 1 -> [1=ABC]
             groupedEntry.key to (groupedEntry.value.map { it.first.split(".").last() to it.second }).toMap()
         }.map {
-            converter.convert(ConversionContext(KeyValueStoreImpl(it.second.toSortedMap(), converter), this::class.java, itemKeyPrefix), clazz)
+            // instead of the whole context, we are just passing a pre-processed properties to the converter
+            // containing only the relevant parts to us
+            // example, the context here is: url = localhost, protocolVersion=1
+            converter.convert(ConversionContext(LayeredPropertyMapImpl(it.second.toSortedMap(), converter), this::class.java, itemKeyPrefix), clazz)
                 ?: throw IllegalStateException("Error while converting $itemKeyPrefix prefix.")
         }
         cache[normalisedPrefix] = result
@@ -145,7 +148,7 @@ open class KeyValueStoreImpl(
     }
 
     override fun equals(other: Any?): Boolean {
-        if (other == null || other !is KeyValueStoreImpl) return false
+        if (other == null || other !is LayeredPropertyMapImpl) return false
         if (this === other) return true
         return properties == other.properties && entries == other.entries
     }
@@ -169,7 +172,7 @@ open class KeyValueStoreImpl(
  *
  * @param key The key we are looking for in the store.
  */
-inline fun <reified T> KeyValueStore.parse(key: String): T {
+inline fun <reified T> LayeredPropertyMap.parse(key: String): T {
     return parse(key, T::class.java)
 }
 
@@ -178,7 +181,7 @@ inline fun <reified T> KeyValueStore.parse(key: String): T {
  *
  * @param key The key we are looking for in the store.
  */
-inline fun <reified T> KeyValueStore.parseOrNull(key: String): T? {
+inline fun <reified T> LayeredPropertyMap.parseOrNull(key: String): T? {
     return parseOrNull(key, T::class.java)
 }
 
@@ -187,7 +190,7 @@ inline fun <reified T> KeyValueStore.parseOrNull(key: String): T? {
  *
  * @param itemKeyPrefix The key prefix we are looking for in the store.
  */
-inline fun <reified T> KeyValueStore.parseList(itemKeyPrefix: String): List<T> {
+inline fun <reified T> LayeredPropertyMap.parseList(itemKeyPrefix: String): List<T> {
     return parseList(itemKeyPrefix, T::class.java)
 }
 
@@ -195,4 +198,4 @@ inline fun <reified T> KeyValueStore.parseList(itemKeyPrefix: String): List<T> {
  * Extension function for converting the content of [KeyValueStore] to a list of [WireKeyValuePair].
  * This conversion is required, because of the avro serialization done on the P2P layer.
  */
-fun KeyValueStore.toWireKeyValuePairList(): List<WireKeyValuePair> = entries.map { WireKeyValuePair(it.key, it.value) }
+fun LayeredPropertyMap.toWireKeyValuePairList(): List<WireKeyValuePair> = entries.map { WireKeyValuePair(it.key, it.value) }

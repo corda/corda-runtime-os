@@ -1,9 +1,9 @@
 package net.corda.membership.impl.serialization
 
+import net.corda.v5.membership.converter.ConversionContext
+import net.corda.v5.membership.converter.CustomPropertyConverter
+import net.corda.v5.membership.converter.PropertyConverter
 import net.corda.v5.membership.identity.MemberX500Name
-import net.corda.v5.membership.identity.parser.ConversionContext
-import net.corda.v5.membership.identity.parser.CustomObjectConverter
-import net.corda.v5.membership.identity.parser.ObjectConverter
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality
@@ -16,15 +16,15 @@ import java.time.Instant
  * @property customConverters A list of converters which can be used as additional converters, besides the simpler
  * ones existing in this class.
  */
-@Component(service = [ObjectConverter::class])
-open class ObjectConverterImpl(
+@Component(service = [PropertyConverter::class])
+open class PropertyConverterImpl(
     @Reference(
-        service = CustomObjectConverter::class,
+        service = CustomPropertyConverter::class,
         cardinality = ReferenceCardinality.OPTIONAL,
         policyOption = ReferencePolicyOption.GREEDY
     )
-    val customConverters: List<CustomObjectConverter<out Any>>
-) : ObjectConverter {
+    val customConverters: List<CustomPropertyConverter<out Any>>
+) : PropertyConverter {
     private val converters = customConverters.associateBy { it.type }.toMutableMap()
 
     @Suppress("UNCHECKED_CAST", "ComplexMethod")

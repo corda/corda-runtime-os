@@ -2,16 +2,16 @@ package net.corda.membership.impl.serialization
 
 import net.corda.membership.impl.EndpointInfoImpl
 import net.corda.membership.impl.MemberContextImpl
+import net.corda.v5.membership.converter.ConversionContext
+import net.corda.v5.membership.converter.CustomPropertyConverter
 import net.corda.v5.membership.identity.EndpointInfo
-import net.corda.v5.membership.identity.parser.ConversionContext
-import net.corda.v5.membership.identity.parser.CustomObjectConverter
 import org.osgi.service.component.annotations.Component
 
 /**
  * Converter class, converting from String to [EndpointInfo] object.
  */
-@Component(service = [CustomObjectConverter::class])
-class EndpointInfoConverter: CustomObjectConverter<EndpointInfo> {
+@Component(service = [CustomPropertyConverter::class])
+class EndpointInfoConverter: CustomPropertyConverter<EndpointInfo> {
     companion object {
         private const val URL_KEY = "connectionURL"
         private const val PROTOCOL_VERSION_KEY = "protocolVersion"
