@@ -3,7 +3,6 @@ package net.corda.sandbox.internal
 import net.corda.install.InstallService
 import net.corda.packaging.CPK
 import net.corda.packaging.CordappManifest
-import net.corda.sandbox.CpkClassInfo
 import net.corda.sandbox.DEFAULT_SECURITY_DOMAIN
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
@@ -277,9 +276,9 @@ class SandboxServiceImplTests {
             classBundleName = cordappBundle.symbolicName,
             cordappBundleName = cordappBundle.symbolicName,
             cpkSignerSummaryHash = cpkWithDependencies.cpk.metadata.id.signerSummaryHash
-        )
+        ).serialise()
 
-        assertEquals(expectedClassTag.serialise(), classTag)
+        assertEquals(expectedClassTag, classTag)
     }
 
     @Test
@@ -300,24 +299,21 @@ class SandboxServiceImplTests {
         sandboxService.createSandboxGroup(listOf(cpkWithDependencies.cpk.metadata.hash))
 
         // Note that we cannot get the `ClassInfo` by name for library bundles.
-        val classInfo = sandboxService.getClassTag(cpkWithDependencies.libraryClass)
+        val classTag = sandboxService.getClassTag(cpkWithDependencies.libraryClass)
 
         val libraryBundle =
             startedBundles.find { bundle -> bundle.symbolicName == cpkWithDependencies.libraryBundleName }!!
         val cordappBundle =
             startedBundles.find { bundle -> bundle.symbolicName == cpkWithDependencies.cordappBundleName }!!
 
-        val expectedClassInfo = CpkClassInfo(
-            libraryBundle.symbolicName,
-            libraryBundle.version,
-            cordappBundle.symbolicName,
-            cordappBundle.version,
-            cpkWithDependencies.cpk.metadata.hash,
-            cpkWithDependencies.cpk.metadata.id.signerSummaryHash,
-            setOf(cpkOne.metadata.hash, cpkTwo.metadata.hash)
-        )
+        val expectedClassTag = EvolvableTagImplV1(
+            isPublicClass = false,
+            classBundleName = libraryBundle.symbolicName,
+            cordappBundleName = cordappBundle.symbolicName,
+            cpkSignerSummaryHash = cpkWithDependencies.cpk.metadata.id.signerSummaryHash
+        ).serialise()
 
-        assertEquals(expectedClassInfo, classInfo)
+        assertEquals(expectedClassTag, classTag)
     }
 
     @Test
@@ -328,7 +324,7 @@ class SandboxServiceImplTests {
         val e = assertThrows<SandboxException> {
             sandboxService.getClassTag(unknownClass)
         }
-        assertTrue(e.message!!.contains(" is not contained in any sandbox."))
+        assertTrue(e.message!!.contains(" is not contained in any sandbox group."))
     }
 
     @Test
