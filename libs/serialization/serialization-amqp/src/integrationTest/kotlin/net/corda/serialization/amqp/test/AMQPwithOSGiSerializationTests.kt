@@ -102,20 +102,20 @@ class AMQPwithOSGiSerializationTests {
         val cpk3 = Path.of("../../../build/resources/integrationTest/TestSerializable3-workflows-$cordappVersion-cordapp.cpk")
         val cpk4 = Path.of("../../../build/resources/integrationTest/TestSerializable4-workflows-$cordappVersion-cordapp.cpk")
 
-        val cpb = assembleCpb(listOf(cpk1, cpk2, cpk3, cpk4))
-        val cpks = installService.getCpb(cpb.metadata.id)!!.cpks
+        assembleCpb(listOf(cpk1, cpk2, cpk3, cpk4)).use { cpb ->
+            val cpks = installService.getCpb(cpb.metadata.id)!!.cpks
 
-        // Create sandbox group
-        val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks.map {it.metadata.hash})
-        assertThat(sandboxGroup).isNotNull
-        assertThat(sandboxGroup.sandboxes).hasSize(4)
+            // Create sandbox group
+            val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks.map { it.metadata.hash })
+            assertThat(sandboxGroup).isNotNull
+            assertThat(sandboxGroup.sandboxes).hasSize(4)
 
-        // Initialised two serialisation factories to avoid having successful tests due to caching
-        val factory1 = testDefaultFactoryNoEvolution()
-        val factory2 = testDefaultFactoryNoEvolution()
+            // Initialised two serialisation factories to avoid having successful tests due to caching
+            val factory1 = testDefaultFactoryNoEvolution()
+            val factory2 = testDefaultFactoryNoEvolution()
 
-        // Initialise the serialisation context
-        val testSerializationContext = SerializationContextImpl(
+            // Initialise the serialisation context
+            val testSerializationContext = SerializationContextImpl(
                 preferredSerializationVersion = amqpMagic,
                 whitelist = AllWhitelist,
                 properties = mutableMapOf(),
@@ -125,57 +125,58 @@ class AMQPwithOSGiSerializationTests {
                 classInfoService = classInfoService,
                 sandboxGroup = sandboxGroup)
 
-        // Serialise our object
-        val cashClass = sandboxGroup.loadClassFromCordappBundle(
+            // Serialise our object
+            val cashClass = sandboxGroup.loadClassFromCordappBundle(
                 cpkIdentifier = installService.getCpb(cpb.metadata.id)!!.cpks.find {
                     it.metadata.id.name == "net.corda.serializable-cpk-one" }!!.metadata.id,
                 className = "net.corda.bundle1.Cash")
-        val cashInstance = cashClass.getConstructor(Int::class.java).newInstance(100)
+            val cashInstance = cashClass.getConstructor(Int::class.java).newInstance(100)
 
-        val obligationClass = sandboxGroup.loadClassFromCordappBundle(
+            val obligationClass = sandboxGroup.loadClassFromCordappBundle(
                 cpkIdentifier = installService.getCpb(cpb.metadata.id)!!.cpks.find {
                     it.metadata.id.name == "net.corda.serializable-cpk-three" }!!.metadata.id,
                 className = "net.corda.bundle3.Obligation")
 
-        val obligationInstance = obligationClass.getConstructor(
+            val obligationInstance = obligationClass.getConstructor(
                 cashInstance.javaClass
-        ).newInstance(cashInstance)
+            ).newInstance(cashInstance)
 
-        val content = "This is a transfer document"
+            val content = "This is a transfer document"
 
-        val documentClass = sandboxGroup.loadClassFromCordappBundle(
+            val documentClass = sandboxGroup.loadClassFromCordappBundle(
                 cpkIdentifier = installService.getCpb(cpb.metadata.id)!!.cpks.find {
                     it.metadata.id.name == "net.corda.serializable-cpk-two" }!!.metadata.id,
                 className = "net.corda.bundle2.Document")
-        val documentInstance = documentClass.getConstructor(String::class.java).newInstance(content)
+            val documentInstance = documentClass.getConstructor(String::class.java).newInstance(content)
 
-        val transferClass = sandboxGroup.loadClassFromCordappBundle(
+            val transferClass = sandboxGroup.loadClassFromCordappBundle(
                 cpkIdentifier = installService.getCpb(cpb.metadata.id)!!.cpks.find {
                     it.metadata.id.name == "net.corda.serializable-cpk-four" }!!.metadata.id,
                 className = "net.corda.bundle4.Transfer")
 
-        val transferInstance = transferClass.getConstructor(
+            val transferInstance = transferClass.getConstructor(
                 obligationInstance.javaClass, documentInstance.javaClass
-        ).newInstance(obligationInstance, documentInstance)
+            ).newInstance(obligationInstance, documentInstance)
 
-        val serialised = SerializationOutput(factory1).serialize(transferInstance, testSerializationContext)
+            val serialised = SerializationOutput(factory1).serialize(transferInstance, testSerializationContext)
 
-        // Perform deserialisation and check if the correct class is deserialised
-        val deserialised = DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext)
+            // Perform deserialisation and check if the correct class is deserialised
+            val deserialised = DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext)
 
-        assertThat(deserialised.obj.javaClass.name).isEqualTo("net.corda.bundle4.Transfer")
-        assertThat(deserialised.obj.javaClass.declaredFields.map { it.name }.toList()).contains("document")
+            assertThat(deserialised.obj.javaClass.name).isEqualTo("net.corda.bundle4.Transfer")
+            assertThat(deserialised.obj.javaClass.declaredFields.map { it.name }.toList()).contains("document")
 
-        val document = deserialised.obj.javaClass.getDeclaredField("document").also { it.trySetAccessible() }.get(deserialised.obj)
-        assertThat(document?.javaClass?.declaredFields?.map { it.name }?.toList()).contains("content")
+            val document = deserialised.obj.javaClass.getDeclaredField("document").also { it.trySetAccessible() }.get(deserialised.obj)
+            assertThat(document?.javaClass?.declaredFields?.map { it.name }?.toList()).contains("content")
 
-        val deserialisedValue = document?.javaClass?.getDeclaredField("content").also { it?.trySetAccessible() }?.get(document)
-        assertThat(deserialisedValue).isEqualTo(content)
+            val deserialisedValue = document?.javaClass?.getDeclaredField("content").also { it?.trySetAccessible() }?.get(document)
+            assertThat(deserialisedValue).isEqualTo(content)
 
-        assertThat(deserialised.envelope.metadata.values).hasSize(4)
-        assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle1.Cash")
-        assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle2.Document")
-        assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle3.Obligation")
-        assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle4.Transfer")
+            assertThat(deserialised.envelope.metadata.values).hasSize(4)
+            assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle1.Cash")
+            assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle2.Document")
+            assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle3.Obligation")
+            assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle4.Transfer")
+        }
     }
 }
