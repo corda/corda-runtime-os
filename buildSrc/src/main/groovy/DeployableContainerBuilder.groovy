@@ -2,8 +2,8 @@ package net.corda.gradle
 
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.ProjectLayout
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.ProviderFactory
@@ -16,7 +16,7 @@ import com.google.cloud.tools.jib.api.*
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath
 
 import javax.inject.Inject
-import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardCopyOption
 
 
 import java.nio.file.Files
@@ -45,48 +45,51 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     private String targetRepo="engineering-docker-dev.software.r3.com/corda-os-${projectName}"
 
     @Inject
-    protected abstract ProviderFactory getProviderFactory();
+    protected abstract ProviderFactory getProviderFactory()
+
+    @Inject
+    protected abstract ObjectFactory getObjects()
 
     @PathSensitive(PathSensitivity.RELATIVE)
     @InputFile
-    final RegularFileProperty overrideFile = project.objects.fileProperty().convention(project.tasks.appJar.archiveFile)
+    final RegularFileProperty overrideFile = getObjects().fileProperty().convention(project.tasks.appJar.archiveFile)
 
     @Input
-    final Property<String> registryUsername = project.objects.property(String).
+    final Property<String> registryUsername = getObjects().property(String).
             convention(getProviderFactory().environmentVariable("CORDA_ARTIFACTORY_USERNAME")
                     .orElse(getProviderFactory().gradleProperty("cordaArtifactoryUsername"))
-                    .orElse(getProviderFactory().gradleProperty("corda.artifactory.username"))
+                    .orElse(getProviderFactory().systemProperty("corda.artifactory.username"))
             )
 
     @Input
-    final Property<String> registryPassword = project.objects.property(String).
+    final Property<String> registryPassword = getObjects().property(String).
             convention(getProviderFactory().environmentVariable("CORDA_ARTIFACTORY_PASSWORD")
                     .orElse(getProviderFactory().gradleProperty("cordaArtifactoryPassword"))
-                    .orElse(getProviderFactory().gradleProperty("corda.artifactory.password"))
+                    .orElse(getProviderFactory().systemProperty("corda.artifactory.password"))
             )
 
     @Input
     final Property<Boolean> remotePublish =
-            project.objects.property(Boolean).convention(false)
+            getObjects().property(Boolean).convention(false)
 
     @Input
     final Property<Boolean> releaseCandidate =
-            project.objects.property(Boolean).convention(false)
+            getObjects().property(Boolean).convention(false)
     @Input
     final Property<String> baseImageName =
-            project.objects.property(String).convention('azul/zulu-openjdk-alpine')
+            getObjects().property(String).convention('azul/zulu-openjdk-alpine')
 
     @Input
     final Property<String> baseImageTag =
-            project.objects.property(String).convention('11')
+            getObjects().property(String).convention('11')
 
     @Input
     final ListProperty<String> arguments =
-            project.objects.listProperty(String)
+            getObjects().listProperty(String)
 
     @Input
     final Property<String> targetImageTag =
-            project.objects.property(String).convention('latest')
+            getObjects().property(String).convention('latest')
 
     DeployableContainerBuilder() {
         description = 'Creates a new "corda-dev" image with the file specified in "overrideFilePath".'
