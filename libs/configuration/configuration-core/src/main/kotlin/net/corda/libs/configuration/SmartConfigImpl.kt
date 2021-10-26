@@ -46,10 +46,11 @@ class SmartConfigImpl(
         return SmartConfigImpl(typeSafeConfig, noopSecretsLookupService)
     }
 
-    override fun withFallback(other: ConfigMergeable?): Config =
+    override fun withFallback(other: ConfigMergeable?): SmartConfig =
         SmartConfigImpl(typeSafeConfig.withFallback(other), secretsLookupService)
 
-    override fun root(): ConfigObject = SmartConfigObjectImpl(typeSafeConfig.root(), secretsLookupService)
+    override fun root(): SmartConfigObject =
+        SmartConfigObjectImpl(typeSafeConfig.root(), secretsLookupService)
 
     override fun origin(): ConfigOrigin = typeSafeConfig.origin()
 
@@ -63,8 +64,10 @@ class SmartConfigImpl(
     override fun resolveWith(source: Config): SmartConfig =
         SmartConfigImpl(typeSafeConfig.resolveWith(source), secretsLookupService)
 
-    override fun resolveWith(source: Config, options: ConfigResolveOptions?) =
-        typeSafeConfig.resolveWith(SmartConfigImpl(source, secretsLookupService), options)
+    override fun resolveWith(source: Config, options: ConfigResolveOptions?): SmartConfig =
+        SmartConfigImpl(
+            typeSafeConfig.resolveWith(SmartConfigImpl(source, secretsLookupService), options),
+            secretsLookupService)
 
     override fun checkValid(reference: Config, vararg restrictToPaths: String) {
         // checkvalid casts to SimpleConfig, so validating the underlying config here should be ok
@@ -131,7 +134,8 @@ class SmartConfigImpl(
         throw UnsupportedOperationException("Deprecated")
     }
 
-    override fun getDuration(path: String?, unit: TimeUnit?): Long = typeSafeConfig.getDuration(path, unit)
+    override fun getDuration(path: String?, unit: TimeUnit?): Long =
+        typeSafeConfig.getDuration(path, unit)
 
     override fun getDuration(path: String?): Duration = typeSafeConfig.getDuration(path)
 
@@ -141,9 +145,11 @@ class SmartConfigImpl(
 
     override fun getList(path: String?): ConfigList = typeSafeConfig.getList(path)
 
-    override fun getBooleanList(path: String?): MutableList<Boolean> = typeSafeConfig.getBooleanList(path)
+    override fun getBooleanList(path: String?): MutableList<Boolean> =
+        typeSafeConfig.getBooleanList(path)
 
-    override fun getNumberList(path: String?): MutableList<Number> = typeSafeConfig.getNumberList(path)
+    override fun getNumberList(path: String?): MutableList<Number> =
+        typeSafeConfig.getNumberList(path)
 
     override fun getIntList(path: String?): MutableList<Int> = typeSafeConfig.getIntList(path)
 

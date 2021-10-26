@@ -50,7 +50,7 @@ class SmartConfigTest {
         on { getValue(config.getValue("fred"))} doReturn "secret"
         on { getValue(fallbackConfig.getValue("jon"))} doReturn "fallback-secret"
     }
-    val smartConfig = SmartConfigImpl(config, secretsLookupService)
+    val smartConfig : SmartConfig = SmartConfigImpl(config, secretsLookupService)
 
     @Test
     fun `isSecret true when property set`() {
