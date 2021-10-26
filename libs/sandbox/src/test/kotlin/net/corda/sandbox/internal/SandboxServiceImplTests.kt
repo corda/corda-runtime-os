@@ -61,7 +61,7 @@ class SandboxServiceImplTests {
      *
      * @param cpksAndContents Used to set up the mock [InstallService] and [BundleUtils] that back the sandbox service
      */
-    private fun createSandboxService(cpksAndContents: Collection<CpkAndContents>): SandboxServiceInternal {
+    private fun createSandboxService(cpksAndContents: Collection<CpkAndContents>): SandboxServiceImpl {
         return SandboxServiceImpl(mockInstallService(cpksAndContents), mockBundleUtils(cpksAndContents))
     }
 

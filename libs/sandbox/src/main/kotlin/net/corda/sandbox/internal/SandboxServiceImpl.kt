@@ -32,14 +32,14 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.streams.asSequence
 
 /** An implementation of [SandboxCreationService] and [SandboxContextService]. */
-@Component(service = [SandboxCreationService::class, SandboxContextService::class, SandboxServiceInternal::class])
+@Component(service = [SandboxCreationService::class, SandboxContextService::class])
 @Suppress("TooManyFunctions")
 internal class SandboxServiceImpl @Activate constructor(
     @Reference
     private val installService: InstallService,
     @Reference
     private val bundleUtils: BundleUtils
-) : SandboxServiceInternal, SingletonSerializeAsToken {
+) : SandboxCreationService, SandboxContextService, SingletonSerializeAsToken {
     private val serviceComponentRuntimeBundleId = bundleUtils.getServiceRuntimeComponentBundle()?.bundleId
         ?: throw SandboxException(
             "The sandbox service cannot run without the Service Component Runtime bundle installed."
@@ -217,7 +217,7 @@ internal class SandboxServiceImpl @Activate constructor(
             }
 
             // Each sandbox requires visibility of the sandboxes of the other CPKs and of the public sandboxes.
-            newSandbox.grantVisibility(newSandboxes + publicSandboxes)
+            newSandbox.grantVisibility(newSandboxes - newSandbox + publicSandboxes)
         }
 
         // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are
