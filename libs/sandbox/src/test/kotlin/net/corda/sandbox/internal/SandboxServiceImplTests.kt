@@ -263,8 +263,8 @@ class SandboxServiceImplTests {
         val sandboxService = createSandboxService(setOf(cpkWithDependencies, cpkAndContentsOne, cpkAndContentsTwo))
         sandboxService.createSandboxGroup(listOf(cpkWithDependencies.cpk.metadata.hash))
 
-        val classTag = sandboxService.getClassTag(cpkWithDependencies.cordappClass)
-        val classTagByName = sandboxService.getClassTag(cpkWithDependencies.cordappClass.name)
+        val classTag = sandboxService.getClassTag(cpkWithDependencies.cordappClass, isStaticTag = false)
+        val classTagByName = sandboxService.getClassTag(cpkWithDependencies.cordappClass.name, isStaticTag = false)
         assertEquals(classTag, classTagByName)
 
         val cordappBundle = startedBundles.find { bundle ->
@@ -299,7 +299,7 @@ class SandboxServiceImplTests {
         sandboxService.createSandboxGroup(listOf(cpkWithDependencies.cpk.metadata.hash))
 
         // Note that we cannot get the `ClassInfo` by name for library bundles.
-        val classTag = sandboxService.getClassTag(cpkWithDependencies.libraryClass)
+        val classTag = sandboxService.getClassTag(cpkWithDependencies.libraryClass, isStaticTag = false)
 
         val libraryBundle =
             startedBundles.find { bundle -> bundle.symbolicName == cpkWithDependencies.libraryBundleName }!!
@@ -322,7 +322,7 @@ class SandboxServiceImplTests {
 
         val unknownClass = Iterable::class.java
         val e = assertThrows<SandboxException> {
-            sandboxService.getClassTag(unknownClass)
+            sandboxService.getClassTag(unknownClass, isStaticTag = false)
         }
         assertTrue(e.message!!.contains(" is not contained in any sandbox group."))
     }

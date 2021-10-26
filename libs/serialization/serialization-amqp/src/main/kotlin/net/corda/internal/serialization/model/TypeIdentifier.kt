@@ -4,10 +4,8 @@ import com.google.common.reflect.TypeToken
 import net.corda.internal.serialization.amqp.Metadata
 import net.corda.internal.serialization.amqp.asClass
 import net.corda.internal.serialization.osgi.TypeResolver
-import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SerializationContext
 import java.io.NotSerializableException
 import java.lang.reflect.GenericArrayType

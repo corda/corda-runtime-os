@@ -2,12 +2,14 @@ package net.corda.sandbox.internal
 
 import net.corda.install.InstallService
 import net.corda.packaging.CPK
-import net.corda.sandbox.*
-import net.corda.sandbox.internal.classtag.ClassTag
+import net.corda.sandbox.CpkSandbox
+import net.corda.sandbox.Sandbox
+import net.corda.sandbox.SandboxContextService
+import net.corda.sandbox.SandboxCreationService
+import net.corda.sandbox.SandboxException
+import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.internal.classtag.ClassTagFactoryImpl
-import net.corda.sandbox.internal.classtag.EvolvableTagImplV1
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
-import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
@@ -71,11 +73,14 @@ internal class SandboxServiceImpl @Activate constructor(
         zombieBundles.addAll((sandbox as SandboxInternal).unload())
     }
 
-    // TODO: needs to get a flag for static or evolvable
-    override fun getClassTag(klass: Class<*>): String {
+    override fun getClassTag(klass: Class<*>, isStaticTag: Boolean): String {
         sandboxGroups.values.forEach {
             try {
-                return it.getEvolvableTag(klass)
+                return if (isStaticTag) {
+                    it.getStaticTag(klass)
+                } else {
+                    it.getEvolvableTag(klass)
+                }
             } catch(se : SandboxException) {
                // klass not found in sandbox group
             }
@@ -83,8 +88,7 @@ internal class SandboxServiceImpl @Activate constructor(
         throw SandboxException("Class ${klass.name} is not contained in any sandbox group.")
     }
 
-    // TODO: needs to get a flag for static or evolvable
-    override fun getClassTag(className: String): String {
+    override fun getClassTag(className: String, isStaticTag: Boolean): String {
         var klass: Class<*>? = null
         for (sandbox in sandboxes.values.filterIsInstance<CpkSandboxImpl>()) {
             try {
@@ -95,7 +99,7 @@ internal class SandboxServiceImpl @Activate constructor(
         }
 
         klass?.let {
-            return getClassTag(klass)
+            return getClassTag(klass, isStaticTag)
         } ?: throw SandboxException("Class $className is not contained in any sandbox.")
     }
 

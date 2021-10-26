@@ -17,7 +17,7 @@ class TypeResolver @Activate constructor(
     companion object {
         private var classTagService: ClassTagService? = null
 
-        fun getClassTagFor(type: Type): String = classTagService!!.getClassTag(type.asClass())
+        fun getClassTagFor(type: Type): String = classTagService!!.getClassTag(type.asClass(), isStaticTag = false)
 
         fun resolve(className: String, classLoader: ClassLoader): Class<*> {
             return try {

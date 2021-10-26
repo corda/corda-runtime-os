@@ -19,14 +19,14 @@ internal class ClassTagServiceImpl @Activate constructor(
     private val sandboxContextService: SandboxContextService
 ) : ClassTagService, SingletonSerializeAsToken {
 
-    override fun getClassTag(klass: Class<*>) = try {
-        sandboxContextService.getClassTag(klass)
+    override fun getClassTag(klass: Class<*>, isStaticTag: Boolean) = try {
+        sandboxContextService.getClassTag(klass, isStaticTag)
     } catch (e: SandboxException) {
         throw ClassTagException(e.message, e)
     }
 
-    override fun getClassTag(className: String) = try {
-        sandboxContextService.getClassTag(className)
+    override fun getClassTag(className: String, isStaticTag: Boolean) = try {
+        sandboxContextService.getClassTag(className, isStaticTag)
     } catch (e: SandboxException) {
         throw ClassTagException(e.message, e)
     }
