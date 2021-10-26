@@ -10,7 +10,7 @@ import org.osgi.service.component.annotations.Component
  *
  * @constructor Create empty Smart config factory impl
  */
-@Component(immediate = true, service = [SmartConfigFactory::class])
+@Component(service = [SmartConfigFactory::class])
 class SmartConfigFactoryImpl : SmartConfigFactory {
     companion object{
         private val noopSecretsLookupService = NoopSecretsLookupService()
