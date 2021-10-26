@@ -7,6 +7,7 @@ import net.corda.sandbox.CpkClassInfo
 import net.corda.sandbox.DEFAULT_SECURITY_DOMAIN
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
+import net.corda.sandbox.internal.classtag.EvolvableTagImplV1
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxInternal
@@ -263,25 +264,22 @@ class SandboxServiceImplTests {
         val sandboxService = createSandboxService(setOf(cpkWithDependencies, cpkAndContentsOne, cpkAndContentsTwo))
         sandboxService.createSandboxGroup(listOf(cpkWithDependencies.cpk.metadata.hash))
 
-        val classInfo = sandboxService.getClassTag(cpkWithDependencies.cordappClass)
-        val classInfoByName = sandboxService.getClassTag(cpkWithDependencies.cordappClass.name)
-        assertEquals(classInfo, classInfoByName)
+        val classTag = sandboxService.getClassTag(cpkWithDependencies.cordappClass)
+        val classTagByName = sandboxService.getClassTag(cpkWithDependencies.cordappClass.name)
+        assertEquals(classTag, classTagByName)
 
         val cordappBundle = startedBundles.find { bundle ->
             bundle.symbolicName == cpkWithDependencies.cordappBundleName
         }!!
 
-        val expectedClassInfo = CpkClassInfo(
-            cordappBundle.symbolicName,
-            cordappBundle.version,
-            cordappBundle.symbolicName,
-            cordappBundle.version,
-            cpkWithDependencies.cpk.metadata.hash,
-            cpkWithDependencies.cpk.metadata.id.signerSummaryHash,
-            setOf(cpkOne.metadata.hash, cpkTwo.metadata.hash)
+        val expectedClassTag = EvolvableTagImplV1(
+            isPublicClass = false,
+            classBundleName = cordappBundle.symbolicName,
+            cordappBundleName = cordappBundle.symbolicName,
+            cpkSignerSummaryHash = cpkWithDependencies.cpk.metadata.id.signerSummaryHash
         )
 
-        assertEquals(expectedClassInfo, classInfo as CpkClassInfo)
+        assertEquals(expectedClassTag.serialise(), classTag)
     }
 
     @Test
@@ -654,7 +652,7 @@ private data class CpkAndContents(
         cpkDependencies: NavigableSet<CPK.Identifier>
     ) = object : CPK {
         override val metadata = object : CPK.Metadata {
-            override val id = CPK.Identifier.newInstance(random.nextInt().toString(), "1.0", null)
+            override val id = CPK.Identifier.newInstance(random.nextInt().toString(), "1.0", randomSecureHash())
             override val type = CPK.Type.UNKNOWN
             override val manifest = object : CPK.Manifest {
                 override val cpkFormatVersion = CPK.FormatVersion.parse("0.0")
