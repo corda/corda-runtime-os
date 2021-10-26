@@ -13,7 +13,6 @@ import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.amqpMagic
 import net.corda.packaging.CPI
-import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxCreationService
 import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializedBytes
@@ -28,16 +27,12 @@ import org.osgi.service.cm.ConfigurationAdmin
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.NotSerializableException
-import java.net.URL
-import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Hashtable
 import java.util.concurrent.TimeUnit
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 class AMQPwithOSGiSerializationTests {
-
-    private val testingBundle = FrameworkUtil.getBundle(this::class.java)
 
     companion object {
         lateinit var installService: InstallService
@@ -77,26 +72,12 @@ class AMQPwithOSGiSerializationTests {
             sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
         }
 
-        private fun assembleCpb(cpkUrls: List<URL>): CPI {
-            val cpks = cpkUrls.map { url ->
-                val urlAsString = url.toString()
-                val cpkName = urlAsString.substring(urlAsString.lastIndexOf("/") + 1)
-                val cpkFile = Files.createTempFile(cpkName, ".cpk")
-                Files.newOutputStream(cpkFile).use {
-                    url.openStream().copyTo(it)
-                }
-                cpkFile.toAbsolutePath()
-            }.toList()
-
-            return try {
-                val byteArrayOutputStream = ByteArrayOutputStream()
-                byteArrayOutputStream.use { outputStream ->
-                    CPI.assemble(outputStream, "dummy-cordapp-bundle", "1.0", cpks)
-                }
-                installService.loadCpb(ByteArrayInputStream(byteArrayOutputStream.toByteArray()))
-            } finally {
-                cpks.map(Files::delete)
+        private fun assembleCpb(cpkUrls: List<Path>): CPI {
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            byteArrayOutputStream.use { outputStream ->
+                CPI.assemble(outputStream, "dummy-cordapp-bundle", "1.0", cpkUrls)
             }
+            return installService.loadCpb(ByteArrayInputStream(byteArrayOutputStream.toByteArray()))
         }
     }
 
@@ -116,14 +97,10 @@ class AMQPwithOSGiSerializationTests {
 
     @Test
     fun `successfully deserialise when composed bundle class is installed`() {
-        val cpk1 = testingBundle.getResource("TestSerializable1-workflows-$cordappVersion-cordapp.cpk")
-                ?: fail("TestSerializable1-workflows-$cordappVersion-cordapp.cpk is missing")
-        val cpk2 = testingBundle.getResource("TestSerializable2-workflows-$cordappVersion-cordapp.cpk")
-                ?: fail("TestSerializable2-workflows-$cordappVersion-cordapp.cpk is missing")
-        val cpk3 = testingBundle.getResource("TestSerializable3-workflows-$cordappVersion-cordapp.cpk")
-                ?: fail("TestSerializable3-workflows-$cordappVersion-cordapp.cpk is missing")
-        val cpk4 = testingBundle.getResource("TestSerializable4-workflows-$cordappVersion-cordapp.cpk")
-                ?: fail("TestSerializable4-workflows-$cordappVersion-cordapp.cpk is missing")
+        val cpk1 = Path.of("../../../build/resources/integrationTest/TestSerializable1-workflows-$cordappVersion-cordapp.cpk")
+        val cpk2 = Path.of("../../../build/resources/integrationTest/TestSerializable2-workflows-$cordappVersion-cordapp.cpk")
+        val cpk3 = Path.of("../../../build/resources/integrationTest/TestSerializable3-workflows-$cordappVersion-cordapp.cpk")
+        val cpk4 = Path.of("../../../build/resources/integrationTest/TestSerializable4-workflows-$cordappVersion-cordapp.cpk")
 
         val cpb = assembleCpb(listOf(cpk1, cpk2, cpk3, cpk4))
         val cpks = installService.getCpb(cpb.metadata.id)!!.cpks
