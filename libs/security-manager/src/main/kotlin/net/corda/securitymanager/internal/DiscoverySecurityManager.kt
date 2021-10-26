@@ -11,7 +11,7 @@ import java.security.Permission
  * While active, it logs any permission checks for which any class on the execution stack is from a bundle whose
  * location matches one of the [prefixes].
  *
- * This security manager is not secure in production.
+ * This security manager is not secure for production use.
  */
 @Component(service = [DiscoverySecurityManager::class])
 class DiscoverySecurityManager(
@@ -40,6 +40,9 @@ class DiscoverySecurityManager(
     override fun stop() {
         System.setSecurityManager(previousSecurityManager)
     }
+
+    override fun grantPermissions(filter: String, perms: Collection<Permission>) = Unit
+    override fun denyPermissions(filter: String, perms: Collection<Permission>) = Unit
 
     /** Logs the [perm] if a class on the stack is from a bundle whose location matches one of the [prefixes]. */
     override fun checkPermission(perm: Permission) {

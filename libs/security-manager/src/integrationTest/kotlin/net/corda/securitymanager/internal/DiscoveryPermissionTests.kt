@@ -1,6 +1,7 @@
 package net.corda.securitymanager.internal
 
-import org.junit.jupiter.api.BeforeAll
+import net.corda.securitymanager.SecurityManagerService
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
@@ -8,30 +9,39 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 
-/** Tests the permissions of sandboxed bundles in discovery mode. */
+/** Tests the `DiscoverySecurityManager`. */
 @ExtendWith(ServiceExtension::class)
-class DiscoveryPermissionTests {
+class DiscoverySecurityManagerTests {
     companion object {
-        @InjectService(timeout = 1000)
-        lateinit var sandboxLoader: SandboxLoader
+        // The permission to get any environment variable.
+        private val getEnvPerm = RuntimePermission(GET_ENV_TARGET, null)
 
-        @Suppress("unused")
-        @JvmStatic
-        @BeforeAll
-        fun setup() {
-            val bundleLocation = FrameworkUtil.getBundle(this::class.java).location
-            sandboxLoader.securityManagerService.startDiscoveryMode(setOf(bundleLocation))
-        }
+        private val bundleLocation = FrameworkUtil.getBundle(this::class.java).location
+    }
+
+    @InjectService(timeout = 1000)
+    lateinit var securityManagerService: SecurityManagerService
+
+    @Suppress("unused")
+    @BeforeEach
+    fun reset() {
+        securityManagerService.startDiscoveryMode(setOf(bundleLocation))
     }
 
     @Test
     fun `no permissions are denied by default`() {
         assertDoesNotThrow {
-            sandboxLoader.sandboxedInvoker.apply {
-                performActionRequiringRuntimePermission()
-                performActionRequiringServiceGetPermission()
-                performActionRequiringServiceRegisterPermission()
-            }
+            // This permission stands in for all permissions.
+            System.getenv()
+        }
+    }
+
+    @Test
+    fun `denying permissions has no effect`() {
+        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
+
+        assertDoesNotThrow {
+            System.getenv()
         }
     }
 }
