@@ -7,17 +7,23 @@ import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.ProviderFactory
+import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
-import com.google.cloud.tools.jib.api.*
+import com.google.cloud.tools.jib.api.Jib
+import com.google.cloud.tools.jib.api.JibContainer
+import com.google.cloud.tools.jib.api.JibContainerBuilder
+import com.google.cloud.tools.jib.api.RegistryImage
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath
+import com.google.cloud.tools.jib.api.Containerizer
+import com.google.cloud.tools.jib.api.DockerDaemonImage
 
 import javax.inject.Inject
 import java.nio.file.StandardCopyOption
-
 
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -40,9 +46,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     private final String projectDir = project.projectDir
     private final String buildDir = project.buildDir
     private final String version = project.version
-
-    private String gitVersion = "git rev-parse --verify --short HEAD".execute().text
     private String targetRepo="engineering-docker-dev.software.r3.com/corda-os-${projectName}"
+    private def gitTask
 
     @Inject
     protected abstract ProviderFactory getProviderFactory()
@@ -94,11 +99,14 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     DeployableContainerBuilder() {
         description = 'Creates a new "corda-dev" image with the file specified in "overrideFilePath".'
         group = 'publishing'
+        gitTask = project.tasks.register("gitVersion", GetGitRevision.class)
+        super.dependsOn(gitTask)
     }
 
     @TaskAction
     def updateImage() {
 
+        String gitRevision = gitTask.flatMap { it.revision }.get()
         String jarLocation = "${buildDir}/tmp/containerization/${projectName}.jar"
         Files.createDirectories(Paths.get("${buildDir}/tmp/containerization/"))
         Files.copy(Paths.get(overrideFile.getAsFile().get().getPath()), Paths.get(jarLocation), StandardCopyOption.REPLACE_EXISTING)
@@ -133,11 +141,11 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         if (!remotePublish.get()) {
             tagContainerForLocal(builder, targetImageTag.get())
             tagContainerForLocal(builder, version)
-            tagContainerForLocal(builder, gitVersion)
+            tagContainerForLocal(builder, gitRevision)
         } else {
             tagContainerForRemote(builder, targetImageTag.get())
             tagContainerForRemote(builder, version)
-            tagContainerForRemote(builder, gitVersion)
+            tagContainerForRemote(builder, gitRevision)
         }
     }
 
@@ -152,4 +160,20 @@ abstract class DeployableContainerBuilder extends DefaultTask {
                 Containerizer.to(RegistryImage.named("${targetRepo}:${tag}")
                         .addCredential(registryUsername.get(), registryPassword.get())))
     }
+
+    static class GetGitRevision extends Exec {
+        @Internal
+        final Property<String> revision
+
+        @Inject
+        GetGitRevision(ObjectFactory objects, ProviderFactory providers) {
+            executable 'git'
+            args 'rev-parse', '--verify', '--short', 'HEAD'
+            standardOutput = new ByteArrayOutputStream()
+            revision = objects.property(String).value(
+                    providers.provider { standardOutput.toString() }
+            )
+        }
+    }
 }
+

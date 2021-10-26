@@ -417,3 +417,64 @@ The `appJar` task depends on the tasks
   file `system_bundles`.
 
 See [The bootable JAR](#the_bootable_jar) section to know how is made the internal structure of the bootable JAR.
+
+## Create Docker Image Custom Gradle Task
+A custom Gradle task has been provided to allow for the containerization of deployable Jars in the Corda-runtime-os project.
+An example of how to apply this task to a project can be seen in the applications/http-rpc-gateway application. 
+
+``` groovy
+tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
+    description "Builds the docker image for the deployable OSGi application"
+
+    arguments = ["--instanceId", "1"]
+
+    if (project.hasProperty('jibRemotePublish')) {
+        remotePublish = jibRemotePublish.toBoolean()
+    }
+
+    if (project.hasProperty('releaseCandidate')) {
+        releaseCandidate = releaseCandidate.toBoolean()
+    }
+}
+```
+
+Once triggered this task will produce a docker image tagging it with the following labels.
+- latest
+- the project version
+- git revision
+
+If ran locally with no properties passed the task will publish images to the local Docker Daemon. 
+
+if jibRemotePublish is true images will be published to artifactory under:
+
+    engineering-docker-dev.software.r3.com/corda-os-${projectName}
+
+CI builds will automatically publish to the remote repo.
+
+Any properties specified in the 'arguments' array will be passed to the java -jar command.
+Also, if a kafka.properties file exists in the project root as follows:
+
+```
+    http-rpc-gateway
+        +--- src
+        +--- build.gradle
+        +--- kafka.properties
+```
+
+The file will be copied to the container and "--kafka", "/opt/pathToFile" will also be passed ot the java -jar command.
+
+### Running the container
+
+```
+docker run -it -p 8888:8888 engineering-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
+```
+
+### Debugging the container
+To debug a running container we can use the JAVA_TOOL_OPTIONS environment variable to pass arguments at runtime e.g.
+
+```
+docker run -it -p 8887:8888 -p 5005:5005 -e "JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005" engineering-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
+```
+
+__NOTE:__ `-p 5005:5005` which forwards internal container debug port to a local port such that remote debugger can
+be attached.
