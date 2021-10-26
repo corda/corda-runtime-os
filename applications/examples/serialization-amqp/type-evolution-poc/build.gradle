@@ -5,12 +5,20 @@ plugins {
 
 description 'Type Evolution AMQP serializer Proof of Concept'
 
+configurations {
+    cpks {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-serialization"
-    implementation project(':libs:serialization:serialization-amqp')
     implementation "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"
     implementation "org.ow2.asm:asm:$asmVersion"
+
+    cpks project(path: ':applications:examples:serialization-amqp:type-evolution-poc:evolution-example-cpk', configuration: 'cordaCPK')
 
 
 //     From demo app:
@@ -20,10 +28,17 @@ dependencies {
 
     implementation 'net.corda:corda-base'
     implementation 'org.slf4j:slf4j-api'
+//    implementation project(':libs:sandbox')
+//    implementation project(':libs:install')
+//    implementation project(':libs:class-info')
+    implementation project(':libs:serialization:serialization-amqp')
     implementation project(":osgi-framework-api")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    runtimeOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+    runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
