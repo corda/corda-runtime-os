@@ -1,6 +1,7 @@
 package net.corda.sandbox
 
 import net.corda.packaging.CPK
+import net.corda.sandbox.internal.classtag.ClassTag
 import org.osgi.framework.Bundle
 
 /**
@@ -8,20 +9,20 @@ import org.osgi.framework.Bundle
  */
 interface SandboxContextService {
     /**
-     * Returns the [ClassInfo] for the given [klass].
+     * Returns the [ClassTag] for the given [klass].
      *
      * A [SandboxException] is thrown if the class is not in a sandbox, or is not found in any bundle the sandbox has
      * visibility of.
      */
-    fun getClassInfo(klass: Class<*>): ClassInfo
+    fun getClassTag(klass: Class<*>): String
 
     /**
-     * Returns the [ClassInfo] for the class with the given [className]. If the className occurs more than once in
+     * Returns the [ClassTag] for the class with the given [className]. If the className occurs more than once in
      * the sandboxGroup then the first one found is returned.
      *
      * A [SandboxException] is thrown if [className] is not found in the sandboxGroup.
      */
-    fun getClassInfo(className: String): ClassInfo
+    fun getClassTag(className: String): String
 
     /**
      * Returns the [Sandbox] lowest in the stack of calls to this function, or null if no sandbox is on the stack.

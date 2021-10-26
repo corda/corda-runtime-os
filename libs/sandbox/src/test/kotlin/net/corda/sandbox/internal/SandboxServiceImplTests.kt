@@ -263,8 +263,8 @@ class SandboxServiceImplTests {
         val sandboxService = createSandboxService(setOf(cpkWithDependencies, cpkAndContentsOne, cpkAndContentsTwo))
         sandboxService.createSandboxGroup(listOf(cpkWithDependencies.cpk.metadata.hash))
 
-        val classInfo = sandboxService.getClassInfo(cpkWithDependencies.cordappClass)
-        val classInfoByName = sandboxService.getClassInfo(cpkWithDependencies.cordappClass.name)
+        val classInfo = sandboxService.getClassTag(cpkWithDependencies.cordappClass)
+        val classInfoByName = sandboxService.getClassTag(cpkWithDependencies.cordappClass.name)
         assertEquals(classInfo, classInfoByName)
 
         val cordappBundle = startedBundles.find { bundle ->
@@ -302,7 +302,7 @@ class SandboxServiceImplTests {
         sandboxService.createSandboxGroup(listOf(cpkWithDependencies.cpk.metadata.hash))
 
         // Note that we cannot get the `ClassInfo` by name for library bundles.
-        val classInfo = sandboxService.getClassInfo(cpkWithDependencies.libraryClass)
+        val classInfo = sandboxService.getClassTag(cpkWithDependencies.libraryClass)
 
         val libraryBundle =
             startedBundles.find { bundle -> bundle.symbolicName == cpkWithDependencies.libraryBundleName }!!
@@ -328,7 +328,7 @@ class SandboxServiceImplTests {
 
         val unknownClass = Iterable::class.java
         val e = assertThrows<SandboxException> {
-            sandboxService.getClassInfo(unknownClass)
+            sandboxService.getClassTag(unknownClass)
         }
         assertTrue(e.message!!.contains(" is not contained in any sandbox."))
     }
@@ -343,7 +343,7 @@ class SandboxServiceImplTests {
         sandboxService.createSandboxGroup(listOf(cpkWithBadDependency.cpk.metadata.hash))
 
         val e = assertThrows<SandboxException> {
-            sandboxService.getClassInfo(cpkWithBadDependency.cordappClass)
+            sandboxService.getClassTag(cpkWithBadDependency.cordappClass)
         }
         assertTrue(e.message!!.contains(".* is listed as a dependency of .*, but is not installed\\.".toRegex()))
     }

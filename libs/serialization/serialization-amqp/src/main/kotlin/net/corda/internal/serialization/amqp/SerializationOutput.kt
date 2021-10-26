@@ -1,6 +1,6 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.classinfo.ClassInfoException
+import net.corda.classinfo.ClassTagException
 import net.corda.internal.serialization.CordaSerializationEncoding
 import net.corda.internal.serialization.SectionId
 import net.corda.internal.serialization.byteArrayOutput
@@ -139,15 +139,12 @@ open class SerializationOutput constructor(
      */
     private fun writeTypeToMetadata(type: Type) {
         try {
-            val classInfo = TypeResolver.getClassInfoFor(type.asClass())
-            if (classInfo is CpkClassInfo && !metadata.containsKey(type.typeName)) {
-                // Transform into ClassTag and pass the serialized ClassTag to the blob instead of the string list
-                val classTag = convertClassInfoToClassTag(classInfo)
-                val serializedClassTag = classTag.serialise()
+            val classTag = TypeResolver.getClassTagFor(type.asClass())
+            if (!metadata.containsKey(type.typeName)) {
                 val key = type.typeName
-                metadata.putValue(key, serializedClassTag)
+                metadata.putValue(key, classTag)
             }
-        } catch (ex: ClassInfoException) {
+        } catch (ex: ClassTagException) {
             logger.trace {
                 "Class ${type.typeName} not found in any sandbox. " +
                 "The type is either a PlatformClass or is not installed. "
@@ -160,15 +157,6 @@ open class SerializationOutput constructor(
                         "This code runs outside an OSGi framework. ${ex.message}"
             }
         }
-    }
-
-    private fun convertClassInfoToClassTag(classInfo: CpkClassInfo): ClassTag {
-        return EvolvableTagImplV1(
-            isPublicClass = false,
-            classBundleName = classInfo.classBundleName,
-            cordappBundleName = classInfo.cordappBundleName,
-            cpkSignerSummaryHash = classInfo.cpkSignerSummaryHash
-        )
     }
 
     @Suppress("TooGenericExceptionCaught")
