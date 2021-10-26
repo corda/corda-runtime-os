@@ -328,21 +328,6 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `throws if asked to retrieve CPK info for a class and a dependency cannot be resolved`() {
-        val badCpkDependency = CPK.Identifier.newInstance("unknown", "", randomSecureHash())
-        val cpkWithBadDependency =
-            cpkAndContentsOne.copy(cpkDependencies = sequenceOf(badCpkDependency).toCollection(TreeSet()))
-
-        val sandboxService = createSandboxService(setOf(cpkWithBadDependency))
-        sandboxService.createSandboxGroup(listOf(cpkWithBadDependency.cpk.metadata.hash))
-
-        val e = assertThrows<SandboxException> {
-            sandboxService.getClassTag(cpkWithBadDependency.cordappClass)
-        }
-        assertTrue(e.message!!.contains(".* is listed as a dependency of .*, but is not installed\\.".toRegex()))
-    }
-
-    @Test
     fun `two sandboxes in the same group have visibility of each other`() {
         val sandboxes =
             sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash)).sandboxes.toList()
