@@ -93,7 +93,7 @@ class MessageConverterTest {
         val networkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(networkMap.getMemberInfo(any())).thenReturn(null)
         val flowMessage = authenticatedMessageAndKey(HoldingIdentity("", ""), peer, ByteBuffer.wrap("DATA".toByteArray()))
-        assertNull(MessageConverter.linkOutMessageFromFlowMessageAndKey(flowMessage, session, networkMap))
+        assertNull(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, networkMap))
         loggingInterceptor.assertSingleWarning(
             "Attempted to send message to peer $peer which is not in the network map." +
                 " The message was discarded."
@@ -115,7 +115,7 @@ class MessageConverterTest {
             )
         )
         val flowMessage = authenticatedMessageAndKey(us, peer, ByteBuffer.wrap("DATA".toByteArray()))
-        assertNull(MessageConverter.linkOutMessageFromFlowMessageAndKey(flowMessage, session, networkMap))
+        assertNull(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, networkMap))
         loggingInterceptor.assertSingleWarning(
             "Could not find the network type in the NetworkMap for our identity = $us." +
                 " The message was discarded."

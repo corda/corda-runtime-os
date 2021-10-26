@@ -5,6 +5,7 @@ import net.corda.install.internal.CONFIG_ADMIN_BASE_DIRECTORY
 import net.corda.install.internal.CONFIG_ADMIN_BLACKLISTED_KEYS
 import net.corda.install.internal.CONFIG_ADMIN_PLATFORM_VERSION
 import net.corda.install.internal.SUPPORTED_CPK_FORMATS
+import net.corda.packaging.CPK
 import net.corda.packaging.CordappManifest
 import net.corda.packaging.CordappManifest.Companion.CORDAPP_CONTRACTS
 import net.corda.packaging.CordappManifest.Companion.CORDAPP_CONTRACT_LICENCE
@@ -19,7 +20,6 @@ import net.corda.packaging.CordappManifest.Companion.CORDAPP_WORKFLOW_VERSION
 import net.corda.packaging.CordappManifest.Companion.DEFAULT_MIN_PLATFORM_VERSION
 import net.corda.packaging.CordappManifest.Companion.MIN_PLATFORM_VERSION
 import net.corda.packaging.CordappManifest.Companion.TARGET_PLATFORM_VERSION
-import net.corda.packaging.Cpk
 import net.corda.packaging.ManifestCordappInfo
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -33,10 +33,8 @@ import org.osgi.service.cm.ConfigurationAdmin
 import java.security.NoSuchAlgorithmException
 import java.security.SecureRandom
 import java.security.cert.Certificate
-import java.util.Collections.emptyNavigableMap
 import java.util.Collections.emptyNavigableSet
 import java.util.Hashtable
-import java.util.NavigableMap
 import java.util.NavigableSet
 import java.util.jar.Manifest
 import kotlin.random.Random
@@ -69,13 +67,10 @@ internal object TestUtils {
 
     /** Creates a dummy [Manifest] containing the CPK-specific values provided. */
     internal fun createDummyCpkManifest(
-        cpkFormatValue: Cpk.Manifest.CpkFormatVersion? = SUPPORTED_CPK_FORMATS.iterator().next()
+        cpkFormatValue: CPK.FormatVersion? = SUPPORTED_CPK_FORMATS.last()
     ): Manifest {
-        val manifestHeaders = listOf(Cpk.Manifest.CPK_FORMAT)
-        val manifestValues = listOf(cpkFormatValue)
-        val manifestHeadersAndValues = manifestHeaders.zip(manifestValues).filter { (_, value) -> value != null }
-
-        val manifestString = manifestHeadersAndValues.joinToString("\n", postfix = "\n") { (header, value) ->
+        val manifestString = listOf(CPK.Manifest.CPK_FORMAT to cpkFormatValue)
+                .joinToString("\n", postfix = "\n") { (header, value) ->
             "$header: $value"
         }
 
@@ -118,32 +113,33 @@ internal object TestUtils {
     fun secureRandomBytes(numOfBytes: Int): ByteArray =
         ByteArray(numOfBytes).apply { newSecureRandom().nextBytes(this) }
 
-    /** Creates a dummy [Cpk] with the provided manifest. */
+    /** Creates a dummy [CPK] with the provided manifest. */
     @Suppress("LongParameterList")
     internal fun createDummyCpk(
         cpkHash: SecureHash = hashingService.hash(
             secureRandomBytes(hashingService.digestLength(DigestAlgorithmName.SHA2_256)), DigestAlgorithmName.SHA2_256
         ),
         cordappJarFilename: String = "cordapp.jar",
-        cpkManifest: Cpk.Manifest = Cpk.Manifest.fromManifest(createDummyCpkManifest()),
+        cpkManifest: CPK.Manifest = CPK.Manifest.fromJarManifest(createDummyCpkManifest()),
         cordappCertificates: Set<Certificate> = emptySet(),
         cordappManifest: CordappManifest = createDummyParsedCordappManifest(),
-        cordappHash: SecureHash = hashingService.hash(
-            secureRandomBytes(hashingService.digestLength(DigestAlgorithmName.SHA2_256)), DigestAlgorithmName.SHA2_256
-        ),
-        dependencies: NavigableSet<Cpk.Identifier> = emptyNavigableSet(),
-        libraryDependencies: NavigableMap<String, SecureHash> = emptyNavigableMap()
-    ) = Cpk.Archived(
-        type = Cpk.Type.UNKNOWN,
-        cordappJarFileName = cordappJarFilename,
-        cpkHash = cpkHash,
-        cpkManifest = cpkManifest,
-        cordappHash = cordappHash,
-        cordappCertificates = cordappCertificates,
-        cordappManifest = cordappManifest,
-        dependencies = dependencies,
-        libraryDependencies = libraryDependencies
-    )
+        dependencies: NavigableSet<CPK.Identifier> = emptyNavigableSet(),
+        libraryDependencies: List<String> = emptyList()
+    ) = object : CPK.Metadata {
+        override val type = CPK.Type.UNKNOWN
+        override val mainBundle = cordappJarFilename
+        override val hash = cpkHash
+        override val id: CPK.Identifier = CPK.Identifier.newInstance(
+            cordappManifest.bundleSymbolicName,
+            cordappManifest.bundleVersion,
+            null
+        )
+        override val manifest = cpkManifest
+        override val cordappCertificates = cordappCertificates
+        override val cordappManifest = cordappManifest
+        override val dependencies = dependencies
+        override val libraries = libraryDependencies
+    }
 
     /**
      * Creates a [ConfigurationAdmin] containing the provided [baseDirectory] and [blacklistedKeys], as well as a

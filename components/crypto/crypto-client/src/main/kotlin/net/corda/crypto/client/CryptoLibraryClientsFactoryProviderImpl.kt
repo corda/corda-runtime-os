@@ -93,11 +93,11 @@ open class CryptoLibraryClientsFactoryProviderImpl @Activate constructor(
         currentImpl.closeGracefully()
     }
 
-    override fun create(requestingComponent: String): CryptoLibraryClientsFactory =
-        impl.create(requestingComponent)
+    override fun get(requestingComponent: String): CryptoLibraryClientsFactory =
+        impl.get(requestingComponent)
 
-    override fun create(memberId: String, requestingComponent: String): CryptoLibraryClientsFactory =
-        impl.create(memberId, requestingComponent)
+    override fun get(memberId: String, requestingComponent: String): CryptoLibraryClientsFactory =
+        impl.get(memberId, requestingComponent)
 
     private class DevImpl(
         private val cipherSuiteFactory: CipherSuiteFactory,
@@ -106,10 +106,10 @@ open class CryptoLibraryClientsFactoryProviderImpl @Activate constructor(
     ) : Impl {
         private val factories = ConcurrentHashMap<String, CryptoLibraryClientsFactory>()
 
-        override fun create(requestingComponent: String): CryptoLibraryClientsFactory =
-            create(memberIdProvider.memberId, requestingComponent)
+        override fun get(requestingComponent: String): CryptoLibraryClientsFactory =
+            get(memberIdProvider.memberId, requestingComponent)
 
-        override fun create(memberId: String, requestingComponent: String): CryptoLibraryClientsFactory {
+        override fun get(memberId: String, requestingComponent: String): CryptoLibraryClientsFactory {
             val key = makeFactoryKey(memberId, requestingComponent)
             logger.warn(
                 "Using dev provider to get {} for {}",
@@ -149,10 +149,10 @@ open class CryptoLibraryClientsFactoryProviderImpl @Activate constructor(
 
         private val factories = ConcurrentHashMap<String, CryptoLibraryClientsFactory>()
 
-        override fun create(requestingComponent: String): CryptoLibraryClientsFactory =
-            create(memberIdProvider.memberId, requestingComponent)
+        override fun get(requestingComponent: String): CryptoLibraryClientsFactory =
+            get(memberIdProvider.memberId, requestingComponent)
 
-        override fun create(memberId: String, requestingComponent: String): CryptoLibraryClientsFactory {
+        override fun get(memberId: String, requestingComponent: String): CryptoLibraryClientsFactory {
             val key = makeFactoryKey(memberId, requestingComponent)
             logger.debug("Getting {} for {}", CryptoLibraryClientsFactory::class.java.name, key)
             return factories.getOrPut(key) {

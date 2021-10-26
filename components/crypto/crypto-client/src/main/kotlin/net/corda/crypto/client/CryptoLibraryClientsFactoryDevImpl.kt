@@ -10,7 +10,7 @@ import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.dev.DevCryptoService
 import net.corda.crypto.impl.dev.DevCryptoServiceConfiguration
 import net.corda.crypto.impl.dev.DevCryptoServiceProvider
-import net.corda.crypto.impl.dev.InMemoryPersistentCacheFactory
+import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactoryProvider
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import java.util.concurrent.ConcurrentHashMap
@@ -24,7 +24,7 @@ class CryptoLibraryClientsFactoryDevImpl(
 
     private val devCryptoServiceProvider: DevCryptoServiceProvider by lazy(LazyThreadSafetyMode.PUBLICATION) {
         DevCryptoServiceProvider(
-            listOf(InMemoryPersistentCacheFactory())
+            listOf(InMemoryKeyValuePersistenceFactoryProvider())
         )
     }
 

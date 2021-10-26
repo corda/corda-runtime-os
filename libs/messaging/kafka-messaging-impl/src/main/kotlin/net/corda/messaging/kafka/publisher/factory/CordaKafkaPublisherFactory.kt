@@ -77,15 +77,13 @@ class CordaKafkaPublisherFactory @Activate constructor(
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<String, RPCResponse>(avroSchemaRegistry)
         val serializer = CordaAvroSerializer<TREQ>(avroSchemaRegistry)
         val deserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, rpcConfig.responseType)
-        val errorDeserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, String::class.java)
 
         return CordaKafkaRPCSenderImpl(
             publisherConfig,
             publisher,
             consumerBuilder,
             serializer,
-            deserializer,
-            errorDeserializer
+            deserializer
         )
     }
 }

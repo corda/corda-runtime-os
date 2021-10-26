@@ -12,7 +12,7 @@ internal class EvolvableTagImplV1(
     isPublicClass: Boolean,
     classBundleName: String,
     cordappBundleName: String,
-    cpkSignerSummaryHash: SecureHash
+    cpkSignerSummaryHash: SecureHash?
 ) : EvolvableTag(1, isPublicClass, classBundleName, cordappBundleName, cpkSignerSummaryHash) {
 
     companion object {

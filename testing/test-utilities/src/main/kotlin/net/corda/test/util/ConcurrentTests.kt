@@ -1,9 +1,13 @@
 package net.corda.test.util
 
+import java.io.PrintWriter
+import java.io.StringWriter
+import java.lang.Integer.min
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
+
 
 /**
  * Useful to test concurrent execution. Like
@@ -21,7 +25,7 @@ import kotlin.concurrent.thread
  */
 class ConcurrentTests(
     private val joinTimeoutMilliseconds: Long = 25_000,
-    private val startTimeoutMilliseconds: Long = 5_000,
+    private val startTimeoutMilliseconds: Long = 5_000
 ) {
     private val latch = CountDownLatch(1)
     private val exceptions = ConcurrentHashMap<Throwable, Unit>()
@@ -45,17 +49,39 @@ class ConcurrentTests(
         return exceptions.keys().toList()
     }
 
-    fun validateResult() {
-        if(exceptions.isNotEmpty()) {
+    fun validateResult(reportFirstNExceptions: Int = 1) {
+        if (exceptions.isNotEmpty()) {
             throw AssertionError(
-                exceptions.keys.joinToString( "${System.lineSeparator()}>>>>${System.lineSeparator()}")
+                exceptions.keys
+                    .take(min(reportFirstNExceptions, 10))
+                    .joinToString("${System.lineSeparator()}>>>>${System.lineSeparator()}") {
+                        printException(it)
+                    }
             )
         }
     }
 
-    fun runAndValidate() {
+    fun runAndValidate(reportFirstNExceptions: Int = 1) {
         run()
-        validateResult()
+        validateResult(reportFirstNExceptions)
+    }
+
+    private fun printException(e: Throwable): String {
+        return StringWriter().use { sw ->
+            PrintWriter(sw).use { pw ->
+                printException(e, pw)
+                pw.println("<<<<<<<<<<<<")
+            }
+            sw.toString()
+        }
+    }
+
+    private fun printException(e: Throwable, pw: PrintWriter) {
+        e.printStackTrace(pw)
+        if (e.cause != null) {
+            pw.print("Caused by: ")
+            printException(e.cause!!, pw)
+        }
     }
 }
 

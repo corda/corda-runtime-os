@@ -1,6 +1,6 @@
 package net.corda.sandbox
 
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPK
 
 /**
  * OSGi service interface for retrieving context on the current sandbox.
@@ -47,5 +47,5 @@ interface SandboxContextService {
      * A [SandboxException] is thrown if the sandbox bundle's location is not formatted correctly, the ID is not a
      * valid UUID, or there is no known sandbox with the given ID.
      */
-    fun getCallingCpk(): Cpk.Identifier?
+    fun getCallingCpk(): CPK.Identifier?
 }

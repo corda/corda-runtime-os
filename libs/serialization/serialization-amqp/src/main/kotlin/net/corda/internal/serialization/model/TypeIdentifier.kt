@@ -4,7 +4,7 @@ import com.google.common.reflect.TypeToken
 import net.corda.internal.serialization.amqp.Metadata
 import net.corda.internal.serialization.amqp.asClass
 import net.corda.internal.serialization.osgi.TypeResolver
-import net.corda.packaging.Cpk
+import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.crypto.SecureHash
@@ -273,7 +273,7 @@ sealed class TypeIdentifier {
     protected fun loadTypeFromMetadata(context: SerializationContext, metadata: Metadata): Class<*> {
         return if (metadata.containsKey(name)) {
             val cpkIdentifierParts = metadata.getValue(name) as List<*>
-            val cpkIdentifier = Cpk.Identifier(
+            val cpkIdentifier = CPK.Identifier.newInstance(
                     cpkIdentifierParts[0] as String,
                     cpkIdentifierParts[1] as String,
                     SecureHash.create(cpkIdentifierParts[4] as String)

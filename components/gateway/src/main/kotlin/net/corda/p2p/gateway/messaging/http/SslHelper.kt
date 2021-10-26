@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.ssl.SslHandler
 import net.corda.p2p.gateway.messaging.RevocationConfig
+import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import org.bouncycastle.asn1.ASN1InputStream
 import org.bouncycastle.asn1.DERIA5String
 import org.bouncycastle.asn1.DEROctetString
@@ -107,13 +108,13 @@ fun createServerSslHandler(keyStore: KeyStore,
 fun getCertCheckingParameters(trustStore: KeyStore, revocationConfig: RevocationConfig): ManagerFactoryParameters {
     val pkixParams = PKIXBuilderParameters(trustStore, X509CertSelector())
     val revocationChecker = when (revocationConfig.mode) {
-        RevocationConfig.Mode.OFF -> AllowAllRevocationChecker
-        RevocationConfig.Mode.SOFT_FAIL, RevocationConfig.Mode.HARD_FAIL -> {
+        RevocationConfigMode.OFF -> AllowAllRevocationChecker
+        RevocationConfigMode.SOFT_FAIL, RevocationConfigMode.HARD_FAIL -> {
             val certPathBuilder = CertPathBuilder.getInstance("PKIX")
             val pkixRevocationChecker = certPathBuilder.revocationChecker as PKIXRevocationChecker
             // We only set SOFT_FAIL as a checker option if specified. Everything else is left as default, which means
             // OCSP is used if possible, CRL as a fallback
-            if (revocationConfig.mode == RevocationConfig.Mode.SOFT_FAIL) {
+            if (revocationConfig.mode == RevocationConfigMode.SOFT_FAIL) {
                 pkixRevocationChecker.options = setOf(PKIXRevocationChecker.Option.SOFT_FAIL)
             }
             pkixRevocationChecker

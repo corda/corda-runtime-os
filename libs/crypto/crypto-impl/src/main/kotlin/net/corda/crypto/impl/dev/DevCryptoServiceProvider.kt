@@ -1,13 +1,10 @@
 package net.corda.crypto.impl.dev
 
-import net.corda.crypto.impl.config.CryptoCacheConfig
-import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
+import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCacheImpl
-import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
-import net.corda.crypto.impl.persistence.PersistentCache
-import net.corda.crypto.impl.persistence.PersistentCacheFactory
+import net.corda.crypto.impl.persistence.KeyValuePersistenceFactoryProvider
+import net.corda.crypto.impl.persistence.SigningKeyCache
 import net.corda.crypto.impl.persistence.SigningKeyCacheImpl
-import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
@@ -16,13 +13,19 @@ import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality
+import org.osgi.service.component.annotations.ReferencePolicyOption
 import org.slf4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CryptoServiceProvider::class])
 class DevCryptoServiceProvider @Activate constructor(
-    @Reference(service = PersistentCacheFactory::class)
-    private val persistentCacheFactories: List<PersistentCacheFactory>
+    @Reference(
+        service = KeyValuePersistenceFactoryProvider::class,
+        cardinality = ReferenceCardinality.AT_LEAST_ONE,
+        policyOption = ReferencePolicyOption.GREEDY
+    )
+    private val persistenceProviders: List<KeyValuePersistenceFactoryProvider>
 ) : CryptoServiceProvider<DevCryptoServiceConfiguration>, AutoCloseable {
     companion object {
         const val SERVICE_NAME = "dev"
@@ -31,11 +34,11 @@ class DevCryptoServiceProvider @Activate constructor(
         private val logger: Logger = contextLogger()
     }
 
-    private val devKeysPersistence =
-        ConcurrentHashMap<String, PersistentCache<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>>()
+    private val devKeysCache =
+        ConcurrentHashMap<String, DefaultCryptoKeyCache>()
 
-    private val signingPersistence =
-        ConcurrentHashMap<String, PersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo>>()
+    private val signingCache =
+        ConcurrentHashMap<String, SigningKeyCache>()
 
     override val name: String = SERVICE_NAME
 
@@ -50,28 +53,28 @@ class DevCryptoServiceProvider @Activate constructor(
         )
         val cipherSuiteFactory = context.cipherSuiteFactory
         val schemeMetadata = cipherSuiteFactory.getSchemeMap()
-        val persistentCacheFactory: PersistentCacheFactory =
-            persistentCacheFactories.firstOrNull { it.name == InMemoryPersistentCacheFactory.NAME }
-                ?: throw CryptoServiceLibraryException(
-                    "There is no provider with the name '${InMemoryPersistentCacheFactory.NAME}'",
-                    isRecoverable = false
-                )
-        val cryptoServiceCache = DefaultCryptoKeyCacheImpl(
-            memberId = context.memberId,
-            passphrase = passphrase,
-            salt = salt,
-            schemeMetadata = schemeMetadata,
-            persistence = devKeysPersistence.getOrPut(context.memberId) {
-                persistentCacheFactory.createDefaultCryptoPersistentCache(CryptoCacheConfig.default)
-            }
+        val persistenceFactory = persistenceProviders.firstOrNull {
+            it.name == InMemoryKeyValuePersistenceFactoryProvider.NAME
+        }?.get() ?: throw CryptoServiceLibraryException(
+            "There is no provider with the name '${InMemoryKeyValuePersistenceFactoryProvider.NAME}'",
+            isRecoverable = false
         )
-        val signingKeyCache = SigningKeyCacheImpl(
-            memberId = context.memberId,
-            keyEncoder = schemeMetadata,
-            persistence = signingPersistence.getOrPut(context.memberId) {
-                persistentCacheFactory.createSigningPersistentCache(CryptoCacheConfig.default)
-            }
-        )
+        val cryptoServiceCache = devKeysCache.getOrPut(context.memberId) {
+            DefaultCryptoKeyCacheImpl(
+                memberId = context.memberId,
+                passphrase = passphrase,
+                salt = salt,
+                schemeMetadata = schemeMetadata,
+                persistenceFactory = persistenceFactory
+            )
+        }
+        val signingKeyCache = signingCache.getOrPut(context.memberId) {
+            SigningKeyCacheImpl(
+                memberId = context.memberId,
+                keyEncoder = schemeMetadata,
+                persistenceFactory = persistenceFactory
+            )
+        }
         return DevCryptoService(
             keyCache = cryptoServiceCache,
             signingCache = signingKeyCache,
@@ -81,7 +84,7 @@ class DevCryptoServiceProvider @Activate constructor(
     }
 
     override fun close() {
-        devKeysPersistence.clear()
-        signingPersistence.clear()
+        devKeysCache.clear()
+        signingCache.clear()
     }
 }

@@ -19,10 +19,3 @@ dependencies {
 
 description 'Crypto Internal API'
 
-tasks.named('jar', Jar) {
-    bnd """\
-Import-Package:\
-    net.i2p.crypto.eddsa.math;resolution:=optional,\
-    *
-"""
-}

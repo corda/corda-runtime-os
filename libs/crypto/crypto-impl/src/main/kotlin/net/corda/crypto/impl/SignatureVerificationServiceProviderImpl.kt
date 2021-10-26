@@ -5,7 +5,7 @@ import net.corda.v5.cipher.suite.SignatureVerificationServiceProvider
 import net.corda.v5.crypto.SignatureVerificationService
 import org.osgi.service.component.annotations.Component
 
-@Component
+@Component(service = [SignatureVerificationServiceProvider::class])
 class SignatureVerificationServiceProviderImpl : SignatureVerificationServiceProvider {
     companion object {
         const val SERVICE_NAME = "default"

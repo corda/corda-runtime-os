@@ -14,6 +14,7 @@ dependencies {
     implementation "net.i2p.crypto:eddsa:$eddsaVersion"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
+    implementation "net.corda:corda-serialization"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
@@ -32,6 +33,12 @@ description 'Common crypto implementation'
 tasks.named('jar', Jar) {
     bnd """\
 Import-Package:\
+    org.bouncycastle.jcajce.provider.asymmetric,\
+    org.bouncycastle.jcajce.provider.config,\
+    org.bouncycastle.jcajce.provider.digest,\
+    org.bouncycastle.jcajce.provider.keystore,\
+    org.bouncycastle.jcajce.provider.symmetric,\
+    org.bouncycastle.jcajce.provider.util,\
     net.i2p.crypto.eddsa.math;resolution:=optional,\
     *
 """

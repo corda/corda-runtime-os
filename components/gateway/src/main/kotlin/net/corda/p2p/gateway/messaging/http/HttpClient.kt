@@ -12,15 +12,14 @@ import io.netty.handler.codec.http.HttpClientCodec
 import io.netty.handler.timeout.IdleStateHandler
 import net.corda.lifecycle.Lifecycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
+import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.lang.IllegalStateException
 import java.net.URI
 import java.util.LinkedList
-import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.TrustManagerFactory
 import kotlin.concurrent.withLock
-import org.bouncycastle.asn1.x500.X500Name
 
 /**
  * The [HttpClient] sends serialised application messages via POST requests to a given URI. It automatically initiates
@@ -39,10 +38,13 @@ import org.bouncycastle.asn1.x500.X500Name
  * @param writeGroup event loop group (thread pool) for processing message writes and reconnects
  * @param nettyGroup event loop group (thread pool) for processing netty callbacks
  */
-class HttpClient(private val destinationInfo: DestinationInfo,
-                 private val sslConfiguration: SslConfiguration,
-                 private val writeGroup: EventLoopGroup,
-                 private val nettyGroup: EventLoopGroup) : Lifecycle, HttpEventListener {
+class HttpClient(
+    private val destinationInfo: DestinationInfo,
+    private val sslConfiguration: SslConfiguration,
+    private val writeGroup: EventLoopGroup,
+    private val nettyGroup: EventLoopGroup,
+    private val listener: HttpEventListener,
+) : Lifecycle, HttpEventListener {
 
     companion object {
         private val logger = LoggerFactory.getLogger(HttpClient::class.java)
@@ -74,8 +76,6 @@ class HttpClient(private val destinationInfo: DestinationInfo,
     override val isRunning: Boolean
         get() = (writeProcessor != null)
 
-    private val eventListeners = CopyOnWriteArrayList<HttpEventListener>()
-
     private val connectListener = ChannelFutureListener { future ->
         if (!future.isSuccess) {
             logger.warn("Failed to connect to ${destinationInfo.uri}: ${future.cause().message}")
@@ -93,7 +93,6 @@ class HttpClient(private val destinationInfo: DestinationInfo,
             }
             writeProcessor = writeGroup.next()
         }
-
     }
 
     override fun stop() {
@@ -103,17 +102,6 @@ class HttpClient(private val destinationInfo: DestinationInfo,
             writeProcessor = null
             logger.info("Stopped HTTP client ${destinationInfo.uri}")
         }
-    }
-
-    /**
-     * Adds an [HttpEventListener] which upstream services can provide to receive updates on important events.
-     */
-    fun addListener(eventListener: HttpEventListener) {
-        eventListeners.add(eventListener)
-    }
-
-    fun removeListener(eventListener: HttpEventListener) {
-        eventListeners.remove(eventListener)
     }
 
     /**
@@ -149,7 +137,7 @@ class HttpClient(private val destinationInfo: DestinationInfo,
         }
         logger.info("Connecting to ${destinationInfo.uri}")
         val bootstrap = Bootstrap()
-        bootstrap.group(nettyGroup).channel(NioSocketChannel::class.java).handler(ClientChannelInitializer(this))
+        bootstrap.group(nettyGroup).channel(NioSocketChannel::class.java).handler(ClientChannelInitializer())
         val clientFuture = bootstrap.connect(destinationInfo.uri.host, destinationInfo.uri.port)
         clientFuture.addListener(connectListener)
     }
@@ -159,9 +147,8 @@ class HttpClient(private val destinationInfo: DestinationInfo,
             clientChannel = event.channel
             // Resend all undelivered messages.
             requestQueue.forEach { write(it, addToQueue = false) }
-
         }
-        eventListeners.forEach { it.onOpen(event) }
+        listener.onOpen(event)
     }
 
     override fun onClose(event: HttpConnectionEvent) {
@@ -177,7 +164,7 @@ class HttpClient(private val destinationInfo: DestinationInfo,
                 connect()
             }
         }
-        eventListeners.forEach { it.onClose(event) }
+        listener.onClose(event)
     }
 
     override fun onMessage(message: HttpMessage) {
@@ -187,14 +174,14 @@ class HttpClient(private val destinationInfo: DestinationInfo,
                 requestQueue.poll()
             }
         }
-        eventListeners.forEach { it.onMessage(message) }
+        listener.onMessage(message)
     }
 
-    private class ClientChannelInitializer(val parent: HttpClient) : ChannelInitializer<SocketChannel>() {
+    private inner class ClientChannelInitializer : ChannelInitializer<SocketChannel>() {
         private val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
 
         init {
-            parent.sslConfiguration.run {
+            sslConfiguration.run {
                 val pkixParams = getCertCheckingParameters(trustStore, revocationCheck)
                 trustManagerFactory.init(pkixParams)
             }
@@ -202,14 +189,18 @@ class HttpClient(private val destinationInfo: DestinationInfo,
 
         override fun initChannel(ch: SocketChannel) {
             val pipeline = ch.pipeline()
-            pipeline.addLast("sslHandler", createClientSslHandler(
-                parent.destinationInfo.sni,
-                parent.destinationInfo.uri,
-                parent.destinationInfo.legalName,
-                trustManagerFactory))
+            pipeline.addLast(
+                "sslHandler",
+                createClientSslHandler(
+                    destinationInfo.sni,
+                    destinationInfo.uri,
+                    destinationInfo.legalName,
+                    trustManagerFactory
+                )
+            )
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, CLIENT_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpClientCodec())
-            pipeline.addLast(HttpChannelHandler(parent, logger))
+            pipeline.addLast(HttpChannelHandler(this@HttpClient, logger))
         }
     }
 }
