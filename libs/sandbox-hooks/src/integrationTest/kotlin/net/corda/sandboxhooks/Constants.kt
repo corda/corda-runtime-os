@@ -33,4 +33,19 @@ internal const val CPK_THREE = "sandbox-cpk-three-cordapp.cpk"
 internal const val LIBRARY_BUNDLE_SYMBOLIC_NAME = "com.example.sandbox.sandbox-cpk-library"
 internal const val LIBRARY_QUERY_CLASS = "com.example.sandbox.library.SandboxQuery"
 
+internal const val LIBRARY_VERSION_FLOW_CPK_1 = "com.example.sandbox.cpk1.LibraryVersionFlow"
+internal const val LIBRARY_VERSION_FLOW_CPK_2 = "com.example.sandbox.cpk2.LibraryVersionFlow"
+internal const val BUNDLE_EVENTS_FLOW = "com.example.sandbox.cpk1.BundleEventOneFlow"
+internal const val BUNDLES_FLOW = "com.example.sandbox.cpk1.BundlesOneFlow"
+internal const val INVOKE_PRIVATE_IMPL_FLOW = "com.example.sandbox.cpk1.InvokePrivateImplFlow"
+internal const val PRIVATE_IMPL_AS_GENERIC_FLOW = "com.example.sandbox.cpk1.PrivateImplAsGenericFlow"
+internal const val SERVICE_EVENTS_FLOW = "com.example.sandbox.cpk1.ServiceEventOneFlow"
+internal const val SERVICES_FLOW_CPK_1 = "com.example.sandbox.cpk1.ServicesOneFlow"
+internal const val SERVICES_FLOW_CPK_2 = "com.example.sandbox.cpk2.ServicesTwoFlow"
+
+internal const val CPK_1_JODATIME_VERSION = "2.10.10"
+internal const val CPK_2_JODATIME_VERSION = "2.10.9"
+
+internal const val PRIVATE_WRAPPER_RETURN_VALUE = "String returned by WrapperImpl."
+
 internal const val SHA256 = "SHA-256"

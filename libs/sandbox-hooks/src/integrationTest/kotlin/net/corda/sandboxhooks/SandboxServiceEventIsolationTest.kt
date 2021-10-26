@@ -11,8 +11,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 @ExtendWith(ServiceExtension::class)
 class SandboxServiceEventIsolationTest {
     companion object {
-        const val SERVICE_EVENT1_FLOW_CLASS = "com.example.sandbox.cpk1.ServiceEventOneFlow"
-
         @InjectService(timeout = 1000)
         lateinit var sandboxLoader: SandboxLoader
     }
@@ -23,7 +21,7 @@ class SandboxServiceEventIsolationTest {
         val otherGroup = sandboxLoader.group2
 
         // This flow returns all service events visible to this bundle.
-        val serviceEvents = sandboxLoader.runFlow<List<ServiceEvent>>(SERVICE_EVENT1_FLOW_CLASS, thisGroup)
+        val serviceEvents = sandboxLoader.runFlow<List<ServiceEvent>>(SERVICE_EVENTS_FLOW, thisGroup)
 
         assertTrue(serviceEvents.isNotEmpty())
         serviceEvents.forEach { event ->

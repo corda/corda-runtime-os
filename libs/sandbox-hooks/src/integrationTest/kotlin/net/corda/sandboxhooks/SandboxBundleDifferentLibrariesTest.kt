@@ -15,11 +15,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 @ExtendWith(ServiceExtension::class)
 class SandboxBundleDifferentLibrariesTest {
     companion object {
-        const val LIBRARY_VERSION_FLOW_CPK_1 = "com.example.sandbox.cpk1.LibraryVersionFlow"
-        const val LIBRARY_VERSION_FLOW_CPK_2 = "com.example.sandbox.cpk2.LibraryVersionFlow"
-        const val CPK_1_JODATIME_VERSION = "2.10.10"
-        const val CPK_2_JODATIME_VERSION = "2.10.9"
-
         @InjectService(timeout = 1000)
         lateinit var sandboxLoader: SandboxLoader
     }
@@ -31,13 +26,9 @@ class SandboxBundleDifferentLibrariesTest {
 
     @Test
     fun checkDifferentCPKsHaveDifferentLibraryBundlesButWithSameSymbolicName() {
-        val sandbox1 = sandboxLoader.group1.getSandbox(sandboxLoader.cpk1.metadata.id)
-        val sandbox2 = sandboxLoader.group1.getSandbox(sandboxLoader.cpk2.metadata.id)
-        val sandbox3 = sandboxLoader.group2.getSandbox(sandboxLoader.cpk3.metadata.id)
-
-        val libraryBundle1 = getBundle(LIBRARY_QUERY_CLASS, sandbox1)
-        val libraryBundle2 = getBundle(LIBRARY_QUERY_CLASS, sandbox2)
-        val libraryBundle3 = getBundle(LIBRARY_QUERY_CLASS, sandbox3)
+        val libraryBundle1 = getBundle(LIBRARY_QUERY_CLASS, sandboxLoader.sandbox1)
+        val libraryBundle2 = getBundle(LIBRARY_QUERY_CLASS, sandboxLoader.sandbox2)
+        val libraryBundle3 = getBundle(LIBRARY_QUERY_CLASS, sandboxLoader.sandbox3)
 
         // Two sandboxes in the same sandbox group have a different copy of the same library.
         assertEquals(libraryBundle1.symbolicName, libraryBundle2.symbolicName)

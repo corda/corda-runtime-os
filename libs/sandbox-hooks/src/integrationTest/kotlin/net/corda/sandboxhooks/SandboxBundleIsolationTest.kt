@@ -12,8 +12,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 @ExtendWith(ServiceExtension::class)
 class SandboxBundleIsolationTest {
     companion object {
-        const val BUNDLES1_FLOW_CLASS = "com.example.sandbox.cpk1.BundlesOneFlow"
-
         @InjectService(timeout = 1000)
         lateinit var sandboxLoader: SandboxLoader
 
@@ -36,17 +34,15 @@ class SandboxBundleIsolationTest {
     fun sandboxCanSeeItsOwnBundlesAndMainBundlesInTheSameSandboxGroupOnly() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
-        val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.metadata.id)
-        val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.metadata.id)
 
         // This flow returns all bundle events visible to this bundle.
-        val bundles = sandboxLoader.runFlow<List<Bundle>>(BUNDLES1_FLOW_CLASS, thisGroup)
+        val bundles = sandboxLoader.runFlow<List<Bundle>>(BUNDLES_FLOW, thisGroup)
 
         assertTrue(bundles.any { bundle -> sandboxLoader.containsBundle(bundle, thisGroup) })
         assertTrue(bundles.none { bundle -> sandboxLoader.containsBundle(bundle, otherGroup) })
 
-        assertTrue(bundlesWithGivenNameAreFromSandbox(bundles, sandboxLoader.cpk1.metadata.id.name, sandbox1))
-        assertTrue(bundlesWithGivenNameAreFromSandbox(bundles, sandboxLoader.cpk2.metadata.id.name, sandbox2))
-        assertTrue(bundlesWithGivenNameAreFromSandbox(bundles, LIBRARY_BUNDLE_SYMBOLIC_NAME, sandbox1))
+        assertTrue(bundlesWithGivenNameAreFromSandbox(bundles, sandboxLoader.cpk1.metadata.id.name, sandboxLoader.sandbox1))
+        assertTrue(bundlesWithGivenNameAreFromSandbox(bundles, sandboxLoader.cpk2.metadata.id.name, sandboxLoader.sandbox2))
+        assertTrue(bundlesWithGivenNameAreFromSandbox(bundles, LIBRARY_BUNDLE_SYMBOLIC_NAME, sandboxLoader.sandbox1))
     }
 }

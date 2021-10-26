@@ -15,9 +15,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 @ExtendWith(ServiceExtension::class)
 class SandboxServiceIsolationTest {
     companion object {
-        const val SERVICES1_FLOW_CLASS = "com.example.sandbox.cpk1.ServicesOneFlow"
-        const val SERVICES2_FLOW_CLASS = "com.example.sandbox.cpk2.ServicesTwoFlow"
-
         @InjectService(timeout = 1000)
         lateinit var sandboxLoader: SandboxLoader
 
@@ -54,18 +51,16 @@ class SandboxServiceIsolationTest {
     fun sandboxCanSeeItsOwnServicesAndServicesInTheMainBundlesOfSandboxesInTheSameSandboxGroupOnly() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
-        val sandbox1 = thisGroup.getSandbox(sandboxLoader.cpk1.metadata.id)
-        val sandbox2 = thisGroup.getSandbox(sandboxLoader.cpk2.metadata.id)
-        val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES1_FLOW_CLASS, thisGroup)
+        val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES_FLOW_CPK_1, thisGroup)
 
         // CPK1 should be able to see its own services, and any services inside CPK2's "main" jar, but nothing from CPK3.
         assertThat(serviceClasses)
             .hasNoServiceFromGroup(otherGroup)
-            .hasNoService(sandbox2.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS))
-            .hasService(sandbox1.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS))
+            .hasNoService(sandboxLoader.sandbox2.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS))
+            .hasService(sandboxLoader.sandbox1.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS))
             .hasService(ServiceComponentRuntime::class.java)
             .hasService(Resolver::class.java)
-            .hasService(sandbox1.loadClassFromCordappBundle(SERVICES1_FLOW_CLASS))
-            .hasService(sandbox2.loadClassFromCordappBundle(SERVICES2_FLOW_CLASS))
+            .hasService(sandboxLoader.sandbox1.loadClassFromCordappBundle(SERVICES_FLOW_CPK_1))
+            .hasService(sandboxLoader.sandbox2.loadClassFromCordappBundle(SERVICES_FLOW_CPK_2))
     }
 }

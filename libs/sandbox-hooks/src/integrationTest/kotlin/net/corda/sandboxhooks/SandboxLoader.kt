@@ -61,6 +61,10 @@ class SandboxLoader @Activate constructor(
     val group1 = createSandboxGroupFor(cpk1, cpk2)
     val group2 = createSandboxGroupFor(cpk3)
 
+    val sandbox1 = group1.getSandbox(cpk1.metadata.id)
+    val sandbox2 = group1.getSandbox(cpk2.metadata.id)
+    val sandbox3 = group2.getSandbox(cpk3.metadata.id)
+
     /** Runs the flow with [className] in sandbox group [group] and casts the return value to [T]. */
     internal fun <T : Any> runFlow(className: String, group: SandboxGroup): T {
         val workflowClass = group.loadClassFromCordappBundle(className, Flow::class.java)

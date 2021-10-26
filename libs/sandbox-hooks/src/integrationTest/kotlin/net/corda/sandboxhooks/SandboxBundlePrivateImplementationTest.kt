@@ -10,23 +10,19 @@ import org.osgi.test.junit5.service.ServiceExtension
 @ExtendWith(ServiceExtension::class)
 class SandboxBundlePrivateImplementationTest {
     companion object {
-        const val INVOKE_PRIVATE_IMPL_FLOW_CLASS = "com.example.sandbox.cpk1.InvokePrivateImplFlow"
-        const val PRIVATE_IMPL_AS_GENERIC_FLOW_CLASS = "com.example.sandbox.cpk1.PrivateImplAsGenericFlow"
-        const val PRIVATE_WRAPPER_RETURN_VALUE = "String returned by WrapperImpl."
-
         @InjectService(timeout = 1000)
         lateinit var sandboxLoader: SandboxLoader
     }
 
     @Test
     fun canInvokePrivateImplementationOfClass() {
-        val returnString = sandboxLoader.runFlow<String>(INVOKE_PRIVATE_IMPL_FLOW_CLASS, sandboxLoader.group1)
+        val returnString = sandboxLoader.runFlow<String>(INVOKE_PRIVATE_IMPL_FLOW, sandboxLoader.group1)
         assertEquals(PRIVATE_WRAPPER_RETURN_VALUE, returnString)
     }
 
     @Test
     fun canUsePrivateImplementationOfClassAsGeneric() {
-        val returnString = sandboxLoader.runFlow<String>(PRIVATE_IMPL_AS_GENERIC_FLOW_CLASS, sandboxLoader.group1)
+        val returnString = sandboxLoader.runFlow<String>(PRIVATE_IMPL_AS_GENERIC_FLOW, sandboxLoader.group1)
         assertEquals(PRIVATE_WRAPPER_RETURN_VALUE, returnString)
     }
 }
