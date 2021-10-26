@@ -172,6 +172,8 @@ internal class SandboxServiceImpl @Activate constructor(
         securityDomain: String,
         startBundles: Boolean
     ): SandboxGroup {
+        if (securityDomain.contains('/'))
+            throw SandboxException("Security domain cannot contain a '/' character.")
 
         val cpks = cpkFileHashes.mapTo(LinkedHashSet()) { cpkFileHash ->
             installService.getCpk(cpkFileHash)
