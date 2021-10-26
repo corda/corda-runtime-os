@@ -38,7 +38,7 @@ class SmartConfigImpl(
     }
 
     override fun isSecret(path: String): Boolean =
-        typeSafeConfig.hasPath("$path.isSecret")
+        typeSafeConfig.hasPath("$path.$SECRETS_INDICATOR")
 
     override fun toSafeConfig(): SmartConfig {
         if(secretsLookupService is NoopSecretsLookupService)

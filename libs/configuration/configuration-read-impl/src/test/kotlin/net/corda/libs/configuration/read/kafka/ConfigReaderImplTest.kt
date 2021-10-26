@@ -4,6 +4,9 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.data.config.Configuration
+import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigFactoryImpl
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.kafka.ConfigReaderImpl.Companion.CONFIGURATION_READER
 import net.corda.messaging.api.records.Record
@@ -24,16 +27,17 @@ class ConfigReaderImplTest {
     private lateinit var configUpdateUtil: ConfigListenerTestUtil
     private val subscriptionFactory: SubscriptionFactory = mock()
     private val subscription: CompactedSubscription<String, Configuration> = mock()
+    private val smartConfigFactory: SmartConfigFactory = SmartConfigFactoryImpl()
 
     @BeforeEach
     fun beforeEach() {
-        val config = BufferedReader(this::class.java.classLoader.getResourceAsStream("kafka.conf").reader()).use {
+        val config = SmartConfigImpl(BufferedReader(this::class.java.classLoader.getResourceAsStream("kafka.conf").reader()).use {
             ConfigFactory.parseString(it.readText())
-        }
+        })
 
         configUpdateUtil = ConfigListenerTestUtil()
         configRepository = ConfigRepository()
-        configReader = ConfigReaderImpl(configRepository, subscriptionFactory, config)
+        configReader = ConfigReaderImpl(configRepository, subscriptionFactory, config, smartConfigFactory)
         Mockito.`when`(
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(CONFIGURATION_READER, "default-topic"),

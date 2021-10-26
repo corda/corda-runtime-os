@@ -10,6 +10,7 @@ import com.typesafe.config.ConfigValue
  * Secrets.
  */
 interface SmartConfig : Config {
+
     /**
      * Returns true of the value for [path] is a secret
      *
@@ -53,4 +54,6 @@ interface SmartConfig : Config {
 
     override fun withValue(path: String?, value: ConfigValue?): SmartConfig
 }
+
+const val SECRETS_INDICATOR = "isSmartConfigSecret"
 

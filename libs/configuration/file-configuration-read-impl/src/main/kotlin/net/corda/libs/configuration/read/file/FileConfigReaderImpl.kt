@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -18,7 +18,8 @@ import kotlin.concurrent.withLock
 
 class FileConfigReaderImpl(
     private val configurationRepository: ConfigRepository,
-    private val bootstrapConfig: Config
+    private val bootstrapConfig: Config,
+    private val smartConfigFactory: SmartConfigFactory,
 ) : ConfigReader {
 
     companion object {
@@ -90,8 +91,7 @@ class FileConfigReaderImpl(
             log.error(e.message, e)
             ConfigFactory.empty()
         }
-        // TODO: inject secrets provider or SmartConfig Factory
-        return SmartConfigImpl(conf)
+        return smartConfigFactory.create(conf)
     }
 
     private class ConfigListenerSubscription(private val configUpdates: MutableMap<ConfigListenerSubscription, ConfigListener>) :

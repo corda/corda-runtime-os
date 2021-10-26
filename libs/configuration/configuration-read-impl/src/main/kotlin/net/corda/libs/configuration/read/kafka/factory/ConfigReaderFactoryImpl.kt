@@ -1,7 +1,7 @@
 package net.corda.libs.configuration.read.kafka.factory
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.libs.configuration.read.kafka.ConfigReaderImpl
@@ -14,11 +14,12 @@ import org.osgi.service.component.annotations.Reference
 @Component(immediate = true, service = [ConfigReaderFactory::class])
 class ConfigReaderFactoryImpl @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = SmartConfigFactory::class)
+    private val smartConfigFactory: SmartConfigFactory,
 ) : ConfigReaderFactory {
 
     override fun createReader(bootstrapConfig: SmartConfig): ConfigReader {
-        // TODO: inject the secrets lookup service
-        return ConfigReaderImpl(ConfigRepository(), subscriptionFactory, SmartConfigImpl(bootstrapConfig))
+        return ConfigReaderImpl(ConfigRepository(), subscriptionFactory, bootstrapConfig, smartConfigFactory)
     }
 }

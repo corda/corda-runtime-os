@@ -1,7 +1,7 @@
 package net.corda.libs.configuration
 
 import com.typesafe.config.ConfigFactory
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -12,7 +12,7 @@ class SmartConfigObjectTest {
         root {
             foo: bar,
             fred {
-                isSecret: true,
+                isSmartConfigSecret: true,
                 token: secure-fred
             },
         }
@@ -21,7 +21,7 @@ class SmartConfigObjectTest {
     val otherConfig = ConfigFactory.parseString(
         """
         jon {
-            isSecret: true,
+            isSmartConfigSecret: true,
             token: secure-jon
         },
         """.trimIndent()
@@ -31,11 +31,12 @@ class SmartConfigObjectTest {
         on { getValue(config.getValue("root.fred"))} doReturn "secret"
         on { getValue(otherConfig.getValue("jon"))} doReturn "other-secret"
     }
-    val configObject = SmartConfigObjectImpl(config.getObject("root"), secretsLookupService)
+    val configObject: SmartConfigObject =
+        SmartConfigObjectImpl(config.getObject("root"), secretsLookupService)
 
     @Test
     fun `toSafeConfig never reveals secrets`() {
-        Assertions.assertThat(configObject.toSafeConfig().toConfig().getString("fred"))
+        assertThat(configObject.toSafeConfig().toConfig().getString("fred"))
             .isEqualTo("*****")
     }
 
@@ -48,50 +49,50 @@ class SmartConfigObjectTest {
     @Test
     fun `withOnlyKey still works`() {
         val conf = configObject.withOnlyKey("fred")
-        Assertions.assertThat(conf.toConfig().hasPath("foo")).isFalse
-        Assertions.assertThat(conf.toConfig().getString("fred")).isEqualTo("secret")
+        assertThat(conf.toConfig().hasPath("foo")).isFalse
+        assertThat(conf.toConfig().getString("fred")).isEqualTo("secret")
     }
 
     @Test
     fun `withoutKey still works`() {
         val conf = configObject.withoutKey("foo")
-        Assertions.assertThat(conf.toConfig().hasPath("foo")).isFalse
-        Assertions.assertThat(conf.toConfig().getString("fred")).isEqualTo("secret")
+        assertThat(conf.toConfig().hasPath("foo")).isFalse
+        assertThat(conf.toConfig().getString("fred")).isEqualTo("secret")
     }
 
     @Test
     fun `withValue still works`() {
         val conf = configObject.withValue("hello", otherConfig.getValue("jon"))
-        Assertions.assertThat(conf.toConfig().getString("hello")).isEqualTo("other-secret")
+        assertThat(conf.toConfig().getString("hello")).isEqualTo("other-secret")
     }
 
     @Test
     fun `atPath still works`() {
         val conf = configObject.atPath("hello.world")
-        Assertions.assertThat(conf.getConfig("hello").getString("world.foo")).isEqualTo("bar")
-        Assertions.assertThat(conf.getConfig("hello").getString("world.fred")).isEqualTo("secret")
+        assertThat(conf.getConfig("hello").getString("world.foo")).isEqualTo("bar")
+        assertThat(conf.getConfig("hello").getString("world.fred")).isEqualTo("secret")
     }
 
     @Test
     fun `atKey still works`() {
         val conf = configObject.atKey("hello")
-        Assertions.assertThat(conf.getConfig("hello").getString("foo")).isEqualTo("bar")
-        Assertions.assertThat(conf.getConfig("hello").getString("fred")).isEqualTo("secret")
+        assertThat(conf.getConfig("hello").getString("foo")).isEqualTo("bar")
+        assertThat(conf.getConfig("hello").getString("fred")).isEqualTo("secret")
     }
 
     @Test
     fun `fallback still works`() {
         val fb = configObject.withFallback(otherConfig)
-        Assertions.assertThat(fb.toConfig().getString("jon")).isEqualTo("other-secret")
+        assertThat(fb.toConfig().getString("jon")).isEqualTo("other-secret")
     }
 
     @Test
     fun `origin still works`() {
-        Assertions.assertThat(configObject.origin()).isEqualTo(config.origin())
+        assertThat(configObject.origin()).isEqualTo(config.origin())
     }
 
     @Test
     fun `isEmpty still works`() {
-        Assertions.assertThat(configObject.isEmpty()).isFalse
+        assertThat(configObject.isEmpty()).isFalse
     }
 }

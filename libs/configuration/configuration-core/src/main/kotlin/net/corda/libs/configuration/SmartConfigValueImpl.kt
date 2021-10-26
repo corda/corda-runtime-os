@@ -15,7 +15,7 @@ class SmartConfigValueImpl(
         private val noopSecretsLookupService = NoopSecretsLookupService()
     }
 
-    override fun toSafeConfig(): SmartConfigValue {
+    override fun toSafeConfigValue(): SmartConfigValue {
         if(secretsLookupService is NoopSecretsLookupService)
             return this
         return SmartConfigValueImpl(typeSafeConfigValue, noopSecretsLookupService)
@@ -36,19 +36,25 @@ class SmartConfigValueImpl(
 
     override fun valueType(): ConfigValueType = typeSafeConfigValue.valueType()
 
-    override fun unwrapped(): Any = typeSafeConfigValue.unwrapped()
+    override fun unwrapped(): Any {
+        val unwrapped = typeSafeConfigValue.unwrapped()
+        if (unwrapped is Map<*,*> && unwrapped[SECRETS_INDICATOR] == true) {
+            return secretsLookupService.getValue(this)
+        }
+        return unwrapped
+    }
 
     override fun render(): String = typeSafeConfigValue.render()
 
     override fun render(options: ConfigRenderOptions?): String = typeSafeConfigValue.render(options)
 
-    override fun atPath(path: String?): Config =
+    override fun atPath(path: String?): SmartConfig =
         SmartConfigImpl(typeSafeConfigValue.atPath(path), secretsLookupService)
 
-    override fun atKey(key: String?): Config =
+    override fun atKey(key: String?): SmartConfig =
         SmartConfigImpl(typeSafeConfigValue.atKey(key), secretsLookupService)
 
-    override fun withOrigin(origin: ConfigOrigin?): ConfigValue? =
+    override fun withOrigin(origin: ConfigOrigin?): SmartConfigValue? =
         SmartConfigValueImpl(typeSafeConfigValue.withOrigin(origin), secretsLookupService)
 
 }

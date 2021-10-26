@@ -18,7 +18,7 @@ class SmartConfigTest {
     val configString = """
         foo: bar,
         fred {
-            isSecret: true,
+            isSmartConfigSecret: true,
             token: secure-fred
         },
         bob: $sub,
@@ -40,7 +40,7 @@ class SmartConfigTest {
     val fallbackConfig = ConfigFactory.parseString(
         """
         jon {
-            isSecret: true,
+            isSmartConfigSecret: true,
             token: secure-jon
         },
         """.trimIndent()
@@ -126,7 +126,7 @@ class SmartConfigTest {
         val resolveWithConf = ConfigFactory.parseString(
             """
         fred {
-            isSecret: true,
+            isSmartConfigSecret: true,
             token: secure-fred
         },
         """.trimIndent()
