@@ -43,12 +43,12 @@ class SandboxServiceIsolationTest {
 
         fun containsClass(clazz: Class<*>, group: SandboxGroup): Boolean {
             val bundle = FrameworkUtil.getBundle(clazz) ?: return false
-            return sandboxLoader.containsBundle(bundle, group)
+            return sandboxLoader.containsBundle(group, bundle)
         }
     }
 
     @Test
-    fun sandboxCanSeeItsOwnServicesAndServicesInTheMainBundlesOfSandboxesInTheSameSandboxGroupOnly() {
+    fun `sandbox can see its own services and main bundle services in the same sandbox group only`() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
         val serviceClasses = sandboxLoader.runFlow<List<Class<out Any>>>(SERVICES_FLOW_CPK_1, thisGroup)

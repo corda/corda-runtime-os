@@ -1,6 +1,5 @@
 package net.corda.sandboxhooks
 
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -17,17 +16,16 @@ class SandboxBundleEventIsolationTest {
     }
 
     @Test
-    fun sandboxGroupDoesNotReceiveBundleEventsFromOtherSandboxGroups() {
+    fun `sandbox group receives bundle events from its own group, and not from other groups`() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
 
         // This flow returns all bundle events visible to this bundle.
         val bundleEvents = sandboxLoader.runFlow<List<BundleEvent>>(BUNDLE_EVENTS_FLOW, thisGroup)
 
-        assertThat(bundleEvents).isNotEmpty
-        bundleEvents.forEach { event ->
-            assertTrue { !sandboxLoader.containsBundle(event.bundle, otherGroup) }
-            assertTrue { !sandboxLoader.containsBundle(event.origin, otherGroup) }
-        }
+        assertTrue(bundleEvents.any { event -> sandboxLoader.containsBundle(thisGroup, event.bundle) })
+        assertTrue(bundleEvents.any { event -> sandboxLoader.containsBundle(thisGroup, event.origin) })
+        assertTrue(bundleEvents.none { event -> sandboxLoader.containsBundle(otherGroup, event.bundle) })
+        assertTrue(bundleEvents.none { event -> sandboxLoader.containsBundle(otherGroup, event.origin) })
     }
 }

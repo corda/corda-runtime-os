@@ -25,7 +25,7 @@ class SandboxBundleDifferentLibrariesTest {
     }
 
     @Test
-    fun checkDifferentCPKsHaveDifferentLibraryBundlesButWithSameSymbolicName() {
+    fun `different CPKs have different library bundles but with the same symbolic name`() {
         val libraryBundle1 = getBundle(LIBRARY_QUERY_CLASS, sandboxLoader.sandbox1)
         val libraryBundle2 = getBundle(LIBRARY_QUERY_CLASS, sandboxLoader.sandbox2)
         val libraryBundle3 = getBundle(LIBRARY_QUERY_CLASS, sandboxLoader.sandbox3)
@@ -40,7 +40,7 @@ class SandboxBundleDifferentLibrariesTest {
     }
 
     @Test
-    fun checkDifferentCPKsCanUseDifferentVersionsOfTheSameLibrary() {
+    fun `different CPKs in the same sandbox group can use different versions of the same library`() {
         // This flow returns a string containing the version of the Joda-Time library used.
         val cpkOneReturnString = sandboxLoader.runFlow<String>(LIBRARY_VERSION_FLOW_CPK_1, sandboxLoader.group1)
         val cpkTwoReturnString = sandboxLoader.runFlow<String>(LIBRARY_VERSION_FLOW_CPK_2, sandboxLoader.group1)

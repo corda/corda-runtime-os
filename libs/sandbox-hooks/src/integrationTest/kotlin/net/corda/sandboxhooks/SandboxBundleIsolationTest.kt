@@ -23,23 +23,23 @@ class SandboxBundleIsolationTest {
          */
         fun bundlesWithGivenNameAreFromSandbox(bundles: List<Bundle>, symbolicName: String, sandbox: Sandbox): Boolean {
             return bundles.any { bundle ->
-                bundle.symbolicName == symbolicName && sandboxLoader.containsBundle(bundle, sandbox)
+                bundle.symbolicName == symbolicName && sandboxLoader.containsBundle(sandbox, bundle)
             } && bundles.none { bundle ->
-                bundle.symbolicName == symbolicName && !sandboxLoader.containsBundle(bundle, sandbox)
+                bundle.symbolicName == symbolicName && !sandboxLoader.containsBundle(sandbox, bundle)
             }
         }
     }
 
     @Test
-    fun sandboxCanSeeItsOwnBundlesAndMainBundlesInTheSameSandboxGroupOnly() {
+    fun `sandbox can see its own bundles and main bundles in the same sandbox group only`() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
 
         // This flow returns all bundle events visible to this bundle.
         val bundles = sandboxLoader.runFlow<List<Bundle>>(BUNDLES_FLOW, thisGroup)
 
-        assertTrue(bundles.any { bundle -> sandboxLoader.containsBundle(bundle, thisGroup) })
-        assertTrue(bundles.none { bundle -> sandboxLoader.containsBundle(bundle, otherGroup) })
+        assertTrue(bundles.any { bundle -> sandboxLoader.containsBundle(thisGroup, bundle) })
+        assertTrue(bundles.none { bundle -> sandboxLoader.containsBundle(otherGroup, bundle) })
 
         assertTrue(bundlesWithGivenNameAreFromSandbox(bundles, sandboxLoader.cpk1.metadata.id.name, sandboxLoader.sandbox1))
         assertTrue(bundlesWithGivenNameAreFromSandbox(bundles, sandboxLoader.cpk2.metadata.id.name, sandboxLoader.sandbox2))

@@ -111,12 +111,12 @@ class SandboxLoader @Activate constructor(
             .firstOrNull() ?: fail("No service for $serviceType.")
     }
 
-    fun containsBundle(bundle: Bundle, sandbox: Sandbox): Boolean {
+    fun containsBundle(sandbox: Sandbox, bundle: Bundle): Boolean {
         val containsMethod = sandbox::class.java.getMethod("containsBundle", Bundle::class.java)
         return containsMethod.invoke(sandbox, bundle) as Boolean
     }
 
-    fun containsBundle(bundle: Bundle, group: SandboxGroup): Boolean {
-        return group.sandboxes.any { sandbox -> containsBundle(bundle, sandbox) }
+    fun containsBundle(group: SandboxGroup, bundle: Bundle): Boolean {
+        return group.sandboxes.any { sandbox -> containsBundle(sandbox, bundle) }
     }
 }
