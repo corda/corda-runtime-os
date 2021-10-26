@@ -92,6 +92,8 @@ internal class ConfigReadServiceEventHandlerTest {
         // The first value captured will be from the BootstrapConfig being provided
         verify(callbackHandles).removeSubscription()
         verify(configReader).stop()
+        verify(coordinator, times(2)).updateStatus(capture(lifecycleStatusCaptor), any())
+        assertThat(lifecycleStatusCaptor.secondValue).isEqualTo(LifecycleStatus.DOWN)
     }
 
     @Test

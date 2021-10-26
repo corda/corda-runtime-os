@@ -14,6 +14,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
@@ -62,7 +63,7 @@ class ConfigReaderImplTest {
             Configuration(config.root().render(ConfigRenderOptions.concise()), config.getString("componentVersion"))
         configReader.onSnapshot(mapOf("corda.database" to avroConfig))
 
-        Assertions.assertThat(configUpdateUtil.update).isTrue
+        assertThat(configUpdateUtil.update).isTrue
         Assertions.assertThat(configRepository.getConfigurations()["corda.database"])
             .isEqualTo(configMap["corda.database"])
     }
@@ -96,7 +97,7 @@ class ConfigReaderImplTest {
 
         configReader.onSnapshot(topicMap)
 
-        Assertions.assertThat(configUpdateUtil.update).isTrue
+        assertThat(configUpdateUtil.update).isTrue
         Assertions.assertThat(configRepository.getConfigurations()["corda.database"])
             .isEqualTo(configMap["corda.database"])
 
@@ -130,7 +131,7 @@ class ConfigReaderImplTest {
 
         configReader.onSnapshot(topicMap)
 
-        Assertions.assertThat(configUpdateUtil.update).isTrue
+        assertThat(configUpdateUtil.update).isTrue
         Assertions.assertThat(configUpdateUtil.lastSnapshot["corda.database"])
             .isEqualTo(configMap["corda.database"])
 
@@ -180,9 +181,9 @@ class ConfigReaderImplTest {
     }
 
     @Test
-    fun `test that listeners get unregistered correctly when service stops`() {
+    fun `test that listeners get unregistered correctly when service closes`() {
         configReader.start()
-        Assertions.assertThat(configReader.isRunning).isTrue
+        assertThat(configReader.isRunning).isTrue
         configReader.registerCallback(configUpdateUtil)
 
         val configMap = ConfigUtil.testConfigMap()
@@ -197,11 +198,11 @@ class ConfigReaderImplTest {
 
         configReader.onSnapshot(topicMap)
 
-        Assertions.assertThat(configUpdateUtil.update).isTrue
+        assertThat(configUpdateUtil.update).isTrue
         Assertions.assertThat(configUpdateUtil.lastSnapshot["corda.database"])
             .isEqualTo(configMap["corda.database"])
 
-        configReader.stop()
+        configReader.close()
         configReader.start()
 
         val securityConfig = configMap["corda.security"]!!
@@ -216,5 +217,43 @@ class ConfigReaderImplTest {
 
         Assertions.assertThat(configUpdateUtil.lastSnapshot["corda.security"]).isNull()
 
+    }
+
+    @Test
+    fun `test that listeners still work after stop start`() {
+        configReader.start()
+        assertThat(configReader.isRunning).isTrue
+        configReader.registerCallback(configUpdateUtil)
+
+        val configMap = ConfigUtil.testConfigMap()
+        val databaseConfig = configMap["corda.database"]!!
+        val avroDatabaseConfig =
+            Configuration(
+                databaseConfig.root()?.render(ConfigRenderOptions.concise()),
+                databaseConfig.getString("componentVersion")
+            )
+
+        val topicMap = mutableMapOf("corda.database" to avroDatabaseConfig)
+
+        configReader.onSnapshot(topicMap)
+
+        assertThat(configUpdateUtil.update).isTrue
+        assertThat(configUpdateUtil.lastSnapshot["corda.database"])
+            .isEqualTo(configMap["corda.database"])
+
+        configReader.stop()
+        configReader.start()
+
+        val securityConfig = configMap["corda.security"]!!
+        val avroSecurityConfig =
+            Configuration(
+                securityConfig.root()?.render(ConfigRenderOptions.concise()),
+                securityConfig.getString("componentVersion")
+            )
+
+        topicMap["corda.security"] = avroSecurityConfig
+        configReader.onNext(Record("", "corda.security", avroSecurityConfig), null, topicMap)
+
+        assertThat(configUpdateUtil.lastSnapshot["corda.security"]).isEqualTo(configMap["corda.security"])
     }
 }

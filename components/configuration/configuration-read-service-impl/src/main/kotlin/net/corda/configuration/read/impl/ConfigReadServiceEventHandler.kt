@@ -53,6 +53,7 @@ internal class ConfigReadServiceEventHandler(
                 callbackHandles.removeSubscription()
                 subscription?.stop()
                 subscription = null
+                coordinator.updateStatus(LifecycleStatus.DOWN, "Configuration service stopped.")
             }
             is ErrorEvent -> {
                 logger.error(
