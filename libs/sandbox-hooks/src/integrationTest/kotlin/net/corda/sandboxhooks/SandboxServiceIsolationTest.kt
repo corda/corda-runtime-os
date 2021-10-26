@@ -16,17 +16,17 @@ class SandboxServiceIsolationTest {
     companion object {
         @InjectService(timeout = 1000)
         lateinit var sandboxLoader: SandboxLoader
-
-        /** Checks whether [sandboxGroup] contains [clazz]. */
-        fun containsClass(sandboxGroup: SandboxGroup, clazz: Class<*>): Boolean {
-            val bundle = FrameworkUtil.getBundle(clazz) ?: return false
-            return sandboxLoader.containsBundle(sandboxGroup, bundle)
-        }
     }
 
     /** Checks whether none of the [foundServices] are contained in the [sandboxGroup]. */
     private fun hasNoServiceFromGroup(foundServices: Collection<Class<*>>, sandboxGroup: SandboxGroup) =
         foundServices.none { service -> containsClass(sandboxGroup, service) }
+
+    /** Checks whether [sandboxGroup] contains [clazz]. */
+    private fun containsClass(sandboxGroup: SandboxGroup, clazz: Class<*>): Boolean {
+        val bundle = FrameworkUtil.getBundle(clazz) ?: return false
+        return sandboxLoader.containsBundle(sandboxGroup, bundle)
+    }
 
     /** Checks whether the [foundServices] contains all of the [serviceClasses]. */
     private fun hasAllServices(foundServices: Collection<Class<*>>, serviceClasses: Collection<Class<*>>) =
