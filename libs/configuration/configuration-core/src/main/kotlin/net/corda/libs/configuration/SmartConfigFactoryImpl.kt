@@ -17,7 +17,7 @@ class SmartConfigFactoryImpl : SmartConfigFactory {
     }
 
     override fun create(config: Config): SmartConfig {
-        // TODO: add a real implementation of [SecretsLookupService]
+        // TODO - add a real implementation of [SecretsLookupService]
         return SmartConfigImpl(config)
     }
 

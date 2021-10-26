@@ -1,6 +1,5 @@
 package net.corda.libs.configuration
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigMergeable
 import com.typesafe.config.ConfigObject
 import com.typesafe.config.ConfigOrigin
