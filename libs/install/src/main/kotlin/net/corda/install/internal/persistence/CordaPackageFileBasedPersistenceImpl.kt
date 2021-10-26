@@ -91,30 +91,34 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
          * In this case we assume the first CPK to be stored is the one we want in the cpksById map. And all of them get stored in
          * the [StoredArchives.cpksByHash] map.
          */
-        val res1 = cpksById.computeIfAbsent(cpk.metadata.id) { cpk }
-        val res2 = cpksByHash.computeIfAbsent(cpk.metadata.hash)  { cpk }
+        val res1 = cpksById.putIfAbsent(cpk.metadata.id, cpk)
+        val res2 = cpksByHash.putIfAbsent(cpk.metadata.hash, cpk)
         /**
-         * If both [res1] and [res2] are different instances, that means cpk was not added to any
-         * of our maps and need to be closed to prevent it from being leaked
+         * If both [res1] and [res2] are not null, that means cpk was not added to any
+         * of our maps and needs to be closed to prevent it from being leaked
          */
-        if(!(cpk === res1 || cpk === res2)) cpk.close()
+        if (res1 != null && res2 != null) {
+            cpk.close()
+        }
     }
 
     override fun putCpk(inputStream : InputStream) : CPK {
         val tmpFile = Files.createTempFile(cpkDirectory, null, ".cpk")
         val expansionLocation = Files.createTempDirectory(expansionDirectory, "cpk")
-        val teeStream = TeeInputStream(inputStream, Files.newOutputStream(tmpFile))
         @Suppress("TooGenericExceptionCaught")
-        val cpk = try {
-             CPK.from(teeStream,
-             cacheDir = expansionLocation,
-             verifySignature = true).also {
-                 standaloneVerifiers.forEach { verifier -> verifier.verify(listOf(it.metadata)) }
-             }
-        } catch (ex : Exception) {
-            teeStream.close()
-            Files.delete(tmpFile)
-            throw ex
+        val cpk = TeeInputStream(inputStream, Files.newOutputStream(tmpFile)).use { teeStream ->
+            try {
+                CPK.from(
+                    inputStream = teeStream,
+                    cacheDir = expansionLocation,
+                    verifySignature = true
+                ).also {
+                    standaloneVerifiers.forEach { verifier -> verifier.verify(listOf(it.metadata)) }
+                }
+            } catch (ex: Exception) {
+                Files.delete(tmpFile)
+                throw ex
+            }
         }
         addCpk(storedArchives.cpksById, storedArchives.cpksByHash, cpk)
         try {
@@ -133,7 +137,9 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
         storedArchives.cpksById.values.forEach(CPK::close)
         storedArchives.cpksByHash.values.forEach(CPK::close)
         //wipe the expansion directory when the component is deactivated
-        if(Files.exists(expansionDirectory)) Files.walk(expansionDirectory).sorted(Comparator.reverseOrder()).forEach(Files::delete)
+        if (Files.exists(expansionDirectory)) {
+            Files.walk(expansionDirectory).sorted(Comparator.reverseOrder()).forEach(Files::delete)
+        }
     }
 
     /** Returns the [Path] representing the node's CPK directory. */

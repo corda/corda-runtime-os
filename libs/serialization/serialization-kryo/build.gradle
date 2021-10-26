@@ -55,6 +55,7 @@ dependencies {
 
     integrationTestImplementation project(":libs:install")
     integrationTestImplementation project("src:integrationTest:cpks:serializable-cpk-one")
+    integrationTestImplementation "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
