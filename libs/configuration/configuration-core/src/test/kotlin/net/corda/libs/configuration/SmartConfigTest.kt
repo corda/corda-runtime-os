@@ -71,12 +71,13 @@ class SmartConfigTest {
     fun `getString delegates to secrets service when secret`() {
         smartConfig.getString("fred")
         verify(secretsLookupService).getValue(config.getValue("fred"))
+        assertThat(smartConfig.getString("fred")).isEqualTo("secret")
     }
 
     @Test
     fun `typesafe substitution works`() {
         assertThat(smartConfig.getString("bob")).isEqualTo("secret")
-        assertThat(smartConfig.isSecret("bob")).isTrue()
+        assertThat(smartConfig.isSecret("bob")).isTrue
     }
 
     @Test
