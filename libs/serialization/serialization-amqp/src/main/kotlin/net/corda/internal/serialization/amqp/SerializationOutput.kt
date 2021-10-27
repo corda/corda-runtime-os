@@ -149,7 +149,7 @@ open class SerializationOutput constructor(
         } catch (ex: NullPointerException) {
             // This is likely a unit test
             logger.trace {
-                "Cannot initialise classInfoService. " +
+                "Cannot initialise sandboxContextService. " +
                 "Unable to write metadata due to un-initialised OSGi service. " +
                         "This code runs outside an OSGi framework. ${ex.message}"
             }
