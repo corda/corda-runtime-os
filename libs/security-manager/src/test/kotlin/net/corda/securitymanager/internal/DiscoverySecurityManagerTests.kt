@@ -12,7 +12,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.service.permissionadmin.PermissionInfo
 import org.slf4j.LoggerFactory
-import java.security.Permission
 
 /** Tests of the [DiscoverySecurityManager]. */
 class DiscoverySecurityManagerTests {
