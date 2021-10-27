@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp;
 
 import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
+import net.corda.v5.serialization.SerializationContext;
 import net.corda.v5.serialization.SerializationCustomSerializer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -18,14 +19,14 @@ import static net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt.te
 public class JavaCustomSerializerMapProxyTests {
     public static class ExampleSerializer implements SerializationCustomSerializer<ClassThatNeedsCustomSerializer, Map<String, Integer>> {
 
-        public Map<String, Integer> toProxy(ClassThatNeedsCustomSerializer obj) {
+        public Map<String, Integer> toProxy(ClassThatNeedsCustomSerializer obj, SerializationContext context) {
             Map<String, Integer> map = new LinkedHashMap<>();
             map.put("a", obj.getA());
             map.put("b", obj.getB());
             return map;
         }
 
-        public ClassThatNeedsCustomSerializer fromProxy(Map<String, Integer> proxy) {
+        public ClassThatNeedsCustomSerializer fromProxy(Map<String, Integer> proxy, SerializationContext context) {
             List<Integer> constructorInput = new ArrayList<Integer>(2);
             constructorInput.add(proxy.get("a"));
             constructorInput.add(proxy.get("b"));

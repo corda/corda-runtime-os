@@ -66,7 +66,7 @@ internal class CorDappCustomSerializer(
                              context: SerializationContext, debugIndent: Int
     ) {
         val proxy = uncheckedCast<SerializationCustomSerializer<*, *>,
-                SerializationCustomSerializer<Any?, Any?>>(serializer).toProxy(obj)
+                SerializationCustomSerializer<Any?, Any?>>(serializer).toProxy(obj, context)
             ?: throw NotSerializableException("proxy object is null")
 
         data.withDescribed(descriptor) {
@@ -79,7 +79,7 @@ internal class CorDappCustomSerializer(
     ): Any {
         val proxy = input.readObject(obj, serializationSchemas, metadata, proxyType, context)
         return uncheckedCast<SerializationCustomSerializer<*, *>,
-                SerializationCustomSerializer<Any?, Any?>>(serializer).fromProxy(proxy)!!
+                SerializationCustomSerializer<Any?, Any?>>(serializer).fromProxy(proxy, context)!!
     }
 
     /**

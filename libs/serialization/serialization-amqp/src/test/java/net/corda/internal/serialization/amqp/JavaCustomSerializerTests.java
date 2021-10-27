@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp;
 
 import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
+import net.corda.v5.serialization.SerializationContext;
 import net.corda.v5.serialization.SerializationCustomSerializer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,7 @@ public class JavaCustomSerializerTests {
          *
          *  Essentially convert ClassThatNeedsCustomSerializer -> ExampleProxy
          */
-        public ExampleProxy toProxy(ClassThatNeedsCustomSerializer obj) {
+        public ExampleProxy toProxy(ClassThatNeedsCustomSerializer obj, SerializationContext context) {
             return new ExampleProxy(obj.getA(), obj.getB());
         }
 
@@ -64,7 +65,7 @@ public class JavaCustomSerializerTests {
          *  Essentially convert ExampleProxy -> Example
          *
          */
-        public ClassThatNeedsCustomSerializer fromProxy(ExampleProxy proxy) {
+        public ClassThatNeedsCustomSerializer fromProxy(ExampleProxy proxy, SerializationContext context) {
             List<Integer> l = new ArrayList<Integer>(2);
             l.add(proxy.getProxiedA());
             l.add(proxy.getProxiedB());

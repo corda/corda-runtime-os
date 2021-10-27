@@ -9,8 +9,8 @@ import net.corda.internal.serialization.osgi.TypeResolver
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.exceptions.CordaThrowable
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
-import net.corda.v5.serialization.SerializationFactory
 import java.io.NotSerializableException
 
 @Suppress("LongParameterList")
@@ -31,7 +31,7 @@ class ThrowableSerializer(
         else -> throw NotSerializableException("$this has no deserialization constructor")
     }
 
-    override fun toProxy(obj: Throwable): ThrowableProxy {
+    override fun toProxy(obj: Throwable,): ThrowableProxy {
         val extraProperties: MutableMap<String, Any?> = LinkedHashMap()
         val message = if (obj is CordaThrowable) {
             // Try and find a constructor
@@ -49,13 +49,16 @@ class ThrowableSerializer(
         } else {
             obj.message
         }
-        val stackTraceToInclude = if (shouldIncludeInternalInfo()) obj.stackTrace else emptyArray()
+        val stackTraceToInclude = if (shouldIncludeInternalInfo(context)) {
+            obj.stackTrace
+        } else {
+            emptyArray()
+        }
         return ThrowableProxy(obj.javaClass.name, message, stackTraceToInclude, obj.cause, obj.suppressed, extraProperties)
     }
 
-    private fun shouldIncludeInternalInfo(): Boolean {
-        val currentContext = SerializationFactory.currentFactory?.currentContext
-        val includeInternalInfo = currentContext?.properties?.get(CommonPropertyNames.IncludeInternalInfo)
+    private fun shouldIncludeInternalInfo(context: SerializationContext): Boolean {
+        val includeInternalInfo = context.properties[CommonPropertyNames.IncludeInternalInfo]
         return true == includeInternalInfo
     }
 

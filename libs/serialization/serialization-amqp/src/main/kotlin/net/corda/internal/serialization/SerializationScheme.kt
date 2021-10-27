@@ -30,7 +30,7 @@ object SnappyEncodingWhitelist : EncodingWhitelist {
 
 data class SerializationContextImpl @JvmOverloads constructor(
     override val preferredSerializationVersion: SerializationMagic,
-    override val deserializationClassLoader: ClassLoader = SerializationDefaults.javaClass.classLoader,
+    override val deserializationClassLoader: ClassLoader = SerializationContextImpl::class.java.classLoader,
     override val whitelist: ClassWhitelist,
     override val properties: Map<Any, Any>,
     override val objectReferencesEnabled: Boolean,
@@ -81,7 +81,7 @@ data class SerializationContextImpl @JvmOverloads constructor(
 open class SerializationFactoryImpl(
     // TODO: This is read-mostly. Probably a faster implementation to be found.
     private val schemes: MutableMap<Pair<CordaSerializationMagic, SerializationContext.UseCase>, SerializationScheme>
-) : SerializationFactory() {
+) : SerializationFactory {
     constructor() : this(ConcurrentHashMap())
 
     companion object {
@@ -122,7 +122,7 @@ open class SerializationFactoryImpl(
 
     @Throws(NotSerializableException::class)
     override fun <T : Any> deserialize(byteSequence: ByteSequence, clazz: Class<T>, context: SerializationContext): T {
-        return asCurrent { withCurrentContext(context) { schemeFor(byteSequence, context.useCase).first.deserialize(byteSequence, clazz, context) } }
+        return schemeFor(byteSequence, context.useCase).first.deserialize(byteSequence, clazz, context)
     }
 
     @Throws(NotSerializableException::class)
@@ -131,17 +131,13 @@ open class SerializationFactoryImpl(
         clazz: Class<T>,
         context: SerializationContext
     ): ObjectWithCompatibleContext<T> {
-        return asCurrent {
-            withCurrentContext(context) {
-                val (scheme, magic) = schemeFor(byteSequence, context.useCase)
-                val deserializedObject = scheme.deserialize(byteSequence, clazz, context)
-                ObjectWithCompatibleContext(deserializedObject, context.withPreferredSerializationVersion(magic))
-            }
-        }
+        val (scheme, magic) = schemeFor(byteSequence, context.useCase)
+        val deserializedObject = scheme.deserialize(byteSequence, clazz, context)
+        return ObjectWithCompatibleContext(deserializedObject, context.withPreferredSerializationVersion(magic))
     }
 
     override fun <T : Any> serialize(obj: T, context: SerializationContext): SerializedBytes<T> {
-        return asCurrent { withCurrentContext(context) { schemeFor(context.preferredSerializationVersion, context.useCase).first.serialize(obj, context) } }
+        return schemeFor(context.preferredSerializationVersion, context.useCase).first.serialize(obj, context)
     }
 
     fun registerScheme(scheme: SerializationScheme) {

@@ -8,7 +8,7 @@ import net.corda.v5.serialization.SerializationEncoding
 
 val AMQP_P2P_CONTEXT = SerializationContextImpl(
         amqpMagic,
-        SerializationDefaults.javaClass.classLoader,
+        SerializationContextImpl::class.java.classLoader,
         GlobalTransientClassWhiteList(BuiltInExceptionsWhitelist()),
         emptyMap(),
         true,

@@ -22,8 +22,6 @@ interface SerializationEnvironment {
     val p2pContext: SerializationContext
     val storageContext: SerializationContext
 
-    val defaultContext: SerializationContext get() = serializationFactory.currentContext ?: p2pContext
-
     /**
      * Get the [SerializationEnvironment]'s default [P2pSerializationService].
      */
