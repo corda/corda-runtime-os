@@ -24,6 +24,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.cert.Certificate
@@ -118,7 +119,7 @@ internal object CPKLoader {
             val metadata = buildMetadata()
             val finalCPKFile = temporaryCPKFile?.let {
                 val destination = it.parent.resolve(metadata.hash.toHexString())
-                Files.move(it, destination)
+                Files.move(it, destination, REPLACE_EXISTING)
                 destination.toFile()
             } ?: throw IllegalStateException("This should never happen")
 
