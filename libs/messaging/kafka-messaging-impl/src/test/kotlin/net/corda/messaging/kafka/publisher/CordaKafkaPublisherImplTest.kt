@@ -325,7 +325,7 @@ class CordaKafkaPublisherImplTest {
         cordaKafkaPublisherImpl = CordaKafkaPublisherImpl(kafkaConfig, producer)
 
         cordaKafkaPublisherImpl.close()
-        verify(producer, times(1)).close(Mockito.any(Duration::class.java))
+        verify(producer, times(1)).close(any())
     }
 
     private fun publish(isTransaction: Boolean = false, records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
