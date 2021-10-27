@@ -55,10 +55,10 @@ class CordaKafkaPublisherFactory @Activate constructor(
         return CordaKafkaPublisherImpl(config, producer)
     }
 
-    override fun <TREQ : Any, TRESP : Any> createRPCSender(
-        rpcConfig: RPCConfig<TREQ, TRESP>,
+    override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+        rpcConfig: RPCConfig<REQUEST, RESPONSE>,
         nodeConfig: Config
-    ): RPCSender<TREQ, TRESP> {
+    ): RPCSender<REQUEST, RESPONSE> {
 
         val publisherConfiguration = ConfigFactory.empty()
             .withValue(GROUP, ConfigValueFactory.fromAnyRef(rpcConfig.groupName))
@@ -75,7 +75,7 @@ class CordaKafkaPublisherFactory @Activate constructor(
         val publisher = createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig)
 
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<String, RPCResponse>(avroSchemaRegistry)
-        val serializer = CordaAvroSerializer<TREQ>(avroSchemaRegistry)
+        val serializer = CordaAvroSerializer<REQUEST>(avroSchemaRegistry)
         val deserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, rpcConfig.responseType)
 
         return CordaKafkaRPCSenderImpl(
