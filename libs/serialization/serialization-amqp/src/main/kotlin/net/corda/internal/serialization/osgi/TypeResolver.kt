@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.osgi
 
-import net.corda.classinfo.ClassTagException
 import net.corda.classinfo.ClassTagService
 import net.corda.internal.serialization.amqp.asClass
 import org.osgi.service.component.annotations.Activate
@@ -25,7 +24,7 @@ class TypeResolver @Activate constructor(
                 Class.forName(className, false, classLoader)
             } catch (ex: Exception) {
                 when (ex) {
-                    is ClassTagException, is NullPointerException -> Class.forName(className, false, classLoader)
+                    is NullPointerException -> Class.forName(className, false, classLoader)
                     else -> throw ex
                 }
             }
