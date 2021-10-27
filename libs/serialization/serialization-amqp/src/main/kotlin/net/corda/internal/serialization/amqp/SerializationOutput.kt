@@ -4,7 +4,6 @@ import net.corda.internal.serialization.CordaSerializationEncoding
 import net.corda.internal.serialization.SectionId
 import net.corda.internal.serialization.byteArrayOutput
 import net.corda.internal.serialization.model.TypeIdentifier
-import net.corda.internal.serialization.osgi.TypeResolver
 import net.corda.sandbox.SandboxException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
@@ -136,8 +135,8 @@ open class SerializationOutput constructor(
      */
     private fun writeTypeToMetadata(type: Type) {
         try {
-            val classTag = TypeResolver.getClassTagFor(type.asClass())
-            if (!metadata.containsKey(type.typeName)) {
+            val classTag = serializerFactory.sandboxGroup?.getEvolvableTag(type.asClass())
+            if (classTag != null && !metadata.containsKey(type.typeName)) {
                 val key = type.typeName
                 metadata.putValue(key, classTag)
             }
@@ -145,13 +144,6 @@ open class SerializationOutput constructor(
             logger.trace {
                 "Class ${type.typeName} not found in any sandbox. " +
                 "The type is either a PlatformClass or is not installed. "
-            }
-        } catch (ex: NullPointerException) {
-            // This is likely a unit test
-            logger.trace {
-                "Cannot initialise sandboxContextService. " +
-                "Unable to write metadata due to un-initialised OSGi service. " +
-                        "This code runs outside an OSGi framework. ${ex.message}"
             }
         }
     }

@@ -14,6 +14,7 @@ import net.corda.internal.serialization.amqp.amqpMagic
 import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
+import net.corda.sandbox.SandboxGroup
 import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
@@ -112,10 +113,13 @@ class AMQPwithOSGiSerializationTests {
     }
 
     @JvmOverloads
-    fun testDefaultFactoryNoEvolution(descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
-                                              DefaultDescriptorBasedSerializerRegistry()): SerializerFactory =
+    fun testDefaultFactoryNoEvolution(
+        sandboxGroup: SandboxGroup,
+        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry()
+    ): SerializerFactory =
             SerializerFactoryBuilder.build(
                     AllWhitelist,
+                    sandboxGroup,
                     descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
                     allowEvolution = false)
 
@@ -145,8 +149,8 @@ class AMQPwithOSGiSerializationTests {
             assertThat(sandboxGroup.sandboxes).hasSize(4)
 
             // Initialised two serialisation factories to avoid having successful tests due to caching
-            val factory1 = testDefaultFactoryNoEvolution()
-            val factory2 = testDefaultFactoryNoEvolution()
+            val factory1 = testDefaultFactoryNoEvolution(sandboxGroup)
+            val factory2 = testDefaultFactoryNoEvolution(sandboxGroup)
 
             // Initialise the serialisation context
             val testSerializationContext = SerializationContextImpl(

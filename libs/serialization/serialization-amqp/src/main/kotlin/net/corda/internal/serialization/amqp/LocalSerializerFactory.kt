@@ -38,6 +38,13 @@ interface LocalSerializerFactory {
     val whitelist: ClassWhitelist
 
     /**
+     * The set of CorDapp sandboxes for the node's CPB.
+     *
+     * In the future, we will allows multiple CPBs per node, and thus we will need to support multiple sandbox groups.
+     */
+    val sandboxGroup: SandboxGroup?
+
+    /**
      * Retrieves the names of the registered custom serializers.
      */
     val customSerializerNames: List<String>
@@ -100,9 +107,11 @@ interface LocalSerializerFactory {
  * A [LocalSerializerFactory] equipped with a [LocalTypeModel] and a [FingerPrinter] to help it build fingerprint-based descriptors
  * and serializers for local types.
  */
+@Suppress("LongParameterList")
 @ThreadSafe
 class DefaultLocalSerializerFactory(
         override val whitelist: ClassWhitelist,
+        override val sandboxGroup: SandboxGroup?,
         private val typeModel: LocalTypeModel,
         private val fingerPrinter: FingerPrinter,
         private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
