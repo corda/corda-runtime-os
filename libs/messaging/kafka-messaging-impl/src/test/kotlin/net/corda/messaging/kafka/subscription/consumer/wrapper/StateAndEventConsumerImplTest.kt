@@ -146,7 +146,6 @@ class StateAndEventConsumerImplTest {
         verify(eventConsumer, times(1)).paused()
         verify(eventConsumer, times(1)).pause(any())
         verify(eventConsumer, times(1)).resume(any())
-        verify(eventConsumer, atLeast(1)).poll(Mockito.any(Duration::class.java))
         verify(stateConsumer, atLeast(1)).poll()
         verify(stateAndEventListener, times(0)).onPartitionSynced(any())
     }

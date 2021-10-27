@@ -15,6 +15,7 @@ import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
+import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.InvalidOffsetException
@@ -27,10 +28,12 @@ import org.apache.kafka.common.errors.AuthenticationException
 import org.apache.kafka.common.errors.AuthorizationException
 import org.apache.kafka.common.errors.FencedInstanceIdException
 import org.apache.kafka.common.errors.InterruptException
+import org.apache.kafka.common.errors.InvalidGroupIdException
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.Logger
 import java.time.Duration
+import java.util.*
 
 /**
  * Wrapper for a Kafka Consumer.
@@ -39,7 +42,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     config: Config,
     private val consumer: Consumer<K, V>,
     private val defaultListener: ConsumerRebalanceListener?,
-) : CordaKafkaConsumer<K, V>, Consumer<K, V> by consumer {
+) : CordaKafkaConsumer<K, V> {
 
     companion object {
         private val log: Logger = contextLogger()
@@ -58,6 +61,15 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     override fun close() {
         try {
             consumer.close(consumerCloseTimeout)
+        } catch (ex: Exception) {
+            log.error("CordaKafkaConsumer failed to close consumer from group $groupName for topic $topic.", ex)
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun close(timeout: Duration) {
+        try {
+            consumer.close(timeout)
         } catch (ex: Exception) {
             log.error("CordaKafkaConsumer failed to close consumer from group $groupName for topic $topic.", ex)
         }
@@ -136,7 +148,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     is AuthorizationException,
                     is IllegalArgumentException,
                     is FencedInstanceIdException -> {
-                        logErrorAndThrowFatalException("Error attempting to commitSync offsets for record $event on topic $topic", ex)
+                        logErrorAndThrowFatalException(
+                            "Error attempting to commitSync offsets for record $event on topic $topic",
+                            ex
+                        )
                     }
                     else -> {
                         logErrorAndThrowFatalException(
@@ -161,7 +176,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic"
                 when (ex) {
                     is IllegalStateException -> {
-                        logErrorAndThrowFatalException("$message. Consumer is already subscribed to this topic. Closing subscription.", ex)
+                        logErrorAndThrowFatalException(
+                            "$message. Consumer is already subscribed to this topic. Closing subscription.",
+                            ex
+                        )
                     }
                     is IllegalArgumentException -> {
                         logErrorAndThrowFatalException("$message. Illegal args provided. Closing subscription.", ex)
@@ -188,7 +206,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 is WakeupException,
                 is KafkaException,
                 is TimeoutException -> {
-                    logWarningAndThrowIntermittentException("Intermittent error attempting to get partitions on topic $topic", ex)
+                    logWarningAndThrowIntermittentException(
+                        "Intermittent error attempting to get partitions on topic $topic",
+                        ex
+                    )
                 }
                 is AuthenticationException,
                 is AuthorizationException -> {
@@ -198,7 +219,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     logErrorAndThrowFatalException("Unexpected error attempting to get partitions on topic $topic", ex)
                 }
             }
-        } ?: logWarningAndThrowIntermittentException("Partitions for topic $topic are null. Kafka may not have completed startup.")
+        }
+            ?: logWarningAndThrowIntermittentException("Partitions for topic $topic are null. Kafka may not have completed startup.")
 
         return listOfPartitions.map { partitionInfo ->
             TopicPartition(partitionInfo.topic(), partitionInfo.partition())
@@ -239,4 +261,325 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         log.warn(errorMessage, ex)
         throw CordaMessageAPIIntermittentException(errorMessage, ex)
     }
+
+    override fun assign(partitions: Collection<TopicPartition>) {
+        try {
+            consumer.assign(partitions)
+        } catch (ex: Exception) {
+            when (ex) {
+                is ConcurrentModificationException -> {
+                    logWarningAndThrowIntermittentException(
+                        "Intermittent error attempting to assign on topic $topic",
+                        ex
+                    )
+                }
+                is IllegalArgumentException,
+                is IllegalStateException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to assign on topic $topic", ex)
+                }
+                else -> {
+                    logErrorAndThrowFatalException("Unexpected error attempting to resume on topic $topic", ex)
+                }
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun assignment(): Set<TopicPartition> {
+        val returnSet: Set<TopicPartition>
+        try {
+            returnSet = consumer.assignment()
+        } catch (ex: Exception) {
+            when (ex) {
+                is IllegalStateException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to get assignment on topic $topic", ex)
+                }
+                is ConcurrentModificationException -> {
+                    logWarningAndThrowIntermittentException(
+                        "Intermittent error attempting to get assignment on topic $topic",
+                        ex
+                    )
+                }
+                else -> {
+                    logErrorAndThrowFatalException("Unexpected error attempting to get assignment on topic $topic", ex)
+                }
+            }
+        }
+        return returnSet
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun position(partition: TopicPartition): Long {
+        val position: Long
+        try {
+            position = consumer.position(partition)
+        } catch (ex: Exception) {
+            when (ex) {
+                is InterruptException,
+                is WakeupException,
+                is KafkaException,
+                is TimeoutException -> {
+                    logWarningAndThrowIntermittentException(
+                        "Intermittent error attempting to get position on topic $topic",
+                        ex
+                    )
+                }
+                is AuthenticationException,
+                is AuthorizationException,
+                is InvalidOffsetException,
+                is IllegalStateException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to get position on topic $topic", ex)
+                }
+                else -> {
+                    logErrorAndThrowFatalException("Unexpected error attempting to get position on topic $topic", ex)
+                }
+            }
+        }
+        return position
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun seek(partition: TopicPartition, offset: Long) {
+        try {
+            consumer.seek(partition, offset)
+        } catch (ex: Exception) {
+            when (ex) {
+                is IllegalArgumentException,
+                is IllegalStateException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to get the first offset on topic $topic", ex)
+                }
+                is ConcurrentModificationException -> {
+                    logWarningAndThrowIntermittentException(
+                        "Intermittent error attempting to get the first offset on topic $topic",
+                        ex
+                    )
+                }
+                else -> {
+                    logErrorAndThrowFatalException(
+                        "Unexpected error attempting to get the first offset on topic $topic",
+                        ex
+                    )
+                }
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun seekToBeginning(partitions: Collection<TopicPartition>) {
+        try {
+            consumer.seekToBeginning(partitions)
+        } catch (ex: Exception) {
+            when (ex) {
+                is IllegalArgumentException,
+                is IllegalStateException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to get the first offset on topic $topic", ex)
+                }
+                is ConcurrentModificationException -> {
+                    logWarningAndThrowIntermittentException(
+                        "Intermittent error attempting to get the first offset on topic $topic",
+                        ex
+                    )
+                }
+                else -> {
+                    logErrorAndThrowFatalException(
+                        "Unexpected error attempting to get the first offset on topic $topic",
+                        ex
+                    )
+                }
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun beginningOffsets(partitions: Collection<TopicPartition>): Map<TopicPartition, Long> {
+        val returnMap: Map<TopicPartition, Long>
+        try {
+            returnMap = consumer.beginningOffsets(partitions)
+        } catch (ex: Exception) {
+            when (ex) {
+                is TimeoutException -> {
+                    logWarningAndThrowIntermittentException(
+                        "Intermittent error attempting to get end offsets on topic $topic",
+                        ex
+                    )
+                }
+                is IllegalStateException,
+                is AuthenticationException,
+                is AuthorizationException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to get end offsets on topic $topic", ex)
+                }
+                else -> {
+                    logErrorAndThrowFatalException("Unexpected error attempting to get end offsets on topic $topic", ex)
+                }
+            }
+        }
+        return returnMap
+    }
+
+
+    override fun endOffsets(partitions: Collection<TopicPartition>): Map<TopicPartition, Long> {
+        val returnMap: Map<TopicPartition, Long>
+        try {
+            returnMap = consumer.endOffsets(partitions)
+        } catch (ex: Exception) {
+            when (ex) {
+                is TimeoutException -> {
+                    logWarningAndThrowIntermittentException(
+                        "Intermittent error attempting to get end offsets on topic $topic",
+                        ex
+                    )
+                }
+                is IllegalStateException,
+                is AuthenticationException,
+                is AuthorizationException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to get end offsets on topic $topic", ex)
+                }
+                else -> {
+                    logErrorAndThrowFatalException("Unexpected error attempting to get end offsets on topic $topic", ex)
+                }
+            }
+        }
+        return returnMap
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun resume(partitions: Collection<TopicPartition>) {
+        try {
+            consumer.resume(partitions)
+        } catch (ex: Exception) {
+            when (ex) {
+                is IllegalStateException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to resume on topic $topic", ex)
+                }
+                else -> {
+                    logErrorAndThrowFatalException("Unexpected error attempting to resume on topic $topic", ex)
+                }
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun pause(partitions: Collection<TopicPartition>) {
+        try {
+            consumer.pause(partitions)
+        } catch (ex: Exception) {
+            when (ex) {
+                is IllegalStateException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to pause on topic $topic", ex)
+                }
+                else -> {
+                    logErrorAndThrowFatalException("Unexpected error attempting to pause on topic $topic", ex)
+                }
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun paused(): Set<TopicPartition> {
+        val returnSet: Set<TopicPartition>
+        try {
+            returnSet = consumer.paused()
+        } catch (ex: Exception) {
+            when (ex) {
+                is IllegalStateException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to get paused on topic $topic", ex)
+                }
+                is ConcurrentModificationException -> {
+                    logWarningAndThrowIntermittentException(
+                        "Intermittent error attempting to get paused on topic $topic",
+                        ex
+                    )
+                }
+                else -> {
+                    logErrorAndThrowFatalException(
+                        "Unexpected error attempting to get paused on topic $topic",
+                        ex
+                    )
+                }
+            }
+        }
+        return returnSet
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun groupMetadata(): ConsumerGroupMetadata {
+        val consumerGroupMetadata: ConsumerGroupMetadata
+        try {
+            consumerGroupMetadata = consumer.groupMetadata()
+        } catch (ex: Exception) {
+            when (ex) {
+                is IllegalStateException,
+                is InvalidGroupIdException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to get group metadata on topic $topic", ex)
+                }
+                is ConcurrentModificationException -> {
+                    logWarningAndThrowIntermittentException(
+                        "Intermittent error attempting to get group metadata on topic $topic",
+                        ex
+                    )
+                }
+                else -> {
+                    logErrorAndThrowFatalException(
+                        "Unexpected error attempting to get group metadata on topic $topic",
+                        ex
+                    )
+                }
+            }
+        }
+        return consumerGroupMetadata
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun subscribe(topics: Collection<String>) {
+        try {
+            consumer.subscribe(topics)
+        } catch (ex: Exception){
+            when(ex) {
+                is IllegalArgumentException,
+                is InvalidGroupIdException,
+                is IllegalStateException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to subscribe to topic $topic", ex)
+                }
+                is ConcurrentModificationException -> {
+                    logWarningAndThrowIntermittentException(
+                        "Intermittent error attempting to subscribe to topic $topic",
+                        ex
+                    )
+                }
+                else -> {
+                    logErrorAndThrowFatalException(
+                        "Unexpected error attempting to subscribe to topic $topic",
+                        ex
+                    )
+                }
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun subscribe(topics: Collection<String>, listener: ConsumerRebalanceListener?) {
+        try {
+            consumer.subscribe(topics, listener)
+        } catch (ex: Exception){
+            when(ex) {
+                is IllegalArgumentException,
+                is IllegalStateException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to subscribe to topic $topic", ex)
+                }
+                is ConcurrentModificationException -> {
+                    logWarningAndThrowIntermittentException(
+                        "Intermittent error attempting to subscribe to topic $topic",
+                        ex
+                    )
+                }
+                else -> {
+                    logErrorAndThrowFatalException(
+                        "Unexpected error attempting to subscribe to topic $topic",
+                        ex
+                    )
+                }
+            }
+        }
+    }
+
 }

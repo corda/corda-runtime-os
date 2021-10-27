@@ -5,6 +5,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordList
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
@@ -30,7 +31,7 @@ class CordaKafkaProducerImplTest {
 
     private val config: Config = mock()
     private val producer: Producer<Any, Any> = mock()
-    private val consumer: Consumer<*, *> = mock()
+    private val consumer: CordaKafkaConsumer<*, *> = mock()
     private lateinit var cordaKafkaProducer: CordaKafkaProducerImpl
 
     private val record: Record<Any, Any> = Record("topic", "key", "value")

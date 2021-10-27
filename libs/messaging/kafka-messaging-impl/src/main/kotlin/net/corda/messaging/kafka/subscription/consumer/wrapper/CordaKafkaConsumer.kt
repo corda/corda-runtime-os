@@ -4,6 +4,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import org.apache.kafka.clients.consumer.Consumer
+import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
@@ -31,7 +32,71 @@ fun <K: Any, V: Any> ConsumerRecordAndMeta<K, V>.asEventLogRecord(): EventLogRec
  * Kafka consumers can have any key type [K] and will have values of type [ByteBuffer].
  * [ByteBuffer] values will be deserialized by avro into [V]
  */
-interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable, Consumer<K, V> {
+interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable {
+    /**
+     * Subscribe to given [topics]
+     */
+    fun subscribe(topics: Collection<String>)
+
+    /**
+     * Subscribe to given [topics] with partition [listener]
+     */
+    fun subscribe(topics: Collection<String>, listener: ConsumerRebalanceListener?)
+
+    /**
+     * Assign the given [partitions]
+     */
+    fun assign(partitions: Collection<TopicPartition>)
+
+    /**
+     * Get current assignments
+     */
+    fun assignment(): Set<TopicPartition>
+
+    /**
+     * Get current position for [partition]
+     * @param partition
+     */
+    fun position(partition: TopicPartition): Long
+
+    /**
+     * Seek given [offset] for a given [partition]
+     */
+    fun seek(partition: TopicPartition, offset: Long)
+
+    /**
+     * Seek the first offset for the given [partitions]
+     */
+    fun seekToBeginning(partitions: Collection<TopicPartition>)
+
+    /**
+     * Get beginning offsets for [partitions]
+     */
+    fun beginningOffsets(partitions: Collection<TopicPartition>): Map<TopicPartition, Long>
+
+    /**
+     * Get end offsets for [partitions]
+     * @param partitions
+     */
+    fun endOffsets(partitions: Collection<TopicPartition>): Map<TopicPartition, Long>
+
+    /**
+     * Resume the given [partitions]
+     * @param partitions
+     */
+    fun resume(partitions: Collection<TopicPartition>)
+
+    /**
+     * Pause the given [partitions]
+     * @param partitions
+     */
+    fun pause(partitions: Collection<TopicPartition>)
+
+    /**
+     * Get the paused partitions
+     */
+    fun paused(): Set<TopicPartition>
+
     /**
      * Poll records from the consumer and sort them by timestamp
      */
@@ -71,5 +136,14 @@ interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable, Consumer<K, V> {
      */
     fun assignPartitionsManually(partitions: Set<Int>)
 
+    /**
+     * Get group metadata
+     */
+    fun groupMetadata(): ConsumerGroupMetadata
 
+    /**
+     * Close consumer with a [timeout]
+     * @param timeout
+     */
+    fun close(timeout: Duration)
 }
