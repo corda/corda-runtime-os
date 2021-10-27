@@ -247,7 +247,7 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `returns the CPK info for a CorDapp class installed in one of the sandboxes`() {
+    fun `returns the class tag for a CorDapp class installed in one of the sandboxes`() {
         // We make the CPK we are retrieving have a dependency on `cpkOne` and `cpkTwo`, so we can check the
         // `CpkClassInfo` fields related to dependencies.
         val cpkDependencies = setOf(cpkOne, cpkTwo).map { cpk ->
@@ -261,9 +261,9 @@ class SandboxServiceImplTests {
             cpkAndContentsOne.copy(libraryClass = Float::class.java, cpkDependencies = cpkDependencies)
 
         val sandboxService = createSandboxService(setOf(cpkWithDependencies, cpkAndContentsOne, cpkAndContentsTwo))
-        sandboxService.createSandboxGroup(listOf(cpkWithDependencies.cpk.metadata.hash))
+        val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkWithDependencies.cpk.metadata.hash))
 
-        val classTag = sandboxService.getClassTag(cpkWithDependencies.cordappClass, isStaticTag = false)
+        val classTag = sandboxGroup.getEvolvableTag(cpkWithDependencies.cordappClass)
 
         val cordappBundle = startedBundles.find { bundle ->
             bundle.symbolicName == cpkWithDependencies.cordappBundleName
@@ -280,7 +280,7 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `returns the CPK info for a library class installed in one of the sandboxes`() {
+    fun `returns the class tag for a library class installed in one of the sandboxes`() {
         // We make the CPK we are retrieving have a dependency on `cpkOne` and `cpkTwo`, so we can check the
         // `CpkClassInfo` fields related to dependencies.
         val cpkDependencies = setOf(cpkOne, cpkTwo).map { cpk ->
@@ -294,10 +294,9 @@ class SandboxServiceImplTests {
             cpkAndContentsOne.copy(libraryClass = Float::class.java, cpkDependencies = cpkDependencies)
 
         val sandboxService = createSandboxService(setOf(cpkWithDependencies, cpkAndContentsOne, cpkAndContentsTwo))
-        sandboxService.createSandboxGroup(listOf(cpkWithDependencies.cpk.metadata.hash))
+        val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkWithDependencies.cpk.metadata.hash))
 
-        // Note that we cannot get the `ClassInfo` by name for library bundles.
-        val classTag = sandboxService.getClassTag(cpkWithDependencies.libraryClass, isStaticTag = false)
+        val classTag = sandboxGroup.getEvolvableTag(cpkWithDependencies.libraryClass)
 
         val libraryBundle =
             startedBundles.find { bundle -> bundle.symbolicName == cpkWithDependencies.libraryBundleName }!!
@@ -315,14 +314,14 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `throws if asked to retrieve CPK info for a class not in any sandbox`() {
-        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+    fun `throws if asked to retrieve a class tag for a class not in any sandbox`() {
+        val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
 
         val unknownClass = Iterable::class.java
         val e = assertThrows<SandboxException> {
-            sandboxService.getClassTag(unknownClass, isStaticTag = false)
+            sandboxGroup.getEvolvableTag(unknownClass)
         }
-        assertTrue(e.message!!.contains(" is not contained in any sandbox group."))
+        assertTrue(e.message!!.contains(" was not loaded from any bundle."))
     }
 
     @Test

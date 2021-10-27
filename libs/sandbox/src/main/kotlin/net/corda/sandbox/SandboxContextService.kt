@@ -1,21 +1,12 @@
 package net.corda.sandbox
 
 import net.corda.packaging.CPK
-import net.corda.sandbox.internal.classtag.ClassTag
 import org.osgi.framework.Bundle
 
 /**
  * OSGi service interface for retrieving context on the current sandbox.
  */
 interface SandboxContextService {
-    /**
-     * Returns the [ClassTag] for the given [klass].
-     *
-     * A [SandboxException] is thrown if the class is not in a sandbox, or is not found in any bundle the sandbox has
-     * visibility of.
-     */
-    fun getClassTag(klass: Class<*>, isStaticTag: Boolean): String
-
     /**
      * Returns the [Sandbox] lowest in the stack of calls to this function, or null if no sandbox is on the stack.
      *

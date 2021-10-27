@@ -73,21 +73,6 @@ internal class SandboxServiceImpl @Activate constructor(
         zombieBundles.addAll((sandbox as SandboxInternal).unload())
     }
 
-    override fun getClassTag(klass: Class<*>, isStaticTag: Boolean): String {
-        sandboxGroups.values.forEach {
-            try {
-                return if (isStaticTag) {
-                    it.getStaticTag(klass)
-                } else {
-                    it.getEvolvableTag(klass)
-                }
-            } catch(se : SandboxException) {
-               // klass not found in sandbox group
-            }
-        }
-        throw SandboxException("Class ${klass.name} is not contained in any sandbox group.")
-    }
-
     override fun getSandbox(bundle: Bundle) = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundle) }
 
     @Suppress("ComplexMethod")
