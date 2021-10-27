@@ -264,8 +264,6 @@ class SandboxServiceImplTests {
         sandboxService.createSandboxGroup(listOf(cpkWithDependencies.cpk.metadata.hash))
 
         val classTag = sandboxService.getClassTag(cpkWithDependencies.cordappClass, isStaticTag = false)
-        val classTagByName = sandboxService.getClassTag(cpkWithDependencies.cordappClass.name, isStaticTag = false)
-        assertEquals(classTag, classTagByName)
 
         val cordappBundle = startedBundles.find { bundle ->
             bundle.symbolicName == cpkWithDependencies.cordappBundleName

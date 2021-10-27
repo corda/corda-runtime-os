@@ -88,21 +88,6 @@ internal class SandboxServiceImpl @Activate constructor(
         throw SandboxException("Class ${klass.name} is not contained in any sandbox group.")
     }
 
-    override fun getClassTag(className: String, isStaticTag: Boolean): String {
-        var klass: Class<*>? = null
-        for (sandbox in sandboxes.values.filterIsInstance<CpkSandboxImpl>()) {
-            try {
-                klass = sandbox.loadClassFromCordappBundle(className)
-            } catch (ex: SandboxException) {
-                continue
-            }
-        }
-
-        klass?.let {
-            return getClassTag(klass, isStaticTag)
-        } ?: throw SandboxException("Class $className is not contained in any sandbox.")
-    }
-
     override fun getSandbox(bundle: Bundle) = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundle) }
 
     @Suppress("ComplexMethod")

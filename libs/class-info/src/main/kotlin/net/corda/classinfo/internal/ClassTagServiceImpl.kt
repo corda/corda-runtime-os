@@ -24,10 +24,4 @@ internal class ClassTagServiceImpl @Activate constructor(
     } catch (e: SandboxException) {
         throw ClassTagException(e.message, e)
     }
-
-    override fun getClassTag(className: String, isStaticTag: Boolean) = try {
-        sandboxContextService.getClassTag(className, isStaticTag)
-    } catch (e: SandboxException) {
-        throw ClassTagException(e.message, e)
-    }
 }
