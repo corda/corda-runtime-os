@@ -38,7 +38,11 @@ class DiscoverySecurityManager(
 
     /** Restores the security manager that was replaced by this [DiscoverySecurityManager]. */
     override fun stop() {
-        System.setSecurityManager(previousSecurityManager)
+        if (System.getSecurityManager() !== this) {
+            log.warn("The DiscoverySecurityManager has already been replaced by another security manager.")
+        } else {
+            System.setSecurityManager(previousSecurityManager)
+        }
     }
 
     override fun grantPermissions(filter: String, perms: Collection<Permission>) = Unit
