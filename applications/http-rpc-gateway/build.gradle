@@ -53,8 +53,6 @@ dependencies {
 tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
     description "Builds the docker image for the deployable OSGi application"
 
-    arguments = ["--instanceId", "1"]
-
     if (project.hasProperty('jibRemotePublish')) {
         remotePublish = jibRemotePublish.toBoolean()
     }

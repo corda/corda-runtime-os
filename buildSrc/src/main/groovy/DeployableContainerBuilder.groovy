@@ -127,9 +127,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             javaArgs.addAll("--kafka", KAFKA_FILE_LOCATION)
         }
 
-        if (arguments.isPresent() && !arguments.get().isEmpty()) {
-            builder.setProgramArguments(javaArgs)
-        }
+        builder.setProgramArguments(javaArgs)
+
         builder.setEntrypoint("java", "-jar", CONTAINER_LOCATION + projectName +".jar")
 
         logger.quiet("Publishing '${targetRepo}:${targetImageTag.get()}' and '${targetRepo}:${version}'" +

@@ -426,8 +426,6 @@ An example of how to apply this task to a project can be seen in the application
 tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
     description "Builds the docker image for the deployable OSGi application"
 
-    arguments = ["--instanceId", "1"]
-
     if (project.hasProperty('jibRemotePublish')) {
         remotePublish = jibRemotePublish.toBoolean()
     }
@@ -443,7 +441,7 @@ Once triggered this task will produce a docker image tagging it with the followi
 - the project version
 - git revision
 
-If ran locally with no properties passed the task will publish images to the local Docker Daemon. 
+If ran locally with no Gradle properties passed the task will publish images to the local Docker Daemon. 
 
 if jibRemotePublish is true images will be published to artifactory under:
 
@@ -451,8 +449,12 @@ if jibRemotePublish is true images will be published to artifactory under:
 
 CI builds will automatically publish to the remote repo.
 
-Any properties specified in the 'arguments' array will be passed to the java -jar command.
-Also, if a kafka.properties file exists in the project root as follows:
+Optionally an 'arguments' array may be provided to the task which will bake parameters into the image to be passed to the java -jar command.
+Unless necessary this should be avoided and use environment variable JAVA_TOOL_OPTIONS to pass properties at run time instead, as follows:
+
+    docker run -p 8888:8888 -e "JAVA_TOOL_OPTIONS=-DinstanceId=1" engineering-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
+
+If a kafka.properties file exists in the project root as follows:
 
 ```
     http-rpc-gateway
@@ -462,6 +464,9 @@ Also, if a kafka.properties file exists in the project root as follows:
 ```
 
 The file will be copied to the container and "--kafka", "/opt/pathToFile" will also be passed ot the java -jar command.
+If this file does not exist in the project and therefore is never copied ot the container properties may be passed at container run time using JAVA_TOOL_OPTIONS as described previously.
+
+    docker run -e  "JAVA_TOOL_OPTIONS=-Dconfig.topic.name=ConfigTopic,-Dmessaging.topic.prefix=http-rpc-gateway,-Dbootstrap.servers=localhost:9092"
 
 ### Running the container
 
