@@ -1,11 +1,11 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.classinfo.ClassTagException
 import net.corda.internal.serialization.CordaSerializationEncoding
 import net.corda.internal.serialization.SectionId
 import net.corda.internal.serialization.byteArrayOutput
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.internal.serialization.osgi.TypeResolver
+import net.corda.sandbox.SandboxException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SerializationContext
@@ -141,7 +141,7 @@ open class SerializationOutput constructor(
                 val key = type.typeName
                 metadata.putValue(key, classTag)
             }
-        } catch (ex: ClassTagException) {
+        } catch (ex: SandboxException) {
             logger.trace {
                 "Class ${type.typeName} not found in any sandbox. " +
                 "The type is either a PlatformClass or is not installed. "
