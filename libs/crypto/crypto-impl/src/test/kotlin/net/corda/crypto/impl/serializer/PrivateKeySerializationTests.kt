@@ -6,14 +6,19 @@ import org.junit.jupiter.api.Timeout
 import org.mockito.Mockito.mock
 import java.security.PrivateKey
 
-@Timeout(30)
 class PrivateKeySerializationTests {
-
     @Test
-    fun `check throws when serializing a private key`() {
+    @Timeout(5)
+    fun `Should throw IllegalStateException when serializing a private key`() {
         val privateKey = mock(PrivateKey::class.java)
         assertThatThrownBy { PrivateKeySerializer().toProxy(privateKey) }
             .isInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("Attempt to serialise private key")
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should throw IllegalStateException when deserializing a private key`() {
+        assertThatThrownBy { PrivateKeySerializer().fromProxy("mock") }
+            .isInstanceOf(IllegalStateException::class.java)
     }
 }

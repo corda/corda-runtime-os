@@ -21,19 +21,27 @@ class SandboxLocationTests {
     @Test
     fun `sandbox location is destringified correctly`() {
         val sandboxLocation = SandboxLocation(validSecurityDomain, validUUID, validURI)
-        val sandboxLocationFromString = SandboxLocation.fromString(sandboxLocation.toString())
+        val sandboxLocationFromString = SandboxLocation.fromString("$validSecurityDomain/$validUUID/$validURI")
 
         assertEquals(sandboxLocation, sandboxLocationFromString)
     }
 
     @Test
-    fun `throws if sandbox location has incorrect number of components`() {
+    fun `can handle sandbox location where the final component contains forward slashes`() {
+        val source = "separated/by/slashes"
+        val sandboxLocation = SandboxLocation(validSecurityDomain, validUUID, source)
+        val sandboxLocationFromString = SandboxLocation.fromString("$validSecurityDomain/$validUUID/$source")
+
+        assertEquals(sandboxLocation, sandboxLocationFromString)
+    }
+
+    @Test
+    fun `throws if sandbox location has insufficient components`() {
         val zeroComponents = ""
         val oneComponent = "sandbox/"
         val twoComponents = "sandbox/$validUUID"
-        val fourComponents = "sandbox/$validUUID/$validURI/suffix"
 
-        listOf(zeroComponents, oneComponent, twoComponents, fourComponents).forEach { sandboxLocationString ->
+        listOf(zeroComponents, oneComponent, twoComponents).forEach { sandboxLocationString ->
             assertThrows<SandboxException> {
                 SandboxLocation.fromString(sandboxLocationString)
             }
