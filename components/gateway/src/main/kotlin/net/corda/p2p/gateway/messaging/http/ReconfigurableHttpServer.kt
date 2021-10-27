@@ -52,30 +52,37 @@ class ReconfigurableHttpServer(
             oldConfiguration: GatewayConfiguration?,
             resources: ResourcesHolder
         ) {
-            val name = this@ReconfigurableHttpServer::class.java.simpleName
-            if (newConfiguration.hostPort == oldConfiguration?.hostPort) {
-                logger.info("New server configuration for $name on the same port, HTTP server will have to go down")
-                serverLock.write {
-                    val oldServer = httpServer
-                    httpServer = null
-                    oldServer?.stop()
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                val name = this@ReconfigurableHttpServer::class.java.simpleName
+                if (newConfiguration.hostPort == oldConfiguration?.hostPort) {
+                    logger.info("New server configuration for $name on the same port, HTTP server will have to go down")
+                    serverLock.write {
+                        val oldServer = httpServer
+                        httpServer = null
+                        oldServer?.stop()
+                        val newServer = HttpServer(listener, newConfiguration)
+                        newServer.start()
+                        resources.keep(newServer::stop)
+                        httpServer = newServer
+                    }
+                } else {
+                    logger.info("New server configuration, $name will be connected to ${newConfiguration.hostAddress}:${newConfiguration.hostPort}")
                     val newServer = HttpServer(listener, newConfiguration)
                     newServer.start()
                     resources.keep(newServer::stop)
-                    httpServer = newServer
+                    serverLock.write {
+                        val oldServer = httpServer
+                        httpServer = null
+                        oldServer?.stop()
+                        httpServer = newServer
+                    }
                 }
-            } else {
-                logger.info("New server configuration, $name will be connected to ${newConfiguration.hostAddress}:${newConfiguration.hostPort}")
-                val newServer = HttpServer(listener, newConfiguration)
-                newServer.start()
-                resources.keep(newServer::stop)
-                serverLock.write {
-                    val oldServer = httpServer
-                    httpServer = null
-                    oldServer?.stop()
-                    httpServer = newServer
-                }
+            } catch (e: Throwable) {
+                this@ReconfigurableHttpServer.dominoTile.configApplied(DominoTile.ConfigUpdateResult.Error(e))
+                return
             }
+            this@ReconfigurableHttpServer.dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
         }
     }
 

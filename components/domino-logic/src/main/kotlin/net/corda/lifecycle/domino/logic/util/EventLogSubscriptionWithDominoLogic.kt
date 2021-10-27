@@ -20,6 +20,7 @@ class EventLogSubscriptionWithDominoLogic<K, V>(
         resources.keep {
             eventLogSubscription.stop()
         }
+        dominoTile.resourcesStarted(false)
     }
 
     override fun start() {

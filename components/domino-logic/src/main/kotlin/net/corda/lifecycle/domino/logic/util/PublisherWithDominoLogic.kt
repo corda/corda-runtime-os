@@ -33,6 +33,7 @@ class PublisherWithDominoLogic(
             }
             it.start()
         }
+        dominoTile.resourcesStarted(false)
     }
 
     fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {

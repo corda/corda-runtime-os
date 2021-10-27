@@ -49,16 +49,21 @@ class ReconfigurableConnectionManager(
             oldConfiguration: GatewayConfiguration?,
             resources: ResourcesHolder
         ) {
-            if (newConfiguration.sslConfig != oldConfiguration?.sslConfig) {
-                logger.info("New SSL configuration, clients for ${this@ReconfigurableConnectionManager::class.java.simpleName} will be" +
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                if (newConfiguration.sslConfig != oldConfiguration?.sslConfig) {
+                    logger.info("New SSL configuration, clients for ${this@ReconfigurableConnectionManager::class.java.simpleName} will be" +
                         " reconnected")
-                val newManager = managerFactory(newConfiguration.sslConfig)
-                resources.keep(newManager)
-                val oldManager = manager
-                manager = null
-                oldManager?.close()
-                manager = newManager
-                this@ReconfigurableConnectionManager.dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
+                    val newManager = managerFactory(newConfiguration.sslConfig)
+                    resources.keep(newManager)
+                    val oldManager = manager
+                    manager = null
+                    oldManager?.close()
+                    manager = newManager
+                    this@ReconfigurableConnectionManager.dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
+                }
+            } catch (e: Throwable) {
+                this@ReconfigurableConnectionManager.dominoTile.configApplied(DominoTile.ConfigUpdateResult.Error(e))
             }
         }
     }
