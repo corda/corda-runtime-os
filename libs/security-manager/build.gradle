@@ -15,8 +15,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
 
-    testImplementation "ch.qos.logback:logback-classic:$logbackVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion"
 
     integrationTestImplementation project(":libs:security-manager")

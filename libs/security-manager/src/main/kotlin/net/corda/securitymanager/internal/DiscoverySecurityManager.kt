@@ -16,7 +16,8 @@ import java.security.Permission
 @Component(service = [DiscoverySecurityManager::class])
 class DiscoverySecurityManager(
     prefixes: Collection<String>,
-    private val bundleUtils: BundleUtils
+    private val bundleUtils: BundleUtils,
+    private val logUtils: LogUtils
 ) : CordaSecurityManager, SecurityManager() {
     companion object {
         private val log = contextLogger()
@@ -48,7 +49,7 @@ class DiscoverySecurityManager(
                 // We log the permission as a `PermissionInfo` so that the permission is printed using the encoding in
                 // which it needs to be added to the CorDapp's `AdditionalPermissions` file.
                 val permissionInfo = PermissionInfo(perm::class.java.name, perm.name, perm.actions)
-                log.info("$klass requested permission $permissionInfo.")
+                logUtils.logInfo(log, "$klass requested permission $permissionInfo.")
                 // Once the permission is logged, we can return early.
                 return
             }

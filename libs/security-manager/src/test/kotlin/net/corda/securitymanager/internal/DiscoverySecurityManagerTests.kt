@@ -1,17 +1,11 @@
 package net.corda.securitymanager.internal
 
-import ch.qos.logback.classic.Logger
-import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.core.Appender
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import org.osgi.service.permissionadmin.PermissionInfo
-import org.slf4j.LoggerFactory
+import org.slf4j.Logger
 
 /** Tests of the [DiscoverySecurityManager]. */
 class DiscoverySecurityManagerTests {
@@ -32,17 +26,13 @@ class DiscoverySecurityManagerTests {
         }
     }
 
-    private val logger = LoggerFactory.getLogger(DiscoverySecurityManager::class.java) as Logger
     private val loggedEvents = mutableListOf<String>()
 
-    init {
-        // We add logging events from `DiscoverySecurityManager` to `loggedEvents`.
-        val loggingEventCaptor = argumentCaptor<ILoggingEvent>()
-        logger.addAppender(mock<Appender<ILoggingEvent>>().apply {
-            whenever(doAppend(loggingEventCaptor.capture())).then {
-                loggedEvents.add(loggingEventCaptor.lastValue.message)
-            }
-        })
+    // Adds info-level log messages to the `loggedEvents` list.
+    private val logUtils = object : LogUtils() {
+        override fun logInfo(logger: Logger, message: String) {
+            loggedEvents.add(message)
+        }
     }
 
     @BeforeEach
@@ -53,7 +43,7 @@ class DiscoverySecurityManagerTests {
 
     @Test
     fun `no permissions are denied by default`() {
-        DiscoverySecurityManager(setOf(testBundleDummyLocationPrefix), bundleUtils)
+        DiscoverySecurityManager(setOf(testBundleDummyLocationPrefix), bundleUtils, logUtils)
 
         assertDoesNotThrow {
             // The permission required for this action stands in for all permissions.
@@ -63,7 +53,7 @@ class DiscoverySecurityManagerTests {
 
     @Test
     fun `permissions from bundles whose location matches one of the prefixes are logged`() {
-        DiscoverySecurityManager(setOf(testBundleDummyLocationPrefix), bundleUtils)
+        DiscoverySecurityManager(setOf(testBundleDummyLocationPrefix), bundleUtils, logUtils)
 
         System.getenv()
 
@@ -73,7 +63,7 @@ class DiscoverySecurityManagerTests {
 
     @Test
     fun `permissions from bundles whose location equals one of the prefixes are logged`() {
-        DiscoverySecurityManager(setOf(testBundleDummyLocation), bundleUtils)
+        DiscoverySecurityManager(setOf(testBundleDummyLocation), bundleUtils, logUtils)
 
         System.getenv()
 
@@ -83,7 +73,7 @@ class DiscoverySecurityManagerTests {
 
     @Test
     fun `permissions from bundles whose location does not match one of the prefixes are not logged`() {
-        DiscoverySecurityManager(setOf("non_matching_prefix"), bundleUtils)
+        DiscoverySecurityManager(setOf("non_matching_prefix"), bundleUtils, logUtils)
 
         System.getenv()
 
@@ -93,7 +83,7 @@ class DiscoverySecurityManagerTests {
 
     @Test
     fun `multiple permissions from bundles whose location matches one of the prefixes are logged`() {
-        DiscoverySecurityManager(setOf(testBundleDummyLocationPrefix), bundleUtils)
+        DiscoverySecurityManager(setOf(testBundleDummyLocationPrefix), bundleUtils, logUtils)
 
         val envVars = setOf("a", "b")
         envVars.forEach { envVar -> System.getenv(envVar) }
@@ -109,7 +99,7 @@ class DiscoverySecurityManagerTests {
     @Test
     fun `permissions from bundles whose location matches multiple prefixes are only logged once`() {
         val overlappingPrefix = testBundleDummyLocationPrefix.dropLast(1)
-        DiscoverySecurityManager(setOf(overlappingPrefix), bundleUtils)
+        DiscoverySecurityManager(setOf(overlappingPrefix), bundleUtils, logUtils)
 
         System.getenv()
 
