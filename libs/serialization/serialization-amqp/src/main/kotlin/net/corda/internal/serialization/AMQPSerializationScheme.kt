@@ -48,8 +48,6 @@ import net.corda.v5.serialization.SerializationWhitelist
 import net.corda.v5.serialization.SerializedBytes
 import java.util.Collections
 
-val AMQP_ENABLED get() = effectiveSerializationEnv.p2pContext.preferredSerializationVersion == amqpMagic
-
 data class SerializationFactoryCacheKey(val classWhitelist: ClassWhitelist,
                                         val sandboxGroup: SandboxGroup?,
                                         val preventDataLoss: Boolean,
