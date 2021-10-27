@@ -19,8 +19,7 @@ import java.net.URI
 import java.nio.file.Paths
 import java.security.DigestInputStream
 import java.security.MessageDigest
-import java.util.Dictionary
-import java.util.Properties
+import java.util.Hashtable
 
 @Component(service = [SandboxLoader::class])
 class SandboxLoader @Activate constructor(
@@ -58,12 +57,11 @@ class SandboxLoader @Activate constructor(
 
     init {
         configAdmin.getConfiguration(ConfigurationAdmin::class.java.name)?.also { config ->
-            val properties = Properties()
+            val properties = Hashtable<String, Any>()
             properties[BASE_DIRECTORY_KEY] = baseDirectory.toString()
             properties[BLACKLISTED_KEYS_KEY] = emptyList<String>()
             properties[PLATFORM_VERSION_KEY] = 999
-            @Suppress("unchecked_cast")
-            config.update(properties as Dictionary<String, Any>)
+            config.update(properties)
         }
 
         val allBundles = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles
