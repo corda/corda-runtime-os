@@ -3,7 +3,6 @@ package net.corda.components.flow.service
 import com.typesafe.config.Config
 import net.corda.components.sandbox.service.SandboxService
 import net.corda.configuration.read.ConfigKeys.Companion.BOOTSTRAP_KEY
-import net.corda.configuration.read.ConfigKeys.Companion.FLOW_KEY
 import net.corda.configuration.read.ConfigKeys.Companion.MESSAGING_KEY
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.manager.FlowManager
@@ -55,10 +54,6 @@ class FlowService @Activate constructor(
     private var configHandle: AutoCloseable? = null
     private var executor: FlowExecutor? = null
 
-    private var bootstrapConfig: Config? = null
-    private var messagingConfig: Config? = null
-    private var flowConfig: Config? = null
-
     private val coordinator = coordinatorFactory.createCoordinator<FlowService>(::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -99,27 +94,9 @@ class FlowService @Activate constructor(
 
     @Suppress("TooGenericExceptionThrown")
     private fun onConfigChange(keys: Set<String>, config: Map<String, Config>) {
-        if (MESSAGING_KEY in keys) {
-            messagingConfig = config[MESSAGING_KEY]
-        }
-
-        if (FLOW_KEY in keys) {
-            flowConfig = config[FLOW_KEY]
-        }
-
-        if (BOOTSTRAP_KEY in keys) {
-            bootstrapConfig = config[BOOTSTRAP_KEY]
-        }
-
-        if (flowConfig != null && messagingConfig != null && bootstrapConfig != null) {
+        if (MESSAGING_KEY in config.keys && BOOTSTRAP_KEY in config.keys && MESSAGING_KEY in config.keys) {
             coordinator.postEvent(
-                NewConfigurationReceived(
-                    mapOf(
-                        MESSAGING_KEY to messagingConfig!!,
-                        FLOW_KEY to flowConfig!!,
-                        BOOTSTRAP_KEY to bootstrapConfig!!
-                    )
-                )
+                NewConfigurationReceived(config)
             )
         }
     }
