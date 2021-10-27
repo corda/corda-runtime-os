@@ -32,6 +32,7 @@ fun <K: Any, V: Any> ConsumerRecordAndMeta<K, V>.asEventLogRecord(): EventLogRec
  * Kafka consumers can have any key type [K] and will have values of type [ByteBuffer].
  * [ByteBuffer] values will be deserialized by avro into [V]
  */
+@Suppress("TooManyFunctions")
 interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable {
     /**
      * Subscribe to given [topics]

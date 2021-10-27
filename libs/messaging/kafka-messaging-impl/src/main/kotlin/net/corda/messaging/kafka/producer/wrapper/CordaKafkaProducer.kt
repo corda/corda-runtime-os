@@ -2,7 +2,6 @@ package net.corda.messaging.kafka.producer.wrapper
 
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.producer.Callback
 import org.apache.kafka.clients.producer.ProducerRecord

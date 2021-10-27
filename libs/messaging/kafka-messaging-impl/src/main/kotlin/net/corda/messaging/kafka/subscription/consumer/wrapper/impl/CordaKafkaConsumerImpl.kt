@@ -38,6 +38,7 @@ import java.util.*
 /**
  * Wrapper for a Kafka Consumer.
  */
+@Suppress("TooManyFunctions")
 class CordaKafkaConsumerImpl<K : Any, V : Any>(
     config: Config,
     private val consumer: Consumer<K, V>,
@@ -262,6 +263,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         throw CordaMessageAPIIntermittentException(errorMessage, ex)
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun assign(partitions: Collection<TopicPartition>) {
         try {
             consumer.assign(partitions)
@@ -417,6 +419,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
 
+    @Suppress("TooGenericExceptionCaught")
     override fun endOffsets(partitions: Collection<TopicPartition>): Map<TopicPartition, Long> {
         val returnMap: Map<TopicPartition, Long>
         try {
