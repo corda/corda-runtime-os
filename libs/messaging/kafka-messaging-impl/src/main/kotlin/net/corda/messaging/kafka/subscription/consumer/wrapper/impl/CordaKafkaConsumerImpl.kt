@@ -104,6 +104,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             .map { ConsumerRecordAndMeta(topicPrefix, it) }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun poll(timeout: Duration): List<ConsumerRecordAndMeta<K, V>> {
         val consumerRecords = try {
             consumer.poll(timeout)
