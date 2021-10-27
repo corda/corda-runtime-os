@@ -15,21 +15,21 @@ data class WebRequest<T>(val path: String, val body: T? = null, val queryParamet
 data class WebResponse<T>(val body: T?, val headers: Map<String, String>, val responseStatus: Int, val responseStatusText: String?)
 
 interface TestHttpClient {
-    fun <T, R> call(verb: net.corda.httprpc.tools.HttpVerb, webRequest: WebRequest<T>, responseClass: Class<R>, userName: String = "", password: String = ""): WebResponse<R> where R: Any
-    fun <T> call(verb: net.corda.httprpc.tools.HttpVerb, webRequest: WebRequest<T>, userName: String = "", password: String = ""): WebResponse<String>
-    fun <T> call(verb: net.corda.httprpc.tools.HttpVerb, webRequest: WebRequest<T>, bearerToken: String): WebResponse<String>
+    fun <T, R> call(verb: HttpVerb, webRequest: WebRequest<T>, responseClass: Class<R>, userName: String = "", password: String = ""): WebResponse<R> where R: Any
+    fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, userName: String = "", password: String = ""): WebResponse<String>
+    fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, bearerToken: String): WebResponse<String>
     val baseAddress: String
 }
 
 class TestHttpClientUnirestImpl(override val baseAddress: String, private val enableSsl: Boolean = false) : TestHttpClient {
 
-    override fun <T, R> call(verb: net.corda.httprpc.tools.HttpVerb, webRequest: WebRequest<T>, responseClass: Class<R>, userName: String, password: String): WebResponse<R> where R: Any {
+    override fun <T, R> call(verb: HttpVerb, webRequest: WebRequest<T>, responseClass: Class<R>, userName: String, password: String): WebResponse<R> where R: Any {
 
         addSslParams()
 
         var request = when (verb) {
-            net.corda.httprpc.tools.HttpVerb.GET -> Unirest.get(baseAddress + webRequest.path).basicAuth(userName, password)
-            net.corda.httprpc.tools.HttpVerb.POST -> Unirest.post(baseAddress + webRequest.path).basicAuth(userName, password)
+            HttpVerb.GET -> Unirest.get(baseAddress + webRequest.path).basicAuth(userName, password)
+            HttpVerb.POST -> Unirest.post(baseAddress + webRequest.path).basicAuth(userName, password)
         }
 
         if (webRequest.body != null && request is HttpRequestWithBody) request = request.body(webRequest.body)
@@ -47,7 +47,7 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
                 .associateBy({ it.name }, { it.value }), response.status, response.statusText)
     }
 
-    override fun <T> call(verb: net.corda.httprpc.tools.HttpVerb, webRequest: WebRequest<T>, userName: String, password: String): WebResponse<String> {
+    override fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, userName: String, password: String): WebResponse<String> {
         return doCall(verb, webRequest) {
             if (userName.isNotEmpty() || password.isNotEmpty()){
                 basicAuth(userName, password)
@@ -55,14 +55,14 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
         }
     }
 
-    private fun <T> doCall(verb: net.corda.httprpc.tools.HttpVerb, webRequest: WebRequest<T>, encodeAuth: HttpRequest<*>.() -> Unit): WebResponse<String> {
+    private fun <T> doCall(verb: HttpVerb, webRequest: WebRequest<T>, encodeAuth: HttpRequest<*>.() -> Unit): WebResponse<String> {
 
         addSslParams()
 
         val path = baseAddress + webRequest.path
         var request: HttpRequest<*> = when (verb) {
-            net.corda.httprpc.tools.HttpVerb.GET -> Unirest.get(path)
-            net.corda.httprpc.tools.HttpVerb.POST -> Unirest.post(path)
+            HttpVerb.GET -> Unirest.get(path)
+            HttpVerb.POST -> Unirest.post(path)
         }
 
         request.encodeAuth()
@@ -82,7 +82,7 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
                 .associateBy({ it.name }, { it.value }), response.status, response.statusText)
     }
 
-    override fun <T> call(verb: net.corda.httprpc.tools.HttpVerb, webRequest: WebRequest<T>, bearerToken: String): WebResponse<String> {
+    override fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, bearerToken: String): WebResponse<String> {
         return doCall(verb, webRequest) {
             header("Authorization", "Bearer $bearerToken")
         }
