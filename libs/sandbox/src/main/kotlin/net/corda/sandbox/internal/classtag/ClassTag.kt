@@ -13,8 +13,8 @@ sealed class ClassTag(val version: Int, val isPublicClass: Boolean, val classBun
     /**
      * Serializes the class tag.
      *
-     * Regardless of [version], serialised class tags must obey the format "classTagIdentifier$version$<otherEntries>".
-     * For example, "armAllowance$99$feedback" and "strike$1$premium$leaf" are valid serialised class tags.
+     * Regardless of [version], serialized class tags must obey the format "classTagIdentifier$version$<otherEntries>".
+     * For example, "armAllowance$99$feedback" and "strike$1$premium$leaf" are valid serialized class tags.
      */
     abstract fun serialise(): String
 }

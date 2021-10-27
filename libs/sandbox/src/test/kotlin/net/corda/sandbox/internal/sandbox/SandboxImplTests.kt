@@ -28,9 +28,9 @@ class SandboxImplTests {
 
     private val uninstalledBundles = mutableSetOf<Bundle>()
 
-    private val publicBundle = createMockBundle(PUBLIC_BUNDLE_NAME, publicBundleClass)
-    private val privateBundle = createMockBundle(PRIVATE_BUNDLE_NAME, privateBundleClass)
-    private val nonSandboxBundle = createMockBundle("", nonSandboxClass)
+    private val publicBundle = mockUninstallableBundle(PUBLIC_BUNDLE_NAME, publicBundleClass)
+    private val privateBundle = mockUninstallableBundle(PRIVATE_BUNDLE_NAME, privateBundleClass)
+    private val nonSandboxBundle = mockUninstallableBundle("", nonSandboxClass)
 
     private val mockBundleUtils = mock<BundleUtils>().apply {
         whenever(getBundle(publicBundleClass)).thenReturn(publicBundle)
@@ -38,10 +38,10 @@ class SandboxImplTests {
         whenever(getBundle(nonSandboxClass)).thenReturn(nonSandboxBundle)
     }
 
-    /** Creates a mock [Bundle] for testing. */
-    private fun createMockBundle(bundleSymbolicName: String, klass: Class<*>) = mockBundle(
+    /** Creates a mock [Bundle] that tracks its own uninstallation. */
+    private fun mockUninstallableBundle(bundleSymbolicName: String, klass: Class<*>) = mockBundle(
         bundleSymbolicName = bundleSymbolicName,
-        classes = setOf(klass)
+        klass = klass
     ).apply {
         whenever(uninstall()).then { uninstalledBundles.add(this) }
     }

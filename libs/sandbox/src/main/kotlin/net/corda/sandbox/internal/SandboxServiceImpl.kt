@@ -32,14 +32,14 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.streams.asSequence
 
 /** An implementation of [SandboxCreationService] and [SandboxContextService]. */
-@Component(service = [SandboxCreationService::class, SandboxContextService::class, SandboxServiceInternal::class])
+@Component(service = [SandboxCreationService::class, SandboxContextService::class])
 @Suppress("TooManyFunctions")
 internal class SandboxServiceImpl @Activate constructor(
     @Reference
     private val installService: InstallService,
     @Reference
     private val bundleUtils: BundleUtils
-) : SandboxServiceInternal, SingletonSerializeAsToken {
+) : SandboxCreationService, SandboxContextService, SingletonSerializeAsToken {
     private val serviceComponentRuntimeBundleId = bundleUtils.getServiceRuntimeComponentBundle()?.bundleId
         ?: throw SandboxException(
             "The sandbox service cannot run without the Service Component Runtime bundle installed."
@@ -65,11 +65,11 @@ internal class SandboxServiceImpl @Activate constructor(
         publicSandboxes.add(publicSandbox)
     }
 
-    override fun createSandboxGroup(cpkFileHashes: Iterable<SecureHash>) =
-        createSandboxes(cpkFileHashes, startBundles = true)
+    override fun createSandboxGroup(cpkFileHashes: Iterable<SecureHash>, securityDomain: String) =
+        createSandboxes(cpkFileHashes, securityDomain, startBundles = true)
 
-    override fun createSandboxGroupWithoutStarting(cpkFileHashes: Iterable<SecureHash>) =
-        createSandboxes(cpkFileHashes, startBundles = false)
+    override fun createSandboxGroupWithoutStarting(cpkFileHashes: Iterable<SecureHash>, securityDomain: String) =
+        createSandboxes(cpkFileHashes, securityDomain, startBundles = false)
 
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) = sandboxGroup.sandboxes.forEach { sandbox ->
         sandboxes.remove(sandbox.id)
@@ -162,12 +162,19 @@ internal class SandboxServiceImpl @Activate constructor(
     /**
      * Retrieves the CPKs from the [installService] based on their [cpkFileHashes], and verifies the CPKs.
      *
-     * Creates a [SandboxGroup], containing a [Sandbox] for each of the CPKs. On the first run, also initialises a
-     * public sandbox. [startBundles] controls whether the CPK bundles are also started.
+     * Creates a [SandboxGroup] in the [securityDomain], containing a [Sandbox] for each of the CPKs. On the first run,
+     * also initialises a public sandbox. [startBundles] controls whether the CPK bundles are also started.
      *
      * Grants each sandbox visibility of the public sandboxes and of the other sandboxes in the group.
      */
-    private fun createSandboxes(cpkFileHashes: Iterable<SecureHash>, startBundles: Boolean): SandboxGroup {
+    private fun createSandboxes(
+        cpkFileHashes: Iterable<SecureHash>,
+        securityDomain: String,
+        startBundles: Boolean
+    ): SandboxGroup {
+        if (securityDomain.contains('/'))
+            throw SandboxException("Security domain cannot contain a '/' character.")
+
         val cpks = cpkFileHashes.mapTo(LinkedHashSet()) { cpkFileHash ->
             installService.getCpk(cpkFileHash)
                 ?: throw SandboxException("No CPK is installed for CPK file hash $cpkFileHash.")
@@ -182,10 +189,17 @@ internal class SandboxServiceImpl @Activate constructor(
 
             val cordappBundle = installBundle(
                 "${cpk.metadata.id.name}-${cpk.metadata.id.version}/${cpk.metadata.mainBundle}",
-                cpk.getResourceAsStream(cpk.metadata.mainBundle), sandboxId)
+                cpk.getResourceAsStream(cpk.metadata.mainBundle),
+                sandboxId,
+                securityDomain
+            )
             val libraryBundles = cpk.metadata.libraries.mapTo(LinkedHashSet()) { libraryJar ->
-                installBundle("${cpk.metadata.id.name}-${cpk.metadata.id.version}/$libraryJar",
-                    cpk.getResourceAsStream(libraryJar), sandboxId)
+                installBundle(
+                    "${cpk.metadata.id.name}-${cpk.metadata.id.version}/$libraryJar",
+                    cpk.getResourceAsStream(libraryJar),
+                    sandboxId,
+                    securityDomain
+                )
             }
             bundles.addAll(libraryBundles)
             bundles.add(cordappBundle)
@@ -203,7 +217,7 @@ internal class SandboxServiceImpl @Activate constructor(
             }
 
             // Each sandbox requires visibility of the sandboxes of the other CPKs and of the public sandboxes.
-            newSandbox.grantVisibility(newSandboxes + publicSandboxes)
+            newSandbox.grantVisibility(newSandboxes - newSandbox + publicSandboxes)
         }
 
         // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are
@@ -229,13 +243,21 @@ internal class SandboxServiceImpl @Activate constructor(
     /**
      * Installs the contents of the [bundleSource] as a bundle and returns the bundle.
      *
-     * The bundle's location is a unique value generated by the combination of the JAR's location and the sandbox ID.
+     * The bundle's location is a unique value generated by combining the security domain, the sandbox ID, and the
+     * JAR's location.
      *
      * A [SandboxException] is thrown if a bundle fails to install, or does not have a symbolic name.
      */
-    private fun installBundle(bundleSource: String, inputStream : InputStream, sandboxId: UUID): Bundle {
+    private fun installBundle(
+        bundleSource: String,
+        inputStream: InputStream,
+        sandboxId: UUID,
+        securityDomain: String
+    ): Bundle {
+
         val bundle = try {
-            bundleUtils.installAsBundle(SandboxLocation(sandboxId, bundleSource).toString(), inputStream)
+            val sandboxLocation = SandboxLocation(securityDomain, sandboxId, bundleSource)
+            bundleUtils.installAsBundle(sandboxLocation.toString(), inputStream)
         } catch (e: BundleException) {
             throw SandboxException("Could not install $bundleSource as a bundle in sandbox $sandboxId.", e)
         }
