@@ -26,24 +26,13 @@ class DiscoverySecurityManager(
     // We log permissions for bundles whose location matches one of these prefixes.
     private val prefixes: Set<String>
 
-    // The security manager that this `DiscoverySecurityManager` replaces, if any.
-    private var previousSecurityManager: SecurityManager?
-
     init {
         this.prefixes = prefixes.toSet()
-        val previousSecurityManager = System.getSecurityManager()
         System.setSecurityManager(this)
-        this.previousSecurityManager = previousSecurityManager
     }
 
     /** Restores the security manager that was replaced by this [DiscoverySecurityManager]. */
-    override fun stop() {
-        if (System.getSecurityManager() !== this) {
-            log.warn("The DiscoverySecurityManager has already been replaced by another security manager.")
-        } else {
-            System.setSecurityManager(previousSecurityManager)
-        }
-    }
+    override fun stop() = Unit
 
     override fun grantPermissions(filter: String, perms: Collection<Permission>) = Unit
     override fun denyPermissions(filter: String, perms: Collection<Permission>) = Unit

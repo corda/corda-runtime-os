@@ -117,20 +117,4 @@ class DiscoverySecurityManagerTests {
         val expectedLoggedEvent = "${this::class.java} requested permission $getEnvPermInfo."
         assertEquals(1, loggedEvents.count { loggedEvent -> loggedEvent == expectedLoggedEvent })
     }
-
-    @Test
-    fun `stopping the discovery security manager restores the previous security manager`() {
-        val noopSecurityManager = object : SecurityManager() {
-            override fun checkPermission(perm: Permission?) = Unit
-        }
-        System.setSecurityManager(noopSecurityManager)
-        DiscoverySecurityManager(setOf(), bundleUtils).stop()
-        assertEquals(noopSecurityManager, System.getSecurityManager())
-    }
-
-    @Test
-    fun `if no security manager was set, stopping the discovery security manager restores the security manager to null`() {
-        DiscoverySecurityManager(setOf(), bundleUtils).stop()
-        assertEquals(null, System.getSecurityManager())
-    }
 }

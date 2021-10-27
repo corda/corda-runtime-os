@@ -191,4 +191,16 @@ class RestrictiveSecurityManagerTests {
             System.getenv()
         }
     }
+
+    @Test
+    fun `the OSGi security manager is reset when the restrictive security manager is started`() {
+        System.setSecurityManager(null)
+
+        securityManagerService.start()
+        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
+
+        assertThrows<AccessControlException> {
+            System.getenv()
+        }
+    }
 }
