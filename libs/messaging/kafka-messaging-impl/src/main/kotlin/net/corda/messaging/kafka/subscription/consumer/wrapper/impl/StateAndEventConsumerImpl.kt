@@ -14,6 +14,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.slf4j.LoggerFactory
 import java.time.Clock
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 
@@ -24,6 +25,11 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>?
 ) : StateAndEventConsumer<K, S, E>, AutoCloseable {
+
+    companion object {
+        //short timeout for poll of paused partitions when waiting for processor to finish
+        private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
+    }
 
     //single threaded executor per state and event consumer
     private val executor = Executors.newSingleThreadScheduledExecutor { runnable ->
@@ -139,7 +145,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         var done = future.isDone
 
         while (!done && (maxWaitTime > System.currentTimeMillis())) {
-            eventConsumer.poll()
+            eventConsumer.poll(PAUSED_POLL_TIMEOUT)
             pollIntervalCutoff = getNextPollIntervalCutoff()
             pollAndUpdateStates(false)
             done = future.isDone
@@ -191,8 +197,8 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         if (System.currentTimeMillis() > pollIntervalCutoff) {
             val assignment = eventConsumer.assignment() - eventConsumer.paused()
             eventConsumer.pause(assignment)
-            eventConsumer.poll()
-            stateConsumer.poll()
+            eventConsumer.poll(PAUSED_POLL_TIMEOUT)
+            stateConsumer.poll(PAUSED_POLL_TIMEOUT)
             pollIntervalCutoff = getNextPollIntervalCutoff()
             eventConsumer.resume(assignment)
         }

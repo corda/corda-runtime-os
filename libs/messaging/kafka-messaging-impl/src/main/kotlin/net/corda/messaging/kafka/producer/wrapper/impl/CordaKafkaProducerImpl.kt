@@ -59,8 +59,8 @@ class CordaKafkaProducerImpl(
         private val log: Logger = contextLogger()
     }
 
-    override fun send(record: ProducerRecord<Any, Any>, callback: Callback): Future<RecordMetadata> {
-        return producer.send(record)
+    override fun send(record: ProducerRecord<Any, Any>, callback: Callback?): Future<RecordMetadata> {
+        return producer.send(record, callback)
     }
 
     override fun sendRecords(records: List<Record<*, *>>) {
@@ -139,7 +139,7 @@ class CordaKafkaProducerImpl(
         }
     }
 
-    override fun tryCommitTransaction() {
+    override fun commitTransaction() {
         try {
             producer.commitTransaction()
         } catch (ex: Exception) {

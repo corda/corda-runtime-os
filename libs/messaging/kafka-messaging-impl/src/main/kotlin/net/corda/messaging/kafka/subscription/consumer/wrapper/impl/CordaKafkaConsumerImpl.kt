@@ -104,6 +104,33 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             .map { ConsumerRecordAndMeta(topicPrefix, it) }
     }
 
+    override fun poll(timeout: Duration): List<ConsumerRecordAndMeta<K, V>> {
+        val consumerRecords = try {
+            consumer.poll(timeout)
+        } catch (ex: Exception) {
+            when (ex) {
+                is AuthorizationException,
+                is AuthenticationException,
+                is IllegalArgumentException,
+                is IllegalStateException,
+                is ArithmeticException,
+                is FencedInstanceIdException,
+                is InvalidOffsetException -> {
+                    logErrorAndThrowFatalException("Error attempting to poll from topic $topic", ex)
+                }
+                is WakeupException,
+                is InterruptException,
+                is KafkaException -> {
+                    logWarningAndThrowIntermittentException("Error attempting to poll from topic $topic", ex)
+                }
+                else -> logErrorAndThrowFatalException("Unexpected error attempting to poll from topic $topic", ex)
+            }
+        }
+        return consumerRecords
+            .sortedBy { it.timestamp() }
+            .map { ConsumerRecordAndMeta(topicPrefix, it) }
+    }
+
     override fun resetToLastCommittedPositions(offsetStrategy: OffsetResetStrategy) {
         val committed = consumer.committed(consumer.assignment())
         for (assignment in consumer.assignment()) {
@@ -159,6 +186,38 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                             "Unexpected error attempting to commitSync offsets " +
                                     "for record $event on topic $topic", ex
                         )
+                    }
+                }
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun subscribe(topics: Collection<String>, listener: ConsumerRebalanceListener?) {
+        var attempts = 0L
+        var attemptSubscription = true
+        while (attemptSubscription) {
+            try {
+                consumer.subscribe(topics, listener ?: defaultListener)
+                attemptSubscription = false
+            } catch (ex: Exception){
+                val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic"
+                when (ex) {
+                    is IllegalStateException -> {
+                        logErrorAndThrowFatalException(
+                            "$message. Consumer is already subscribed to this topic. Closing subscription.",
+                            ex
+                        )
+                    }
+                    is IllegalArgumentException -> {
+                        logErrorAndThrowFatalException("$message. Illegal args provided. Closing subscription.", ex)
+                    }
+                    is KafkaException -> {
+                        attempts++
+                        handleErrorRetry(message, attempts, consumerSubscribeMaxRetries, ex)
+                    }
+                    else -> {
+                        logErrorAndThrowFatalException("$message. Unexpected error.", ex)
                     }
                 }
             }
@@ -530,59 +589,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             }
         }
         return consumerGroupMetadata
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    override fun subscribe(topics: Collection<String>) {
-        try {
-            consumer.subscribe(topics)
-        } catch (ex: Exception){
-            when(ex) {
-                is IllegalArgumentException,
-                is InvalidGroupIdException,
-                is IllegalStateException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to subscribe to topic $topic", ex)
-                }
-                is ConcurrentModificationException -> {
-                    logWarningAndThrowIntermittentException(
-                        "Intermittent error attempting to subscribe to topic $topic",
-                        ex
-                    )
-                }
-                else -> {
-                    logErrorAndThrowFatalException(
-                        "Unexpected error attempting to subscribe to topic $topic",
-                        ex
-                    )
-                }
-            }
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    override fun subscribe(topics: Collection<String>, listener: ConsumerRebalanceListener?) {
-        try {
-            consumer.subscribe(topics, listener)
-        } catch (ex: Exception){
-            when(ex) {
-                is IllegalArgumentException,
-                is IllegalStateException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to subscribe to topic $topic", ex)
-                }
-                is ConcurrentModificationException -> {
-                    logWarningAndThrowIntermittentException(
-                        "Intermittent error attempting to subscribe to topic $topic",
-                        ex
-                    )
-                }
-                else -> {
-                    logErrorAndThrowFatalException(
-                        "Unexpected error attempting to subscribe to topic $topic",
-                        ex
-                    )
-                }
-            }
-        }
     }
 
 }

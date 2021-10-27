@@ -82,7 +82,7 @@ class CordaKafkaProducerImplTest {
 
     @Test
     fun testTryCommitTransaction() {
-        cordaKafkaProducer.tryCommitTransaction()
+        cordaKafkaProducer.commitTransaction()
         verify(producer, times(1)).commitTransaction()
         verify(producer, times(0)).abortTransaction()
     }
@@ -90,14 +90,14 @@ class CordaKafkaProducerImplTest {
     @Test
     fun testTryCommitTransactionFatal() {
         doThrow(IllegalStateException()).whenever(producer).commitTransaction()
-        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.tryCommitTransaction() }
+        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.commitTransaction() }
         verify(producer, times(1)).commitTransaction()
     }
 
     @Test
     fun testTryCommitTransactionIntermittent() {
         doThrow(KafkaException()).whenever(producer).commitTransaction()
-        assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaProducer.tryCommitTransaction() }
+        assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaProducer.commitTransaction() }
         verify(producer, times(1)).abortTransaction()
         verify(producer, times(1)).commitTransaction()
     }

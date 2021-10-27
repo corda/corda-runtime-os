@@ -35,11 +35,6 @@ fun <K: Any, V: Any> ConsumerRecordAndMeta<K, V>.asEventLogRecord(): EventLogRec
 @Suppress("TooManyFunctions")
 interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable {
     /**
-     * Subscribe to given [topics]
-     */
-    fun subscribe(topics: Collection<String>)
-
-    /**
      * Subscribe to given [topics] with partition [listener]
      */
     fun subscribe(topics: Collection<String>, listener: ConsumerRebalanceListener?)
@@ -102,6 +97,11 @@ interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable {
      * Poll records from the consumer and sort them by timestamp
      */
     fun poll(): List<ConsumerRecordAndMeta<K, V>>
+
+    /**
+     * Poll records from the consumer and sort them by timestamp with a [timeout]
+     */
+    fun poll(timeout: Duration): List<ConsumerRecordAndMeta<K, V>>
 
     /**
      * Reset the consumer position on a topic to the last committed position. Next poll from the topic will read from this position.

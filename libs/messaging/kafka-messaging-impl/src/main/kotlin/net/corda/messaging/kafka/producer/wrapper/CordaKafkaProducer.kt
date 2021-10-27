@@ -14,7 +14,7 @@ interface CordaKafkaProducer : AutoCloseable {
     /**
      * Send a [record] to kafka with a [callback]
      */
-    fun send(record: ProducerRecord<Any, Any>, callback: Callback): Future<RecordMetadata>
+    fun send(record: ProducerRecord<Any, Any>, callback: Callback?): Future<RecordMetadata>
 
     /**
      * Send [records] of varying key and value types to their respective topics
@@ -48,7 +48,7 @@ interface CordaKafkaProducer : AutoCloseable {
      * @throws CordaMessageAPIFatalException Fatal error
      * @throws CordaMessageAPIIntermittentException Retryable error
      */
-    fun tryCommitTransaction()
+    fun commitTransaction()
 
     /**
      * Starts up the transaction
