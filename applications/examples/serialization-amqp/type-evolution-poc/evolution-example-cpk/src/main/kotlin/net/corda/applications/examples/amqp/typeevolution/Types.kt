@@ -1,3 +1,5 @@
+package net.corda.applications.examples.amqp.typeevolution
+
 import net.corda.v5.serialization.annotations.CordaSerializationTransformRename
 import net.corda.v5.serialization.annotations.CordaSerializationTransformRenames
 import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
