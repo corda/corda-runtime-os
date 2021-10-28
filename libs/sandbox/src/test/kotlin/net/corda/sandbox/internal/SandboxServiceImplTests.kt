@@ -472,26 +472,6 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `can retrieve calling sandbox`() {
-        val mockBundle = mockBundle()
-        // `getBundle` is called during stack-walking to identify the current frame's bundle. Here, we ensure that
-        // the stack-walking code returns our mock bundle.
-        val mockBundleUtils = mockBundleUtils(setOf(cpkAndContentsOne)).apply {
-            whenever(getBundle(any())).thenReturn(mockBundle)
-        }
-
-        val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
-        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkAndContentsOne.cpk.metadata.hash))
-        val sandbox = (sandboxGroup as SandboxGroupInternal).sandboxes.single()
-
-        // We can only set the mock bundle's location after we know the sandbox ID.
-        val sandboxLocation = SandboxLocation(DEFAULT_SECURITY_DOMAIN, sandbox.id, "testUri")
-        whenever(mockBundle.location).thenReturn(sandboxLocation.toString())
-
-        assertEquals(sandbox, sandboxService.getCallingSandbox())
-    }
-
-    @Test
     fun `can retrieve calling sandbox group`() {
         val mockBundle = mockBundle()
         val mockBundleUtils = mockBundleUtils(setOf(cpkAndContentsOne)).apply {
@@ -527,7 +507,7 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `retrieving calling sandbox returns null if there is no sandbox bundle on the stack`() {
+    fun `retrieving calling sandbox group returns null if there is no sandbox bundle on the stack`() {
         val mockBundle = mockBundle()
         val mockBundleUtils = mockBundleUtils(setOf(cpkAndContentsOne)).apply {
             whenever(getBundle(any())).thenReturn(mockBundle)
@@ -540,11 +520,11 @@ class SandboxServiceImplTests {
         val nonSandboxLocation = ""
         whenever(mockBundle.location).thenReturn(nonSandboxLocation)
 
-        assertNull(sandboxService.getCallingSandbox())
+        assertNull(sandboxService.getCallingSandboxGroup())
     }
 
     @Test
-    fun `retrieving calling sandbox throws if no sandbox can be found with the given ID`() {
+    fun `retrieving calling sandbox group throws if no sandbox can be found with the given ID`() {
         val mockBundle = mockBundle()
         val mockBundleUtils = mockBundleUtils(setOf(cpkAndContentsOne)).apply {
             whenever(getBundle(any())).thenReturn(mockBundle)
@@ -557,7 +537,7 @@ class SandboxServiceImplTests {
         whenever(mockBundle.location).thenReturn(invalidSandboxLocation.toString())
 
         val e = assertThrows<SandboxException> {
-            sandboxService.getCallingSandbox()
+            sandboxService.getCallingSandboxGroup()
         }
         assertTrue(
             e.message!!.contains(

@@ -126,24 +126,6 @@ internal class SandboxServiceImpl @Activate constructor(
         }
     }
 
-    override fun getCallingSandbox(): Sandbox? {
-        val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-
-        val sandboxBundleLocation = stackWalkerInstance.walk { stackFrameStream ->
-            stackFrameStream
-                .asSequence()
-                .mapNotNull { stackFrame -> bundleUtils.getBundle(stackFrame.declaringClass)?.location }
-                .find { bundleLocation -> bundleLocation.startsWith("sandbox/") }
-        } ?: return null
-
-        val sandboxId = SandboxLocation.fromString(sandboxBundleLocation).id
-
-        return sandboxes[sandboxId] ?: throw SandboxException(
-            "A sandbox was found on the stack, but it did not " +
-                    "match any sandbox known to this SandboxService."
-        )
-    }
-
     override fun getCallingSandboxGroup(): SandboxGroup? {
         val sandbox = (getCallingSandbox() ?: return null) as SandboxInternal
         return sandboxGroups[sandbox.id] ?: throw SandboxException(
@@ -318,6 +300,23 @@ internal class SandboxServiceImpl @Activate constructor(
             cpk.metadata.hash,
             cpk.metadata.id.signerSummaryHash,
             cpkDependencyHashes
+        )
+    }
+
+    private fun getCallingSandbox(): Sandbox? {
+        val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
+
+        val sandboxBundleLocation = stackWalkerInstance.walk { stackFrameStream ->
+            stackFrameStream
+                .asSequence()
+                .mapNotNull { stackFrame -> bundleUtils.getBundle(stackFrame.declaringClass)?.location }
+                .find { bundleLocation -> bundleLocation.startsWith("sandbox/") }
+        } ?: return null
+
+        val sandboxId = SandboxLocation.fromString(sandboxBundleLocation).id
+
+        return sandboxes[sandboxId] ?: throw SandboxException(
+            "A sandbox was found on the stack, but it did not match any sandbox known to this SandboxService."
         )
     }
 }
