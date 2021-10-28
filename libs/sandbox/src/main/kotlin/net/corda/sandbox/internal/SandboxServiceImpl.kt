@@ -2,10 +2,7 @@ package net.corda.sandbox.internal
 
 import net.corda.install.InstallService
 import net.corda.packaging.CPK
-import net.corda.sandbox.ClassInfo
-import net.corda.sandbox.CpkClassInfo
 import net.corda.sandbox.CpkSandbox
-import net.corda.sandbox.PublicClassInfo
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
@@ -13,7 +10,6 @@ import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.internal.classtag.ClassTagFactoryImpl
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
-import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
@@ -75,28 +71,6 @@ internal class SandboxServiceImpl @Activate constructor(
         sandboxes.remove(sandbox.id)
         sandboxGroups.remove(sandbox.id)
         zombieBundles.addAll((sandbox as SandboxInternal).unload())
-    }
-
-    override fun getClassInfo(klass: Class<*>): ClassInfo {
-        val sandbox = sandboxes.values.find { sandbox -> sandbox.containsClass(klass) }
-            ?: throw SandboxException("Class $klass is not contained in any sandbox.")
-        return getClassInfo(klass, sandbox)
-    }
-
-    override fun getClassInfo(className: String): ClassInfo {
-        for (sandbox in sandboxes.values.filterIsInstance<CpkSandboxImpl>()) {
-            try {
-                val klass = sandbox.loadClassFromCordappBundle(className)
-                val bundle = bundleUtils.getBundle(klass)
-                    ?: throw SandboxException("Class $klass is not loaded from any bundle.")
-                val matchingSandbox = sandboxes.values.find { it.containsBundle(bundle) }
-                matchingSandbox?.let { return getClassInfo(klass, matchingSandbox) }
-                    ?: logger.trace("Class $className not found in sandbox $sandbox. ")
-            } catch (ex: SandboxException) {
-                continue
-            }
-        }
-        throw SandboxException("Class $className is not contained in any sandbox.")
     }
 
     override fun getSandbox(bundle: Bundle) = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundle) }
@@ -288,34 +262,5 @@ internal class SandboxServiceImpl @Activate constructor(
                 throw SandboxException("Bundle $bundle could not be started.", e)
             }
         }
-    }
-
-    /** Contains the logic that is shared between the two public `getClassInfo` methods. */
-    private fun getClassInfo(klass: Class<*>, sandbox: SandboxInternal): ClassInfo {
-        val bundle = bundleUtils.getBundle(klass)
-            ?: throw SandboxException("Class $klass is not loaded from any bundle.")
-
-        val cpk = when (sandbox) {
-            is CpkSandboxInternal -> sandbox.cpk
-            else -> return PublicClassInfo(bundle.symbolicName, bundle.version)
-        }
-
-        // This lookup is required because a CPK's dependencies are only given as <name, version, public key hashes>
-        // trios in CPK files.
-        val cpkDependencyHashes = cpk.metadata.dependencies.mapTo(LinkedHashSet()) { cpkIdentifier ->
-            (installService.getCpk(cpkIdentifier) ?: throw SandboxException(
-                "CPK $cpkIdentifier is listed as a dependency of ${cpk.metadata.id}, but is not installed."
-            )).metadata.hash
-        }
-
-        return CpkClassInfo(
-            bundle.symbolicName,
-            bundle.version,
-            sandbox.cordappBundle.symbolicName,
-            sandbox.cordappBundle.version,
-            cpk.metadata.hash,
-            cpk.metadata.id.signerSummaryHash,
-            cpkDependencyHashes
-        )
     }
 }

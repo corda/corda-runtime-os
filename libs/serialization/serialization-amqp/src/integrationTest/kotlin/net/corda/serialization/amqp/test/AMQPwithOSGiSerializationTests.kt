@@ -1,6 +1,5 @@
 package net.corda.serialization.amqp.test
 
-import net.corda.classinfo.ClassInfoService
 import net.corda.install.InstallService
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.SerializationContextImpl
@@ -13,6 +12,7 @@ import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.amqpMagic
 import net.corda.packaging.CPI
+import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializedBytes
@@ -53,7 +53,7 @@ class AMQPwithOSGiSerializationTests {
         lateinit var installService: InstallService
 
         @InjectService
-        lateinit var classInfoService: ClassInfoService
+        lateinit var sandboxContextService: SandboxContextService
 
         @InjectService
         lateinit var sandboxCreationService: SandboxCreationService
@@ -156,7 +156,7 @@ class AMQPwithOSGiSerializationTests {
                 objectReferencesEnabled = false,
                 useCase = SerializationContext.UseCase.Testing,
                 encoding = null,
-                classInfoService = classInfoService,
+                classInfoService = sandboxContextService,
                 sandboxGroup = sandboxGroup
             )
 

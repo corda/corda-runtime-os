@@ -8,22 +8,6 @@ import org.osgi.framework.Bundle
  */
 interface SandboxContextService {
     /**
-     * Returns the [ClassInfo] for the given [klass].
-     *
-     * A [SandboxException] is thrown if the class is not in a sandbox, or is not found in any bundle the sandbox has
-     * visibility of.
-     */
-    fun getClassInfo(klass: Class<*>): ClassInfo
-
-    /**
-     * Returns the [ClassInfo] for the class with the given [className]. If the className occurs more than once in
-     * the sandboxGroup then the first one found is returned.
-     *
-     * A [SandboxException] is thrown if [className] is not found in the sandboxGroup.
-     */
-    fun getClassInfo(className: String): ClassInfo
-
-    /**
      * Returns the [Sandbox] lowest in the stack of calls to this function, or null if no sandbox is on the stack.
      *
      * A [SandboxException] is thrown if the sandbox bundle's location is not formatted correctly, the ID is not a

@@ -50,7 +50,7 @@ class EnumEvolutionSerializer(
         return baseLocalTypes.enumConstants.apply(type.asClass())[ordinal]
     }
 
-    override fun writeClassInfo(output: SerializationOutput) {
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {
         throw UnsupportedOperationException("It should be impossible to write an evolution serializer")
     }
 

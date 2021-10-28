@@ -3,7 +3,6 @@ package net.corda.sandbox.internal
 import net.corda.install.InstallService
 import net.corda.packaging.CPK
 import net.corda.packaging.CordappManifest
-import net.corda.sandbox.CpkClassInfo
 import net.corda.sandbox.DEFAULT_SECURITY_DOMAIN
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
@@ -31,7 +30,6 @@ import java.nio.file.Paths
 import java.security.cert.Certificate
 import java.util.Collections.emptyNavigableSet
 import java.util.NavigableSet
-import java.util.TreeSet
 import java.util.UUID.randomUUID
 import kotlin.random.Random.Default.nextBytes
 
@@ -244,108 +242,6 @@ class SandboxServiceImplTests {
     fun `returns null if asked to retrieve an unknown sandbox`() {
         val sandboxService = SandboxServiceImpl(mock(), mockBundleUtils())
         assertNull(sandboxService.getSandbox(mock()))
-    }
-
-    @Test
-    fun `returns the CPK info for a CorDapp class installed in one of the sandboxes`() {
-        // We make the CPK we are retrieving have a dependency on `cpkOne` and `cpkTwo`, so we can check the
-        // `CpkClassInfo` fields related to dependencies.
-        val cpkDependencies = setOf(cpkOne, cpkTwo).map { cpk ->
-            CPK.Identifier.newInstance(
-                cpk.metadata.id.name,
-                cpk.metadata.id.version,
-                cpk.metadata.id.signerSummaryHash
-            )
-        }.toCollection(TreeSet())
-        val cpkWithDependencies =
-            cpkAndContentsOne.copy(libraryClass = Float::class.java, cpkDependencies = cpkDependencies)
-
-        val sandboxService = createSandboxService(setOf(cpkWithDependencies, cpkAndContentsOne, cpkAndContentsTwo))
-        sandboxService.createSandboxGroup(listOf(cpkWithDependencies.cpk.metadata.hash))
-
-        val classInfo = sandboxService.getClassInfo(cpkWithDependencies.cordappClass)
-        val classInfoByName = sandboxService.getClassInfo(cpkWithDependencies.cordappClass.name)
-        assertEquals(classInfo, classInfoByName)
-
-        val cordappBundle = startedBundles.find { bundle ->
-            bundle.symbolicName == cpkWithDependencies.cordappBundleName
-        }!!
-
-        val expectedClassInfo = CpkClassInfo(
-            cordappBundle.symbolicName,
-            cordappBundle.version,
-            cordappBundle.symbolicName,
-            cordappBundle.version,
-            cpkWithDependencies.cpk.metadata.hash,
-            cpkWithDependencies.cpk.metadata.id.signerSummaryHash,
-            setOf(cpkOne.metadata.hash, cpkTwo.metadata.hash)
-        )
-
-        assertEquals(expectedClassInfo, classInfo as CpkClassInfo)
-    }
-
-    @Test
-    fun `returns the CPK info for a library class installed in one of the sandboxes`() {
-        // We make the CPK we are retrieving have a dependency on `cpkOne` and `cpkTwo`, so we can check the
-        // `CpkClassInfo` fields related to dependencies.
-        val cpkDependencies = setOf(cpkOne, cpkTwo).map { cpk ->
-            CPK.Identifier.newInstance(
-                cpk.metadata.id.name,
-                cpk.metadata.id.version,
-                cpk.metadata.id.signerSummaryHash
-            )
-        }.toCollection(TreeSet())
-        val cpkWithDependencies =
-            cpkAndContentsOne.copy(libraryClass = Float::class.java, cpkDependencies = cpkDependencies)
-
-        val sandboxService = createSandboxService(setOf(cpkWithDependencies, cpkAndContentsOne, cpkAndContentsTwo))
-        sandboxService.createSandboxGroup(listOf(cpkWithDependencies.cpk.metadata.hash))
-
-        // Note that we cannot get the `ClassInfo` by name for library bundles.
-        val classInfo = sandboxService.getClassInfo(cpkWithDependencies.libraryClass)
-
-        val libraryBundle =
-            startedBundles.find { bundle -> bundle.symbolicName == cpkWithDependencies.libraryBundleName }!!
-        val cordappBundle =
-            startedBundles.find { bundle -> bundle.symbolicName == cpkWithDependencies.cordappBundleName }!!
-
-        val expectedClassInfo = CpkClassInfo(
-            libraryBundle.symbolicName,
-            libraryBundle.version,
-            cordappBundle.symbolicName,
-            cordappBundle.version,
-            cpkWithDependencies.cpk.metadata.hash,
-            cpkWithDependencies.cpk.metadata.id.signerSummaryHash,
-            setOf(cpkOne.metadata.hash, cpkTwo.metadata.hash)
-        )
-
-        assertEquals(expectedClassInfo, classInfo)
-    }
-
-    @Test
-    fun `throws if asked to retrieve CPK info for a class not in any sandbox`() {
-        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
-
-        val unknownClass = Iterable::class.java
-        val e = assertThrows<SandboxException> {
-            sandboxService.getClassInfo(unknownClass)
-        }
-        assertTrue(e.message!!.contains(" is not contained in any sandbox."))
-    }
-
-    @Test
-    fun `throws if asked to retrieve CPK info for a class and a dependency cannot be resolved`() {
-        val badCpkDependency = CPK.Identifier.newInstance("unknown", "", randomSecureHash())
-        val cpkWithBadDependency =
-            cpkAndContentsOne.copy(cpkDependencies = sequenceOf(badCpkDependency).toCollection(TreeSet()))
-
-        val sandboxService = createSandboxService(setOf(cpkWithBadDependency))
-        sandboxService.createSandboxGroup(listOf(cpkWithBadDependency.cpk.metadata.hash))
-
-        val e = assertThrows<SandboxException> {
-            sandboxService.getClassInfo(cpkWithBadDependency.cordappClass)
-        }
-        assertTrue(e.message!!.contains(".* is listed as a dependency of .*, but is not installed\\.".toRegex()))
     }
 
     @Test
@@ -654,7 +550,7 @@ private data class CpkAndContents(
         cpkDependencies: NavigableSet<CPK.Identifier>
     ) = object : CPK {
         override val metadata = object : CPK.Metadata {
-            override val id = CPK.Identifier.newInstance(random.nextInt().toString(), "1.0", null)
+            override val id = CPK.Identifier.newInstance(random.nextInt().toString(), "1.0", randomSecureHash())
             override val type = CPK.Type.UNKNOWN
             override val manifest = object : CPK.Manifest {
                 override val cpkFormatVersion = CPK.FormatVersion.parse("0.0")
