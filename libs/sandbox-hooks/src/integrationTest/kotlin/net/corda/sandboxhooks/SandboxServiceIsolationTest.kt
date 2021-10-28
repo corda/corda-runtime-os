@@ -1,6 +1,5 @@
 package net.corda.sandboxhooks
 
-import net.corda.sandbox.SandboxGroup
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -18,45 +17,40 @@ class SandboxServiceIsolationTest {
         lateinit var sandboxLoader: SandboxLoader
     }
 
-    /** Checks whether none of the [foundServices] are contained in the [sandboxGroup]. */
-    private fun hasNoServiceFromGroup(foundServices: Collection<Class<*>>, sandboxGroup: SandboxGroup) =
-        foundServices.none { service -> containsClass(sandboxGroup, service) }
-
-    /** Checks whether [sandboxGroup] contains [clazz]. */
-    private fun containsClass(sandboxGroup: SandboxGroup, clazz: Class<*>): Boolean {
-        val bundle = FrameworkUtil.getBundle(clazz) ?: return false
-        return sandboxLoader.containsBundle(sandboxGroup, bundle)
-    }
-
-    /** Checks whether the [foundServices] contains all of the [serviceClasses]. */
-    private fun hasAllServices(foundServices: Collection<Class<*>>, serviceClasses: Collection<Class<*>>) =
-        serviceClasses.all { serviceClass ->
-            foundServices.any { service -> serviceClass.isAssignableFrom(service) }
-        }
-
     @Test
-    fun `sandbox can see its own services and main bundle services in the same sandbox group only`() {
+    fun `sandbox can see services from its own sandbox and main bundles in the same sandbox group`() {
         val thisGroup = sandboxLoader.group1
-        val otherGroup = sandboxLoader.group2
-        val serviceClasses = sandboxLoader.runFlow<List<Class<*>>>(SERVICES_FLOW_CPK_1, thisGroup)
+        // This flow returns all services visible to this bundle.
+        val serviceClasses = runFlow<List<Class<*>>>(thisGroup, SERVICES_FLOW_CPK_1)
 
-        // CPK 1 can see public services, services in its own sandbox, and services in the main bundle of other
-        // sandboxes in the same group.
-        assertTrue(
-            hasAllServices(
-                serviceClasses, setOf(
-                    ServiceComponentRuntime::class.java,
-                    Resolver::class.java,
-                    sandboxLoader.group1.loadClassFromMainBundle(sandboxLoader.cpk1.metadata.id, LIBRARY_QUERY_CLASS),
-                    sandboxLoader.group1.loadClassFromMainBundle(sandboxLoader.cpk1.metadata.id, SERVICES_FLOW_CPK_1),
-                    sandboxLoader.group1.loadClassFromMainBundle(sandboxLoader.cpk2.metadata.id, SERVICES_FLOW_CPK_2)
-                )
-            )
+        val expectedServices = setOf(
+            ServiceComponentRuntime::class.java,
+            Resolver::class.java,
+            sandboxLoader.group1.loadClassFromMainBundle(sandboxLoader.cpk1.metadata.id, LIBRARY_QUERY_CLASS),
+            sandboxLoader.group1.loadClassFromMainBundle(sandboxLoader.cpk1.metadata.id, SERVICES_FLOW_CPK_1),
+            sandboxLoader.group1.loadClassFromMainBundle(sandboxLoader.cpk2.metadata.id, SERVICES_FLOW_CPK_2)
         )
 
-        // CPK 1 cannot see any services from another sandbox group.
-        assertTrue(hasNoServiceFromGroup(serviceClasses, otherGroup))
+        assertTrue(
+            expectedServices.all { serviceClass ->
+                serviceClasses.any { service -> serviceClass.isAssignableFrom(service) }
+            }
+        )
     }
 
-    // TODO - Test of only seeing one library.
+    @Test
+    fun `sandbox cannot see services in library bundles of other sandboxes or in main bundles of other sandbox groups`() {
+        val thisGroup = sandboxLoader.group1
+        val otherGroup = sandboxLoader.group2
+        val serviceClasses = runFlow<List<Class<*>>>(thisGroup, SERVICES_FLOW_CPK_1)
+
+        assertTrue(serviceClasses.none { service ->
+            val serviceBundle = FrameworkUtil.getBundle(service)
+            if (serviceBundle != null) {
+                sandboxGroupContainsBundle(otherGroup, serviceBundle)
+            } else {
+                false
+            }
+        })
+    }
 }
