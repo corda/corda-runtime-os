@@ -76,32 +76,9 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun poll(): List<ConsumerRecordAndMeta<K, V>> {
-        val consumerRecords = try {
-            consumer.poll(consumerPollTimeout)
-        } catch (ex: Exception) {
-            when (ex) {
-                is AuthorizationException,
-                is AuthenticationException,
-                is IllegalArgumentException,
-                is IllegalStateException,
-                is ArithmeticException,
-                is FencedInstanceIdException,
-                is InvalidOffsetException -> {
-                    logErrorAndThrowFatalException("Error attempting to poll from topic $topic", ex)
-                }
-                is WakeupException,
-                is InterruptException,
-                is KafkaException -> {
-                    logWarningAndThrowIntermittentException("Error attempting to poll from topic $topic", ex)
-                }
-                else -> logErrorAndThrowFatalException("Unexpected error attempting to poll from topic $topic", ex)
-            }
-        }
-        return consumerRecords
-            .sortedBy { it.timestamp() }
-            .map { ConsumerRecordAndMeta(topicPrefix, it) }
+        return poll(consumerPollTimeout)
+
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -201,38 +178,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             try {
                 consumer.subscribe(topics, listener ?: defaultListener)
                 attemptSubscription = false
-            } catch (ex: Exception){
-                val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic"
-                when (ex) {
-                    is IllegalStateException -> {
-                        logErrorAndThrowFatalException(
-                            "$message. Consumer is already subscribed to this topic. Closing subscription.",
-                            ex
-                        )
-                    }
-                    is IllegalArgumentException -> {
-                        logErrorAndThrowFatalException("$message. Illegal args provided. Closing subscription.", ex)
-                    }
-                    is KafkaException -> {
-                        attempts++
-                        handleErrorRetry(message, attempts, consumerSubscribeMaxRetries, ex)
-                    }
-                    else -> {
-                        logErrorAndThrowFatalException("$message. Unexpected error.", ex)
-                    }
-                }
-            }
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    override fun subscribeToTopic(listener: ConsumerRebalanceListener?) {
-        var attempts = 0L
-        var attemptSubscription = true
-        while (attemptSubscription) {
-            try {
-                consumer.subscribe(listOf(topicWithPrefix), listener ?: defaultListener)
-                attemptSubscription = false
             } catch (ex: Exception) {
                 val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic"
                 when (ex) {
@@ -257,12 +202,19 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
+    override fun subscribeToTopic(listener: ConsumerRebalanceListener?) =
+        subscribe(listOf(topicWithPrefix), listener ?: defaultListener)
+
     @Suppress("TooGenericExceptionCaught")
     override fun getPartitions(topic: String, duration: Duration): List<TopicPartition> {
         val listOfPartitions: List<PartitionInfo> = try {
             consumer.partitionsFor(topic, duration)
         } catch (ex: Exception) {
             when (ex) {
+                is AuthenticationException,
+                is AuthorizationException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to get partitions on topic $topic", ex)
+                }
                 is InterruptException,
                 is WakeupException,
                 is KafkaException,
@@ -271,10 +223,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                         "Intermittent error attempting to get partitions on topic $topic",
                         ex
                     )
-                }
-                is AuthenticationException,
-                is AuthorizationException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to get partitions on topic $topic", ex)
                 }
                 else -> {
                     logErrorAndThrowFatalException("Unexpected error attempting to get partitions on topic $topic", ex)
@@ -348,9 +296,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     @Suppress("TooGenericExceptionCaught")
     override fun assignment(): Set<TopicPartition> {
-        val returnSet: Set<TopicPartition>
-        try {
-            returnSet = consumer.assignment()
+        return try {
+            consumer.assignment()
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException -> {
@@ -367,16 +314,20 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 }
             }
         }
-        return returnSet
     }
 
     @Suppress("TooGenericExceptionCaught")
     override fun position(partition: TopicPartition): Long {
-        val position: Long
-        try {
-            position = consumer.position(partition)
+        return try {
+            consumer.position(partition)
         } catch (ex: Exception) {
             when (ex) {
+                is AuthenticationException,
+                is AuthorizationException,
+                is InvalidOffsetException,
+                is IllegalStateException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to get position on topic $topic", ex)
+                }
                 is InterruptException,
                 is WakeupException,
                 is KafkaException,
@@ -386,18 +337,11 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                         ex
                     )
                 }
-                is AuthenticationException,
-                is AuthorizationException,
-                is InvalidOffsetException,
-                is IllegalStateException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to get position on topic $topic", ex)
-                }
                 else -> {
                     logErrorAndThrowFatalException("Unexpected error attempting to get position on topic $topic", ex)
                 }
             }
         }
-        return position
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -454,55 +398,51 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     @Suppress("TooGenericExceptionCaught")
     override fun beginningOffsets(partitions: Collection<TopicPartition>): Map<TopicPartition, Long> {
-        val returnMap: Map<TopicPartition, Long>
-        try {
-            returnMap = consumer.beginningOffsets(partitions)
+        return try {
+            consumer.beginningOffsets(partitions)
         } catch (ex: Exception) {
             when (ex) {
+                is IllegalStateException,
+                is AuthenticationException,
+                is AuthorizationException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to get end offsets on topic $topic", ex)
+                }
                 is TimeoutException -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to get end offsets on topic $topic",
                         ex
                     )
                 }
-                is IllegalStateException,
-                is AuthenticationException,
-                is AuthorizationException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to get end offsets on topic $topic", ex)
-                }
                 else -> {
                     logErrorAndThrowFatalException("Unexpected error attempting to get end offsets on topic $topic", ex)
                 }
             }
         }
-        return returnMap
     }
 
 
     @Suppress("TooGenericExceptionCaught")
     override fun endOffsets(partitions: Collection<TopicPartition>): Map<TopicPartition, Long> {
-        val returnMap: Map<TopicPartition, Long>
-        try {
-            returnMap = consumer.endOffsets(partitions)
+        return try {
+            consumer.endOffsets(partitions)
         } catch (ex: Exception) {
             when (ex) {
+                is IllegalStateException,
+                is AuthenticationException,
+                is AuthorizationException -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to get end offsets on topic $topic", ex)
+                }
                 is TimeoutException -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to get end offsets on topic $topic",
                         ex
                     )
                 }
-                is IllegalStateException,
-                is AuthenticationException,
-                is AuthorizationException -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to get end offsets on topic $topic", ex)
-                }
                 else -> {
                     logErrorAndThrowFatalException("Unexpected error attempting to get end offsets on topic $topic", ex)
                 }
             }
         }
-        return returnMap
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -539,9 +479,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     @Suppress("TooGenericExceptionCaught")
     override fun paused(): Set<TopicPartition> {
-        val returnSet: Set<TopicPartition>
-        try {
-            returnSet = consumer.paused()
+        return try {
+            consumer.paused()
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException -> {
@@ -561,14 +500,12 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 }
             }
         }
-        return returnSet
     }
 
     @Suppress("TooGenericExceptionCaught")
     override fun groupMetadata(): ConsumerGroupMetadata {
-        val consumerGroupMetadata: ConsumerGroupMetadata
-        try {
-            consumerGroupMetadata = consumer.groupMetadata()
+        return try {
+            consumer.groupMetadata()
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException,
@@ -589,7 +526,5 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 }
             }
         }
-        return consumerGroupMetadata
     }
-
 }
