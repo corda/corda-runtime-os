@@ -28,8 +28,6 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.streams.asSequence
 
-// TODO - Add tests of `isSandboxed` and `areInSameSandbox`.
-
 /** An implementation of [SandboxCreationService] and [SandboxContextService]. */
 @Component(service = [SandboxCreationService::class, SandboxContextService::class])
 @Suppress("TooManyFunctions")

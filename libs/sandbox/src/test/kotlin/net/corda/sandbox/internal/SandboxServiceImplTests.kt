@@ -561,6 +561,59 @@ class SandboxServiceImplTests {
     }
 
     @Test
+    fun `correctly indicates that a sandboxed bundle is sandboxed`() {
+        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        startedBundles.forEach { bundle ->
+            assertTrue(sandboxService.isSandboxed(bundle))
+        }
+    }
+
+    @Test
+    fun `correctly indicates that an unsandboxed bundle is unsandboxed`() {
+        val sandboxService = createSandboxService(setOf())
+        assertFalse(sandboxService.isSandboxed(mock()))
+    }
+
+    @Test
+    fun `correctly indicates that two unsandboxed bundles are not in the same sandbox`() {
+        val sandboxService = createSandboxService(setOf())
+        assertFalse(sandboxService.areInSameSandbox(mock(), mock()))
+    }
+
+    @Test
+    fun `correctly indicates that an unsandboxed bundle is not in the same sandbox as a sandboxed bundle`() {
+        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        startedBundles.forEach { bundle ->
+            assertFalse(sandboxService.areInSameSandbox(mock(), bundle))
+        }
+    }
+
+    @Test
+    fun `correctly indicates that two bundles in the same sandbox are in the same sandbox`() {
+        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        startedBundles.forEach { bundleOne ->
+            startedBundles.forEach { bundleTwo ->
+                assertTrue(sandboxService.areInSameSandbox(bundleOne, bundleTwo))
+            }
+        }
+    }
+
+    @Test
+    fun `correctly indicates that two bundles in different sandboxes are not in the same sandbox`() {
+        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        val bundlesFromSandboxGroupOne = startedBundles.toList()
+
+        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        val bundlesFromSandboxGroupTwo = startedBundles - bundlesFromSandboxGroupOne
+
+        bundlesFromSandboxGroupOne.forEach { bundleOne ->
+            bundlesFromSandboxGroupTwo.forEach { bundleTwo ->
+                assertFalse(sandboxService.areInSameSandbox(bundleOne, bundleTwo))
+            }
+        }
+    }
+
+    @Test
     fun `a sandbox's security domain defaults to 'sandbox'`() {
         sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
         startedBundles.forEach { bundle ->
