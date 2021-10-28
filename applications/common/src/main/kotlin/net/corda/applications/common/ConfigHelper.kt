@@ -43,7 +43,7 @@ class ConfigHelper {
                 }
                 log.error(
                     "No $path property found! " +
-                            "Pass property in via --kafka properties file or via -D$path"
+                            "Pass property in via -D$path"
                 )
             }
 

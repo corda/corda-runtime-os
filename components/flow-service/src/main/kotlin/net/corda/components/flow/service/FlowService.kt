@@ -92,7 +92,7 @@ class FlowService @Activate constructor(
         }
     }
 
-    @Suppress("TooGenericExceptionThrown")
+    @Suppress("TooGenericExceptionThrown", "UNUSED_PARAMETER")
     private fun onConfigChange(keys: Set<String>, config: Map<String, Config>) {
         if (MESSAGING_KEY in config.keys && BOOTSTRAP_KEY in config.keys && MESSAGING_KEY in config.keys) {
             coordinator.postEvent(
