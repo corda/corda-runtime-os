@@ -4,9 +4,6 @@ import net.corda.packaging.CPK
 
 /** An interface to a group of sandboxes with visibility of one another. */
 interface SandboxGroup {
-    /** The sandboxes in the group. */
-    val sandboxes: Collection<CpkSandbox>
-
     /**
      * Loads the [Class] with [className] from the main bundle of the [CpkSandbox] with the given [cpkIdentifier].
      *

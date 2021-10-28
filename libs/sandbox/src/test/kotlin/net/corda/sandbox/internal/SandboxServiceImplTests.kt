@@ -120,7 +120,7 @@ class SandboxServiceImplTests {
         val cpkHashes = cpksAndContents.map { contents -> contents.cpk.metadata.hash }
 
         val sandboxGroup = sandboxService.createSandboxGroup(cpkHashes)
-        val sandboxes = sandboxGroup.sandboxes
+        val sandboxes = (sandboxGroup as SandboxGroupInternal).sandboxes
         assertEquals(2, sandboxes.size)
 
         val sandboxesRetrievedFromSandboxGroup =
@@ -142,7 +142,8 @@ class SandboxServiceImplTests {
 
     @Test
     fun `can retrieve a bundle's sandbox`() {
-        val sandbox = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash)).sandboxes.single()
+        val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        val sandbox = (sandboxGroup as SandboxGroupInternal).sandboxes.single()
         startedBundles.forEach { bundle ->
             assertEquals(sandbox, sandboxService.getSandbox(bundle) as Sandbox)
         }
@@ -150,7 +151,8 @@ class SandboxServiceImplTests {
 
     @Test
     fun `a sandbox correctly indicates which CPK it is created from`() {
-        val sandbox = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash)).sandboxes.single()
+        val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        val sandbox = (sandboxGroup as SandboxGroupInternal).sandboxes.single()
         assertEquals(cpkOne, sandbox.cpk)
     }
 
@@ -350,8 +352,8 @@ class SandboxServiceImplTests {
 
     @Test
     fun `two sandboxes in the same group have visibility of each other`() {
-        val sandboxes =
-            sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash)).sandboxes.toList()
+        val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash))
+        val sandboxes = (sandboxGroup as SandboxGroupInternal).sandboxes.toList()
         assertEquals(2, sandboxes.size)
 
         val sandboxOne = sandboxes[0] as SandboxInternal
@@ -383,10 +385,10 @@ class SandboxServiceImplTests {
     @Test
     fun `a bundle doesn't have visibility of a bundle in another sandbox it doesn't have visibility of`() {
         // We create the two sandboxes separately so that they don't have visibility of one another.
-        val sandboxOne =
-            sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash)).sandboxes.single() as SandboxInternal
-        val sandboxTwo =
-            sandboxService.createSandboxGroup(listOf(cpkTwo.metadata.hash)).sandboxes.single() as SandboxInternal
+        val sandboxGroupOne = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        val sandboxGroupTwo = sandboxService.createSandboxGroup(listOf(cpkTwo.metadata.hash))
+        val sandboxOne = (sandboxGroupOne as SandboxGroupInternal).sandboxes.single() as SandboxInternal
+        val sandboxTwo = (sandboxGroupTwo as SandboxGroupInternal).sandboxes.single() as SandboxInternal
 
         val sandboxOneBundles = startedBundles.filter { bundle -> sandboxOne.containsBundle(bundle) }
         val sandboxTwoBundles = startedBundles.filter { bundle -> sandboxTwo.containsBundle(bundle) }
@@ -400,8 +402,8 @@ class SandboxServiceImplTests {
 
     @Test
     fun `a bundle only has visibility of public bundles in another sandbox it has visibility of`() {
-        val sandboxes =
-            sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash)).sandboxes.toList()
+        val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash))
+        val sandboxes = (sandboxGroup as SandboxGroupInternal).sandboxes.toList()
         val sandboxOne = sandboxes[0] as SandboxImpl
         val sandboxTwo = sandboxes[1] as SandboxImpl
 
@@ -422,8 +424,8 @@ class SandboxServiceImplTests {
 
     @Test
     fun `a bundle only has visibility of the main bundle in another CPK sandbox it has visibility of`() {
-        val sandboxes =
-            sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash)).sandboxes.toList()
+        val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash))
+        val sandboxes = (sandboxGroup as SandboxGroupInternal).sandboxes.toList()
         val sandboxOne = sandboxes[0] as CpkSandboxImpl
         val sandboxTwo = sandboxes[1] as CpkSandboxImpl
 
@@ -446,7 +448,8 @@ class SandboxServiceImplTests {
         val privateMockBundle = mockBundle()
         sandboxService.createPublicSandbox(setOf(publicMockBundle), setOf(privateMockBundle))
 
-        val sandbox = sandboxService.createSandboxGroup(setOf(cpkTwo.metadata.hash)).sandboxes.single() as SandboxImpl
+        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkTwo.metadata.hash))
+        val sandbox = (sandboxGroup as SandboxGroupInternal).sandboxes.single() as SandboxImpl
         val sandboxBundles = startedBundles.filter { bundle -> sandbox.containsBundle(bundle) }
 
         sandboxBundles.forEach { sandboxOneBundle ->
@@ -478,7 +481,8 @@ class SandboxServiceImplTests {
         }
 
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
-        val sandbox = sandboxService.createSandboxGroup(setOf(cpkAndContentsOne.cpk.metadata.hash)).sandboxes.single()
+        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkAndContentsOne.cpk.metadata.hash))
+        val sandbox = (sandboxGroup as SandboxGroupInternal).sandboxes.single()
 
         // We can only set the mock bundle's location after we know the sandbox ID.
         val sandboxLocation = SandboxLocation(DEFAULT_SECURITY_DOMAIN, sandbox.id, "testUri")
@@ -497,7 +501,7 @@ class SandboxServiceImplTests {
 
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
         val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkAndContentsOne.cpk.metadata.hash))
-        val sandbox = sandboxGroup.sandboxes.single()
+        val sandbox = (sandboxGroup as SandboxGroupInternal).sandboxes.single()
 
         val validSandboxLocation = SandboxLocation(DEFAULT_SECURITY_DOMAIN, sandbox.id, "testUri")
         whenever(mockBundle.location).thenReturn(validSandboxLocation.toString())
@@ -513,7 +517,8 @@ class SandboxServiceImplTests {
         }
 
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
-        val sandbox = sandboxService.createSandboxGroup(setOf(cpkAndContentsOne.cpk.metadata.hash)).sandboxes.single()
+        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkAndContentsOne.cpk.metadata.hash))
+        val sandbox = (sandboxGroup as SandboxGroupInternal).sandboxes.single()
 
         val validSandboxLocation = SandboxLocation(DEFAULT_SECURITY_DOMAIN, sandbox.id, "testUri")
         whenever(mockBundle.location).thenReturn(validSandboxLocation.toString())

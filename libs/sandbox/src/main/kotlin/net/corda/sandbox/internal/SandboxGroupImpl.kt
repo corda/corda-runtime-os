@@ -22,7 +22,7 @@ internal class SandboxGroupImpl(
     private val sandboxesById: Map<CPK.Identifier, CpkSandboxInternal>,
     private val publicSandboxes: Iterable<SandboxInternal>,
     private val classTagFactory: ClassTagFactory
-) : SandboxGroup {
+) : SandboxGroupInternal {
     override val sandboxes = sandboxesById.values
 
     override fun loadClassFromMainBundle(cpkIdentifier: CPK.Identifier, className: String): Class<*> {

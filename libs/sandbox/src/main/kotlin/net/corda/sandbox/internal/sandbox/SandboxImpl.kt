@@ -1,6 +1,5 @@
 package net.corda.sandbox.internal.sandbox
 
-import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.loggerFor
@@ -38,14 +37,14 @@ internal open class SandboxImpl(
         return bundleUtils.getBundle(klass) in allBundles
     }
 
-    override fun hasVisibility(otherSandbox: Sandbox) = otherSandbox.id in visibleSandboxes
+    override fun hasVisibility(otherSandbox: SandboxInternal) = otherSandbox.id in visibleSandboxes
 
-    override fun grantVisibility(otherSandbox: Sandbox) {
+    override fun grantVisibility(otherSandbox: SandboxInternal) {
         visibleSandboxes.add(otherSandbox.id)
     }
 
-    override fun grantVisibility(otherSandboxes: List<Sandbox>) {
-        visibleSandboxes.addAll(otherSandboxes.map(Sandbox::id))
+    override fun grantVisibility(otherSandboxes: List<SandboxInternal>) {
+        visibleSandboxes.addAll(otherSandboxes.map(SandboxInternal::id))
     }
 
     override fun getBundle(bundleName: String) = (publicBundles + privateBundles).find { bundle ->

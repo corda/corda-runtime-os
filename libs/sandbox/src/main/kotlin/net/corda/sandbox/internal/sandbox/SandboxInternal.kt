@@ -3,9 +3,13 @@ package net.corda.sandbox.internal.sandbox
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import org.osgi.framework.Bundle
+import java.util.UUID
 
 /** Extends [Sandbox] with internal methods. */
 internal interface SandboxInternal : Sandbox {
+    // The sandbox's unique identifier.
+    val id: UUID
+
     // The sandbox's public bundles. The public bundles are the bundles that another sandbox with visibility of this
     // sandbox can see.
     val publicBundles: Set<Bundle>
@@ -17,13 +21,13 @@ internal interface SandboxInternal : Sandbox {
     fun containsClass(klass: Class<*>): Boolean
 
     /** Indicates whether this sandbox has visibility of [otherSandbox]. */
-    fun hasVisibility(otherSandbox: Sandbox): Boolean
+    fun hasVisibility(otherSandbox: SandboxInternal): Boolean
 
     /** Grants this sandbox visibility of [otherSandbox]. */
-    fun grantVisibility(otherSandbox: Sandbox)
+    fun grantVisibility(otherSandbox: SandboxInternal)
 
     /** Grants this sandbox visibility of the [otherSandboxes]. */
-    fun grantVisibility(otherSandboxes: List<Sandbox>)
+    fun grantVisibility(otherSandboxes: List<SandboxInternal>)
 
     /** Returns the bundle with symbolic name [bundleName] from sandbox, or null if no bundle has a matching name. */
     fun getBundle(bundleName: String): Bundle?

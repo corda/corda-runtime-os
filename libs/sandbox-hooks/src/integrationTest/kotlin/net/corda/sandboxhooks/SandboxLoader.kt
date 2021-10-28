@@ -2,6 +2,7 @@ package net.corda.sandboxhooks
 
 import net.corda.install.InstallService
 import net.corda.packaging.CPK
+import net.corda.sandbox.CpkSandbox
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
@@ -100,8 +101,12 @@ class SandboxLoader @Activate constructor(
     private fun createSandboxGroupFor(vararg cpks: CPK) =
         sandboxCreationService.createSandboxGroup(cpks.map { it.metadata.hash })
 
-    private fun getSandbox(sandboxGroup: SandboxGroup, cpk: CPK) =
-        sandboxGroup.sandboxes.find { sandbox -> sandbox.cpk === cpk }!!
+    private fun getSandbox(sandboxGroup: SandboxGroup, cpk: CPK): CpkSandbox {
+        val sandboxesMethod = sandboxGroup::class.java.getMethod("getSandboxes")
+        @Suppress("UNCHECKED_CAST")
+        val sandboxes = sandboxesMethod.invoke(sandboxGroup) as Collection<CpkSandbox>
+        return sandboxes.find { sandbox -> sandbox.cpk === cpk }!!
+    }
 
     private fun <T, U : T> getServiceFor(serviceType: Class<T>, bundleClass: Class<U>): T {
         val context = FrameworkUtil.getBundle(bundleClass).bundleContext
@@ -116,6 +121,10 @@ class SandboxLoader @Activate constructor(
         return containsMethod.invoke(sandbox, bundle) as Boolean
     }
 
-    fun containsBundle(group: SandboxGroup, bundle: Bundle) =
-        group.sandboxes.any { sandbox -> containsBundle(sandbox, bundle) }
+    fun containsBundle(group: SandboxGroup, bundle: Bundle): Boolean {
+        val sandboxesMethod = group::class.java.getMethod("getSandboxes")
+        @Suppress("UNCHECKED_CAST")
+        val sandboxes = sandboxesMethod.invoke(group) as Collection<CpkSandbox>
+        return sandboxes.any { sandbox -> containsBundle(sandbox, bundle) }
+    }
 }

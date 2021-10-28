@@ -3,9 +3,7 @@ package net.corda.sandbox
 import net.corda.packaging.CPK
 import org.osgi.framework.Bundle
 
-/**
- * OSGi service interface for retrieving context on the current sandbox.
- */
+/** OSGi service interface for retrieving context on the current sandbox. */
 interface SandboxContextService {
     /**
      * Returns the [ClassInfo] for the given [klass].

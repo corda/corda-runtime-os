@@ -71,10 +71,13 @@ internal class SandboxServiceImpl @Activate constructor(
     override fun createSandboxGroupWithoutStarting(cpkFileHashes: Iterable<SecureHash>, securityDomain: String) =
         createSandboxes(cpkFileHashes, securityDomain, startBundles = false)
 
-    override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) = sandboxGroup.sandboxes.forEach { sandbox ->
-        sandboxes.remove(sandbox.id)
-        sandboxGroups.remove(sandbox.id)
-        zombieBundles.addAll((sandbox as SandboxInternal).unload())
+    override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
+        val sandboxGroupInternal = sandboxGroup as SandboxGroupInternal
+        sandboxGroupInternal.sandboxes.forEach { sandbox ->
+            sandboxes.remove(sandbox.id)
+            sandboxGroups.remove(sandbox.id)
+            zombieBundles.addAll((sandbox as SandboxInternal).unload())
+        }
     }
 
     override fun getClassInfo(klass: Class<*>): ClassInfo {
@@ -142,9 +145,8 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     override fun getCallingSandboxGroup(): SandboxGroup? {
-        val sandboxId = getCallingSandbox()?.id ?: return null
-
-        return sandboxGroups[sandboxId] ?: throw SandboxException(
+        val sandbox = (getCallingSandbox() ?: return null) as SandboxInternal
+        return sandboxGroups[sandbox.id] ?: throw SandboxException(
             "A sandbox was found, but it was not part of any sandbox group."
         )
     }
