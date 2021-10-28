@@ -31,11 +31,15 @@ class DedupListener(
             val state = stateEntry.value
             val expiryTime = state.expireTime
             if (currentTime > expiryTime) {
+                log.info("Clearing up expired state for synced key $key")
                 publisher.publish(listOf(Record(stateTopic, key, null)))
             } else {
                 val scheduleTask = executorService.schedule(
-                    { publisher.publish(listOf(Record(stateTopic, key, null))) },
-                    maxSessionLength,
+                    {
+                        log.info("Clearing up expired state for key $key")
+                        publisher.publish(listOf(Record(stateTopic, key, null)))
+                    },
+                    expiryTime - currentTime,
                     TimeUnit.MILLISECONDS
                 )
                 scheduledTasks[key] = scheduleTask
@@ -44,7 +48,7 @@ class DedupListener(
     }
 
     override fun onPartitionLost(states: Map<String, RequestWindow>) {
-        log.info( "Lost partition states $states" )
+        log.info("Lost partition states $states")
         for (stateEntry in states) {
             val key = stateEntry.key
             scheduledTasks[key]?.cancel(true)
@@ -52,6 +56,6 @@ class DedupListener(
     }
 
     override fun onPostCommit(updatedStates: Map<String, RequestWindow?>) {
-        log.info("Committed states $updatedStates" )
+        log.info("Committed states $updatedStates")
     }
 }

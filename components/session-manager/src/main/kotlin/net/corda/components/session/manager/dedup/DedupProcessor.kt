@@ -42,23 +42,23 @@ class DedupProcessor(
         val outputTopic = getEventOutputTopic(eventValue)
 
         if (state == null) {
-            log.info("State is null for key $key" )
+            log.info("State is null for key $key")
             if (eventExpiryTime > currentTime) {
                 setSessionWindowForKey(key)
 
-                log.info("Valid message. Setting new state expiry time of $eventExpiryTime for key $key" )
+                log.info("Valid message. Setting new state expiry time of $eventExpiryTime for key $key")
                 responseState = RequestWindow(event.key, eventExpiryTime)
                 responseEvents.add(Record(outputTopic, getOutputEventKey(eventValue), eventValue))
             } else {
-                log.info("Dropping Message. Event with expiry time $eventExpiryTime has lapsed for key $key. Current time $currentTime" )
+                log.info("Dropping Message. Event with expiry time $eventExpiryTime has lapsed for key $key. Current time $currentTime")
             }
         } else {
             val stateExpiryTime = state.expireTime
-            log.info("State for key $key has expiry time of $stateExpiryTime" )
+            log.info("State for key $key has expiry time of $stateExpiryTime")
             if (stateExpiryTime > currentTime) {
-                log.info("Duplicate message found for key $key. State expire time is within expiry limit of $stateExpiryTime" )
+                log.info("Duplicate message found for key $key. State expire time is within expiry limit of $stateExpiryTime")
             } else {
-                log.info("Valid message. Resetting state for key $key. New expiry time of $eventExpiryTime for key $key" )
+                log.info("Valid message. Resetting state for key $key. New expiry time of $eventExpiryTime for key $key")
                 responseState = RequestWindow(event.key, eventExpiryTime)
                 responseEvents.add(Record(outputTopic, getOutputEventKey(eventValue), eventValue))
             }
@@ -71,12 +71,14 @@ class DedupProcessor(
         val scheduledTask = scheduledTasks[key]
         scheduledTask?.cancel(true)
         scheduledTasks[key] = executorService.schedule(
-            { publisher.publish(listOf(Record(stateTopic, key, null))) },
+            {
+                log.info("Clearing up expired state from processor for key $key")
+                publisher.publish(listOf(Record(stateTopic, key, null)))
+            },
             maxSessionLength,
             TimeUnit.MILLISECONDS
         )
     }
-
 
     private fun getOutputEventKey(event: Any): Any {
         return when (event) {
