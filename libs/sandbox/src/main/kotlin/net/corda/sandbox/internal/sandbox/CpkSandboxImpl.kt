@@ -22,11 +22,4 @@ internal class CpkSandboxImpl(
     } catch (e: IllegalStateException) {
         throw SandboxException("The bundle $mainBundle in sandbox $id has been uninstalled.", e)
     }
-
-    override fun mainBundleContainsClass(className: String) = try {
-        loadClassFromMainBundle(className)
-        true
-    } catch (e: SandboxException) {
-        false
-    }
 }

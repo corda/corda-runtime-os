@@ -32,9 +32,14 @@ internal class SandboxGroupImpl(
     }
 
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
-        val containingSandbox = sandboxes.find { sandbox -> sandbox.mainBundleContainsClass(className) }
+        val klass = sandboxes.mapNotNull { sandbox ->
+            try {
+                sandbox.loadClassFromMainBundle(className)
+            } catch (e: SandboxException) {
+                null
+            }
+        }.firstOrNull()
             ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
-        val klass = containingSandbox.loadClassFromMainBundle(className)
 
         return try {
             klass.asSubclass(type)

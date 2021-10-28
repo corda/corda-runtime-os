@@ -3,8 +3,6 @@ package net.corda.sandbox.internal.sandbox
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.mockBundle
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -43,17 +41,5 @@ class CpkSandboxImplTests {
         assertThrows<SandboxException> {
             sandbox.loadClassFromMainBundle(Int::class.java.name)
         }
-    }
-
-    @Test
-    fun `correctly indicates whether the CPK sandbox's main bundle contains a given class`() {
-        val mainBundle = mockBundle(klass = String::class.java)
-        val otherBundle = mockBundle(klass = Int::class.java)
-
-        val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), mainBundle, setOf(otherBundle))
-
-        assertTrue(sandbox.mainBundleContainsClass(String::class.java.name))
-        assertFalse(sandbox.mainBundleContainsClass(Int::class.java.name))
-        assertFalse(sandbox.mainBundleContainsClass(Boolean::class.java.name))
     }
 }
