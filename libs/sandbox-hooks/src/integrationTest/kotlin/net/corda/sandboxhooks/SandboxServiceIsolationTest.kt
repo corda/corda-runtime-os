@@ -26,9 +26,9 @@ class SandboxServiceIsolationTest {
         val expectedServices = setOf(
             ServiceComponentRuntime::class.java,
             Resolver::class.java,
-            sandboxLoader.group1.loadClassFromMainBundle(sandboxLoader.cpk1.metadata.id, LIBRARY_QUERY_CLASS),
-            sandboxLoader.group1.loadClassFromMainBundle(sandboxLoader.cpk1.metadata.id, SERVICES_FLOW_CPK_1),
-            sandboxLoader.group1.loadClassFromMainBundle(sandboxLoader.cpk2.metadata.id, SERVICES_FLOW_CPK_2)
+            sandboxLoader.group1.loadClassFromMainBundles(LIBRARY_QUERY_CLASS, Any::class.java),
+            sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1, Any::class.java),
+            sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_2, Any::class.java)
         )
 
         assertTrue(

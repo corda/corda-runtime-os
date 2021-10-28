@@ -23,13 +23,8 @@ internal class SandboxGroupImpl(
     private val publicSandboxes: Iterable<Sandbox>,
     private val classTagFactory: ClassTagFactory
 ) : SandboxGroupInternal {
+    
     override val sandboxes = sandboxesById.values
-
-    override fun loadClassFromMainBundle(cpkIdentifier: CPK.Identifier, className: String): Class<*> {
-        val sandbox = sandboxesById[cpkIdentifier]
-            ?: throw SandboxException("CPK $cpkIdentifier was not found in the sandbox group.")
-        return sandbox.loadClassFromMainBundle(className)
-    }
 
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
         val klass = sandboxes.mapNotNull { sandbox ->

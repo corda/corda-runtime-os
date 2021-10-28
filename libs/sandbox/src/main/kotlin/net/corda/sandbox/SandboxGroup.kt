@@ -1,17 +1,7 @@
 package net.corda.sandbox
 
-import net.corda.packaging.CPK
-
 /** An interface to a group of sandboxes with visibility of one another. */
 interface SandboxGroup {
-    /**
-     * Loads the [Class] with [className] from the main bundle of the CPK sandbox with the given [cpkIdentifier].
-     *
-     * Throws [SandboxException] if there is no sandbox with the given CPK identifier, if this sandbox does not contain
-     * the named class, or if the main bundle of the sandbox with the given CPK identifier is uninstalled.
-     */
-    fun loadClassFromMainBundle(cpkIdentifier: CPK.Identifier, className: String): Class<*>
-
     /**
      * Attempts to load the [Class] with [className] from the main bundle of each sandbox in the sandbox group in
      * turn. Casts the first match to type [T] and returns it.
