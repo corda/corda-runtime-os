@@ -2,6 +2,9 @@ package net.corda.p2p.linkmanager
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -20,67 +23,71 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-class StubNetworkMap(subscriptionFactory: SubscriptionFactory): LinkManagerNetworkMap, Lifecycle {
+class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+                     subscriptionFactory: SubscriptionFactory): LinkManagerNetworkMap, Lifecycle {
 
     private val processor = NetworkMapEntryProcessor()
     private val subscriptionConfig = SubscriptionConfig("network-map", TestSchema.NETWORK_MAP_TOPIC)
     private val subscription = subscriptionFactory.createCompactedSubscription(subscriptionConfig, processor)
     private val keyDeserialiser = KeyDeserialiser()
 
-    private val lock = ReentrantReadWriteLock()
-    @Volatile
-    private var running: Boolean = false
+    private val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
 
     override val isRunning: Boolean
-        get() = running
+        get() = dominoTile.isRunning
 
     override fun start() {
-        lock.write {
-            if (!running) {
-                subscription.start()
-                running = true
-            }
+        if (!isRunning) {
+            dominoTile.start()
         }
     }
 
     override fun stop() {
-        lock.write {
-            if (running) {
-                subscription.stop()
-                running = false
-            }
+        if (isRunning) {
+            dominoTile.stop()
+        }
+    }
+
+    private fun createResources(resources: ResourcesHolder) {
+        subscription.start()
+        resources.keep {
+            subscription.stop()
         }
     }
 
     @Suppress("TYPE_INFERENCE_ONLY_INPUT_TYPES_WARNING")
     override fun getMemberInfo(holdingIdentity: LinkManagerNetworkMap.HoldingIdentity): LinkManagerNetworkMap.MemberInfo? {
-        lock.read {
-            if (!running) {
+        return dominoTile.withLifecycleLock {
+            if (!isRunning) {
                 throw IllegalStateException("getMemberInfo operation invoked while component was stopped.")
             }
 
-            return processor.netmapEntriesByHoldingIdentity[holdingIdentity]?.toMemberInfo()
+            processor.netmapEntriesByHoldingIdentity[holdingIdentity]?.toMemberInfo()
         }
     }
 
     override fun getMemberInfo(hash: ByteArray, groupId: String): LinkManagerNetworkMap.MemberInfo? {
-        lock.read {
-            if (!running) {
+        return dominoTile.withLifecycleLock {
+            if (!isRunning) {
                 throw IllegalStateException("getMemberInfo operation invoked while component was stopped.")
             }
 
-            return processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.get(ByteBuffer.wrap(hash))?.toMemberInfo()
+            processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.get(ByteBuffer.wrap(hash))?.toMemberInfo()
         }
     }
 
     override fun getNetworkType(groupId: String): LinkManagerNetworkMap.NetworkType? {
-        lock.read {
-            if (!running) {
+        return dominoTile.withLifecycleLock {
+            if (!isRunning) {
                 throw IllegalStateException("getNetworkType operation invoked while component was stopped.")
             }
 
-            return processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.first()?.networkType?.toLMNetworkType()
+            processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.first()?.networkType?.toLMNetworkType()
         }
+    }
+
+    override fun getDominoTile(): DominoTile {
+        return dominoTile
     }
 
     private fun NetworkMapEntry.toMemberInfo():LinkManagerNetworkMap.MemberInfo {
@@ -106,7 +113,7 @@ class StubNetworkMap(subscriptionFactory: SubscriptionFactory): LinkManagerNetwo
         }
     }
 
-    private class NetworkMapEntryProcessor: CompactedProcessor<String, NetworkMapEntry> {
+    private inner class NetworkMapEntryProcessor: CompactedProcessor<String, NetworkMapEntry> {
 
         private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
 
@@ -120,6 +127,7 @@ class StubNetworkMap(subscriptionFactory: SubscriptionFactory): LinkManagerNetwo
 
         override fun onSnapshot(currentData: Map<String, NetworkMapEntry>) {
             currentData.forEach { (_, networkMapEntry) -> addEntry(networkMapEntry) }
+            dominoTile.resourcesStarted(false)
         }
 
         override fun onNext(

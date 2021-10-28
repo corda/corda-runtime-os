@@ -1,5 +1,7 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.lifecycle.domino.logic.DominoTile
+
 /**
  * This interface represents a component that has knowledge about the identities that are hosted locally.
  *
@@ -10,4 +12,8 @@ interface LinkManagerHostingMap {
 
     fun isHostedLocally(identity: LinkManagerNetworkMap.HoldingIdentity): Boolean
 
+    /**
+     * Returns the [DominoTile] used by the CryptoService or null if a DominoTile is not used.
+     */
+    fun getDominoTile(): DominoTile
 }

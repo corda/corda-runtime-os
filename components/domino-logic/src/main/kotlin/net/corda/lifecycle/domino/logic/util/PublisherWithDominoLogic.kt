@@ -24,7 +24,7 @@ class PublisherWithDominoLogic(
 
     val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources)
 
-    fun createResources(resources: ResourcesHolder) {
+    private fun createResources(resources: ResourcesHolder) {
         val publisherConfig = PublisherConfig(publisherId)
         publisher = publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty()).also {
             resources.keep {

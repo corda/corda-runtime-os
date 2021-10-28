@@ -26,26 +26,13 @@ import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 @Suppress("TooManyFunctions")
-open class DominoTile private constructor(
+open class DominoTile constructor(
     instanceName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
     val createResources: ((resources: ResourcesHolder) -> Any)? = null,
     private val children: Collection<DominoTile> = emptySet(),
     private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
 ) : Lifecycle {
-
-    constructor(instanceName: String,
-                coordinatorFactory: LifecycleCoordinatorFactory,
-                createResources: ((resources: ResourcesHolder) -> Any)? = null,
-                children: Collection<DominoTile> = emptySet()
-    ): this(instanceName, coordinatorFactory, createResources, children, configurationChangeHandler = null)
-
-    constructor(instanceName: String,
-                coordinatorFactory: LifecycleCoordinatorFactory,
-                configurationChangeHandler: ConfigurationChangeHandler<*>,
-                createResources: ((resources: ResourcesHolder) -> Any)? = null,
-                children: Collection<DominoTile> = emptySet()
-    ): this(instanceName, coordinatorFactory, createResources, children, configurationChangeHandler)
 
     companion object {
         private val logger = contextLogger()

@@ -1,6 +1,9 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -19,7 +22,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-class StubCryptoService(subscriptionFactory: SubscriptionFactory): LinkManagerCryptoService, Lifecycle {
+class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+                        subscriptionFactory: SubscriptionFactory): LinkManagerCryptoService, Lifecycle {
+
+    companion object {
+        val logger = contextLogger()
+    }
 
     private val keyPairEntryProcessor = KeyPairEntryProcessor()
     private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC)
@@ -29,34 +37,39 @@ class StubCryptoService(subscriptionFactory: SubscriptionFactory): LinkManagerCr
     private val rsaSignature = Signature.getInstance(RSA_SIGNATURE_ALGO)
     private val ecdsaSignature = Signature.getInstance(ECDSA_SIGNATURE_ALGO)
 
+    private val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
+
+    override fun getDominoTile(): DominoTile {
+        return dominoTile
+    }
+
     private val lock = ReentrantReadWriteLock()
-    @Volatile
-    private var running: Boolean = false
 
     override val isRunning: Boolean
-        get() = running
+        get() = dominoTile.isRunning
 
     override fun start() {
-        lock.write {
-            if (!running) {
-                subscription.start()
-                running = true
-            }
+        if (!isRunning) {
+            dominoTile.start()
         }
     }
 
     override fun stop() {
-        lock.write {
-            if (running) {
-                subscription.stop()
-                running = false
-            }
+        if (isRunning) {
+            dominoTile.stop()
+        }
+    }
+
+    private fun createResources(resources: ResourcesHolder) {
+        subscription.start()
+        resources.keep {
+            subscription.stop()
         }
     }
 
     override fun signData(publicKey: PublicKey, data: ByteArray): ByteArray {
         lock.read {
-            if (!running) {
+            if (!isRunning) {
                 throw IllegalStateException("signData operation invoked while component was stopped.")
             }
 
@@ -82,11 +95,7 @@ class StubCryptoService(subscriptionFactory: SubscriptionFactory): LinkManagerCr
         }
     }
 
-    private class KeyPairEntryProcessor: CompactedProcessor<String, KeyPairEntry> {
-
-        companion object {
-            val logger = contextLogger()
-        }
+    private inner class KeyPairEntryProcessor: CompactedProcessor<String, KeyPairEntry> {
 
         private val keys = mutableMapOf<String, KeyPair>()
         private val keyDeserialiser = KeyDeserialiser()
@@ -118,6 +127,7 @@ class StubCryptoService(subscriptionFactory: SubscriptionFactory): LinkManagerCr
                 val publicKey = keyDeserialiser.toPublicKey(keyPairEntry.publicKey.array(), keyPairEntry.keyAlgo)
                 keys[alias] = KeyPair(keyPairEntry.keyAlgo, privateKey, publicKey)
             }
+            dominoTile.resourcesStarted(false)
         }
 
         override fun onNext(newRecord: Record<String, KeyPairEntry>,

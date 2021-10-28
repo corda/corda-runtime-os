@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import java.security.PublicKey
 
@@ -43,6 +44,11 @@ interface LinkManagerNetworkMap {
      * Returns the [NetworkType] for group identifier [groupId].
      */
     fun getNetworkType(groupId: String): NetworkType?
+
+    /**
+     * Returns the [DominoTile] used by the NetworkMap
+     */
+    fun getDominoTile(): DominoTile
 
     data class MemberInfo(val holdingIdentity: HoldingIdentity,
                           val publicKey: PublicKey,
