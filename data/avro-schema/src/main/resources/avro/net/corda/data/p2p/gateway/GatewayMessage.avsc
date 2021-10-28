@@ -1,0 +1,25 @@
+{
+  "type": "record",
+  "name": "GatewayMessage",
+  "namespace": "net.corda.p2p.gateway",
+  "doc": "A request to the p2p gateway component",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "doc": "A unique identifier of the message used for correlation to the response."
+    },
+    {
+      "name": "payload",
+      "type": [
+        "net.corda.p2p.crypto.AuthenticatedDataMessage",
+        "net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage",
+        "net.corda.p2p.crypto.InitiatorHelloMessage",
+        "net.corda.p2p.crypto.InitiatorHandshakeMessage",
+        "net.corda.p2p.crypto.ResponderHelloMessage",
+        "net.corda.p2p.crypto.ResponderHandshakeMessage",
+        "net.corda.p2p.app.UnauthenticatedMessage"
+      ]
+    }
+  ]
+}
