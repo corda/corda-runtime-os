@@ -15,20 +15,16 @@ import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.Gateway.Companion.CONSUMER_GROUP_ID
 import net.corda.p2p.gateway.GatewayMessage
-import net.corda.p2p.gateway.GatewayResponse
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
-import net.corda.p2p.gateway.messaging.http.HttpEventListener
-import net.corda.p2p.gateway.messaging.http.HttpMessage
+import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.schema.Schema
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
-import java.nio.ByteBuffer
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -44,8 +40,8 @@ internal class OutboundMessageHandler(
     instanceId: Int,
 ) : EventLogProcessor<String, LinkOutMessage>,
     Lifecycle,
-    HttpEventListener,
     InternalTileWithResources(lifecycleCoordinatorFactory) {
+
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
         const val MAX_RETRIES = 1
@@ -53,8 +49,7 @@ internal class OutboundMessageHandler(
 
     private val connectionManager = ReconfigurableConnectionManager(
         lifecycleCoordinatorFactory,
-        configurationReaderService,
-        this,
+        configurationReaderService
     )
 
     private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
@@ -64,17 +59,16 @@ internal class OutboundMessageHandler(
         null
     )
 
-    private val pendingRequestFutures = ConcurrentHashMap<String, PendingRequest>()
     private val retryThreadPool = Executors.newSingleThreadScheduledExecutor()
 
-    @Suppress("NestedBlockDepth")
+    @Suppress("TooGenericExceptionCaught")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
         withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("Can not handle events")
             }
 
-            val pendingRequests = events.mapNotNull { evt ->
+            val pendingMessages = events.mapNotNull { evt ->
                 evt.value?.let { peerMessage ->
                     try {
                         val sni = SniCalculator.calculateSni(
@@ -95,10 +89,8 @@ internal class OutboundMessageHandler(
                             sni,
                             expectedX500Name
                         )
-                        connectionManager.acquire(destinationInfo).write(message)
-                        val pendingRequest = PendingRequest(gatewayMessage, destinationInfo, CompletableFuture())
-                        pendingRequestFutures[messageId] = pendingRequest
-                        pendingRequest
+                        val responseFuture = connectionManager.acquire(destinationInfo).write(message)
+                        PendingRequest(gatewayMessage, destinationInfo, responseFuture)
                     } catch (e: IllegalArgumentException) {
                         logger.warn("Can't send message to destination ${peerMessage.header.address}. ${e.message}")
                         null
@@ -106,59 +98,65 @@ internal class OutboundMessageHandler(
                 }
             }
 
-            pendingRequests.forEach { (gatewayMessage, destinationInfo, future) ->
-                try {
-                    future.get(connectionManager.latestConnectionConfig.responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
-                    pendingRequestFutures.remove(gatewayMessage.id)
-                } catch (e: Exception) {
-                    logger.warn("Request (${gatewayMessage.id}) failed, it will be retried later.", e)
-                    pendingRequestFutures.remove(gatewayMessage.id)
-                    scheduleMessageReplay(destinationInfo, gatewayMessage, MAX_RETRIES)
+            waitUntilComplete(pendingMessages)
+            pendingMessages.forEach { pendingMessage ->
+                val (response, error) = try {
+                    val response = pendingMessage.future.get(0, TimeUnit.MILLISECONDS)
+                    response to null
+                } catch (error: Exception) {
+                    null to error
                 }
+                handleResponse(pendingMessage, response, error, MAX_RETRIES)
             }
 
         }
         return emptyList()
     }
 
-    private fun scheduleMessageReplay(destinationInfo: DestinationInfo, gatewayMessage: GatewayMessage, remainingAttempts: Int) {
-        if (remainingAttempts > 0) {
-            retryThreadPool.schedule({
-                connectionManager.acquire(destinationInfo).write(gatewayMessage.toByteBuffer().array())
-                val pendingRequest = PendingRequest(gatewayMessage, destinationInfo, CompletableFuture())
-                pendingRequestFutures[gatewayMessage.id] = pendingRequest
-                pendingRequest.future.whenCompleteAsync { _, error ->
-                    pendingRequestFutures.remove(gatewayMessage.id)
-                    if (error != null) {
-                        scheduleMessageReplay(destinationInfo, gatewayMessage, remainingAttempts - 1)
-                    }
-                }
-            }, connectionManager.latestConnectionConfig.retryDelay.toMillis(), TimeUnit.MILLISECONDS)
+    @Suppress("TooGenericExceptionCaught", "SpreadOperator")
+    private fun waitUntilComplete(pendingRequests: List<PendingRequest>) {
+        try {
+            CompletableFuture.allOf( *pendingRequests.map{ it.future }.toTypedArray() )
+                .get(connectionManager.latestConnectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        } catch (e: Exception) {
+            // Do nothing - results/errors will be processed individually.
         }
     }
 
-    override fun onMessage(message: HttpMessage) {
-        logger.debug("Processing response message from ${message.source} with status ${message.statusCode}")
-        when(message.statusCode) {
-            HttpResponseStatus.OK -> {
-                val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(message.payload))
-                pendingRequestFutures[gatewayResponse.id]?.future?.complete(Unit)
+    private fun scheduleMessageReplay(destinationInfo: DestinationInfo, gatewayMessage: GatewayMessage, remainingAttempts: Int) {
+        retryThreadPool.schedule({
+            val future = connectionManager.acquire(destinationInfo).write(gatewayMessage.toByteBuffer().array())
+            val pendingRequest = PendingRequest(gatewayMessage, destinationInfo, future)
+            future.orTimeout(connectionManager.latestConnectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
+                  .whenCompleteAsync { response, error ->
+                        handleResponse(pendingRequest, response, error, remainingAttempts - 1)
+                  }
+        }, connectionManager.latestConnectionConfig().retryDelay.toMillis(), TimeUnit.MILLISECONDS)
+    }
+
+    private fun handleResponse(pendingRequest: PendingRequest, response: HttpResponse?, error: Throwable?, remainingAttempts: Int) {
+        if (error != null) {
+            if (remainingAttempts > 0) {
+                logger.warn("Request (${pendingRequest.gatewayMessage.id}) failed, it will be retried later.", error)
+                scheduleMessageReplay(pendingRequest.destinationInfo, pendingRequest.gatewayMessage, remainingAttempts)
+            } else {
+                logger.warn("Request (${pendingRequest.gatewayMessage.id}) failed.", error)
             }
-            HttpResponseStatus.SERVICE_UNAVAILABLE, HttpResponseStatus.BAD_REQUEST -> {
-                logger.warn("Destination at (${message.source}) failed to process message with ${message.statusCode.code()}")
-            }
-            else -> {
-                if (message.payload.isNotEmpty()) {
-                    val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(message.payload))
-                    val error = RuntimeException("Destination at (${message.source}) failed to process message. " +
-                            "Response status: ${message.statusCode}")
-                    pendingRequestFutures[gatewayResponse.id]?.future?.completeExceptionally(error)
+        } else if (response != null) {
+            if (response.statusCode != HttpResponseStatus.OK) {
+                if (shouldRetry(response.statusCode) && remainingAttempts > 0) {
+                    logger.warn("Request (${pendingRequest.gatewayMessage.id}) failed with status code ${response.statusCode}, " +
+                            "it will be retried later.")
+                    scheduleMessageReplay(pendingRequest.destinationInfo, pendingRequest.gatewayMessage, remainingAttempts)
                 } else {
-                    logger.warn("Destination at (${message.source}) failed to process message. " +
-                            "Response status: ${message.statusCode}")
+                    logger.warn("Request (${pendingRequest.gatewayMessage.id}) failed with status code ${response.statusCode}.")
                 }
             }
         }
+    }
+
+    private fun shouldRetry(statusCode: HttpResponseStatus): Boolean {
+        return statusCode.code() >= 500
     }
 
     override val keyClass: Class<String>
@@ -172,5 +170,7 @@ internal class OutboundMessageHandler(
         p2pMessageSubscription.start()
     }
 
-    private data class PendingRequest(val gatewayMessage: GatewayMessage, val destinationInfo: DestinationInfo, val future: CompletableFuture<Unit>)
+    private data class PendingRequest(val gatewayMessage: GatewayMessage,
+                                      val destinationInfo: DestinationInfo,
+                                      val future: CompletableFuture<HttpResponse>)
 }

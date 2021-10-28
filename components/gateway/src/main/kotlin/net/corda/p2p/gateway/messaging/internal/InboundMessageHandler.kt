@@ -21,8 +21,8 @@ import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.GatewayMessage
 import net.corda.p2p.gateway.GatewayResponse
-import net.corda.p2p.gateway.messaging.http.HttpEventListener
-import net.corda.p2p.gateway.messaging.http.HttpMessage
+import net.corda.p2p.gateway.messaging.http.HttpRequest
+import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
@@ -39,8 +39,7 @@ internal class InboundMessageHandler(
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: Config,
-) :
-    HttpEventListener,
+) : HttpServerListener,
     InternalTile(lifecycleCoordinatorFactory) {
 
     companion object {
@@ -55,32 +54,28 @@ internal class InboundMessageHandler(
      * Handler for direct P2P messages. The payload is deserialized and then published to the ingress topic.
      * A session init request has additional handling as the Gateway needs to generate a secret and share it
      */
-    override fun onMessage(message: HttpMessage) {
-        withLifecycleLock { handleMessage(message) }
+    override fun onRequest(request: HttpRequest) {
+        withLifecycleLock { handleRequest(request) }
     }
 
+
+
     @Suppress("TooGenericExceptionCaught")
-    private fun handleMessage(message: HttpMessage) {
+    private fun handleRequest(request: HttpRequest) {
         if (!isRunning) {
-            logger.error("Received message from ${message.source}, while handler is stopped. Discarding it and returning error code.")
-            server.writeResponse(HttpResponseStatus.SERVICE_UNAVAILABLE, message.source)
+            logger.error("Received message from ${request.source}, while handler is stopped. Discarding it and returning error code.")
+            server.writeResponse(HttpResponseStatus.SERVICE_UNAVAILABLE, request.source)
             return
         }
 
-        if (message.statusCode != HttpResponseStatus.OK) {
-            logger.warn("Received invalid request from ${message.source}. Status code ${message.statusCode}")
-            server.writeResponse(message.statusCode, message.source)
-            return
-        }
-
-        logger.debug("Processing request message from ${message.source}")
+        logger.debug("Processing request message from ${request.source}")
         val (gatewayMessage, p2pMessage) = try {
-            val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(message.payload))
+            val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(request.payload))
             gatewayMessage to LinkInMessage(gatewayMessage.payload)
         } catch (e: Throwable) {
             logger.warn("Invalid message received. Cannot deserialize")
             logger.debug(e.stackTraceToString())
-            server.writeResponse(HttpResponseStatus.BAD_REQUEST, message.source)
+            server.writeResponse(HttpResponseStatus.BAD_REQUEST, request.source)
             return
         }
 
@@ -89,11 +84,11 @@ internal class InboundMessageHandler(
         when (p2pMessage.payload) {
             is UnauthenticatedMessage -> {
                 p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
-                server.writeResponse(HttpResponseStatus.OK, response.toByteBuffer().array(), message.source)
+                server.writeResponse(HttpResponseStatus.OK, response.toByteBuffer().array(), request.source)
             }
             else -> {
                 val statusCode = processSessionMessage(p2pMessage)
-                server.writeResponse(statusCode, response.toByteBuffer().array(), message.source)
+                server.writeResponse(statusCode, response.toByteBuffer().array(), request.source)
             }
         }
     }

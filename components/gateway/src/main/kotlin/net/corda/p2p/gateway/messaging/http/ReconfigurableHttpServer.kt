@@ -16,7 +16,7 @@ import kotlin.concurrent.write
 class ReconfigurableHttpServer(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
-    private val listener: HttpEventListener,
+    private val listener: HttpServerListener,
 ) :
     ConfigurationAwareLeafTile<GatewayConfiguration>(
         lifecycleCoordinatorFactory,

@@ -6,15 +6,13 @@ import net.corda.lifecycle.domino.logic.ConfigurationAwareLeafTile
 import net.corda.p2p.gateway.Gateway.Companion.CONFIG_KEY
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
-import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.v5.base.util.contextLogger
 
 class ReconfigurableConnectionManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
-    listener: HttpEventListener,
     private val managerFactory: (sslConfig: SslConfiguration, connectionConfig: ConnectionConfiguration) -> ConnectionManager =
-        { sslConfig, connectionConfig -> ConnectionManager(sslConfig, connectionConfig, listener) }
+        { sslConfig, connectionConfig -> ConnectionManager(sslConfig, connectionConfig) }
 ) : ConfigurationAwareLeafTile<GatewayConfiguration>(
     lifecycleCoordinatorFactory,
     configurationReaderService,
@@ -27,6 +25,8 @@ class ReconfigurableConnectionManager(
     // When the updated domino logic (supporting internal tile with configuration) is in place, this will be updated. See: CORE-2876.
     @Volatile
     var latestConnectionConfig = ConnectionConfiguration()
+
+    fun latestConnectionConfig() = latestConnectionConfig
 
     companion object {
         private val logger = contextLogger()
@@ -46,7 +46,8 @@ class ReconfigurableConnectionManager(
         newConfiguration: GatewayConfiguration,
         oldConfiguration: GatewayConfiguration?,
     ) {
-        if (newConfiguration.sslConfig != oldConfiguration?.sslConfig || newConfiguration.connectionConfig != oldConfiguration.connectionConfig) {
+        if (newConfiguration.sslConfig != oldConfiguration?.sslConfig ||
+            newConfiguration.connectionConfig != oldConfiguration.connectionConfig) {
             logger.info("New configuration, clients for $name will be reconnected")
             latestConnectionConfig = newConfiguration.connectionConfig
             val newManager = managerFactory(newConfiguration.sslConfig, newConfiguration.connectionConfig)

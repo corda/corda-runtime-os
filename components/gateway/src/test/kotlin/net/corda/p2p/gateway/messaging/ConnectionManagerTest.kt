@@ -4,13 +4,10 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.util.concurrent.Future
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
-import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.MockedConstruction
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -19,11 +16,10 @@ import org.mockito.kotlin.verify
 import java.net.URI
 
 class ConnectionManagerTest {
-    private val listener = mock<HttpEventListener>()
     private val sslConfiguration = mock<SslConfiguration>()
     private val connectionConfiguration = ConnectionConfiguration(10, 1.seconds, 1.seconds, 1.seconds, 1.seconds)
 
-    private val connectionManager = ConnectionManager(sslConfiguration, connectionConfiguration, listener)
+    private val connectionManager = ConnectionManager(sslConfiguration, connectionConfiguration)
     private val mockedClient = mockConstruction(HttpClient::class.java)
 
     @AfterEach
@@ -66,6 +62,8 @@ class ConnectionManagerTest {
             )
 
         assertThat(client1).isSameAs(client2)
+        assertThat(mockedClient.constructed()).hasSize(1)
+        verify(mockedClient.constructed().first(), times(1)).start()
     }
 
     @Test
@@ -96,7 +94,7 @@ class ConnectionManagerTest {
         val loop = mock<NioEventLoopGroup> {
             on { terminationFuture() } doReturn terminationFuture
         }
-        val connectionManager = ConnectionManager(sslConfiguration, connectionConfiguration, listener) { loop }
+        val connectionManager = ConnectionManager(sslConfiguration, connectionConfiguration) { loop }
         val client1 = connectionManager
             .acquire(
                 DestinationInfo(
@@ -125,7 +123,7 @@ class ConnectionManagerTest {
         val loop = mock<NioEventLoopGroup> {
             on { terminationFuture() } doReturn terminationFuture
         }
-        val connectionManager = ConnectionManager(sslConfiguration, connectionConfiguration, listener) { loop }
+        val connectionManager = ConnectionManager(sslConfiguration, connectionConfiguration) { loop }
         connectionManager
             .acquire(
                 DestinationInfo(
@@ -145,7 +143,7 @@ class ConnectionManagerTest {
         val loop = mock<NioEventLoopGroup> {
             on { terminationFuture() } doReturn terminationFuture
         }
-        val connectionManager = ConnectionManager(sslConfiguration, connectionConfiguration, listener) { loop }
+        val connectionManager = ConnectionManager(sslConfiguration, connectionConfiguration) { loop }
         connectionManager.close()
 
         verify(loop, times(2)).shutdownGracefully()

@@ -16,12 +16,12 @@ import io.netty.handler.codec.http.DefaultFullHttpRequest
 import io.netty.handler.codec.http.HttpClientCodec
 import io.netty.handler.codec.http.HttpMethod
 import io.netty.handler.ssl.SslHandler
-import io.netty.handler.timeout.IdleStateHandler
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -33,7 +33,6 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -41,6 +40,7 @@ import java.io.IOException
 import java.net.URI
 import java.security.KeyStore
 import java.security.cert.PKIXBuilderParameters
+import java.util.concurrent.ExecutionException
 import javax.net.ssl.TrustManagerFactory
 
 class HttpClientTest {
@@ -63,7 +63,7 @@ class HttpClientTest {
         on { next() } doReturn loop
     }
     private val nettyGroup = mock<EventLoopGroup>()
-    private val listener = mock<HttpEventListener>()
+    private val listener = mock<HttpConnectionListener>()
     private val channel = mock<Channel>()
     private val pkixParams = mockConstruction(PKIXBuilderParameters::class.java)
     private val trustManagerFactory = mockStatic(TrustManagerFactory::class.java).also {
@@ -93,7 +93,7 @@ class HttpClientTest {
 
     private val connectionTimeout = 1.seconds
     private val client = HttpClient(
-        destinationInfo, sslConfiguration, writeGroup, nettyGroup, listener, connectionTimeout
+        destinationInfo, sslConfiguration, writeGroup, nettyGroup, connectionTimeout, listener
     )
 
     @Test
@@ -176,19 +176,53 @@ class HttpClientTest {
     }
 
     @Test
-    fun `write will write the correct data`() {
+    fun `write will write the correct data and populate future when response is received`() {
         val request = argumentCaptor<DefaultFullHttpRequest>()
         whenever(channel.writeAndFlush(request.capture())).doReturn(mock())
         client.start()
         client.onOpen(HttpConnectionEvent(channel))
 
-        client.write(byteArrayOf(1, 5))
+        val future = client.write(byteArrayOf(1, 5))
 
         assertSoftly {
             it.assertThat(request.firstValue.uri()).isEqualTo("https://www.r3.com:3023/gateway/send")
             it.assertThat(request.firstValue.method()).isEqualTo(HttpMethod.POST)
             it.assertThat(request.firstValue.content().array()).isEqualTo(byteArrayOf(1, 5))
         }
+
+        val response = mock<HttpResponse>()
+        client.onResponse(response)
+
+        assertThat(future.get()).isEqualTo(response)
+    }
+
+    @Test
+    fun `sent requests with no responses will fail if connection is closed`() {
+        val request = argumentCaptor<DefaultFullHttpRequest>()
+        whenever(channel.writeAndFlush(request.capture())).doReturn(mock())
+        client.start()
+        client.onOpen(HttpConnectionEvent(channel))
+
+        val future = client.write(byteArrayOf(1, 5))
+
+        client.onClose(HttpConnectionEvent(channel))
+        assertThatThrownBy { future.get() }
+            .isInstanceOf(ExecutionException::class.java)
+            .hasStackTraceContaining("Connection was closed.")
+    }
+
+    @Test
+    fun `queued requests that have not been sent will fail if connection is closed`() {
+        val request = argumentCaptor<DefaultFullHttpRequest>()
+        whenever(channel.writeAndFlush(request.capture())).doReturn(mock())
+        client.start()
+
+        val future = client.write(byteArrayOf(1, 5))
+
+        client.onClose(HttpConnectionEvent(channel))
+        assertThatThrownBy { future.get() }
+            .isInstanceOf(ExecutionException::class.java)
+            .hasStackTraceContaining("Connection was closed.")
     }
 
     @Test
@@ -241,14 +275,6 @@ class HttpClientTest {
     }
 
     @Test
-    fun `onMessage will propagate the event`() {
-        val message = mock<HttpMessage>()
-        client.onMessage(message)
-
-        verify(listener).onMessage(message)
-    }
-
-    @Test
     fun `initChannel in ClientChannelInitializer add handlers to pipeline`() {
         client.start()
         client.onOpen(HttpConnectionEvent(channel))
@@ -266,6 +292,6 @@ class HttpClientTest {
 
         verify(pipeline).addLast(eq("sslHandler"), any<SslHandler>())
         verify(pipeline).addLast(any<HttpClientCodec>())
-        verify(pipeline).addLast(any<HttpChannelHandler>())
+        verify(pipeline).addLast(any<HttpClientChannelHandler>())
     }
 }

@@ -48,7 +48,7 @@ data class ConnectionConfiguration(
     /**
      * Time after which a message is retried, when previously failed.
      */
-    val retryDelay: Duration = Duration.ofSeconds(5)
+    val retryDelay: Duration = Duration.ofSeconds(1)
 )
 
 internal fun Config.toGatewayConfiguration(): GatewayConfiguration {

@@ -1,15 +1,11 @@
 package net.corda.p2p.gateway.messaging
 
 import com.github.benmanes.caffeine.cache.Caffeine
-import com.github.benmanes.caffeine.cache.RemovalCause
 import com.github.benmanes.caffeine.cache.RemovalListener
 import io.netty.channel.nio.NioEventLoopGroup
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
-import net.corda.p2p.gateway.messaging.http.HttpEventListener
-import net.corda.v5.base.util.seconds
 import java.net.URI
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * The [ConnectionManager] is responsible for creating an HTTP connection and caching it. If a connection to the requested
@@ -23,7 +19,6 @@ import java.util.concurrent.ConcurrentHashMap
 class ConnectionManager(
     private val sslConfiguration: SslConfiguration,
     private val connectionConfiguration: ConnectionConfiguration,
-    private val listener: HttpEventListener,
     nioEventLoopGroupFactory: (Int) -> NioEventLoopGroup = { NioEventLoopGroup(it) }
 ) : AutoCloseable {
 
@@ -51,7 +46,6 @@ class ConnectionManager(
                 sslConfiguration,
                 writeGroup,
                 nettyGroup,
-                listener,
                 connectionConfiguration.acquireTimeout
             )
             client.start()
