@@ -8,7 +8,7 @@ interface SandboxGroup {
     val sandboxes: Collection<CpkSandbox>
 
     /**
-     * Returns the [CpkSandbox] out of [sandboxes] with the given [Cpk.Identifier]. There is guaranteed to be at
+     * Returns the [CpkSandbox] out of [sandboxes] with the given [CPK.Identifier]. There is guaranteed to be at
      * most one.
      *
      * Throws [SandboxException] if no sandbox with the given CPK identifier exists.
@@ -16,7 +16,7 @@ interface SandboxGroup {
     fun getSandbox(cpkIdentifier: CPK.Identifier): CpkSandbox
 
     /**
-     * Finds the [CpkSandbox] out of [sandboxes] with the given [Cpk.Identifier] (there is guaranteed to be at
+     * Finds the [CpkSandbox] out of [sandboxes] with the given [CPK.Identifier] (there is guaranteed to be at
      * most one), and loads the [Class] with [className] from the CorDapp bundle of that sandbox.
      *
      * Throws [SandboxException] if there is no sandbox with the given CPK identifier, if this sandbox does not contain
@@ -32,13 +32,6 @@ interface SandboxGroup {
      * uninstalled, or if the named class is not of the correct type.
      */
     fun <T : Any> loadClassFromCordappBundle(className: String, type: Class<T>): Class<out T>
-
-    /**
-     * Returns number of times class [className] appears in the CorDapp bundles of the sandbox group's sandboxes.
-     *
-     * Throws [SandboxException] if any of the sandboxes' CorDapp bundles are uninstalled.
-     */
-    fun cordappClassCount(className: String): Int
 
     /**
      * Returns the serialised static tag for a given [klass].
