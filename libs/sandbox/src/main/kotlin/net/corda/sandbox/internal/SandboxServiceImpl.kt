@@ -255,10 +255,16 @@ internal class SandboxServiceImpl @Activate constructor(
         securityDomain: String
     ): Bundle {
 
+        val sandboxLocation = SandboxLocation(securityDomain, sandboxId, bundleSource)
         val bundle = try {
-            val sandboxLocation = SandboxLocation(securityDomain, sandboxId, bundleSource)
             bundleUtils.installAsBundle(sandboxLocation.toString(), inputStream)
         } catch (e: BundleException) {
+            if (bundleUtils.allBundles.none { bundle -> bundle.symbolicName == SANDBOX_HOOKS_BUNDLE }) {
+                logger.warn(
+                    "The \"$SANDBOX_HOOKS_BUNDLE\" bundle is not installed. This can cause failures when installing " +
+                            "sandbox bundles."
+                )
+            }
             throw SandboxException("Could not install $bundleSource as a bundle in sandbox $sandboxId.", e)
         }
 
