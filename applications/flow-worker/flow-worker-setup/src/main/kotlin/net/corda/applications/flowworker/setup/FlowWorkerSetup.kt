@@ -1,10 +1,10 @@
 package net.corda.applications.flowworker.setup
 
 import com.typesafe.config.Config
-import net.corda.applications.flowworker.common.helper.ConfigHelper
-import net.corda.applications.flowworker.common.helper.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
-import net.corda.applications.flowworker.common.helper.ConfigHelper.Companion.getBootstrapConfig
-import net.corda.applications.flowworker.common.helper.ConfigHelper.Companion.getConfigValue
+import net.corda.applications.common.ConfigHelper
+import net.corda.applications.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
+import net.corda.applications.common.ConfigHelper.Companion.getBootstrapConfig
+import net.corda.applications.common.ConfigHelper.Companion.getConfigValue
 import net.corda.applications.flowworker.setup.helper.getHelloWorldRPCEventRecord
 import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin

@@ -1,7 +1,7 @@
 package net.corda.applications.flowworker
 
 import com.typesafe.config.Config
-import net.corda.applications.flowworker.common.helper.ConfigHelper.Companion.getBootstrapConfig
+import net.corda.applications.common.ConfigHelper.Companion.getBootstrapConfig
 import net.corda.components.flow.service.FlowService
 import net.corda.components.sandbox.service.SandboxService
 import net.corda.configuration.read.ConfigurationReadService

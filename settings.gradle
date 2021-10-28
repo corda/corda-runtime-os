@@ -68,13 +68,13 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'corda-runtime-os'
+include 'applications:common'
 include 'applications:examples:demo-app'
 include 'applications:examples:demo-publisher'
 include 'applications:examples:goodbyeworld'
 include 'applications:examples:persistence:persistence-config'
 include 'applications:examples:persistence:persistence-demo'
 include 'applications:flow-worker'
-include 'applications:flow-worker:common'
 include 'applications:flow-worker:flow-worker-setup'
 include 'applications:examples:hello-quasar'
 include 'applications:tools:kafka-reader'

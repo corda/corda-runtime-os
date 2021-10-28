@@ -15,5 +15,5 @@ dependencies {
     implementation 'net.corda:corda-base'
 }
 
-description 'Flow Worker Application Common'
+description 'Application Common'
 

@@ -1,4 +1,4 @@
-package net.corda.applications.flowworker.common.helper
+package net.corda.applications.common
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -9,7 +9,6 @@ import org.slf4j.Logger
 class ConfigHelper {
     companion object {
         private val log: Logger = contextLogger()
-        const val DEFAULT_FLOW_EVENT_TOPIC_VALUE = "FlowEventTopic"
         const val DEFAULT_CONFIG_TOPIC_VALUE = "ConfigTopic"
         private const val DEFAULT_BOOTSTRAP_SERVER_VALUE = "localhost:9092"
 

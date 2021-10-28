@@ -1,12 +1,13 @@
 package net.corda.applications.flowworker.setup.helper
 
-import net.corda.applications.flowworker.common.helper.ConfigHelper.Companion.DEFAULT_FLOW_EVENT_TOPIC_VALUE
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.records.Record
 import java.time.Instant
+
+const val DEFAULT_FLOW_EVENT_TOPIC_VALUE = "FlowEventTopic"
 
 fun getHelloWorldRPCEventRecord() : Record<*, *>  {
     return getStartRPCEventRecord(
