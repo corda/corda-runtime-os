@@ -1,6 +1,7 @@
 package net.corda.cpi.read.impl.kafka
 
 import com.typesafe.config.Config
+import net.corda.cpi.read.impl.kafka.CPIStreamReaderImpl.Companion.logger
 import net.corda.cpi.utils.CPX_KAFKA_FILE_CACHE_ROOT_DIR_CONFIG_PATH
 import net.corda.data.packaging.CPISegmentRequest
 import net.corda.data.packaging.CPISegmentResponse
@@ -11,6 +12,7 @@ import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.packaging.CPI
 import net.corda.packaging.converters.toAvro
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
 import java.io.InputStream
 import java.nio.file.Files
@@ -51,21 +53,21 @@ class CPIStreamReaderImpl(private val rpcConfig: RPCConfig<CPISegmentRequest, CP
         executorService.awaitTermination(AWAIT_TERMINATION_TIMEOUT, TimeUnit.SECONDS)
     }
 
-    fun getCPIStream(cpiIdentifier: CPI.Identifier): CompletableFuture<InputStream> {
+    fun getCPIStream(cpiIdentifier: CPI.Identifier, fileHash: SecureHash): CompletableFuture<InputStream> {
         val respFuture = CompletableFuture<InputStream>()
-        executorService.execute(CPISegmentReaderExecutor(cpiIdentifier, path, rpcSender, respFuture))
+        executorService.execute(CPISegmentReaderExecutor(cpiIdentifier, fileHash, path, rpcSender, respFuture))
         return respFuture
     }
 }
 
 class CPISegmentReaderExecutor(private val cpiIdentifier: CPI.Identifier,
+                               private val fileHash: SecureHash,
                                private val parentPath: Path,
                                private val rpcSender: RPCSender<CPISegmentRequest, CPISegmentResponse>,
                                private val cpiSegmentResponseFuture: CompletableFuture<InputStream>): Runnable {
 
     override fun run() {
-        // TODO - Use the hash as the file name, should be in CPI.Identifier somewhere
-        val filename = "${cpiIdentifier.name}-${cpiIdentifier.version}"
+        val filename = fileHash.toString()
         val path = parentPath.resolve(filename)
         if (!Files.exists(path)) {
             val tempFilename = UUID.randomUUID().toString()
@@ -87,7 +89,7 @@ class CPISegmentReaderExecutor(private val cpiIdentifier: CPI.Identifier,
                     catch(ex: ExecutionException) {
                         ex.cause?.message?.let { msg ->
                             if (msg.startsWith("No partitions")) {
-                                println("CordaRPCAPISenderException : No partitions received")
+                                logger.debug("CordaRPCAPISenderException : No partitions received")
                                 Thread.sleep(1000)
                             }
                             else throw ex

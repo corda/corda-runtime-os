@@ -3,28 +3,23 @@
  */
 package net.corda.cpi.utils
 
-import net.corda.data.packaging.CPIIdentifier
 import net.corda.packaging.CPI
 import net.corda.v5.crypto.SecureHash
-import javax.security.auth.x500.X500Principal
 
-// TODO: Review this, using ~ as the separator
+// TODO: Review this, using , as the separator
 fun CPI.Identifier.toSerializedString(): String {
-    return "$name~$version~${signerSummaryHash?.toString() ?: ""}~${identity?.name ?: ""}~${identity?.groupId ?: ""}"
+    return "$name,$version,${signerSummaryHash?.toString() ?: ""}"
 }
 
 fun CPI.Identifier.Companion.newInstance(src: String): CPI.Identifier {
-    val params = src.split("~")
+    val params = src.split(",")
     val name = params[0]
     val version = params[1]
     val signerSummaryHash = if (params[2].isEmpty()) null else SecureHash.create(params[2])
-    val identityName = if (params[3].isEmpty()) null else X500Principal(params[3])
-    val identityGroup = if (params[4].isEmpty()) null else params[4]
-    return if (identityName != null && identityGroup != null) {
-               newInstance(name, version, signerSummaryHash, CPI.Identity.newInstance(identityName, identityGroup))
-           } else newInstance(name, version, signerSummaryHash)
+    return newInstance(name, version, signerSummaryHash)
 }
 
+const val CPI_MAX_SEGMENT_SIZE = 512 * 512
 const val RPC_CPI_GROUP_NAME = "rpcCPIGroup"
 const val RPC_CPI_CLIENT_NAME = "rpcCPIClient"
 const val RPC_CPI_TOPIC_NAME = "rpcCPITopicName"

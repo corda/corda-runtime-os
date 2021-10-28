@@ -15,6 +15,7 @@ import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.packaging.CPI
 import org.osgi.service.component.annotations.Component
 import java.io.InputStream
+import java.lang.IllegalArgumentException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -40,7 +41,10 @@ class CPIReadImplKafka(
     }
 
     override fun getCPI(cpiIdentifier: CPI.Identifier): CompletableFuture<InputStream> {
-        return streamReader.getCPIStream(cpiIdentifier)
+        val cpiMetadata = cpiListHandler.cpiMetadata[cpiIdentifier]
+        val fileHash = cpiMetadata?.hash
+            ?: return CompletableFuture.failedFuture(IllegalArgumentException("Unknown CPI identifier. Name = ${cpiIdentifier.name}"))
+        return streamReader.getCPIStream(cpiIdentifier, fileHash)
     }
 
     override val isRunning: Boolean

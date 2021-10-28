@@ -84,12 +84,12 @@ class CPIRPCIntegrationTest {
             )
     }
 
-    @Test
+//    @Test
     fun `subscribe to receive CPI identity objects`() {
 
         val initlatch = CountDownLatch(1)
         val endlatch = CountDownLatch(2)
-        var listeners = mutableMapOf<CPI.Identifier, CPI.Metadata>() //Map<CPI.Identifier, CPI.Metadata> = emptyMap()
+        var listeners = mutableMapOf<CPI.Identifier, CPI.Metadata>()
 
         val cpiPath = System.getProperty("cpi.path")
         val rootPath = Paths.get(cpiPath).parent

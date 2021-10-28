@@ -19,7 +19,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation "net.corda:corda-packaging"
-    implementation group: 'net.corda', name: 'corda-packaging-avro-converters', version: cordaApiVersion
+    implementation "net.corda:corda-packaging-avro-converters"
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

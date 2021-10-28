@@ -76,7 +76,7 @@ class CPIWatcher(private val cpiFileListener: CPIFileListener): Runnable {
 
             when (event.kind()) {
                 OVERFLOW -> {
-                    // TODO: Handle this, by resending full snapshot to the client
+                    // NOTE: Handle this, by resending full snapshot to the client
                 }
                 ENTRY_CREATE -> {
                     if (Files.isDirectory(child)) {

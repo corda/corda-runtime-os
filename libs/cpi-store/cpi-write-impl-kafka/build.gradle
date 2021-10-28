@@ -17,7 +17,7 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-packaging"
-    implementation group: 'net.corda', name: 'corda-packaging-avro-converters', version: cordaApiVersion
+    implementation "net.corda:corda-packaging-avro-converters"
 
     implementation project(":libs:cpi-store:cpi-read")
     implementation project(":libs:cpi-store:cpi-read-impl-kafka")

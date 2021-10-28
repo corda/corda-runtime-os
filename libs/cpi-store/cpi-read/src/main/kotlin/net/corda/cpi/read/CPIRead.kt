@@ -9,11 +9,15 @@ import java.io.InputStream
 import java.util.concurrent.CompletableFuture
 
 interface CPIRead : Lifecycle {
+
     /**
-     * Register a callback for the CPI list
+     * Register a callback for the CPI list.
      * If the service is already running, you will receive a snapshot of the current CPI List
      */
     fun registerCallback(cpiListener: CPIListener): AutoCloseable
 
+    /**
+     * Retrieve an InputStream given a CPI identifier.
+     */
     fun getCPI(cpiIdentifier: CPI.Identifier): CompletableFuture<InputStream>
 }

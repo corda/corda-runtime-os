@@ -2,6 +2,7 @@ package net.corda.cpi.write.impl.kafka
 
 import com.typesafe.config.Config
 import net.corda.cpi.read.CPISegmentReader
+import net.corda.cpi.utils.CPI_MAX_SEGMENT_SIZE
 import net.corda.data.packaging.CPISegmentRequest
 import net.corda.data.packaging.CPISegmentResponse
 import net.corda.lifecycle.Lifecycle
@@ -51,15 +52,12 @@ class CPISegmentRequestExecutor(private val cpiSegmentReader: CPISegmentReader, 
 
     override fun run() {
         // TODO - how do we send exceptions back to the client
-
         val response = CPISegmentResponse()
-        response.start = cpiSegmentRequest.start
-        val byteBuffer = ByteBuffer.allocate(512 * 512)  // TODO:move this to private member
+        val byteBuffer = ByteBuffer.allocate(CPI_MAX_SEGMENT_SIZE)
         val avroIdentifier = cpiSegmentRequest.identifier
         val cpiIdentifier = avroIdentifier.toCorda()
         val start = cpiSegmentRequest.start
         val isEOF = cpiSegmentReader.getCPISegment(cpiIdentifier, start, byteBuffer)
-        response.numberBytesRead = byteBuffer.position()
         response.atEnd = isEOF
         byteBuffer.flip()
         response.segment = byteBuffer

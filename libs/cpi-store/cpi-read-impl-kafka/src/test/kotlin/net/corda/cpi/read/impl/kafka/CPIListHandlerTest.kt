@@ -5,14 +5,19 @@ import net.corda.cpi.read.CPIListener
 import net.corda.cpi.utils.CPI_LIST_TOPIC_NAME
 import net.corda.cpi.utils.CPI_SUBSCRIPTION_GROUP_NAME
 import net.corda.cpi.utils.toSerializedString
-import net.corda.data.packaging.CPIIdentifier
-import net.corda.data.packaging.CPIIdentity
 import net.corda.data.packaging.CPIMetadata
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.packaging.CPI
+import net.corda.packaging.CPK
+import net.corda.packaging.CordappManifest
+import net.corda.packaging.ManifestCordappInfo
+import net.corda.packaging.converters.toAvro
+import net.corda.packaging.converters.toCorda
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -20,13 +25,52 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.mock
+import java.util.*
+
 
 class CPIListHandlerTest {
+    private val random = Random(0)
     private val subscriptionFactory: SubscriptionFactory = mock()
     private val subscription: CompactedSubscription<String, CPIMetadata> = mock()
     private lateinit var cpiListHandler: CPIListHandler
-    private val signersHashA = "SHA256:6a838d1e427f4389aa3989d4372672c36e7843d8a3489b59439f09f23891e901"
-    private val signersHashB = "SHA256:12add1e427f4389aa337838764873989d4372672c36e7843d8a3489b53433443"
+
+    private val cpkTypeA = CPK.Type.CORDA_API
+
+    private fun createCPIId(key: String): CPI.Identifier {
+        return CPI.Identifier.newInstance("SomeName${key}",
+            "1.0",
+            SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)))
+    }
+
+    private fun createCPIMetadata(id: CPI.Identifier, key: String): CPI.Metadata {
+        val cpkId = CPK.Identifier.newInstance("SomeName${key}",
+            "1.0", SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)))
+        val cordappManifest = CordappManifest(
+            "net.corda.Bundle$key",
+            "1.2.3",
+            12,
+            34,
+            ManifestCordappInfo("someName$key", "R3", 42, "some license"),
+            ManifestCordappInfo("someName$key", "R3", 42, "some license"),
+            mapOf("Corda-Contract-Classes" to "contractClass1, contractClass2",
+                "Corda-Flow-Classes" to "flowClass1, flowClass2"),
+        )
+        val cpkManifest = CPK.Manifest.newInstance(CPK.FormatVersion.newInstance(2, 3))
+        val cpkMetadata = CPK.Metadata.newInstance(cpkManifest,
+            "mainBundleA.jar",
+            listOf("libraryA.jar"),
+            sequenceOf(cpkId).toCollection(TreeSet()),
+            cordappManifest,
+            cpkTypeA,
+            SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
+            emptySet()
+        )
+        return CPI.Metadata.newInstance(
+            id,
+            SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes)),
+            listOf(cpkMetadata),
+            "someString")
+    }
 
     @BeforeEach
     fun beforeEach() {
@@ -47,12 +91,11 @@ class CPIListHandlerTest {
 
     @Test
     fun `register callback then call onSnapshot`() {
-        val avroCPBIdentifier = CPIIdentifier("CPI1", "1.0", signersHashA, CPIIdentity("cn=Rosanna Lee, ou=People, o=Sun, c=us", "groupId"))
-        val avroCPBMetadata = CPIMetadata(avroCPBIdentifier, "networkPolicy1", mapOf("metaName1" to "metaValue1", "metaName2" to "metaValue2"))
-
-        val cpiIdentifier = CPI.Identifier.newInstance(avroCPBMetadata)
+        val cpiIdentifier = createCPIId("A")
+        val cpiMetadata = createCPIMetadata(cpiIdentifier, "A")
+        val avroCPIMetadata = cpiMetadata.toAvro()
         val listener = CPIListenerImplTest()
-        val inputCpbIdentifier = mapOf(cpiIdentifier.toSerializedString() to avroCPBMetadata)
+        val inputCpbIdentifier = mapOf(cpiIdentifier.toSerializedString() to avroCPIMetadata)
         cpiListHandler.start()
         cpiListHandler.registerCPIListCallback(listener)
         cpiListHandler.onSnapshot(inputCpbIdentifier)
@@ -60,29 +103,33 @@ class CPIListHandlerTest {
         assertIdentities(inputCpbIdentifier, listener.snapshot!!)
     }
 
-    // TODO: Switch this to the proper comparison
     private fun assertIdentities(expected: Map<String, CPIMetadata>, actual: Map<CPI.Identifier, CPI.Metadata>) {
         assertEquals(expected.size, actual.size)
         expected.keys.forEach {
-            val identifier = CPI.Identifier.newInstance(expected[it]!!)
+            val identifier = expected[it]?.id?.toCorda()
             assertTrue(actual.containsKey(identifier))
-            val expectedAvroMetadata = expected[it]
-            val metadata = actual[identifier]
-            val expectedMetadata = CPI.Metadata.newInstance(expectedAvroMetadata!!)
-            // TODO: Compare the CPKs as well
-            assertEquals(expectedMetadata.id, metadata?.id)
-            assertEquals(expectedMetadata.networkPolicy, metadata?.networkPolicy)
+            val expectedAvroMetadata = expected[it]!!
+            val metadata = actual[identifier]!!
+            val expectedMetadata = expectedAvroMetadata.toCorda()
+            assertEquals(expectedMetadata.id, metadata.id)
+            assertEquals(expectedMetadata.hash, metadata.hash)
+            assertEquals(expectedMetadata.networkPolicy, metadata.networkPolicy)
+            expectedMetadata.cpks.containsAll(metadata.cpks)
+            metadata.cpks.containsAll(expectedMetadata.cpks)
         }
     }
 
     @Test
     fun `register callback then call onNext`() {
-        val avroCPBIdentifierA = CPIIdentifier("CPI1", "1.0", signersHashA, CPIIdentity("cn=Rosanna LeeA, ou=People, o=Sun, c=us", "groupIdA"))
-        val avroCPBIdentifierB = CPIIdentifier("CPI2", "2.0", signersHashB, CPIIdentity("cn=Rosanna LeeB, ou=People, o=Sun, c=us", "groupIdB"))
-        val cpbMetadataA = CPIMetadata(avroCPBIdentifierA, "networkPolicyA", mapOf("metaNameA1" to "metaValueA1", "metaNameA2" to "metaValueA2"))
-        val cpbMetadataB = CPIMetadata(avroCPBIdentifierB, "networkPolicyB", mapOf("metaNameB1" to "metaValueB1", "metaNameB2" to "metaValueB2"))
-        val cpiIdentifierStrA = CPI.Identifier.newInstance(cpbMetadataA).toSerializedString()
-        val cpiIdentifierStrB = CPI.Identifier.newInstance(cpbMetadataB).toSerializedString()
+        val cpiIdentifierA = createCPIId("A")
+        val cpiMetadataA = createCPIMetadata(cpiIdentifierA, "A")
+        val cpiIdentifierB = createCPIId("B")
+        val cpiMetadataB = createCPIMetadata(cpiIdentifierB, "B")
+
+        val cpbMetadataA = cpiMetadataA.toAvro()
+        val cpbMetadataB = cpiMetadataB.toAvro()
+        val cpiIdentifierStrA = cpiIdentifierA.toSerializedString()
+        val cpiIdentifierStrB = cpiIdentifierB.toSerializedString()
 
         val listener = CPIListenerImplTest()
         val cpbIdentifiers = mapOf(cpiIdentifierStrA to cpbMetadataA, cpiIdentifierStrB to cpbMetadataB)
@@ -95,9 +142,11 @@ class CPIListHandlerTest {
 
     @Test
     fun `listener not invoked after unregister`() {
-        val avroCPBIdentifier = CPIIdentifier("CPI1", "1.0", signersHashA, CPIIdentity("cn=Rosanna Lee, ou=People, o=Sun, c=us", "groupIdA"))
-        val avroCPBMetadata = CPIMetadata(avroCPBIdentifier, "networkPolicy", mapOf("metaName1" to "metaValue1", "metaName2" to "metaValue2"))
-        val cpiIdentifierStr = CPI.Identifier.newInstance(avroCPBIdentifier).toSerializedString()
+        val cpiIdentifier = createCPIId("A")
+        val cpiMetadata = createCPIMetadata(cpiIdentifier, "A")
+
+        val avroCPBMetadata = cpiMetadata.toAvro()
+        val cpiIdentifierStr = cpiIdentifier.toSerializedString()
         val listener = CPIListenerImplTest()
         val inputCpbIdentifier = mapOf(cpiIdentifierStr to avroCPBMetadata)
         cpiListHandler.start()
@@ -115,9 +164,10 @@ class CPIListHandlerTest {
 
     @Test
     fun `register callback twice then call onSnapshot`() {
-        val avroCPBIdentifier = CPIIdentifier("CPI1", "1.0", signersHashA, CPIIdentity("cn=Rosanna Lee, ou=People, o=Sun, c=us", "groupIdA"))
-        val avroCPBMetadata = CPIMetadata(avroCPBIdentifier, "networkPolicy", mapOf("metaName1" to "metaValue1", "metaName2" to "metaValue2"))
-        val cpiIdentifierStr = CPI.Identifier.newInstance(avroCPBMetadata).toSerializedString()
+        val cpiIdentifier = createCPIId("A")
+        val cpiMetadata = createCPIMetadata(cpiIdentifier, "A")
+        val avroCPBMetadata = cpiMetadata.toAvro()
+        val cpiIdentifierStr = cpiIdentifier.toSerializedString()
         val listenerA = CPIListenerImplTest()
         val listenerB = CPIListenerImplTest()
         val inputCpbIdentifier = mapOf(cpiIdentifierStr to avroCPBMetadata)

@@ -5,11 +5,8 @@ import net.corda.cpi.read.CPIRead
 import net.corda.cpi.read.CPISegmentReader
 import net.corda.cpi.read.factory.CPIReadFactory
 import net.corda.cpi.read.impl.kafka.CPIReadImplKafka
-import net.corda.data.packaging.CPISegmentRequest
-import net.corda.data.packaging.CPISegmentResponse
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

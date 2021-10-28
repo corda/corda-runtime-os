@@ -19,7 +19,7 @@ class CPIListHandler(private val subscriptionFactory: SubscriptionFactory,
                      private val nodeConfig: Config
 ) : CompactedProcessor<String, CPIMetadata> {
 
-    private val cpiIdentities: MutableMap<CPI.Identifier, CPI.Metadata> = Collections.synchronizedMap(mutableMapOf())
+    val cpiMetadata: MutableMap<CPI.Identifier, CPI.Metadata> = Collections.synchronizedMap(mutableMapOf())
     private val listeners: MutableList<CPIListener> = Collections.synchronizedList(mutableListOf())
     private var subscription: CompactedSubscription<String, CPIMetadata>? = null
     @Volatile
@@ -37,7 +37,7 @@ class CPIListHandler(private val subscriptionFactory: SubscriptionFactory,
         synchronized(listeners) {
             val convertedData = fromAvroTypedMap(currentData)
             listeners.forEach { it.onUpdate(convertedData.keys, convertedData) }
-            cpiIdentities.putAll(convertedData)
+            cpiMetadata.putAll(convertedData)
             snapshotReceived = true
         }
     }
@@ -61,14 +61,14 @@ class CPIListHandler(private val subscriptionFactory: SubscriptionFactory,
 
         synchronized(listeners) {
             listeners.forEach { it.onUpdate(setOf(changedKey), convertedData) }
-            changedValue?.let { cpiIdentities.put(changedKey, it) } ?: cpiIdentities.remove(changedKey)
+            changedValue?.let { cpiMetadata.put(changedKey, it) } ?: cpiMetadata.remove(changedKey)
         }
     }
 
     fun registerCPIListCallback(cpiListener: CPIListener): AutoCloseable {
         listeners.add(cpiListener)
         if (snapshotReceived) {
-            cpiListener.onUpdate(cpiIdentities.keys, cpiIdentities)
+            cpiListener.onUpdate(cpiMetadata.keys, cpiMetadata)
         }
         return CPIListenerRegistration(this, cpiListener)
     }
