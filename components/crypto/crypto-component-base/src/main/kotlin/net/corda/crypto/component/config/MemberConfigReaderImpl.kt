@@ -1,4 +1,4 @@
-package net.corda.crypto.service.config
+package net.corda.crypto.component.config
 
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.impl.closeGracefully
@@ -8,7 +8,6 @@ import net.corda.data.crypto.config.CryptoConfigurationRecord
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.v5.base.util.contextLogger
@@ -29,13 +28,12 @@ class MemberConfigReaderImpl @Activate constructor(
 ) : MemberConfigReader, Lifecycle, CryptoLifecycleComponent {
     companion object {
         private val logger: Logger = contextLogger()
+        private val DEFAULT_MEMBER_CONFIG = CryptoMemberConfigImpl(emptyMap())
     }
 
-    private var impl = Impl(
-        subscriptionFactory,
-        CryptoConfigMap(emptyMap()),
-        logger
-    )
+    private interface Reader : MemberConfigReader, AutoCloseable
+
+    private var impl: Reader = DummyImpl(logger)
 
     override var isRunning: Boolean = false
 
@@ -63,32 +61,35 @@ class MemberConfigReaderImpl @Activate constructor(
 
     override fun get(memberId: String): CryptoMemberConfig = impl.get(memberId)
 
+    private class DummyImpl(
+        private val logger: Logger
+    ) : Reader {
+        override fun get(memberId: String): CryptoMemberConfig {
+            logger.warn("Using dummy config reader to get member's '{}' config", memberId)
+            return DEFAULT_MEMBER_CONFIG
+        }
+
+        override fun close() {
+        }
+    }
+
     private class Impl(
         subscriptionFactory: SubscriptionFactory,
         config: CryptoConfigMap,
         private val logger: Logger
-    ) : CompactedProcessor<String, CryptoConfigurationRecord>, AutoCloseable {
-        companion object {
-            private val DEFAULT_MEMBER_CONFIG = CryptoMemberConfigImpl(emptyMap())
-        }
-
+    ) : CompactedProcessor<String, CryptoConfigurationRecord>, Reader {
         private val groupName: String = config.getString(ConfigConsts.GROUP_NAME_KEY)
 
         private val topicName: String = config.getString(ConfigConsts.TOPIC_NAME_KEY)
 
-        private var subscription: CompactedSubscription<String, CryptoConfigurationRecord>? =
-            if(config.isEmpty()) {
-                null
-            } else {
-                subscriptionFactory.createCompactedSubscription(
-                    SubscriptionConfig(groupName, topicName),
-                    this
-                ).also { it.start() }
-            }
+        private var subscription = subscriptionFactory.createCompactedSubscription(
+            SubscriptionConfig(groupName, topicName),
+            this
+        ).also { it.start() }
 
         private var configMap = ConcurrentHashMap<String, CryptoMemberConfig>()
 
-        fun get(memberId: String): CryptoMemberConfig {
+        override fun get(memberId: String): CryptoMemberConfig {
             logger.debug("Getting configuration for member {}", memberId)
             return configMap[memberId] ?: configMap[DEFAULT_MEMBER_KEY] ?: DEFAULT_MEMBER_CONFIG
         }
@@ -112,7 +113,7 @@ class MemberConfigReaderImpl @Activate constructor(
             currentData: Map<String, CryptoConfigurationRecord>
         ) {
             logger.debug("Processing new update")
-            if(newRecord.value == null) {
+            if (newRecord.value == null) {
                 configMap.remove(newRecord.key)
             } else {
                 configMap[newRecord.key] = toMemberConfig(newRecord.value!!)
@@ -120,7 +121,7 @@ class MemberConfigReaderImpl @Activate constructor(
         }
 
         override fun close() {
-            subscription?.closeGracefully()
+            subscription.closeGracefully()
         }
 
         private fun toMemberConfig(value: CryptoConfigurationRecord) =

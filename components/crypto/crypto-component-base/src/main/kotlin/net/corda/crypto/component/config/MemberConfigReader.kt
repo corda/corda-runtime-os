@@ -1,4 +1,4 @@
-package net.corda.crypto.service.config
+package net.corda.crypto.component.config
 
 import net.corda.v5.cipher.suite.config.CryptoMemberConfig
 import net.corda.v5.crypto.exceptions.CryptoConfigurationException

@@ -19,7 +19,7 @@ import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.config.mngCache
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactoryProvider
-import net.corda.crypto.service.config.MemberConfigReader
+import net.corda.crypto.component.config.MemberConfigReader
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata

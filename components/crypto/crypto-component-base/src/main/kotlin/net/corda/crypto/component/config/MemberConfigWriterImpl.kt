@@ -1,4 +1,4 @@
-package net.corda.crypto.service.config
+package net.corda.crypto.component.config
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
@@ -31,11 +31,7 @@ class MemberConfigWriterImpl @Activate constructor(
         private val logger: Logger = contextLogger()
     }
 
-    private var impl = Impl(
-        publisherFactory,
-        CryptoConfigMap(emptyMap()),
-        logger
-    )
+    private var impl: Impl? = null
 
     override var isRunning: Boolean = false
 
@@ -46,7 +42,7 @@ class MemberConfigWriterImpl @Activate constructor(
 
     override fun stop() {
         logger.info("Stopping...")
-        impl.closeGracefully()
+        impl?.closeGracefully()
         isRunning = false
     }
 
@@ -58,11 +54,15 @@ class MemberConfigWriterImpl @Activate constructor(
             config.memberConfig,
             logger
         )
-        currentImpl.closeGracefully()
+        currentImpl?.closeGracefully()
     }
 
     override fun put(memberId: String, entity: CryptoMemberConfig): CompletableFuture<Unit> =
-        impl.put(memberId, entity)
+        if(impl == null) {
+            throw IllegalStateException("The writer has not been initialize yet.")
+        } else {
+            impl!!.put(memberId, entity)
+        }
 
     private class Impl(
         publisherFactory: PublisherFactory,
@@ -75,7 +75,7 @@ class MemberConfigWriterImpl @Activate constructor(
 
         private val pub: Publisher = publisherFactory.createPublisher(
             PublisherConfig(clientId)
-        )
+        ).also { it.start() }
 
         override fun close() {
             pub.close()

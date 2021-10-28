@@ -1,4 +1,4 @@
-package net.corda.crypto.service.config
+package net.corda.crypto.component.config
 
 class ConfigConsts {
     companion object {
