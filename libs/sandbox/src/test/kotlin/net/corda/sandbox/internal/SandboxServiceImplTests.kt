@@ -3,7 +3,6 @@ package net.corda.sandbox.internal
 import net.corda.install.InstallService
 import net.corda.packaging.CPK
 import net.corda.packaging.CordappManifest
-import net.corda.sandbox.DEFAULT_SECURITY_DOMAIN
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxImpl
@@ -28,7 +27,6 @@ import java.nio.file.Paths
 import java.security.cert.Certificate
 import java.util.Collections.emptyNavigableSet
 import java.util.NavigableSet
-import java.util.UUID.randomUUID
 import kotlin.random.Random.Default.nextBytes
 
 /** Tests of [SandboxServiceImpl]. */
@@ -349,60 +347,29 @@ class SandboxServiceImplTests {
 
     @Test
     fun `can retrieve calling sandbox group`() {
-        val mockBundle = mockBundle()
         val mockBundleUtils = mockBundleUtils(setOf(cpkAndContentsOne)).apply {
             whenever(getServiceRuntimeComponentBundle()).thenReturn(scrBundle)
-            whenever(getBundle(any())).thenReturn(mockBundle)
         }
 
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
         val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkAndContentsOne.cpk.metadata.hash))
-        val sandbox = (sandboxGroup as SandboxGroupInternal).sandboxes.single()
+        val sandboxMainBundle = (sandboxGroup as SandboxGroupInternal).sandboxes.single().mainBundle
 
-        val validSandboxLocation = SandboxLocation(DEFAULT_SECURITY_DOMAIN, sandbox.id, "testUri")
-        whenever(mockBundle.location).thenReturn(validSandboxLocation.toString())
+        whenever(mockBundleUtils.getBundle(any())).thenReturn(sandboxMainBundle)
 
         assertEquals(sandboxGroup, sandboxService.getCallingSandboxGroup())
     }
 
     @Test
     fun `retrieving calling sandbox group returns null if there is no sandbox bundle on the stack`() {
-        val mockBundle = mockBundle()
         val mockBundleUtils = mockBundleUtils(setOf(cpkAndContentsOne)).apply {
-            whenever(getBundle(any())).thenReturn(mockBundle)
+            whenever(getBundle(any())).thenReturn(mock())
         }
 
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
         sandboxService.createSandboxGroup(setOf(cpkAndContentsOne.cpk.metadata.hash))
 
-        // We return a non-sandbox location (i.e. one missing the 'sandbox/' prefix).
-        val nonSandboxLocation = ""
-        whenever(mockBundle.location).thenReturn(nonSandboxLocation)
-
         assertNull(sandboxService.getCallingSandboxGroup())
-    }
-
-    @Test
-    fun `retrieving calling sandbox group throws if no sandbox can be found with the given ID`() {
-        val mockBundle = mockBundle()
-        val mockBundleUtils = mockBundleUtils(setOf(cpkAndContentsOne)).apply {
-            whenever(getBundle(any())).thenReturn(mockBundle)
-        }
-
-        val sandboxService = SandboxServiceImpl(mock(), mockBundleUtils)
-
-        // We return a sandbox location that does not correspond to any actual sandbox.
-        val invalidSandboxLocation = SandboxLocation(DEFAULT_SECURITY_DOMAIN, randomUUID(), "testUri")
-        whenever(mockBundle.location).thenReturn(invalidSandboxLocation.toString())
-
-        val e = assertThrows<SandboxException> {
-            sandboxService.getCallingSandboxGroup()
-        }
-        assertTrue(
-            e.message!!.contains(
-                "A sandbox was found on the stack, but it did not match any sandbox known to this SandboxService."
-            )
-        )
     }
 
     @Test
@@ -510,10 +477,10 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `a sandbox's security domain defaults to 'sandbox'`() {
+    fun `a sandbox's security domain defaults to an empty string`() {
         sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
         startedBundles.forEach { bundle ->
-            assertTrue(bundle.location.startsWith(DEFAULT_SECURITY_DOMAIN))
+            assertTrue(bundle.location.startsWith(""))
         }
     }
 
@@ -547,9 +514,7 @@ private data class CpkAndContents(
     val cpk = createDummyCpk(cpkDependencies)
 
     /** Creates a dummy [CPK]. */
-    private fun createDummyCpk(
-        cpkDependencies: NavigableSet<CPK.Identifier>
-    ) = object : CPK {
+    private fun createDummyCpk(cpkDependencies: NavigableSet<CPK.Identifier>) = object : CPK {
         override val metadata = object : CPK.Metadata {
             override val id = CPK.Identifier.newInstance(random.nextInt().toString(), "1.0", randomSecureHash())
             override val type = CPK.Type.UNKNOWN
@@ -557,6 +522,7 @@ private data class CpkAndContents(
                 override val cpkFormatVersion = CPK.FormatVersion.parse("0.0")
             }
             override val hash = SecureHash(HASH_ALGORITHM, nextBytes(HASH_LENGTH))
+
             // We use `random.nextInt` to generate random values here.
             override val mainBundle = Paths.get("${random.nextInt()}.jar").toString()
             override val libraries = listOf(Paths.get("lib/${random.nextInt()}.jar").toString())

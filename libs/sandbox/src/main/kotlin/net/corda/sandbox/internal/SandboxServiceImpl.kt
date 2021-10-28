@@ -58,11 +58,11 @@ internal class SandboxServiceImpl @Activate constructor(
         publicSandboxes.add(publicSandbox)
     }
 
-    override fun createSandboxGroup(cpkFileHashes: Iterable<SecureHash>, securityDomain: String) =
-        createSandboxes(cpkFileHashes, securityDomain, startBundles = true)
+    override fun createSandboxGroup(cpkHashes: Iterable<SecureHash>, securityDomain: String) =
+        createSandboxes(cpkHashes, securityDomain, startBundles = true)
 
-    override fun createSandboxGroupWithoutStarting(cpkFileHashes: Iterable<SecureHash>, securityDomain: String) =
-        createSandboxes(cpkFileHashes, securityDomain, startBundles = false)
+    override fun createSandboxGroupWithoutStarting(cpkHashes: Iterable<SecureHash>, securityDomain: String) =
+        createSandboxes(cpkHashes, securityDomain, startBundles = false)
 
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
         val sandboxGroupInternal = sandboxGroup as SandboxGroupInternal
@@ -241,26 +241,20 @@ internal class SandboxServiceImpl @Activate constructor(
         }
     }
 
-    /**
-     * Returns the [Sandbox] lowest in the stack of calls to this function, or null if no sandbox is on the stack.
-     *
-     * A [SandboxException] is thrown if the sandbox bundle's location is not formatted correctly, the ID is not a
-     * valid UUID, or there is no known sandbox with the given ID.
-     */
+    /** Returns the [Sandbox] lowest in the stack of calls to this function, or null if no sandbox is on the stack. */
     private fun getCallingSandbox(): Sandbox? {
         val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
 
-        val sandboxBundleLocation = stackWalkerInstance.walk { stackFrameStream ->
+        return stackWalkerInstance.walk { stackFrameStream ->
             stackFrameStream
                 .asSequence()
-                .mapNotNull { stackFrame -> bundleUtils.getBundle(stackFrame.declaringClass)?.location }
-                .find { bundleLocation -> bundleLocation.startsWith("sandbox/") }
-        } ?: return null
-
-        val sandboxId = SandboxLocation.fromString(sandboxBundleLocation).id
-
-        return sandboxes[sandboxId] ?: throw SandboxException(
-            "A sandbox was found on the stack, but it did not match any sandbox known to this SandboxService."
-        )
+                .mapNotNull { stackFrame ->
+                    val bundle = bundleUtils.getBundle(stackFrame.declaringClass)
+                    if (bundle != null) {
+                        sandboxes.values.find { sandbox -> sandbox.containsBundle(bundle) }
+                    } else null
+                }
+                .firstOrNull()
+        }
     }
 }

@@ -23,7 +23,7 @@ internal class SandboxGroupImpl(
     private val publicSandboxes: Iterable<Sandbox>,
     private val classTagFactory: ClassTagFactory
 ) : SandboxGroupInternal {
-    
+
     override val sandboxes = sandboxesById.values
 
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
