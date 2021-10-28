@@ -490,23 +490,6 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `can retrieve calling sandbox's CPK identifier`() {
-        val mockBundle = mockBundle()
-        val mockBundleUtils = mockBundleUtils(setOf(cpkAndContentsOne)).apply {
-            whenever(getBundle(any())).thenReturn(mockBundle)
-        }
-
-        val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
-        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkAndContentsOne.cpk.metadata.hash))
-        val sandbox = (sandboxGroup as SandboxGroupInternal).sandboxes.single()
-
-        val validSandboxLocation = SandboxLocation(DEFAULT_SECURITY_DOMAIN, sandbox.id, "testUri")
-        whenever(mockBundle.location).thenReturn(validSandboxLocation.toString())
-
-        assertEquals(sandbox.cpk.metadata.id, sandboxService.getCallingCpk())
-    }
-
-    @Test
     fun `retrieving calling sandbox group returns null if there is no sandbox bundle on the stack`() {
         val mockBundle = mockBundle()
         val mockBundleUtils = mockBundleUtils(setOf(cpkAndContentsOne)).apply {

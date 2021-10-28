@@ -1,10 +1,8 @@
 package net.corda.sandbox.internal
 
 import net.corda.install.InstallService
-import net.corda.packaging.CPK
 import net.corda.sandbox.ClassInfo
 import net.corda.sandbox.CpkClassInfo
-import net.corda.sandbox.CpkSandbox
 import net.corda.sandbox.PublicClassInfo
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxContextService
@@ -131,16 +129,6 @@ internal class SandboxServiceImpl @Activate constructor(
         return sandboxGroups[sandbox.id] ?: throw SandboxException(
             "A sandbox was found, but it was not part of any sandbox group."
         )
-    }
-
-    override fun getCallingCpk(): CPK.Identifier? {
-        val callingSandbox = getCallingSandbox()
-        return if (callingSandbox is CpkSandbox) {
-            callingSandbox.cpk.metadata.id
-
-        } else {
-            null
-        }
     }
 
     /**
@@ -303,6 +291,12 @@ internal class SandboxServiceImpl @Activate constructor(
         )
     }
 
+    /**
+     * Returns the [Sandbox] lowest in the stack of calls to this function, or null if no sandbox is on the stack.
+     *
+     * A [SandboxException] is thrown if the sandbox bundle's location is not formatted correctly, the ID is not a
+     * valid UUID, or there is no known sandbox with the given ID.
+     */
     private fun getCallingSandbox(): Sandbox? {
         val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
 
