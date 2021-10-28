@@ -20,14 +20,16 @@ The gradle task publishOSGiImage publishes a Docker Image which can be run local
 
 ### Running the container
 ```
-docker run -it -p -e "JAVA_TOOL_OPTIONS=-DinstanceId=1" 8888:8888 engineering-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
+docker run -it -e "JAVA_TOOL_OPTIONS=-DinstanceId=1" -p 8888:8888 engineering-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
 ```
 
 ### Debugging the container
 To debug a running container we can use the JAVA_TOOL_OPTIONS environment variable to pass arguments at runtime e.g.
 
 ```
-docker run -it -p 8887:8888 -p 5005:5005 -e "JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005,-DinstanceId=1" engineering-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
+docker run -it -p 8888:8888 -p 5005:5005 -e "JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005 -DinstanceId=1" engineering-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
 ```
 
 For further details on the image creation process see [Jar containerization](../../buildSrc/README.md#Create Docker Image Custom Gradle Task)
+
+Swagger UI can now be accessed using [local URL](https://localhost:8888/api/v1/swagger).
