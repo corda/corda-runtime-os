@@ -21,7 +21,7 @@ interface SandboxContextService {
     fun getClassInfo(className: String): ClassInfo
 
     /**
-     * Finds the [Sandbox] lowest in the stack of calls to this function, and returns the [SandboxGroup] that contains
+     * Finds the sandbox lowest in the stack of calls to this function, and returns the [SandboxGroup] that contains
      * it. Returns null if no sandbox is on the stack.
      *
      * A [SandboxException] is thrown if the sandbox bundle's location is not formatted correctly, the ID is not a
