@@ -1,7 +1,4 @@
-import aQute.bnd.gradle.Resolve
-
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
 }
 
@@ -73,21 +70,6 @@ tasks.named('jar', Jar) {
 -conditionalpackage: aQute.*
 """
     }
-}
-
-def resolve = tasks.register('resolve', Resolve) {
-    dependsOn jar
-    bundles = files(
-        sourceSets.integrationTest.runtimeClasspath,
-        configurations.archives.artifacts.files
-    )
-    bndrun = file('tests.bndrun')
-    //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
-    System.setProperty("bnd.home.dir", "$rootDir/bnd")
-}
-
-tasks.named('check') {
-    dependsOn resolve
 }
 
 tasks.named('test', Test) {
