@@ -1,12 +1,11 @@
 package net.corda.sandbox.internal.sandbox
 
-import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import org.osgi.framework.Bundle
 import java.util.UUID
 
-/** Extends [Sandbox] with internal methods. */
-internal interface SandboxInternal : Sandbox {
+/** A container for isolating a set of bundles. */
+internal interface Sandbox {
     // The sandbox's unique identifier.
     val id: UUID
 
@@ -21,13 +20,13 @@ internal interface SandboxInternal : Sandbox {
     fun containsClass(klass: Class<*>): Boolean
 
     /** Indicates whether this sandbox has visibility of [otherSandbox]. */
-    fun hasVisibility(otherSandbox: SandboxInternal): Boolean
+    fun hasVisibility(otherSandbox: Sandbox): Boolean
 
     /** Grants this sandbox visibility of [otherSandbox]. */
-    fun grantVisibility(otherSandbox: SandboxInternal)
+    fun grantVisibility(otherSandbox: Sandbox)
 
     /** Grants this sandbox visibility of the [otherSandboxes]. */
-    fun grantVisibility(otherSandboxes: List<SandboxInternal>)
+    fun grantVisibility(otherSandboxes: List<Sandbox>)
 
     /** Returns the bundle with symbolic name [bundleName] from sandbox, or null if no bundle has a matching name. */
     fun getBundle(bundleName: String): Bundle?

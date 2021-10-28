@@ -8,7 +8,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * An implementation of [SandboxInternal].
+ * An implementation of [Sandbox].
  *
  * @param bundleUtils The [BundleUtils] that all OSGi activity is delegated to for testing purposes
  * @param privateBundles The set of non-public [Bundle]s in this sandbox
@@ -18,7 +18,7 @@ internal open class SandboxImpl(
     override val id: UUID,
     final override val publicBundles: Set<Bundle>,
     private val privateBundles: Set<Bundle>
-) : SandboxInternal {
+) : Sandbox {
     private val logger = loggerFor<SandboxImpl>()
 
     // The other sandboxes whose services, bundles and events this sandbox can receive.
@@ -37,14 +37,14 @@ internal open class SandboxImpl(
         return bundleUtils.getBundle(klass) in allBundles
     }
 
-    override fun hasVisibility(otherSandbox: SandboxInternal) = otherSandbox.id in visibleSandboxes
+    override fun hasVisibility(otherSandbox: Sandbox) = otherSandbox.id in visibleSandboxes
 
-    override fun grantVisibility(otherSandbox: SandboxInternal) {
+    override fun grantVisibility(otherSandbox: Sandbox) {
         visibleSandboxes.add(otherSandbox.id)
     }
 
-    override fun grantVisibility(otherSandboxes: List<SandboxInternal>) {
-        visibleSandboxes.addAll(otherSandboxes.map(SandboxInternal::id))
+    override fun grantVisibility(otherSandboxes: List<Sandbox>) {
+        visibleSandboxes.addAll(otherSandboxes.map(Sandbox::id))
     }
 
     override fun getBundle(bundleName: String) = (publicBundles + privateBundles).find { bundle ->

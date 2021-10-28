@@ -6,21 +6,21 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.internal.classtag.ClassTagFactory
 import net.corda.sandbox.internal.classtag.EvolvableTag
 import net.corda.sandbox.internal.classtag.StaticTag
-import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
-import net.corda.sandbox.internal.sandbox.SandboxInternal
+import net.corda.sandbox.internal.sandbox.CpkSandbox
+import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
 
 /**
  * An implementation of the [SandboxGroup] interface.
  *
  * @param bundleUtils The [BundleUtils] that all OSGi activity is delegated to for testing purposes.
- * @param sandboxesById The [CpkSandboxInternal]s in this sandbox group, keyed by the identifier of their CPK.
+ * @param sandboxesById The [CpkSandbox]s in this sandbox group, keyed by the identifier of their CPK.
  * @param publicSandboxes An iterable containing all existing public sandboxes.
  */
 internal class SandboxGroupImpl(
     private val bundleUtils: BundleUtils,
-    private val sandboxesById: Map<CPK.Identifier, CpkSandboxInternal>,
-    private val publicSandboxes: Iterable<SandboxInternal>,
+    private val sandboxesById: Map<CPK.Identifier, CpkSandbox>,
+    private val publicSandboxes: Iterable<Sandbox>,
     private val classTagFactory: ClassTagFactory
 ) : SandboxGroupInternal {
     override val sandboxes = sandboxesById.values

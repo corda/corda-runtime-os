@@ -1,12 +1,12 @@
 package net.corda.sandbox.internal.classtag
 
-import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
 import net.corda.sandbox.internal.CLASS_TAG_IDENTIFIER_IDX
 import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
 import net.corda.sandbox.internal.ClassTagV1
-import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
+import net.corda.sandbox.internal.sandbox.CpkSandbox
+import net.corda.sandbox.internal.sandbox.Sandbox
 import org.osgi.framework.Bundle
 
 /** An implementation of [ClassTagFactory]. */
@@ -34,7 +34,7 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
 
         }
 
-        if (sandbox !is CpkSandboxInternal) throw SandboxException("Sandbox was neither a public sandbox nor a " +
+        if (sandbox !is CpkSandbox) throw SandboxException("Sandbox was neither a public sandbox nor a " +
                 "CPK sandbox. A valid class tag cannot be constructed.")
 
         return if (isStaticClassTag) {

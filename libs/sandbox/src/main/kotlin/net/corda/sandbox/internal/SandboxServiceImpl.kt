@@ -4,16 +4,15 @@ import net.corda.install.InstallService
 import net.corda.sandbox.ClassInfo
 import net.corda.sandbox.CpkClassInfo
 import net.corda.sandbox.PublicClassInfo
-import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.internal.classtag.ClassTagFactoryImpl
+import net.corda.sandbox.internal.sandbox.CpkSandbox
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
-import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
+import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.sandbox.SandboxImpl
-import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
@@ -28,6 +27,8 @@ import java.io.InputStream
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.streams.asSequence
+
+// TODO - Add tests of `isSandboxed` and `areInSameSandbox`.
 
 /** An implementation of [SandboxCreationService] and [SandboxContextService]. */
 @Component(service = [SandboxCreationService::class, SandboxContextService::class])
@@ -44,13 +45,13 @@ internal class SandboxServiceImpl @Activate constructor(
         )
 
     // These sandboxes are not persisted in any way; they are recreated on node startup.
-    private val sandboxes = ConcurrentHashMap<UUID, SandboxInternal>()
+    private val sandboxes = ConcurrentHashMap<UUID, Sandbox>()
 
     // Maps each sandbox ID to the sandbox group that the sandbox is part of.
     private val sandboxGroups = ConcurrentHashMap<UUID, SandboxGroup>()
 
     // The created public sandboxes.
-    private val publicSandboxes = mutableListOf<SandboxInternal>()
+    private val publicSandboxes = mutableListOf<Sandbox>()
 
     // Bundles that failed to uninstall when a sandbox group was unloaded.
     private val zombieBundles = mutableListOf<Bundle>()
@@ -74,7 +75,7 @@ internal class SandboxServiceImpl @Activate constructor(
         sandboxGroupInternal.sandboxes.forEach { sandbox ->
             sandboxes.remove(sandbox.id)
             sandboxGroups.remove(sandbox.id)
-            zombieBundles.addAll((sandbox as SandboxInternal).unload())
+            zombieBundles.addAll((sandbox as Sandbox).unload())
         }
     }
 
@@ -123,7 +124,7 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     override fun getCallingSandboxGroup(): SandboxGroup? {
-        val sandbox = (getCallingSandbox() ?: return null) as SandboxInternal
+        val sandbox = getCallingSandbox() ?: return null
         return sandboxGroups[sandbox.id] ?: throw SandboxException(
             "A sandbox was found, but it was not part of any sandbox group."
         )
@@ -269,12 +270,12 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     /** Contains the logic that is shared between the two public `getClassInfo` methods. */
-    private fun getClassInfo(klass: Class<*>, sandbox: SandboxInternal): ClassInfo {
+    private fun getClassInfo(klass: Class<*>, sandbox: Sandbox): ClassInfo {
         val bundle = bundleUtils.getBundle(klass)
             ?: throw SandboxException("Class $klass is not loaded from any bundle.")
 
         val cpk = when (sandbox) {
-            is CpkSandboxInternal -> sandbox.cpk
+            is CpkSandbox -> sandbox.cpk
             else -> return PublicClassInfo(bundle.symbolicName, bundle.version)
         }
 

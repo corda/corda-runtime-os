@@ -34,12 +34,6 @@ class SandboxServiceIsolationTest {
             foundServices.any { service -> serviceClass.isAssignableFrom(service) }
         }
 
-    /** Checks whether the [foundServices] contains none of the [serviceClasses]. */
-    private fun hasNoneServices(foundServices: Collection<Class<*>>, serviceClasses: Collection<Class<*>>) =
-        serviceClasses.all { serviceClass ->
-            foundServices.none { service -> serviceClass.isAssignableFrom(service) }
-        }
-
     @Test
     fun `sandbox can see its own services and main bundle services in the same sandbox group only`() {
         val thisGroup = sandboxLoader.group1
@@ -53,22 +47,16 @@ class SandboxServiceIsolationTest {
                 serviceClasses, setOf(
                     ServiceComponentRuntime::class.java,
                     Resolver::class.java,
-                    sandboxLoader.sandbox1.loadClassFromMainBundle(LIBRARY_QUERY_CLASS),
-                    sandboxLoader.sandbox1.loadClassFromMainBundle(SERVICES_FLOW_CPK_1),
-                    sandboxLoader.sandbox2.loadClassFromMainBundle(SERVICES_FLOW_CPK_2)
+                    sandboxLoader.group1.loadClassFromMainBundle(sandboxLoader.cpk1.metadata.id, LIBRARY_QUERY_CLASS),
+                    sandboxLoader.group1.loadClassFromMainBundle(sandboxLoader.cpk1.metadata.id, SERVICES_FLOW_CPK_1),
+                    sandboxLoader.group1.loadClassFromMainBundle(sandboxLoader.cpk2.metadata.id, SERVICES_FLOW_CPK_2)
                 )
             )
         )
 
         // CPK 1 cannot see any services from another sandbox group.
         assertTrue(hasNoServiceFromGroup(serviceClasses, otherGroup))
-
-        // CPK 1 cannot see any library services from another sandbox in the same sandbox group.
-        assertTrue(
-            hasNoneServices(
-                serviceClasses,
-                setOf(sandboxLoader.sandbox2.loadClassFromMainBundle(LIBRARY_QUERY_CLASS))
-            )
-        )
     }
+
+    // TODO - Test of only seeing one library.
 }

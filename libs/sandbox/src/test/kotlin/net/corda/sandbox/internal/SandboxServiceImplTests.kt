@@ -8,7 +8,6 @@ import net.corda.sandbox.DEFAULT_SECURITY_DOMAIN
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxImpl
-import net.corda.sandbox.internal.sandbox.SandboxInternal
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.AfterEach
@@ -339,10 +338,7 @@ class SandboxServiceImplTests {
         val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash))
         val sandboxes = (sandboxGroup as SandboxGroupInternal).sandboxes.toList()
         assertEquals(2, sandboxes.size)
-
-        val sandboxOne = sandboxes[0] as SandboxInternal
-        val sandboxTwo = sandboxes[1] as SandboxInternal
-        assertTrue(sandboxOne.hasVisibility(sandboxTwo))
+        assertTrue(sandboxes[0].hasVisibility(sandboxes[1]))
     }
 
     @Test
@@ -367,12 +363,12 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `a bundle doesn't have visibility of a bundle in another sandbox it doesn't have visibility of`() {
+    fun `a bundle doesn't have visibility of a bundle in a sandbox it doesn't have visibility of`() {
         // We create the two sandboxes separately so that they don't have visibility of one another.
         val sandboxGroupOne = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
         val sandboxGroupTwo = sandboxService.createSandboxGroup(listOf(cpkTwo.metadata.hash))
-        val sandboxOne = (sandboxGroupOne as SandboxGroupInternal).sandboxes.single() as SandboxInternal
-        val sandboxTwo = (sandboxGroupTwo as SandboxGroupInternal).sandboxes.single() as SandboxInternal
+        val sandboxOne = (sandboxGroupOne as SandboxGroupInternal).sandboxes.single()
+        val sandboxTwo = (sandboxGroupTwo as SandboxGroupInternal).sandboxes.single()
 
         val sandboxOneBundles = startedBundles.filter { bundle -> sandboxOne.containsBundle(bundle) }
         val sandboxTwoBundles = startedBundles.filter { bundle -> sandboxTwo.containsBundle(bundle) }

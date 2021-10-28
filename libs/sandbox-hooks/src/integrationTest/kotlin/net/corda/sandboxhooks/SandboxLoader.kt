@@ -2,8 +2,6 @@ package net.corda.sandboxhooks
 
 import net.corda.install.InstallService
 import net.corda.packaging.CPK
-import net.corda.sandbox.CpkSandbox
-import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
@@ -79,10 +77,6 @@ class SandboxLoader @Activate constructor(
     val group1 = createSandboxGroupFor(cpk1, cpk2)
     val group2 = createSandboxGroupFor(cpk3)
 
-    val sandbox1 = getSandbox(group1, cpk1)
-    val sandbox2 = getSandbox(group1, cpk2)
-    val sandbox3 = getSandbox(group2, cpk3)
-
     /** Runs the flow with [className] in sandbox group [group] and casts the return value to [T]. */
     internal fun <T : Any> runFlow(className: String, group: SandboxGroup): T {
         val workflowClass = group.loadClassFromMainBundles(className, Flow::class.java)
@@ -101,13 +95,6 @@ class SandboxLoader @Activate constructor(
     private fun createSandboxGroupFor(vararg cpks: CPK) =
         sandboxCreationService.createSandboxGroup(cpks.map { it.metadata.hash })
 
-    private fun getSandbox(sandboxGroup: SandboxGroup, cpk: CPK): CpkSandbox {
-        val sandboxesMethod = sandboxGroup::class.java.getMethod("getSandboxes")
-        @Suppress("UNCHECKED_CAST")
-        val sandboxes = sandboxesMethod.invoke(sandboxGroup) as Collection<CpkSandbox>
-        return sandboxes.find { sandbox -> sandbox.cpk === cpk }!!
-    }
-
     private fun <T, U : T> getServiceFor(serviceType: Class<T>, bundleClass: Class<U>): T {
         val context = FrameworkUtil.getBundle(bundleClass).bundleContext
         return context.getServiceReferences(serviceType, null)
@@ -116,15 +103,17 @@ class SandboxLoader @Activate constructor(
             .firstOrNull() ?: fail("No service for $serviceType.")
     }
 
-    fun containsBundle(sandbox: Sandbox, bundle: Bundle): Boolean {
-        val containsMethod = sandbox::class.java.getMethod("containsBundle", Bundle::class.java)
-        return containsMethod.invoke(sandbox, bundle) as Boolean
-    }
+    // TODO - Review this use of `Any`. Hopefully there's a better way.
 
     fun containsBundle(group: SandboxGroup, bundle: Bundle): Boolean {
         val sandboxesMethod = group::class.java.getMethod("getSandboxes")
         @Suppress("UNCHECKED_CAST")
-        val sandboxes = sandboxesMethod.invoke(group) as Collection<CpkSandbox>
+        val sandboxes = sandboxesMethod.invoke(group) as Collection<Any>
         return sandboxes.any { sandbox -> containsBundle(sandbox, bundle) }
+    }
+
+    private fun containsBundle(sandbox: Any, bundle: Bundle): Boolean {
+        val containsMethod = sandbox::class.java.getMethod("containsBundle", Bundle::class.java)
+        return containsMethod.invoke(sandbox, bundle) as Boolean
     }
 }

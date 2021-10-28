@@ -1,7 +1,7 @@
 package net.corda.sandbox.internal
 
 import net.corda.packaging.CPK
-import net.corda.sandbox.Sandbox
+import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.classtag.ClassTag
 import net.corda.sandbox.internal.classtag.ClassTagFactory
