@@ -6,7 +6,6 @@ import net.corda.packaging.CordappManifest
 import net.corda.sandbox.DEFAULT_SECURITY_DOMAIN
 import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
-import net.corda.sandbox.internal.classtag.EvolvableTagImplV1
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxInternal
@@ -31,7 +30,6 @@ import java.nio.file.Paths
 import java.security.cert.Certificate
 import java.util.Collections.emptyNavigableSet
 import java.util.NavigableSet
-import java.util.TreeSet
 import java.util.UUID.randomUUID
 import kotlin.random.Random.Default.nextBytes
 
