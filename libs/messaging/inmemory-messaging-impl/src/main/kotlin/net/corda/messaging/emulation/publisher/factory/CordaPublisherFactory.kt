@@ -44,10 +44,10 @@ class CordaPublisherFactory @Activate constructor(
         return CordaPublisher(config, topicService)
     }
 
-    override fun <TREQ : Any, TRESP : Any> createRPCSender(
-        rpcConfig: RPCConfig<TREQ, TRESP>,
+    override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+        rpcConfig: RPCConfig<REQUEST, RESPONSE>,
         nodeConfig: Config
-    ): RPCSender<TREQ, TRESP> {
+    ): RPCSender<REQUEST, RESPONSE> {
         TODO("Not yet implemented")
     }
 }
