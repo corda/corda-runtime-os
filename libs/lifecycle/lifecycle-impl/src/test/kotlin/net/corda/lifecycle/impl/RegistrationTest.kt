@@ -100,7 +100,7 @@ class RegistrationTest {
     }
 
     @Test
-    fun `not closing coordinator a registration leads to an error state`() {
+    fun `not closing a coordinator registration eventually leads to a down state`() {
         val factory = LifecycleCoordinatorFactoryImpl()
         val coordinator = factory.createCoordinator(LifecycleCoordinatorName("a", "b")) { _, _ -> }
         coordinator.start()
@@ -112,7 +112,7 @@ class RegistrationTest {
         tracked.close()
         Thread.sleep(1000)
         assertThat(tracked.status).isEqualTo(LifecycleStatus.DOWN)
-        assertThat(coordinator.status).isEqualTo(LifecycleStatus.ERROR)
+        assertThat(coordinator.status).isEqualTo(LifecycleStatus.DOWN)
 //        coordinator.close()
     }
 

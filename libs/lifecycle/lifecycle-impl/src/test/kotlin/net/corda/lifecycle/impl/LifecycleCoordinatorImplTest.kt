@@ -14,6 +14,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.impl.LifecycleProcessor.Companion.STOPPED_REASON
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -1066,7 +1067,7 @@ internal class LifecycleCoordinatorImplTest {
     }
 
     @Test
-    fun `cannot close coordinator if there are any registrations`() {
+    fun `can still close coordinator even if there are registrations`() {
         var latch = CountDownLatch(2)
         val flushingEvent = object : LifecycleEvent {}
         val coordinator1 = createCoordinator { event, _ ->
@@ -1083,27 +1084,16 @@ internal class LifecycleCoordinatorImplTest {
                 }
             }
         }
-        val registration = coordinator1.followStatusChanges(setOf(coordinator2))
         coordinator1.start()
         coordinator2.start()
         coordinator1.postEvent(flushingEvent)
         coordinator2.postEvent(flushingEvent)
         assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS))
-        assertThrows<LifecycleException> {
-            coordinator1.close()
-        }
-        assertThrows<LifecycleException> {
-            coordinator2.close()
-        }
-
-        // Should be able to close both coordinators after closing the registration.
-        latch = CountDownLatch(2)
-        registration.close()
-        coordinator1.postEvent(flushingEvent)
-        coordinator2.postEvent(flushingEvent)
-        assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         coordinator1.close()
         coordinator2.close()
+
+        assertThat(coordinator1.isClosed)
+        assertThat(coordinator2.isClosed)
     }
 
     private fun createCoordinator(
