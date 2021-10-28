@@ -26,7 +26,7 @@ import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 @Suppress("TooManyFunctions")
-open class DominoTile constructor(
+class DominoTile constructor(
     instanceName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
     val createResources: ((resources: ResourcesHolder) -> Any)? = null,
@@ -64,13 +64,13 @@ open class DominoTile constructor(
 
     private val controlLock = ReentrantReadWriteLock()
 
-    final override fun start() {
+    override fun start() {
         logger.info("Starting $name")
         coordinator.start()
         coordinator.postEvent(StartTile)
     }
 
-    final override fun stop() {
+    override fun stop() {
         if (state != State.StoppedByParent) {
             coordinator.postEvent(StopTile(false))
         }
@@ -272,7 +272,7 @@ open class DominoTile constructor(
         }
     }
 
-    internal fun gotError(cause: Throwable) {
+    private fun gotError(cause: Throwable) {
         logger.warn("Got error in $name", cause)
         if (state != State.StoppedDueToError) {
             coordinator.postEvent(StopTile(true))
