@@ -1,4 +1,4 @@
-package net.corda.securitymanager.osgi
+package net.corda.securitymanager.internal
 
 import net.corda.securitymanager.SecurityManagerService
 import org.junit.jupiter.api.BeforeEach
@@ -25,7 +25,7 @@ class DiscoverySecurityManagerTests {
     @Suppress("unused")
     @BeforeEach
     fun reset() {
-        securityManagerService.startDiscoveryMode()
+        securityManagerService.startDiscoveryMode(setOf(bundleLocation))
     }
 
     @Test

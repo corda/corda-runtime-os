@@ -1,4 +1,4 @@
-package net.corda.securitymanager.osgi
+package net.corda.securitymanager.internal
 
 import net.corda.securitymanager.SecurityManagerService
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
@@ -185,9 +185,21 @@ class RestrictiveSecurityManagerTests {
         securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
 
         // This stops the existing `RestrictiveSecurityManager`, and starts the `DiscoverySecurityManager`.
-        securityManagerService.startDiscoveryMode()
+        securityManagerService.startDiscoveryMode(setOf())
 
         assertDoesNotThrow {
+            System.getenv()
+        }
+    }
+
+    @Test
+    fun `the OSGi security manager is reset when the restrictive security manager is started`() {
+        System.setSecurityManager(null)
+
+        securityManagerService.start()
+        securityManagerService.denyPermissions(bundleLocation, setOf(getEnvPerm))
+
+        assertThrows<AccessControlException> {
             System.getenv()
         }
     }

@@ -6,6 +6,7 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.condpermadmin.ConditionalPermissionAdmin
 import java.security.Permission
 
 /** An implementation of [SecurityManagerService]. */
@@ -13,36 +14,41 @@ import java.security.Permission
 @Component(immediate = true, service = [SecurityManagerService::class])
 class SecurityManagerServiceImpl @Activate constructor(
     @Reference
-    private val discoverySecurityManager: DiscoverySecurityManager,
+    private val conditionalPermissionAdmin: ConditionalPermissionAdmin,
     @Reference
-    private val restrictiveSecurityManager: RestrictiveSecurityManager
+    private val bundleUtils: BundleUtils,
+    @Reference
+    private val logUtils: LogUtils
 ) : SecurityManagerService {
     companion object {
         private val log = contextLogger()
     }
 
-    // The currently-running Corda security manager.
-    private var securityManager: CordaSecurityManager? = null
+    // The OSGi security manager that is installed at framework start. This may be temporarily replaced by the
+    // `DiscoverySecurityManager`.
+    private val osgiSecurityManager = System.getSecurityManager()
+
+    // The current Corda security manager.
+    private var cordaSecurityManager: CordaSecurityManager? = null
 
     override fun start() {
-        securityManager?.stop()
+        cordaSecurityManager?.stop()
+        System.setSecurityManager(osgiSecurityManager)
         log.info("Starting restrictive Corda security manager.")
-        securityManager = restrictiveSecurityManager.apply { start() }
+        cordaSecurityManager = RestrictiveSecurityManager(conditionalPermissionAdmin)
     }
 
-    override fun startDiscoveryMode() {
-        securityManager?.stop()
+    override fun startDiscoveryMode(prefixes: Collection<String>) {
+        cordaSecurityManager?.stop()
         log.info("Starting discovery Corda security manager. This is not secure in production.")
-        securityManager = discoverySecurityManager.apply { start() }
+        cordaSecurityManager = DiscoverySecurityManager(prefixes, bundleUtils, logUtils)
     }
 
-    override fun grantPermissions(filter: String, perms: Collection<Permission>) {
-        securityManager?.grantPermissions(filter, perms)
+    override fun grantPermissions(filter: String, perms: Collection<Permission>) =
+        cordaSecurityManager?.grantPermissions(filter, perms)
             ?: throw SecurityManagerException("No Corda security manager is currently running.")
-    }
 
-    override fun denyPermissions(filter: String, perms: Collection<Permission>) {
-        securityManager?.denyPermissions(filter, perms)
+    override fun denyPermissions(filter: String, perms: Collection<Permission>) =
+        cordaSecurityManager?.denyPermissions(filter, perms)
             ?: throw SecurityManagerException("No Corda security manager is currently running.")
-    }
 }

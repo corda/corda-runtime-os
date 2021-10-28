@@ -1,4 +1,4 @@
-package net.corda.securitymanager.osgi
+package net.corda.securitymanager.internal
 
 internal const val WILDCARD = "*"
 internal const val GET_ENV_TARGET = "getenv.$WILDCARD"

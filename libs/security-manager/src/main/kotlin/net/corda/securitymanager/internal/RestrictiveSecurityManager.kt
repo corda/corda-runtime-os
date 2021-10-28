@@ -1,9 +1,6 @@
 package net.corda.securitymanager.internal
 
 import net.corda.securitymanager.SecurityManagerException
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import org.osgi.service.condpermadmin.BundleLocationCondition
 import org.osgi.service.condpermadmin.ConditionInfo
 import org.osgi.service.condpermadmin.ConditionalPermissionAdmin
@@ -15,9 +12,7 @@ import java.security.AllPermission
 import java.security.Permission
 
 /** A [CordaSecurityManager] that provides control over what permissions are granted or denied. */
-@Component(service = [RestrictiveSecurityManager::class])
-class RestrictiveSecurityManager @Activate constructor(
-    @Reference
+class RestrictiveSecurityManager(
     private val conditionalPermissionAdmin: ConditionalPermissionAdmin
 ) : CordaSecurityManager {
     companion object {
@@ -25,7 +20,7 @@ class RestrictiveSecurityManager @Activate constructor(
     }
 
     /** Grants all permissions to all bundles. */
-    override fun start() {
+    init {
         val grantAllPermissions = conditionalPermissionAdmin.newConditionalPermissionInfo(
             null, null, arrayOf(allPermInfo), ALLOW
         )
