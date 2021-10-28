@@ -25,5 +25,5 @@ fun getStartRPCEventRecord(clientId: String, cpiId: String, flowId: String, flow
     val identity = HoldingIdentity(x500Name, groupId)
     val key = FlowKey(flowId, identity)
     val rpcStartFlow = StartRPCFlow(clientId, flowName, cpiId, identity, Instant.now(), "args")
-    return Record(DEFAULT_DEDUP_TOPIC_VALUE, key, FlowEvent(key, rpcStartFlow))
+    return Record(DEFAULT_DEDUP_TOPIC_VALUE, flowId, FlowEvent(key, rpcStartFlow))
 }
