@@ -1,6 +1,5 @@
 package net.corda.flow.manager.impl
 
-import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowError
@@ -13,11 +12,11 @@ import net.corda.dependency.injection.DependencyInjectionService
 import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.flow.statemachine.factory.FlowStateMachineFactory
 import net.corda.sandbox.SandboxGroup
-import net.corda.virtual.node.cache.FlowMetadata
-import net.corda.virtual.node.cache.VirtualNodeCache
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.services.serialization.SerializationService
 import net.corda.v5.serialization.SerializedBytes
+import net.corda.virtual.node.cache.FlowMetadata
+import net.corda.virtual.node.cache.VirtualNodeCache
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -51,7 +50,7 @@ class FlowManagerImplTest {
             flowName,
             "Pass!",
             SecureHash("", ByteBuffer.allocate(1)),
-            ExceptionEnvelope()
+            FlowError()
         )
         val stateMachineState = StateMachineState(
             "",

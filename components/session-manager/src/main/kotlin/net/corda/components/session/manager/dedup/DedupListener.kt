@@ -5,7 +5,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -25,7 +24,7 @@ class DedupListener(
     }
 
     override fun onPartitionSynced(states: Map<String, RequestWindow>) {
-        log.debug { "Synced states $states" }
+        log.info("Synced states $states")
         val currentTime = System.currentTimeMillis()
         for (stateEntry in states) {
             val key = stateEntry.key
@@ -45,7 +44,7 @@ class DedupListener(
     }
 
     override fun onPartitionLost(states: Map<String, RequestWindow>) {
-        log.debug { "Lost partition states $states" }
+        log.info( "Lost partition states $states" )
         for (stateEntry in states) {
             val key = stateEntry.key
             scheduledTasks[key]?.cancel(true)
@@ -53,6 +52,6 @@ class DedupListener(
     }
 
     override fun onPostCommit(updatedStates: Map<String, RequestWindow?>) {
-        log.debug { "Committed states $updatedStates" }
+        log.info("Committed states $updatedStates" )
     }
 }

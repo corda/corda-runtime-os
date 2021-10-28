@@ -1,6 +1,7 @@
 package net.corda.components.session.manager.dedup
 
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.session.RequestWindow
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -8,7 +9,6 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -30,9 +30,10 @@ class DedupProcessor(
     }
 
     override fun onNext(state: RequestWindow?, event: Record<String, Any>): StateAndEventProcessor.Response<RequestWindow> {
+        log.info("Received event $event with state $state")
         val key = event.key
         val currentTime = System.currentTimeMillis()
-        var responseState: RequestWindow? = null
+        var responseState: RequestWindow? = state
         val responseEvents = mutableListOf<Record<*, *>>()
 
         val eventValue = event.value ?: return StateAndEventProcessor.Response(responseState, responseEvents)
@@ -41,24 +42,25 @@ class DedupProcessor(
         val outputTopic = getEventOutputTopic(eventValue)
 
         if (state == null) {
-            log.debug { "State is null for key $key" }
+            log.info("State is null for key $key" )
             if (eventExpiryTime > currentTime) {
                 setSessionWindowForKey(key)
 
-                log.debug { "Setting new state expiry time of $eventExpiryTime for key $key" }
+                log.info("Valid message. Setting new state expiry time of $eventExpiryTime for key $key" )
                 responseState = RequestWindow(event.key, eventExpiryTime)
                 responseEvents.add(Record(outputTopic, getOutputEventKey(eventValue), eventValue))
             } else {
-                log.debug { "Event with expiry time $eventExpiryTime has lapsed for key $key. Current time $currentTime" }
+                log.info("Dropping Message. Event with expiry time $eventExpiryTime has lapsed for key $key. Current time $currentTime" )
             }
         } else {
             val stateExpiryTime = state.expireTime
-            log.debug { "State for key $key has expiry time of $stateExpiryTime" }
+            log.info("State for key $key has expiry time of $stateExpiryTime" )
             if (stateExpiryTime > currentTime) {
-                log.debug { "Duplicate message found for key $key. State expire time is within expiry limit of $stateExpiryTime" }
+                log.info("Duplicate message found for key $key. State expire time is within expiry limit of $stateExpiryTime" )
             } else {
-                log.debug { "Resetting state for key $key. New expiry time of $eventExpiryTime for key $key" }
+                log.info("Valid message. Resetting state for key $key. New expiry time of $eventExpiryTime for key $key" )
                 responseState = RequestWindow(event.key, eventExpiryTime)
+                responseEvents.add(Record(outputTopic, getOutputEventKey(eventValue), eventValue))
             }
         }
 
@@ -78,8 +80,13 @@ class DedupProcessor(
 
     private fun getOutputEventKey(event: Any): Any {
         return when (event) {
-            is StartRPCFlow -> {
-                FlowKey(event.clientId, event.rpcUsername)
+            is FlowEvent -> {
+                when (val payload = event.payload) {
+                    is StartRPCFlow -> {
+                        FlowKey(payload.clientId, payload.rpcUsername)
+                    }
+                    else -> throw CordaMessageAPIFatalException("Unexpected type found")
+                }
             }
             else -> throw CordaMessageAPIFatalException("Unexpected type found")
         }
@@ -87,8 +94,13 @@ class DedupProcessor(
 
     private fun getEventTimeStamp(eventValue: Any): Long {
         return when (eventValue) {
-            is StartRPCFlow -> {
-                eventValue.timestamp.epochSecond
+            is FlowEvent -> {
+                when (val payload = eventValue.payload) {
+                    is StartRPCFlow -> {
+                        payload.timestamp.toEpochMilli()
+                    }
+                    else -> throw CordaMessageAPIFatalException("Unexpected type found")
+                }
             }
             else -> throw CordaMessageAPIFatalException("Unexpected type found")
         }
@@ -96,7 +108,7 @@ class DedupProcessor(
 
     private fun getEventOutputTopic(eventValue: Any): String {
         return when (eventValue) {
-            is StartRPCFlow -> {
+            is FlowEvent -> {
                 FLOW_EVENT_TOPIC
             }
             else -> throw CordaMessageAPIFatalException("Unexpected type found")

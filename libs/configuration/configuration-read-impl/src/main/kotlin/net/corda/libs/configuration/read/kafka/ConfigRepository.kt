@@ -3,9 +3,13 @@ package net.corda.libs.configuration.read.kafka
 import com.typesafe.config.Config
 import java.util.*
 
-class ConfigRepository {
+class ConfigRepository(bootstrapConfig: Config) {
 
-    private var configurationMap: Map<String, Config> = Collections.synchronizedMap(mutableMapOf())
+    companion object {
+        const val BOOTSTRAP_KEY = "corda.boot"
+    }
+
+    private var configurationMap: Map<String, Config> = Collections.synchronizedMap(mutableMapOf(BOOTSTRAP_KEY to bootstrapConfig))
 
     fun getConfigurations(): Map<String, Config> {
         return configurationMap.toMap()

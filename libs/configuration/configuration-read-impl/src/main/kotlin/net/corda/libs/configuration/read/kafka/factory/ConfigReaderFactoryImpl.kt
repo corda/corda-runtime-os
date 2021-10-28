@@ -17,6 +17,6 @@ class ConfigReaderFactoryImpl @Activate constructor(
 ) : ConfigReaderFactory {
 
     override fun createReader(bootstrapConfig: Config): ConfigReader {
-        return ConfigReaderImpl(ConfigRepository(), subscriptionFactory, bootstrapConfig)
+        return ConfigReaderImpl(ConfigRepository(bootstrapConfig), subscriptionFactory, bootstrapConfig)
     }
 }

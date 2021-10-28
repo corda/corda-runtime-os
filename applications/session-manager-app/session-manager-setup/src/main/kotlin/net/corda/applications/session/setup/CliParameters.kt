@@ -10,6 +10,12 @@ class CliParameters {
     )
     var instanceId: String? = null
 
+    @CommandLine.Option(
+        names = ["--numRecords"],
+        description = ["Number of duplicates to send"]
+    )
+    var numRecords: Int? = null
+
     @CommandLine.Option(names = ["--config"], description = ["File containing configuration to be stored"])
     var configurationFile: File? = null
 

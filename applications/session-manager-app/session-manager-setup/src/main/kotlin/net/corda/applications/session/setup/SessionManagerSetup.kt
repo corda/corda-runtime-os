@@ -20,6 +20,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
@@ -67,6 +68,7 @@ class SessionManagerSetup @Activate constructor(
         CommandLine(parameters).parseArgs(*args)
         val instanceId = parameters.instanceId?.toInt()
         val configurationFile = parameters.configurationFile
+        val numRecords = parameters.numRecords ?: 1
         val topicTemplate = parameters.topicTemplate
         val bootstrapConfig = getBootstrapConfig(instanceId)
 
@@ -95,7 +97,7 @@ class SessionManagerSetup @Activate constructor(
                     is RegistrationStatusChangeEvent -> {
                         if (event.status == LifecycleStatus.UP) {
                             consoleLogger.info("Publishing RPCRecord")
-                            publisher?.publishRecords(listOf(getHelloWorldRPCEventRecord()))?.forEach { it.get() }
+                            publisher?.publishRecords(getRecords(numRecords))?.forEach { it.get() }
                             consoleLogger.info("Published RPCRecord")
                             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
                         } else {
@@ -112,6 +114,10 @@ class SessionManagerSetup @Activate constructor(
             }
 
         lifeCycleCoordinator!!.start()
+    }
+
+    private fun getRecords(numRecords: Int): List<Record<*, *>> {
+        return MutableList(numRecords) { getHelloWorldRPCEventRecord() }
     }
 
     private fun writeConfig(configurationFile: File?, bootstrapConfig: Config) {

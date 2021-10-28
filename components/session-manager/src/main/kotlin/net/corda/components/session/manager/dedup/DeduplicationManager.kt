@@ -17,7 +17,6 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -32,16 +31,16 @@ class DeduplicationManager(
     private companion object {
         private val logger = contextLogger()
 
-        private const val SESSION_KEY = "SESSION"
-        private const val BOOT_KEY = "BOOT"
-        private const val MESSAGING_KEY = "MESSAGING"
+        private const val SESSION_KEY = "corda.session"
+        private const val BOOT_KEY = "corda.boot"
+        private const val MESSAGING_KEY = "corda.messaging"
 
         private const val INSTANCE_ID = "instance-id"
-        private const val MAX_SESSION_LENGTH = "session.dedup.maxSessionLength"
-        private const val DEDUP_STATE_TOPIC = "session.dedup.topic.state"
-        private const val DEDUP_EVENT_TOPIC = "session.dedup.topic.event"
-        private const val CLIENT_ID = "session.dedup.publisher.clientId"
-        private const val CONSUMER_GROUP = "session.dedup.consumer.groupName"
+        private const val MAX_SESSION_LENGTH = "dedup.maxSessionLength"
+        private const val DEDUP_STATE_TOPIC = "dedup.topic.state"
+        private const val DEDUP_EVENT_TOPIC = "dedup.topic.event"
+        private const val CLIENT_ID = "dedup.publisher.clientId"
+        private const val CONSUMER_GROUP = "dedup.consumer.groupName"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<DeduplicationManager>(::eventHandler)
@@ -62,10 +61,11 @@ class DeduplicationManager(
     private val eventTopic = sessionConfig.getString(DEDUP_EVENT_TOPIC)
     private val consumerGroup = sessionConfig.getString(CONSUMER_GROUP)
 
+    @Suppress("UNUSED_PARAMETER")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        logger.info ("DeduplicationManager received event $event")
         when (event) {
             is StartEvent -> {
-                logger.debug { "Starting deduplication manager." }
                 val scheduledExecutorService = resetScheduledExecutorService()
                 val publisher = resetPublisher()
 
@@ -77,9 +77,9 @@ class DeduplicationManager(
                     configs[MESSAGING_KEY]!!,
                     DedupListener(dedupState)
                 )
+                stateAndEventSub?.start()
             }
             is StopEvent -> {
-                logger.debug { "Stopping deduplication manager." }
                 publisher?.close()
                 stateAndEventSub?.close()
                 scheduledExecutorService?.shutdownNow()
