@@ -35,7 +35,6 @@ dependencies {
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
     implementation "org.slf4j:slf4j-api"
 
-    implementation project(":libs:class-info")
     implementation project(":libs:crypto:crypto-internal")
     implementation project(":libs:sandbox")
     implementation project(":libs:serialization:checkpoint-serialization-api")
