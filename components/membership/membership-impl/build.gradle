@@ -7,20 +7,7 @@ description 'Membership services implementation'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
-    compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "net.corda:corda-avro-schema"
-    implementation "net.corda:corda-application"
-    implementation "net.corda:corda-cipher-suite"
-    implementation "net.corda:corda-membership"
-    implementation "net.corda:corda-membership-conversion"
-    implementation "net.corda:corda-membership-identity"
-    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
-
-    testImplementation project(":libs:crypto:crypto-impl")
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation project(":testing:crypto-testkit")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 }
