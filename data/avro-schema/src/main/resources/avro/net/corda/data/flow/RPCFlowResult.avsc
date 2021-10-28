@@ -22,7 +22,7 @@
     {
       "name": "error",
       "doc": "The flow exception (if any) that caused an error",
-      "type": ["null", "net.corda.data.flow.FlowError"]
+      "type": ["null", "net.corda.data.ExceptionEnvelope"]
     }
   ]
 }
