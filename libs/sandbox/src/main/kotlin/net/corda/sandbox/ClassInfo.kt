@@ -18,8 +18,8 @@ data class PublicClassInfo(override val classBundleName: String, override val cl
 /**
  * A [ClassInfo] for a class from a CPK.
  *
- * @param cordappBundleName The symbolic name of the CorDapp bundle of the CPK the class was loaded from.
- * @param cordappBundleVersion The version of the CorDapp bundle of the CPK the class was loaded from.
+ * @param mainBundleName The symbolic name of the main bundle of the CPK the class was loaded from.
+ * @param mainBundleVersion The version of the main bundle of the CPK the class was loaded from.
  * @param cpkFileHash The hash of the CPK the class was loaded from.
  * @param cpkSignerSummaryHash A summary hash of the hashes of the public keys that signed the CPK the class is from.
  * @param cpkDependencies The hashes of the CPK's dependencies.
@@ -27,8 +27,8 @@ data class PublicClassInfo(override val classBundleName: String, override val cl
 data class CpkClassInfo(
     override val classBundleName: String,
     override val classBundleVersion: Version,
-    val cordappBundleName: String,
-    val cordappBundleVersion: Version,
+    val mainBundleName: String,
+    val mainBundleVersion: Version,
     val cpkFileHash: SecureHash,
     val cpkSignerSummaryHash: SecureHash?,
     val cpkDependencies: Set<SecureHash>

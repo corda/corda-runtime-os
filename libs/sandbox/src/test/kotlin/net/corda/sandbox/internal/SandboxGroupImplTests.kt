@@ -25,7 +25,7 @@ private const val PUBLIC_STATIC_TAG = "serialised_static_public_class"
 private const val BAD_CPK_FILE_HASH_STATIC_TAG = "serialised_static_bad_cpk_file_hash"
 private const val CPK_EVOLVABLE_TAG = "serialised_evolvable_cpk_class"
 private const val PUBLIC_EVOLVABLE_TAG = "serialised_evolvable_public_class"
-private const val BAD_CORDAPP_BUNDLE_NAME_EVOLVABLE_TAG = "serialised_evolvable_bad_cordapp_bundle_name"
+private const val BAD_MAIN_BUNDLE_NAME_EVOLVABLE_TAG = "serialised_evolvable_bad_main_bundle_name"
 private const val BAD_SIGNERS_EVOLVABLE_TAG = "serialised_evolvable_bad_signers"
 
 /**
@@ -42,7 +42,7 @@ class SandboxGroupImplTests {
     private val mockCpkBundle = mockBundle(CPK_BUNDLE_NAME, cpkClass)
     private val mockPublicBundle = mockBundle(PUBLIC_BUNDLE_NAME, publicClass)
     private val mockNonSandboxBundle = mockBundle()
-    private val mockCordappBundle = mockBundle(CORDAPP_BUNDLE_NAME)
+    private val mockMainBundle = mockBundle(MAIN_BUNDLE_NAME)
 
     private val mockBundleUtils = mock<BundleUtils>().apply {
         whenever(getBundle(cpkClass)).thenReturn(mockCpkBundle)
@@ -51,7 +51,7 @@ class SandboxGroupImplTests {
     }
 
     private val cpkSandbox =
-        CpkSandboxImpl(mockBundleUtils, randomUUID(), mockCpk(), mockCordappBundle, setOf(mockCpkBundle))
+        CpkSandboxImpl(mockBundleUtils, randomUUID(), mockCpk(), mockMainBundle, setOf(mockCpkBundle))
     private val publicSandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(mockPublicBundle), emptySet())
 
     private val sandboxGroupImpl = SandboxGroupImpl(
@@ -143,7 +143,7 @@ class SandboxGroupImplTests {
     @Test
     fun `throws if asked to return class but cannot find matching sandbox for an evolvable tag`() {
         assertThrows<SandboxException> {
-            sandboxGroupImpl.getClass(cpkClass.name, BAD_CORDAPP_BUNDLE_NAME_EVOLVABLE_TAG)
+            sandboxGroupImpl.getClass(cpkClass.name, BAD_MAIN_BUNDLE_NAME_EVOLVABLE_TAG)
         }
         assertThrows<SandboxException> {
             sandboxGroupImpl.getClass(cpkClass.name, BAD_SIGNERS_EVOLVABLE_TAG)
@@ -168,17 +168,17 @@ private class StaticTagImpl(isPublicClass: Boolean, classBundleName: String, cpk
 private class EvolvableTagImpl(
     isPublicClass: Boolean,
     classBundleName: String,
-    cordappBundleName: String,
+    mainBundleName: String,
     cpkSignerSummaryHash: SecureHash?
 ) :
-    EvolvableTag(1, isPublicClass, classBundleName, cordappBundleName, cpkSignerSummaryHash) {
+    EvolvableTag(1, isPublicClass, classBundleName, mainBundleName, cpkSignerSummaryHash) {
     override fun serialise() = ""
 }
 
 /** A dummy [ClassTagFactory] implementation that returns pre-defined tags. */
 private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
-    // Used for public classes, where the CorDapp bundle name, CPK file hash and CPK signer summary hash are ignored.
-    val dummyCordappBundleName = "dummyCordappBundleName"
+    // Used for public classes, where the main bundle name, CPK file hash and CPK signer summary hash are ignored.
+    val dummyMainBundleName = "dummyMainBundleName"
     val dummyHash = SecureHash.create("SHA-256:0000000000000000")
 
     private val cpkStaticTag =
@@ -191,26 +191,26 @@ private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
         StaticTagImpl(false, CPK_BUNDLE_NAME, randomSecureHash())
 
     private val cpkEvolvableTag =
-        EvolvableTagImpl(false, CPK_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, cpk.metadata.id.signerSummaryHash)
+        EvolvableTagImpl(false, CPK_BUNDLE_NAME, MAIN_BUNDLE_NAME, cpk.metadata.id.signerSummaryHash)
 
     private val publicEvolvableTag =
         EvolvableTagImpl(
             true,
             PUBLIC_BUNDLE_NAME,
-            dummyCordappBundleName,
+            dummyMainBundleName,
             dummyHash
         )
 
-    private val invalidCordappBundleNameEvolvableTag =
+    private val invalidMainBundleNameEvolvableTag =
         EvolvableTagImpl(
             false,
             CPK_BUNDLE_NAME,
-            "invalid_cordapp_bundle_name",
+            "invalid_main_bundle_name",
             cpk.metadata.id.signerSummaryHash
         )
 
     private val invalidSignersEvolvableTag =
-        EvolvableTagImpl(false, CPK_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, randomSecureHash())
+        EvolvableTagImpl(false, CPK_BUNDLE_NAME, MAIN_BUNDLE_NAME, randomSecureHash())
 
     override fun createSerialised(
         isStaticClassTag: Boolean,
@@ -226,7 +226,7 @@ private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
             BAD_CPK_FILE_HASH_STATIC_TAG -> invalidCpkFileHashStaticTag
             CPK_EVOLVABLE_TAG -> cpkEvolvableTag
             PUBLIC_EVOLVABLE_TAG -> publicEvolvableTag
-            BAD_CORDAPP_BUNDLE_NAME_EVOLVABLE_TAG -> invalidCordappBundleNameEvolvableTag
+            BAD_MAIN_BUNDLE_NAME_EVOLVABLE_TAG -> invalidMainBundleNameEvolvableTag
             BAD_SIGNERS_EVOLVABLE_TAG -> invalidSignersEvolvableTag
             else -> throw IllegalArgumentException("Could not deserialise tag.")
         }

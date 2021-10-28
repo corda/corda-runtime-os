@@ -53,9 +53,9 @@ class SandboxServiceIsolationTest {
                 serviceClasses, setOf(
                     ServiceComponentRuntime::class.java,
                     Resolver::class.java,
-                    sandboxLoader.sandbox1.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS),
-                    sandboxLoader.sandbox1.loadClassFromCordappBundle(SERVICES_FLOW_CPK_1),
-                    sandboxLoader.sandbox2.loadClassFromCordappBundle(SERVICES_FLOW_CPK_2)
+                    sandboxLoader.sandbox1.loadClassFromMainBundle(LIBRARY_QUERY_CLASS),
+                    sandboxLoader.sandbox1.loadClassFromMainBundle(SERVICES_FLOW_CPK_1),
+                    sandboxLoader.sandbox2.loadClassFromMainBundle(SERVICES_FLOW_CPK_2)
                 )
             )
         )
@@ -67,7 +67,7 @@ class SandboxServiceIsolationTest {
         assertTrue(
             hasNoneServices(
                 serviceClasses,
-                setOf(sandboxLoader.sandbox2.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS))
+                setOf(sandboxLoader.sandbox2.loadClassFromMainBundle(LIBRARY_QUERY_CLASS))
             )
         )
     }

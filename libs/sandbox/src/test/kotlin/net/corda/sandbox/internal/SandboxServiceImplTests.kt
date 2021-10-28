@@ -85,13 +85,13 @@ class SandboxServiceImplTests {
         whenever(allBundles).thenReturn(listOf(frameworkBundle, scrBundle))
 
         cpksAndContents.forEach { contents ->
-            val cordappPath = contents.cpk.metadata.mainBundle
+            val mainBundlePath = contents.cpk.metadata.mainBundle
             val libPath = contents.cpk.metadata.libraries.single()
 
-            whenever(installAsBundle(argThat { endsWith(cordappPath) || endsWith(libPath) }, any())).then { answer ->
+            whenever(installAsBundle(argThat { endsWith(mainBundlePath) || endsWith(libPath) }, any())).then { answer ->
                 val bundleLocation = answer.arguments.first() as String
-                val (bundleName, bundleClass) = if (bundleLocation.endsWith(cordappPath)) {
-                    contents.cordappBundleName to contents.cordappClass
+                val (bundleName, bundleClass) = if (bundleLocation.endsWith(mainBundlePath)) {
+                    contents.mainBundleName to contents.mainBundleClass
                 } else {
                     contents.libraryBundleName to contents.libraryClass
                 }
@@ -174,7 +174,7 @@ class SandboxServiceImplTests {
     fun `throws if a CPK bundle cannot be installed`() {
         val mockBundleUtils = mockBundleUtils(
             setOf(cpkAndContentsOne),
-            notInstallableBundles = setOf(cpkAndContentsOne.cordappBundleName!!)
+            notInstallableBundles = setOf(cpkAndContentsOne.mainBundleName!!)
         )
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
 
@@ -185,38 +185,38 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `throws if a CPK's CorDapp bundle does not have a symbolic name`() {
-        val cpkWithBadCordapp = cpkAndContentsOne.copy(cordappBundleName = null)
+    fun `throws if a CPK's main bundle does not have a symbolic name`() {
+        val cpkWithBadMainBundle = cpkAndContentsOne.copy(mainBundleName = null)
         val sandboxService = SandboxServiceImpl(
-            mockInstallService(setOf(cpkWithBadCordapp)),
-            mockBundleUtils(setOf(cpkWithBadCordapp))
+            mockInstallService(setOf(cpkWithBadMainBundle)),
+            mockBundleUtils(setOf(cpkWithBadMainBundle))
         )
 
         val e = assertThrows<SandboxException> {
-            sandboxService.createSandboxGroup(listOf(cpkWithBadCordapp.cpk.metadata.hash))
+            sandboxService.createSandboxGroup(listOf(cpkWithBadMainBundle.cpk.metadata.hash))
         }
         assertTrue(e.message!!.contains(" does not have a symbolic name, which would prevent serialisation."))
     }
 
     @Test
     fun `throws if a CPK's library bundle does not have a symbolic name`() {
-        val cpkWithBadCordapp = cpkAndContentsOne.copy(libraryBundleName = null)
+        val cpkWithBadMainBundle = cpkAndContentsOne.copy(libraryBundleName = null)
         val sandboxService = SandboxServiceImpl(
-            mockInstallService(setOf(cpkWithBadCordapp)),
-            mockBundleUtils(setOf(cpkWithBadCordapp))
+            mockInstallService(setOf(cpkWithBadMainBundle)),
+            mockBundleUtils(setOf(cpkWithBadMainBundle))
         )
 
         val e = assertThrows<SandboxException> {
-            sandboxService.createSandboxGroup(listOf(cpkWithBadCordapp.cpk.metadata.hash))
+            sandboxService.createSandboxGroup(listOf(cpkWithBadMainBundle.cpk.metadata.hash))
         }
         assertTrue(e.message!!.contains(" does not have a symbolic name, which would prevent serialisation."))
     }
 
     @Test
-    fun `throws if a CPK's CorDapp bundle cannot be started`() {
+    fun `throws if a CPK's main bundle cannot be started`() {
         val mockBundleUtils = mockBundleUtils(
             setOf(cpkAndContentsOne),
-            notStartableBundles = setOf(cpkAndContentsOne.cordappBundleName!!)
+            notStartableBundles = setOf(cpkAndContentsOne.mainBundleName!!)
         )
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
 
@@ -247,7 +247,7 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `returns the CPK info for a CorDapp class installed in one of the sandboxes`() {
+    fun `returns the CPK info for a main bundle class installed in one of the sandboxes`() {
         // We make the CPK we are retrieving have a dependency on `cpkOne` and `cpkTwo`, so we can check the
         // `CpkClassInfo` fields related to dependencies.
         val cpkDependencies = setOf(cpkOne, cpkTwo).map { cpk ->
@@ -263,19 +263,19 @@ class SandboxServiceImplTests {
         val sandboxService = createSandboxService(setOf(cpkWithDependencies, cpkAndContentsOne, cpkAndContentsTwo))
         sandboxService.createSandboxGroup(listOf(cpkWithDependencies.cpk.metadata.hash))
 
-        val classInfo = sandboxService.getClassInfo(cpkWithDependencies.cordappClass)
-        val classInfoByName = sandboxService.getClassInfo(cpkWithDependencies.cordappClass.name)
+        val classInfo = sandboxService.getClassInfo(cpkWithDependencies.mainBundleClass)
+        val classInfoByName = sandboxService.getClassInfo(cpkWithDependencies.mainBundleClass.name)
         assertEquals(classInfo, classInfoByName)
 
-        val cordappBundle = startedBundles.find { bundle ->
-            bundle.symbolicName == cpkWithDependencies.cordappBundleName
+        val mainBundle = startedBundles.find { bundle ->
+            bundle.symbolicName == cpkWithDependencies.mainBundleName
         }!!
 
         val expectedClassInfo = CpkClassInfo(
-            cordappBundle.symbolicName,
-            cordappBundle.version,
-            cordappBundle.symbolicName,
-            cordappBundle.version,
+            mainBundle.symbolicName,
+            mainBundle.version,
+            mainBundle.symbolicName,
+            mainBundle.version,
             cpkWithDependencies.cpk.metadata.hash,
             cpkWithDependencies.cpk.metadata.id.signerSummaryHash,
             setOf(cpkOne.metadata.hash, cpkTwo.metadata.hash)
@@ -306,14 +306,14 @@ class SandboxServiceImplTests {
 
         val libraryBundle =
             startedBundles.find { bundle -> bundle.symbolicName == cpkWithDependencies.libraryBundleName }!!
-        val cordappBundle =
-            startedBundles.find { bundle -> bundle.symbolicName == cpkWithDependencies.cordappBundleName }!!
+        val mainBundle =
+            startedBundles.find { bundle -> bundle.symbolicName == cpkWithDependencies.mainBundleName }!!
 
         val expectedClassInfo = CpkClassInfo(
             libraryBundle.symbolicName,
             libraryBundle.version,
-            cordappBundle.symbolicName,
-            cordappBundle.version,
+            mainBundle.symbolicName,
+            mainBundle.version,
             cpkWithDependencies.cpk.metadata.hash,
             cpkWithDependencies.cpk.metadata.id.signerSummaryHash,
             setOf(cpkOne.metadata.hash, cpkTwo.metadata.hash)
@@ -343,7 +343,7 @@ class SandboxServiceImplTests {
         sandboxService.createSandboxGroup(listOf(cpkWithBadDependency.cpk.metadata.hash))
 
         val e = assertThrows<SandboxException> {
-            sandboxService.getClassInfo(cpkWithBadDependency.cordappClass)
+            sandboxService.getClassInfo(cpkWithBadDependency.mainBundleClass)
         }
         assertTrue(e.message!!.contains(".* is listed as a dependency of .*, but is not installed\\.".toRegex()))
     }
@@ -421,7 +421,7 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `a bundle only has visibility of the CorDapp bundle in another CPK sandbox it has visibility of`() {
+    fun `a bundle only has visibility of the main bundle in another CPK sandbox it has visibility of`() {
         val sandboxes =
             sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash)).sandboxes.toList()
         val sandboxOne = sandboxes[0] as CpkSandboxImpl
@@ -429,12 +429,12 @@ class SandboxServiceImplTests {
 
         val sandboxOneBundles = startedBundles.filter { bundle -> sandboxOne.containsBundle(bundle) }
         val sandboxTwoBundles = startedBundles.filter { bundle -> sandboxTwo.containsBundle(bundle) }
-        val sandboxTwoCordappBundle = sandboxTwo.cordappBundle
-        val sandboxTwoPrivateBundles = sandboxTwoBundles - sandboxTwoCordappBundle
+        val sandboxTwoMainBundle = sandboxTwo.mainBundle
+        val sandboxTwoLibraryBundles = sandboxTwoBundles - sandboxTwoMainBundle
 
         sandboxOneBundles.forEach { sandboxOneBundle ->
-            assertTrue(sandboxService.hasVisibility(sandboxOneBundle, sandboxTwoCordappBundle))
-            sandboxTwoPrivateBundles.forEach { sandboxTwoPrivateBundle ->
+            assertTrue(sandboxService.hasVisibility(sandboxOneBundle, sandboxTwoMainBundle))
+            sandboxTwoLibraryBundles.forEach { sandboxTwoPrivateBundle ->
                 assertFalse(sandboxService.hasVisibility(sandboxOneBundle, sandboxTwoPrivateBundle))
             }
         }
@@ -582,7 +582,7 @@ class SandboxServiceImplTests {
             mockInstallService,
             mockBundleUtils(
                 setOf(cpkAndContentsOne),
-                notUninstallableBundles = setOf(cpkAndContentsOne.cordappBundleName!!)
+                notUninstallableBundles = setOf(cpkAndContentsOne.mainBundleName!!)
             )
         )
 
@@ -598,7 +598,7 @@ class SandboxServiceImplTests {
             mockInstallService,
             mockBundleUtils(
                 setOf(cpkAndContentsOne),
-                notUninstallableBundles = setOf(cpkAndContentsOne.cordappBundleName!!)
+                notUninstallableBundles = setOf(cpkAndContentsOne.mainBundleName!!)
             )
         )
 
@@ -606,7 +606,7 @@ class SandboxServiceImplTests {
         sandboxService.unloadSandboxGroup(sandboxGroup)
 
         val leftoverBundle = startedBundles.find { bundle ->
-            bundle.symbolicName == cpkAndContentsOne.cordappBundleName
+            bundle.symbolicName == cpkAndContentsOne.mainBundleName
         }!!
         assertFalse(sandboxService.hasVisibility(mockBundle(), leftoverBundle))
         assertFalse(sandboxService.hasVisibility(leftoverBundle, mockBundle()))
@@ -640,13 +640,13 @@ class SandboxServiceImplTests {
 
 /** For testing, associates a [CPK] with its bundles, the classes within those, and its CPK dependencies. */
 private data class CpkAndContents(
-    val cordappClass: Class<*>,
+    val mainBundleClass: Class<*>,
     val libraryClass: Class<*>,
-    val cordappBundleName: String? = "${random.nextInt()}",
+    val mainBundleName: String? = "${random.nextInt()}",
     val libraryBundleName: String? = "${random.nextInt()}",
     private val cpkDependencies: NavigableSet<CPK.Identifier> = emptyNavigableSet()
 ) {
-    val bundleNames = setOf(cordappBundleName, libraryBundleName)
+    val bundleNames = setOf(mainBundleName, libraryBundleName)
     val cpk = createDummyCpk(cpkDependencies)
 
     /** Creates a dummy [CPK]. */
@@ -664,7 +664,7 @@ private data class CpkAndContents(
             override val mainBundle = Paths.get("${random.nextInt()}.jar").toString()
             override val libraries = listOf(Paths.get("lib/${random.nextInt()}.jar").toString())
             override val cordappManifest = mock<CordappManifest>().apply {
-                whenever(bundleSymbolicName).thenAnswer { cordappBundleName }
+                whenever(bundleSymbolicName).thenAnswer { mainBundleName }
                 whenever(bundleVersion).thenAnswer { "${random.nextInt()}" }
             }
             override val dependencies = cpkDependencies

@@ -152,7 +152,7 @@ class SandboxImplTests {
 
     @Test
     fun `unloading a sandbox attempts to uninstall all bundles`() {
-        val cantBeUninstalledCordappBundle = mockBundle().apply {
+        val cantBeUninstalledMainBundle = mockBundle().apply {
             whenever(uninstall()).then { throw IllegalStateException() }
         }
         val libraryBundle = mockBundle().apply {
@@ -162,7 +162,7 @@ class SandboxImplTests {
         SandboxImpl(
             mockBundleUtils,
             randomUUID(),
-            setOf(cantBeUninstalledCordappBundle, libraryBundle),
+            setOf(cantBeUninstalledMainBundle, libraryBundle),
             emptySet()
         ).unload()
 

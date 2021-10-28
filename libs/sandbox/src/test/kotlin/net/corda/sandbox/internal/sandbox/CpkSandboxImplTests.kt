@@ -15,45 +15,45 @@ import java.util.UUID.randomUUID
 
 class CpkSandboxImplTests {
     @Test
-    fun `can load class from CorDapp bundles in CPK sandbox`() {
-        val cordappBundle = mockBundle(klass = String::class.java)
-        val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), cordappBundle, emptySet())
+    fun `can load class from main bundles in CPK sandbox`() {
+        val mainBundle = mockBundle(klass = String::class.java)
+        val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), mainBundle, emptySet())
 
-        assertEquals(String::class.java, sandbox.loadClassFromCordappBundle(String::class.java.name))
+        assertEquals(String::class.java, sandbox.loadClassFromMainBundle(String::class.java.name))
     }
 
     @Test
     fun `cannot load class from other bundles in CPK sandbox`() {
-        val cordappBundle = mockBundle()
+        val mainBundle = mockBundle()
         val otherBundle = mockBundle(klass = Int::class.java)
-        val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), cordappBundle, setOf(otherBundle))
+        val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), mainBundle, setOf(otherBundle))
 
         assertThrows<SandboxException> {
-            sandbox.loadClassFromCordappBundle(Int::class.java.name)
+            sandbox.loadClassFromMainBundle(Int::class.java.name)
         }
     }
 
     @Test
     fun `throws if loading class from CPK sandbox with an uninstalled bundle`() {
-        val cordappBundle = mock<Bundle>().apply {
+        val mainBundle = mock<Bundle>().apply {
             whenever(loadClass(any())).thenThrow(IllegalStateException::class.java)
         }
-        val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), cordappBundle, emptySet())
+        val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), mainBundle, emptySet())
 
         assertThrows<SandboxException> {
-            sandbox.loadClassFromCordappBundle(Int::class.java.name)
+            sandbox.loadClassFromMainBundle(Int::class.java.name)
         }
     }
 
     @Test
-    fun `correctly indicates whether the CPK sandbox's CorDapp bundle contains a given class`() {
-        val cordappBundle = mockBundle(klass = String::class.java)
+    fun `correctly indicates whether the CPK sandbox's main bundle contains a given class`() {
+        val mainBundle = mockBundle(klass = String::class.java)
         val otherBundle = mockBundle(klass = Int::class.java)
 
-        val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), cordappBundle, setOf(otherBundle))
+        val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), mainBundle, setOf(otherBundle))
 
-        assertTrue(sandbox.cordappBundleContainsClass(String::class.java.name))
-        assertFalse(sandbox.cordappBundleContainsClass(Int::class.java.name))
-        assertFalse(sandbox.cordappBundleContainsClass(Boolean::class.java.name))
+        assertTrue(sandbox.mainBundleContainsClass(String::class.java.name))
+        assertFalse(sandbox.mainBundleContainsClass(Int::class.java.name))
+        assertFalse(sandbox.mainBundleContainsClass(Boolean::class.java.name))
     }
 }

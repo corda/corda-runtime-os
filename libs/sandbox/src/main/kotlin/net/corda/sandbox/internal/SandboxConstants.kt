@@ -19,6 +19,6 @@ internal object ClassTagV1 {
     internal const val EVOLVABLE_IDENTIFIER = "E"
 
     // Used as placeholders when generating class tags for public sandbox classes.
-    internal const val PLACEHOLDER_CORDAPP_BUNDLE_NAME = "PUBLIC_BUNDLE"
+    internal const val PLACEHOLDER_MAIN_BUNDLE_NAME = "PUBLIC_BUNDLE"
     internal val PLACEHOLDER_HASH = SecureHash.create("SHA-256:0000000000000000")
 }

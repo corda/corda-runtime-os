@@ -279,7 +279,7 @@ sealed class TypeIdentifier {
                     SecureHash.create(cpkIdentifierParts[4] as String)
             )
             try {
-                (context.sandboxGroup as? SandboxGroup)?.loadClassFromCordappBundle(cpkIdentifier, name) as Class<*>
+                (context.sandboxGroup as? SandboxGroup)?.loadClassFromMainBundle(cpkIdentifier, name) as Class<*>
             } catch (ex: SandboxException) {
                 throw ClassNotFoundException("Unable to load CPK type $name", ex)
             }

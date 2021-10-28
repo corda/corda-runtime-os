@@ -153,7 +153,7 @@ class DefaultLocalSerializerFactory(
                     cpkIdentifierParts[1] as String,
                     SecureHash.create(cpkIdentifierParts[4] as String)
                 )
-                (context.sandboxGroup as? SandboxGroup)?.loadClassFromCordappBundle(cpkIdentifier, typeName)
+                (context.sandboxGroup as? SandboxGroup)?.loadClassFromMainBundle(cpkIdentifier, typeName)
             } catch (_: SandboxException) {
                 logger.trace { "Failed to load class $typeName from any sandboxes" }
                 null

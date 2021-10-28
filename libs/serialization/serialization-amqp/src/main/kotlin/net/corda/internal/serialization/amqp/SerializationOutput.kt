@@ -143,8 +143,8 @@ open class SerializationOutput constructor(
                 val value = listOf(
                     classInfo.classBundleName,
                     classInfo.classBundleVersion.toString(),
-                    classInfo.cordappBundleName,
-                    classInfo.cordappBundleVersion.toString(),
+                    classInfo.mainBundleName,
+                    classInfo.mainBundleVersion.toString(),
                     classInfo.cpkSignerSummaryHash.toString()
                 )
                 metadata.putValue(key, value)

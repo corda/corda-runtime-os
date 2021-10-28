@@ -16,22 +16,21 @@ interface SandboxGroup {
     fun getSandbox(cpkIdentifier: CPK.Identifier): CpkSandbox
 
     /**
-     * Finds the [CpkSandbox] out of [sandboxes] with the given [CPK.Identifier] (there is guaranteed to be at
-     * most one), and loads the [Class] with [className] from the CorDapp bundle of that sandbox.
+     * Loads the [Class] with [className] from the main bundle of the [CpkSandbox] with the given [cpkIdentifier].
      *
      * Throws [SandboxException] if there is no sandbox with the given CPK identifier, if this sandbox does not contain
-     * the named class, or if the CorDapp bundle of the sandbox with the given CPK identifier is uninstalled.
+     * the named class, or if the main bundle of the sandbox with the given CPK identifier is uninstalled.
      */
-    fun loadClassFromCordappBundle(cpkIdentifier: CPK.Identifier, className: String): Class<*>
+    fun loadClassFromMainBundle(cpkIdentifier: CPK.Identifier, className: String): Class<*>
 
     /**
-     * Attempts to load the [Class] with [className] from the CorDapp bundle of each sandbox in the sandbox group in
+     * Attempts to load the [Class] with [className] from the main bundle of each sandbox in the sandbox group in
      * turn. Casts the first match to type [T] and returns it.
      *
-     * Throws [SandboxException] if no sandbox contains the named class, if any of the sandboxes' CorDapp bundles are
+     * Throws [SandboxException] if no sandbox contains the named class, if any of the sandboxes' main bundles are
      * uninstalled, or if the named class is not of the correct type.
      */
-    fun <T : Any> loadClassFromCordappBundle(className: String, type: Class<T>): Class<out T>
+    fun <T : Any> loadClassFromMainBundle(className: String, type: Class<T>): Class<out T>
 
     /**
      * Returns the serialised static tag for a given [klass].

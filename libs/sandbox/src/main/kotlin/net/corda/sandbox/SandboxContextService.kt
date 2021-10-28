@@ -55,7 +55,7 @@ interface SandboxContextService {
 
     /**
      * Returns true if the [lookingBundle]'s sandbox and the [lookedAtBundle]'s sandbox are both null, if both the
-     * [lookingBundle] and the [lookedAtBundle] are in the same sandbox, or if [lookedAtBundle] is a CorDapp bundle
+     * [lookingBundle] and the [lookedAtBundle] are in the same sandbox, or if [lookedAtBundle] is the main bundle
      * in a sandbox that [lookingBundle]'s sandbox has visibility of.
      */
     fun hasVisibility(lookingBundle: Bundle, lookedAtBundle: Bundle): Boolean

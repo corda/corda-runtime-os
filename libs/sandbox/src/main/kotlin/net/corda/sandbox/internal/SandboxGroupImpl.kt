@@ -28,13 +28,13 @@ internal class SandboxGroupImpl(
     override fun getSandbox(cpkIdentifier: CPK.Identifier) = sandboxesById[cpkIdentifier]
         ?: throw SandboxException("CPK $cpkIdentifier was not found in the sandbox group.")
 
-    override fun loadClassFromCordappBundle(cpkIdentifier: CPK.Identifier, className: String) =
-        getSandbox(cpkIdentifier).loadClassFromCordappBundle(className)
+    override fun loadClassFromMainBundle(cpkIdentifier: CPK.Identifier, className: String) =
+        getSandbox(cpkIdentifier).loadClassFromMainBundle(className)
 
-    override fun <T : Any> loadClassFromCordappBundle(className: String, type: Class<T>): Class<out T> {
-        val containingSandbox = sandboxes.find { sandbox -> sandbox.cordappBundleContainsClass(className) }
+    override fun <T : Any> loadClassFromMainBundle(className: String, type: Class<T>): Class<out T> {
+        val containingSandbox = sandboxes.find { sandbox -> sandbox.mainBundleContainsClass(className) }
             ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
-        val klass = containingSandbox.loadClassFromCordappBundle(className)
+        val klass = containingSandbox.loadClassFromMainBundle(className)
 
         return try {
             klass.asSubclass(type)
@@ -43,10 +43,6 @@ internal class SandboxGroupImpl(
                 "Class $className was found in sandbox, but was not of the provided type $type."
             )
         }
-    }
-
-    override fun cordappClassCount(className: String) = sandboxes.count { sandbox ->
-        sandbox.cordappBundleContainsClass(className)
     }
 
     override fun getStaticTag(klass: Class<*>) = getClassTag(klass, isStaticTag = true)
@@ -61,7 +57,7 @@ internal class SandboxGroupImpl(
                 is StaticTag -> sandboxes.find { sandbox -> sandbox.cpk.metadata.hash == classTag.cpkFileHash }
                 is EvolvableTag -> sandboxes.find { sandbox ->
                     sandbox.cpk.metadata.id.signerSummaryHash == classTag.cpkSignerSummaryHash
-                            && sandbox.cordappBundle.symbolicName == classTag.cordappBundleName
+                            && sandbox.mainBundle.symbolicName == classTag.mainBundleName
                 }
             } ?: throw SandboxException(
                 "Class tag $className did not match any sandbox in the sandbox group or a public sandboxe."

@@ -21,7 +21,7 @@ class SandboxBundleDifferentLibrariesTest {
     /** Checks whether [sandbox] contains a class with [className]. */
     @Suppress("SameParameterValue")
     private fun getBundle(sandbox: CpkSandbox, className: String) =
-        FrameworkUtil.getBundle(sandbox.loadClassFromCordappBundle(className))
+        FrameworkUtil.getBundle(sandbox.loadClassFromMainBundle(className))
 
     @Test
     fun `different CPKs have different library bundles but with the same symbolic name`() {

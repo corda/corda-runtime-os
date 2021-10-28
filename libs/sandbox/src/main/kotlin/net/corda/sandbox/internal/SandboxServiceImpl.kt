@@ -86,7 +86,7 @@ internal class SandboxServiceImpl @Activate constructor(
     override fun getClassInfo(className: String): ClassInfo {
         for (sandbox in sandboxes.values.filterIsInstance<CpkSandboxImpl>()) {
             try {
-                val klass = sandbox.loadClassFromCordappBundle(className)
+                val klass = sandbox.loadClassFromMainBundle(className)
                 val bundle = bundleUtils.getBundle(klass)
                     ?: throw SandboxException("Class $klass is not loaded from any bundle.")
                 val matchingSandbox = sandboxes.values.find { it.containsBundle(bundle) }
@@ -187,7 +187,7 @@ internal class SandboxServiceImpl @Activate constructor(
         val newSandboxes = cpks.map { cpk ->
             val sandboxId = UUID.randomUUID()
 
-            val cordappBundle = installBundle(
+            val mainBundle = installBundle(
                 "${cpk.metadata.id.name}-${cpk.metadata.id.version}/${cpk.metadata.mainBundle}",
                 cpk.getResourceAsStream(cpk.metadata.mainBundle),
                 sandboxId,
@@ -202,9 +202,9 @@ internal class SandboxServiceImpl @Activate constructor(
                 )
             }
             bundles.addAll(libraryBundles)
-            bundles.add(cordappBundle)
+            bundles.add(mainBundle)
 
-            val sandbox = CpkSandboxImpl(bundleUtils, sandboxId, cpk, cordappBundle, libraryBundles)
+            val sandbox = CpkSandboxImpl(bundleUtils, sandboxId, cpk, mainBundle, libraryBundles)
             sandboxes[sandboxId] = sandbox
 
             sandbox
@@ -311,8 +311,8 @@ internal class SandboxServiceImpl @Activate constructor(
         return CpkClassInfo(
             bundle.symbolicName,
             bundle.version,
-            sandbox.cordappBundle.symbolicName,
-            sandbox.cordappBundle.version,
+            sandbox.mainBundle.symbolicName,
+            sandbox.mainBundle.version,
             cpk.metadata.hash,
             cpk.metadata.id.signerSummaryHash,
             cpkDependencyHashes

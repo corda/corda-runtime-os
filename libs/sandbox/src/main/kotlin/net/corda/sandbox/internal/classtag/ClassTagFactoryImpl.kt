@@ -27,7 +27,7 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
                 EvolvableTagImplV1(
                     isPublicClass = true,
                     bundleSymbolicName,
-                    ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME,
+                    ClassTagV1.PLACEHOLDER_MAIN_BUNDLE_NAME,
                     ClassTagV1.PLACEHOLDER_HASH
                 )
             }.serialise()
@@ -43,7 +43,7 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
             EvolvableTagImplV1(
                 isPublicClass = false,
                 bundleSymbolicName,
-                sandbox.cordappBundle.symbolicName,
+                sandbox.mainBundle.symbolicName,
                 sandbox.cpk.metadata.id.signerSummaryHash
             )
         }.serialise()

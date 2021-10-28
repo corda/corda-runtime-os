@@ -84,7 +84,7 @@ class SandboxLoader @Activate constructor(
 
     /** Runs the flow with [className] in sandbox group [group] and casts the return value to [T]. */
     internal fun <T : Any> runFlow(className: String, group: SandboxGroup): T {
-        val workflowClass = group.loadClassFromCordappBundle(className, Flow::class.java)
+        val workflowClass = group.loadClassFromMainBundle(className, Flow::class.java)
         @Suppress("unchecked_cast")
         return getServiceFor(Flow::class.java, workflowClass).call() as? T
             ?: fail("Workflow did not return the correct type.")

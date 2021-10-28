@@ -6,13 +6,13 @@ import org.osgi.framework.Bundle
 
 /** Extends [CpkSandbox] with internal methods. */
 internal interface CpkSandboxInternal: CpkSandbox, SandboxInternal {
-    // The CPK's CorDapp bundle.
-    val cordappBundle: Bundle
+    // The CPK's main bundle.
+    val mainBundle: Bundle
 
     /**
-     * Indicates whether the [CpkSandbox]'s CorDapp bundle contains a class named [className].
+     * Indicates whether the [CpkSandbox]'s main bundle contains a class named [className].
      *
-     * Throws [SandboxException] if the CorDapp bundle is uninstalled.
+     * Throws [SandboxException] if the main bundle is uninstalled.
      */
-    fun cordappBundleContainsClass(className: String): Boolean
+    fun mainBundleContainsClass(className: String): Boolean
 }
