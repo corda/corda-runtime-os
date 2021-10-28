@@ -8,7 +8,6 @@ import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeLoader
 import net.corda.internal.serialization.model.TypeModellingFingerPrinter
-import net.corda.sandbox.SandboxGroup
 import net.corda.v5.serialization.ClassWhitelist
 import java.io.NotSerializableException
 import java.lang.reflect.Method
@@ -95,8 +94,7 @@ object SerializerFactoryBuilder {
     fun build(whitelist: ClassWhitelist): SerializerFactory {
         return makeFactory(
                 whitelist,
-                sandboxGroup = null,
-                descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry(),
+                DefaultDescriptorBasedSerializerRegistry(),
                 allowEvolution = true,
                 overrideFingerPrinter = null,
                 onlyCustomSerializers = false,
@@ -107,7 +105,6 @@ object SerializerFactoryBuilder {
     @JvmStatic
     fun build(
             whitelist: ClassWhitelist,
-            sandboxGroup: SandboxGroup? = null,
             descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
                     DefaultDescriptorBasedSerializerRegistry(),
             allowEvolution: Boolean = true,
@@ -116,7 +113,6 @@ object SerializerFactoryBuilder {
             mustPreserveDataWhenEvolving: Boolean = false): SerializerFactory {
         return makeFactory(
                 whitelist,
-                sandboxGroup,
                 descriptorBasedSerializerRegistry,
                 allowEvolution,
                 overrideFingerPrinter,
@@ -126,7 +122,6 @@ object SerializerFactoryBuilder {
 
     @Suppress("TooGenericExceptionCaught", "LongParameterList")
     private fun makeFactory(whitelist: ClassWhitelist,
-                            sandboxGroup: SandboxGroup?,
                             descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
                             allowEvolution: Boolean,
                             overrideFingerPrinter: FingerPrinter?,
@@ -141,7 +136,6 @@ object SerializerFactoryBuilder {
 
         val localSerializerFactory = DefaultLocalSerializerFactory(
                 whitelist,
-                sandboxGroup,
                 localTypeModel,
                 fingerPrinter,
                 descriptorBasedSerializerRegistry,
