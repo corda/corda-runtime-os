@@ -190,6 +190,7 @@ include 'testing:apps:test-app'
 include 'testing:crypto-testkit'
 include 'testing:bundles:testing-cats'
 include 'testing:bundles:testing-dogs'
+include 'testing:message-patterns'
 include 'testing:test-utilities'
 
 // The following logic dictates if we use the composite build gradle functionality,
