@@ -8,14 +8,6 @@ interface SandboxGroup {
     val sandboxes: Collection<CpkSandbox>
 
     /**
-     * Returns the [CpkSandbox] out of [sandboxes] with the given [CPK.Identifier]. There is guaranteed to be at
-     * most one.
-     *
-     * Throws [SandboxException] if no sandbox with the given CPK identifier exists.
-     */
-    fun getSandbox(cpkIdentifier: CPK.Identifier): CpkSandbox
-
-    /**
      * Loads the [Class] with [className] from the main bundle of the [CpkSandbox] with the given [cpkIdentifier].
      *
      * Throws [SandboxException] if there is no sandbox with the given CPK identifier, if this sandbox does not contain
@@ -30,7 +22,7 @@ interface SandboxGroup {
      * Throws [SandboxException] if no sandbox contains the named class, if any of the sandboxes' main bundles are
      * uninstalled, or if the named class is not of the correct type.
      */
-    fun <T : Any> loadClassFromMainBundle(className: String, type: Class<T>): Class<out T>
+    fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T>
 
     /**
      * Returns the serialised static tag for a given [klass].

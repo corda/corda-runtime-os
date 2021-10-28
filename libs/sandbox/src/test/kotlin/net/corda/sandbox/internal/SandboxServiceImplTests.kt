@@ -115,7 +115,7 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `can create sandboxes by CPK hash and retrieve them`() {
+    fun `can create sandboxes and retrieve them`() {
         val cpksAndContents = setOf(cpkAndContentsOne, cpkAndContentsTwo)
         val cpkHashes = cpksAndContents.map { contents -> contents.cpk.metadata.hash }
 
@@ -124,7 +124,7 @@ class SandboxServiceImplTests {
         assertEquals(2, sandboxes.size)
 
         val sandboxesRetrievedFromSandboxGroup =
-            cpksAndContents.map { contents -> sandboxGroup.getSandbox(contents.cpk.metadata.id) }
+            cpksAndContents.map { contents -> sandboxGroup.sandboxes.find { sandbox -> sandbox.cpk === contents.cpk } }
         assertEquals(sandboxes.toSet(), sandboxesRetrievedFromSandboxGroup.toSet())
     }
 

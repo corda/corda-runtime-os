@@ -78,13 +78,13 @@ class SandboxLoader @Activate constructor(
     val group1 = createSandboxGroupFor(cpk1, cpk2)
     val group2 = createSandboxGroupFor(cpk3)
 
-    val sandbox1 = group1.getSandbox(cpk1.metadata.id)
-    val sandbox2 = group1.getSandbox(cpk2.metadata.id)
-    val sandbox3 = group2.getSandbox(cpk3.metadata.id)
+    val sandbox1 = getSandbox(group1, cpk1)
+    val sandbox2 = getSandbox(group1, cpk2)
+    val sandbox3 = getSandbox(group2, cpk3)
 
     /** Runs the flow with [className] in sandbox group [group] and casts the return value to [T]. */
     internal fun <T : Any> runFlow(className: String, group: SandboxGroup): T {
-        val workflowClass = group.loadClassFromMainBundle(className, Flow::class.java)
+        val workflowClass = group.loadClassFromMainBundles(className, Flow::class.java)
         @Suppress("unchecked_cast")
         return getServiceFor(Flow::class.java, workflowClass).call() as? T
             ?: fail("Workflow did not return the correct type.")
@@ -99,6 +99,9 @@ class SandboxLoader @Activate constructor(
 
     private fun createSandboxGroupFor(vararg cpks: CPK) =
         sandboxCreationService.createSandboxGroup(cpks.map { it.metadata.hash })
+
+    private fun getSandbox(sandboxGroup: SandboxGroup, cpk: CPK) =
+        sandboxGroup.sandboxes.find { sandbox -> sandbox.cpk === cpk }!!
 
     private fun <T, U : T> getServiceFor(serviceType: Class<T>, bundleClass: Class<U>): T {
         val context = FrameworkUtil.getBundle(bundleClass).bundleContext

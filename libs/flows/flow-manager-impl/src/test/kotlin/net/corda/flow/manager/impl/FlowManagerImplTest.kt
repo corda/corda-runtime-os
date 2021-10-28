@@ -65,7 +65,7 @@ class FlowManagerImplTest {
         val serialized = SerializedBytes<String>("Test".toByteArray())
 
         doReturn(sandboxGroup).`when`(virtualNodeCache).getSandboxGroupFor(any(), any())
-        doReturn(TestFlow::class.java).`when`(sandboxGroup).loadClassFromMainBundle(any(), eq(Flow::class.java))
+        doReturn(TestFlow::class.java).`when`(sandboxGroup).loadClassFromMainBundles(any(), eq(Flow::class.java))
         doReturn(stateMachine).`when`(flowStateMachineFactory).createStateMachine(any(), any(), any(), any())
         doReturn(Pair(checkpoint, eventsOut)).`when`(stateMachine).waitForCheckpoint()
         doReturn(serialized).`when`(checkpointSerialisationService).serialize(any())
