@@ -5,7 +5,6 @@ import net.corda.packaging.CPK
 import net.corda.packaging.CordappManifest
 import net.corda.sandbox.CpkClassInfo
 import net.corda.sandbox.DEFAULT_SECURITY_DOMAIN
-import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxImpl
@@ -141,15 +140,6 @@ class SandboxServiceImplTests {
     }
 
     @Test
-    fun `can retrieve a bundle's sandbox`() {
-        val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
-        val sandbox = (sandboxGroup as SandboxGroupInternal).sandboxes.single()
-        startedBundles.forEach { bundle ->
-            assertEquals(sandbox, sandboxService.getSandbox(bundle) as Sandbox)
-        }
-    }
-
-    @Test
     fun `a sandbox correctly indicates which CPK it is created from`() {
         val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
         val sandbox = (sandboxGroup as SandboxGroupInternal).sandboxes.single()
@@ -240,12 +230,6 @@ class SandboxServiceImplTests {
             sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
         }
         assertTrue(e.message!!.contains(" could not be started."))
-    }
-
-    @Test
-    fun `returns null if asked to retrieve an unknown sandbox`() {
-        val sandboxService = SandboxServiceImpl(mock(), mockBundleUtils())
-        assertNull(sandboxService.getSandbox(mock()))
     }
 
     @Test
@@ -540,7 +524,7 @@ class SandboxServiceImplTests {
         assertEquals(bundleNames.toSet(), uninstalledBundleNames.toSet())
 
         uninstalledBundles.forEach { bundle ->
-            assertNull(sandboxService.getSandbox(bundle))
+            assertFalse(sandboxService.isSandboxed(bundle))
         }
     }
 

@@ -30,8 +30,11 @@ interface SandboxContextService {
      */
     fun getCallingSandboxGroup(): SandboxGroup?
 
-    /** Returns the [Sandbox] containing the given [bundle], or null if no match. */
-    fun getSandbox(bundle: Bundle): Sandbox?
+    /** Indicates whether the [bundle] is in a sandbox. */
+    fun isSandboxed(bundle: Bundle): Boolean
+
+    /** Indicates whether [bundleOne] and [bundleTwo] are in the same sandbox. */
+    fun areInSameSandbox(bundleOne: Bundle, bundleTwo: Bundle): Boolean
 
     /**
      * Returns true if the [lookingBundle]'s sandbox and the [lookedAtBundle]'s sandbox are both null, if both the

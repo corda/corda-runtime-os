@@ -100,12 +100,10 @@ internal class SandboxServiceImpl @Activate constructor(
         throw SandboxException("Class $className is not contained in any sandbox.")
     }
 
-    override fun getSandbox(bundle: Bundle) = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundle) }
-
     @Suppress("ComplexMethod")
     override fun hasVisibility(lookingBundle: Bundle, lookedAtBundle: Bundle): Boolean {
-        val lookingSandbox = getSandbox(lookingBundle)
-        val lookedAtSandbox = getSandbox(lookedAtBundle)
+        val lookingSandbox = sandboxes.values.find { sandbox -> sandbox.containsBundle(lookingBundle) }
+        val lookedAtSandbox = sandboxes.values.find { sandbox -> sandbox.containsBundle(lookedAtBundle) }
 
         return when {
             lookingBundle in zombieBundles || lookedAtBundle in zombieBundles -> false
@@ -129,6 +127,14 @@ internal class SandboxServiceImpl @Activate constructor(
         return sandboxGroups[sandbox.id] ?: throw SandboxException(
             "A sandbox was found, but it was not part of any sandbox group."
         )
+    }
+
+    override fun isSandboxed(bundle: Bundle) = sandboxes.values.any { sandbox -> sandbox.containsBundle(bundle) }
+
+    override fun areInSameSandbox(bundleOne: Bundle, bundleTwo: Bundle): Boolean {
+        val sandboxOne = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundleOne) }
+        val sandboxTwo = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundleTwo) }
+        return sandboxOne != null && sandboxOne === sandboxTwo
     }
 
     /**

@@ -1,6 +1,5 @@
 package net.corda.sandboxhooks.bundle
 
-import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxContextService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -22,9 +21,8 @@ class IsolatingCollisionBundleHookTests {
 
     @Test
     fun `sandboxed candidate does not represent a collision`() {
-        val sandbox = mock<Sandbox>()
         val sandboxService = mock<SandboxContextService>().apply {
-            whenever(getSandbox(bundle)).thenReturn(sandbox)
+            whenever(isSandboxed(bundle)).thenReturn(true)
         }
 
         val isolatingCollisionBundleHook = IsolatingCollisionBundleHook(sandboxService)
