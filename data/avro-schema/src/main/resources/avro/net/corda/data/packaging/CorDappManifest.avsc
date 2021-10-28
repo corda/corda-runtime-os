@@ -1,0 +1,35 @@
+{
+  "type": "record",
+  "namespace": "net.corda.data.packaging",
+  "name": "CorDappManifest",
+  "fields": [
+    {
+      "name": "bundleSymbolicName",
+      "type" : "string"
+    },
+    {
+      "name": "bundleVersion",
+      "type" : "string"
+    },
+    {
+      "name": "minPlatformVersion",
+      "type" : "int"
+    },
+    {
+      "name": "targetPlatformVersion",
+      "type" : "int"
+    },
+    {
+      "name": "contractInfo",
+      "type" : "net.corda.data.packaging.ManifestCorDappInfo"
+    },
+    {
+      "name": "workflowInfo",
+      "type" : "net.corda.data.packaging.ManifestCorDappInfo"
+    },
+    {
+      "name": "attributes",
+      "type" : { "type":  "map", "values" :  "string", "default": {}}
+    }
+  ]
+}

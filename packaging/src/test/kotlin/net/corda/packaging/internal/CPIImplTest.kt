@@ -8,19 +8,17 @@ import org.junit.jupiter.api.Test
 import java.util.Collections
 import java.util.NavigableSet
 import java.util.TreeSet
-import javax.security.auth.x500.X500Principal
 
 class CPIImplTest {
     @Test
     fun `CPI identifiers without a signerSummaryHash and an identity compares correctly`() {
-        val id1 = CPI.Identifier.newInstance("a", "1.0", null, null)
+        val id1 = CPI.Identifier.newInstance("a", "1.0", null)
         val id2 = CPI.Identifier.newInstance("a", "1.0",
-            SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32)), null)
+            SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32)))
         val id3 = CPI.Identifier.newInstance(
             "a",
             "1.0",
             SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32)),
-            CPI.Identity.newInstance(X500Principal("C=IE, L=Dublin, CN=somebody"), "groupId")
         )
         var ids : NavigableSet<CPI.Identifier> = Collections.emptyNavigableSet()
         Assertions.assertDoesNotThrow {

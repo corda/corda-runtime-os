@@ -13,7 +13,7 @@ plugins {
 dependencies {
     api "org.apache.avro:avro:$avroVersion"
     // Transitive dependency bump to eliminate critical violation in NexusIQ report - see nexus iq report.
-    // Constains block can be removed when Avro is upgraded to v1.11
+    // Constraints block can be removed when Avro is upgraded to v1.11
     // For more details, please see: https://issues.apache.org/jira/browse/AVRO-3215
     constraints {
         implementation('org.apache.commons:commons-compress:1.21+') {
@@ -146,4 +146,9 @@ Bundle-SymbolicName: \${project.group}.\${project.name}
 Fragment-Host: avro
 '''
     }
+}
+
+tasks.named("sourcesJar", Jar) {
+    inputs.files(generateAvro)
+    inputs.files(generateOSGiPackageInfo)
 }
