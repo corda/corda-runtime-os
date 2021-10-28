@@ -586,11 +586,19 @@ open class SessionManagerImpl(
         }
 
         private fun sendHeartbeat(sessionKey: SessionKey, session: Session) {
-            val sessionInfo = trackedSessions[session.sessionId] ?: return
+            val sessionInfo = trackedSessions[session.sessionId]
+            if (sessionInfo == null) {
+                logger.info("Stopped sending heartbeats for session (${session.sessionId}), which expired.")
+                return
+            }
+
             val timeSinceLastAck = timeStamp() - sessionInfo.lastAckTimestamp
             val timeSinceLastSend = timeStamp() - sessionInfo.lastSendTimestamp
 
-            if (timeSinceLastAck >= sessionTimeout.toMillis()) return
+            if (timeSinceLastAck >= sessionTimeout.toMillis()) {
+                logger.info("Stopped sending heartbeats for session (${session.sessionId}), which expired.")
+                return
+            }
             if (timeSinceLastSend >= heartbeatPeriod.toMillis()) {
                 logger.trace("Sending heartbeat message between ${sessionKey.ourId} (our Identity) and ${sessionKey.responderId}.")
                 sendHeartbeatMessage(
