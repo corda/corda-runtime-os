@@ -7,17 +7,19 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CLOSE_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.utils.getRecordListOffsets
 import net.corda.messaging.kafka.utils.getStringOrNull
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException
-import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.clients.producer.Callback
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.errors.AuthorizationException
@@ -30,6 +32,7 @@ import org.apache.kafka.common.errors.UnsupportedForMessageFormatException
 import org.apache.kafka.common.errors.UnsupportedVersionException
 import org.slf4j.Logger
 import java.time.Duration
+import java.util.concurrent.Future
 
 /**
  * Wrapper for the CordaKafkaProducer.
@@ -40,7 +43,7 @@ import java.time.Duration
 class CordaKafkaProducerImpl(
     config: Config,
     private val producer: Producer<Any, Any>
-) : CordaKafkaProducer, Producer<Any, Any> by producer {
+) : CordaKafkaProducer {
     private val closeTimeout = config.getLong(CLOSE_TIMEOUT)
     private val topicPrefix = config.getString(TOPIC_PREFIX)
     private val clientId = config.getString(CommonClientConfigs.CLIENT_ID_CONFIG)
@@ -54,6 +57,10 @@ class CordaKafkaProducerImpl(
 
     private companion object {
         private val log: Logger = contextLogger()
+    }
+
+    override fun send(record: ProducerRecord<Any, Any>, callback: Callback?): Future<RecordMetadata> {
+        return producer.send(record, callback)
     }
 
     override fun sendRecords(records: List<Record<*, *>>) {
@@ -132,7 +139,7 @@ class CordaKafkaProducerImpl(
         }
     }
 
-    override fun tryCommitTransaction() {
+    override fun commitTransaction() {
         try {
             producer.commitTransaction()
         } catch (ex: Exception) {
@@ -166,16 +173,16 @@ class CordaKafkaProducerImpl(
         }
     }
 
-    override fun sendAllOffsetsToTransaction(consumer: Consumer<*, *>) {
+    override fun sendAllOffsetsToTransaction(consumer: CordaKafkaConsumer<*, *>) {
         trySendOffsetsToTransaction(consumer, null)
     }
 
-    override fun sendRecordOffsetsToTransaction(consumer: Consumer<*, *>, records: List<ConsumerRecord<*, *>>) {
+    override fun sendRecordOffsetsToTransaction(consumer: CordaKafkaConsumer<*, *>, records: List<ConsumerRecord<*, *>>) {
         trySendOffsetsToTransaction(consumer, records)
     }
 
     @Suppress("ThrowsCount")
-    private fun trySendOffsetsToTransaction(consumer: Consumer<*, *>, records: List<ConsumerRecord<*, *>>? = null) {
+    private fun trySendOffsetsToTransaction(consumer: CordaKafkaConsumer<*, *>, records: List<ConsumerRecord<*, *>>? = null) {
         try {
             producer.sendOffsetsToTransaction(consumerOffsets(consumer, records), consumer.groupMetadata())
         } catch (ex: Exception) {
@@ -225,11 +232,20 @@ class CordaKafkaProducerImpl(
         }
     }
 
+    override fun close(timeout: Duration) {
+        try {
+            producer.close(timeout)
+        } catch (ex: Exception) {
+            log.error("CordaKafkaProducer failed to close producer safely. ClientId: $clientId", ex)
+        }
+    }
+
+
     /**
      * Generate the consumer offsets.
      */
     private fun consumerOffsets(
-        consumer: Consumer<*, *>,
+        consumer: CordaKafkaConsumer<*, *>,
         records: List<ConsumerRecord<*, *>>? = null
     ): Map<TopicPartition, OffsetAndMetadata> {
         return if (records == null) {
@@ -242,7 +258,7 @@ class CordaKafkaProducerImpl(
     /**
      * Generate the consumer offsets for poll position in each consumer partition
      */
-    private fun getConsumerOffsets(consumer: Consumer<*, *>): Map<TopicPartition, OffsetAndMetadata> {
+    private fun getConsumerOffsets(consumer: CordaKafkaConsumer<*, *>): Map<TopicPartition, OffsetAndMetadata> {
         val offsets =  mutableMapOf<TopicPartition, OffsetAndMetadata>()
         for (topicPartition in consumer.assignment()) {
             offsets[topicPartition] = OffsetAndMetadata(consumer.position(topicPartition))
