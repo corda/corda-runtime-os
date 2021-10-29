@@ -1,40 +1,36 @@
 package net.corda.sandbox.internal
 
-import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.internal.classtag.ClassTagFactory
 import net.corda.sandbox.internal.classtag.EvolvableTag
 import net.corda.sandbox.internal.classtag.StaticTag
-import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
-import net.corda.sandbox.internal.sandbox.SandboxInternal
+import net.corda.sandbox.internal.sandbox.CpkSandbox
+import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
 
 /**
  * An implementation of the [SandboxGroup] interface.
  *
- * @param bundleUtils The [BundleUtils] that all OSGi activity is delegated to for testing purposes.
- * @param sandboxesById The [CpkSandboxInternal]s in this sandbox group, keyed by the identifier of their CPK.
+ * @param bundleUtils The utils that all OSGi activity is delegated to for testing purposes.
+ * @param sandboxes The CPK sandboxes in this sandbox group.
  * @param publicSandboxes An iterable containing all existing public sandboxes.
  */
 internal class SandboxGroupImpl(
-    private val bundleUtils: BundleUtils,
-    private val sandboxesById: Map<CPK.Identifier, CpkSandboxInternal>,
-    private val publicSandboxes: Iterable<SandboxInternal>,
-    private val classTagFactory: ClassTagFactory
-) : SandboxGroup {
-    override val sandboxes = sandboxesById.values
-
-    override fun getSandbox(cpkIdentifier: CPK.Identifier) = sandboxesById[cpkIdentifier]
-        ?: throw SandboxException("CPK $cpkIdentifier was not found in the sandbox group.")
-
-    override fun loadClassFromCordappBundle(cpkIdentifier: CPK.Identifier, className: String) =
-        getSandbox(cpkIdentifier).loadClassFromCordappBundle(className)
-
-    override fun <T : Any> loadClassFromCordappBundle(className: String, type: Class<T>): Class<out T> {
-        val containingSandbox = sandboxes.find { sandbox -> sandbox.cordappBundleContainsClass(className) }
+    override val sandboxes: Collection<CpkSandbox>,
+    private val publicSandboxes: Iterable<Sandbox>,
+    private val classTagFactory: ClassTagFactory,
+    private val bundleUtils: BundleUtils
+) : SandboxGroupInternal {
+    override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
+        val klass = sandboxes.mapNotNull { sandbox ->
+            try {
+                sandbox.loadClassFromMainBundle(className)
+            } catch (e: SandboxException) {
+                null
+            }
+        }.firstOrNull()
             ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
-        val klass = containingSandbox.loadClassFromCordappBundle(className)
 
         return try {
             klass.asSubclass(type)
@@ -43,10 +39,6 @@ internal class SandboxGroupImpl(
                 "Class $className was found in sandbox, but was not of the provided type $type."
             )
         }
-    }
-
-    override fun cordappClassCount(className: String) = sandboxes.count { sandbox ->
-        sandbox.cordappBundleContainsClass(className)
     }
 
     override fun getStaticTag(klass: Class<*>) = getClassTag(klass, isStaticTag = true)
@@ -61,7 +53,7 @@ internal class SandboxGroupImpl(
                 is StaticTag -> sandboxes.find { sandbox -> sandbox.cpk.metadata.hash == classTag.cpkFileHash }
                 is EvolvableTag -> sandboxes.find { sandbox ->
                     sandbox.cpk.metadata.id.signerSummaryHash == classTag.cpkSignerSummaryHash
-                            && sandbox.cordappBundle.symbolicName == classTag.cordappBundleName
+                            && sandbox.mainBundle.symbolicName == classTag.mainBundleName
                 }
             } ?: throw SandboxException(
                 "Class tag $className did not match any sandbox in the sandbox group or a public sandboxe."

@@ -92,7 +92,7 @@ class KryoCheckpointTest {
             .build()
 
         val cash = sandboxManagementService.group1
-            .loadClassFromCordappBundle("net.corda.bundle1.Cash", Any::class.java)
+            .loadClassFromMainBundles("net.corda.bundle1.Cash", Any::class.java)
             .constructors.first().newInstance(1)
 
         // Serialize with serializerSandbox1

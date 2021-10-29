@@ -2,7 +2,7 @@ package net.corda.sandbox.internal.classtag
 
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
-import net.corda.sandbox.internal.CORDAPP_BUNDLE_NAME
+import net.corda.sandbox.internal.MAIN_BUNDLE_NAME
 import net.corda.sandbox.internal.CPK_BUNDLE_NAME
 import net.corda.sandbox.internal.ClassTagV1
 import net.corda.sandbox.internal.mockBundle
@@ -20,9 +20,9 @@ class ClassTagFactoryImplTests {
     private val classTagFactory = ClassTagFactoryImpl()
 
     private val mockBundle = mockBundle(CPK_BUNDLE_NAME)
-    private val mockCordappBundle = mockBundle(CORDAPP_BUNDLE_NAME)
+    private val mockMainBundle = mockBundle(MAIN_BUNDLE_NAME)
     private val mockCpk = mockCpk()
-    private val mockSandbox = CpkSandboxImpl(mock(), randomUUID(), mockCpk, mockCordappBundle, emptySet())
+    private val mockSandbox = CpkSandboxImpl(mock(), randomUUID(), mockCpk, mockMainBundle, emptySet())
 
     /**
      * Returns a serialised class tag.
@@ -96,7 +96,7 @@ class ClassTagFactoryImplTests {
         assertEquals(1, classTag.version)
         assertFalse(classTag.isPublicClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
-        assertEquals(mockSandbox.cordappBundle.symbolicName, classTag.cordappBundleName)
+        assertEquals(mockSandbox.mainBundle.symbolicName, classTag.mainBundleName)
         assertEquals(mockCpk.metadata.id.signerSummaryHash, classTag.cpkSignerSummaryHash)
     }
 
@@ -114,7 +114,7 @@ class ClassTagFactoryImplTests {
         assertEquals(1, classTag.version)
         assertTrue(classTag.isPublicClass)
         assertEquals(mockBundle.symbolicName, classTag.classBundleName)
-        // We do not check the class tag's CorDapp bundle name or signer summary hash, since placeholders are used for
+        // We do not check the class tag's main bundle name or signer summary hash, since placeholders are used for
         // public classes.
     }
 

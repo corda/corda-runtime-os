@@ -1,11 +1,14 @@
 package net.corda.sandbox.internal.sandbox
 
-import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import org.osgi.framework.Bundle
+import java.util.UUID
 
-/** Extends [Sandbox] with internal methods. */
-internal interface SandboxInternal : Sandbox {
+/** A container for isolating a set of bundles. */
+internal interface Sandbox {
+    // The sandbox's unique identifier.
+    val id: UUID
+
     // The sandbox's public bundles. The public bundles are the bundles that another sandbox with visibility of this
     // sandbox can see.
     val publicBundles: Set<Bundle>
