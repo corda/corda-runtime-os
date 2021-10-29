@@ -241,7 +241,7 @@ class CordaKafkaConsumerImplTest {
             listener
         )
         cordaKafkaConsumer.subscribe(listOf("test"), null)
-        verify(consumer, times(1)).subscribe(listOf("test"), Mockito.any(ConsumerRebalanceListener::class.java))
+        verify(consumer, times(1)).subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
     }
 
     @Test
