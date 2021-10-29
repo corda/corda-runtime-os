@@ -12,7 +12,7 @@ internal interface ClassTagFactory {
      *
      * @param isStaticClassTag Whether to create a static or an evolvable class tag.
      * @param bundle The bundle the class is loaded from.
-     * @param sandbox The CPK sandbox the class is loaded from, or null if the class is part of a CPK sandbox.
+     * @param sandbox The CPK sandbox the class is loaded from, or null if the class is not loaded from a CPK.
      */
     fun createSerialised(
         isStaticClassTag: Boolean,
