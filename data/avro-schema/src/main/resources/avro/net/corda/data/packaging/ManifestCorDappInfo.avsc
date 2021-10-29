@@ -1,0 +1,23 @@
+{
+  "type" : "record",
+  "namespace": "net.corda.data.packaging",
+  "name": "ManifestCorDappInfo",
+  "fields": [
+    {
+      "name": "shortName",
+      "type": ["null", "string"]
+    },
+    {
+      "name": "vendor",
+      "type": ["null", "string"]
+    },
+    {
+      "name": "versionId",
+      "type": ["null", "int"]
+    },
+    {
+      "name": "license",
+      "type": ["null", "string"]
+    }
+  ]
+}

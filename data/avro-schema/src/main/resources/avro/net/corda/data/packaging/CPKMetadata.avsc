@@ -1,0 +1,43 @@
+{
+  "type": "record",
+  "namespace": "net.corda.data.packaging",
+  "name": "CPKMetadata",
+  "fields": [
+    {
+      "name": "id",
+      "type": "net.corda.data.packaging.CPKIdentifier"
+    },
+    {
+      "name": "manifest",
+      "type": "net.corda.data.packaging.CPKManifest"
+    },
+    {
+      "name": "mainBundle",
+      "type": "string"
+    },
+    {
+      "name": "libraries",
+      "type": { "type": "array", "items": "string" }
+    },
+    {
+      "name": "dependencies",
+      "type": { "type": "array", "items": "net.corda.data.packaging.CPKIdentifier" }
+    },
+    {
+      "name": "corDappManifest",
+      "type": "net.corda.data.packaging.CorDappManifest"
+    },
+    {
+      "name": "type",
+      "type": "net.corda.data.packaging.CPKType"
+    },
+    {
+      "name": "hash",
+      "type": "net.corda.data.crypto.SecureHash"
+    },
+    {
+      "name": "corDappCertificates",
+      "type": { "type": "array", "items": "bytes" }
+    }
+  ]
+}

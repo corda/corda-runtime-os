@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "CPKIdentifier",
+  "namespace": "net.corda.data.packaging",
+  "fields": [
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "version",
+      "type": "string"
+    },
+    {
+      "name": "signerSummaryHash",
+      "type": ["null", "net.corda.data.crypto.SecureHash"]
+    }
+  ]
+}

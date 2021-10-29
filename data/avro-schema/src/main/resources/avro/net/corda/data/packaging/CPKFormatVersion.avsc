@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "CPKFormatVersion",
+  "namespace": "net.corda.data.packaging",
+  "fields" : [
+    {
+      "name": "major",
+      "type": "int"
+    },
+    {
+      "name": "minor",
+      "type": "int"
+    }
+  ]
+}

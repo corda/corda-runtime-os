@@ -1,5 +1,7 @@
 package net.corda.packaging
 
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -8,6 +10,8 @@ import org.junit.jupiter.api.io.TempDir
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
+import java.security.DigestInputStream
+import java.security.MessageDigest
 import java.util.TreeSet
 
 //This is to avoid extracting the CPK archive in every single test case,
@@ -28,7 +32,7 @@ class CPITests {
     private lateinit var testCPI: CPI
     private val cpiName = "Test CPI"
     private val cpiVersion = "1.5"
-
+    private lateinit var cpiHash : SecureHash
 
     @BeforeAll
     fun setup(@TempDir junitTestDir : Path) {
@@ -42,14 +46,18 @@ class CPITests {
         contractCPK = CPK.Metadata.from(Files.newInputStream(contractCPKPath), contractCPKPath.toString())
         workflowCPK = CPK.Metadata.from(Files.newInputStream(workflowCPKPath), workflowCPKPath.toString())
         CPI.assemble(Files.newOutputStream(testCPIPath), cpiName, cpiVersion, listOf(workflowCPKPath, contractCPKPath))
-        testCPI = CPI.from(Files.newInputStream(testCPIPath), testDir.resolve("cpi_expansion_dir"))
+        val md = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
+        testCPI = DigestInputStream(Files.newInputStream(testCPIPath), md).use { inputStream ->
+             CPI.from(inputStream, testDir.resolve("cpi_expansion_dir"))
+        }
+        cpiHash = SecureHash(DigestAlgorithmName.SHA2_256.name, md.digest())
     }
 
     @Test
     fun `CPI metadata are correct`() {
         Assertions.assertEquals(cpiName, testCPI.metadata.id.name)
         Assertions.assertEquals(cpiVersion, testCPI.metadata.id.version)
-        Assertions.assertNull(testCPI.metadata.id.identity)
+        Assertions.assertEquals(cpiHash, testCPI.metadata.hash)
     }
 
     @Test

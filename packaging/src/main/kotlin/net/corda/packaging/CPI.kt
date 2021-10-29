@@ -2,15 +2,14 @@ package net.corda.packaging
 
 import net.corda.packaging.internal.CPIBuilder
 import net.corda.packaging.internal.CPIIdentifierImpl
-import net.corda.packaging.internal.CPIIdentityImpl
 import net.corda.packaging.internal.CPILoader
+import net.corda.packaging.internal.CPIMetadataImpl
 import net.corda.packaging.internal.jarSignatureVerificationEnabledByDefault
 import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.Reader
 import java.nio.file.Path
-import javax.security.auth.x500.X500Principal
 
 interface CPI : AutoCloseable {
 
@@ -76,26 +75,6 @@ interface CPI : AutoCloseable {
     }
 
     /**
-     * The network identity of a CorDapp
-     */
-    interface Identity : Comparable<Identity> {
-        /**
-         * The party X.500 name, representing the entity running the CorDapp in a network
-         */
-        val name : X500Principal
-
-        /**
-         * The unique identifier of a Corda network
-         */
-        val groupId : String
-
-        companion object {
-            @JvmStatic
-            fun newInstance(name : X500Principal, groupId : String): Identity = CPIIdentityImpl(name, groupId)
-        }
-    }
-
-    /**
      * A set of data that uniquely identifies a CPI file
      */
     interface Identifier : Comparable<Identifier> {
@@ -115,27 +94,24 @@ interface CPI : AutoCloseable {
          */
         val signerSummaryHash : SecureHash?
 
-        /**
-         * The network identity of the CPI, null for CPB files
-         */
-        val identity : Identity?
-
         companion object {
             @JvmStatic
             @JvmOverloads
-            fun newInstance(name : String, version : String, signerSummaryHash : SecureHash? = null, identity: Identity? = null): Identifier =
-                CPIIdentifierImpl(name, version, signerSummaryHash, identity)
+            fun newInstance(name : String, version : String, signerSummaryHash : SecureHash? = null): Identifier =
+                CPIIdentifierImpl(name, version, signerSummaryHash)
 
         }
     }
 
     interface Metadata {
         val id : Identifier
+        val hash : SecureHash
         val cpks : Collection<CPK.Metadata>
         val networkPolicy : String?
 
         /**
-         * @return a [CPK.Metadata] instance with containing the informa
+         * @return a [CPK.Metadata] instance with containing the information about a single [CPK]
+         * @throws [NoSuchElementException] if a [CPK] with the given [CPK.Identifier] doesn't exist in the [CPI]
          */
         fun cpkById(id : CPK.Identifier) : CPK.Metadata
 
@@ -154,6 +130,10 @@ interface CPI : AutoCloseable {
                      cpiLocation : String? = null,
                      verifySignature : Boolean = jarSignatureVerificationEnabledByDefault()) : Metadata =
                 CPILoader.loadMetadata(inputStream, cpiLocation, verifySignature)
+
+            @JvmStatic
+            fun newInstance(id : Identifier, hash: SecureHash, cpks: Iterable<CPK.Metadata>, networkPolicy : String?) : Metadata =
+                CPIMetadataImpl(id, hash, cpks, networkPolicy)
         }
     }
 

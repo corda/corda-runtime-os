@@ -1,0 +1,11 @@
+plugins {
+    id 'corda-api.common-library'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+
+dependencies {
+    implementation project(":packaging")
+    implementation project(":data:avro-schema")
+}

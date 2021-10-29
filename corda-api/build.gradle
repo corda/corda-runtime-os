@@ -18,6 +18,7 @@ dependencies {
         api project(':membership')
         api project(':membership-identity')
         api project(':packaging')
+        api project(':packaging:packaging-avro-converters')
         api project(':persistence')
         api project(':serialization')
 
