@@ -177,12 +177,7 @@ internal class SandboxServiceImpl @Activate constructor(
             startBundles(bundles)
         }
 
-        val sandboxGroup = SandboxGroupImpl(
-            bundleUtils,
-            newSandboxes.associateBy { sandbox -> sandbox.cpk.metadata.id },
-            publicSandboxes,
-            ClassTagFactoryImpl()
-        )
+        val sandboxGroup = SandboxGroupImpl(newSandboxes, bundleUtils, publicSandboxes, ClassTagFactoryImpl())
 
         newSandboxes.forEach { sandbox ->
             sandboxGroups[sandbox.id] = sandboxGroup

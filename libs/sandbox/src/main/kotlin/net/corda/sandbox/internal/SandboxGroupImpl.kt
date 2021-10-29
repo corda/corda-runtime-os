@@ -1,6 +1,5 @@
 package net.corda.sandbox.internal
 
-import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.internal.classtag.ClassTagFactory
@@ -13,19 +12,16 @@ import net.corda.sandbox.internal.utilities.BundleUtils
 /**
  * An implementation of the [SandboxGroup] interface.
  *
- * @param bundleUtils The [BundleUtils] that all OSGi activity is delegated to for testing purposes.
- * @param sandboxesById The [CpkSandbox]s in this sandbox group, keyed by the identifier of their CPK.
+ * @param bundleUtils The utils that all OSGi activity is delegated to for testing purposes.
+ * @param sandboxes The CPK sandboxes in this sandbox group.
  * @param publicSandboxes An iterable containing all existing public sandboxes.
  */
 internal class SandboxGroupImpl(
+    override val sandboxes: Collection<CpkSandbox>,
     private val bundleUtils: BundleUtils,
-    private val sandboxesById: Map<CPK.Identifier, CpkSandbox>,
     private val publicSandboxes: Iterable<Sandbox>,
     private val classTagFactory: ClassTagFactory
 ) : SandboxGroupInternal {
-
-    override val sandboxes = sandboxesById.values
-
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
         val klass = sandboxes.mapNotNull { sandbox ->
             try {

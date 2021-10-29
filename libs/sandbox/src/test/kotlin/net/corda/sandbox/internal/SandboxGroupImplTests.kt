@@ -55,8 +55,8 @@ class SandboxGroupImplTests {
     private val publicSandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(mockPublicBundle), emptySet())
 
     private val sandboxGroupImpl = SandboxGroupImpl(
+        setOf(cpkSandbox),
         mockBundleUtils,
-        mapOf(cpkSandbox.cpk.metadata.id to cpkSandbox),
         setOf(publicSandbox),
         DummyClassTagFactory(cpkSandbox.cpk)
     )
