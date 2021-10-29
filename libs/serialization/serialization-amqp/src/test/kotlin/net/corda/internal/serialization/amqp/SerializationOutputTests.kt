@@ -3,6 +3,8 @@ package net.corda.internal.serialization.amqp
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.AlwaysEmptyWhitelist
 import net.corda.internal.serialization.CordaSerializationEncoding
+import net.corda.internal.serialization.EncodingWhitelist
+import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.SnappyEncodingWhitelist
 import net.corda.internal.serialization.amqp.custom.BigDecimalSerializer
 import net.corda.internal.serialization.amqp.custom.CurrencySerializer
@@ -18,8 +20,6 @@ import net.corda.v5.application.flows.FlowException
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.OpaqueBytes
-import net.corda.v5.serialization.EncodingWhitelist
-import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.annotations.ConstructorForDeserialization
 import org.apache.qpid.proton.amqp.Decimal128
 import org.apache.qpid.proton.amqp.Decimal32
@@ -224,7 +224,7 @@ class SerializationOutputTests {
         val ser2 = SerializationOutput(factory)
         val des2 = DeserializationInput(factory)
         val desObj2 = des2.deserialize(
-            ser2.serialize(obj),
+            ser2.serialize(obj, context = withSerializationContext),
             withSerializationContext.withEncodingWhitelist(encodingWhitelist)
         )
         assertTrue(deepEquals(obj, desObj2) == expectedEqual)
@@ -495,12 +495,12 @@ class SerializationOutputTests {
     @Test
     fun `test throwables serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(ThrowableSerializer(factory), true)
-        factory.register(StackTraceElementSerializer(), true)
+        factory.register(ThrowableSerializer(factory))
+        factory.register(StackTraceElementSerializer(factory))
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(ThrowableSerializer(factory2), true)
-        factory2.register(StackTraceElementSerializer(), true)
+        factory2.register(ThrowableSerializer(factory2))
+        factory2.register(StackTraceElementSerializer(factory2))
 
         val t = IllegalAccessException("message").fillInStackTrace()
 
@@ -518,12 +518,12 @@ class SerializationOutputTests {
     @Test
     fun `test complex throwables serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(ThrowableSerializer(factory), true)
-        factory.register(StackTraceElementSerializer(), true)
+        factory.register(ThrowableSerializer(factory))
+        factory.register(StackTraceElementSerializer(factory))
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(ThrowableSerializer(factory2), true)
-        factory2.register(StackTraceElementSerializer(), true)
+        factory2.register(ThrowableSerializer(factory2))
+        factory2.register(StackTraceElementSerializer(factory2))
 
         try {
             try {
@@ -548,12 +548,12 @@ class SerializationOutputTests {
     @Test
     fun `test suppressed throwables serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(ThrowableSerializer(factory), true)
-        factory.register(StackTraceElementSerializer(), true)
+        factory.register(ThrowableSerializer(factory))
+        factory.register(StackTraceElementSerializer(factory))
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(ThrowableSerializer(factory2), true)
-        factory2.register(StackTraceElementSerializer(), true)
+        factory2.register(ThrowableSerializer(factory2))
+        factory2.register(StackTraceElementSerializer(factory))
 
         try {
             try {
@@ -572,12 +572,12 @@ class SerializationOutputTests {
     @Test
     fun `test flow corda exception subclasses serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(ThrowableSerializer(factory), true)
-        factory.register(StackTraceElementSerializer(), true)
+        factory.register(ThrowableSerializer(factory))
+        factory.register(StackTraceElementSerializer(factory))
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(ThrowableSerializer(factory2), true)
-        factory2.register(StackTraceElementSerializer(), true)
+        factory2.register(ThrowableSerializer(factory2))
+        factory2.register(StackTraceElementSerializer(factory2))
 
         val obj = FlowException("message").fillInStackTrace()
         serdesThrowableWithInternalInfo(obj, factory, factory2)
@@ -711,10 +711,10 @@ class SerializationOutputTests {
     @Test
     fun `test toString custom serializer`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(BigDecimalSerializer, true)
+        factory.register(BigDecimalSerializer)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(BigDecimalSerializer, true)
+        factory2.register(BigDecimalSerializer)
 
         val obj = BigDecimals(BigDecimal.TEN, BigDecimal.TEN)
         val objCopy = serdes(obj, factory, factory2)
@@ -726,10 +726,10 @@ class SerializationOutputTests {
     @Test
     fun `test byte arrays not reference counted`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(BigDecimalSerializer, true)
+        factory.register(BigDecimalSerializer)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(BigDecimalSerializer, true)
+        factory2.register(BigDecimalSerializer)
 
         val bytes = ByteArray(1)
         val obj = ByteArrays(bytes, bytes)
@@ -752,10 +752,10 @@ class SerializationOutputTests {
     @Test
     fun `test InputStream serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(InputStreamSerializer, true)
+        factory.register(InputStreamSerializer)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(InputStreamSerializer, true)
+        factory2.register(InputStreamSerializer)
         val bytes = ByteArray(10) { it.toByte() }
         val obj = bytes.inputStream()
         val obj2 = serdes<InputStream>(obj, factory, factory2, expectedEqual = false, expectDeserializedEqual = false)
@@ -796,8 +796,8 @@ class SerializationOutputTests {
         data class C(val a: Amount<Currency>)
 
         val factory = testDefaultFactoryNoEvolution()
-        factory.register(BigDecimalSerializer, true)
-        factory.register(CurrencySerializer, true)
+        factory.register(BigDecimalSerializer)
+        factory.register(CurrencySerializer)
 
         val c = C(Amount(100, BigDecimal("1.5"), Currency.getInstance("USD")))
 

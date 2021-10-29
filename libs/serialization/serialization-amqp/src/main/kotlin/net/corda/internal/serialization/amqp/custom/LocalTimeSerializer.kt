@@ -1,13 +1,22 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.v5.serialization.SerializationCustomSerializer
+import net.corda.internal.serialization.SerializationContext
+import net.corda.internal.serialization.amqp.CustomSerializer
+import net.corda.internal.serialization.amqp.SerializerFactory
 import java.time.LocalTime
 
 /**
  * A serializer for [LocalTime] that uses a proxy object to write out the hours, minutes, seconds and the nanos.
  */
-class LocalTimeSerializer : SerializationCustomSerializer<LocalTime, LocalTimeSerializer.LocalTimeProxy> {
-    override fun toProxy(obj: LocalTime): LocalTimeProxy = LocalTimeProxy(
+class LocalTimeSerializer(
+    factory: SerializerFactory
+) : CustomSerializer.Proxy<LocalTime, LocalTimeSerializer.LocalTimeProxy>(
+    LocalTime::class.java,
+    LocalTimeProxy::class.java,
+    factory,
+    withInheritance = false
+) {
+    override fun toProxy(obj: LocalTime, context: SerializationContext): LocalTimeProxy = LocalTimeProxy(
         obj.hour.toByte(),
         obj.minute.toByte(),
         obj.second.toByte(),

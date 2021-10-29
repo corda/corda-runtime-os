@@ -1,6 +1,6 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.v5.serialization.SerializationContext
+import net.corda.internal.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Binary
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
@@ -20,12 +20,12 @@ class AMQPPrimitiveSerializer(clazz: Class<*>) : AMQPSerializer<Any> {
     }
 
     override fun writeObject(
-            obj: Any,
-            data: Data,
-            type: Type,
-            output: SerializationOutput,
-            context: SerializationContext,
-            debugIndent: Int
+        obj: Any,
+        data: Data,
+        type: Type,
+        output: SerializationOutput,
+        context: SerializationContext,
+        debugIndent: Int
     ) {
         if (obj is ByteArray) {
             data.putObject(Binary(obj))

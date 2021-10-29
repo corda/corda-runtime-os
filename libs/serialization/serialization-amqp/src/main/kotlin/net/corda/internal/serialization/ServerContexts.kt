@@ -2,7 +2,6 @@
 package net.corda.internal.serialization
 
 import net.corda.internal.serialization.amqp.amqpMagic
-import net.corda.v5.serialization.SerializationContext
 
 /*
  * Serialisation contexts for the server.

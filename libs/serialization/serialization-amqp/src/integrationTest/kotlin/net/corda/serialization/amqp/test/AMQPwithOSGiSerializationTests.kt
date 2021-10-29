@@ -2,6 +2,7 @@ package net.corda.serialization.amqp.test
 
 import net.corda.install.InstallService
 import net.corda.internal.serialization.AllWhitelist
+import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.SerializationContextImpl
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.DescriptorBasedSerializerRegistry
@@ -14,7 +15,6 @@ import net.corda.internal.serialization.amqp.amqpMagic
 import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
-import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail

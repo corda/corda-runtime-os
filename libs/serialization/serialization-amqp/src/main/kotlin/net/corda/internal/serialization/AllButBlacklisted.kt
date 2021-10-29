@@ -1,6 +1,5 @@
 package net.corda.internal.serialization
 
-import net.corda.v5.serialization.ClassWhitelist
 import java.io.BufferedInputStream
 import java.io.Console
 import java.io.File

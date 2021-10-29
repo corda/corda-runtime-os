@@ -41,18 +41,16 @@ interface CustomSerializerRegistry {
      * serializer that expects to find getters and a constructor with a parameter for each property.
      *
      * @param customSerializer a SerializationCustomSerializer that converts the target type to/from a proxy object
-     * @param withInheritance should this serializer apply to subclasses of the target type? Useful for interface
-     * and abstract classes.
      */
-    fun register(customSerializer: SerializationCustomSerializer<*, *>, withInheritance: Boolean)
+    fun register(customSerializer: CustomSerializer<out Any>)
 
     /**
      * Register a user defined custom serializer for any type that cannot be serialized or deserialized by the default
      * serializer that expects to find getters and a constructor with a parameter for each property.
      *
-     * @param customSerializer a SerializationCustomSerializer that converts the target type to/from a proxy object
+     * @param customSerializer a CorDappCustomSerializer that converts the target type to/from a proxy object
      */
-    fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>)
+    fun registerExternal(customSerializer: CorDappCustomSerializer)
 
     /**
      * Try to find a custom serializer for the actual class, and declared type, of a value.
@@ -103,26 +101,29 @@ class CachingCustomSerializerRegistry(
     private val customSerializersCache: MutableMap<CustomSerializerIdentifier, CustomSerializerLookupResult> = DefaultCacheProvider.createCache()
     private val customSerializers: MutableList<SerializerFor> = mutableListOf()
 
-    override fun register(
-        customSerializer: SerializationCustomSerializer<*, *>,
-        withInheritance: Boolean
-    ) {
-        val serializer = CorDappCustomSerializer(
-            customSerializer,
-            withInheritance
-        )
-        logger.trace { "action=\"Registering custom serializer\", class=\"${serializer.type}\"" }
-        storeCustomSerializer(serializer)
+    override fun register(customSerializer: CustomSerializer<out Any>) {
+        logger.trace { "action=\"Registering custom serializer\", class=\"${customSerializer.type}\"" }
+        checkActiveCache(customSerializer.type)
+
+        descriptorBasedSerializerRegistry.getOrBuild(customSerializer.typeDescriptor.toString()) {
+            customSerializers += customSerializer
+            for (additional in customSerializer.additionalSerializers) {
+                register(additional)
+            }
+
+            for (alias in customSerializer.deserializationAliases) {
+                val aliasDescriptor = typeDescriptorFor(alias)
+                if (aliasDescriptor != customSerializer.typeDescriptor) {
+                    descriptorBasedSerializerRegistry[aliasDescriptor.toString()] = customSerializer
+                }
+            }
+
+            customSerializer
+        }
     }
 
-    override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>) {
-        val serializer = CorDappCustomSerializer(customSerializer, false)
-        logger.trace { "action=\"Registering external serializer\", class=\"${serializer.type}\"" }
-        storeCustomSerializer(serializer)
-    }
-
-    private fun storeCustomSerializer(customSerializer: AMQPSerializer<Any>) {
-        require(customSerializer is SerializerFor) { "customSerializer must implement SerializerFor" }
+    override fun registerExternal(customSerializer: CorDappCustomSerializer) {
+        logger.trace { "action=\"Registering external serializer\", class=\"${customSerializer.type}\"" }
         checkActiveCache(customSerializer.type)
 
         val descriptor = customSerializer.typeDescriptor.toString()
@@ -160,15 +161,23 @@ class CachingCustomSerializerRegistry(
 
     @Suppress("ThrowsCount", "ComplexMethod")
     private fun doFindCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? {
+        val declaredSuperClass = declaredType.asClass().superclass
+
         val declaredSerializers = customSerializers.mapNotNull { customSerializer ->
             when {
-                customSerializer.isSerializerFor(clazz) -> {
+                !customSerializer.isSerializerFor(clazz) -> null
+                (declaredSuperClass == null
+                        || !customSerializer.isSerializerFor(declaredSuperClass)
+                        || !customSerializer.revealSubclassesInSchema) -> {
                     logger.debug { "action=\"Using custom serializer\", class=${clazz.typeName}, declaredType=${declaredType.typeName}" }
 
-                    @Suppress("UNCHECKED_CAST")
+                    @Suppress("unchecked_cast")
                     customSerializer as? AMQPSerializer<Any>
                 }
-                else -> null
+                else ->
+                    // Make a subclass serializer for the subclass and return that...
+                    @Suppress("unchecked_cast")
+                    CustomSerializer.SubClass(clazz, customSerializer as CustomSerializer<Any>)
             }
         }
 
@@ -188,7 +197,13 @@ class CachingCustomSerializerRegistry(
             throw IllegalCustomSerializerException(declaredSerializers.first(), clazz)
         }
 
-        return declaredSerializers.first()
+        return declaredSerializers.first().let {
+            if (it is CustomSerializer<Any>) {
+                it.specialiseFor(declaredType)
+            } else {
+                it
+            }
+        }
     }
 
     private val Class<*>.isCustomSerializationForbidden: Boolean get() = when {
@@ -199,4 +214,3 @@ class CachingCustomSerializerRegistry(
         else -> false
     }
 }
-

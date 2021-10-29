@@ -2,7 +2,6 @@ package net.corda.internal.serialization
 
 import net.corda.v5.application.services.serialization.SerializationService
 import net.corda.v5.base.types.sequence
-import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.SingletonSerializeAsToken
 

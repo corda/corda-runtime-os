@@ -1,7 +1,7 @@
 package net.corda.internal.serialization.amqp.testutils
 
-import net.corda.v5.serialization.SerializationContext
 import net.corda.internal.serialization.AllWhitelist
+import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.SerializationContextImpl
 import net.corda.internal.serialization.amqp.amqpMagic
 

@@ -1,9 +1,9 @@
 package net.corda.internal.serialization.amqp
 
 import com.google.common.primitives.Primitives
+import net.corda.internal.serialization.ClassWhitelist
 import net.corda.internal.serialization.model.BaseLocalTypes
 import net.corda.internal.serialization.model.LocalTypeModelConfiguration
-import net.corda.v5.serialization.ClassWhitelist
 import org.apache.qpid.proton.amqp.Decimal128
 import org.apache.qpid.proton.amqp.Decimal32
 import org.apache.qpid.proton.amqp.Decimal64
@@ -16,16 +16,14 @@ import java.lang.reflect.Type
 import java.util.Date
 import java.util.EnumSet
 import java.util.UUID
-import java.util.function.Function
-import java.util.function.Predicate
 
 /**
  * [LocalTypeModelConfiguration] based on a [ClassWhitelist]
  */
 class WhitelistBasedTypeModelConfiguration(
-        private val whitelist: ClassWhitelist,
-        private val customSerializerRegistry: CustomSerializerRegistry,
-        override val baseTypes: BaseLocalTypes
+    private val whitelist: ClassWhitelist,
+    private val customSerializerRegistry: CustomSerializerRegistry,
+    override val baseTypes: BaseLocalTypes
 ) : LocalTypeModelConfiguration {
     constructor(whitelist: ClassWhitelist, customSerializerRegistry: CustomSerializerRegistry)
         : this(whitelist, customSerializerRegistry, DEFAULT_BASE_TYPES)
@@ -67,9 +65,9 @@ private val DEFAULT_BASE_TYPES = BaseLocalTypes(
     exceptionClass = Exception::class.java,
     mapClass = Map::class.java,
     stringClass = String::class.java,
-    isEnum = Predicate { clazz -> clazz.isEnum },
-    enumConstants = Function { clazz -> clazz.enumConstants },
-    enumConstantNames = Function { clazz ->
+    isEnum = Class<*>::isEnum,
+    enumConstants = Class<*>::getEnumConstants,
+    enumConstantNames = { clazz ->
         (clazz as Class<out Enum<*>>).enumConstants.map(Enum<*>::name)
     }
 )

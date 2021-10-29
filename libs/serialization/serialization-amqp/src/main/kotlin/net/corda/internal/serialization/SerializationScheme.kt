@@ -3,14 +3,7 @@ package net.corda.internal.serialization
 import net.corda.internal.serialization.amqp.amqpMagic
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.ByteSequence
-import net.corda.v5.serialization.ClassWhitelist
-import net.corda.v5.serialization.EncodingWhitelist
-import net.corda.v5.serialization.ObjectWithCompatibleContext
-import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
-import net.corda.v5.serialization.SerializationEncoding
-import net.corda.v5.serialization.SerializationFactory
-import net.corda.v5.serialization.SerializationMagic
 import net.corda.v5.serialization.SerializedBytes
 import org.slf4j.LoggerFactory
 import java.io.NotSerializableException

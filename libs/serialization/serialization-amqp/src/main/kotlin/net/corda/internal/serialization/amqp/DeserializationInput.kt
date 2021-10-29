@@ -1,13 +1,17 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.*
+import net.corda.internal.serialization.ByteBufferInputStream
+import net.corda.internal.serialization.CordaSerializationEncoding
+import net.corda.internal.serialization.EncodingWhitelist
+import net.corda.internal.serialization.NullEncodingWhitelist
+import net.corda.internal.serialization.SectionId
+import net.corda.internal.serialization.SerializationContext
+import net.corda.internal.serialization.encodingNotPermittedFormat
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
-import net.corda.v5.serialization.EncodingWhitelist
-import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializedBytes
 import org.apache.qpid.proton.amqp.Binary
 import org.apache.qpid.proton.amqp.DescribedType

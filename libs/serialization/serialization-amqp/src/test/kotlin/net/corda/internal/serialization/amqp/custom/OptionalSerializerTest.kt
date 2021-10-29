@@ -1,8 +1,10 @@
 package net.corda.internal.serialization.amqp.custom
 
+import net.corda.internal.serialization.SerializationContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.mockito.kotlin.mock
 import java.util.Optional
 import java.util.concurrent.TimeUnit
 
@@ -10,30 +12,45 @@ import java.util.concurrent.TimeUnit
 class OptionalSerializerTest {
 
     @Test
-	fun `should convert optional with item to proxy`() {
+    fun `should convert optional with item to proxy`() {
         val opt = Optional.of("GenericTestString")
-        val proxy = OptionalSerializer().toProxy(opt)
+        val proxy = toProxy(OptionalSerializer(mock()), opt)
         assertThat(proxy.item).isEqualTo("GenericTestString")
     }
 
     @Test
-	fun `should convert optional without item to empty proxy`() {
+    fun `should convert optional without item to empty proxy`() {
         val opt = Optional.ofNullable<String>(null)
-        val proxy = OptionalSerializer().toProxy(opt)
+        val proxy = toProxy(OptionalSerializer(mock()), opt)
         assertThat(proxy.item).isNull()
     }
 
     @Test
-	fun `should convert proxy without item to empty optional `() {
+    fun `should convert proxy without item to empty optional `() {
         val proxy = OptionalSerializer.OptionalProxy(null)
-        val opt = OptionalSerializer().fromProxy(proxy)
+        val opt = fromProxy<Any>(OptionalSerializer(mock()), proxy)
         assertThat(opt.isPresent).isFalse
     }
 
     @Test
-	fun `should convert proxy with item to empty optional `() {
+    fun `should convert proxy with item to empty optional `() {
         val proxy = OptionalSerializer.OptionalProxy("GenericTestString")
-        val opt = OptionalSerializer().fromProxy(proxy)
+        val opt = fromProxy<String>(OptionalSerializer(mock()), proxy)
         assertThat(opt.get()).isEqualTo("GenericTestString")
+    }
+
+    private fun toProxy(serializer: OptionalSerializer, opt: Optional<*>): OptionalSerializer.OptionalProxy {
+        val method = serializer::class.java.getDeclaredMethod("toProxy", Optional::class.java, SerializationContext::class.java).also {
+            it.isAccessible = true
+        }
+        return method.invoke(serializer, opt, mock<SerializationContext>()) as OptionalSerializer.OptionalProxy
+    }
+
+    private fun <T> fromProxy(serializer: OptionalSerializer, proxy: OptionalSerializer.OptionalProxy): Optional<T> {
+        val method = serializer::class.java.getDeclaredMethod("fromProxy", OptionalSerializer.OptionalProxy::class.java).also {
+            it.isAccessible = true
+        }
+        @Suppress("unchecked_cast")
+        return method.invoke(serializer, proxy) as Optional<T>
     }
 }

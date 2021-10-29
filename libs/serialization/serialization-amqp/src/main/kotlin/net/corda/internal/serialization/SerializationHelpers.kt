@@ -2,9 +2,6 @@ package net.corda.internal.serialization
 
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.base.types.sequence
-import net.corda.v5.serialization.ObjectWithCompatibleContext
-import net.corda.v5.serialization.SerializationContext
-import net.corda.v5.serialization.SerializationFactory
 import net.corda.v5.serialization.SerializedBytes
 import java.sql.Blob
 

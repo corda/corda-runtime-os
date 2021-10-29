@@ -1,6 +1,8 @@
 package net.corda.internal.serialization.amqp.testutils
 
 import net.corda.internal.serialization.AllWhitelist
+import net.corda.internal.serialization.SerializationContext
+import net.corda.internal.serialization.SerializationEncoding
 import net.corda.internal.serialization.TestMutableWhiteList
 import net.corda.internal.serialization.amqp.AMQPSerializer
 import net.corda.internal.serialization.amqp.BytesAndSchemas
@@ -19,8 +21,6 @@ import net.corda.utilities.isDirectory
 import net.corda.utilities.reflection.packageName_
 import net.corda.utilities.toPath
 import net.corda.v5.base.types.OpaqueBytes
-import net.corda.v5.serialization.SerializationContext
-import net.corda.v5.serialization.SerializationEncoding
 import net.corda.v5.serialization.SerializedBytes
 import org.apache.qpid.proton.codec.Data
 import org.junit.jupiter.api.Test

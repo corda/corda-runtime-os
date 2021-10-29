@@ -4,7 +4,6 @@ import net.corda.internal.serialization.amqp.AMQPTypeIdentifierParser
 import net.corda.internal.serialization.amqp.PropertyDescriptor
 import net.corda.internal.serialization.amqp.asClass
 import net.corda.internal.serialization.amqp.propertyDescriptors
-import net.corda.v5.serialization.ClassWhitelist
 import java.lang.reflect.Type
 
 /**

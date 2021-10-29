@@ -1,7 +1,7 @@
 package net.corda.internal.serialization.model
 
+import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.Metadata
-import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.base.util.contextLogger
 import java.io.NotSerializableException
 import java.lang.reflect.Type

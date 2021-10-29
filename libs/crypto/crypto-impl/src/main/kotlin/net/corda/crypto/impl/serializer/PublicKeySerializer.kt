@@ -1,7 +1,6 @@
 package net.corda.crypto.impl.serializer
 
 import net.corda.crypto.CryptoLibraryFactory
-import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -17,9 +16,9 @@ class PublicKeySerializer @Activate constructor(
     private val cryptoLibraryFactory: CryptoLibraryFactory
 ) : SerializationCustomSerializer<PublicKey, ByteArray> {
 
-    override fun toProxy(obj: PublicKey, context: SerializationContext): ByteArray =
+    override fun toProxy(obj: PublicKey): ByteArray =
         cryptoLibraryFactory.getKeyEncodingService().encodeAsByteArray(obj)
 
-    override fun fromProxy(proxy: ByteArray, context: SerializationContext): PublicKey =
+    override fun fromProxy(proxy: ByteArray): PublicKey =
         cryptoLibraryFactory.getKeyEncodingService().decodePublicKey(proxy)
 }

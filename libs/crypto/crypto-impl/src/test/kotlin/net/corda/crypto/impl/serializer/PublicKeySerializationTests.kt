@@ -26,10 +26,10 @@ class PublicKeySerializationTests {
         val publicKeySerializer = PublicKeySerializer(cryptoLibraryFactory)
 
         // Convert to proxy object
-        val proxy = publicKeySerializer.toProxy(publicKey, mock())
+        val proxy = publicKeySerializer.toProxy(publicKey)
 
         // Convert back to public key
-        val keyAfterConversion = publicKeySerializer.fromProxy(proxy, mock())
+        val keyAfterConversion = publicKeySerializer.fromProxy(proxy)
 
         assertEquals(publicKey, keyAfterConversion)
     }

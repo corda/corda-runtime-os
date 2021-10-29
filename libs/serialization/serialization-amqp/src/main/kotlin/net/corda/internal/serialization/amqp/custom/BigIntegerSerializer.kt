@@ -1,6 +1,6 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.v5.serialization.SerializationCustomSerializer
+import net.corda.internal.serialization.amqp.CustomSerializer
 import java.math.BigInteger
 
 /**
@@ -8,7 +8,4 @@ import java.math.BigInteger
  * features that are precision independent other than via a string.  The format of the string is discussed in the
  * documentation for [BigInteger.toString].
  */
-object BigIntegerSerializer : SerializationCustomSerializer<BigInteger, String> {
-    override fun toProxy(obj: BigInteger): String = obj.toString()
-    override fun fromProxy(proxy: String): BigInteger = BigInteger(proxy)
-}
+object BigIntegerSerializer : CustomSerializer.ToString<BigInteger>(BigInteger::class.java)

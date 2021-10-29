@@ -1,15 +1,21 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.v5.serialization.SerializationContext
-import net.corda.v5.serialization.SerializationCustomSerializer
+import net.corda.internal.serialization.SerializationContext
+import net.corda.internal.serialization.amqp.CustomSerializer
+import net.corda.internal.serialization.amqp.LocalSerializerFactory
 
-class StackTraceElementSerializer :
-    SerializationCustomSerializer<StackTraceElement, StackTraceElementSerializer.StackTraceElementProxy> {
-    override fun toProxy(obj: StackTraceElement, context: SerializationContext): StackTraceElementProxy =
-        StackTraceElementProxy(obj.className, obj.methodName, obj.fileName, obj.lineNumber)
+class StackTraceElementSerializer(factory: LocalSerializerFactory)
+    : CustomSerializer.Proxy<StackTraceElement, StackTraceElementSerializer.StackTraceElementProxy>(
+    StackTraceElement::class.java,
+    StackTraceElementProxy::class.java,
+    factory,
+    withInheritance = false
+) {
+    override fun toProxy(obj: StackTraceElement, context: SerializationContext): StackTraceElementProxy
+        = StackTraceElementProxy(obj.className, obj.methodName, obj.fileName, obj.lineNumber)
 
-    override fun fromProxy(proxy: StackTraceElementProxy, context: SerializationContext): StackTraceElement =
-        StackTraceElement(proxy.declaringClass, proxy.methodName, proxy.fileName, proxy.lineNumber)
+    override fun fromProxy(proxy: StackTraceElementProxy): StackTraceElement
+        = StackTraceElement(proxy.declaringClass, proxy.methodName, proxy.fileName, proxy.lineNumber)
 
     data class StackTraceElementProxy(
         val declaringClass: String,
