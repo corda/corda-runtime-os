@@ -114,5 +114,5 @@ class SandboxLoader @Activate constructor(
     }
 
     fun containsBundle(group: SandboxGroup, bundle: Bundle) =
-        group.sandboxes.any { sandbox -> containsBundle(sandbox, bundle) }
+        group.cpkSandboxes.any { sandbox -> containsBundle(sandbox, bundle) }
 }

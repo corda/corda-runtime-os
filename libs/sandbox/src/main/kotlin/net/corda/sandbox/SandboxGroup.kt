@@ -5,10 +5,10 @@ import net.corda.packaging.CPK
 /** An interface to a group of sandboxes with visibility of one another. */
 interface SandboxGroup {
     /** The sandboxes in the group. */
-    val sandboxes: Collection<CpkSandbox>
+    val cpkSandboxes: Collection<CpkSandbox>
 
     /**
-     * Returns the [CpkSandbox] out of [sandboxes] with the given [Cpk.Identifier]. There is guaranteed to be at
+     * Returns the [CpkSandbox] out of [cpkSandboxes] with the given [CPK.Identifier]. There is guaranteed to be at
      * most one.
      *
      * Throws [SandboxException] if no sandbox with the given CPK identifier exists.
@@ -16,7 +16,7 @@ interface SandboxGroup {
     fun getSandbox(cpkIdentifier: CPK.Identifier): CpkSandbox
 
     /**
-     * Finds the [CpkSandbox] out of [sandboxes] with the given [Cpk.Identifier] (there is guaranteed to be at
+     * Finds the [CpkSandbox] out of [cpkSandboxes] with the given [CPK.Identifier] (there is guaranteed to be at
      * most one), and loads the [Class] with [className] from the CorDapp bundle of that sandbox.
      *
      * Throws [SandboxException] if there is no sandbox with the given CPK identifier, if this sandbox does not contain
@@ -43,16 +43,16 @@ interface SandboxGroup {
     /**
      * Returns the serialised static tag for a given [klass].
      *
-     * Throws [SandboxException] if the class is not loaded from any bundle, or is contained in a bundle that is not
-     * contained in any sandbox in the group or in a public sandbox.
+     * Throws [SandboxException] if the class is not loaded from any bundle, or is contained in a bundle that does not
+     * have a symbolic name.
      */
     fun getStaticTag(klass: Class<*>): String
 
     /**
      * Returns the serialised evolvable tag for a given [klass].
      *
-     * Throws [SandboxException] if the class is not loaded from any bundle, or is contained in a bundle that is not
-     * contained in any sandbox in the group or in a public sandbox.
+     * Throws [SandboxException] if the class is not loaded from any bundle, or is contained in a bundle that does not
+     * have a symbolic name.
      */
     fun getEvolvableTag(klass: Class<*>): String
 

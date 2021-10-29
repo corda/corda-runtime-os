@@ -23,7 +23,7 @@ internal class SandboxGroupImpl(
     private val publicSandboxes: Iterable<SandboxInternal>,
     private val classTagFactory: ClassTagFactory
 ) : SandboxGroup {
-    override val sandboxes = sandboxesById.values
+    override val cpkSandboxes = sandboxesById.values
 
     override fun getSandbox(cpkIdentifier: CPK.Identifier) = sandboxesById[cpkIdentifier]
         ?: throw SandboxException("CPK $cpkIdentifier was not found in the sandbox group.")
@@ -32,7 +32,7 @@ internal class SandboxGroupImpl(
         getSandbox(cpkIdentifier).loadClassFromCordappBundle(className)
 
     override fun <T : Any> loadClassFromCordappBundle(className: String, type: Class<T>): Class<out T> {
-        val containingSandbox = sandboxes.find { sandbox -> sandbox.cordappBundleContainsClass(className) }
+        val containingSandbox = cpkSandboxes.find { sandbox -> sandbox.cordappBundleContainsClass(className) }
             ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
         val klass = containingSandbox.loadClassFromCordappBundle(className)
 
@@ -45,7 +45,7 @@ internal class SandboxGroupImpl(
         }
     }
 
-    override fun cordappClassCount(className: String) = sandboxes.count { sandbox ->
+    override fun cordappClassCount(className: String) = cpkSandboxes.count { sandbox ->
         sandbox.cordappBundleContainsClass(className)
     }
 
@@ -58,8 +58,8 @@ internal class SandboxGroupImpl(
 
         if (classTag.isCpkClass) {
             val sandbox = when (classTag) {
-                is StaticTag -> sandboxes.find { sandbox -> sandbox.cpk.metadata.hash == classTag.cpkFileHash }
-                is EvolvableTag -> sandboxes.find { sandbox ->
+                is StaticTag -> cpkSandboxes.find { sandbox -> sandbox.cpk.metadata.hash == classTag.cpkFileHash }
+                is EvolvableTag -> cpkSandboxes.find { sandbox ->
                     sandbox.cpk.metadata.id.signerSummaryHash == classTag.cpkSignerSummaryHash
                             && sandbox.cordappBundle.symbolicName == classTag.cordappBundleName
                 }
@@ -88,27 +88,19 @@ internal class SandboxGroupImpl(
      * If [isStaticTag] is true, a serialised [StaticTag] is returned. Otherwise, a serialised [EvolvableTag] is
      * returned.
      *
-     * Throws [SandboxException] if the class is not contained in any bundle, the class is contained in a bundle that
-     * is not contained in any sandbox in the group or in a public sandbox, or the class is contained in a bundle
-     * that does not have a symbolic name.
+     * Throws [SandboxException] if the class is not contained in any bundle, or is contained in a bundle that does not
+     * have a symbolic name.
      */
-    // TODO: Handle classes not from any bundle.
-    // TODO: Handle Felix Framework bundle as well.
+    // TODO - CORE-2884: Add handling of non-bundle and Felix framework classes.
     private fun getClassTag(klass: Class<*>, isStaticTag: Boolean): String {
         val bundle = bundleUtils.getBundle(klass)
             ?: throw SandboxException("Class ${klass.name} was not loaded from any bundle.")
 
-        val publicSandbox = publicSandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
-        if (publicSandbox != null) {
-            return classTagFactory.createSerialised(isStaticTag, false, bundle, publicSandbox)
-        }
-
-        val cpkSandbox = sandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
+        val cpkSandbox = cpkSandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
         if (cpkSandbox != null) {
-            return classTagFactory.createSerialised(isStaticTag, true, bundle, cpkSandbox)
+            return classTagFactory.createSerialised(isStaticTag, bundle, cpkSandbox)
         }
 
-        throw SandboxException(
-            "Bundle ${bundle.symbolicName} was not found in the sandbox group or in a public sandbox.")
+        return classTagFactory.createSerialised(isStaticTag, bundle, null)
     }
 }

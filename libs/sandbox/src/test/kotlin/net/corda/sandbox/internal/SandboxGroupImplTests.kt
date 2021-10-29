@@ -1,13 +1,13 @@
 package net.corda.sandbox.internal
 
 import net.corda.packaging.CPK
-import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.classtag.ClassTag
 import net.corda.sandbox.internal.classtag.ClassTagFactory
 import net.corda.sandbox.internal.classtag.EvolvableTag
 import net.corda.sandbox.internal.classtag.StaticTag
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
+import net.corda.sandbox.internal.sandbox.CpkSandboxInternal
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.crypto.SecureHash
@@ -21,10 +21,10 @@ import java.util.UUID.randomUUID
 
 // Various dummy serialised class tags.
 private const val CPK_STATIC_TAG = "serialised_static_cpk_class"
-private const val PUBLIC_STATIC_TAG = "serialised_static_public_class"
+private const val NON_CPK_STATIC_TAG = "serialised_static_non_cpk_class"
 private const val BAD_CPK_FILE_HASH_STATIC_TAG = "serialised_static_bad_cpk_file_hash"
 private const val CPK_EVOLVABLE_TAG = "serialised_evolvable_cpk_class"
-private const val PUBLIC_EVOLVABLE_TAG = "serialised_evolvable_public_class"
+private const val NON_CPK_EVOLVABLE_TAG = "serialised_evolvable_non_cpk_class"
 private const val BAD_CORDAPP_BUNDLE_NAME_EVOLVABLE_TAG = "serialised_evolvable_bad_cordapp_bundle_name"
 private const val BAD_SIGNERS_EVOLVABLE_TAG = "serialised_evolvable_bad_signers"
 
@@ -35,42 +35,42 @@ private const val BAD_SIGNERS_EVOLVABLE_TAG = "serialised_evolvable_bad_signers"
  */
 class SandboxGroupImplTests {
     private val cpkClass = String::class.java
-    private val publicClass = Int::class.java
+    private val nonCpkClass = Int::class.java
     private val nonBundleClass = Boolean::class.java
     private val nonSandboxClass = Float::class.java
 
     private val mockCpkBundle = mockBundle(CPK_BUNDLE_NAME, cpkClass)
-    private val mockPublicBundle = mockBundle(PUBLIC_BUNDLE_NAME, publicClass)
+    private val mockNonCpkBundle = mockBundle(NON_CPK_BUNDLE_NAME, nonCpkClass)
     private val mockNonSandboxBundle = mockBundle()
     private val mockCordappBundle = mockBundle(CORDAPP_BUNDLE_NAME)
 
     private val mockBundleUtils = mock<BundleUtils>().apply {
         whenever(getBundle(cpkClass)).thenReturn(mockCpkBundle)
-        whenever(getBundle(publicClass)).thenReturn(mockPublicBundle)
+        whenever(getBundle(nonCpkClass)).thenReturn(mockNonCpkBundle)
         whenever(getBundle(nonSandboxClass)).thenReturn(mockNonSandboxBundle)
     }
 
     private val cpkSandbox =
         CpkSandboxImpl(mockBundleUtils, randomUUID(), mockCpk(), mockCordappBundle, setOf(mockCpkBundle))
-    private val publicSandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(mockPublicBundle), emptySet())
+    private val nonCpkSandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(mockNonCpkBundle), emptySet())
 
     private val sandboxGroupImpl = SandboxGroupImpl(
         mockBundleUtils,
         mapOf(cpkSandbox.cpk.metadata.id to cpkSandbox),
-        setOf(publicSandbox),
+        setOf(nonCpkSandbox),
         DummyClassTagFactory(cpkSandbox.cpk)
     )
 
     @Test
     fun `creates valid static tag for a CPK class`() {
-        val expectedTag = "true;true;$mockCpkBundle;$cpkSandbox"
+        val expectedTag = "true;$mockCpkBundle;$cpkSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(cpkClass))
     }
 
     @Test
-    fun `creates valid static tag for a public class`() {
-        val expectedTag = "true;false;$mockPublicBundle;$publicSandbox"
-        assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(publicClass))
+    fun `creates valid static tag for a non-CPK class`() {
+        val expectedTag = "true;$mockNonCpkBundle;null"
+        assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(nonCpkClass))
     }
 
     @Test
@@ -81,22 +81,15 @@ class SandboxGroupImplTests {
     }
 
     @Test
-    fun `returns null if asked to create static tag for a class in a bundle not in the sandbox group`() {
-        assertThrows<SandboxException> {
-            sandboxGroupImpl.getStaticTag(nonSandboxClass)
-        }
-    }
-
-    @Test
     fun `creates valid evolvable tag for a CPK class`() {
-        val expectedTag = "false;true;$mockCpkBundle;$cpkSandbox"
+        val expectedTag = "false;$mockCpkBundle;$cpkSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(cpkClass))
     }
 
     @Test
-    fun `creates valid evolvable tag for a public class`() {
-        val expectedTag = "false;false;$mockPublicBundle;$publicSandbox"
-        assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(publicClass))
+    fun `creates valid evolvable tag for a non-CPK class`() {
+        val expectedTag = "false;$mockNonCpkBundle;null"
+        assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(nonCpkClass))
     }
 
     @Test
@@ -107,20 +100,13 @@ class SandboxGroupImplTests {
     }
 
     @Test
-    fun `throws if asked to create evolvable tag for a class in a bundle not in the sandbox group`() {
-        assertThrows<SandboxException> {
-            sandboxGroupImpl.getEvolvableTag(nonSandboxClass)
-        }
-    }
-
-    @Test
     fun `returns CPK class identified by a static tag`() {
         assertEquals(cpkClass, sandboxGroupImpl.getClass(cpkClass.name, CPK_STATIC_TAG))
     }
 
     @Test
-    fun `returns public class identified by a static tag`() {
-        assertEquals(publicClass, sandboxGroupImpl.getClass(publicClass.name, PUBLIC_STATIC_TAG))
+    fun `returns non-CPK class identified by a static tag`() {
+        assertEquals(nonCpkClass, sandboxGroupImpl.getClass(nonCpkClass.name, NON_CPK_STATIC_TAG))
     }
 
     @Test
@@ -129,8 +115,8 @@ class SandboxGroupImplTests {
     }
 
     @Test
-    fun `returns public class identified by an evolvable tag`() {
-        assertEquals(publicClass, sandboxGroupImpl.getClass(publicClass.name, PUBLIC_EVOLVABLE_TAG))
+    fun `returns non-CPK class identified by an evolvable tag`() {
+        assertEquals(nonCpkClass, sandboxGroupImpl.getClass(nonCpkClass.name, NON_CPK_EVOLVABLE_TAG))
     }
 
     @Test
@@ -177,15 +163,15 @@ private class EvolvableTagImpl(
 
 /** A dummy [ClassTagFactory] implementation that returns pre-defined tags. */
 private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
-    // Used for public classes, where the CorDapp bundle name, CPK file hash and CPK signer summary hash are ignored.
+    // Used for non-CPK classes, where the CorDapp bundle name, CPK file hash and CPK signer summary hash are ignored.
     val dummyCordappBundleName = "dummyCordappBundleName"
     val dummyHash = SecureHash.create("SHA-256:0000000000000000")
 
     private val cpkStaticTag =
         StaticTagImpl(true, CPK_BUNDLE_NAME, cpk.metadata.hash)
 
-    private val publicStaticTag =
-        StaticTagImpl(false, PUBLIC_BUNDLE_NAME, dummyHash)
+    private val nonCpkStaticTag =
+        StaticTagImpl(false, NON_CPK_BUNDLE_NAME, dummyHash)
 
     private val invalidCpkFileHashStaticTag =
         StaticTagImpl(true, CPK_BUNDLE_NAME, randomSecureHash())
@@ -193,10 +179,10 @@ private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
     private val cpkEvolvableTag =
         EvolvableTagImpl(true, CPK_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, cpk.metadata.id.signerSummaryHash)
 
-    private val publicEvolvableTag =
+    private val nonCpkEvolvableTag =
         EvolvableTagImpl(
             false,
-            PUBLIC_BUNDLE_NAME,
+            NON_CPK_BUNDLE_NAME,
             dummyCordappBundleName,
             dummyHash
         )
@@ -214,18 +200,17 @@ private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
 
     override fun createSerialised(
         isStaticClassTag: Boolean,
-        isCpkBundle: Boolean,
         bundle: Bundle,
-        sandbox: Sandbox
-    ) = "$isStaticClassTag;$isCpkBundle;$bundle;$sandbox"
+        sandbox: CpkSandboxInternal?
+    ) = "$isStaticClassTag;$bundle;$sandbox"
 
     override fun deserialise(serialisedClassTag: String): ClassTag {
         return when (serialisedClassTag) {
             CPK_STATIC_TAG -> cpkStaticTag
-            PUBLIC_STATIC_TAG -> publicStaticTag
+            NON_CPK_STATIC_TAG -> nonCpkStaticTag
             BAD_CPK_FILE_HASH_STATIC_TAG -> invalidCpkFileHashStaticTag
             CPK_EVOLVABLE_TAG -> cpkEvolvableTag
-            PUBLIC_EVOLVABLE_TAG -> publicEvolvableTag
+            NON_CPK_EVOLVABLE_TAG -> nonCpkEvolvableTag
             BAD_CORDAPP_BUNDLE_NAME_EVOLVABLE_TAG -> invalidCordappBundleNameEvolvableTag
             BAD_SIGNERS_EVOLVABLE_TAG -> invalidSignersEvolvableTag
             else -> throw IllegalArgumentException("Could not deserialise tag.")

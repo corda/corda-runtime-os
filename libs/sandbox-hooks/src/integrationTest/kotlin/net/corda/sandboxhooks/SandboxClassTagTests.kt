@@ -8,6 +8,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 
 /** Tests the use of class tags for serialisation and deserialisation. */
+// TODO - CORE-2884: Add tests of class-tag creation for non-bundle and Felix framework classes.
 @ExtendWith(ServiceExtension::class)
 class SandboxClassTagTests {
     companion object {
@@ -15,41 +16,28 @@ class SandboxClassTagTests {
         lateinit var sandboxLoader: SandboxLoader
     }
 
-    // TODO: Known to fail. Need to fix.
-//    @Test
-//    fun `can create tags for a platform classes and use them to retrieve the class`() {
-//        val platformClasses = setOf(String::class.java, List::class.java, ClassLoader::class.java)
-//        platformClasses.forEach { platformClass ->
-//            val staticTag = sandboxLoader.group1.getStaticTag(platformClass)
-//            val evolvableTag = sandboxLoader.group1.getStaticTag(platformClass)
-//
-//            assertEquals(platformClass, sandboxLoader.group1.getClass(platformClass.name, staticTag))
-//            assertEquals(platformClass, sandboxLoader.group1.getClass(platformClass.name, evolvableTag))
-//        }
-//    }
-
     @Test
-    fun `can create a static tag for a public sandbox class and use it to retrieve the class`() {
-        val publicSandboxClasses = setOf(
-            Flow::class.java, // A class from a Corda bundle.
-            Lazy::class.java // A class from the Kotlin bundle.
+    fun `can create class tags for a non-CPK class and use it to retrieve the class`() {
+        val nonCpkClasses = setOf(
+            Lazy::class.java, // A class from the Kotlin bundle.
+            Flow::class.java // A class from a Corda bundle.
         )
-        publicSandboxClasses.forEach { publicSandboxClass ->
-            val staticTag = sandboxLoader.group1.getStaticTag(publicSandboxClass)
-            val evolvableTag = sandboxLoader.group1.getStaticTag(publicSandboxClass)
+        nonCpkClasses.forEach { nonCpkClass ->
+            val staticTag = sandboxLoader.group1.getStaticTag(nonCpkClass)
+            val evolvableTag = sandboxLoader.group1.getStaticTag(nonCpkClass)
 
-            assertEquals(publicSandboxClass, sandboxLoader.group1.getClass(publicSandboxClass.name, staticTag))
-            assertEquals(publicSandboxClass, sandboxLoader.group1.getClass(publicSandboxClass.name, evolvableTag))
+            assertEquals(nonCpkClass, sandboxLoader.group1.getClass(nonCpkClass.name, staticTag))
+            assertEquals(nonCpkClass, sandboxLoader.group1.getClass(nonCpkClass.name, evolvableTag))
         }
     }
 
     @Test
-    fun `can create a static tag for a sandbox class and use it to retrieve the class`() {
-        val sandboxClass = sandboxLoader.sandbox1.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS)
-        val staticTag = sandboxLoader.group1.getStaticTag(sandboxClass)
-        val evolvableTag = sandboxLoader.group1.getStaticTag(sandboxClass)
+    fun `can create class tags for a CPK class and use it to retrieve the class`() {
+        val cpkClass = sandboxLoader.sandbox1.loadClassFromCordappBundle(LIBRARY_QUERY_CLASS)
+        val staticTag = sandboxLoader.group1.getStaticTag(cpkClass)
+        val evolvableTag = sandboxLoader.group1.getStaticTag(cpkClass)
 
-        assertEquals(sandboxClass, sandboxLoader.group1.getClass(sandboxClass.name, staticTag))
-        assertEquals(sandboxClass, sandboxLoader.group1.getClass(sandboxClass.name, evolvableTag))
+        assertEquals(cpkClass, sandboxLoader.group1.getClass(cpkClass.name, staticTag))
+        assertEquals(cpkClass, sandboxLoader.group1.getClass(cpkClass.name, evolvableTag))
     }
 }

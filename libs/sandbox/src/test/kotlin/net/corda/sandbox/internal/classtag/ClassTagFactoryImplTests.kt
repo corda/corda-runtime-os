@@ -52,7 +52,6 @@ class ClassTagFactoryImplTests {
     fun `can serialise and deserialise a static class tag for a CPK class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = true,
-            isCpkBundle = true,
             mockBundle,
             mockSandbox
         )
@@ -69,9 +68,8 @@ class ClassTagFactoryImplTests {
     fun `can serialise and deserialise a static class tag for a public class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = true,
-            isCpkBundle = false,
             mockBundle,
-            mockSandbox
+            null
         )
 
         val classTag = classTagFactory.deserialise(serialisedTag) as StaticTag
@@ -86,7 +84,6 @@ class ClassTagFactoryImplTests {
     fun `can serialise and deserialise an evolvable class tag for a CPK class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = false,
-            isCpkBundle = true,
             mockBundle,
             mockSandbox
         )
@@ -104,9 +101,8 @@ class ClassTagFactoryImplTests {
     fun `can serialise and deserialise an evolvable class tag for a public class`() {
         val serialisedTag = classTagFactory.createSerialised(
             isStaticClassTag = false,
-            isCpkBundle = false,
             mockBundle,
-            mockSandbox
+            null
         )
 
         val classTag = classTagFactory.deserialise(serialisedTag) as EvolvableTag
@@ -123,9 +119,8 @@ class ClassTagFactoryImplTests {
         assertThrows<SandboxException> {
             classTagFactory.createSerialised(
                 isStaticClassTag = false,
-                isCpkBundle = false,
                 mock(),
-                mockSandbox
+                null
             )
         }
     }

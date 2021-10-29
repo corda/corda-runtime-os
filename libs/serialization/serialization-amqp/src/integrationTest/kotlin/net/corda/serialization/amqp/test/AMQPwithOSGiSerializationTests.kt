@@ -142,7 +142,7 @@ class AMQPwithOSGiSerializationTests {
             // Create sandbox group
             val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks.map {it.metadata.hash})
             assertThat(sandboxGroup).isNotNull
-            assertThat(sandboxGroup.sandboxes).hasSize(4)
+            assertThat(sandboxGroup.cpkSandboxes).hasSize(4)
 
             // Initialised two serialisation factories to avoid having successful tests due to caching
             val factory1 = testDefaultFactoryNoEvolution()

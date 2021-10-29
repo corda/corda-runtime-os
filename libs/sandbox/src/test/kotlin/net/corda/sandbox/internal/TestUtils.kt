@@ -14,7 +14,7 @@ import kotlin.random.Random.Default.nextLong
 
 const val HASH_ALGORITHM = "SHA-256"
 const val HASH_LENGTH = 32
-const val PUBLIC_BUNDLE_NAME = "public_bundle_symbolic_name"
+const val NON_CPK_BUNDLE_NAME = "non_cpk_bundle_symbolic_name"
 const val CPK_BUNDLE_NAME = "cpk_bundle_symbolic_name"
 const val CORDAPP_BUNDLE_NAME = "cordapp_bundle_symbolic_name"
 
