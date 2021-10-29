@@ -18,9 +18,9 @@ import net.corda.sandbox.internal.utilities.BundleUtils
  */
 internal class SandboxGroupImpl(
     override val sandboxes: Collection<CpkSandbox>,
-    private val bundleUtils: BundleUtils,
     private val publicSandboxes: Iterable<Sandbox>,
-    private val classTagFactory: ClassTagFactory
+    private val classTagFactory: ClassTagFactory,
+    private val bundleUtils: BundleUtils
 ) : SandboxGroupInternal {
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
         val klass = sandboxes.mapNotNull { sandbox ->
