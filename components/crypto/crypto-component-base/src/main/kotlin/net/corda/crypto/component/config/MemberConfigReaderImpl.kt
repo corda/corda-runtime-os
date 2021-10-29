@@ -12,7 +12,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
-import net.corda.v5.cipher.suite.config.CryptoLibraryConfig.Companion.DEFAULT_MEMBER_KEY
 import net.corda.v5.cipher.suite.config.CryptoMemberConfig
 import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import org.osgi.service.component.annotations.Activate
@@ -27,6 +26,7 @@ class MemberConfigReaderImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
 ) : MemberConfigReader, Lifecycle, CryptoLifecycleComponent {
     companion object {
+        private const val DEFAULT_MEMBER_KEY = "default"
         private val logger: Logger = contextLogger()
         private val DEFAULT_MEMBER_CONFIG = CryptoMemberConfigImpl(emptyMap())
     }
