@@ -14,16 +14,16 @@ interface SandboxGroup {
     /**
      * Returns the serialised static tag for a given [klass].
      *
-     * Throws [SandboxException] if the class is not loaded from any bundle, or is contained in a bundle that is not
-     * contained in any sandbox in the group or in a public sandbox.
+     * Throws [SandboxException] if the class is not loaded from any bundle, or if the class is contained in a bundle
+     * that does not have a symbolic name.
      */
     fun getStaticTag(klass: Class<*>): String
 
     /**
      * Returns the serialised evolvable tag for a given [klass].
      *
-     * Throws [SandboxException] if the class is not loaded from any bundle, or is contained in a bundle that is not
-     * contained in any sandbox in the group or in a public sandbox.
+     * Throws [SandboxException] if the class is not loaded from any bundle, or if the class is contained in a bundle
+     * that does not have a symbolic name.
      */
     fun getEvolvableTag(klass: Class<*>): String
 

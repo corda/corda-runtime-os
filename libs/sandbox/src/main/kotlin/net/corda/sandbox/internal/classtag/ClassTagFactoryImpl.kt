@@ -6,21 +6,19 @@ import net.corda.sandbox.internal.CLASS_TAG_IDENTIFIER_IDX
 import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
 import net.corda.sandbox.internal.ClassTagV1
 import net.corda.sandbox.internal.sandbox.CpkSandbox
-import net.corda.sandbox.internal.sandbox.Sandbox
 import org.osgi.framework.Bundle
 
 /** An implementation of [ClassTagFactory]. */
 internal class ClassTagFactoryImpl : ClassTagFactory {
     override fun createSerialised(
         isStaticClassTag: Boolean,
-        isPublicBundle: Boolean,
         bundle: Bundle,
-        sandbox: Sandbox
+        sandbox: CpkSandbox?
     ): String {
         val bundleSymbolicName = bundle.symbolicName ?: throw SandboxException(
             "Bundle at ${bundle.location} does not have a symbolic name, preventing serialisation.")
 
-        if (isPublicBundle) {
+        if (sandbox == null) {
             return if (isStaticClassTag) {
                 StaticTagImplV1(isPublicClass = true, bundleSymbolicName, ClassTagV1.PLACEHOLDER_HASH)
             } else {
@@ -33,9 +31,6 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
             }.serialise()
 
         }
-
-        if (sandbox !is CpkSandbox) throw SandboxException("Sandbox was neither a public sandbox nor a " +
-                "CPK sandbox. A valid class tag cannot be constructed.")
 
         return if (isStaticClassTag) {
             StaticTagImplV1(isPublicClass = false, bundleSymbolicName, sandbox.cpk.metadata.hash)

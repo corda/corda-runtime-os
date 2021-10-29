@@ -81,8 +81,7 @@ internal class SandboxGroupImpl(
      * If [isStaticTag] is true, a serialised [StaticTag] is returned. Otherwise, a serialised [EvolvableTag] is
      * returned.
      *
-     * Throws [SandboxException] if the class is not contained in any bundle, the class is contained in a bundle that
-     * is not contained in any sandbox in the group or in a public sandbox, or the class is contained in a bundle
+     * Throws [SandboxException] if the class is not contained in any bundle, or if the class is contained in a bundle
      * that does not have a symbolic name.
      */
     private fun getClassTag(klass: Class<*>, isStaticTag: Boolean): String {
@@ -92,13 +91,13 @@ internal class SandboxGroupImpl(
         val publicSandbox = publicSandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
 
         return if (publicSandbox != null) {
-            classTagFactory.createSerialised(isStaticTag, true, bundle, publicSandbox)
+            classTagFactory.createSerialised(isStaticTag, bundle, null)
         } else {
             val sandbox = cpkSandboxes.find { sandbox -> sandbox.containsBundle(bundle) } ?: throw SandboxException(
                 "Bundle ${bundle.symbolicName} was not found in the sandbox group or in a public sandbox."
             )
 
-            classTagFactory.createSerialised(isStaticTag, false, bundle, sandbox)
+            classTagFactory.createSerialised(isStaticTag, bundle, sandbox)
         }
     }
 }

@@ -1,12 +1,12 @@
 package net.corda.sandbox.internal
 
 import net.corda.packaging.CPK
-import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.classtag.ClassTag
 import net.corda.sandbox.internal.classtag.ClassTagFactory
 import net.corda.sandbox.internal.classtag.EvolvableTag
 import net.corda.sandbox.internal.classtag.StaticTag
+import net.corda.sandbox.internal.sandbox.CpkSandbox
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.utilities.BundleUtils
@@ -63,13 +63,13 @@ class SandboxGroupImplTests {
 
     @Test
     fun `creates valid static tag for a CPK class`() {
-        val expectedTag = "true;false;$mockCpkBundle;$cpkSandbox"
+        val expectedTag = "true;$mockCpkBundle;$cpkSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(cpkClass))
     }
 
     @Test
     fun `creates valid static tag for a public class`() {
-        val expectedTag = "true;true;$mockPublicBundle;$publicSandbox"
+        val expectedTag = "true;$mockPublicBundle;null"
         assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(publicClass))
     }
 
@@ -89,13 +89,13 @@ class SandboxGroupImplTests {
 
     @Test
     fun `creates valid evolvable tag for a CPK class`() {
-        val expectedTag = "false;false;$mockCpkBundle;$cpkSandbox"
+        val expectedTag = "false;$mockCpkBundle;$cpkSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(cpkClass))
     }
 
     @Test
     fun `creates valid evolvable tag for a public class`() {
-        val expectedTag = "false;true;$mockPublicBundle;$publicSandbox"
+        val expectedTag = "false;$mockPublicBundle;null"
         assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(publicClass))
     }
 
@@ -214,10 +214,9 @@ private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
 
     override fun createSerialised(
         isStaticClassTag: Boolean,
-        isPublicBundle: Boolean,
         bundle: Bundle,
-        sandbox: Sandbox
-    ) = "$isStaticClassTag;$isPublicBundle;$bundle;$sandbox"
+        sandbox: CpkSandbox?
+    ) = "$isStaticClassTag;$bundle;$sandbox"
 
     override fun deserialise(serialisedClassTag: String): ClassTag {
         return when (serialisedClassTag) {
