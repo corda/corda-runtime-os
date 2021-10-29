@@ -21,7 +21,7 @@ internal fun <T : Any> runFlow(group: SandboxGroup, className: String): T {
 
 /** Indicates whether the [sandboxGroup] contains the [bundle]. */
 internal fun sandboxGroupContainsBundle(sandboxGroup: SandboxGroup, bundle: Bundle): Boolean {
-    val sandboxesMethod = sandboxGroup::class.java.getMethod("getSandboxes")
+    val sandboxesMethod = sandboxGroup::class.java.getMethod("getCpkSandboxes")
     @Suppress("UNCHECKED_CAST")
     val sandboxes = sandboxesMethod.invoke(sandboxGroup) as Collection<Any>
     return sandboxes.any { sandbox -> sandboxContainsBundle(sandbox, bundle) }

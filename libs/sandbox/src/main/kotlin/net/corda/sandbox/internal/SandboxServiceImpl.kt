@@ -66,7 +66,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
         val sandboxGroupInternal = sandboxGroup as SandboxGroupInternal
-        sandboxGroupInternal.sandboxes.forEach { sandbox ->
+        sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
             sandboxes.remove(sandbox.id)
             sandboxGroups.remove(sandbox.id)
             zombieBundles.addAll((sandbox as Sandbox).unload())

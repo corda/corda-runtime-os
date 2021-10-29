@@ -20,7 +20,7 @@ sealed class ClassTag(val version: Int, val isPublicClass: Boolean, val classBun
 }
 
 /**
- * Identifies a sandboxed class based on the exact CPK version it comes from.
+ * Identifies a sandboxed class based on the exact CPK version it was loaded from.
  *
  * @param cpkFileHash The hash of the CPK the class was loaded from.
  */
@@ -28,7 +28,7 @@ abstract class StaticTag(version: Int, isPublicClass: Boolean, classBundleName: 
     ClassTag(version, isPublicClass, classBundleName)
 
 /**
- * Identifies a sandboxed class in an evolvable way.
+ * Identifies a sandboxed class based on the CPK's main bundle name and signers.
  *
  * @param mainBundleName The symbolic name of the main bundle of the CPK that the class if from.
  * @param cpkSignerSummaryHash A summary hash of the hashes of the public keys that signed the CPK the class is from.

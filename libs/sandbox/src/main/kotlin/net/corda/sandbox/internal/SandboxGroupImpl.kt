@@ -12,18 +12,19 @@ import net.corda.sandbox.internal.utilities.BundleUtils
 /**
  * An implementation of the [SandboxGroup] interface.
  *
- * @param bundleUtils The utils that all OSGi activity is delegated to for testing purposes.
- * @param sandboxes The CPK sandboxes in this sandbox group.
+ * @param cpkSandboxes The CPK sandboxes in this sandbox group.
  * @param publicSandboxes An iterable containing all existing public sandboxes.
+ * @param classTagFactory Used to generate class tags.
+ * @param bundleUtils The utils that all OSGi activity is delegated to for testing purposes.
  */
 internal class SandboxGroupImpl(
-    override val sandboxes: Collection<CpkSandbox>,
+    override val cpkSandboxes: Collection<CpkSandbox>,
     private val publicSandboxes: Iterable<Sandbox>,
     private val classTagFactory: ClassTagFactory,
     private val bundleUtils: BundleUtils
 ) : SandboxGroupInternal {
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
-        val klass = sandboxes.mapNotNull { sandbox ->
+        val klass = cpkSandboxes.mapNotNull { sandbox ->
             try {
                 sandbox.loadClassFromMainBundle(className)
             } catch (e: SandboxException) {
@@ -50,8 +51,8 @@ internal class SandboxGroupImpl(
 
         if (!classTag.isPublicClass) {
             val sandbox = when (classTag) {
-                is StaticTag -> sandboxes.find { sandbox -> sandbox.cpk.metadata.hash == classTag.cpkFileHash }
-                is EvolvableTag -> sandboxes.find { sandbox ->
+                is StaticTag -> cpkSandboxes.find { sandbox -> sandbox.cpk.metadata.hash == classTag.cpkFileHash }
+                is EvolvableTag -> cpkSandboxes.find { sandbox ->
                     sandbox.cpk.metadata.id.signerSummaryHash == classTag.cpkSignerSummaryHash
                             && sandbox.mainBundle.symbolicName == classTag.mainBundleName
                 }
@@ -93,7 +94,7 @@ internal class SandboxGroupImpl(
         return if (publicSandbox != null) {
             classTagFactory.createSerialised(isStaticTag, true, bundle, publicSandbox)
         } else {
-            val sandbox = sandboxes.find { sandbox -> sandbox.containsBundle(bundle) } ?: throw SandboxException(
+            val sandbox = cpkSandboxes.find { sandbox -> sandbox.containsBundle(bundle) } ?: throw SandboxException(
                 "Bundle ${bundle.symbolicName} was not found in the sandbox group or in a public sandbox."
             )
 
