@@ -13,30 +13,46 @@ configurations {
 }
 
 dependencies {
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-serialization"
-    implementation "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"
-    implementation "org.ow2.asm:asm:$asmVersion"
-
-    cpks project(path: ':applications:examples:serialization-amqp:type-evolution-poc:evolution-example-cpk', configuration: 'cordaCPK')
-
-
-//     From demo app:
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
 
-    implementation 'net.corda:corda-base'
-    implementation 'org.slf4j:slf4j-api'
-    implementation project(':libs:serialization:serialization-amqp')
-    implementation project(":osgi-framework-api")
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-application"
+    implementation "net.corda:corda-base"
+
+    implementation "net.corda:corda-packaging"
+    implementation "net.corda:corda-serialization"
+    implementation project(":components:install:install-legacy")
+    implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
+    implementation project(":libs:sandbox")
+    implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
+    implementation project(":libs:utilities")
+
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "com.google.guava:guava:$guavaVersion"
+    implementation "org.apache.qpid:proton-j:$protonjVersion"
+    implementation 'org.slf4j:slf4j-api'
 
-    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    implementation project(":osgi-framework-api")
+
+    implementation project(':libs:serialization:serialization-amqp')
+    implementation project(':libs:sandbox')
+    implementation project(':components:install:install-legacy')
+
+    cpks project(path: ':applications:examples:serialization-amqp:type-evolution-poc:evolution-example-cpk', configuration: 'cordaCPK')
+
+    runtimeOnly project(':libs:sandbox')
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
-    runtimeOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+
+    runtimeOnly "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"
+    implementation "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    runtimeOnly "org.ow2.asm:asm:$asmVersion"
+    runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+    runtimeOnly project(':libs:crypto:crypto-impl')
 }
