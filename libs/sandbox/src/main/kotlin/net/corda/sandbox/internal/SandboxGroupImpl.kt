@@ -56,7 +56,7 @@ internal class SandboxGroupImpl(
     override fun getClass(className: String, serialisedClassTag: String): Class<*> {
         val classTag = classTagFactory.deserialise(serialisedClassTag)
 
-        if (!classTag.isPublicClass) {
+        if (classTag.isCpkClass) {
             val sandbox = when (classTag) {
                 is StaticTag -> sandboxes.find { sandbox -> sandbox.cpk.metadata.hash == classTag.cpkFileHash }
                 is EvolvableTag -> sandboxes.find { sandbox ->
@@ -64,7 +64,7 @@ internal class SandboxGroupImpl(
                             && sandbox.cordappBundle.symbolicName == classTag.cordappBundleName
                 }
             } ?: throw SandboxException(
-                "Class tag $className did not match any sandbox in the sandbox group or a public sandboxe."
+                "Class tag $className did not match any sandbox in the sandbox group or a public sandbox."
             )
             return sandbox.loadClass(className, classTag.classBundleName) ?: throw SandboxException(
                 "Class $className could not be loaded from bundle ${classTag.classBundleName} in sandbox ${sandbox.id}."
@@ -92,20 +92,23 @@ internal class SandboxGroupImpl(
      * is not contained in any sandbox in the group or in a public sandbox, or the class is contained in a bundle
      * that does not have a symbolic name.
      */
+    // TODO: Handle classes not from any bundle.
+    // TODO: Handle Felix Framework bundle as well.
     private fun getClassTag(klass: Class<*>, isStaticTag: Boolean): String {
         val bundle = bundleUtils.getBundle(klass)
             ?: throw SandboxException("Class ${klass.name} was not loaded from any bundle.")
 
         val publicSandbox = publicSandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
-
-        return if (publicSandbox != null) {
-            classTagFactory.createSerialised(isStaticTag, true, bundle, publicSandbox)
-        } else {
-            val sandbox = sandboxes.find { sandbox -> sandbox.containsBundle(bundle) } ?: throw SandboxException(
-                "Bundle ${bundle.symbolicName} was not found in the sandbox group or in a public sandbox."
-            )
-
-            classTagFactory.createSerialised(isStaticTag, false, bundle, sandbox)
+        if (publicSandbox != null) {
+            return classTagFactory.createSerialised(isStaticTag, false, bundle, publicSandbox)
         }
+
+        val cpkSandbox = sandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
+        if (cpkSandbox != null) {
+            return classTagFactory.createSerialised(isStaticTag, true, bundle, cpkSandbox)
+        }
+
+        throw SandboxException(
+            "Bundle ${bundle.symbolicName} was not found in the sandbox group or in a public sandbox.")
     }
 }

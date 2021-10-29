@@ -63,13 +63,13 @@ class SandboxGroupImplTests {
 
     @Test
     fun `creates valid static tag for a CPK class`() {
-        val expectedTag = "true;false;$mockCpkBundle;$cpkSandbox"
+        val expectedTag = "true;true;$mockCpkBundle;$cpkSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(cpkClass))
     }
 
     @Test
     fun `creates valid static tag for a public class`() {
-        val expectedTag = "true;true;$mockPublicBundle;$publicSandbox"
+        val expectedTag = "true;false;$mockPublicBundle;$publicSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(publicClass))
     }
 
@@ -89,13 +89,13 @@ class SandboxGroupImplTests {
 
     @Test
     fun `creates valid evolvable tag for a CPK class`() {
-        val expectedTag = "false;false;$mockCpkBundle;$cpkSandbox"
+        val expectedTag = "false;true;$mockCpkBundle;$cpkSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(cpkClass))
     }
 
     @Test
     fun `creates valid evolvable tag for a public class`() {
-        val expectedTag = "false;true;$mockPublicBundle;$publicSandbox"
+        val expectedTag = "false;false;$mockPublicBundle;$publicSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(publicClass))
     }
 
@@ -159,19 +159,19 @@ class SandboxGroupImplTests {
 }
 
 /** A dummy [StaticTag] implementation. */
-private class StaticTagImpl(isPublicClass: Boolean, classBundleName: String, cpkHash: SecureHash) :
-    StaticTag(1, isPublicClass, classBundleName, cpkHash) {
+private class StaticTagImpl(isCpkClass: Boolean, classBundleName: String, cpkHash: SecureHash) :
+    StaticTag(1, isCpkClass, classBundleName, cpkHash) {
     override fun serialise() = ""
 }
 
 /** A dummy [EvolvableTag] implementation. */
 private class EvolvableTagImpl(
-    isPublicClass: Boolean,
+    isCpkClass: Boolean,
     classBundleName: String,
     cordappBundleName: String,
     cpkSignerSummaryHash: SecureHash?
 ) :
-    EvolvableTag(1, isPublicClass, classBundleName, cordappBundleName, cpkSignerSummaryHash) {
+    EvolvableTag(1, isCpkClass, classBundleName, cordappBundleName, cpkSignerSummaryHash) {
     override fun serialise() = ""
 }
 
@@ -182,20 +182,20 @@ private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
     val dummyHash = SecureHash.create("SHA-256:0000000000000000")
 
     private val cpkStaticTag =
-        StaticTagImpl(false, CPK_BUNDLE_NAME, cpk.metadata.hash)
+        StaticTagImpl(true, CPK_BUNDLE_NAME, cpk.metadata.hash)
 
     private val publicStaticTag =
-        StaticTagImpl(true, PUBLIC_BUNDLE_NAME, dummyHash)
+        StaticTagImpl(false, PUBLIC_BUNDLE_NAME, dummyHash)
 
     private val invalidCpkFileHashStaticTag =
-        StaticTagImpl(false, CPK_BUNDLE_NAME, randomSecureHash())
+        StaticTagImpl(true, CPK_BUNDLE_NAME, randomSecureHash())
 
     private val cpkEvolvableTag =
-        EvolvableTagImpl(false, CPK_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, cpk.metadata.id.signerSummaryHash)
+        EvolvableTagImpl(true, CPK_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, cpk.metadata.id.signerSummaryHash)
 
     private val publicEvolvableTag =
         EvolvableTagImpl(
-            true,
+            false,
             PUBLIC_BUNDLE_NAME,
             dummyCordappBundleName,
             dummyHash
@@ -203,21 +203,21 @@ private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
 
     private val invalidCordappBundleNameEvolvableTag =
         EvolvableTagImpl(
-            false,
+            true,
             CPK_BUNDLE_NAME,
             "invalid_cordapp_bundle_name",
             cpk.metadata.id.signerSummaryHash
         )
 
     private val invalidSignersEvolvableTag =
-        EvolvableTagImpl(false, CPK_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, randomSecureHash())
+        EvolvableTagImpl(true, CPK_BUNDLE_NAME, CORDAPP_BUNDLE_NAME, randomSecureHash())
 
     override fun createSerialised(
         isStaticClassTag: Boolean,
-        isPublicBundle: Boolean,
+        isCpkBundle: Boolean,
         bundle: Bundle,
         sandbox: Sandbox
-    ) = "$isStaticClassTag;$isPublicBundle;$bundle;$sandbox"
+    ) = "$isStaticClassTag;$isCpkBundle;$bundle;$sandbox"
 
     override fun deserialise(serialisedClassTag: String): ClassTag {
         return when (serialisedClassTag) {

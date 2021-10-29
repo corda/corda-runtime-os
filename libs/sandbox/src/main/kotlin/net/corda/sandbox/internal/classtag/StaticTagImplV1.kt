@@ -9,10 +9,10 @@ import net.corda.v5.crypto.SecureHash
 
 /** Implements [StaticTag]. */
 internal class StaticTagImplV1(
-    isPublicClass: Boolean,
+    isCpkClass: Boolean,
     classBundleName: String,
     cpkFileHash: SecureHash
-) : StaticTag(1, isPublicClass, classBundleName, cpkFileHash) {
+) : StaticTag(1, isCpkClass, classBundleName, cpkFileHash) {
     companion object {
         private const val ENTRIES_LENGTH = 5
         private const val IS_PUBLIC_CLASS_IDX = 2
@@ -46,7 +46,7 @@ internal class StaticTagImplV1(
 
         entries[CLASS_TAG_IDENTIFIER_IDX] = ClassTagV1.STATIC_IDENTIFIER
         entries[CLASS_TAG_VERSION_IDX] = version
-        entries[IS_PUBLIC_CLASS_IDX] = isPublicClass
+        entries[IS_PUBLIC_CLASS_IDX] = isCpkClass
         entries[CLASS_BUNDLE_NAME_IDX] = classBundleName
         entries[CPK_FILE_HASH_IDX] = cpkFileHash
 

@@ -13,19 +13,19 @@ import org.osgi.framework.Bundle
 internal class ClassTagFactoryImpl : ClassTagFactory {
     override fun createSerialised(
         isStaticClassTag: Boolean,
-        isPublicBundle: Boolean,
+        isCpkBundle: Boolean,
         bundle: Bundle,
         sandbox: Sandbox
     ): String {
         val bundleSymbolicName = bundle.symbolicName ?: throw SandboxException(
             "Bundle at ${bundle.location} does not have a symbolic name, preventing serialisation.")
 
-        if (isPublicBundle) {
+        if (!isCpkBundle) {
             return if (isStaticClassTag) {
-                StaticTagImplV1(isPublicClass = true, bundleSymbolicName, ClassTagV1.PLACEHOLDER_HASH)
+                StaticTagImplV1(isCpkClass = false, bundleSymbolicName, ClassTagV1.PLACEHOLDER_HASH)
             } else {
                 EvolvableTagImplV1(
-                    isPublicClass = true,
+                    isCpkClass = false,
                     bundleSymbolicName,
                     ClassTagV1.PLACEHOLDER_CORDAPP_BUNDLE_NAME,
                     ClassTagV1.PLACEHOLDER_HASH
@@ -38,10 +38,10 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
                 "CPK sandbox. A valid class tag cannot be constructed.")
 
         return if (isStaticClassTag) {
-            StaticTagImplV1(isPublicClass = false, bundleSymbolicName, sandbox.cpk.metadata.hash)
+            StaticTagImplV1(isCpkClass = true, bundleSymbolicName, sandbox.cpk.metadata.hash)
         } else {
             EvolvableTagImplV1(
-                isPublicClass = false,
+                isCpkClass = true,
                 bundleSymbolicName,
                 sandbox.cordappBundle.symbolicName,
                 sandbox.cpk.metadata.id.signerSummaryHash
