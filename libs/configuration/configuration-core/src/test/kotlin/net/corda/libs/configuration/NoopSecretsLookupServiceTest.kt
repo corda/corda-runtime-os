@@ -8,7 +8,7 @@ import org.mockito.kotlin.mock
 class NoopSecretsLookupServiceTest {
 
     @Test
-    fun getValueReturnsNothingUsefull() {
+    fun getValueReturnsNothingUseful() {
         val key = mock<ConfigValue>()
         assertThat(NoopSecretsLookupService().getValue(key)).isEqualTo("*****")
     }
