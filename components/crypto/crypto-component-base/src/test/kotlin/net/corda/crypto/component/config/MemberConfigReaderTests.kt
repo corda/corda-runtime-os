@@ -17,9 +17,15 @@ import net.corda.v5.cipher.suite.config.CryptoMemberConfig
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.contains
 import org.hamcrest.Matchers.empty
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.mockito.Mockito
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import java.time.Duration
 import java.time.Instant
 import kotlin.test.assertEquals
@@ -61,6 +67,30 @@ class MemberConfigReaderTests {
                 )
             )
         )
+        private val cryptoMemberConfig2 = CryptoMemberConfigImpl(
+            mapOf(
+                "default" to mapOf(
+                    "serviceName" to "FUTUREX",
+                    "timeout" to "2",
+                    "defaultSignatureScheme" to "CORDA.ECDSA.SECP256K1",
+                    "serviceConfig" to mapOf(
+                        "credentials" to "password"
+                    )
+                )
+            )
+        )
+        private val cryptoMemberConfig3 = CryptoMemberConfigImpl(
+            mapOf(
+                "LEDGER" to mapOf(
+                    "serviceName" to "FUTUREX",
+                    "timeout" to "10",
+                    "defaultSignatureScheme" to "CORDA.EDDSA.ED25519",
+                    "serviceConfig" to mapOf(
+                        "credentials" to "password"
+                    )
+                )
+            )
+        )
 
         private fun CompactedSubscription<String, CryptoConfigurationRecord>.wait(
             key: String,
@@ -81,6 +111,7 @@ class MemberConfigReaderTests {
             }
         }
 
+        @Suppress("TooGenericExceptionCaught")
         private fun <T> wait(key: String, timeout: Duration, retryDelay: Duration, get: (String) -> T?): T {
             val end = Instant.now().plus(timeout)
             do {
@@ -113,6 +144,11 @@ class MemberConfigReaderTests {
         )
     }
 
+    @AfterEach
+    fun cleanup() {
+        reader.close()
+    }
+
     private fun publish(vararg records: Pair<String, CryptoMemberConfig>) {
         val writer = MemberConfigWriterImpl(publisherFactory)
         writer.start()
@@ -132,14 +168,54 @@ class MemberConfigReaderTests {
 
     @Test
     @Timeout(5)
+    fun `Should return default value when reader is not configured`() {
+        publish("123" to cryptoMemberConfig, "789" to cryptoMemberConfig3)
+        reader.start()
+        val result = reader.get("123")
+        assertNotNull(result)
+        assertEquals(0, result.size)
+    }
+
+    @Test
+    @Timeout(5)
     fun `Should load snapshot and get configuration value`() {
-        publish("123" to cryptoMemberConfig)
+        publish("123" to cryptoMemberConfig, "789" to cryptoMemberConfig3)
         reader.start()
         reader.handleConfigEvent(config)
         val result = reader.wait("123")
         assertNotNull(result)
         assertEquals(2, result.size)
         assertThat(result.keys, contains("default", "LEDGER"))
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should load snapshot then update and get new configuration value`() {
+        publish("123" to cryptoMemberConfig, "789" to cryptoMemberConfig3)
+        reader.start()
+        reader.handleConfigEvent(config)
+        val result = reader.wait("123")
+        assertNotNull(result)
+        assertEquals(2, result.size)
+        assertThat(result.keys, contains("default", "LEDGER"))
+        publish("123" to cryptoMemberConfig2)
+        val result2 = reader.wait("123")
+        assertNotNull(result2)
+        assertEquals(1, result2.size)
+        assertThat(result2.keys, contains("default"))
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should add and get new configuration value`() {
+        reader.start()
+        reader.handleConfigEvent(config)
+        publish("123" to cryptoMemberConfig, "789" to cryptoMemberConfig3)
+        val result = reader.wait("123")
+        assertNotNull(result)
+        assertEquals(2, result.size)
+        assertThat(result.keys, contains("default", "LEDGER"))
+        publish("123" to cryptoMemberConfig2)
     }
 
     @Test
@@ -162,6 +238,50 @@ class MemberConfigReaderTests {
         val result = reader.get("789")
         assertNotNull(result)
         assertThat(result.keys, empty())
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should close initialised subscription`() {
+        val sub = mock<CompactedSubscription<String, CryptoConfigurationRecord>>()
+        val factory: SubscriptionFactory = mock {
+            on { createCompactedSubscription<String, CryptoConfigurationRecord>(any(), any(), any()) }.thenReturn(sub)
+        }
+        val reader = MemberConfigReaderImpl(factory)
+        reader.start()
+        reader.handleConfigEvent(config)
+        Mockito.verify(sub, never()).close()
+        reader.close()
+        Mockito.verify(sub, times(1)).close()
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should close initialised subscription when component is reconfigured`() {
+        val sub = mock<CompactedSubscription<String, CryptoConfigurationRecord>>()
+        val factory: SubscriptionFactory = mock {
+            on { createCompactedSubscription<String, CryptoConfigurationRecord>(any(), any(), any()) }.thenReturn(sub)
+        }
+        val reader = MemberConfigReaderImpl(factory)
+        reader.start()
+        reader.handleConfigEvent(config)
+        Mockito.verify(sub, never()).close()
+        reader.handleConfigEvent(config)
+        Mockito.verify(sub, times(1)).close()
+        reader.close()
+        Mockito.verify(sub, times(2)).close()
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should not fail closing uninitialised reader`() {
+        val factory: SubscriptionFactory = mock()
+        val reader = MemberConfigReaderImpl(factory)
+        Mockito.verify(factory, never())
+            .createCompactedSubscription<String, CryptoConfigurationRecord>(any(), any(), any())
+        reader.close()
+        Mockito.verify(factory, never())
+            .createCompactedSubscription<String, CryptoConfigurationRecord>(any(), any(), any())
     }
 
     private class NoOpProcessor : CompactedProcessor<String, CryptoConfigurationRecord> {
