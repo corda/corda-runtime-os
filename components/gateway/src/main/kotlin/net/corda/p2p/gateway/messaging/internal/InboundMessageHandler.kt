@@ -84,11 +84,11 @@ internal class InboundMessageHandler(
         when (p2pMessage.payload) {
             is UnauthenticatedMessage -> {
                 p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
-                server.writeResponse(HttpResponseStatus.OK, response.toByteBuffer().array(), request.source)
+                server.writeResponse(HttpResponseStatus.OK, request.source, response.toByteBuffer().array())
             }
             else -> {
                 val statusCode = processSessionMessage(p2pMessage)
-                server.writeResponse(statusCode, response.toByteBuffer().array(), request.source)
+                server.writeResponse(statusCode, request.source, response.toByteBuffer().array())
             }
         }
     }

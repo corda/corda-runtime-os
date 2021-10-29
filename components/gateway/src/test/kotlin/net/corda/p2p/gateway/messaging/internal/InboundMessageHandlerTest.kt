@@ -148,8 +148,8 @@ class InboundMessageHandlerTest {
         verify(server.constructed().first())
             .writeResponse(
                 HttpResponseStatus.OK,
-                gatewayResponse.toByteBuffer().array(),
-                InetSocketAddress("www.r3.com", 1231)
+                InetSocketAddress("www.r3.com", 1231),
+                gatewayResponse.toByteBuffer().array()
             )
     }
 
@@ -172,8 +172,8 @@ class InboundMessageHandlerTest {
         verify(server.constructed().first())
             .writeResponse(
                 HttpResponseStatus.OK,
-                gatewayResponse.toByteBuffer().array(),
-                InetSocketAddress("www.r3.com", 1231)
+                InetSocketAddress("www.r3.com", 1231),
+                gatewayResponse.toByteBuffer().array()
             )
     }
 
@@ -247,8 +247,8 @@ class InboundMessageHandlerTest {
         verify(server.constructed().first())
             .writeResponse(
                 HttpResponseStatus.INTERNAL_SERVER_ERROR,
-                GatewayResponse(msgId).toByteBuffer().array(),
-                InetSocketAddress("www.r3.com", 1231)
+                InetSocketAddress("www.r3.com", 1231),
+                GatewayResponse(msgId).toByteBuffer().array()
             )
     }
 
@@ -282,8 +282,8 @@ class InboundMessageHandlerTest {
             verify(server.constructed().first())
                 .writeResponse(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR,
-                    GatewayResponse(msgId).toByteBuffer().array(),
-                    InetSocketAddress("www.r3.com", 1231)
+                    InetSocketAddress("www.r3.com", 1231),
+                    GatewayResponse(msgId).toByteBuffer().array()
                 )
         }
     }

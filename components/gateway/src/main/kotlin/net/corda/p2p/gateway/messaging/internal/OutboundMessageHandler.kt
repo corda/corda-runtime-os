@@ -68,7 +68,7 @@ internal class OutboundMessageHandler(
                 throw IllegalStateException("Can not handle events")
             }
 
-            val pendingMessages = events.mapNotNull { evt ->
+            val pendingRequests = events.mapNotNull { evt ->
                 evt.value?.let { peerMessage ->
                     try {
                         val sni = SniCalculator.calculateSni(
@@ -98,8 +98,8 @@ internal class OutboundMessageHandler(
                 }
             }
 
-            waitUntilComplete(pendingMessages)
-            pendingMessages.forEach { pendingMessage ->
+            waitUntilComplete(pendingRequests)
+            pendingRequests.forEach { pendingMessage ->
                 val (response, error) = try {
                     val response = pendingMessage.future.get(0, TimeUnit.MILLISECONDS)
                     response to null
