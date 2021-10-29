@@ -203,7 +203,6 @@ internal class SandboxServiceImpl @Activate constructor(
         val sandboxGroup = SandboxGroupImpl(
             bundleUtils,
             newSandboxes.associateBy { sandbox -> sandbox.cpk.metadata.id },
-            publicSandboxes,
             ClassTagFactoryImpl()
         )
 
