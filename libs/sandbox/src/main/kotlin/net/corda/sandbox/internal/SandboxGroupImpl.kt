@@ -64,21 +64,23 @@ internal class SandboxGroupImpl(
                             && sandbox.cordappBundle.symbolicName == classTag.cordappBundleName
                 }
             } ?: throw SandboxException(
-                "Class tag $className did not match any sandbox in the sandbox group or a public sandbox."
+                "CPK class tag for $className did not match any CPK sandbox in the sandbox group."
             )
+
             return sandbox.loadClass(className, classTag.classBundleName) ?: throw SandboxException(
                 "Class $className could not be loaded from bundle ${classTag.classBundleName} in sandbox ${sandbox.id}."
             )
 
         } else {
-            publicSandboxes.forEach { publicSandbox ->
-                val klass = publicSandbox.loadClass(className, classTag.classBundleName)
-                if (klass != null) return klass
+            val bundle = bundleUtils.allBundles.find { bundle -> bundle.symbolicName == classTag.classBundleName }
+                ?: throw SandboxException("Class tag for $className did not match any loaded bundle.")
+            return try {
+                bundle.loadClass(className)
+            } catch (e: ClassNotFoundException) {
+                throw SandboxException(
+                    "Class $className could not be loaded from bundle ${bundle.symbolicName}."
+                )
             }
-            throw SandboxException(
-                "Class $className from bundle ${classTag.classBundleName} could not be loaded from any of the public " +
-                        "sandboxes."
-            )
         }
     }
 
