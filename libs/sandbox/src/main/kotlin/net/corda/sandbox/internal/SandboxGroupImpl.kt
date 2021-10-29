@@ -5,6 +5,7 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.internal.classtag.ClassTagFactory
 import net.corda.sandbox.internal.classtag.EvolvableTag
 import net.corda.sandbox.internal.classtag.StaticTag
+import net.corda.sandbox.internal.classtag.ClassType
 import net.corda.sandbox.internal.sandbox.CpkSandbox
 import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
@@ -49,7 +50,7 @@ internal class SandboxGroupImpl(
     override fun getClass(className: String, serialisedClassTag: String): Class<*> {
         val classTag = classTagFactory.deserialise(serialisedClassTag)
 
-        if (!classTag.isPublicClass) {
+        if (classTag.classType == ClassType.CpkSandboxClass) {
             val sandbox = when (classTag) {
                 is StaticTag -> cpkSandboxes.find { sandbox -> sandbox.cpk.metadata.hash == classTag.cpkFileHash }
                 is EvolvableTag -> cpkSandboxes.find { sandbox ->

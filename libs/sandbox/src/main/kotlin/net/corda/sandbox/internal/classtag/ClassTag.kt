@@ -2,14 +2,21 @@ package net.corda.sandbox.internal.classtag
 
 import net.corda.v5.crypto.SecureHash
 
+/** Represents the source of the class in a [ClassTag]. */
+enum class ClassType { CpkSandboxClass, PublicSandboxClass }
+
 /**
  * Identifies a sandboxed class during serialisation and deserialisation.
  *
- * @param version The version of the class tag.
- * @param isPublicClass Indicates whether the class is a class in a public sandbox.
- * @param classBundleName The symbolic name of the bundle that the class was loaded from.
+ * @property version The version of the class tag.
+ * @property classType Indicates whether the class is a CPK sandbox class or a public sandbox class.
+ * @property classBundleName The symbolic name of the bundle that the class was loaded from.
  */
-sealed class ClassTag(val version: Int, val isPublicClass: Boolean, val classBundleName: String) {
+sealed class ClassTag {
+    abstract val version: Int
+    abstract val classType: ClassType
+    abstract val classBundleName: String
+
     /**
      * Serializes the class tag.
      *
@@ -22,21 +29,19 @@ sealed class ClassTag(val version: Int, val isPublicClass: Boolean, val classBun
 /**
  * Identifies a sandboxed class based on the exact CPK version it was loaded from.
  *
- * @param cpkFileHash The hash of the CPK the class was loaded from.
+ * @property cpkFileHash The hash of the CPK the class was loaded from.
  */
-abstract class StaticTag(version: Int, isPublicClass: Boolean, classBundleName: String, val cpkFileHash: SecureHash) :
-    ClassTag(version, isPublicClass, classBundleName)
+abstract class StaticTag : ClassTag() {
+    abstract val cpkFileHash: SecureHash
+}
 
 /**
  * Identifies a sandboxed class based on the CPK's main bundle name and signers.
  *
- * @param mainBundleName The symbolic name of the main bundle of the CPK that the class if from.
- * @param cpkSignerSummaryHash A summary hash of the hashes of the public keys that signed the CPK the class is from.
+ * @property mainBundleName The symbolic name of the main bundle of the CPK that the class if from.
+ * @property cpkSignerSummaryHash A summary hash of the hashes of the public keys that signed the CPK the class is from.
  */
-abstract class EvolvableTag(
-    version: Int,
-    isPublicClass: Boolean,
-    classBundleName: String,
-    val mainBundleName: String,
-    val cpkSignerSummaryHash: SecureHash?
-) : ClassTag(version, isPublicClass, classBundleName)
+abstract class EvolvableTag : ClassTag() {
+    abstract val mainBundleName: String
+    abstract val cpkSignerSummaryHash: SecureHash?
+}

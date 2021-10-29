@@ -1,22 +1,24 @@
 package net.corda.sandbox.internal.classtag
 
 import net.corda.sandbox.SandboxException
+import net.corda.sandbox.internal.CLASS_TAG_CLASS_BUNDLE_NAME_IDX
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
 import net.corda.sandbox.internal.CLASS_TAG_IDENTIFIER_IDX
 import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
 import net.corda.sandbox.internal.ClassTagV1
+import net.corda.sandbox.internal.CLASS_TAG_CLASS_TYPE_IDX
 import net.corda.v5.crypto.SecureHash
 
 /** Implements [StaticTag]. */
-internal class StaticTagImplV1(
-    isPublicClass: Boolean,
-    classBundleName: String,
-    cpkFileHash: SecureHash
-) : StaticTag(1, isPublicClass, classBundleName, cpkFileHash) {
+internal data class StaticTagImplV1(
+    override val classType: ClassType,
+    override val classBundleName: String,
+    override val cpkFileHash: SecureHash
+) : StaticTag() {
+    override val version: Int = 1
+
     companion object {
         private const val ENTRIES_LENGTH = 5
-        private const val IS_PUBLIC_CLASS_IDX = 2
-        private const val CLASS_BUNDLE_NAME_IDX = 3
         private const val CPK_FILE_HASH_IDX = 4
 
         /** Deserialises a [StaticTagImplV1] class tag. */
@@ -26,7 +28,15 @@ internal class StaticTagImplV1(
                         "entries were expected. The entries were $classTagEntries."
             )
 
-            val isPublicClass = classTagEntries[IS_PUBLIC_CLASS_IDX].toBoolean()
+            val classTypeString = classTagEntries[CLASS_TAG_CLASS_TYPE_IDX]
+            val classType = try {
+                ClassType.valueOf(classTypeString)
+            } catch (e: IllegalArgumentException) {
+                throw SandboxException(
+                    "Couldn't parse class type $classTypeString in serialised evolvable class tag.",
+                    e
+                )
+            }
 
             val cpkFileHashString = classTagEntries[CPK_FILE_HASH_IDX]
             val cpkFileHash = try {
@@ -35,7 +45,7 @@ internal class StaticTagImplV1(
                 throw SandboxException("Couldn't parse hash $cpkFileHashString in serialised static class tag.", e)
             }
 
-            return StaticTagImplV1(isPublicClass, classTagEntries[CLASS_BUNDLE_NAME_IDX], cpkFileHash)
+            return StaticTagImplV1(classType, classTagEntries[CLASS_TAG_CLASS_BUNDLE_NAME_IDX], cpkFileHash)
         }
     }
 
@@ -46,8 +56,8 @@ internal class StaticTagImplV1(
 
         entries[CLASS_TAG_IDENTIFIER_IDX] = ClassTagV1.STATIC_IDENTIFIER
         entries[CLASS_TAG_VERSION_IDX] = version
-        entries[IS_PUBLIC_CLASS_IDX] = isPublicClass
-        entries[CLASS_BUNDLE_NAME_IDX] = classBundleName
+        entries[CLASS_TAG_CLASS_TYPE_IDX] = classType
+        entries[CLASS_TAG_CLASS_BUNDLE_NAME_IDX] = classBundleName
         entries[CPK_FILE_HASH_IDX] = cpkFileHash
 
         return entries.joinToString(CLASS_TAG_DELIMITER)

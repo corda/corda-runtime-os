@@ -1,24 +1,25 @@
 package net.corda.sandbox.internal.classtag
 
 import net.corda.sandbox.SandboxException
+import net.corda.sandbox.internal.CLASS_TAG_CLASS_BUNDLE_NAME_IDX
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
 import net.corda.sandbox.internal.CLASS_TAG_IDENTIFIER_IDX
 import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
 import net.corda.sandbox.internal.ClassTagV1
+import net.corda.sandbox.internal.CLASS_TAG_CLASS_TYPE_IDX
 import net.corda.v5.crypto.SecureHash
 
 /** Implements [EvolvableTag]. */
-internal class EvolvableTagImplV1(
-    isPublicClass: Boolean,
-    classBundleName: String,
-    mainBundleName: String,
-    cpkSignerSummaryHash: SecureHash?
-) : EvolvableTag(1, isPublicClass, classBundleName, mainBundleName, cpkSignerSummaryHash) {
+internal data class EvolvableTagImplV1(
+    override val classType: ClassType,
+    override val classBundleName: String,
+    override val mainBundleName: String,
+    override val cpkSignerSummaryHash: SecureHash?
+) : EvolvableTag() {
+    override val version: Int = 1
 
     companion object {
         private const val ENTRIES_LENGTH = 6
-        private const val IS_PUBLIC_CLASS_IDX = 2
-        private const val CLASS_BUNDLE_NAME_IDX = 3
         private const val MAIN_BUNDLE_NAME_IDX = 4
         private const val CPK_PUBLIC_KEY_HASHES_IDX = 5
 
@@ -29,7 +30,15 @@ internal class EvolvableTagImplV1(
                         "entries were expected. The entries were $classTagEntries."
             )
 
-            val isPublicClass = classTagEntries[IS_PUBLIC_CLASS_IDX].toBoolean()
+            val classTypeString = classTagEntries[CLASS_TAG_CLASS_TYPE_IDX]
+            val classType = try {
+                ClassType.valueOf(classTypeString)
+            } catch (e: IllegalArgumentException) {
+                throw SandboxException(
+                    "Couldn't parse class type $classTypeString in serialised evolvable class tag.",
+                    e
+                )
+            }
 
             val cpkSignerSummaryHashString = classTagEntries[CPK_PUBLIC_KEY_HASHES_IDX]
             val cpkSignerSummaryHash = try {
@@ -41,8 +50,8 @@ internal class EvolvableTagImplV1(
             }
 
             return EvolvableTagImplV1(
-                isPublicClass,
-                classTagEntries[CLASS_BUNDLE_NAME_IDX],
+                classType,
+                classTagEntries[CLASS_TAG_CLASS_BUNDLE_NAME_IDX],
                 classTagEntries[MAIN_BUNDLE_NAME_IDX],
                 cpkSignerSummaryHash
             )
@@ -56,8 +65,8 @@ internal class EvolvableTagImplV1(
 
         entries[CLASS_TAG_IDENTIFIER_IDX] = ClassTagV1.EVOLVABLE_IDENTIFIER
         entries[CLASS_TAG_VERSION_IDX] = version
-        entries[IS_PUBLIC_CLASS_IDX] = isPublicClass
-        entries[CLASS_BUNDLE_NAME_IDX] = classBundleName
+        entries[CLASS_TAG_CLASS_TYPE_IDX] = classType
+        entries[CLASS_TAG_CLASS_BUNDLE_NAME_IDX] = classBundleName
         entries[MAIN_BUNDLE_NAME_IDX] = mainBundleName
         entries[CPK_PUBLIC_KEY_HASHES_IDX] = cpkSignerSummaryHash
 

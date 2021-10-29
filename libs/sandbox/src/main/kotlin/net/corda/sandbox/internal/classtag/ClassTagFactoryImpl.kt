@@ -16,9 +16,9 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
         )
 
         return if (cpkSandbox == null) {
-            StaticTagImplV1(isPublicClass = true, bundleSymbolicName, ClassTagV1.PLACEHOLDER_HASH)
+            StaticTagImplV1(ClassType.PublicSandboxClass, bundleSymbolicName, ClassTagV1.PLACEHOLDER_HASH)
         } else {
-            StaticTagImplV1(isPublicClass = false, bundleSymbolicName, cpkSandbox.cpk.metadata.hash)
+            StaticTagImplV1(ClassType.CpkSandboxClass, bundleSymbolicName, cpkSandbox.cpk.metadata.hash)
         }.serialise()
     }
 
@@ -29,7 +29,7 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
 
         return if (cpkSandbox == null) {
             EvolvableTagImplV1(
-                isPublicClass = true,
+                ClassType.PublicSandboxClass,
                 bundleSymbolicName,
                 ClassTagV1.PLACEHOLDER_MAIN_BUNDLE_NAME,
                 ClassTagV1.PLACEHOLDER_HASH
@@ -37,7 +37,7 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
 
         } else {
             EvolvableTagImplV1(
-                isPublicClass = false,
+                ClassType.CpkSandboxClass,
                 bundleSymbolicName,
                 cpkSandbox.mainBundle.symbolicName,
                 cpkSandbox.cpk.metadata.id.signerSummaryHash
@@ -63,8 +63,7 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
             type == ClassTagV1.STATIC_IDENTIFIER && version == 1 -> StaticTagImplV1.deserialise(entries)
             type == ClassTagV1.EVOLVABLE_IDENTIFIER && version == 1 -> EvolvableTagImplV1.deserialise(entries)
             else -> throw SandboxException(
-                "Serialised class tag had type $type and version $version. This " +
-                        "combination is unknown."
+                "Serialised class tag had type $type and version $version. This combination is unknown."
             )
         }
     }

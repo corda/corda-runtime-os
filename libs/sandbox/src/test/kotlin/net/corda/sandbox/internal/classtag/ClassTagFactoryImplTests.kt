@@ -2,14 +2,18 @@ package net.corda.sandbox.internal.classtag
 
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
+import net.corda.sandbox.internal.CLASS_TAG_IDENTIFIER_IDX
+import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
 import net.corda.sandbox.internal.CPK_BUNDLE_NAME
 import net.corda.sandbox.internal.ClassTagV1
+import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_HASH
+import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_MAIN_BUNDLE_NAME
 import net.corda.sandbox.internal.MAIN_BUNDLE_NAME
+import net.corda.sandbox.internal.CLASS_TAG_CLASS_TYPE_IDX
 import net.corda.sandbox.internal.mockBundle
 import net.corda.sandbox.internal.mockCpk
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -29,73 +33,77 @@ class ClassTagFactoryImplTests {
      *
      * @param classTag The class tag identifier to use.
      * @param version The version to use.
+     * @param classType The tag type to use.
      * @param length The number of entries.
      * @param hash If non-null, the fourth entry of a static tag (the CPK file hash) or the fifth entry of an evolvable
      *  tag (the CPK signers) is set to [hash].
      */
-    private fun generateSerialisedTag(classTag: String, version: String, length: Int, hash: String? = null): String {
-        val additionalEntries = List(length - 2) { "0" }
-        val entries = (listOf(classTag, version) + additionalEntries).toMutableList()
+    private fun generateSerialisedTag(
+        classTag: String,
+        length: Int,
+        version: String = "1",
+        classType: String = "CpkSandboxClass",
+        hash: String? = null
+    ): String {
+        // We allocate excess entries, then trim the list later.
+        val entries = MutableList(10) { "0" }
+        entries[CLASS_TAG_IDENTIFIER_IDX] = classTag
+        entries[CLASS_TAG_VERSION_IDX] = version
+        entries[CLASS_TAG_CLASS_TYPE_IDX] = classType
 
         if (hash != null) {
-            if (classTag == ClassTagV1.STATIC_IDENTIFIER) {
-                entries[4] = hash
-            } else if (classTag == ClassTagV1.EVOLVABLE_IDENTIFIER) {
-                entries[5] = hash
-            }
+            val hashIdx = if (classTag == ClassTagV1.STATIC_IDENTIFIER) 4 else 5
+            entries[hashIdx] = hash
         }
 
-        return entries.joinToString(CLASS_TAG_DELIMITER)
+        return entries.subList(0, length).joinToString(CLASS_TAG_DELIMITER)
     }
 
     @Test
     fun `can serialise and deserialise a static class tag for a CPK class`() {
         val serialisedTag = classTagFactory.createSerialisedStaticTag(mockBundle, mockSandbox)
+        val classTag = classTagFactory.deserialise(serialisedTag)
 
-        val classTag = classTagFactory.deserialise(serialisedTag) as StaticTag
-
-        assertEquals(1, classTag.version)
-        assertFalse(classTag.isPublicClass)
-        assertEquals(mockBundle.symbolicName, classTag.classBundleName)
-        assertEquals(mockCpk.metadata.hash, classTag.cpkFileHash)
+        val expectedClassTag =
+            StaticTagImplV1(ClassType.CpkSandboxClass, mockBundle.symbolicName, mockCpk.metadata.hash)
+        assertEquals(expectedClassTag, classTag)
     }
 
     @Test
     fun `can serialise and deserialise a static class tag for a public class`() {
         val serialisedTag = classTagFactory.createSerialisedStaticTag(mockBundle, null)
+        val classTag = classTagFactory.deserialise(serialisedTag)
 
-        val classTag = classTagFactory.deserialise(serialisedTag) as StaticTag
-
-        assertEquals(1, classTag.version)
-        assertTrue(classTag.isPublicClass)
-        assertEquals(mockBundle.symbolicName, classTag.classBundleName)
-        // We do not check the class tag's CPK file hash, since a placeholder is used for public classes.
+        val expectedClassTag = StaticTagImplV1(ClassType.PublicSandboxClass, mockBundle.symbolicName, PLACEHOLDER_HASH)
+        assertEquals(expectedClassTag, classTag)
     }
 
     @Test
     fun `can serialise and deserialise an evolvable class tag for a CPK class`() {
         val serialisedTag = classTagFactory.createSerialisedEvolvableTag(mockBundle, mockSandbox)
+        val classTag = classTagFactory.deserialise(serialisedTag)
 
-        val classTag = classTagFactory.deserialise(serialisedTag) as EvolvableTag
-
-        assertEquals(1, classTag.version)
-        assertFalse(classTag.isPublicClass)
-        assertEquals(mockBundle.symbolicName, classTag.classBundleName)
-        assertEquals(mockSandbox.mainBundle.symbolicName, classTag.mainBundleName)
-        assertEquals(mockCpk.metadata.id.signerSummaryHash, classTag.cpkSignerSummaryHash)
+        val expectedClassTag = EvolvableTagImplV1(
+            ClassType.CpkSandboxClass,
+            mockBundle.symbolicName,
+            mockSandbox.mainBundle.symbolicName,
+            mockCpk.metadata.id.signerSummaryHash
+        )
+        assertEquals(expectedClassTag, classTag)
     }
 
     @Test
     fun `can serialise and deserialise an evolvable class tag for a public class`() {
         val serialisedTag = classTagFactory.createSerialisedEvolvableTag(mockBundle, null)
+        val classTag = classTagFactory.deserialise(serialisedTag)
 
-        val classTag = classTagFactory.deserialise(serialisedTag) as EvolvableTag
-
-        assertEquals(1, classTag.version)
-        assertTrue(classTag.isPublicClass)
-        assertEquals(mockBundle.symbolicName, classTag.classBundleName)
-        // We do not check the class tag's main bundle name or signer summary hash, since placeholders are used for
-        // public classes.
+        val expectedClassTag = EvolvableTagImplV1(
+            ClassType.PublicSandboxClass,
+            mockBundle.symbolicName,
+            PLACEHOLDER_MAIN_BUNDLE_NAME,
+            PLACEHOLDER_HASH
+        )
+        assertEquals(expectedClassTag, classTag)
     }
 
     @Test
@@ -127,7 +135,7 @@ class ClassTagFactoryImplTests {
             "Serialised class tag's version .* could not be converted to an integer."
         )
 
-        val invalidVersion = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, "Z", 2)
+        val invalidVersion = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, 2, "Z")
         val invalidVersionException = assertThrows<SandboxException> { classTagFactory.deserialise(invalidVersion) }
         assertTrue(invalidVersionPattern.matches(invalidVersionException.message!!))
     }
@@ -138,7 +146,7 @@ class ClassTagFactoryImplTests {
             "Serialised class tag had type .* and version .*\\. This combination is unknown."
         )
 
-        val unknownTag = generateSerialisedTag("Z", "1", 2)
+        val unknownTag = generateSerialisedTag("Z", 2, "1")
         val unknownTagException = assertThrows<SandboxException> { classTagFactory.deserialise(unknownTag) }
         assertTrue(unknownTagExceptionPattern.matches(unknownTagException.message!!))
     }
@@ -149,7 +157,18 @@ class ClassTagFactoryImplTests {
             "Serialised class tag had type .* and version .*\\. This combination is unknown."
         )
 
-        val unknownVersion = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, "2", 2)
+        val unknownVersion = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, 2, "2")
+        val unknownTagException = assertThrows<SandboxException> { classTagFactory.deserialise(unknownVersion) }
+        assertTrue(unknownTagPattern.matches(unknownTagException.message!!))
+    }
+
+    @Test
+    fun `throws if asked to deserialise an unknown class type`() {
+        val unknownTagPattern = Regex(
+            "Couldn't parse class type .* in serialised evolvable class tag."
+        )
+
+        val unknownVersion = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, 5, classType = "Z")
         val unknownTagException = assertThrows<SandboxException> { classTagFactory.deserialise(unknownVersion) }
         assertTrue(unknownTagPattern.matches(unknownTagException.message!!))
     }
@@ -161,11 +180,11 @@ class ClassTagFactoryImplTests {
                     "were .*\\."
         )
 
-        val fourEntries = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, "1", length = 4)
+        val fourEntries = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, 4)
         val fourEntriesException = assertThrows<SandboxException> { classTagFactory.deserialise(fourEntries) }
         assertTrue(insufficientEntriesPattern.matches(fourEntriesException.message!!))
 
-        val sixEntries = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, "1", length = 6)
+        val sixEntries = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, 6)
         val sixEntriesException = assertThrows<SandboxException> { classTagFactory.deserialise(sixEntries) }
         assertTrue(insufficientEntriesPattern.matches(sixEntriesException.message!!))
     }
@@ -177,11 +196,11 @@ class ClassTagFactoryImplTests {
                     "entries were .*\\."
         )
 
-        val fiveEntries = generateSerialisedTag(ClassTagV1.EVOLVABLE_IDENTIFIER, "1", length = 5)
+        val fiveEntries = generateSerialisedTag(ClassTagV1.EVOLVABLE_IDENTIFIER, 5)
         val fiveEntriesException = assertThrows<SandboxException> { classTagFactory.deserialise(fiveEntries) }
         assertTrue(insufficientEntriesPattern.matches(fiveEntriesException.message!!))
 
-        val sevenEntries = generateSerialisedTag(ClassTagV1.EVOLVABLE_IDENTIFIER, "1", length = 7)
+        val sevenEntries = generateSerialisedTag(ClassTagV1.EVOLVABLE_IDENTIFIER, 7)
         val sevenEntriesException = assertThrows<SandboxException> { classTagFactory.deserialise(sevenEntries) }
         assertTrue(insufficientEntriesPattern.matches(sevenEntriesException.message!!))
     }
@@ -190,7 +209,7 @@ class ClassTagFactoryImplTests {
     fun `throws if asked to deserialise a static tag with an invalid CPK file hash`() {
         val invalidHashPattern = Regex("Couldn't parse hash .* in serialised static class tag\\.")
 
-        val invalidHash = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, "1", 5, "BAD_HASH")
+        val invalidHash = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, 5, hash = "BAD_HASH")
         val invalidHashException = assertThrows<SandboxException> { classTagFactory.deserialise(invalidHash) }
         assertTrue(invalidHashPattern.matches(invalidHashException.message!!))
     }
@@ -199,7 +218,7 @@ class ClassTagFactoryImplTests {
     fun `throws if asked to deserialise an evolvable tag with an invalid public key hash`() {
         val invalidHashPattern = Regex("Couldn't parse hash .* in serialised evolvable class tag\\.")
 
-        val invalidHash = generateSerialisedTag(ClassTagV1.EVOLVABLE_IDENTIFIER, "1", 6, "BAD_HASH")
+        val invalidHash = generateSerialisedTag(ClassTagV1.EVOLVABLE_IDENTIFIER, 6, hash = "BAD_HASH")
         val invalidHashException = assertThrows<SandboxException> { classTagFactory.deserialise(invalidHash) }
         assertTrue(invalidHashPattern.matches(invalidHashException.message!!))
     }
