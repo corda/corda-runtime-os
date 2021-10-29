@@ -50,7 +50,7 @@ class ClassTagFactoryImplTests {
 
     @Test
     fun `can serialise and deserialise a static class tag for a CPK class`() {
-        val serialisedTag = classTagFactory.createSerialised(isStaticClassTag = true, mockBundle, mockSandbox)
+        val serialisedTag = classTagFactory.createSerialisedStaticTag(mockBundle, mockSandbox)
 
         val classTag = classTagFactory.deserialise(serialisedTag) as StaticTag
 
@@ -62,7 +62,7 @@ class ClassTagFactoryImplTests {
 
     @Test
     fun `can serialise and deserialise a static class tag for a public class`() {
-        val serialisedTag = classTagFactory.createSerialised(isStaticClassTag = true, mockBundle, null)
+        val serialisedTag = classTagFactory.createSerialisedStaticTag(mockBundle, null)
 
         val classTag = classTagFactory.deserialise(serialisedTag) as StaticTag
 
@@ -74,7 +74,7 @@ class ClassTagFactoryImplTests {
 
     @Test
     fun `can serialise and deserialise an evolvable class tag for a CPK class`() {
-        val serialisedTag = classTagFactory.createSerialised(isStaticClassTag = false, mockBundle, mockSandbox)
+        val serialisedTag = classTagFactory.createSerialisedEvolvableTag(mockBundle, mockSandbox)
 
         val classTag = classTagFactory.deserialise(serialisedTag) as EvolvableTag
 
@@ -87,7 +87,7 @@ class ClassTagFactoryImplTests {
 
     @Test
     fun `can serialise and deserialise an evolvable class tag for a public class`() {
-        val serialisedTag = classTagFactory.createSerialised(isStaticClassTag = false, mockBundle, null)
+        val serialisedTag = classTagFactory.createSerialisedEvolvableTag(mockBundle, null)
 
         val classTag = classTagFactory.deserialise(serialisedTag) as EvolvableTag
 
@@ -101,7 +101,7 @@ class ClassTagFactoryImplTests {
     @Test
     fun `throws if asked to create a class tag for a bundle with no symbolic name`() {
         assertThrows<SandboxException> {
-            classTagFactory.createSerialised(isStaticClassTag = false, mock(), null)
+            classTagFactory.createSerialisedEvolvableTag(mock(), null)
         }
     }
 

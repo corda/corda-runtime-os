@@ -90,14 +90,22 @@ internal class SandboxGroupImpl(
 
         val publicSandbox = publicSandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
 
-        return if (publicSandbox != null) {
-            classTagFactory.createSerialised(isStaticTag, bundle, null)
-        } else {
-            val sandbox = cpkSandboxes.find { sandbox -> sandbox.containsBundle(bundle) } ?: throw SandboxException(
-                "Bundle ${bundle.symbolicName} was not found in the sandbox group or in a public sandbox."
-            )
+        if (publicSandbox != null) {
+            return if (isStaticTag) {
+                classTagFactory.createSerialisedStaticTag(bundle, null)
+            } else {
+                classTagFactory.createSerialisedEvolvableTag(bundle, null)
+            }
+        }
 
-            classTagFactory.createSerialised(isStaticTag, bundle, sandbox)
+        val sandbox = cpkSandboxes.find { sandbox -> sandbox.containsBundle(bundle) } ?: throw SandboxException(
+            "Bundle ${bundle.symbolicName} was not found in the sandbox group or in a public sandbox."
+        )
+
+        return if (isStaticTag) {
+            classTagFactory.createSerialisedStaticTag(bundle, sandbox)
+        } else {
+            classTagFactory.createSerialisedEvolvableTag(bundle, sandbox)
         }
     }
 }

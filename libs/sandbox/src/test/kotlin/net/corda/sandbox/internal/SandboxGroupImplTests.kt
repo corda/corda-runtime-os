@@ -63,13 +63,13 @@ class SandboxGroupImplTests {
 
     @Test
     fun `creates valid static tag for a CPK class`() {
-        val expectedTag = "true;$mockCpkBundle;$cpkSandbox"
+        val expectedTag = "s;$mockCpkBundle;$cpkSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(cpkClass))
     }
 
     @Test
     fun `creates valid static tag for a public class`() {
-        val expectedTag = "true;$mockPublicBundle;null"
+        val expectedTag = "s;$mockPublicBundle;null"
         assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(publicClass))
     }
 
@@ -89,13 +89,13 @@ class SandboxGroupImplTests {
 
     @Test
     fun `creates valid evolvable tag for a CPK class`() {
-        val expectedTag = "false;$mockCpkBundle;$cpkSandbox"
+        val expectedTag = "e;$mockCpkBundle;$cpkSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(cpkClass))
     }
 
     @Test
     fun `creates valid evolvable tag for a public class`() {
-        val expectedTag = "false;$mockPublicBundle;null"
+        val expectedTag = "e;$mockPublicBundle;null"
         assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(publicClass))
     }
 
@@ -180,26 +180,20 @@ private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
     // Used for public classes, where the main bundle name, CPK file hash and CPK signer summary hash are ignored.
     val dummyMainBundleName = "dummyMainBundleName"
     val dummyHash = SecureHash.create("SHA-256:0000000000000000")
+    val staticIdentifier = "s"
+    val evolvableIdentifier = "e"
 
-    private val cpkStaticTag =
-        StaticTagImpl(false, CPK_BUNDLE_NAME, cpk.metadata.hash)
+    private val cpkStaticTag = StaticTagImpl(false, CPK_BUNDLE_NAME, cpk.metadata.hash)
 
-    private val publicStaticTag =
-        StaticTagImpl(true, PUBLIC_BUNDLE_NAME, dummyHash)
+    private val publicStaticTag = StaticTagImpl(true, PUBLIC_BUNDLE_NAME, dummyHash)
 
-    private val invalidCpkFileHashStaticTag =
-        StaticTagImpl(false, CPK_BUNDLE_NAME, randomSecureHash())
+    private val invalidCpkFileHashStaticTag = StaticTagImpl(false, CPK_BUNDLE_NAME, randomSecureHash())
 
     private val cpkEvolvableTag =
         EvolvableTagImpl(false, CPK_BUNDLE_NAME, MAIN_BUNDLE_NAME, cpk.metadata.id.signerSummaryHash)
 
     private val publicEvolvableTag =
-        EvolvableTagImpl(
-            true,
-            PUBLIC_BUNDLE_NAME,
-            dummyMainBundleName,
-            dummyHash
-        )
+        EvolvableTagImpl(true, PUBLIC_BUNDLE_NAME, dummyMainBundleName, dummyHash)
 
     private val invalidMainBundleNameEvolvableTag =
         EvolvableTagImpl(
@@ -212,11 +206,15 @@ private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
     private val invalidSignersEvolvableTag =
         EvolvableTagImpl(false, CPK_BUNDLE_NAME, MAIN_BUNDLE_NAME, randomSecureHash())
 
-    override fun createSerialised(
-        isStaticClassTag: Boolean,
+    override fun createSerialisedStaticTag(
         bundle: Bundle,
-        sandbox: CpkSandbox?
-    ) = "$isStaticClassTag;$bundle;$sandbox"
+        cpkSandbox: CpkSandbox?
+    ) = "$staticIdentifier;$bundle;$cpkSandbox"
+
+    override fun createSerialisedEvolvableTag(
+        bundle: Bundle,
+        cpkSandbox: CpkSandbox?
+    ) = "$evolvableIdentifier;$bundle;$cpkSandbox"
 
     override fun deserialise(serialisedClassTag: String): ClassTag {
         return when (serialisedClassTag) {

@@ -10,36 +10,37 @@ import org.osgi.framework.Bundle
 
 /** An implementation of [ClassTagFactory]. */
 internal class ClassTagFactoryImpl : ClassTagFactory {
-    override fun createSerialised(
-        isStaticClassTag: Boolean,
-        bundle: Bundle,
-        sandbox: CpkSandbox?
-    ): String {
+    override fun createSerialisedStaticTag(bundle: Bundle, cpkSandbox: CpkSandbox?): String {
         val bundleSymbolicName = bundle.symbolicName ?: throw SandboxException(
-            "Bundle at ${bundle.location} does not have a symbolic name, preventing serialisation.")
+            "Bundle at ${bundle.location} does not have a symbolic name, preventing serialisation."
+        )
 
-        if (sandbox == null) {
-            return if (isStaticClassTag) {
-                StaticTagImplV1(isPublicClass = true, bundleSymbolicName, ClassTagV1.PLACEHOLDER_HASH)
-            } else {
-                EvolvableTagImplV1(
-                    isPublicClass = true,
-                    bundleSymbolicName,
-                    ClassTagV1.PLACEHOLDER_MAIN_BUNDLE_NAME,
-                    ClassTagV1.PLACEHOLDER_HASH
-                )
-            }.serialise()
+        return if (cpkSandbox == null) {
+            StaticTagImplV1(isPublicClass = true, bundleSymbolicName, ClassTagV1.PLACEHOLDER_HASH)
+        } else {
+            StaticTagImplV1(isPublicClass = false, bundleSymbolicName, cpkSandbox.cpk.metadata.hash)
+        }.serialise()
+    }
 
-        }
+    override fun createSerialisedEvolvableTag(bundle: Bundle, cpkSandbox: CpkSandbox?): String {
+        val bundleSymbolicName = bundle.symbolicName ?: throw SandboxException(
+            "Bundle at ${bundle.location} does not have a symbolic name, preventing serialisation."
+        )
 
-        return if (isStaticClassTag) {
-            StaticTagImplV1(isPublicClass = false, bundleSymbolicName, sandbox.cpk.metadata.hash)
+        return if (cpkSandbox == null) {
+            EvolvableTagImplV1(
+                isPublicClass = true,
+                bundleSymbolicName,
+                ClassTagV1.PLACEHOLDER_MAIN_BUNDLE_NAME,
+                ClassTagV1.PLACEHOLDER_HASH
+            )
+
         } else {
             EvolvableTagImplV1(
                 isPublicClass = false,
                 bundleSymbolicName,
-                sandbox.mainBundle.symbolicName,
-                sandbox.cpk.metadata.id.signerSummaryHash
+                cpkSandbox.mainBundle.symbolicName,
+                cpkSandbox.cpk.metadata.id.signerSummaryHash
             )
         }.serialise()
     }
@@ -61,8 +62,10 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
         return when {
             type == ClassTagV1.STATIC_IDENTIFIER && version == 1 -> StaticTagImplV1.deserialise(entries)
             type == ClassTagV1.EVOLVABLE_IDENTIFIER && version == 1 -> EvolvableTagImplV1.deserialise(entries)
-            else -> throw SandboxException("Serialised class tag had type $type and version $version. This " +
-                    "combination is unknown.")
+            else -> throw SandboxException(
+                "Serialised class tag had type $type and version $version. This " +
+                        "combination is unknown."
+            )
         }
     }
 }
