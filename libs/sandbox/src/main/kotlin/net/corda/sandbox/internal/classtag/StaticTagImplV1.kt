@@ -22,6 +22,7 @@ internal data class StaticTagImplV1(
         private const val CPK_FILE_HASH_IDX = 4
 
         /** Deserialises a [StaticTagImplV1] class tag. */
+        @Suppress("ThrowsCount")
         fun deserialise(classTagEntries: List<String>): StaticTagImplV1 {
             if (classTagEntries.size != ENTRIES_LENGTH) throw SandboxException(
                 "Serialised static class tag contained ${classTagEntries.size} entries, whereas $ENTRIES_LENGTH " +

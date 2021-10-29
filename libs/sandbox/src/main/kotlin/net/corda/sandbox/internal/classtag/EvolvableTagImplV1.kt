@@ -24,6 +24,7 @@ internal data class EvolvableTagImplV1(
         private const val CPK_PUBLIC_KEY_HASHES_IDX = 5
 
         /** Deserialises an [EvolvableTagImplV1] class tag. */
+        @Suppress("ThrowsCount")
         fun deserialise(classTagEntries: List<String>): EvolvableTagImplV1 {
             if (classTagEntries.size != ENTRIES_LENGTH) throw SandboxException(
                 "Serialised evolvable class tag contained ${classTagEntries.size} entries, whereas $ENTRIES_LENGTH " +

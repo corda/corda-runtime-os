@@ -2,6 +2,7 @@ package net.corda.sandbox.internal.classtag
 
 import net.corda.v5.crypto.SecureHash
 
+// TODO - Introduce third class type.
 /** Represents the source of the class in a [ClassTag]. */
 enum class ClassType { CpkSandboxClass, PublicSandboxClass }
 
