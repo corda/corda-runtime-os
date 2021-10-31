@@ -8,11 +8,10 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.sandbox.SandboxCreationService
 import org.osgi.framework.FrameworkUtil
-import org.osgi.service.component.annotations.Activate
 import org.osgi.service.cm.ConfigurationAdmin
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ReferenceCardinality
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.Hashtable
@@ -43,12 +42,16 @@ class Main @Activate constructor(
 //    saveResourceFiles()
 
         val conf = configurationAdmin.getConfiguration(ConfigurationAdmin::class.java.name, null)
-        conf?.update(Hashtable(mapOf("baseDirectory" to "/Users/josephzuniga-daly/Documents/git/corda-runtime-os/applications/examples/serialization-amqp/type-evolution-poc/tmp")))
+        val tmpDir = args[0]
+        val cpk = args[1]
+
+        conf?.update(Hashtable(mapOf("baseDirectory" to tmpDir)))
 
         printBundleList()
         printServiceList()
 
-        sandboxCreationService.createPublicSandbox()
+//        sandboxCreationService.createPublicSandbox()
+//        sandboxCreationService.createSandboxGroup()
 
         exit()
     }
