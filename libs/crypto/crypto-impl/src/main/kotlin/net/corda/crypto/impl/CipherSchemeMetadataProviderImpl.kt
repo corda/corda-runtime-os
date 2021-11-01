@@ -54,7 +54,7 @@ class CipherSchemeMetadataProviderImpl : CipherSchemeMetadataProvider {
         )
     }
 
-    val providerMap = ProviderMap { cipherSchemeMetadata }
+    val providerMap = ProviderMap(::cipherSchemeMetadata)
 
     private val signatureSchemes: Array<SignatureScheme> = arrayOf(
         providerMap.RSA_SHA256,

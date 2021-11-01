@@ -92,7 +92,8 @@ class CipherSuiteFactoryTests {
         factory = CipherSuiteFactoryImpl(
             schemeMetadataProviders,
             verifierProviders,
-            digestServiceProviders
+            digestServiceProviders,
+            mock()
         )
     }
 

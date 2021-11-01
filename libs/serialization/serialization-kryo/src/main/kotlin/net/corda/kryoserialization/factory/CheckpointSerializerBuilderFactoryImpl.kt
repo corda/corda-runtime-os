@@ -1,24 +1,24 @@
 package net.corda.kryoserialization.factory
 
-import net.corda.crypto.CryptoLibraryFactory
 import net.corda.kryoserialization.impl.KryoCheckpointSerializerBuilderImpl
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.CheckpointSerializerBuilder
 import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
+import net.corda.v5.cipher.suite.KeyEncodingService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Component(immediate = true, service = [CheckpointSerializerBuilderFactory::class])
+@Component
 class CheckpointSerializerBuilderFactoryImpl @Activate constructor(
     @Reference
-    private val cryptoLibraryFactory: CryptoLibraryFactory
+    private val keyEncodingService: KeyEncodingService
 ) : CheckpointSerializerBuilderFactory {
     override fun createCheckpointSerializerBuilder(
         sandboxGroup: SandboxGroup
     ): CheckpointSerializerBuilder {
         return KryoCheckpointSerializerBuilderImpl(
-            cryptoLibraryFactory.getKeyEncodingService(),
+            keyEncodingService,
             sandboxGroup
         )
     }

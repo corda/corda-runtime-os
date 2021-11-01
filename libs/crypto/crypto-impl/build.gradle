@@ -5,7 +5,9 @@ plugins {
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:osgi.core"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:org.osgi.namespace.service:$osgiNamespaceServiceVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "org.slf4j:slf4j-api"
@@ -26,6 +28,7 @@ dependencies {
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
+    testImplementation "org.osgi:osgi.core"
 }
 
 description 'Common crypto implementation'

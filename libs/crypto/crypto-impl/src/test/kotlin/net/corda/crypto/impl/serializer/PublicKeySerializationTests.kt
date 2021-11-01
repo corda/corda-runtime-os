@@ -1,6 +1,5 @@
 package net.corda.crypto.impl.serializer
 
-import net.corda.crypto.CryptoLibraryFactory
 import net.corda.serialization.InternalDirectSerializer.ReadObject
 import net.corda.serialization.InternalDirectSerializer.WriteObject
 import net.corda.v5.cipher.suite.KeyEncodingService
@@ -24,10 +23,7 @@ class PublicKeySerializationTests {
             on { it.decodePublicKey(encodedPublicKey) }.thenReturn(publicKey)
             on { it.encodeAsByteArray(publicKey) }.thenReturn(encodedPublicKey)
         }
-        val cryptoLibraryFactory = mock<CryptoLibraryFactory> {
-            on { it.getKeyEncodingService() }.thenReturn(keyEncodingService)
-        }
-        val publicKeySerializer = PublicKeySerializer(cryptoLibraryFactory)
+        val publicKeySerializer = PublicKeySerializer(keyEncodingService)
 
         argumentCaptor<ByteArray> {
             val writeOps = mock<WriteObject>()

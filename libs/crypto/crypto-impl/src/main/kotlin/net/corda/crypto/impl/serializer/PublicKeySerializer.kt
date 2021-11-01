@@ -1,10 +1,10 @@
 package net.corda.crypto.impl.serializer
 
-import net.corda.crypto.CryptoLibraryFactory
 import net.corda.serialization.BaseDirectSerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.InternalDirectSerializer.ReadObject
 import net.corda.serialization.InternalDirectSerializer.WriteObject
+import net.corda.v5.cipher.suite.KeyEncodingService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -15,15 +15,15 @@ import java.security.PublicKey
  */
 @Component(service = [InternalCustomSerializer::class])
 class PublicKeySerializer @Activate constructor(
-    @Reference(service = CryptoLibraryFactory::class)
-    private val cryptoLibraryFactory: CryptoLibraryFactory
+    @Reference
+    private val keyEncodingService: KeyEncodingService
 ) : BaseDirectSerializer<PublicKey>() {
     override val type: Class<PublicKey> get() = PublicKey::class.java
     override val withInheritance: Boolean get() = true
 
-    override fun writeObject(obj: PublicKey, writer: WriteObject)
-        = writer.putAsBytes(cryptoLibraryFactory.getKeyEncodingService().encodeAsByteArray(obj))
+    override fun writeObject(obj: PublicKey, writer: WriteObject) =
+        writer.putAsBytes(keyEncodingService.encodeAsByteArray(obj))
 
-    override fun readObject(reader: ReadObject): PublicKey
-        = cryptoLibraryFactory.getKeyEncodingService().decodePublicKey(reader.getAsBytes())
+    override fun readObject(reader: ReadObject): PublicKey =
+        keyEncodingService.decodePublicKey(reader.getAsBytes())
 }
