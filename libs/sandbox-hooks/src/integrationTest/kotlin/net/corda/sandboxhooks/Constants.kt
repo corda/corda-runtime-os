@@ -47,7 +47,9 @@ internal const val PRIVATE_IMPL_AS_GENERIC_FLOW = "com.example.sandbox.cpk1.Priv
 internal const val SERVICE_EVENTS_FLOW = "com.example.sandbox.cpk1.ServiceEventOneFlow"
 internal const val SERVICES_FLOW_CPK_1 = "com.example.sandbox.cpk1.ServicesOneFlow"
 internal const val SERVICES_FLOW_CPK_2 = "com.example.sandbox.cpk2.ServicesTwoFlow"
+
 internal const val LIBRARY_QUERY_CLASS = "com.example.sandbox.library.SandboxQuery"
+internal const val SYSTEM_BUNDLE_CLASS = "org.apache.felix.framework.BundleImpl"
 
 internal const val PRIVATE_WRAPPER_RETURN_VALUE = "String returned by WrapperImpl."
 
