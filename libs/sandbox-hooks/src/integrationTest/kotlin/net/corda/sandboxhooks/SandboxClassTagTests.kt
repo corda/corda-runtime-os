@@ -18,8 +18,8 @@ class SandboxClassTagTests {
     @Test
     fun `can create class tags for a non-bundle class and use it to retrieve the class`() {
         val nonBundleClasses = setOf(
-            String::class.java, // A class from the Kotlin bundle.
-            ClassLoader::class.java // A class from a Corda bundle.
+            String::class.java, // A system class.
+            ClassLoader::class.java // Another system class.
         )
         nonBundleClasses.forEach { nonCpkClass ->
             val staticTag = sandboxLoader.group1.getStaticTag(nonCpkClass)

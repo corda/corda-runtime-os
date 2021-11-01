@@ -48,6 +48,7 @@ internal class SandboxGroupImpl(
 
     override fun getEvolvableTag(klass: Class<*>) = getClassTag(klass, isStaticTag = false)
 
+    @Suppress("ComplexMethod")
     override fun getClass(className: String, serialisedClassTag: String): Class<*> {
         val classTag = classTagFactory.deserialise(serialisedClassTag)
 

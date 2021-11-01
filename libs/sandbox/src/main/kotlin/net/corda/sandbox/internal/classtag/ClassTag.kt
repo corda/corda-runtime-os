@@ -16,7 +16,7 @@ enum class ClassType {
  * Identifies a sandboxed class during serialisation and deserialisation.
  *
  * @property version The version of the class tag.
- * @property classType Indicates whether the class is a CPK sandbox class or a public sandbox class.
+ * @property classType Indicates whether the class is a non-bundle class, a CPK sandbox class or a public sandbox class.
  * @property classBundleName The symbolic name of the bundle that the class was loaded from.
  */
 internal sealed class ClassTag {
