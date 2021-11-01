@@ -7,9 +7,13 @@ import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
 import net.corda.sandbox.internal.CPK_BUNDLE_NAME
 import net.corda.sandbox.internal.ClassTagV1
 import net.corda.sandbox.internal.ClassTagV1.CLASS_TYPE_IDX
+import net.corda.sandbox.internal.ClassTagV1.CPK_SANDBOX_CLASS
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_HASH
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_STRING
+import net.corda.sandbox.internal.ClassTagV1.VERSION
 import net.corda.sandbox.internal.MAIN_BUNDLE_NAME
+import net.corda.sandbox.internal.classtag.v1.EvolvableTagImplV1
+import net.corda.sandbox.internal.classtag.v1.StaticTagImplV1
 import net.corda.sandbox.internal.mockBundle
 import net.corda.sandbox.internal.mockCpk
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
@@ -41,9 +45,8 @@ class ClassTagFactoryImplTests {
     private fun generateSerialisedTag(
         classTag: String,
         length: Int,
-        version: String = "1",
-        // TODO: Use constant.
-        classType: String = "C",
+        version: String = VERSION.toString(),
+        classType: String = CPK_SANDBOX_CLASS,
         hash: String? = null
     ): String {
         // We allocate excess entries, then trim the list later.
@@ -187,7 +190,7 @@ class ClassTagFactoryImplTests {
     @Test
     fun `throws if asked to deserialise an unknown class type`() {
         val unknownClassTypePattern = Regex(
-            "Could not deserialise class tag class type from string .*\\."
+            "Could not deserialise class type from string .*\\."
         )
 
         val unknownClassType = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, 5, classType = "Z")

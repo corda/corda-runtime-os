@@ -42,3 +42,10 @@ internal abstract class EvolvableTag : ClassTag() {
     abstract val mainBundleName: String
     abstract val cpkSignerSummaryHash: SecureHash?
 }
+
+/** Represents the source of the class in a [ClassTag]. */
+internal enum class ClassType {
+    NonBundleClass, // A class not loaded from a bundle.
+    CpkSandboxClass, // A class loaded from a CPK sandbox.
+    PublicSandboxClass // A class loaded from a public sandbox.
+}

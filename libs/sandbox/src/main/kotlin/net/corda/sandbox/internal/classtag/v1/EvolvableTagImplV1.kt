@@ -1,4 +1,4 @@
-package net.corda.sandbox.internal.classtag
+package net.corda.sandbox.internal.classtag.v1
 
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
@@ -7,6 +7,9 @@ import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
 import net.corda.sandbox.internal.ClassTagV1
 import net.corda.sandbox.internal.ClassTagV1.CLASS_BUNDLE_NAME_IDX
 import net.corda.sandbox.internal.ClassTagV1.CLASS_TYPE_IDX
+import net.corda.sandbox.internal.ClassTagV1.VERSION
+import net.corda.sandbox.internal.classtag.ClassType
+import net.corda.sandbox.internal.classtag.EvolvableTag
 import net.corda.v5.crypto.SecureHash
 
 /** Implements [EvolvableTag]. */
@@ -16,7 +19,7 @@ internal data class EvolvableTagImplV1(
     override val mainBundleName: String,
     override val cpkSignerSummaryHash: SecureHash?
 ) : EvolvableTag() {
-    override val version: Int = 1
+    override val version: Int = VERSION
 
     companion object {
         private const val ENTRIES_LENGTH = 6
@@ -31,7 +34,7 @@ internal data class EvolvableTagImplV1(
                         "entries were expected. The entries were $classTagEntries."
             )
 
-            val classType = ClassType.fromString(classTagEntries[CLASS_TYPE_IDX])
+            val classType = classTypeFromString(classTagEntries[CLASS_TYPE_IDX])
 
             val cpkSignerSummaryHashString = classTagEntries[CPK_PUBLIC_KEY_HASHES_IDX]
             val cpkSignerSummaryHash = try {
@@ -58,7 +61,7 @@ internal data class EvolvableTagImplV1(
 
         entries[CLASS_TAG_IDENTIFIER_IDX] = ClassTagV1.EVOLVABLE_IDENTIFIER
         entries[CLASS_TAG_VERSION_IDX] = version
-        entries[CLASS_TYPE_IDX] = classType
+        entries[CLASS_TYPE_IDX] = classTypeToString(classType)
         entries[CLASS_BUNDLE_NAME_IDX] = classBundleName
         entries[MAIN_BUNDLE_NAME_IDX] = mainBundleName
         entries[CPK_PUBLIC_KEY_HASHES_IDX] = cpkSignerSummaryHash

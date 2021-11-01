@@ -7,6 +7,8 @@ import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
 import net.corda.sandbox.internal.ClassTagV1
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_HASH
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_STRING
+import net.corda.sandbox.internal.classtag.v1.EvolvableTagImplV1
+import net.corda.sandbox.internal.classtag.v1.StaticTagImplV1
 import net.corda.sandbox.internal.sandbox.CpkSandbox
 import org.osgi.framework.Bundle
 
@@ -52,10 +54,11 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
         )
 
         val type = entries[CLASS_TAG_IDENTIFIER_IDX]
+
         val versionString = entries[CLASS_TAG_VERSION_IDX]
         val version = versionString.toIntOrNull()
             ?: throw SandboxException(
-                "Serialised class tag's version $versionString could not be converted to an integer."
+                "Serialised class tag version $versionString could not be converted to an integer."
             )
 
         return when {

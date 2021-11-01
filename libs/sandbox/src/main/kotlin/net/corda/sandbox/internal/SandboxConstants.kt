@@ -19,8 +19,14 @@ internal object ClassTagV1 {
     internal const val CLASS_TYPE_IDX = 2
     internal const val CLASS_BUNDLE_NAME_IDX = 3
 
+    internal const val VERSION = 1
+
     internal const val STATIC_IDENTIFIER = "S"
     internal const val EVOLVABLE_IDENTIFIER = "E"
+
+    internal const val NON_BUNDLE_CLASS = "N"
+    internal const val CPK_SANDBOX_CLASS = "C"
+    internal const val PUBLIC_SANDBOX_CLASS = "P"
 
     // Used as placeholders when generating class tags for public sandbox classes.
     internal const val PLACEHOLDER_STRING = "PLACEHOLDER"
