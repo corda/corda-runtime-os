@@ -17,9 +17,7 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
             return if (isStaticTag) {
                 StaticTagImplV1(ClassType.NonBundleClass, PLACEHOLDER_STRING, PLACEHOLDER_HASH)
             } else {
-                EvolvableTagImplV1(
-                    ClassType.NonBundleClass, PLACEHOLDER_STRING, PLACEHOLDER_STRING, PLACEHOLDER_HASH
-                )
+                EvolvableTagImplV1(ClassType.NonBundleClass, PLACEHOLDER_STRING, PLACEHOLDER_STRING, PLACEHOLDER_HASH)
             }.serialise()
         }
 
@@ -31,9 +29,7 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
             if (isStaticTag) {
                 StaticTagImplV1(ClassType.PublicSandboxClass, bundleName, PLACEHOLDER_HASH)
             } else {
-                EvolvableTagImplV1(
-                    ClassType.PublicSandboxClass, bundleName, PLACEHOLDER_STRING, PLACEHOLDER_HASH
-                )
+                EvolvableTagImplV1(ClassType.PublicSandboxClass, bundleName, PLACEHOLDER_STRING, PLACEHOLDER_HASH)
             }
         } else {
             if (isStaticTag) {

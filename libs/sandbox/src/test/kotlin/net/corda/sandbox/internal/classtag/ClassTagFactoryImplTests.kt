@@ -175,24 +175,24 @@ class ClassTagFactoryImplTests {
 
     @Test
     fun `throws if asked to deserialise an unknown version`() {
-        val unknownTagPattern = Regex(
+        val unknownVersionPattern = Regex(
             "Serialised class tag had type .* and version .*\\. This combination is unknown."
         )
 
         val unknownVersion = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, 2, "2")
-        val unknownTagException = assertThrows<SandboxException> { classTagFactory.deserialise(unknownVersion) }
-        assertTrue(unknownTagPattern.matches(unknownTagException.message!!))
+        val unknownVersionException = assertThrows<SandboxException> { classTagFactory.deserialise(unknownVersion) }
+        assertTrue(unknownVersionPattern.matches(unknownVersionException.message!!))
     }
 
     @Test
     fun `throws if asked to deserialise an unknown class type`() {
-        val unknownTagPattern = Regex(
+        val unknownClassTypePattern = Regex(
             "Could not deserialise class tag class type from string .*\\."
         )
 
-        val unknownVersion = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, 5, classType = "Z")
-        val unknownTagException = assertThrows<SandboxException> { classTagFactory.deserialise(unknownVersion) }
-        assertTrue(unknownTagPattern.matches(unknownTagException.message!!))
+        val unknownClassType = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, 5, classType = "Z")
+        val unknownClassTypeException = assertThrows<SandboxException> { classTagFactory.deserialise(unknownClassType) }
+        assertTrue(unknownClassTypePattern.matches(unknownClassTypeException.message!!))
     }
 
     @Test
