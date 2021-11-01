@@ -11,15 +11,15 @@ import net.corda.v5.crypto.SecureHash
 internal class EvolvableTagImplV1(
     isPublicClass: Boolean,
     classBundleName: String,
-    cordappBundleName: String,
+    mainBundleName: String,
     cpkSignerSummaryHash: SecureHash?
-) : EvolvableTag(1, isPublicClass, classBundleName, cordappBundleName, cpkSignerSummaryHash) {
+) : EvolvableTag(1, isPublicClass, classBundleName, mainBundleName, cpkSignerSummaryHash) {
 
     companion object {
         private const val ENTRIES_LENGTH = 6
         private const val IS_PUBLIC_CLASS_IDX = 2
         private const val CLASS_BUNDLE_NAME_IDX = 3
-        private const val CORDAPP_BUNDLE_NAME_IDX = 4
+        private const val MAIN_BUNDLE_NAME_IDX = 4
         private const val CPK_PUBLIC_KEY_HASHES_IDX = 5
 
         /** Deserialises an [EvolvableTagImplV1] class tag. */
@@ -43,7 +43,7 @@ internal class EvolvableTagImplV1(
             return EvolvableTagImplV1(
                 isPublicClass,
                 classTagEntries[CLASS_BUNDLE_NAME_IDX],
-                classTagEntries[CORDAPP_BUNDLE_NAME_IDX],
+                classTagEntries[MAIN_BUNDLE_NAME_IDX],
                 cpkSignerSummaryHash
             )
         }
@@ -58,7 +58,7 @@ internal class EvolvableTagImplV1(
         entries[CLASS_TAG_VERSION_IDX] = version
         entries[IS_PUBLIC_CLASS_IDX] = isPublicClass
         entries[CLASS_BUNDLE_NAME_IDX] = classBundleName
-        entries[CORDAPP_BUNDLE_NAME_IDX] = cordappBundleName
+        entries[MAIN_BUNDLE_NAME_IDX] = mainBundleName
         entries[CPK_PUBLIC_KEY_HASHES_IDX] = cpkSignerSummaryHash
 
         return entries.joinToString(CLASS_TAG_DELIMITER)

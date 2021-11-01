@@ -249,7 +249,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
             producer.beginTransaction()
             producer.sendRecords(processor.onNext(consumerRecords.map { it.asEventLogRecord() }))
             producer.sendAllOffsetsToTransaction(consumer)
-            producer.tryCommitTransaction()
+            producer.commitTransaction()
         } catch (ex: Exception) {
             when (ex) {
                 is CordaMessageAPIFatalException,

@@ -65,9 +65,9 @@ open class ArraySerializer(override val type: Type, factory: LocalSerializerFact
         RestrictedType(typeName, null, emptyList(), "list", Descriptor(typeDescriptor), emptyList())
     }
 
-    override fun writeClassInfo(output: SerializationOutput) {
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {
         if (output.writeTypeNotations(typeNotation)) {
-            output.requireSerializer(elementType)
+            output.requireSerializer(elementType, context)
         }
     }
 

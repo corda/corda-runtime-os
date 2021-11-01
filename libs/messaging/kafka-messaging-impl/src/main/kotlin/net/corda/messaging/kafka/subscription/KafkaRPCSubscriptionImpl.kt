@@ -100,9 +100,7 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     String::class.java,
                     RPCRequest::class.java
                 ).use {
-                    it.subscribe(
-                        listOf("$topicPrefix$topic")
-                    )
+                    it.subscribeToTopic()
                     pollAndProcessRecords(it)
                 }
                 attempts = 0

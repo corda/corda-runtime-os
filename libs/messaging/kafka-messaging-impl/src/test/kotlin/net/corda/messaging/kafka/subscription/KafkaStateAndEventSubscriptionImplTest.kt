@@ -126,7 +126,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         verify(producer, times(4)).beginTransaction()
         verify(producer, times(4)).sendRecords(any())
         verify(producer, times(4)).sendRecordOffsetsToTransaction(any(), any())
-        verify(producer, times(4)).tryCommitTransaction()
+        verify(producer, times(4)).commitTransaction()
     }
 
     @Test
@@ -153,7 +153,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         verify(producer, times(5)).beginTransaction()
         verify(producer, times(5)).sendRecords(any())
         verify(producer, times(5)).sendRecordOffsetsToTransaction(any(), any())
-        verify(producer, times(5)).tryCommitTransaction()
+        verify(producer, times(5)).commitTransaction()
 
     }
 
@@ -197,7 +197,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         verify(producer, times(28)).beginTransaction()
         verify(producer, times(28)).sendRecords(any())
         verify(producer, times(28)).sendRecordOffsetsToTransaction(any(), any())
-        verify(producer, times(28)).tryCommitTransaction()
+        verify(producer, times(28)).commitTransaction()
     }
 
     @Test
@@ -241,7 +241,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         verify(producer, times(3)).beginTransaction()
         verify(producer, times(3)).sendRecords(any())
         verify(producer, times(3)).sendRecordOffsetsToTransaction(any(), any())
-        verify(producer, times(3)).tryCommitTransaction()
+        verify(producer, times(3)).commitTransaction()
     }
 
     @Test
@@ -297,6 +297,6 @@ class KafkaStateAndEventSubscriptionImplTest {
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).sendRecordOffsetsToTransaction(any(), any())
-        verify(producer, times(1)).tryCommitTransaction()
+        verify(producer, times(1)).commitTransaction()
     }
 }

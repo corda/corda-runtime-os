@@ -19,7 +19,7 @@ class SingletonSerializer(override val type: Class<*>, val singleton: Any, facto
 
     internal val typeNotation: TypeNotation = RestrictedType(type.typeName, "Singleton", generateProvides(), "boolean", Descriptor(typeDescriptor), emptyList())
 
-    override fun writeClassInfo(output: SerializationOutput) {
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {
         output.writeTypeNotations(typeNotation)
     }
 

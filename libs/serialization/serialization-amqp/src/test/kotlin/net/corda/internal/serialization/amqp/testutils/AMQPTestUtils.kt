@@ -50,21 +50,25 @@ fun testDefaultFactory(
     descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
         DefaultDescriptorBasedSerializerRegistry()
 ) =
-    SerializerFactoryBuilder.build(AllWhitelist, descriptorBasedSerializerRegistry)
+    SerializerFactoryBuilder.build(AllWhitelist, descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry)
 
 @JvmOverloads
 fun testDefaultFactoryNoEvolution(
     descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
         DefaultDescriptorBasedSerializerRegistry()
 ): SerializerFactory =
-    SerializerFactoryBuilder.build(AllWhitelist, descriptorBasedSerializerRegistry, false)
+    SerializerFactoryBuilder.build(
+        AllWhitelist,
+        descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
+        allowEvolution = false
+    )
 
 @JvmOverloads
 fun testDefaultFactoryWithWhitelist(
     descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
         DefaultDescriptorBasedSerializerRegistry()
 ) =
-    SerializerFactoryBuilder.build(TestMutableWhiteList(), descriptorBasedSerializerRegistry)
+    SerializerFactoryBuilder.build(TestMutableWhiteList(), descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry)
 
 class TestSerializationOutput(
     private val verbose: Boolean,
