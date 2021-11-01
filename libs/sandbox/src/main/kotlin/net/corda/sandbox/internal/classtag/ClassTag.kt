@@ -2,16 +2,6 @@ package net.corda.sandbox.internal.classtag
 
 import net.corda.v5.crypto.SecureHash
 
-/** Represents the source of the class in a [ClassTag]. */
-enum class ClassType {
-    /** A class loaded from a CPK sandbox. */
-    CpkSandboxClass,
-    /** A class loaded from a public sandbox. */
-    PublicSandboxClass,
-    /** A class not loaded from a bundle. */
-    NonBundleClass
-}
-
 /**
  * Identifies a sandboxed class during serialisation and deserialisation.
  *

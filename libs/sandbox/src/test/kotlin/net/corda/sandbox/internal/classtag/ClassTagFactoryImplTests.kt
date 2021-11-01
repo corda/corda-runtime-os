@@ -1,12 +1,12 @@
 package net.corda.sandbox.internal.classtag
 
 import net.corda.sandbox.SandboxException
-import net.corda.sandbox.internal.CLASS_TAG_CLASS_TYPE_IDX
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
 import net.corda.sandbox.internal.CLASS_TAG_IDENTIFIER_IDX
 import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
 import net.corda.sandbox.internal.CPK_BUNDLE_NAME
 import net.corda.sandbox.internal.ClassTagV1
+import net.corda.sandbox.internal.ClassTagV1.CLASS_TYPE_IDX
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_HASH
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_STRING
 import net.corda.sandbox.internal.MAIN_BUNDLE_NAME
@@ -42,14 +42,15 @@ class ClassTagFactoryImplTests {
         classTag: String,
         length: Int,
         version: String = "1",
-        classType: String = "CpkSandboxClass",
+        // TODO: Use constant.
+        classType: String = "C",
         hash: String? = null
     ): String {
         // We allocate excess entries, then trim the list later.
         val entries = MutableList(10) { "0" }
         entries[CLASS_TAG_IDENTIFIER_IDX] = classTag
         entries[CLASS_TAG_VERSION_IDX] = version
-        entries[CLASS_TAG_CLASS_TYPE_IDX] = classType
+        entries[CLASS_TYPE_IDX] = classType
 
         if (hash != null) {
             val hashIdx = if (classTag == ClassTagV1.STATIC_IDENTIFIER) 4 else 5
@@ -186,7 +187,7 @@ class ClassTagFactoryImplTests {
     @Test
     fun `throws if asked to deserialise an unknown class type`() {
         val unknownTagPattern = Regex(
-            "Couldn't parse class type .* in serialised evolvable class tag."
+            "Could not deserialise class tag class type from string .*\\."
         )
 
         val unknownVersion = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, 5, classType = "Z")

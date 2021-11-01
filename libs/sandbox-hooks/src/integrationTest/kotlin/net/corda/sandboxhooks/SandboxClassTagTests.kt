@@ -25,7 +25,7 @@ class SandboxClassTagTests {
         )
         nonBundleClasses.forEach { nonCpkClass ->
             val staticTag = sandboxLoader.group1.getStaticTag(nonCpkClass)
-            val evolvableTag = sandboxLoader.group1.getStaticTag(nonCpkClass)
+            val evolvableTag = sandboxLoader.group1.getEvolvableTag(nonCpkClass)
 
             assertEquals(nonCpkClass, sandboxLoader.group1.getClass(nonCpkClass.name, staticTag))
             assertEquals(nonCpkClass, sandboxLoader.group1.getClass(nonCpkClass.name, evolvableTag))
@@ -40,7 +40,7 @@ class SandboxClassTagTests {
         )
         nonCpkClasses.forEach { nonCpkClass ->
             val staticTag = sandboxLoader.group1.getStaticTag(nonCpkClass)
-            val evolvableTag = sandboxLoader.group1.getStaticTag(nonCpkClass)
+            val evolvableTag = sandboxLoader.group1.getEvolvableTag(nonCpkClass)
 
             assertEquals(nonCpkClass, sandboxLoader.group1.getClass(nonCpkClass.name, staticTag))
             assertEquals(nonCpkClass, sandboxLoader.group1.getClass(nonCpkClass.name, evolvableTag))
@@ -51,7 +51,7 @@ class SandboxClassTagTests {
     fun `can create class tags for a CPK class and use them to retrieve the class`() {
         val cpkClass = sandboxLoader.group1.loadClassFromMainBundles(LIBRARY_QUERY_CLASS, Any::class.java)
         val staticTag = sandboxLoader.group1.getStaticTag(cpkClass)
-        val evolvableTag = sandboxLoader.group1.getStaticTag(cpkClass)
+        val evolvableTag = sandboxLoader.group1.getEvolvableTag(cpkClass)
 
         assertEquals(cpkClass, sandboxLoader.group1.getClass(cpkClass.name, staticTag))
         assertEquals(cpkClass, sandboxLoader.group1.getClass(cpkClass.name, evolvableTag))
@@ -63,7 +63,7 @@ class SandboxClassTagTests {
         val systemBundleClass = systemBundle.loadClass(SYSTEM_BUNDLE_CLASS)
 
         val staticTag = sandboxLoader.group1.getStaticTag(systemBundleClass)
-        val evolvableTag = sandboxLoader.group1.getStaticTag(systemBundleClass)
+        val evolvableTag = sandboxLoader.group1.getEvolvableTag(systemBundleClass)
 
         assertEquals(systemBundleClass, sandboxLoader.group1.getClass(systemBundleClass.name, staticTag))
         assertEquals(systemBundleClass, sandboxLoader.group1.getClass(systemBundleClass.name, evolvableTag))
