@@ -1,0 +1,44 @@
+{
+  "type": "record",
+  "name": "Group",
+  "namespace": "net.corda.data.permissions",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string"
+    },
+    {
+      "name": "version",
+      "type": "int"
+    },
+    {
+      "name": "lastChangeDetails",
+      "type": "net.corda.data.permissions.ChangeDetails"
+    },
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "parentGroupId",
+      "type": [ "null", "string" ],
+      "doc": "Optional parent group ID of this group."
+    },
+    {
+      "name": "properties",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.permissions.Property"
+      },
+      "doc": "List of group properties."
+    },
+    {
+      "name": "roleIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "List of role IDs associated with this group."
+    }
+  ]
+}
