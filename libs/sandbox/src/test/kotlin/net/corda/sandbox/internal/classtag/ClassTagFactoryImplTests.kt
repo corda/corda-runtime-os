@@ -60,6 +60,16 @@ class ClassTagFactoryImplTests {
     }
 
     @Test
+    fun `can serialise and deserialise a static class tag for a non-bundle class`() {
+        val serialisedTag = classTagFactory.createSerialisedTag(true, null, null)
+        val classTag = classTagFactory.deserialise(serialisedTag)
+
+        val expectedClassTag =
+            StaticTagImplV1(ClassType.NonBundleClass, PLACEHOLDER_STRING, PLACEHOLDER_HASH)
+        assertEquals(expectedClassTag, classTag)
+    }
+
+    @Test
     fun `can serialise and deserialise a static class tag for a CPK class`() {
         val serialisedTag = classTagFactory.createSerialisedTag(true, mockBundle, mockSandbox)
         val classTag = classTagFactory.deserialise(serialisedTag)
@@ -75,6 +85,17 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag)
 
         val expectedClassTag = StaticTagImplV1(ClassType.PublicSandboxClass, mockBundle.symbolicName, PLACEHOLDER_HASH)
+        assertEquals(expectedClassTag, classTag)
+    }
+
+    @Test
+    fun `can serialise and deserialise an evolvable class tag for a non-bundle class`() {
+        val serialisedTag = classTagFactory.createSerialisedTag(false, null, null)
+        val classTag = classTagFactory.deserialise(serialisedTag)
+
+        val expectedClassTag = EvolvableTagImplV1(
+            ClassType.NonBundleClass, PLACEHOLDER_STRING, PLACEHOLDER_STRING, PLACEHOLDER_HASH
+        )
         assertEquals(expectedClassTag, classTag)
     }
 

@@ -8,7 +8,6 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 
 /** Tests the use of class tags for serialisation and deserialisation. */
-// TODO - CORE-2884: Add tests of class-tag creation for non-bundle and Felix framework classes.
 @ExtendWith(ServiceExtension::class)
 class SandboxClassTagTests {
     companion object {
