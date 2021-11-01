@@ -3,7 +3,7 @@ package net.corda.sandbox
 import net.corda.packaging.CPK
 
 /**
- * An interface to a group of sandboxes with visibility of one another.
+ * A group of sandboxes with visibility of one another.
  *
  * @property cpks The CPKs this sandbox group is constructed from.
  */
