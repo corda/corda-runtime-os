@@ -100,6 +100,7 @@ class Main @Activate constructor(
         consoleLogger.info("Shutting down")
     }
 
+    @Suppress("MaxLineLength")
     private fun runExample(input: DeserializationInput, serializationContext: SerializationContext){
         consoleLogger.info("AddNullableProperty = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("addNullableProperty.bin")!!.readBytes()), Any::class.java, serializationContext)))
         consoleLogger.info("AddNonNullableProperty = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("addNonNullableProperty.bin")!!.readBytes()), Any::class.java, serializationContext)))
