@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.http
 
+import net.corda.v5.base.util.toBase64
 import java.net.SocketAddress
 
 class HttpRequest(
@@ -9,6 +10,6 @@ class HttpRequest(
 ) {
 
     override fun toString(): String {
-        return "Source: $source\ndestination: $destination\npayload: $payload"
+        return "Source: $source\ndestination: $destination\npayload: ${payload.toBase64()}"
     }
 }

@@ -62,7 +62,7 @@ class HttpClient(
      * Queue containing messages that will be sent once the connection is established.
      * All queue operations must be synchronized through [writeProcessor].
      */
-    private val requestQueue = LinkedList<Pair<Message, CompletableFuture<HttpResponse>>>()
+    private val requestQueue = LinkedList<Pair<HttpRequestPayload, CompletableFuture<HttpResponse>>>()
 
     /**
      * A list of futures for the expected responses, in the order they are expected.
@@ -96,6 +96,7 @@ class HttpClient(
                 logger.info("HTTP client to ${destinationInfo.uri} already started")
                 return
             }
+            explicitlyClosed = false
             writeProcessor = writeGroup.next()
             connect()
         }
@@ -116,11 +117,7 @@ class HttpClient(
      * @param message the bytes payload to be sent
      * @throws IllegalStateException if the connection is down
      */
-    fun write(message: ByteArray): CompletableFuture<HttpResponse> {
-        return write(Message(message))
-    }
-
-    private fun write(message: Message): CompletableFuture<HttpResponse> {
+    fun write(message: HttpRequestPayload): CompletableFuture<HttpResponse> {
         val future = CompletableFuture<HttpResponse>()
         writeProcessor?.execute {
             val channel = clientChannel
@@ -129,7 +126,7 @@ class HttpClient(
                 // Queuing messages to be sent once connection is established.
                 requestQueue.offer(message to future)
             } else {
-                val request = HttpHelper.createRequest(message.payload, destinationInfo.uri)
+                val request = HttpHelper.createRequest(message, destinationInfo.uri)
                 channel.writeAndFlush(request)
                 pendingResponses.add(future)
                 logger.debug("Sent HTTP request $request")
@@ -159,7 +156,7 @@ class HttpClient(
             // Send all queued messages.
             while (requestQueue.isNotEmpty()) {
                 val (message, future) = requestQueue.removeFirst()
-                val request = HttpHelper.createRequest(message.payload, destinationInfo.uri)
+                val request = HttpHelper.createRequest(message, destinationInfo.uri)
                 clientChannel!!.writeAndFlush(request)
                 pendingResponses.add(future)
                 logger.debug("Sent HTTP request $request")
@@ -182,6 +179,7 @@ class HttpClient(
 
             // If the connection wasn't explicitly closed on our side, we try to reconnect.
             if (!explicitlyClosed) {
+                logger.info("Previous connection to ${destinationInfo.uri} was closed, a new attempt will be made to connect again.")
                 connect()
             }
         }
@@ -227,3 +225,5 @@ class HttpClient(
  * will use standard target identity check
  */
 data class DestinationInfo(val uri: URI, val sni: String, val legalName: X500Name?)
+
+typealias HttpRequestPayload = ByteArray

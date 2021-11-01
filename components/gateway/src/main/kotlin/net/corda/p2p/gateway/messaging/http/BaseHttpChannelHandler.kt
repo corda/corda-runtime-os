@@ -5,6 +5,7 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
 import io.netty.handler.codec.http.HttpObject
 import io.netty.handler.ssl.SslHandshakeCompletionEvent
+import io.netty.handler.ssl.SslHandshakeTimeoutException
 import io.netty.handler.timeout.IdleStateEvent
 import org.slf4j.Logger
 import java.nio.channels.ClosedChannelException
@@ -40,12 +41,17 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
                     eventListener.onOpen(HttpConnectionEvent(ch))
                 } else {
                     val cause = evt.cause()
-                    if (cause is ClosedChannelException) {
-                        logger.warn("SSL handshake closed early")
-                    } else if (cause is SSLException && cause.message == "handshake timed out") {
-                        logger.warn("SSL handshake timed out")
+                    when {
+                        cause is ClosedChannelException -> logger.warn("SSL handshake closed early")
+                        cause is SslHandshakeTimeoutException -> logger.warn("SSL handshake timed out")
+                        cause is SSLException && (cause.message?.contains("close_notify") == true) -> {
+                            logger.warn("Received close_notify during handshake")
+                        }
+                        cause is SSLException && (cause.message?.contains("internal_error") == true) -> {
+                            logger.warn("Received internal_error during handshake")
+                        }
+                        else -> logger.warn("Handshake failure ${evt.cause().message}", evt.cause())
                     }
-                    logger.error("Handshake failure ${evt.cause().message}")
                     ctx.close()
                 }
             }

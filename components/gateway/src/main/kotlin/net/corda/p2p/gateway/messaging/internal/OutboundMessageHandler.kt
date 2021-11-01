@@ -78,7 +78,6 @@ internal class OutboundMessageHandler(
                         )
                         val messageId = UUID.randomUUID().toString()
                         val gatewayMessage = GatewayMessage(messageId, peerMessage.payload)
-                        val message = gatewayMessage.toByteBuffer().array()
                         val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
                             X500Name(peerMessage.header.destinationX500Name)
                         } else {
@@ -89,7 +88,7 @@ internal class OutboundMessageHandler(
                             sni,
                             expectedX500Name
                         )
-                        val responseFuture = connectionManager.acquire(destinationInfo).write(message)
+                        val responseFuture = sendMessage(destinationInfo, gatewayMessage)
                         PendingRequest(gatewayMessage, destinationInfo, responseFuture)
                     } catch (e: IllegalArgumentException) {
                         logger.warn("Can't send message to destination ${peerMessage.header.address}. ${e.message}")
@@ -125,7 +124,7 @@ internal class OutboundMessageHandler(
 
     private fun scheduleMessageReplay(destinationInfo: DestinationInfo, gatewayMessage: GatewayMessage, remainingAttempts: Int) {
         retryThreadPool.schedule({
-            val future = connectionManager.acquire(destinationInfo).write(gatewayMessage.toByteBuffer().array())
+            val future = sendMessage(destinationInfo, gatewayMessage)
             val pendingRequest = PendingRequest(gatewayMessage, destinationInfo, future)
             future.orTimeout(connectionManager.latestConnectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
                   .whenCompleteAsync { response, error ->
@@ -157,6 +156,10 @@ internal class OutboundMessageHandler(
 
     private fun shouldRetry(statusCode: HttpResponseStatus): Boolean {
         return statusCode.code() >= 500
+    }
+
+    private fun sendMessage(destinationInfo: DestinationInfo, gatewayMessage: GatewayMessage): CompletableFuture<HttpResponse> {
+        return connectionManager.acquire(destinationInfo).write(gatewayMessage.toByteBuffer().array())
     }
 
     override val keyClass: Class<String>
