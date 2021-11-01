@@ -37,7 +37,6 @@ class DeduplicationManager(
 
         private const val INSTANCE_ID = "instance-id"
         private const val MAX_SESSION_LENGTH = "dedup.maxSessionLength"
-        private const val DEDUP_STATE_TOPIC = "dedup.topic.state"
         private const val DEDUP_EVENT_TOPIC = "dedup.topic.event"
         private const val CLIENT_ID = "dedup.publisher.clientId"
         private const val CONSUMER_GROUP = "dedup.consumer.groupName"
@@ -57,7 +56,6 @@ class DeduplicationManager(
     private val instanceId = bootConfig.getInt(INSTANCE_ID)
     private val maxSessionLength = sessionConfig.getLong(MAX_SESSION_LENGTH)
     private val clientId = sessionConfig.getString(CLIENT_ID)
-    private val stateTopic = sessionConfig.getString(DEDUP_STATE_TOPIC)
     private val eventTopic = sessionConfig.getString(DEDUP_EVENT_TOPIC)
     private val consumerGroup = sessionConfig.getString(CONSUMER_GROUP)
 
@@ -70,7 +68,7 @@ class DeduplicationManager(
                 val publisher = resetPublisher()
 
                 stateAndEventSub?.close()
-                val dedupState = DedupState(maxSessionLength, stateTopic, publisher, scheduledExecutorService, scheduledTasks)
+                val dedupState = DedupState(maxSessionLength, eventTopic, publisher, scheduledExecutorService, scheduledTasks)
                 stateAndEventSub = subscriptionFactory.createStateAndEventSubscription(
                     SubscriptionConfig(consumerGroup, eventTopic, instanceId),
                     DedupProcessor(dedupState),

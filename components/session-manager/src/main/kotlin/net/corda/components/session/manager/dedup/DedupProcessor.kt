@@ -19,7 +19,7 @@ class DedupProcessor(
     StateAndEventProcessor<String, RequestWindow, Any> {
 
     private val maxSessionLength: Long = dedupState.maxSessionLength
-    private val stateTopic: String = dedupState.stateTopic
+    private val eventTopic: String = dedupState.eventTopic
     private val publisher: Publisher = dedupState.publisher
     private val executorService: ScheduledExecutorService = dedupState.executorService
     private val scheduledTasks: MutableMap<String, ScheduledFuture<*>> = dedupState.scheduledTasks
@@ -36,7 +36,8 @@ class DedupProcessor(
         var responseState: RequestWindow? = state
         val responseEvents = mutableListOf<Record<*, *>>()
 
-        val eventValue = event.value ?: return StateAndEventProcessor.Response(responseState, responseEvents)
+        //event value of null is a clear up state message from scheduled tasks
+        val eventValue = event.value ?: return StateAndEventProcessor.Response(null, responseEvents)
         val timestamp = getEventTimeStamp(eventValue)
         val eventExpiryTime = timestamp + maxSessionLength
         val outputTopic = getEventOutputTopic(eventValue)
@@ -73,7 +74,7 @@ class DedupProcessor(
         scheduledTasks[key] = executorService.schedule(
             {
                 log.info("Clearing up expired state from processor for key $key")
-                publisher.publish(listOf(Record(stateTopic, key, null)))
+                publisher.publish(listOf(Record(eventTopic, key, null)))
             },
             maxSessionLength,
             TimeUnit.MILLISECONDS
