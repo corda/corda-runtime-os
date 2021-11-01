@@ -4,7 +4,6 @@ import net.corda.httprpc.server.config.HttpRpcSettingsProvider
 import net.corda.httprpc.server.impl.internal.HttpRpcServerInternal
 import net.corda.httprpc.server.impl.internal.HttpRpcServerInternal.Companion.INSECURE_SERVER_DEV_MODE_WARNING
 import net.corda.httprpc.server.impl.internal.HttpRpcServerInternal.Companion.SSL_PASSWORD_MISSING
-import net.corda.httprpc.server.impl.rpcops.NonCordaSerializableAPI
 import net.corda.httprpc.server.impl.security.SecurityManagerRPCImpl
 import net.corda.v5.base.util.NetworkHostAndPort
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -15,7 +14,6 @@ import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.whenever
 import java.nio.file.Paths
-import kotlin.reflect.jvm.javaMethod
 
 class HttpRpcServerTest {
 

@@ -4,9 +4,9 @@ import com.google.gson.Gson
 import io.javalin.core.util.Header.WWW_AUTHENTICATE
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.toExample
-import net.corda.httprpc.server.impl.rpcops.CustomNonSerializableString
-import net.corda.httprpc.server.impl.rpcops.CustomUnsafeString
+import net.corda.httprpc.server.impl.rpcops.impl.CustomNonSerializableString
 import net.corda.httprpc.server.impl.rpcops.impl.CustomSerializationControllerImpl
+import net.corda.httprpc.server.impl.rpcops.impl.CustomUnsafeString
 import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckControllerImpl
 import net.corda.httprpc.server.impl.rpcops.impl.TestJavaPrimitivesControllerImpl
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
