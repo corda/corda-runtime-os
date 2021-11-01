@@ -8,16 +8,16 @@ import com.typesafe.config.ConfigValueType
 
 class SmartConfigValueImpl(
     private val typeSafeConfigValue: ConfigValue,
-    private val secretsLookupService: SecretsLookupService = noopSecretsLookupService
+    private val secretsLookupService: SecretsLookupService = maskedSecretsLookupService
 ) : SmartConfigValue, ConfigValue {
     companion object{
-        private val noopSecretsLookupService = NoopSecretsLookupService()
+        private val maskedSecretsLookupService = MaskedSecretsLookupService()
     }
 
     override fun toSafeConfigValue(): SmartConfigValue {
-        if(secretsLookupService is NoopSecretsLookupService)
+        if(secretsLookupService is MaskedSecretsLookupService)
             return this
-        return SmartConfigValueImpl(typeSafeConfigValue, noopSecretsLookupService)
+        return SmartConfigValueImpl(typeSafeConfigValue, maskedSecretsLookupService)
     }
 
     override fun equals(other: Any?): Boolean {

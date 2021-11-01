@@ -23,10 +23,10 @@ import java.util.concurrent.TimeUnit
 @Suppress("TooManyFunctions")
 class SmartConfigImpl(
     val typeSafeConfig: Config,
-    private val secretsLookupService: SecretsLookupService = noopSecretsLookupService
+    private val secretsLookupService: SecretsLookupService = maskedSecretsLookupService
 ) : SmartConfig {
     companion object{
-        private val noopSecretsLookupService = NoopSecretsLookupService()
+        private val maskedSecretsLookupService = MaskedSecretsLookupService()
     }
 
     override fun equals(other: Any?): Boolean {
@@ -45,9 +45,9 @@ class SmartConfigImpl(
         typeSafeConfig.hasPath("$path.$SECRETS_INDICATOR")
 
     override fun toSafeConfig(): SmartConfig {
-        if(secretsLookupService is NoopSecretsLookupService)
+        if(secretsLookupService is MaskedSecretsLookupService)
             return this
-        return SmartConfigImpl(typeSafeConfig, noopSecretsLookupService)
+        return SmartConfigImpl(typeSafeConfig, maskedSecretsLookupService)
     }
 
     override fun withFallback(other: ConfigMergeable?): SmartConfig =

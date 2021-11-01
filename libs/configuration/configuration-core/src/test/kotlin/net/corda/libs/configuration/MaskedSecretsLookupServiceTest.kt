@@ -5,11 +5,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 
-class NoopSecretsLookupServiceTest {
+class MaskedSecretsLookupServiceTest {
 
     @Test
     fun getValueReturnsNothingUseful() {
         val key = mock<ConfigValue>()
-        assertThat(NoopSecretsLookupService().getValue(key)).isEqualTo("*****")
+        assertThat(MaskedSecretsLookupService().getValue(key)).isEqualTo("*****")
     }
 }

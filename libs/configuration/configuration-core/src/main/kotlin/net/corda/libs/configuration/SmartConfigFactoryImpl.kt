@@ -13,7 +13,7 @@ import org.osgi.service.component.annotations.Component
 @Component(service = [SmartConfigFactory::class])
 class SmartConfigFactoryImpl : SmartConfigFactory {
     companion object{
-        private val noopSecretsLookupService = NoopSecretsLookupService()
+        private val maskedSecretsLookupService = MaskedSecretsLookupService()
     }
 
     override fun create(config: Config): SmartConfig {
@@ -22,6 +22,6 @@ class SmartConfigFactoryImpl : SmartConfigFactory {
     }
 
     override fun createSafe(config: Config): SmartConfig {
-        return SmartConfigImpl(config, noopSecretsLookupService)
+        return SmartConfigImpl(config, maskedSecretsLookupService)
     }
 }

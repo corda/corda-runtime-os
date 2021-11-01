@@ -10,10 +10,10 @@ import com.typesafe.config.ConfigValueType
 @Suppress("TooManyFunctions")
 class SmartConfigObjectImpl(
     private val typeSafeConfigObject: ConfigObject,
-    private val secretsLookupService: SecretsLookupService = noopSecretsLookupService
+    private val secretsLookupService: SecretsLookupService = maskedSecretsLookupService
 ) : SmartConfigObject {
     companion object{
-        private val noopSecretsLookupService = NoopSecretsLookupService()
+        private val maskedSecretsLookupService = MaskedSecretsLookupService()
     }
 
     override fun equals(other: Any?): Boolean {
@@ -25,20 +25,20 @@ class SmartConfigObjectImpl(
     }
 
     override fun toSafeConfig(): SmartConfigObject {
-        if(secretsLookupService is NoopSecretsLookupService)
+        if(secretsLookupService is MaskedSecretsLookupService)
             return this
-        return SmartConfigObjectImpl(typeSafeConfigObject, noopSecretsLookupService)
+        return SmartConfigObjectImpl(typeSafeConfigObject, maskedSecretsLookupService)
     }
 
     // NOTE: render will always use Noop Secrets Lookup
     override fun render(): String {
-        if(secretsLookupService is NoopSecretsLookupService)
+        if(secretsLookupService is MaskedSecretsLookupService)
             return typeSafeConfigObject.render()
         return toSafeConfig().render()
     }
 
     override fun render(options: ConfigRenderOptions?): String {
-        if(secretsLookupService is NoopSecretsLookupService)
+        if(secretsLookupService is MaskedSecretsLookupService)
             return typeSafeConfigObject.render(options)
         return toSafeConfig().render()
     }
