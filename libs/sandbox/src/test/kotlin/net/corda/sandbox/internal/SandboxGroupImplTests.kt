@@ -39,9 +39,9 @@ private const val BAD_SIGNERS_EVOLVABLE_TAG = "serialised_evolvable_bad_signers"
  * There are no tests of the sandbox-retrieval and class-loading functionality, since this is likely to be deprecated.
  */
 class SandboxGroupImplTests {
+    private val nonBundleClass = Boolean::class.java
     private val cpkClass = String::class.java
     private val publicClass = Int::class.java
-    private val nonBundleClass = Boolean::class.java
     private val nonSandboxClass = Float::class.java
 
     private val mockCpkBundle = mockBundle(CPK_BUNDLE_NAME, cpkClass)
@@ -67,6 +67,12 @@ class SandboxGroupImplTests {
     )
 
     @Test
+    fun `creates valid static tag for a non-bundle class`() {
+        val expectedTag = "$STATIC_IDENTIFIER;${null};${null}"
+        assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(nonBundleClass))
+    }
+
+    @Test
     fun `creates valid static tag for a CPK class`() {
         val expectedTag = "$STATIC_IDENTIFIER;$mockCpkBundle;$cpkSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(cpkClass))
@@ -79,17 +85,16 @@ class SandboxGroupImplTests {
     }
 
     @Test
-    fun `returns null if asked to create static tag for a class outside any bundle`() {
-        assertThrows<SandboxException> {
-            sandboxGroupImpl.getStaticTag(nonBundleClass)
-        }
-    }
-
-    @Test
     fun `returns null if asked to create static tag for a class in a bundle not in the sandbox group`() {
         assertThrows<SandboxException> {
             sandboxGroupImpl.getStaticTag(nonSandboxClass)
         }
+    }
+
+    @Test
+    fun `creates valid evolvable tag for a non-bundle class`() {
+        val expectedTag = "$EVOLVABLE_IDENTIFIER;${null};${null}"
+        assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(nonBundleClass))
     }
 
     @Test
@@ -102,13 +107,6 @@ class SandboxGroupImplTests {
     fun `creates valid evolvable tag for a public class`() {
         val expectedTag = "$EVOLVABLE_IDENTIFIER;$mockPublicBundle;${null}"
         assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(publicClass))
-    }
-
-    @Test
-    fun `throws if asked to create evolvable tag for a class outside any bundle`() {
-        assertThrows<SandboxException> {
-            sandboxGroupImpl.getEvolvableTag(nonBundleClass)
-        }
     }
 
     @Test
@@ -187,14 +185,12 @@ private class EvolvableTagImpl(
 /** A dummy [ClassTagFactory] implementation that returns pre-defined tags. */
 private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
     // Used for public classes, where the main bundle name, CPK file hash and CPK signer summary hash are ignored.
-    val dummyMainBundleName = PLACEHOLDER_STRING
-    val dummyHash = PLACEHOLDER_HASH
     val staticIdentifier = STATIC_IDENTIFIER
     val evolvableIdentifier = EVOLVABLE_IDENTIFIER
 
     private val cpkStaticTag = StaticTagImpl(ClassType.CpkSandboxClass, CPK_BUNDLE_NAME, cpk.metadata.hash)
 
-    private val publicStaticTag = StaticTagImpl(ClassType.PublicSandboxClass, PUBLIC_BUNDLE_NAME, dummyHash)
+    private val publicStaticTag = StaticTagImpl(ClassType.PublicSandboxClass, PUBLIC_BUNDLE_NAME, PLACEHOLDER_HASH)
 
     private val invalidCpkFileHashStaticTag =
         StaticTagImpl(ClassType.CpkSandboxClass, CPK_BUNDLE_NAME, randomSecureHash())
@@ -208,7 +204,7 @@ private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
         )
 
     private val publicEvolvableTag =
-        EvolvableTagImpl(ClassType.PublicSandboxClass, PUBLIC_BUNDLE_NAME, dummyMainBundleName, dummyHash)
+        EvolvableTagImpl(ClassType.PublicSandboxClass, PUBLIC_BUNDLE_NAME, PLACEHOLDER_STRING, PLACEHOLDER_HASH)
 
     private val invalidMainBundleNameEvolvableTag =
         EvolvableTagImpl(
