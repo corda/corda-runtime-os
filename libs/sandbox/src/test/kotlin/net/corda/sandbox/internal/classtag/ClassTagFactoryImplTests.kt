@@ -157,7 +157,7 @@ class ClassTagFactoryImplTests {
     @Test
     fun `throws if asked to deserialise a version that cannot be converted to an integer`() {
         val invalidVersionPattern = Regex(
-            "Serialised class tag's version .* could not be converted to an integer."
+            "Serialised class tag version .* could not be converted to an integer."
         )
 
         val invalidVersion = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, 2, "Z")
