@@ -8,6 +8,7 @@ import net.corda.crypto.component.lifecycle.AbstractCryptoCoordinator
 import net.corda.crypto.impl.config.isDev
 import net.corda.crypto.impl.config.keyCache
 import net.corda.crypto.impl.config.mngCache
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -91,7 +92,7 @@ class CryptoLibraryCoordinatorTests {
                 AbstractCryptoCoordinator.CRYPTO_CONFIG
             ),
             mapOf(
-                AbstractCryptoCoordinator.CRYPTO_CONFIG to ConfigFactory.empty()
+                AbstractCryptoCoordinator.CRYPTO_CONFIG to SmartConfigImpl(ConfigFactory.empty())
             )
         )
         val cipherSuiteFactoryCaptor = argumentCaptor<CryptoLibraryConfig>()

@@ -1,8 +1,8 @@
 package net.corda.flow.worker
 
-import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.manager.FlowManager
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -87,7 +87,7 @@ class FlowService @Activate constructor(
     }
 
     @Suppress("TooGenericExceptionThrown")
-    private fun onConfigChange(keys: Set<String>, config: Map<String, Config>) {
+    private fun onConfigChange(keys: Set<String>, config: Map<String, SmartConfig>) {
         if (MESSAGING_KEY in keys) {
             val newConfig = config[MESSAGING_KEY] ?: throw Exception("Configuration missing from map")
             coordinator.postEvent(NewConfigurationReceived(newConfig))
