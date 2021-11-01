@@ -16,7 +16,7 @@ cordapp {
 }
 
 dependencies {
-    cordapp "net.corda:corda-flows:$cordaDevPreviewVersion"
+    cordapp "net.corda:corda-flows:$cordaVersion"
 }
 
 jar {
