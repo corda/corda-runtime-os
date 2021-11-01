@@ -1,10 +1,7 @@
 package net.corda.cpi.write.impl.kafka.factory
 
 import com.typesafe.config.Config
-import net.corda.cpi.read.CPIRead
 import net.corda.cpi.read.factory.CPIReadFactory
-import net.corda.cpi.read.impl.kafka.CPIReadImplKafka
-import net.corda.cpi.read.impl.kafka.factory.CPIReadFactoryImpl
 import net.corda.cpi.write.CPIWrite
 import net.corda.cpi.write.factory.CPIWriteFactory
 import net.corda.cpi.write.impl.kafka.CPIWriteImplKafka

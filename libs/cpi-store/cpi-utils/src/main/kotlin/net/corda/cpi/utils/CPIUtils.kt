@@ -6,7 +6,6 @@ package net.corda.cpi.utils
 import net.corda.packaging.CPI
 import net.corda.v5.crypto.SecureHash
 
-// TODO: Review this, using , as the separator
 fun CPI.Identifier.toSerializedString(): String {
     return "$name,$version,${signerSummaryHash?.toString() ?: ""}"
 }

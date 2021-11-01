@@ -70,37 +70,45 @@ class CPISegmentReaderExecutor(private val cpiIdentifier: CPI.Identifier,
         val filename = fileHash.toString()
         val path = parentPath.resolve(filename)
         if (!Files.exists(path)) {
-            val tempFilename = UUID.randomUUID().toString()
-            val tempPath = parentPath.resolve(tempFilename)
-            Files.createDirectories(tempPath.parent)
-
-            Files.newByteChannel(tempPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING).use { byteChannel ->
-                var start: Long = 0
-                do {
-                    var atEnd = false
-                    try {
-                        val req = CPISegmentRequest(cpiIdentifier.toAvro(), start)
-                        val response = rpcSender.sendRequest(req)
-                        val segmentResp = response.get(5, TimeUnit.MINUTES)
-                        byteChannel.write(segmentResp.segment)
-                        start += segmentResp.segment.limit()
-                        atEnd = segmentResp.atEnd
-                    }
-                    catch(ex: ExecutionException) {
-                        ex.cause?.message?.let { msg ->
-                            if (msg.startsWith("No partitions")) {
-                                logger.debug("CordaRPCAPISenderException : No partitions received")
-                                Thread.sleep(1000)
-                            }
-                            else throw ex
-                        }
-                    }
-                } while (!atEnd)
-            }
-            Files.move(tempPath, path, StandardCopyOption.REPLACE_EXISTING)
+            sendSegment(path)
         }
         val inStream = Files.newInputStream(path)
         cpiSegmentResponseFuture.complete(inStream)
+    }
+
+    private fun sendSegment(toPath: Path) {
+        val tempFilename = UUID.randomUUID().toString()
+        val tempPath = parentPath.resolve(tempFilename)
+        Files.createDirectories(tempPath.parent)
+
+        Files.newByteChannel(tempPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE,
+                                       StandardOpenOption.TRUNCATE_EXISTING).use { byteChannel ->
+            var start: Long = 0
+            do {
+                var atEnd = false
+                try {
+                    val req = CPISegmentRequest(cpiIdentifier.toAvro(), start)
+                    val response = rpcSender.sendRequest(req)
+                    val segmentResp = response.get(5, TimeUnit.MINUTES)
+                    byteChannel.write(segmentResp.segment)
+                    start += segmentResp.segment.limit()
+                    atEnd = segmentResp.atEnd
+                }
+                catch(ex: ExecutionException) {
+                    checkNoPartitionsException(ex)
+                }
+            } while (!atEnd)
+        }
+        Files.move(tempPath, toPath, StandardCopyOption.REPLACE_EXISTING)
+    }
+    private fun checkNoPartitionsException(ex: ExecutionException) {
+        ex.cause?.message?.let { msg ->
+            if (msg.startsWith("No partitions")) {
+                logger.debug("CordaRPCAPISenderException : No partitions received")
+                Thread.sleep(1000)
+            }
+            else throw ex
+        }
     }
 }
 

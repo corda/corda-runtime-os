@@ -79,21 +79,13 @@ class CPIWatcher(private val cpiFileListener: CPIFileListener): Runnable {
                     // NOTE: Handle this, by resending full snapshot to the client
                 }
                 ENTRY_CREATE -> {
-                    if (Files.isDirectory(child)) {
-                        registerAllDirs(child)
-                    } else if (matcher.matches(child.fileName)) {
-                        cpiFileListener.newCPI(child)
-                    }
+                    handleEntryCreate(child)
                 }
                 ENTRY_MODIFY -> {
-                    if (!Files.isDirectory(child) && matcher.matches(child.fileName)) {
-                        cpiFileListener.modifiedCPI(child)
-                    }
+                    handleEntryModify(child)
                 }
                 ENTRY_DELETE -> {
-                    if (!Files.isDirectory(child) && matcher.matches(child.fileName)) {
-                        cpiFileListener.deletedCPI(child)
-                    }
+                    handleEntryDelete(child)
                 }
             }
             val isValid = key.reset()
@@ -104,6 +96,24 @@ class CPIWatcher(private val cpiFileListener: CPIFileListener): Runnable {
                 logger.error("No valid directories left to watch, exiting file watcher thread")
                 stopped = true
             }
+        }
+    }
+
+    private fun handleEntryCreate(child: Path) {
+        if (Files.isDirectory(child)) {
+            registerAllDirs(child)
+        } else if (matcher.matches(child.fileName)) {
+            cpiFileListener.newCPI(child)
+        }
+    }
+    private fun handleEntryModify(child: Path) {
+        if (!Files.isDirectory(child) && matcher.matches(child.fileName)) {
+            cpiFileListener.modifiedCPI(child)
+        }
+    }
+    private fun handleEntryDelete(child: Path) {
+        if (!Files.isDirectory(child) && matcher.matches(child.fileName)) {
+            cpiFileListener.deletedCPI(child)
         }
     }
 }

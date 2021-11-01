@@ -33,7 +33,6 @@ class CPIListHandler(private val subscriptionFactory: SubscriptionFactory,
         get() = CPIMetadata::class.java
 
     override fun onSnapshot(currentData: Map<String, CPIMetadata>) {
-        // TODO: Do the correct conversion from CPIIdentifier to CPI.Identifier
         synchronized(listeners) {
             val convertedData = fromAvroTypedMap(currentData)
             listeners.forEach { it.onUpdate(convertedData.keys, convertedData) }

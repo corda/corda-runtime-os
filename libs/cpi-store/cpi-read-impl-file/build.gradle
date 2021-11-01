@@ -5,6 +5,9 @@ plugins {
 
 description 'File CPI Read API Impl'
 
+evaluationDependsOn(':libs:cpi-store:integration-test:test-resources:contract-cpk')
+evaluationDependsOn(':libs:cpi-store:integration-test:test-resources:workflow-cpk')
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -22,4 +25,5 @@ dependencies {
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(path: ':libs:cpi-store:integration-test:test-resources:workflow-cpk', configuration: 'outputcpb')
 }

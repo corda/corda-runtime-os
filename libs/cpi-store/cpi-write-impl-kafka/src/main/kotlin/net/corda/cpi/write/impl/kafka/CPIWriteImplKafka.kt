@@ -27,14 +27,14 @@ import java.lang.IllegalStateException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-
-//TODO: Combine the readSegment and readfactory?
 class CPIWriteImplKafka(private val subscriptionFactory: SubscriptionFactory,
                         private val publisherFactory: PublisherFactory,
                         private val nodeConfig: Config,
                         private val cpiReadFactory: CPIReadFactory): CPIWrite {
 
-    private val rpcConfig = RPCConfig(RPC_CPI_GROUP_NAME, RPC_CPI_CLIENT_NAME, RPC_CPI_TOPIC_NAME, CPISegmentRequest::class.java, CPISegmentResponse::class.java)
+    private val rpcConfig = RPCConfig(RPC_CPI_GROUP_NAME,
+                                      RPC_CPI_CLIENT_NAME,
+                                      RPC_CPI_TOPIC_NAME, CPISegmentRequest::class.java, CPISegmentResponse::class.java)
 
     private val lock = ReentrantLock()
     @Volatile

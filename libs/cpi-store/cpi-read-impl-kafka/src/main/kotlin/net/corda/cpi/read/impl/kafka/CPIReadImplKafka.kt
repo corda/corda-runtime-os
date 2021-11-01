@@ -29,7 +29,9 @@ class CPIReadImplKafka(
 
     private val lock = ReentrantLock()
 
-    private val rpcConfig = RPCConfig(RPC_CPI_GROUP_NAME, RPC_CPI_CLIENT_NAME, RPC_CPI_TOPIC_NAME, CPISegmentRequest::class.java, CPISegmentResponse::class.java)
+    private val rpcConfig = RPCConfig(RPC_CPI_GROUP_NAME,
+                                      RPC_CPI_CLIENT_NAME,
+                                      RPC_CPI_TOPIC_NAME, CPISegmentRequest::class.java, CPISegmentResponse::class.java)
 
     @Volatile
     private var stopped = true
