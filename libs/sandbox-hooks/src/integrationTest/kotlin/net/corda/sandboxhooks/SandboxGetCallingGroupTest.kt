@@ -2,6 +2,7 @@ package net.corda.sandboxhooks
 
 import net.corda.sandbox.SandboxGroup
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
@@ -16,10 +17,15 @@ class SandboxGetCallingGroupTest {
     }
 
     @Test
-    fun `can retrieve the calling sandbox group`() {
+    fun `can retrieve the calling sandbox group from within a sandbox`() {
         val callingSandboxGroup = applyFunction<Any, SandboxGroup>(
             sandboxLoader.group1, GET_CALLING_SANDBOX_GROUP_FUNCTION, sandboxLoader.sandboxContextService
         )
         assertEquals(sandboxLoader.group1, callingSandboxGroup)
+    }
+
+    @Test
+    fun `retrieving the calling sandbox group from outside a sandbox returns null`() {
+        assertNull(sandboxLoader.sandboxContextService.getCallingSandboxGroup())
     }
 }
