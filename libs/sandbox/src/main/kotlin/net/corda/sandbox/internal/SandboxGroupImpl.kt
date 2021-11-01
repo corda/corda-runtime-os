@@ -100,7 +100,6 @@ internal class SandboxGroupImpl(
         val bundle = bundleUtils.getBundle(klass)
             ?: return classTagFactory.createSerialisedTag(isStaticTag, null, null)
 
-
         val publicSandbox = publicSandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
         if (publicSandbox != null) {
             return classTagFactory.createSerialisedTag(isStaticTag, bundle, null)
