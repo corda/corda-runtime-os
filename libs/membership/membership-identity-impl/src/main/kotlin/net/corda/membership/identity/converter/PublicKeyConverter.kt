@@ -28,7 +28,7 @@ class PublicKeyConverter(private val keyEncodingService: KeyEncodingService): Cu
                 val keyOrOwningKey = context.store.entries.singleOrNull()?.value ?: context.store[PARTY_OWNING_KEY]
                 keyOrOwningKey?.let { keyEncodingService.decodePublicKey(it) }
             }
-            else -> throw IllegalArgumentException("Unknown class '${context.store::class.java.name}'")
+            else -> throw IllegalArgumentException("Unknown class '${context.store::class.java.name}'.")
         }
 
     }

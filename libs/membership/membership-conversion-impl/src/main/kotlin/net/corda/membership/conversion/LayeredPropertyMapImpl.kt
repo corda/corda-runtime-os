@@ -5,7 +5,6 @@ import net.corda.v5.membership.conversion.ConversionContext
 import net.corda.v5.membership.conversion.LayeredPropertyMap
 import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.v5.membership.conversion.ValueNotFoundException
-import java.lang.ClassCastException
 import java.util.SortedMap
 import java.util.concurrent.ConcurrentHashMap
 
@@ -27,10 +26,15 @@ open class LayeredPropertyMapImpl(
      */
     @Suppress("UNCHECKED_CAST")
     override fun <T> parse(key: String, clazz: Class<out T>): T {
-
         // 1. Check if value already is in our cache, if yes, return that value
-        cache[key]?.let {
-            return it as? T  ?: throw ClassCastException("Casting failed for $it at $key.")
+        val cached = cache[key]
+        if(cached != null) {
+            // needed because the simple approach using as? T does not do the actual casting without value assignment,
+            // hence it won't throw the exception here
+            if(!clazz.isAssignableFrom(cached::class.java)) {
+                throw ClassCastException("Casting failed for $key.")
+            }
+            return cached as T
         }
 
         // 2. Check if value exists in entries, if not, throw exception since impossible to convert
@@ -70,8 +74,17 @@ open class LayeredPropertyMapImpl(
     ): List<T> {
         // 1. Check if list already in cache, if yes, return that list
         val simplePrefix = simplifySearchKeyPrefix(itemKeyPrefix)
-        cache[simplePrefix]?.let {
-            return it as? List<T> ?: throw ClassCastException("Casting failed for $it at $simplePrefix prefix.")
+        val cached = cache[simplePrefix]
+        if(cached != null) {
+            // needed because the simple approach using as? T does not do the actual casting without value assignment,
+            // hence it won't throw the exception here
+            val converted = cached as List<T>
+            converted.firstOrNull()?.let {
+                if(!clazz.isAssignableFrom(it::class.java)) {
+                    throw ClassCastException("Casting failed for $simplePrefix prefix.")
+                }
+            }
+            return converted
         }
 
         // normalise prefix, add "." at the end to make processing easier and make usage foolproof
@@ -80,45 +93,30 @@ open class LayeredPropertyMapImpl(
         // 2. Check the matching elements in entries
         val matchingEntries = entries.filter { it.key.startsWith(normalisedPrefix) }
 
-        // 3. If no matching elements in entries, return emptylist since it's impossible to cast if not exist
-        if (matchingEntries.isEmpty()) {
-            return emptyList()
-        }
+        // 3. If no matching elements in entries, throw exception
+        if (matchingEntries.isEmpty()) throw ValueNotFoundException("There is no value for '$itemKeyPrefix' prefix.")
 
-        // creating the following transformation: corda.endpoints.1.url -> 1.url
-        // 1.url = localhost
-        // 1.protocolVersion = 1
-        // 2.url = localhost
-        // 2.protocolVersion = 1
-        // 3.url = localhost
-        // 3.protocolVersion = 1
-        // in case of identityKeys: corda.identityKeys.1 -> 1
-        // 1 = ABC
-        val strippedEntries = matchingEntries.map {
-            it.key.removePrefix(normalisedPrefix) to it.value
-        }.takeIf {
-            it.all { it.first[0].isDigit() }
+        // 4. Checking that the structure has numbers in it, if not then throwing an exception
+        val entryList = matchingEntries.takeIf {
+            it.all { it.key.removePrefix(normalisedPrefix).first().isDigit() }
         } ?: throw IllegalArgumentException("Prefix is invalid, only number is accepted after prefix.")
 
-        // grouping by the indexes and stripping off them
-        // then convert it to a map and pass it to the converter
-        val result = strippedEntries.groupBy {
-            // 1 -> [1.url=localhost, 1.protocolVersion=1]
-            // 2 -> [2.url=localhost, 2.protocolVersion=1]
-            // 1 -> [1=ABC]
-            it.first[0].toInt()
+        // 5. grouping by the indexes
+        // then convert it to a map one by one and pass it to the converter
+        // 1 -> [corda.endpoints.1.url=localhost, corda.endpoints.1.protocolVersion=1]
+        // 2 -> [corda.endpoints.2.url=localhost, corda.endpoints.2.protocolVersion=1]
+        // 1 -> [corda.identityKeys.1=ABC]
+        val result = entryList.groupBy {
+            it.key.removePrefix(normalisedPrefix).first()
         }.map { groupedEntry ->
-            // 1 -> [url=localhost,protocolVersion=1]
-            // 2 -> [url=localhost,protocolVersion=1]
-            // 1 -> [1=ABC]
-            groupedEntry.key to (groupedEntry.value.map { it.first.split(".").last() to it.second }).toMap()
+            groupedEntry.key to (groupedEntry.value.map { it.key to it.value }).toMap()
         }.map {
-            // instead of the whole context, we are just passing a pre-processed properties to the converter
-            // containing only the relevant parts to us
-            // example, the context here is: url = localhost, protocolVersion=1
-            converter.convert(ConversionContext(LayeredPropertyMapImpl(it.second.toSortedMap(), converter), this::class.java, itemKeyPrefix), clazz)
+            // instead of the whole context, we are just passing a pre-processed properties to the converter one by one
+            converter.convert(ConversionContext(LayeredPropertyMapImpl(it.second.toSortedMap(), converter), this::class.java, normalisedPrefix), clazz)
                 ?: throw IllegalStateException("Error while converting $itemKeyPrefix prefix.")
         }
+
+        // 6. put result into cache
         cache[simplePrefix] = result
         return result
     }
@@ -128,11 +126,13 @@ open class LayeredPropertyMapImpl(
      */
     @Suppress("UNCHECKED_CAST")
     override fun <T> parseOrNull(key: String, clazz: Class<out T>): T? {
-
-        // 1. Check if value already in cache, if yes, return that value
-        val cachedValue = cache[key]
-        cachedValue?.let {
-            return cachedValue as T?
+        // 1. Check if value already in cache, if yes, return that value (caching unfortunately won't work for nulls)
+        val cached = cache[key]
+        if(cached != null) {
+            if(!clazz.isAssignableFrom(cached::class.java)) {
+                throw ClassCastException("Casting failed for $key.")
+            }
+            return cached as T
         }
 
         // 2. Check if value present in entries, if not or the value is null then return null

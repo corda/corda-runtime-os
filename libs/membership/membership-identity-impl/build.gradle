@@ -17,6 +17,7 @@ dependencies {
     implementation "net.corda:corda-membership-conversion"
     implementation "net.corda:corda-membership-identity"
 
+    testImplementation project(":testing:membership-testkit")
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 }

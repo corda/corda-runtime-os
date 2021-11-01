@@ -25,9 +25,10 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.identity.MemberInfoExtension.Companion.status
 import net.corda.membership.identity.converter.EndpointInfoConverter
 import net.corda.membership.identity.converter.PublicKeyConverter
+import net.corda.membership.testkit.DummyConverter
+import net.corda.membership.testkit.DummyObjectWithNumberAndText
+import net.corda.membership.testkit.DummyObjectWithText
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.membership.conversion.ConversionContext
-import net.corda.v5.membership.conversion.CustomPropertyConverter
 import net.corda.v5.membership.conversion.ValueNotFoundException
 import net.corda.v5.membership.identity.EndpointInfo
 import net.corda.v5.membership.identity.MemberInfo
@@ -42,13 +43,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.whenever
-import org.osgi.service.component.annotations.Component
 import java.io.File
+import java.lang.ClassCastException
 import java.security.PublicKey
 import java.time.Instant
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 @Suppress("MaxLineLength")
 class MemberInfoTest {
@@ -58,9 +58,15 @@ class MemberInfoTest {
         private val key = Mockito.mock(PublicKey::class.java)
 
         private val modifiedTime = Instant.now()
-        private val endpoints = listOf(EndpointInfoImpl("https://localhost:10000", 1), EndpointInfoImpl("https://google.com", 10))
+        private val endpoints = listOf(
+            EndpointInfoImpl("https://localhost:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),
+            EndpointInfoImpl("https://google.com", 10)
+        )
         private val identityKeys = listOf(key, key)
-        private val testObjects = listOf(TestObject(1, "dummytext1"), TestObject(2, "dummytext2"))
+        private val testObjects = listOf(
+            DummyObjectWithNumberAndText(1, "dummytext1"),
+            DummyObjectWithNumberAndText(2, "dummytext2")
+        )
 
         private const val TEST_OBJECT_NUMBER = "custom.testObjects.%s.number"
         private const val TEST_OBJECT_TEXT = "custom.testObjects.%s.text"
@@ -69,7 +75,7 @@ class MemberInfoTest {
             listOf(
                 EndpointInfoConverter(),
                 PublicKeyConverter(keyEncodingService),
-                TestStringConverter()
+                DummyConverter()
             )
         )
 
@@ -132,7 +138,7 @@ class MemberInfoTest {
 
         private fun createInvalidListFormat(): List<Pair<String, String>> = listOf(Pair("$INVALID_LIST_KEY.value", "invalidValue"))
 
-        val MemberInfo.testObjects: List<TestObject>
+        val MemberInfo.testObjects: List<DummyObjectWithNumberAndText>
             get() = this.memberProvidedContext.parseList("custom.testObjects")
 
         private var memberInfo: MemberInfo? = null
@@ -200,14 +206,15 @@ class MemberInfoTest {
     }
 
     @Test
-    fun `parsing of a list returns back emptyList when no value is found`() {
-        assertTrue {
-            memberInfo?.memberProvidedContext?.parseList<String>("dummyKey")?.isEmpty()!!
+    fun `parsing throws ValueNotFoundException when no value is found`() {
+        val ex = assertFailsWith<ValueNotFoundException> {
+            memberInfo?.memberProvidedContext?.parseList<String>(DUMMY_KEY)
         }
+        assertEquals("There is no value for '$DUMMY_KEY' prefix.", ex.message)
     }
 
     @Test
-    fun `convert fails when non-existing key is used`() {
+    fun `parse throws ValueNotFoundException when non-existing key is used`() {
         val nonExistentKey = "nonExistentKey"
         val ex = assertFailsWith<ValueNotFoundException> { memberInfo?.mgmProvidedContext?.parse(nonExistentKey) }
         assertEquals("There is no value for '$nonExistentKey' key.", ex.message)
@@ -224,13 +231,16 @@ class MemberInfoTest {
     fun `retrieving value from cache fails when casting is impossible`() {
         val keys = memberInfo?.identityKeys
         assertEquals(identityKeys, keys)
-        assertFailsWith<ClassCastException> { memberInfo?.memberProvidedContext?.parse(IDENTITY_KEYS) as EndpointInfo }
+        val ex = assertFailsWith<ClassCastException> { memberInfo?.memberProvidedContext?.parseList<EndpointInfo>(IDENTITY_KEYS) }
+        assertEquals("Casting failed for $IDENTITY_KEYS prefix.", ex.message)
     }
 
     @Test
     fun `convert fails when there is no converter for the required type`() {
-        val ex = assertFailsWith<IllegalStateException> { memberInfo?.mgmProvidedContext?.parse(DUMMY_KEY) as DummyObject }
-        assertEquals("Unknown 'net.corda.membership.identity.DummyObject' type.", ex.message)
+        val ex = assertFailsWith<IllegalStateException> {
+            memberInfo?.mgmProvidedContext?.parse(DUMMY_KEY) as DummyObjectWithText
+        }
+        assertEquals("Unknown '${DummyObjectWithText::class.java.name}' type.", ex.message)
     }
 
     @Test
@@ -239,22 +249,5 @@ class MemberInfoTest {
             memberInfo?.dummy
         }
         assertEquals("Prefix is invalid, only number is accepted after prefix.", ex.message)
-    }
-}
-
-data class DummyObject(val text: String)
-
-data class TestObject(val number: Int, val text: String)
-
-@Component(service = [CustomPropertyConverter::class])
-class TestStringConverter: CustomPropertyConverter<TestObject> {
-    override val type: Class<TestObject>
-        get() = TestObject::class.java
-
-    override fun convert(context: ConversionContext): TestObject {
-        return TestObject(
-            context.store["number"]?.toInt() ?: throw NullPointerException(),
-            context.store["text"] ?: throw NullPointerException()
-        )
     }
 }

@@ -2,7 +2,6 @@ package net.corda.membership.application.converter
 
 import net.corda.membership.application.PartyImpl
 import net.corda.membership.conversion.PropertyConverterImpl
-import net.corda.membership.conversion.parse
 import net.corda.membership.identity.MGMContextImpl
 import net.corda.membership.identity.MemberContextImpl
 import net.corda.membership.identity.MemberInfoExtension
@@ -29,6 +28,8 @@ class PartyConverterTest {
         private const val KEY = "12345"
         private val key = Mockito.mock(PublicKey::class.java)
 
+        private val converter = PropertyConverterImpl(listOf(PartyConverter(), PublicKeyConverter(keyEncodingService)))
+
         val memberContext = MemberContextImpl(
             sortedMapOf(
                 MemberInfoExtension.PARTY_NAME to partyName,
@@ -36,9 +37,7 @@ class PartyConverterTest {
                 MemberInfoExtension.NOTARY_SERVICE_PARTY_NAME to notaryName,
                 MemberInfoExtension.NOTARY_SERVICE_PARTY_KEY to KEY
             ),
-            PropertyConverterImpl(
-                listOf(PartyConverter(), PublicKeyConverter(keyEncodingService))
-            )
+            converter
         )
 
         val nodeParty = PartyImpl(
@@ -56,9 +55,7 @@ class PartyConverterTest {
                 MemberInfoExtension.PARTY_NAME to partyName,
                 MemberInfoExtension.PARTY_OWNING_KEY to KEY
             ),
-            PropertyConverterImpl(
-                listOf(PartyConverter())
-            )
+            converter
         )
     }
 
@@ -74,17 +71,17 @@ class PartyConverterTest {
 
     @Test
     fun `PartyConverter works for converting node's party`() {
-        assertEquals(nodeParty, memberContext.parse(PARTY) as Party)
+        assertEquals(nodeParty, memberContext.parse(PARTY, Party::class.java))
     }
 
     @Test
     fun `PartyConverter works for converting notary service's party`() {
-        assertEquals(notaryServiceParty, memberContext.parse(NOTARY_SERVICE_PARTY) as Party)
+        assertEquals(notaryServiceParty, memberContext.parse(NOTARY_SERVICE_PARTY, Party::class.java))
     }
 
     @Test
     fun `PartyConverter fails when incorrect context is used`() {
-        val ex = assertFailsWith<IllegalArgumentException> { mgmContext.parse(PARTY) as Party }
+        val ex = assertFailsWith<IllegalArgumentException> { mgmContext.parse(PARTY, Party::class.java) }
         assertEquals("Unknown class 'net.corda.membership.identity.MGMContextImpl'.", ex.message)
     }
 }

@@ -24,9 +24,9 @@ class EndpointInfoConverter: CustomPropertyConverter<EndpointInfo> {
         return when(context.storeClass) {
             MemberContextImpl::class.java -> {
                 EndpointInfoImpl(
-                    context.store.get(URL_KEY)
+                    context.findValueByPattern(URL_KEY)
                             ?: throw IllegalArgumentException("$URL_KEY cannot be null."),
-                    context.store.get(PROTOCOL_VERSION_KEY)?.toInt()
+                    context.findValueByPattern(PROTOCOL_VERSION_KEY)?.toInt()
                             ?: throw IllegalArgumentException("$PROTOCOL_VERSION_KEY cannot be null.")
                 )
             }
