@@ -75,7 +75,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         val states = stateConsumer.poll()
         for (state in states) {
             log.debug { "Updating state: $state" }
-            updateInMemoryState(state.record)
+            updateInMemoryState(state)
             partitionsSynced.addAll(getSyncedEventPartitions())
         }
 

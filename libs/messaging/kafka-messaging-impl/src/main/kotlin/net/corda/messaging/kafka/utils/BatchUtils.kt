@@ -1,6 +1,5 @@
 package net.corda.messaging.kafka.utils
 
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
@@ -8,15 +7,15 @@ import org.apache.kafka.common.TopicPartition
 /**
  * Divide a list of [events] into batches such that 1 key does not have more then one entry per batch
  */
-fun<K: Any, E : Any> getEventsByBatch(events: List<ConsumerRecordAndMeta<K, E>>): List<List<ConsumerRecordAndMeta<K, E>>> {
+fun<K: Any, E : Any> getEventsByBatch(events: List<ConsumerRecord<K, E>>): List<List<ConsumerRecord<K, E>>> {
     if (events.isEmpty()) {
         return emptyList()
     }
 
     val keysInBatch = mutableSetOf<K>()
-    val eventBatches = mutableListOf<MutableList<ConsumerRecordAndMeta<K, E>>>(mutableListOf())
+    val eventBatches = mutableListOf<MutableList<ConsumerRecord<K, E>>>(mutableListOf())
     events.forEach { event ->
-        val eventKey = event.record.key()
+        val eventKey = event.key()
 
         if (eventKey in keysInBatch) {
             keysInBatch.clear()

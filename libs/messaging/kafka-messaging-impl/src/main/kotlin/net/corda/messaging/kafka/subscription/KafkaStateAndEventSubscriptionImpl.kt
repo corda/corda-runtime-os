@@ -10,10 +10,8 @@ import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
-import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.types.StateAndEventConfig
 import net.corda.messaging.kafka.types.Topic
 import net.corda.messaging.kafka.utils.getEventsByBatch
@@ -177,7 +175,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun tryProcessBatchOfEvents(events: List<ConsumerRecordAndMeta<K, E>>) {
+    private fun tryProcessBatchOfEvents(events: List<ConsumerRecord<K, E>>) {
         val outputRecords = mutableListOf<Record<*, *>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
 
@@ -189,7 +187,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         producer.beginTransaction()
         producer.sendRecords(outputRecords)
-        producer.sendRecordOffsetsToTransaction(eventConsumer, events.map { it.record })
+        producer.sendRecordOffsetsToTransaction(eventConsumer, events.map { it })
         producer.commitTransaction()
         log.debug { "Processing of events(size: ${events.size}) complete" }
 
@@ -197,19 +195,19 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun processEvent(
-        event: ConsumerRecordAndMeta<K, E>,
+        event: ConsumerRecord<K, E>,
         outputRecords: MutableList<Record<*, *>>,
         updatedStates: MutableMap<Int, MutableMap<K, S?>>
     ) {
         log.debug { "Processing event: $event" }
-        val key = event.record.key()
+        val key = event.key()
         val state = stateAndEventConsumer.getInMemoryStateValue(key)
-        val partitionId = event.record.partition()
+        val partitionId = event.partition()
         val thisEventUpdates = getUpdatesForEvent(state, event)
 
         if (thisEventUpdates == null) {
             log.warn("Sending event: $event, and state: $state to dead letter queue. Processor failed to complete.")
-            outputRecords.add(generateDeadLetterRecord(event.record, state))
+            outputRecords.add(generateDeadLetterRecord(event, state))
             outputRecords.add(Record(stateTopic.suffix, key, null))
             updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
         } else {
@@ -221,17 +219,21 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun getUpdatesForEvent(state: S?, event: ConsumerRecordAndMeta<K, E>): StateAndEventProcessor.Response<S>? {
-        val future = stateAndEventConsumer.waitForFunctionToFinish({ processor.onNext(state, event.asRecord()) }, processorTimeout,
-            "Failed to finish within the time limit for state: $state and event: $event")
+    private fun getUpdatesForEvent(state: S?, event: ConsumerRecord<K, E>): StateAndEventProcessor.Response<S>? {
+        val future = stateAndEventConsumer.waitForFunctionToFinish(
+            { processor.onNext(state, Record(event.topic(), event.key(), event.value())) }, processorTimeout,
+            "Failed to finish within the time limit for state: $state and event: $event"
+        )
         return uncheckedCast(future.tryGetResult())
     }
 
     private fun generateDeadLetterRecord(event: ConsumerRecord<K, E>, state: S?): Record<*, *> {
         val keyBytes = ByteBuffer.wrap(cordaAvroSerializer.serialize(stateTopic.topic, event.key()))
-        val stateBytes = if (state != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(stateTopic.topic, state)) else null
+        val stateBytes =
+            if (state != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(stateTopic.topic, state)) else null
         val eventBytes = ByteBuffer.wrap(cordaAvroSerializer.serialize(eventTopic.topic, event.value()))
-        return Record(eventTopic.suffix + deadLetterQueueSuffix, event.key(),
+        return Record(
+            eventTopic.suffix + deadLetterQueueSuffix, event.key(),
             StateAndEventDeadLetterRecord(clock.instant(), keyBytes, stateBytes, eventBytes)
         )
     }

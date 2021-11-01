@@ -11,7 +11,6 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAM
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.v5.base.util.seconds
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.TopicPartition
@@ -82,14 +81,15 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
                 consumer!!.resume(listOf(partitionToBeQueried))
                 consumer!!.seek(partitionToBeQueried, offset)
                 val records = consumer!!.poll()
-                    .filter { it.record.partition() == partition && it.record.offset() == offset }
+                    .filter { it.partition() == partition && it.offset() == offset }
 
                 return when {
                     records.isEmpty() -> {
                         null
                     }
                     records.size == 1 -> {
-                        records.single().asRecord()
+                        val record = records.single()
+                        Record(record.topic(), record.key(), record.value())
                     }
                     else -> {
                         val errorMsg = "Multiple records located for partition=$partition, offset=$offset, topic=$topic : $records."

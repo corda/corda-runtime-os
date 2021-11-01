@@ -9,7 +9,6 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.POLL_TIME
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.SUBSCRIBE_MAX_RETRIES
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
@@ -76,13 +75,13 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    override fun poll(): List<ConsumerRecordAndMeta<K, V>> {
+    override fun poll(): List<ConsumerRecord<K, V>> {
         return poll(consumerPollTimeout)
 
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun poll(timeout: Duration): List<ConsumerRecordAndMeta<K, V>> {
+    override fun poll(timeout: Duration): List<ConsumerRecord<K, V>> {
         val consumerRecords = try {
             consumer.poll(timeout)
         } catch (ex: Exception) {
@@ -106,7 +105,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
         return consumerRecords
             .sortedBy { it.timestamp() }
-            .map { ConsumerRecordAndMeta(topicPrefix, it) }
     }
 
     override fun resetToLastCommittedPositions(offsetStrategy: OffsetResetStrategy) {
