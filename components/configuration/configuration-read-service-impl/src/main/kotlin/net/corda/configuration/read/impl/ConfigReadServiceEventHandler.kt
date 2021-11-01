@@ -82,7 +82,7 @@ internal class ConfigReadServiceEventHandler(
     internal class ServiceUpHandler(
         private val coordinator: LifecycleCoordinator
     ): ConfigListener {
-        override fun onUpdate(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config>) {
+        override fun onUpdate(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, SmartConfig>) {
             if (coordinator.status == LifecycleStatus.DOWN) {
                 coordinator.updateStatus(LifecycleStatus.UP, "Connected to configuration repository.")
             }
