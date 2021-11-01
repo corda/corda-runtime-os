@@ -4,6 +4,7 @@ import net.corda.install.InstallService
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -20,6 +21,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.nio.file.Path
 import java.util.Hashtable
 
@@ -70,10 +72,21 @@ class Main @Activate constructor(
         consoleLogger.info(sandboxGroup.toString())
 
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-//        val output = SerializationOutput(factory)
-        val input = DeserializationInput(factory)
 
-        runExample(input, AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxGroup))
+        // Save output
+        val output = SerializationOutput(factory)
+        val example =
+            sandboxGroup.loadClassFromMainBundles<Any>("net.corda.applications.examples.amqp.typeevolution.Example", Any::class.java)
+        val method = example.getMethod("saveResourceFiles")
+        val result = method.invoke(example.getConstructor().newInstance()) as Map<*, *>
+        for (i in result) {
+            File(i.key as String).writeBytes(output.serialize(i.value!!, AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxGroup)).bytes)
+        }
+
+
+        // Test
+//        val input = DeserializationInput(factory)
+//        runExample(input, AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxGroup))
 
         exit()
     }
