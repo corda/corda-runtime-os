@@ -1,28 +1,27 @@
-package net.corda.gateway
+package net.corda.p2p.config.publisher
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import picocli.CommandLine
+import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.write.ConfigWriter
+import net.corda.libs.configuration.write.factory.ConfigWriterFactory
+import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import kotlin.random.Random
 
-internal class CliArguments {
-    companion object {
-        fun parse(args: Array<String>): CliArguments {
-            val arguments = CliArguments()
-            val commandLine = CommandLine(arguments)
-            commandLine.isCaseInsensitiveEnumValuesAllowed = true
-            @Suppress("SpreadOperator")
-            commandLine.parseArgs(*args)
-
-            if (arguments.helpRequested) {
-                commandLine.usage(System.out)
-            }
-
-            return arguments
-        }
-    }
+@Command(
+    subcommands = [
+        GatewayConfiguration::class,
+        LinkManagerConfiguration::class,
+    ],
+    description = [
+        "Publish configuration to the P2P applications"
+    ]
+)
+internal class CommonArguments(
+    private val configWriterFactory: ConfigWriterFactory,
+    internal val smartConfigFactory: SmartConfigFactory,
+) {
     @Option(
         names = ["-h", "--help"],
         usageHelp = true,
@@ -40,7 +39,7 @@ internal class CliArguments {
         names = ["--config-topic-name"],
         description = ["The config topic name (default: \${DEFAULT-VALUE})"]
     )
-    var configTopicName = "ConfigTopic"
+    private var configTopicName = "ConfigTopic"
 
     @Option(
         names = ["--topic-prefix"],
@@ -48,13 +47,7 @@ internal class CliArguments {
     )
     var topicPrefix = "p2p"
 
-    @Option(
-        names = ["-i", "--instance-id"],
-        description = ["The unique instance ID (default to random number)"]
-    )
-    var instanceId = Random.nextInt()
-
-    val kafkaNodeConfiguration: Config by lazy {
+    private val kafkaNodeConfiguration: Config by lazy {
         ConfigFactory.empty()
             .withValue(
                 "messaging.kafka.common.bootstrap.servers",
@@ -68,4 +61,10 @@ internal class CliArguments {
                 ConfigValueFactory.fromAnyRef(topicPrefix)
             )
     }
+
+    fun createWriter(): ConfigWriter =
+        configWriterFactory.createWriter(
+            configTopicName,
+            kafkaNodeConfiguration
+        )
 }

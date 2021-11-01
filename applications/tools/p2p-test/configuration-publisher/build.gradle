@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-app'
 }
 
-description 'Gateway Application'
+description 'P2P Configuration Publisher Application'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -13,6 +13,8 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':osgi-framework-api')
     implementation project(':components:gateway')
+    implementation "net.corda:corda-avro-schema"
+    implementation project(":libs:configuration:configuration-core")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'
@@ -26,9 +28,6 @@ dependencies {
 
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
-    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
-    runtimeOnly project(":components:configuration:configuration-read-service-impl")
-    runtimeOnly project(":libs:configuration:configuration-read-impl")
-    implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:configuration:configuration-read")
+    implementation project(":libs:configuration:configuration-write")
+    runtimeOnly project(":libs:configuration:configuration-write-impl")
 }
