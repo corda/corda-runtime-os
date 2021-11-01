@@ -161,12 +161,12 @@ internal class SandboxServiceImpl @Activate constructor(
             sandbox
         }
 
-        newSandboxes.forEach { newSandbox ->
+        publicSandboxes.forEach { publicSandbox ->
             // The public sandboxes have visibility of all sandboxes.
-            publicSandboxes.forEach { publicSandbox ->
-                publicSandbox.grantVisibility(newSandbox)
-            }
+            publicSandbox.grantVisibility(newSandboxes)
+        }
 
+        newSandboxes.forEach { newSandbox ->
             // Each sandbox requires visibility of the sandboxes of the other CPKs and of the public sandboxes.
             newSandbox.grantVisibility(newSandboxes - newSandbox + publicSandboxes)
         }

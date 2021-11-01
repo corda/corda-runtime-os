@@ -33,26 +33,16 @@ internal open class SandboxImpl(
 
     override fun containsBundle(bundle: Bundle) = bundle in allBundles
 
-    override fun containsClass(klass: Class<*>): Boolean {
-        return bundleUtils.getBundle(klass) in allBundles
-    }
-
     override fun hasVisibility(otherSandbox: Sandbox) = otherSandbox.id in visibleSandboxes
 
-    override fun grantVisibility(otherSandbox: Sandbox) {
-        visibleSandboxes.add(otherSandbox.id)
-    }
-
-    override fun grantVisibility(otherSandboxes: List<Sandbox>) {
+    override fun grantVisibility(otherSandboxes: Collection<Sandbox>) {
         visibleSandboxes.addAll(otherSandboxes.map(Sandbox::id))
     }
 
-    override fun getBundle(bundleName: String) = (publicBundles + privateBundles).find { bundle ->
-        bundle.symbolicName == bundleName
-    }
-
     override fun loadClass(className: String, bundleName: String): Class<*>? {
-        val bundle = getBundle(bundleName) ?: return null
+        val bundle = (publicBundles + privateBundles).find { bundle ->
+            bundle.symbolicName == bundleName
+        } ?: return null
 
         return try {
             bundle.loadClass(className)
