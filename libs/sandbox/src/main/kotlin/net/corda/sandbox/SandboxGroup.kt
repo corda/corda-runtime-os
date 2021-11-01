@@ -1,7 +1,15 @@
 package net.corda.sandbox
 
-/** An interface to a group of sandboxes with visibility of one another. */
+import net.corda.packaging.CPK
+
+/**
+ * An interface to a group of sandboxes with visibility of one another.
+ *
+ * @property cpks The CPKs this sandbox group is constructed from.
+ */
 interface SandboxGroup {
+    val cpks: Collection<CPK>
+
     /**
      * Attempts to load the [Class] with [className] from the main bundle of each sandbox in the sandbox group in
      * turn. Casts the first match to type [T] and returns it.

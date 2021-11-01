@@ -22,6 +22,9 @@ internal class SandboxGroupImpl(
     private val classTagFactory: ClassTagFactory,
     private val bundleUtils: BundleUtils
 ) : SandboxGroupInternal {
+
+    override val cpks = sandboxes.map(CpkSandbox::cpk)
+
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
         val klass = sandboxes.mapNotNull { sandbox ->
             try {
