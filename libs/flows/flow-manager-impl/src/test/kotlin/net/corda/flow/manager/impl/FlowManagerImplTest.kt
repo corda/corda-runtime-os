@@ -1,8 +1,8 @@
 package net.corda.flow.manager.impl
 
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
 import net.corda.data.flow.Checkpoint
-import net.corda.data.flow.FlowError
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.RPCFlowResult
 import net.corda.data.flow.StateMachineState
@@ -51,7 +51,7 @@ class FlowManagerImplTest {
             flowName,
             "Pass!",
             SecureHash("", ByteBuffer.allocate(1)),
-            FlowError()
+            ExceptionEnvelope()
         )
         val stateMachineState = StateMachineState(
             "",

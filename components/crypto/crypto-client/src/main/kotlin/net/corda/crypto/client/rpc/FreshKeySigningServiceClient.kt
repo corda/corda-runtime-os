@@ -134,9 +134,9 @@ class FreshKeySigningServiceClient(
     )
 
     @Suppress("ThrowsCount", "UNCHECKED_CAST", "ComplexMethod", "TooGenericExceptionCaught")
-    private fun <TRESP> WireFreshKeysRequest.executeWithTimeoutRetry(
-        respClazz: Class<TRESP>
-    ): TRESP {
+    private fun <RESPONSE> WireFreshKeysRequest.executeWithTimeoutRetry(
+        respClazz: Class<RESPONSE>
+    ): RESPONSE {
         var retry = clientRetries
         while (true) {
             try {
@@ -152,7 +152,7 @@ class FreshKeySigningServiceClient(
                             "received ${response.response::class.java.name} with ${response.context.memberId} member"
                 }
                 logger.debug("Received response {} for member {}", respClazz.name, context.memberId)
-                return response.response as TRESP
+                return response.response as RESPONSE
             } catch (e: TimeoutException) {
                 retry--
                 if (retry < 0) {

@@ -237,11 +237,11 @@ class KafkaSubscriptionFactory @Activate constructor(
         return KafkaRandomAccessSubscriptionImpl(config, consumerBuilder, keyClass, valueClass)
     }
 
-    override fun <TREQ : Any, TRESP : Any> createRPCSubscription(
-        rpcConfig: RPCConfig<TREQ, TRESP>,
+    override fun <REQUEST : Any, RESPONSE : Any> createRPCSubscription(
+        rpcConfig: RPCConfig<REQUEST, RESPONSE>,
         nodeConfig: Config,
-        responderProcessor: RPCResponderProcessor<TREQ, TRESP>
-    ): RPCSubscription<TREQ, TRESP> {
+        responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
+    ): RPCSubscription<REQUEST, RESPONSE> {
 
         val rpcConfiguration = ConfigFactory.empty()
             .withValue(GROUP, ConfigValueFactory.fromAnyRef(rpcConfig.groupName))
@@ -256,7 +256,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         )
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<String, RPCRequest>(avroSchemaRegistry)
 
-        val cordaAvroSerializer = CordaAvroSerializer<TRESP>(avroSchemaRegistry)
+        val cordaAvroSerializer = CordaAvroSerializer<RESPONSE>(avroSchemaRegistry)
         val cordaAvroDeserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, rpcConfig.requestType)
         val publisherFactory = CordaKafkaPublisherFactory(avroSchemaRegistry)
         val publisher = publisherFactory.createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig)

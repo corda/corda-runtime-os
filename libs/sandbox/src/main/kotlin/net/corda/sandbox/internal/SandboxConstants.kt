@@ -4,9 +4,6 @@ package net.corda.sandbox.internal
 
 import net.corda.v5.crypto.SecureHash
 
-internal const val FELIX_FRAMEWORK_BUNDLE = "org.apache.felix.framework"
-internal const val FELIX_SCR_BUNDLE = "org.apache.felix.scr"
-
 // The index of the class tag identifier and version in all serialised class tags.
 internal const val CLASS_TAG_IDENTIFIER_IDX = 0
 internal const val CLASS_TAG_VERSION_IDX = 1
@@ -25,5 +22,3 @@ internal object ClassTagV1 {
     internal const val PLACEHOLDER_CORDAPP_BUNDLE_NAME = "PUBLIC_BUNDLE"
     internal val PLACEHOLDER_HASH = SecureHash.create("SHA-256:0000000000000000")
 }
-
-internal const val HASH_ALGORITHM = "SHA-256"

@@ -4,6 +4,7 @@ import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.crypto.service.persistence.KafkaInfrastructure.Companion.MNG_CACHE_TOPIC_NAME
+import net.corda.crypto.service.persistence.KafkaInfrastructure.Companion.wait
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.crypto.sha256Bytes
 import org.junit.jupiter.api.AfterEach
@@ -83,7 +84,7 @@ class KafkaSigningKeysPersistenceSnapshotTests {
     @Test
     @Timeout(5)
     fun `Should load snapshot and get signing cache value`() {
-        val cachedRecord1 = signingPersistence.get(original1.publicKeyHash)
+        val cachedRecord1 =  signingPersistence.wait(original1.publicKeyHash)
         assertNotNull(cachedRecord1)
         assertEquals(original1.publicKeyHash, cachedRecord1.publicKeyHash)
         assertEquals(original1.alias, cachedRecord1.alias)

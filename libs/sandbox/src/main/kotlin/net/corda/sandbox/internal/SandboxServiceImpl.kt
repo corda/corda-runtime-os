@@ -32,14 +32,14 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.streams.asSequence
 
 /** An implementation of [SandboxCreationService] and [SandboxContextService]. */
-@Component(service = [SandboxCreationService::class, SandboxContextService::class, SandboxServiceInternal::class])
+@Component(service = [SandboxCreationService::class, SandboxContextService::class])
 @Suppress("TooManyFunctions")
 internal class SandboxServiceImpl @Activate constructor(
     @Reference
     private val installService: InstallService,
     @Reference
     private val bundleUtils: BundleUtils
-) : SandboxServiceInternal, SingletonSerializeAsToken {
+) : SandboxCreationService, SandboxContextService, SingletonSerializeAsToken {
     private val serviceComponentRuntimeBundleId = bundleUtils.getServiceRuntimeComponentBundle()?.bundleId
         ?: throw SandboxException(
             "The sandbox service cannot run without the Service Component Runtime bundle installed."
@@ -172,6 +172,8 @@ internal class SandboxServiceImpl @Activate constructor(
         securityDomain: String,
         startBundles: Boolean
     ): SandboxGroup {
+        if (securityDomain.contains('/'))
+            throw SandboxException("Security domain cannot contain a '/' character.")
 
         val cpks = cpkFileHashes.mapTo(LinkedHashSet()) { cpkFileHash ->
             installService.getCpk(cpkFileHash)
@@ -215,7 +217,7 @@ internal class SandboxServiceImpl @Activate constructor(
             }
 
             // Each sandbox requires visibility of the sandboxes of the other CPKs and of the public sandboxes.
-            newSandbox.grantVisibility(newSandboxes + publicSandboxes)
+            newSandbox.grantVisibility(newSandboxes - newSandbox + publicSandboxes)
         }
 
         // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are
@@ -253,10 +255,16 @@ internal class SandboxServiceImpl @Activate constructor(
         securityDomain: String
     ): Bundle {
 
+        val sandboxLocation = SandboxLocation(securityDomain, sandboxId, bundleSource)
         val bundle = try {
-            val sandboxLocation = SandboxLocation(securityDomain, sandboxId, bundleSource)
             bundleUtils.installAsBundle(sandboxLocation.toString(), inputStream)
         } catch (e: BundleException) {
+            if (bundleUtils.allBundles.none { bundle -> bundle.symbolicName == SANDBOX_HOOKS_BUNDLE }) {
+                logger.warn(
+                    "The \"$SANDBOX_HOOKS_BUNDLE\" bundle is not installed. This can cause failures when installing " +
+                            "sandbox bundles."
+                )
+            }
             throw SandboxException("Could not install $bundleSource as a bundle in sandbox $sandboxId.", e)
         }
 

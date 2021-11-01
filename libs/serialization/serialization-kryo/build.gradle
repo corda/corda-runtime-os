@@ -53,8 +53,9 @@ dependencies {
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent"
 
-    integrationTestImplementation project(":libs:install")
+    integrationTestImplementation project(":components:install:install-legacy")
     integrationTestImplementation project("src:integrationTest:cpks:serializable-cpk-one")
+    integrationTestImplementation "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
@@ -67,6 +68,7 @@ dependencies {
     integrationTestImplementation project(":libs:configuration:configuration-read-impl")
     integrationTestImplementation project(":libs:messaging:inmemory-messaging-impl")
     integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(":libs:sandbox-hooks")
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

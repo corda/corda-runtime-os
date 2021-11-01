@@ -19,7 +19,8 @@ interface SandboxCreationService {
      *
      * Duplicate [cpkFileHashes] are discarded (i.e. only one sandbox will be created per unique hash).
      *
-     * A [SandboxException] is thrown if the sandbox creation fails.
+     * A [SandboxException] is thrown if the [securityDomain] contains a '/' character, or if the sandbox creation
+     * fails.
      */
     fun createSandboxGroup(
         cpkFileHashes: Iterable<SecureHash>,

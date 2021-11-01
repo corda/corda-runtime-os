@@ -61,7 +61,7 @@ class SandboxServiceImplTests {
      *
      * @param cpksAndContents Used to set up the mock [InstallService] and [BundleUtils] that back the sandbox service
      */
-    private fun createSandboxService(cpksAndContents: Collection<CpkAndContents>): SandboxServiceInternal {
+    private fun createSandboxService(cpksAndContents: Collection<CpkAndContents>): SandboxServiceImpl {
         return SandboxServiceImpl(mockInstallService(cpksAndContents), mockBundleUtils(cpksAndContents))
     }
 
@@ -626,6 +626,14 @@ class SandboxServiceImplTests {
         sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash), securityDomain = customSecurityDomain)
         startedBundles.forEach { bundle ->
             assertTrue(bundle.location.startsWith(customSecurityDomain))
+        }
+    }
+
+    @Test
+    fun `a sandbox's security domain cannot contain a forward slash`() {
+        val customSecurityDomain = "custom/sec_domain"
+        assertThrows<SandboxException> {
+            sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash), securityDomain = customSecurityDomain)
         }
     }
 }

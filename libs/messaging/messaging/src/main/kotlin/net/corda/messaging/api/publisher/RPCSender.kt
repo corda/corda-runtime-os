@@ -5,7 +5,7 @@ import java.util.concurrent.CompletableFuture
 
 
 /**
- * Interface for posting requests of type [TREQ] and receiving responses of type [TRESP]
+ * Interface for posting requests of type [REQUEST] and receiving responses of type [RESPONSE]
  * RPCSender instances can be created via the [PublisherFactory].
  *
  * The sender contains a subscription for reading back responses. Depending on the response status, the future will be
@@ -14,12 +14,12 @@ import java.util.concurrent.CompletableFuture
  * CancellationException if it was cancelled when calling get()/getOrThrow() on future
  *
  */
-interface RPCSender<TREQ, TRESP>: Lifecycle {
+interface RPCSender<REQUEST, RESPONSE> : Lifecycle {
 
     /**
      * Send request via RPC
-     * @param req of type [TREQ]
-     * @return completable future of type [TRESP]
+     * @param req of type [REQUEST]
+     * @return completable future of type [RESPONSE]
      *
      * The future represents the promise of a response and is completed when said response is received
      * It may error if the response fails or if the request times out
@@ -29,6 +29,6 @@ interface RPCSender<TREQ, TRESP>: Lifecycle {
      *
      * The client is responsible for retries in the event of a failure or timeout
      */
-    fun sendRequest(req: TREQ): CompletableFuture<TRESP>
+    fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE>
 
 }
