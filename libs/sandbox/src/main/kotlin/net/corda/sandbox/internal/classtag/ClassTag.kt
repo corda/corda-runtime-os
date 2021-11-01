@@ -2,9 +2,15 @@ package net.corda.sandbox.internal.classtag
 
 import net.corda.v5.crypto.SecureHash
 
-// TODO - Introduce third class type.
 /** Represents the source of the class in a [ClassTag]. */
-enum class ClassType { CpkSandboxClass, PublicSandboxClass }
+enum class ClassType {
+    /** A class loaded from a CPK sandbox. */
+    CpkSandboxClass,
+    /** A class loaded from a public sandbox. */
+    PublicSandboxClass,
+    /** A class not loaded from a bundle. */
+    NonBundleClass
+}
 
 /**
  * Identifies a sandboxed class during serialisation and deserialisation.
@@ -13,7 +19,7 @@ enum class ClassType { CpkSandboxClass, PublicSandboxClass }
  * @property classType Indicates whether the class is a CPK sandbox class or a public sandbox class.
  * @property classBundleName The symbolic name of the bundle that the class was loaded from.
  */
-sealed class ClassTag {
+internal sealed class ClassTag {
     abstract val version: Int
     abstract val classType: ClassType
     abstract val classBundleName: String
@@ -32,7 +38,7 @@ sealed class ClassTag {
  *
  * @property cpkFileHash The hash of the CPK the class was loaded from.
  */
-abstract class StaticTag : ClassTag() {
+internal abstract class StaticTag : ClassTag() {
     abstract val cpkFileHash: SecureHash
 }
 
@@ -42,7 +48,7 @@ abstract class StaticTag : ClassTag() {
  * @property mainBundleName The symbolic name of the main bundle of the CPK that the class if from.
  * @property cpkSignerSummaryHash A summary hash of the hashes of the public keys that signed the CPK the class is from.
  */
-abstract class EvolvableTag : ClassTag() {
+internal abstract class EvolvableTag : ClassTag() {
     abstract val mainBundleName: String
     abstract val cpkSignerSummaryHash: SecureHash?
 }

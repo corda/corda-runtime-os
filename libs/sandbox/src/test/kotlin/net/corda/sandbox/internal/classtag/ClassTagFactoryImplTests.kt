@@ -1,15 +1,15 @@
 package net.corda.sandbox.internal.classtag
 
 import net.corda.sandbox.SandboxException
+import net.corda.sandbox.internal.CLASS_TAG_CLASS_TYPE_IDX
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
 import net.corda.sandbox.internal.CLASS_TAG_IDENTIFIER_IDX
 import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
 import net.corda.sandbox.internal.CPK_BUNDLE_NAME
 import net.corda.sandbox.internal.ClassTagV1
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_HASH
-import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_MAIN_BUNDLE_NAME
+import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_STRING
 import net.corda.sandbox.internal.MAIN_BUNDLE_NAME
-import net.corda.sandbox.internal.CLASS_TAG_CLASS_TYPE_IDX
 import net.corda.sandbox.internal.mockBundle
 import net.corda.sandbox.internal.mockCpk
 import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
@@ -61,7 +61,7 @@ class ClassTagFactoryImplTests {
 
     @Test
     fun `can serialise and deserialise a static class tag for a CPK class`() {
-        val serialisedTag = classTagFactory.createSerialisedStaticTag(mockBundle, mockSandbox)
+        val serialisedTag = classTagFactory.createSerialisedTag(true, mockBundle, mockSandbox)
         val classTag = classTagFactory.deserialise(serialisedTag)
 
         val expectedClassTag =
@@ -71,7 +71,7 @@ class ClassTagFactoryImplTests {
 
     @Test
     fun `can serialise and deserialise a static class tag for a public class`() {
-        val serialisedTag = classTagFactory.createSerialisedStaticTag(mockBundle, null)
+        val serialisedTag = classTagFactory.createSerialisedTag(true, mockBundle, null)
         val classTag = classTagFactory.deserialise(serialisedTag)
 
         val expectedClassTag = StaticTagImplV1(ClassType.PublicSandboxClass, mockBundle.symbolicName, PLACEHOLDER_HASH)
@@ -80,7 +80,7 @@ class ClassTagFactoryImplTests {
 
     @Test
     fun `can serialise and deserialise an evolvable class tag for a CPK class`() {
-        val serialisedTag = classTagFactory.createSerialisedEvolvableTag(mockBundle, mockSandbox)
+        val serialisedTag = classTagFactory.createSerialisedTag(false, mockBundle, mockSandbox)
         val classTag = classTagFactory.deserialise(serialisedTag)
 
         val expectedClassTag = EvolvableTagImplV1(
@@ -94,13 +94,13 @@ class ClassTagFactoryImplTests {
 
     @Test
     fun `can serialise and deserialise an evolvable class tag for a public class`() {
-        val serialisedTag = classTagFactory.createSerialisedEvolvableTag(mockBundle, null)
+        val serialisedTag = classTagFactory.createSerialisedTag(false, mockBundle, null)
         val classTag = classTagFactory.deserialise(serialisedTag)
 
         val expectedClassTag = EvolvableTagImplV1(
             ClassType.PublicSandboxClass,
             mockBundle.symbolicName,
-            PLACEHOLDER_MAIN_BUNDLE_NAME,
+            PLACEHOLDER_STRING,
             PLACEHOLDER_HASH
         )
         assertEquals(expectedClassTag, classTag)
@@ -109,7 +109,7 @@ class ClassTagFactoryImplTests {
     @Test
     fun `throws if asked to create a class tag for a bundle with no symbolic name`() {
         assertThrows<SandboxException> {
-            classTagFactory.createSerialisedEvolvableTag(mock(), null)
+            classTagFactory.createSerialisedTag(false, mock(), null)
         }
     }
 

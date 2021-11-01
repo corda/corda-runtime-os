@@ -4,7 +4,7 @@ import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.ClassTagV1.EVOLVABLE_IDENTIFIER
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_HASH
-import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_MAIN_BUNDLE_NAME
+import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_STRING
 import net.corda.sandbox.internal.ClassTagV1.STATIC_IDENTIFIER
 import net.corda.sandbox.internal.classtag.ClassTag
 import net.corda.sandbox.internal.classtag.ClassTagFactory
@@ -187,7 +187,7 @@ private class EvolvableTagImpl(
 /** A dummy [ClassTagFactory] implementation that returns pre-defined tags. */
 private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
     // Used for public classes, where the main bundle name, CPK file hash and CPK signer summary hash are ignored.
-    val dummyMainBundleName = PLACEHOLDER_MAIN_BUNDLE_NAME
+    val dummyMainBundleName = PLACEHOLDER_STRING
     val dummyHash = PLACEHOLDER_HASH
     val staticIdentifier = STATIC_IDENTIFIER
     val evolvableIdentifier = EVOLVABLE_IDENTIFIER
@@ -221,15 +221,14 @@ private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
     private val invalidSignersEvolvableTag =
         EvolvableTagImpl(ClassType.CpkSandboxClass, CPK_BUNDLE_NAME, MAIN_BUNDLE_NAME, randomSecureHash())
 
-    override fun createSerialisedStaticTag(
-        bundle: Bundle,
+    override fun createSerialisedTag(
+        isStaticTag: Boolean,
+        bundle: Bundle?,
         cpkSandbox: CpkSandbox?
-    ) = "$staticIdentifier;$bundle;$cpkSandbox"
-
-    override fun createSerialisedEvolvableTag(
-        bundle: Bundle,
-        cpkSandbox: CpkSandbox?
-    ) = "$evolvableIdentifier;$bundle;$cpkSandbox"
+    ): String {
+        val tagIdentifier = if (isStaticTag) staticIdentifier else evolvableIdentifier
+        return "$tagIdentifier;$bundle;$cpkSandbox"
+    }
 
     override fun deserialise(serialisedClassTag: String): ClassTag {
         return when (serialisedClassTag) {

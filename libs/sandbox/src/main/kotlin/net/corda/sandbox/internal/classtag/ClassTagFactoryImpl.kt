@@ -5,43 +5,46 @@ import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
 import net.corda.sandbox.internal.CLASS_TAG_IDENTIFIER_IDX
 import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
 import net.corda.sandbox.internal.ClassTagV1
+import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_HASH
+import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_STRING
 import net.corda.sandbox.internal.sandbox.CpkSandbox
 import org.osgi.framework.Bundle
 
 /** An implementation of [ClassTagFactory]. */
 internal class ClassTagFactoryImpl : ClassTagFactory {
-    override fun createSerialisedStaticTag(bundle: Bundle, cpkSandbox: CpkSandbox?): String {
-        val bundleSymbolicName = bundle.symbolicName ?: throw SandboxException(
+    override fun createSerialisedTag(isStaticTag: Boolean, bundle: Bundle?, cpkSandbox: CpkSandbox?): String {
+        if (bundle == null) {
+            return if (isStaticTag) {
+                StaticTagImplV1(ClassType.NonBundleClass, PLACEHOLDER_STRING, PLACEHOLDER_HASH)
+            } else {
+                EvolvableTagImplV1(
+                    ClassType.NonBundleClass, PLACEHOLDER_STRING, PLACEHOLDER_STRING, PLACEHOLDER_HASH
+                )
+            }.serialise()
+        }
+
+        val bundleName = bundle.symbolicName ?: throw SandboxException(
             "Bundle at ${bundle.location} does not have a symbolic name, preventing serialisation."
         )
 
         return if (cpkSandbox == null) {
-            StaticTagImplV1(ClassType.PublicSandboxClass, bundleSymbolicName, ClassTagV1.PLACEHOLDER_HASH)
+            if (isStaticTag) {
+                StaticTagImplV1(ClassType.PublicSandboxClass, bundleName, PLACEHOLDER_HASH)
+            } else {
+                EvolvableTagImplV1(
+                    ClassType.PublicSandboxClass, bundleName, PLACEHOLDER_STRING, PLACEHOLDER_HASH
+                )
+            }
         } else {
-            StaticTagImplV1(ClassType.CpkSandboxClass, bundleSymbolicName, cpkSandbox.cpk.metadata.hash)
-        }.serialise()
-    }
-
-    override fun createSerialisedEvolvableTag(bundle: Bundle, cpkSandbox: CpkSandbox?): String {
-        val bundleSymbolicName = bundle.symbolicName ?: throw SandboxException(
-            "Bundle at ${bundle.location} does not have a symbolic name, preventing serialisation."
-        )
-
-        return if (cpkSandbox == null) {
-            EvolvableTagImplV1(
-                ClassType.PublicSandboxClass,
-                bundleSymbolicName,
-                ClassTagV1.PLACEHOLDER_MAIN_BUNDLE_NAME,
-                ClassTagV1.PLACEHOLDER_HASH
-            )
-
-        } else {
-            EvolvableTagImplV1(
-                ClassType.CpkSandboxClass,
-                bundleSymbolicName,
-                cpkSandbox.mainBundle.symbolicName,
-                cpkSandbox.cpk.metadata.id.signerSummaryHash
-            )
+            if (isStaticTag) {
+                StaticTagImplV1(ClassType.CpkSandboxClass, bundleName, cpkSandbox.cpk.metadata.hash)
+            } else {
+                val mainBundleName = cpkSandbox.mainBundle.symbolicName
+                val signerSummaryHash = cpkSandbox.cpk.metadata.id.signerSummaryHash
+                EvolvableTagImplV1(
+                    ClassType.CpkSandboxClass, bundleName, mainBundleName, signerSummaryHash
+                )
+            }
         }.serialise()
     }
 

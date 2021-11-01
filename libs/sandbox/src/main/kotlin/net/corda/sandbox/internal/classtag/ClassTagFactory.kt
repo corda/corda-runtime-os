@@ -6,24 +6,15 @@ import org.osgi.framework.Bundle
 /** Creates, serialises and deserialises [ClassTag] objects. */
 internal interface ClassTagFactory {
     /**
-     * Creates and serialises a [StaticTag].
+     * Creates and serialises a [ClassTag].
      *
      * Throws `SandboxException` if the [bundle] does not have a symbolic name.
      *
-     * @param bundle The bundle the class is loaded from.
+     * @param isStaticTag Indicates whether to create a [StaticTag] or an [EvolvableTag]
+     * @param bundle The bundle the class is loaded from, or null is the class is not loaded from a bundle.
      * @param cpkSandbox The CPK sandbox the class is loaded from, or null if the class is not from a CPK sandbox.
      */
-    fun createSerialisedStaticTag(bundle: Bundle, cpkSandbox: CpkSandbox?): String
-
-    /**
-     * Creates and serialises an [EvolvableTag].
-     *
-     * Throws `SandboxException` if the [bundle] does not have a symbolic name.
-     *
-     * @param bundle The bundle the class is loaded from.
-     * @param cpkSandbox The CPK sandbox the class is loaded from, or null if the class is not from a CPK sandbox.
-     */
-    fun createSerialisedEvolvableTag(bundle: Bundle, cpkSandbox: CpkSandbox?): String
+    fun createSerialisedTag(isStaticTag: Boolean, bundle: Bundle?, cpkSandbox: CpkSandbox?): String
 
     /**
      * Deserialises a [ClassTag].

@@ -3,9 +3,9 @@ package net.corda.sandbox.internal
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.internal.classtag.ClassTagFactory
+import net.corda.sandbox.internal.classtag.ClassType
 import net.corda.sandbox.internal.classtag.EvolvableTag
 import net.corda.sandbox.internal.classtag.StaticTag
-import net.corda.sandbox.internal.classtag.ClassType
 import net.corda.sandbox.internal.sandbox.CpkSandbox
 import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
@@ -24,6 +24,7 @@ internal class SandboxGroupImpl(
     private val classTagFactory: ClassTagFactory,
     private val bundleUtils: BundleUtils
 ) : SandboxGroupInternal {
+
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
         val klass = cpkSandboxes.mapNotNull { sandbox ->
             try {
@@ -50,6 +51,16 @@ internal class SandboxGroupImpl(
     override fun getClass(className: String, serialisedClassTag: String): Class<*> {
         val classTag = classTagFactory.deserialise(serialisedClassTag)
 
+        if (classTag.classType == ClassType.NonBundleClass) {
+            return try {
+                ClassLoader.getSystemClassLoader().loadClass(className)
+            } catch (e: ClassNotFoundException) {
+                throw SandboxException(
+                    "Class $className was not from a bundle, and could not be found in the system classloader."
+                )
+            }
+        }
+
         if (classTag.classType == ClassType.CpkSandboxClass) {
             val sandbox = when (classTag) {
                 is StaticTag -> cpkSandboxes.find { sandbox -> sandbox.cpk.metadata.hash == classTag.cpkFileHash }
@@ -58,7 +69,7 @@ internal class SandboxGroupImpl(
                             && sandbox.mainBundle.symbolicName == classTag.mainBundleName
                 }
             } ?: throw SandboxException(
-                "Class tag $className did not match any sandbox in the sandbox group or a public sandboxe."
+                "Class tag $serialisedClassTag did not match any sandbox in the sandbox group."
             )
             return sandbox.loadClass(className, classTag.classBundleName) ?: throw SandboxException(
                 "Class $className could not be loaded from bundle ${classTag.classBundleName} in sandbox ${sandbox.id}."
@@ -87,26 +98,18 @@ internal class SandboxGroupImpl(
      */
     private fun getClassTag(klass: Class<*>, isStaticTag: Boolean): String {
         val bundle = bundleUtils.getBundle(klass)
-            ?: throw SandboxException("Class ${klass.name} was not loaded from any bundle.")
+            ?: return classTagFactory.createSerialisedTag(isStaticTag, null, null)
+
 
         val publicSandbox = publicSandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
-
         if (publicSandbox != null) {
-            return if (isStaticTag) {
-                classTagFactory.createSerialisedStaticTag(bundle, null)
-            } else {
-                classTagFactory.createSerialisedEvolvableTag(bundle, null)
-            }
+            return classTagFactory.createSerialisedTag(isStaticTag, bundle, null)
         }
 
         val sandbox = cpkSandboxes.find { sandbox -> sandbox.containsBundle(bundle) } ?: throw SandboxException(
             "Bundle ${bundle.symbolicName} was not found in the sandbox group or in a public sandbox."
         )
 
-        return if (isStaticTag) {
-            classTagFactory.createSerialisedStaticTag(bundle, sandbox)
-        } else {
-            classTagFactory.createSerialisedEvolvableTag(bundle, sandbox)
-        }
+        return classTagFactory.createSerialisedTag(isStaticTag, bundle, sandbox)
     }
 }
