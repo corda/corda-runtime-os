@@ -19,6 +19,7 @@ import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.config.mngCache
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactoryProvider
+import net.corda.crypto.component.config.MemberConfigReader
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -39,7 +40,10 @@ import org.slf4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CryptoFactory::class])
+@Suppress("LongParameterList")
 class CryptoFactoryImpl @Activate constructor(
+    @Reference(service = MemberConfigReader::class)
+    private val memberConfigReader: MemberConfigReader,
     @Reference(
         service = KeyValuePersistenceFactoryProvider::class,
         cardinality = ReferenceCardinality.AT_LEAST_ONE,
@@ -60,6 +64,7 @@ class CryptoFactoryImpl @Activate constructor(
     }
 
     private var impl = Impl(
+        memberConfigReader,
         persistenceProviders,
         cipherSuiteFactory,
         cryptoServiceProviders,
@@ -84,6 +89,7 @@ class CryptoFactoryImpl @Activate constructor(
         logger.info("Received new configuration...")
         val currentImpl = impl
         impl = Impl(
+            memberConfigReader,
             persistenceProviders,
             cipherSuiteFactory,
             cryptoServiceProviders,
@@ -102,6 +108,7 @@ class CryptoFactoryImpl @Activate constructor(
         impl.getSigningService(memberId, category)
 
     private class Impl(
+        private val memberConfigReader: MemberConfigReader,
         private val persistenceProviders: List<KeyValuePersistenceFactoryProvider>,
         private val cipherSuiteFactory: CipherSuiteFactory,
         private val cryptoServiceProviders: List<CryptoServiceProvider<*>>,
@@ -171,7 +178,7 @@ class CryptoFactoryImpl @Activate constructor(
         }
 
         private fun getServiceConfig(memberId: String, category: String): CryptoServiceConfig =
-            libraryConfig.getMember(memberId).getCategory(category)
+            memberConfigReader.get(memberId).getCategory(category)
 
         @Suppress("UNCHECKED_CAST", "TooGenericExceptionCaught")
         private fun getCryptoService(memberId: String, category: String, config: CryptoServiceConfig): CryptoService {

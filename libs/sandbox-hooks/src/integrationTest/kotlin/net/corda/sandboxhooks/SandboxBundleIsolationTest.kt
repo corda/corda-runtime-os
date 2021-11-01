@@ -1,6 +1,5 @@
 package net.corda.sandboxhooks
 
-import net.corda.sandbox.Sandbox
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -14,34 +13,30 @@ class SandboxBundleIsolationTest {
     companion object {
         @InjectService(timeout = 1000)
         lateinit var sandboxLoader: SandboxLoader
-
-        /**
-         * Indicates whether at least one of the provided bundles has the given [symbolicName] and is contained in the
-         * [sandbox], and that there is no bundle out of the provided bundles that has the given [symbolicName] but
-         * that is not contained in the [sandbox].
-         */
-        fun bundlesWithGivenNameAreFromSandbox(bundles: List<Bundle>, symbolicName: String, sandbox: Sandbox): Boolean {
-            return bundles.any { bundle ->
-                bundle.symbolicName == symbolicName && sandboxLoader.containsBundle(sandbox, bundle)
-            } && bundles.none { bundle ->
-                bundle.symbolicName == symbolicName && !sandboxLoader.containsBundle(sandbox, bundle)
-            }
-        }
     }
 
     @Test
-    fun `sandbox can see its own bundles and main bundles in the same sandbox group only`() {
+    fun `sandbox can see bundles in its own sandbox group`() {
+        val thisGroup = sandboxLoader.group1
+        // This flow returns all bundles visible to this bundle.
+        val bundles = runFlow<List<Bundle>>(thisGroup, BUNDLES_FLOW)
+
+        val expectedBundleNames = setOf(
+            FRAMEWORK_BUNDLE_NAME, SCR_BUNDLE_NAME, CPK_ONE_BUNDLE_NAME, CPK_TWO_BUNDLE_NAME, CPK_LIBRARY_BUNDLE_NAME
+        )
+
+        assertTrue(bundles.any { bundle -> sandboxGroupContainsBundle(thisGroup, bundle) })
+        assertTrue(bundles.map(Bundle::getSymbolicName).containsAll(expectedBundleNames))
+    }
+
+    @Test
+    fun `sandbox cannot see bundles in other sandbox groups`() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
 
-        // This flow returns all bundle events visible to this bundle.
-        val bundles = sandboxLoader.runFlow<List<Bundle>>(BUNDLES_FLOW, thisGroup)
+        // This flow returns all bundles visible to this bundle.
+        val bundles = runFlow<List<Bundle>>(thisGroup, BUNDLES_FLOW)
 
-        assertTrue(bundles.any { bundle -> sandboxLoader.containsBundle(thisGroup, bundle) })
-        assertTrue(bundles.none { bundle -> sandboxLoader.containsBundle(otherGroup, bundle) })
-
-        assertTrue(bundlesWithGivenNameAreFromSandbox(bundles, sandboxLoader.cpk1.metadata.id.name, sandboxLoader.sandbox1))
-        assertTrue(bundlesWithGivenNameAreFromSandbox(bundles, sandboxLoader.cpk2.metadata.id.name, sandboxLoader.sandbox2))
-        assertTrue(bundlesWithGivenNameAreFromSandbox(bundles, LIBRARY_BUNDLE_SYMBOLIC_NAME, sandboxLoader.sandbox1))
+        assertTrue(bundles.none { bundle -> sandboxGroupContainsBundle(otherGroup, bundle) })
     }
 }

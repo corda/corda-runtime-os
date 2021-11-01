@@ -1,6 +1,6 @@
 package net.corda.sandbox.internal.classtag
 
-import net.corda.sandbox.Sandbox
+import net.corda.sandbox.internal.sandbox.Sandbox
 import org.osgi.framework.Bundle
 
 /** Creates, serialises and deserialises [ClassTag] objects. */

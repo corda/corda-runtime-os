@@ -100,7 +100,7 @@ class FlowManagerImpl @Activate constructor(
     @Suppress("SpreadOperator")
     private fun getOrCreate(identity: HoldingIdentity, flow: FlowMetadata, args: List<Any?>): Flow<*> {
         val flowClazz: Class<Flow<*>> =
-            uncheckedCast(virtualNodeCache.getSandboxGroupFor(identity, flow).loadClassFromCordappBundle(flow.name, Flow::class.java))
+            uncheckedCast(virtualNodeCache.getSandboxGroupFor(identity, flow).loadClassFromMainBundles(flow.name, Flow::class.java))
         val constructor = flowClazz.getDeclaredConstructor(*args.map { it!!::class.java }.toTypedArray())
         return constructor.newInstance(*args.toTypedArray())
     }
