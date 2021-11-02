@@ -10,6 +10,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import java.util.concurrent.ConcurrentHashMap
 
@@ -19,28 +20,9 @@ import java.util.concurrent.ConcurrentHashMap
 class ConfigBasedLinkManagerHostingMap(
     val configReadService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory
-): LinkManagerHostingMap, Lifecycle {
+): LinkManagerHostingMap {
 
-    override val isRunning: Boolean
-        get() = dominoTile.isRunning
-
-    override fun start() {
-        if (!isRunning) {
-            dominoTile.start()
-        }
-    }
-
-    override fun stop() {
-        if (isRunning) {
-            dominoTile.stop()
-        }
-    }
-
-    private val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, configurationChangeHandler = HostingMapConfigurationChangeHandler())
-
-    override fun getDominoTile(): DominoTile {
-        return dominoTile
-    }
+    override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, configurationChangeHandler = HostingMapConfigurationChangeHandler())
 
     private val locallyHostedIdentities = ConcurrentHashMap.newKeySet<LinkManagerNetworkMap.HoldingIdentity>()
 
@@ -63,6 +45,7 @@ class ConfigBasedLinkManagerHostingMap(
             val identitiesToRemove = oldIdentities - newConfiguration
             locallyHostedIdentities.removeAll(identitiesToRemove)
             locallyHostedIdentities.addAll(identitiesToAdd)
+            dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
         }
     }
 

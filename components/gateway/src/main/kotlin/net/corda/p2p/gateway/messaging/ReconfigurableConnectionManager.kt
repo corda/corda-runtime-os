@@ -1,10 +1,10 @@
 package net.corda.p2p.gateway.messaging
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.Gateway.Companion.CONFIG_KEY
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
@@ -17,14 +17,11 @@ class ReconfigurableConnectionManager(
     val configurationReaderService: ConfigurationReadService,
     listener: HttpEventListener,
     private val managerFactory: (SslConfiguration) -> ConnectionManager = { ConnectionManager(it, listener) }
-) : Lifecycle {
+) : LifecycleWithDominoTile {
     @Volatile
     private var manager: ConnectionManager? = null
 
-    val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, configurationChangeHandler = ConnectionManagerConfigChangeHandler())
-
-    override val isRunning: Boolean
-        get() = dominoTile.isRunning
+    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, configurationChangeHandler = ConnectionManagerConfigChangeHandler())
 
     companion object {
         private val logger = contextLogger()
@@ -52,8 +49,7 @@ class ReconfigurableConnectionManager(
             @Suppress("TooGenericExceptionCaught")
             try {
                 if (newConfiguration.sslConfig != oldConfiguration?.sslConfig) {
-                    logger.info("New SSL configuration, clients for ${this@ReconfigurableConnectionManager::class.java.simpleName} will be" +
-                        " reconnected")
+                    logger.info("New SSL configuration, clients for ${dominoTile.name} will be reconnected")
                     val newManager = managerFactory(newConfiguration.sslConfig)
                     resources.keep(newManager)
                     val oldManager = manager
@@ -65,17 +61,6 @@ class ReconfigurableConnectionManager(
             } catch (e: Throwable) {
                 this@ReconfigurableConnectionManager.dominoTile.configApplied(DominoTile.ConfigUpdateResult.Error(e))
             }
-        }
-    }
-    override fun start() {
-        if (!isRunning) {
-            dominoTile.start()
-        }
-    }
-
-    override fun stop() {
-        if (isRunning) {
-            dominoTile.stop()
         }
     }
 }

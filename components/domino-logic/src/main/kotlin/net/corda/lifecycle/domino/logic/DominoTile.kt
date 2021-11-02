@@ -49,7 +49,7 @@ class DominoTile(
         StoppedByParent
     }
 
-    private val name = LifecycleCoordinatorName(
+    val name = LifecycleCoordinatorName(
         instanceName,
         instancesIndex.compute(instanceName) { _, last ->
             if (last == null) {
@@ -74,6 +74,12 @@ class DominoTile(
 
     fun <T> withLifecycleLock(access: () -> T): T {
         return controlLock.read {
+            access.invoke()
+        }
+    }
+
+    fun <T> withLifecycleWriteLock(access: () -> T): T {
+        return controlLock.write {
             access.invoke()
         }
     }

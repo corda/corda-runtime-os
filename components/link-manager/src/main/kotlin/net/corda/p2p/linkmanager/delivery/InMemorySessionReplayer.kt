@@ -1,10 +1,13 @@
 package net.corda.p2p.linkmanager.delivery
 
+import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -25,8 +28,9 @@ class InMemorySessionReplayer(
     publisherFactory: PublisherFactory,
     configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
+    nodeConfiguration: Config,
     private val networkMap: LinkManagerNetworkMap,
-): Lifecycle {
+): LifecycleWithDominoTile {
 
     companion object {
         const val MESSAGE_REPLAYER_CLIENT_ID = "session-message-replayer-client"
@@ -34,34 +38,16 @@ class InMemorySessionReplayer(
 
     private var logger = LoggerFactory.getLogger(this::class.java.name)
 
-    private val config = PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, 1)
-    private val publisher = publisherFactory.createPublisher(config)
+    private val publisher = PublisherWithDominoLogic(publisherFactory, coordinatorFactory, MESSAGE_REPLAYER_CLIENT_ID, nodeConfiguration)
+
     private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService,
-        LinkManagerConfiguration.MESSAGE_REPLAY_PERIOD_KEY, ::replayMessage, setOf(networkMap.getDominoTile()))
+        LinkManagerConfiguration.MESSAGE_REPLAY_PERIOD_KEY, ::replayMessage, setOf(networkMap.dominoTile))
 
-    val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::startResources, setOf(replayScheduler.dominoTile))
-
-    private fun startResources(resources: ResourcesHolder) {
-        publisher.start()
-        resources.keep(publisher)
-        dominoTile.resourcesStarted(false)
-    }
-
-    override val isRunning: Boolean
-        get() = dominoTile.isRunning
-
-    override fun start() {
-        if (!isRunning) {
-            publisher.start()
-            replayScheduler.start()
-        }
-    }
-
-    override fun stop() {
-        if (isRunning) {
-            replayScheduler.stop()
-        }
-    }
+    override val dominoTile = DominoTile(
+        this::class.java.simpleName,
+        coordinatorFactory,
+        children = setOf(replayScheduler.dominoTile, publisher.dominoTile)
+    )
 
     data class SessionMessageReplay(
         val message: Any,

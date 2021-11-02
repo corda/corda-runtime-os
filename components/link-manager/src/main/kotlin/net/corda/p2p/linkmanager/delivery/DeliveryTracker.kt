@@ -1,10 +1,11 @@
 package net.corda.p2p.linkmanager.delivery
 
+import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -26,12 +27,18 @@ class DeliveryTracker(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configReadService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
+    private val nodeConfiguration: Config,
     private val subscriptionFactory: SubscriptionFactory,
     childrenUsedByProcessAuthenticatedMessage: Set<DominoTile>,
     processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>,
-    ): Lifecycle {
+    ): LifecycleWithDominoTile {
 
-    private val appMessageReplayer = AppMessageReplayer(coordinatorFactory, publisherFactory, processAuthenticatedMessage)
+    private val appMessageReplayer = AppMessageReplayer(
+        coordinatorFactory,
+        publisherFactory,
+        nodeConfiguration,
+        processAuthenticatedMessage
+    )
     private val replayScheduler = ReplayScheduler(
         coordinatorFactory,
         configReadService,
@@ -40,30 +47,16 @@ class DeliveryTracker(
         childrenUsedByProcessAuthenticatedMessage + appMessageReplayer.dominoTile
     )
 
-    val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources,
+    override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources,
         setOf(replayScheduler.dominoTile))
-
-    override val isRunning: Boolean
-        get() = dominoTile.isRunning
-
-    override fun start() {
-        if (!isRunning) {
-            dominoTile.start()
-        }
-    }
-
-    override fun stop() {
-        if (isRunning) {
-            dominoTile.stop()
-        }
-    }
 
     private fun createResources(resources: ResourcesHolder) {
         val messageTracker = MessageTracker(replayScheduler)
         val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("message-tracker-group", Schema.P2P_OUT_MARKERS, 1),
-            processor = messageTracker.processor,
-            stateAndEventListener = messageTracker.listener
+            messageTracker.processor,
+            nodeConfiguration,
+            messageTracker.listener
         )
         resources.keep(messageTrackerSubscription)
         dominoTile.resourcesStarted(false)
@@ -72,31 +65,17 @@ class DeliveryTracker(
     private class AppMessageReplayer(
         coordinatorFactory: LifecycleCoordinatorFactory,
         publisherFactory: PublisherFactory,
+        nodeConfiguration: Config,
         private val processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
-    ): Lifecycle {
+    ): LifecycleWithDominoTile {
 
         companion object {
             const val MESSAGE_REPLAYER_CLIENT_ID = "message-replayer-client"
         }
 
-        private val publisher = PublisherWithDominoLogic(publisherFactory, coordinatorFactory, MESSAGE_REPLAYER_CLIENT_ID)
+        private val publisher = PublisherWithDominoLogic(publisherFactory, coordinatorFactory, MESSAGE_REPLAYER_CLIENT_ID, nodeConfiguration)
 
-        val dominoTile = publisher.dominoTile
-
-        override val isRunning: Boolean
-            get() = dominoTile.isRunning
-
-        override fun start() {
-            if (!isRunning) {
-                dominoTile.start()
-            }
-        }
-
-        override fun stop() {
-            if (isRunning) {
-                dominoTile.stop()
-            }
-        }
+        override val dominoTile = publisher.dominoTile
 
         fun replayMessage(message: AuthenticatedMessageAndKey) {
             dominoTile.withLifecycleLock {

@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -20,10 +19,9 @@ import java.security.PublicKey
 import java.security.Signature
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
-import kotlin.concurrent.write
 
 class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-                        subscriptionFactory: SubscriptionFactory): LinkManagerCryptoService, Lifecycle {
+                        subscriptionFactory: SubscriptionFactory): LinkManagerCryptoService {
 
     companion object {
         val logger = contextLogger()
@@ -37,28 +35,9 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     private val rsaSignature = Signature.getInstance(RSA_SIGNATURE_ALGO)
     private val ecdsaSignature = Signature.getInstance(ECDSA_SIGNATURE_ALGO)
 
-    private val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
-
-    override fun getDominoTile(): DominoTile {
-        return dominoTile
-    }
+    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
 
     private val lock = ReentrantReadWriteLock()
-
-    override val isRunning: Boolean
-        get() = dominoTile.isRunning
-
-    override fun start() {
-        if (!isRunning) {
-            dominoTile.start()
-        }
-    }
-
-    override fun stop() {
-        if (isRunning) {
-            dominoTile.stop()
-        }
-    }
 
     private fun createResources(resources: ResourcesHolder) {
         subscription.start()

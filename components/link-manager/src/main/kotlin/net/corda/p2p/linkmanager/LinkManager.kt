@@ -1,16 +1,16 @@
 package net.corda.p2p.linkmanager
 
+import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.AuthenticatedMessageAck
@@ -51,9 +51,7 @@ import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.*
-import java.util.concurrent.locks.ReentrantLock
 import java.time.Instant
-import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
 class LinkManager(@Reference(service = SubscriptionFactory::class)
@@ -64,10 +62,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                   val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                   @Reference(service = ConfigurationReadService::class)
                   val configurationReaderService: ConfigurationReadService,
+                  private val nodeConfiguration: Config,
                   val linkManagerNetworkMap: LinkManagerNetworkMap,
                   private val linkManagerHostingMap: LinkManagerHostingMap,
                   private val linkManagerCryptoService: LinkManagerCryptoService,
-) : Lifecycle {
+) : LifecycleWithDominoTile {
 
     companion object {
         const val LINK_MANAGER_PUBLISHER_CLIENT_ID = "linkmanager"
@@ -81,7 +80,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     private val inboundAssignmentListener = InboundAssignmentListener { inboundDominoTile.resourcesStarted(false) }
 
-    private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory, lifecycleCoordinatorFactory)
+    private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory, lifecycleCoordinatorFactory, nodeConfiguration)
 
     private val sessionManager = SessionManagerImpl(
         linkManagerNetworkMap,
@@ -90,6 +89,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         publisherFactory,
         configurationReaderService,
         lifecycleCoordinatorFactory,
+        nodeConfiguration
     )
 
     private fun createInboundResources(resources: ResourcesHolder) {
@@ -119,8 +119,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             lifecycleCoordinatorFactory,
             configurationReaderService,
             publisherFactory,
+            nodeConfiguration,
             subscriptionFactory,
-            setOf(linkManagerNetworkMap.getDominoTile(), linkManagerCryptoService.getDominoTile(), sessionManager.dominoTile)
+            setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoService.dominoTile, sessionManager.dominoTile)
         ) { outboundMessageProcessor.processAuthenticatedMessage(it, true) }
         deliveryTracker.start()
         resources.keep(deliveryTracker)
@@ -128,31 +129,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         resources.keep(outboundMessageSubscription)
     }
 
-    private val commonChildren = setOf(linkManagerNetworkMap.getDominoTile(), linkManagerCryptoService.getDominoTile(),
-        linkManagerHostingMap.getDominoTile())
+    private val commonChildren = setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoService.dominoTile,
+        linkManagerHostingMap.dominoTile)
     private val inboundDominoTile = DominoTile("inbound", lifecycleCoordinatorFactory, ::createInboundResources, children = commonChildren)
     private val outboundDominoTile = DominoTile("outbound", lifecycleCoordinatorFactory, ::createOutboundResources,
         children = setOf(inboundDominoTile, messagesPendingSession.dominoTile) + commonChildren)
 
-    val dominoTile = DominoTile(
+    override val dominoTile = DominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         children = setOf(inboundDominoTile, outboundDominoTile))
-
-    override fun start() {
-        if (!isRunning) {
-            dominoTile.start()
-        }
-    }
-
-    override fun stop() {
-        if (isRunning) {
-            dominoTile.stop()
-        }
-    }
-
-    override val isRunning: Boolean
-        get() = dominoTile.isRunning
 
     class OutboundMessageProcessor(
         private val sessionManager: SessionManager,
@@ -417,26 +403,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     class PendingSessionMessageQueuesImpl(
         publisherFactory: PublisherFactory,
-        coordinatorFactory: LifecycleCoordinatorFactory
-    ): PendingSessionMessageQueues, Lifecycle {
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        nodeConfiguration: Config
+    ): PendingSessionMessageQueues, LifecycleWithDominoTile {
         private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<AuthenticatedMessageAndKey>>()
-        private val publisher = PublisherWithDominoLogic(publisherFactory, coordinatorFactory, LINK_MANAGER_PUBLISHER_CLIENT_ID)
+        private val publisher = PublisherWithDominoLogic(publisherFactory, coordinatorFactory, LINK_MANAGER_PUBLISHER_CLIENT_ID, nodeConfiguration)
         override val dominoTile = publisher.dominoTile
-
-        override val isRunning: Boolean
-            get() = dominoTile.isRunning
-
-        override fun start() {
-            if (!isRunning) {
-                dominoTile.start()
-            }
-        }
-
-        override fun stop() {
-            if (isRunning) {
-                dominoTile.stop()
-            }
-        }
 
         /**
          * Either adds a [FlowMessage] to a queue for a session which is pending (has started but hasn't finished

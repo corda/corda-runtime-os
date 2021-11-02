@@ -3,9 +3,9 @@ package net.corda.p2p.gateway.messaging.internal
 import com.typesafe.config.Config
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -37,19 +37,16 @@ internal class InboundMessageHandler(
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: Config,
-) : HttpEventListener, Lifecycle {
+) : HttpEventListener, LifecycleWithDominoTile {
 
     companion object {
         private val logger = contextLogger()
     }
 
-    override val isRunning: Boolean
-        get() = dominoTile.isRunning
-
     private var p2pInPublisher = PublisherWithDominoLogic(publisherFactory, lifecycleCoordinatorFactory, PUBLISHER_ID, nodeConfiguration)
     private val sessionPartitionMapper = SessionPartitionMapperImpl(lifecycleCoordinatorFactory, subscriptionFactory, nodeConfiguration)
     private val server = ReconfigurableHttpServer(lifecycleCoordinatorFactory, configurationReaderService, this)
-    val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, children = listOf(sessionPartitionMapper.dominoTile, p2pInPublisher.dominoTile, server.dominoTile))
+    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, children = listOf(sessionPartitionMapper.dominoTile, p2pInPublisher.dominoTile, server.dominoTile))
 
     /**
      * Handler for direct P2P messages. The payload is deserialized and then published to the ingress topic.
@@ -123,18 +120,6 @@ internal class InboundMessageHandler(
                 logger.warn("Invalid payload of LinkInMessage: ${message.payload::class.java}")
                 return null
             }
-        }
-    }
-
-    override fun start() {
-        if (!isRunning) {
-            dominoTile.start()
-        }
-    }
-
-    override fun stop() {
-        if (isRunning) {
-            dominoTile.stop()
         }
     }
 

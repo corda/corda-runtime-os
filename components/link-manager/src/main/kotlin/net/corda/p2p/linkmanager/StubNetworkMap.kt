@@ -24,29 +24,14 @@ import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-                     subscriptionFactory: SubscriptionFactory): LinkManagerNetworkMap, Lifecycle {
+                     subscriptionFactory: SubscriptionFactory): LinkManagerNetworkMap {
 
     private val processor = NetworkMapEntryProcessor()
     private val subscriptionConfig = SubscriptionConfig("network-map", TestSchema.NETWORK_MAP_TOPIC)
     private val subscription = subscriptionFactory.createCompactedSubscription(subscriptionConfig, processor)
     private val keyDeserialiser = KeyDeserialiser()
 
-    private val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
-
-    override val isRunning: Boolean
-        get() = dominoTile.isRunning
-
-    override fun start() {
-        if (!isRunning) {
-            dominoTile.start()
-        }
-    }
-
-    override fun stop() {
-        if (isRunning) {
-            dominoTile.stop()
-        }
-    }
+    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
 
     private fun createResources(resources: ResourcesHolder) {
         subscription.start()
@@ -84,10 +69,6 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 
             processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.first()?.networkType?.toLMNetworkType()
         }
-    }
-
-    override fun getDominoTile(): DominoTile {
-        return dominoTile
     }
 
     private fun NetworkMapEntry.toMemberInfo():LinkManagerNetworkMap.MemberInfo {

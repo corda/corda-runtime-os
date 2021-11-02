@@ -2,10 +2,10 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
@@ -20,16 +20,13 @@ class ReconfigurableHttpServer(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReaderService: ConfigurationReadService,
     private val listener: HttpEventListener,
-) : Lifecycle {
-
-    override val isRunning: Boolean
-        get() = dominoTile.isRunning
+) : LifecycleWithDominoTile {
 
     @Volatile
     private var httpServer: HttpServer? = null
     private val serverLock = ReentrantReadWriteLock()
 
-    val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler())
+    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler())
 
     companion object {
         private val logger = contextLogger()
@@ -54,9 +51,8 @@ class ReconfigurableHttpServer(
         ) {
             @Suppress("TooGenericExceptionCaught")
             try {
-                val name = this@ReconfigurableHttpServer::class.java.simpleName
                 if (newConfiguration.hostPort == oldConfiguration?.hostPort) {
-                    logger.info("New server configuration for $name on the same port, HTTP server will have to go down")
+                    logger.info("New server configuration for ${dominoTile.name} on the same port, HTTP server will have to go down")
                     serverLock.write {
                         val oldServer = httpServer
                         httpServer = null
@@ -67,7 +63,8 @@ class ReconfigurableHttpServer(
                         httpServer = newServer
                     }
                 } else {
-                    logger.info("New server configuration, $name will be connected to ${newConfiguration.hostAddress}:${newConfiguration.hostPort}")
+                    logger.info("New server configuration, ${dominoTile.name} will be connected to " +
+                        "${newConfiguration.hostAddress}:${newConfiguration.hostPort}")
                     val newServer = HttpServer(listener, newConfiguration)
                     newServer.start()
                     resources.keep(newServer::stop)
@@ -83,18 +80,6 @@ class ReconfigurableHttpServer(
                 return
             }
             this@ReconfigurableHttpServer.dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
-        }
-    }
-
-    override fun start() {
-        if (!isRunning) {
-            dominoTile.start()
-        }
-    }
-
-    override fun stop() {
-        if (isRunning) {
-            dominoTile.stop()
         }
     }
 }

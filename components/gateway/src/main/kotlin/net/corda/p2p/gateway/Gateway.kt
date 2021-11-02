@@ -2,9 +2,9 @@ package net.corda.p2p.gateway
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
@@ -29,10 +29,7 @@ class Gateway(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     nodeConfiguration: Config,
     instanceId: Int,
-) : Lifecycle {
-
-    override val isRunning: Boolean
-        get() = dominoTile.isRunning
+) : LifecycleWithDominoTile {
 
     private val inboundMessageHandler = InboundMessageHandler(
         lifecycleCoordinatorFactory,
@@ -50,23 +47,11 @@ class Gateway(
     )
 
     private val children: Collection<DominoTile> = listOf(inboundMessageHandler.dominoTile, outboundMessageProcessor.dominoTile)
-    val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, children = children)
+    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, children = children)
 
     companion object {
         const val CONSUMER_GROUP_ID = "gateway"
         const val PUBLISHER_ID = "gateway"
         const val CONFIG_KEY = "p2p.gateway"
-    }
-
-    override fun start() {
-        if (!isRunning) {
-            dominoTile.start()
-        }
-    }
-
-    override fun stop() {
-        if (isRunning) {
-            dominoTile.stop()
-        }
     }
 }

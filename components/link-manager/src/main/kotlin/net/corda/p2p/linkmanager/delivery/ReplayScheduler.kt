@@ -7,6 +7,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.linkmanager.AutoClosableScheduledExecutorService
 import net.corda.v5.base.util.contextLogger
@@ -32,9 +33,9 @@ class ReplayScheduler<M>(
     private val replayMessage: (message: M) -> Unit,
     children: Set<DominoTile>,
     private val currentTimestamp: () -> Long = { Instant.now().toEpochMilli() },
-    ) : Lifecycle {
+    ) : LifecycleWithDominoTile {
 
-    val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources, children, ReplaySchedulerConfigurationChangeHandler())
+    override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources, children, ReplaySchedulerConfigurationChangeHandler())
 
     private val replayPeriod = AtomicReference<Duration>()
 
@@ -44,23 +45,6 @@ class ReplayScheduler<M>(
 
     companion object {
         private val logger = contextLogger()
-    }
-
-    override val isRunning: Boolean
-        get() = dominoTile.isRunning
-
-    override fun start() {
-        if (!isRunning) {
-            dominoTile.start()
-            executorService = Executors.newSingleThreadScheduledExecutor()
-        }
-    }
-
-    override fun stop() {
-        if (isRunning) {
-            dominoTile.stop()
-            executorService.shutdown()
-        }
     }
 
     private inner class ReplaySchedulerConfigurationChangeHandler: ConfigurationChangeHandler<Duration>(configReadService,

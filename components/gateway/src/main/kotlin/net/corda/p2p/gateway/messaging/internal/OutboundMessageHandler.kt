@@ -3,9 +3,9 @@ package net.corda.p2p.gateway.messaging.internal
 import com.typesafe.config.Config
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
@@ -37,13 +37,10 @@ internal class OutboundMessageHandler(
     nodeConfiguration: Config,
     instanceId: Int,
 
-) : EventLogProcessor<String, LinkOutMessage>, Lifecycle, HttpEventListener {
+) : EventLogProcessor<String, LinkOutMessage>, LifecycleWithDominoTile, HttpEventListener {
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
     }
-
-    override val isRunning: Boolean
-        get() = dominoTile.isRunning
 
     private val connectionManager = ReconfigurableConnectionManager(
         lifecycleCoordinatorFactory,
@@ -51,7 +48,7 @@ internal class OutboundMessageHandler(
         this,
     )
 
-    val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, children = listOf(connectionManager.dominoTile), createResources = ::createResources)
+    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, children = listOf(connectionManager.dominoTile), createResources = ::createResources)
 
     private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC, instanceId),
@@ -108,19 +105,6 @@ internal class OutboundMessageHandler(
     override val valueClass: Class<LinkOutMessage>
         get() = LinkOutMessage::class.java
 
-
-
-    override fun start() {
-        if (!isRunning) {
-            dominoTile.start()
-        }
-    }
-
-    override fun stop() {
-        if (isRunning) {
-            dominoTile.stop()
-        }
-    }
 
     private fun createResources(resources: ResourcesHolder) {
         resources.keep(p2pMessageSubscription::stop)

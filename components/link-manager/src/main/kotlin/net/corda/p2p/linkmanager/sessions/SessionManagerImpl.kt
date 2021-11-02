@@ -3,10 +3,11 @@ package net.corda.p2p.linkmanager.sessions
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -68,14 +69,16 @@ open class SessionManagerImpl(
     publisherFactory: PublisherFactory,
     private val configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
+    nodeConfiguration: Config,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
     private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
         publisherFactory,
         configurationReaderService,
         coordinatorFactory,
+        nodeConfiguration,
         networkMap
     )
-) : SessionManager, Lifecycle {
+) : SessionManager, LifecycleWithDominoTile {
 
     companion object {
         fun getSessionKeyFromMessage(message: AuthenticatedMessage): SessionKey {
@@ -96,7 +99,6 @@ open class SessionManagerImpl(
     private val logger = LoggerFactory.getLogger(this::class.java.name)
 
     private val sessionNegotiationLock = ReentrantReadWriteLock()
-    private val sessionManagerConfigLock = ReentrantReadWriteLock()
 
     private val config = AtomicReference<SessionManagerConfig>()
 
@@ -104,15 +106,16 @@ open class SessionManagerImpl(
         publisherFactory,
         configurationReaderService,
         coordinatorFactory,
+        nodeConfiguration,
         networkMap,
         ::destroyOutboundSession
     )
 
-    val dominoTile = DominoTile(
+    override val dominoTile = DominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         children = setOf(
-            heartbeatManager.dominoTile, sessionReplayer.dominoTile, networkMap.getDominoTile(), cryptoService.getDominoTile(),
+            heartbeatManager.dominoTile, sessionReplayer.dominoTile, networkMap.dominoTile, cryptoService.dominoTile,
             pendingOutboundSessionMessageQueues.dominoTile
         ),
         configurationChangeHandler = SessionManagerConfigChangeHandler()
@@ -148,7 +151,7 @@ open class SessionManagerImpl(
             oldConfiguration: SessionManagerConfig?,
             resources: ResourcesHolder
         ) {
-            sessionManagerConfigLock.write {
+            dominoTile.withLifecycleWriteLock {
                 config.set(newConfiguration)
                 destroyAllSessions()
             }
@@ -162,33 +165,33 @@ open class SessionManagerImpl(
     }
 
     override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
-        sessionManagerConfigLock.read {
+        return dominoTile.withLifecycleLock {
             sessionNegotiationLock.read {
                 val key = getSessionKeyFromMessage(message.message)
 
                 val activeSession = activeOutboundSessions[key]
                 if (activeSession != null) {
-                    return SessionState.SessionEstablished(activeSession)
+                    return@read SessionState.SessionEstablished(activeSession)
                 }
                 pendingOutboundSessionMessageQueues.queueMessage(message, key)
                 if (pendingOutboundSessionKeys.contains(key)) {
-                    return SessionState.SessionAlreadyPending
+                    return@read SessionState.SessionAlreadyPending
                 } else {
-                    val (sessionId, initMessage) = getSessionInitMessage(key) ?: return SessionState.CannotEstablishSession
-                    return SessionState.NewSessionNeeded(sessionId, initMessage)
+                    val (sessionId, initMessage) = getSessionInitMessage(key) ?: return@read SessionState.CannotEstablishSession
+                    return@read SessionState.NewSessionNeeded(sessionId, initMessage)
                 }
             }
         }
     }
 
     override fun getSessionById(uuid: String): SessionManager.SessionDirection {
-        sessionManagerConfigLock.read {
+        return dominoTile.withLifecycleLock {
             val inboundSession = activeInboundSessions[uuid]
             if (inboundSession != null) {
-                return SessionManager.SessionDirection.Inbound(inboundSession.first, inboundSession.second)
+                return@withLifecycleLock SessionManager.SessionDirection.Inbound(inboundSession.first, inboundSession.second)
             }
             val outboundSession = activeOutboundSessionsById[uuid]
-            return if (outboundSession != null) {
+            return@withLifecycleLock if (outboundSession != null) {
                 SessionManager.SessionDirection.Outbound(outboundSession.first, outboundSession.second)
             } else {
                 SessionManager.SessionDirection.NoSession
@@ -198,16 +201,14 @@ open class SessionManagerImpl(
 
     override fun processSessionMessage(message: LinkInMessage): LinkOutMessage? {
         return dominoTile.withLifecycleLock {
-            sessionManagerConfigLock.read {
-                when (val payload = message.payload) {
-                    is ResponderHelloMessage -> processResponderHello(payload)
-                    is ResponderHandshakeMessage -> processResponderHandshake(payload)
-                    is InitiatorHelloMessage -> processInitiatorHello(payload)
-                    is InitiatorHandshakeMessage -> processInitiatorHandshake(payload)
-                    else -> {
-                        logger.warn("Cannot process message of type: ${payload::class.java}. The message was discarded.")
-                        null
-                    }
+            when (val payload = message.payload) {
+                is ResponderHelloMessage -> processResponderHello(payload)
+                is ResponderHandshakeMessage -> processResponderHandshake(payload)
+                is InitiatorHelloMessage -> processInitiatorHello(payload)
+                is InitiatorHandshakeMessage -> processInitiatorHandshake(payload)
+                else -> {
+                    logger.warn("Cannot process message of type: ${payload::class.java}. The message was discarded.")
+                    null
                 }
             }
         }
@@ -515,9 +516,10 @@ open class SessionManagerImpl(
         publisherFactory: PublisherFactory,
         private val configurationReaderService: ConfigurationReadService,
         coordinatorFactory: LifecycleCoordinatorFactory,
+        nodeConfiguration: Config,
         private val networkMap: LinkManagerNetworkMap,
         private val destroySession: (key: SessionKey, sessionId: String) -> Any
-    ) : Lifecycle {
+    ) : LifecycleWithDominoTile {
 
         companion object {
             private val logger = contextLogger()
@@ -551,35 +553,10 @@ open class SessionManagerImpl(
             Duration.ofMillis(config.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY)))
         }
 
-        val dominoTile = DominoTile(
-            this::class.java.simpleName,
-            coordinatorFactory,
-            ::createResources,
-            setOf(networkMap.getDominoTile()),
-            HeartbeatManagerConfigChangeHandler(),
-        )
-
         private fun createResources(resources: ResourcesHolder) {
             executorService = Executors.newSingleThreadScheduledExecutor()
             resources.keep(AutoClosableScheduledExecutorService(executorService))
-            publisher.start()
-            resources.keep(publisher)
             dominoTile.resourcesStarted(false)
-        }
-
-        override val isRunning: Boolean
-            get() = dominoTile.isRunning
-
-        override fun start() {
-            if (!isRunning) {
-                dominoTile.start()
-            }
-        }
-
-        override fun stop() {
-           if (isRunning) {
-               dominoTile.stop()
-            }
         }
 
         @Volatile
@@ -587,7 +564,15 @@ open class SessionManagerImpl(
 
         private val trackedSessions = ConcurrentHashMap<String, TrackedSession>()
 
-        private val publisher = publisherFactory.createPublisher(PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID, 1))
+        private val publisher = PublisherWithDominoLogic(publisherFactory, coordinatorFactory, HEARTBEAT_MANAGER_CLIENT_ID, nodeConfiguration)
+
+        override val dominoTile = DominoTile(
+            this::class.java.simpleName,
+            coordinatorFactory,
+            ::createResources,
+            setOf(networkMap.dominoTile, publisher.dominoTile),
+            HeartbeatManagerConfigChangeHandler(),
+        )
 
         /**
          * For each Session we track the following.
