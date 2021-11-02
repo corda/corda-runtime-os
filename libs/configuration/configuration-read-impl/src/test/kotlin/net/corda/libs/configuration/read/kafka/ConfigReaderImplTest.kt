@@ -36,7 +36,7 @@ class ConfigReaderImplTest {
         })
 
         configUpdateUtil = ConfigListenerTestUtil()
-        configRepository = ConfigRepository(ConfigFactory.empty())
+        configRepository = ConfigRepository(SmartConfigImpl(ConfigFactory.empty()))
         configReader = ConfigReaderImpl(configRepository, subscriptionFactory, config, smartConfigFactory)
         Mockito.`when`(
             subscriptionFactory.createCompactedSubscription(
@@ -48,8 +48,6 @@ class ConfigReaderImplTest {
 
         Mockito.doNothing().`when`(subscription).start()
         Mockito.doNothing().`when`(subscription).stop()
-
-
     }
 
     @Test

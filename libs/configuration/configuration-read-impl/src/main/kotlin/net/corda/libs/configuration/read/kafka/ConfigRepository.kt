@@ -9,7 +9,7 @@ class ConfigRepository(bootstrapConfig: SmartConfig) {
         const val BOOTSTRAP_KEY = "corda.boot"
     }
 
-    private var configurationMap: Map<String, SmartConfig> = Collections.synchronizedMap(mutableMapOf())
+    private var configurationMap: Map<String, SmartConfig> = Collections.synchronizedMap(mutableMapOf(BOOTSTRAP_KEY to bootstrapConfig))
 
     fun getConfigurations(): Map<String, SmartConfig> {
         return configurationMap.toMap()

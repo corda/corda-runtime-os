@@ -1,5 +1,5 @@
 // TODO: Change this when the version in gradle.properties had changed
-def cordaVersion = '5.0.0--beta-1635752188061'
+def cordaVersion = '5.0.0-DevPreview+'
 
 pipeline {
     agent {
