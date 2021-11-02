@@ -1,6 +1,5 @@
 package net.corda.applications.examples.demo
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.components.examples.config.reader.ConfigReader
@@ -10,6 +9,8 @@ import net.corda.components.examples.config.reader.MessagingConfigUpdateEvent
 import net.corda.components.examples.durable.RunDurableSub
 import net.corda.components.examples.pubsub.RunPubSub
 import net.corda.components.examples.stateevent.RunStateEventSub
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -46,6 +47,8 @@ class DemoApp @Activate constructor(
     private var configReaderFactory: ConfigReaderFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = SmartConfigFactory::class)
+    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
 
     private companion object {
@@ -153,12 +156,14 @@ class DemoApp @Activate constructor(
         return kafkaConnectionProperties
     }
 
-    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): Config {
+    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
-        return ConfigFactory.empty()
+
+        // TODO - inject the secrets provider
+        return smartConfigFactory.create(ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
             .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, ""))))
     }
 
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {

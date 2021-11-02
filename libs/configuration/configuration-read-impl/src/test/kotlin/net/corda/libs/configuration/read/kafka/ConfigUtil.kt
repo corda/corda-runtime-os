@@ -1,12 +1,13 @@
 package net.corda.libs.configuration.read.kafka
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 
 object ConfigUtil {
 
-    fun testConfigMap(): Map<String, Config> {
-        val configMap = mutableMapOf<String, Config>()
+    fun testConfigMap(): Map<String, SmartConfig> {
+        val configMap = mutableMapOf<String, SmartConfig>()
 
         configMap["corda.database"] = databaseConfig(5.4)
         configMap["corda.security"] = securityConfig(5.4)
@@ -14,16 +15,16 @@ object ConfigUtil {
         return configMap
     }
 
-    fun databaseConfig(version: Double): Config = ConfigFactory.parseString(
+    fun databaseConfig(version: Double): SmartConfig = SmartConfigImpl(ConfigFactory.parseString(
         """
             transactionIsolationLevel = READ_COMMITTED
             schema = corda
             runMigration=true
             componentVersion="$version"
         """.trimIndent()
-    )
+    ))
 
-    fun securityConfig(version: Double): Config = ConfigFactory.parseString(
+    fun securityConfig(version: Double): SmartConfig = SmartConfigImpl(ConfigFactory.parseString(
         """
             authService {
                 dataSource {
@@ -48,5 +49,5 @@ object ConfigUtil {
             }
             componentVersion="$version"
         """.trimIndent()
-    )
+    ))
 }

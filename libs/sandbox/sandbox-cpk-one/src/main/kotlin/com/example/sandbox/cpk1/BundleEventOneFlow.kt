@@ -1,4 +1,3 @@
-@file:Suppress("unused")
 package com.example.sandbox.cpk1
 
 import com.example.sandbox.library.SandboxQuery
@@ -8,6 +7,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+@Suppress("unused")
 @Component(name = "bundle-event.one.flow")
 class BundleEventOneFlow @Activate constructor(
     @Reference(target = "(component.name=sandbox.query)")

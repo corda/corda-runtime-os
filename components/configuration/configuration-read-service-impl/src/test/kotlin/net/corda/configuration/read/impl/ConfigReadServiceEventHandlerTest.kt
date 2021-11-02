@@ -1,6 +1,5 @@
 package net.corda.configuration.read.impl
 
-import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.ErrorEvent
@@ -53,14 +52,14 @@ internal class ConfigReadServiceEventHandlerTest {
 
     @Test
     fun `BootstrapConfigProvided has correct output`() {
-        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(ConfigFactory.empty()), coordinator)
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(mock()), coordinator)
         verify(coordinator).postEvent(capture(lifecycleEventCaptor))
         assertThat(lifecycleEventCaptor.firstValue is SetupSubscription)
     }
 
     @Test
     fun `Event handler works when states in correct order`() {
-        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(ConfigFactory.empty()), coordinator)
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(mock()), coordinator)
         configReadServiceEventHandler.processEvent(SetupSubscription(), coordinator)
 
         verify(coordinator).updateStatus(capture(lifecycleStatusCaptor), any())
@@ -71,7 +70,7 @@ internal class ConfigReadServiceEventHandlerTest {
 
     @Test
     fun `Start event works when bootstrap config provided`() {
-        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(ConfigFactory.empty()), coordinator)
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(mock()), coordinator)
         configReadServiceEventHandler.processEvent(StartEvent(), coordinator)
         // The first value captured will be from the BootstrapConfig being provided
         verify(coordinator, times(2)).postEvent(capture(lifecycleEventCaptor))
@@ -87,7 +86,7 @@ internal class ConfigReadServiceEventHandlerTest {
 
     @Test
     fun `Stop event removes the subscription`() {
-        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(ConfigFactory.empty()), coordinator)
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(mock()), coordinator)
         configReadServiceEventHandler.processEvent(SetupSubscription(), coordinator)
         configReadServiceEventHandler.processEvent(StopEvent(), coordinator)
         // The first value captured will be from the BootstrapConfig being provided

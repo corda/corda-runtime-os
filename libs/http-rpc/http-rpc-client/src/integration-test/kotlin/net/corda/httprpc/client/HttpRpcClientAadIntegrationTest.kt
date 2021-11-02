@@ -1,11 +1,7 @@
 package net.corda.httprpc.client
 
 import net.corda.httprpc.client.config.HttpRpcClientConfig
-import net.corda.httprpc.security.read.RPCSecurityManager
-import net.corda.httprpc.security.read.impl.RPCSecurityManagerFactoryStubImpl
-import net.corda.httprpc.server.HttpRpcServer
 import net.corda.httprpc.server.config.models.AzureAdSettings
-import net.corda.httprpc.server.config.models.HttpRpcContext
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.config.models.SsoSettings
 import net.corda.httprpc.server.impl.HttpRpcServerImpl
@@ -19,28 +15,25 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-class HttpRpcClientAadIntegrationTest {
+class HttpRpcClientAadIntegrationTest : HttpRpcIntegrationTestBase() {
 
     private lateinit var httpRpcSettings: HttpRpcSettings
-    private lateinit var httpRpcServer: HttpRpcServer
-    private lateinit var securityManager: RPCSecurityManager
 
     @BeforeEach
     fun setUp() {
-        securityManager = RPCSecurityManagerFactoryStubImpl().createRPCSecurityManager()
         httpRpcSettings = HttpRpcSettings(
             NetworkHostAndPort("localhost", findFreePort()),
-            HttpRpcContext("1", "api", "HttpRpcContext test title ", "HttpRpcContext test description"),
+            context,
             null,
             SsoSettings(AzureAdSettings(AzureAdMock.clientId, null, AzureAdMock.tenantId, trustedIssuers = listOf(AzureAdMock.issuer))),
             HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
         )
-        httpRpcServer = HttpRpcServerImpl(listOf(TestHealthCheckAPIImpl()), securityManager, httpRpcSettings, true).apply { start() }
+        server = HttpRpcServerImpl(listOf(TestHealthCheckAPIImpl()), securityManager, httpRpcSettings, true).apply { start() }
     }
 
     @AfterEach
     fun tearDown() {
-        httpRpcServer.stop()
+        server.stop()
     }
 
     @Test

@@ -8,7 +8,7 @@ import net.corda.crypto.component.lifecycle.AbstractCryptoCoordinator
 import net.corda.crypto.impl.config.isDev
 import net.corda.crypto.impl.config.keyCache
 import net.corda.crypto.impl.config.mngCache
-import net.corda.crypto.impl.dev.DevCryptoServiceProvider
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -18,7 +18,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_CODE_NAME
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -28,7 +27,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -94,7 +92,7 @@ class CryptoLibraryCoordinatorTests {
                 AbstractCryptoCoordinator.CRYPTO_CONFIG
             ),
             mapOf(
-                AbstractCryptoCoordinator.CRYPTO_CONFIG to ConfigFactory.empty()
+                AbstractCryptoCoordinator.CRYPTO_CONFIG to SmartConfigImpl(ConfigFactory.empty())
             )
         )
         val cipherSuiteFactoryCaptor = argumentCaptor<CryptoLibraryConfig>()
@@ -109,26 +107,10 @@ class CryptoLibraryCoordinatorTests {
         assertTrue(cipherSuiteFactoryCaptor.firstValue.keyCache.isEmpty())
         assertTrue(cipherSuiteFactoryCaptor.firstValue.mngCache.isEmpty())
         assertTrue(cipherSuiteFactoryCaptor.firstValue.rpc.isEmpty())
-        assertEquals(
-            DevCryptoServiceProvider.SERVICE_NAME,
-            cipherSuiteFactoryCaptor.firstValue.getMember("default").default.serviceName
-        )
-        assertEquals(
-            EDDSA_ED25519_CODE_NAME,
-            cipherSuiteFactoryCaptor.firstValue.getMember("default").default.defaultSignatureScheme
-        )
         assertTrue(cryptoFactoryProviderCaptor.firstValue.isDev)
         assertTrue(cryptoFactoryProviderCaptor.firstValue.keyCache.isEmpty())
         assertTrue(cryptoFactoryProviderCaptor.firstValue.mngCache.isEmpty())
         assertTrue(cryptoFactoryProviderCaptor.firstValue.rpc.isEmpty())
-        assertEquals(
-            DevCryptoServiceProvider.SERVICE_NAME,
-            cryptoFactoryProviderCaptor.firstValue.getMember("default").default.serviceName
-        )
-        assertEquals(
-            EDDSA_ED25519_CODE_NAME,
-            cryptoFactoryProviderCaptor.firstValue.getMember("default").default.defaultSignatureScheme
-        )
     }
 
     @Test

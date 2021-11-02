@@ -11,7 +11,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
@@ -20,7 +19,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Clock
-import java.time.Duration
 import java.util.concurrent.CountDownLatch
 
 class StateAndEventConsumerImplTest {
@@ -146,7 +144,6 @@ class StateAndEventConsumerImplTest {
         verify(eventConsumer, times(1)).paused()
         verify(eventConsumer, times(1)).pause(any())
         verify(eventConsumer, times(1)).resume(any())
-        verify(eventConsumer, atLeast(1)).poll(Mockito.any(Duration::class.java))
         verify(stateConsumer, atLeast(1)).poll()
         verify(stateAndEventListener, times(0)).onPartitionSynced(any())
     }

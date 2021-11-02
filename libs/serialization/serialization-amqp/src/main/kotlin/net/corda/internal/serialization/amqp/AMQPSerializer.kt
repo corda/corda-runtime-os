@@ -26,7 +26,7 @@ interface AMQPSerializer<out T> {
      * Add anything required to the AMQP schema via [SerializationOutput.writeTypeNotations] and any dependent serializers
      * via [SerializationOutput.requireSerializer]. e.g. for the elements of an array.
      */
-    fun writeClassInfo(output: SerializationOutput)
+    fun writeClassInfo(output: SerializationOutput, context: SerializationContext)
 
     /**
      * Write the given object, with declared type, to the output.

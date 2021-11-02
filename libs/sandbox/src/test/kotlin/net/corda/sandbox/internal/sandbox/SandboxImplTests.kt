@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import java.util.UUID.randomUUID
@@ -62,14 +62,6 @@ class SandboxImplTests {
     }
 
     @Test
-    fun `correctly indicates whether classes are in the sandbox`() {
-        val sandbox = createSandboxImpl()
-        assertTrue(sandbox.containsClass(publicBundleClass))
-        assertTrue(sandbox.containsClass(privateBundleClass))
-        assertFalse(sandbox.containsClass(nonSandboxClass))
-    }
-
-    @Test
     fun `sandbox has visibility of itself`() {
         val sandbox = createSandboxImpl()
         assertTrue(sandbox.hasVisibility(sandbox))
@@ -86,7 +78,7 @@ class SandboxImplTests {
     fun `sandbox has visibility of other sandboxes to which it is granted visibility`() {
         val sandboxOne = createSandboxImpl()
         val sandboxTwo = createSandboxImpl()
-        sandboxOne.grantVisibility(sandboxTwo)
+        sandboxOne.grantVisibility(setOf(sandboxTwo))
         assertTrue(sandboxOne.hasVisibility(sandboxTwo))
     }
 
@@ -94,16 +86,8 @@ class SandboxImplTests {
     fun `visibility between sandboxes is one-way`() {
         val sandboxOne = createSandboxImpl()
         val sandboxTwo = createSandboxImpl()
-        sandboxOne.grantVisibility(sandboxTwo)
+        sandboxOne.grantVisibility(setOf(sandboxTwo))
         assertFalse(sandboxTwo.hasVisibility(sandboxOne))
-    }
-
-    @Test
-    fun `can retrieve public and private bundles from the sandbox by name`() {
-        val sandbox = createSandboxImpl()
-        assertEquals(publicBundle, sandbox.getBundle(PUBLIC_BUNDLE_NAME))
-        assertEquals(privateBundle, sandbox.getBundle(PRIVATE_BUNDLE_NAME))
-        assertNull(sandbox.getBundle("bad_name"))
     }
 
     @Test
@@ -152,7 +136,7 @@ class SandboxImplTests {
 
     @Test
     fun `unloading a sandbox attempts to uninstall all bundles`() {
-        val cantBeUninstalledCordappBundle = mockBundle().apply {
+        val cantBeUninstalledMainBundle = mockBundle().apply {
             whenever(uninstall()).then { throw IllegalStateException() }
         }
         val libraryBundle = mockBundle().apply {
@@ -162,7 +146,7 @@ class SandboxImplTests {
         SandboxImpl(
             mockBundleUtils,
             randomUUID(),
-            setOf(cantBeUninstalledCordappBundle, libraryBundle),
+            setOf(cantBeUninstalledMainBundle, libraryBundle),
             emptySet()
         ).unload()
 

@@ -1,8 +1,8 @@
 package net.corda.flow.manager.impl
 
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
 import net.corda.data.flow.Checkpoint
-import net.corda.data.flow.FlowError
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.RPCFlowResult
 import net.corda.data.flow.StateMachineState
@@ -12,11 +12,11 @@ import net.corda.dependency.injection.DependencyInjectionService
 import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.flow.statemachine.factory.FlowStateMachineFactory
 import net.corda.sandbox.SandboxGroup
-import net.corda.virtual.node.cache.FlowMetadata
-import net.corda.virtual.node.cache.VirtualNodeCache
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.services.serialization.SerializationService
 import net.corda.v5.serialization.SerializedBytes
+import net.corda.virtual.node.cache.FlowMetadata
+import net.corda.virtual.node.cache.VirtualNodeCache
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -50,7 +50,7 @@ class FlowManagerImplTest {
             flowName,
             "Pass!",
             SecureHash("", ByteBuffer.allocate(1)),
-            FlowError()
+            ExceptionEnvelope()
         )
         val stateMachineState = StateMachineState(
             "",
@@ -65,7 +65,7 @@ class FlowManagerImplTest {
         val serialized = SerializedBytes<String>("Test".toByteArray())
 
         doReturn(sandboxGroup).`when`(virtualNodeCache).getSandboxGroupFor(any(), any())
-        doReturn(TestFlow::class.java).`when`(sandboxGroup).loadClassFromCordappBundle(any(), eq(Flow::class.java))
+        doReturn(TestFlow::class.java).`when`(sandboxGroup).loadClassFromMainBundles(any(), eq(Flow::class.java))
         doReturn(stateMachine).`when`(flowStateMachineFactory).createStateMachine(any(), any(), any(), any())
         doReturn(Pair(checkpoint, eventsOut)).`when`(stateMachine).waitForCheckpoint()
         doReturn(serialized).`when`(checkpointSerialisationService).serialize(any())

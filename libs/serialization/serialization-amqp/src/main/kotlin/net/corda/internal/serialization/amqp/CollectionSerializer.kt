@@ -101,9 +101,9 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
     private val outboundType = resolveTypeVariables(declaredType.actualTypeArguments[0], null)
     private val inboundType = declaredType.actualTypeArguments[0]
 
-    override fun writeClassInfo(output: SerializationOutput) = ifThrowsAppend({ declaredType.typeName }) {
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) = ifThrowsAppend({ declaredType.typeName }) {
         if (output.writeTypeNotations(typeNotation)) {
-            output.requireSerializer(outboundType)
+            output.requireSerializer(outboundType, context)
         }
     }
 

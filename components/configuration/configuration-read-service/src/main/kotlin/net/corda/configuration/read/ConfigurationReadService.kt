@@ -1,6 +1,6 @@
 package net.corda.configuration.read
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 
 /**
@@ -42,5 +42,5 @@ interface ConfigurationReadService : Lifecycle {
      * @throws ConfigurationException If the bootstrap configuration is provided after a connection has been
      *                                established, or if the configuration does not allow access.
      */
-    fun bootstrapConfig(config: Config)
+    fun bootstrapConfig(config: SmartConfig)
 }

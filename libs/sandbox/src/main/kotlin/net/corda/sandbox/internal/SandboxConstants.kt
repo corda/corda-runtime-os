@@ -4,12 +4,10 @@ package net.corda.sandbox.internal
 
 import net.corda.v5.crypto.SecureHash
 
-internal const val FELIX_FRAMEWORK_BUNDLE = "org.apache.felix.framework"
-internal const val FELIX_SCR_BUNDLE = "org.apache.felix.scr"
-
-// The index of the class tag identifier and version in all serialised class tags.
+// The index of the class tag identifier, version, tag type and class bundle name in all serialised class tags.
 internal const val CLASS_TAG_IDENTIFIER_IDX = 0
 internal const val CLASS_TAG_VERSION_IDX = 1
+
 // We cannot use ';' (because this can appear in bundle symbolic names - see
 // http://docs.osgi.org/specification/osgi.core/7.0.0/framework.module.html#framework.module.bsn) or ':' (because this
 // appears in stringified secure hashes). '$' cannot appear in bundle symbolic names (see
@@ -18,12 +16,22 @@ internal const val CLASS_TAG_DELIMITER = "$"
 
 // Constants used in class tag serialisation and deserialisation.
 internal object ClassTagV1 {
+    internal const val CLASS_TYPE_IDX = 2
+    internal const val CLASS_BUNDLE_NAME_IDX = 3
+
+    internal const val VERSION = 1
+
     internal const val STATIC_IDENTIFIER = "S"
     internal const val EVOLVABLE_IDENTIFIER = "E"
 
+    internal const val NON_BUNDLE_CLASS = "N"
+    internal const val CPK_SANDBOX_CLASS = "C"
+    internal const val PUBLIC_SANDBOX_CLASS = "P"
+
     // Used as placeholders when generating class tags for public sandbox classes.
-    internal const val PLACEHOLDER_CORDAPP_BUNDLE_NAME = "PUBLIC_BUNDLE"
+    internal const val PLACEHOLDER_STRING = "PLACEHOLDER"
     internal val PLACEHOLDER_HASH = SecureHash.create("SHA-256:0000000000000000")
 }
 
-internal const val HASH_ALGORITHM = "SHA-256"
+// The symbolic name of the `sandbox-hooks` bundle.
+internal const val SANDBOX_HOOKS_BUNDLE = "net.corda.sandbox-hooks"

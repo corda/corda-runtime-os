@@ -108,7 +108,7 @@ class ComposableObjectSerializer(
         private val reader: ComposableObjectReader,
         private val writer: ComposableObjectWriter): ObjectSerializer {
 
-    override fun writeClassInfo(output: SerializationOutput) = writer.writeClassInfo(output)
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) = writer.writeClassInfo(output, context)
 
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput, context: SerializationContext, debugIndent: Int) =
             writer.writeObject(obj, data, type, output, context, debugIndent)
@@ -123,14 +123,14 @@ class ComposableObjectWriter(
         private val interfaces: List<LocalTypeInformation>,
         private val propertySerializers: Map<PropertyName, PropertySerializer>
 ) {
-    fun writeClassInfo(output: SerializationOutput) {
+    fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {
         if (output.writeTypeNotations(typeNotation)) {
             for (iface in interfaces) {
-                output.requireSerializer(iface.observedType)
+                output.requireSerializer(iface.observedType, context)
             }
 
             propertySerializers.values.forEach { serializer ->
-                serializer.writeClassInfo(output)
+                serializer.writeClassInfo(output, context)
             }
         }
     }
@@ -184,8 +184,8 @@ class AbstractObjectSerializer(
         override val propertySerializers: Map<PropertyName, PropertySerializer>,
         override val fields: List<Field>,
         private val writer: ComposableObjectWriter): ObjectSerializer {
-    override fun writeClassInfo(output: SerializationOutput) =
-        writer.writeClassInfo(output)
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) =
+        writer.writeClassInfo(output, context)
 
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput, context: SerializationContext, debugIndent: Int) =
         writer.writeObject(obj, data, type, output, context, debugIndent)
@@ -237,7 +237,7 @@ class EvolutionObjectSerializer(
 
     override val fields: List<Field> get() = emptyList()
 
-    override fun writeClassInfo(output: SerializationOutput) =
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) =
             throw UnsupportedOperationException("Evolved types cannot be written")
 
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput, context: SerializationContext, debugIndent: Int) =
