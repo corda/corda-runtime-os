@@ -245,6 +245,18 @@ class CordaKafkaConsumerImplTest {
     }
 
     @Test
+    fun testSubscribeNullListener() {
+        consumer = mock()
+        cordaKafkaConsumer = CordaKafkaConsumerImpl(
+            kafkaConfig,
+            consumer,
+            null
+        )
+        cordaKafkaConsumer.subscribe(listOf("test"), null)
+        verify(consumer, times(1)).subscribe(Mockito.anyList())
+    }
+
+    @Test
     fun testSubscribeToTopicRetries() {
         consumer = mock()
         cordaKafkaConsumer = CordaKafkaConsumerImpl(
