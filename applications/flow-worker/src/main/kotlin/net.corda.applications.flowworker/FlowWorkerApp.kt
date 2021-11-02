@@ -1,10 +1,10 @@
 package net.corda.applications.flowworker
 
-import com.typesafe.config.Config
 import net.corda.applications.common.ConfigHelper.Companion.getBootstrapConfig
 import net.corda.components.flow.service.FlowService
 import net.corda.components.sandbox.service.SandboxService
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -30,6 +30,8 @@ class FlowWorkerApp @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = SandboxService::class)
     private val sandboxService: SandboxService,
+    @Reference(service = SmartConfigFactory::class)
+    private val smartConfigFactory: SmartConfigFactory
 ) : Application {
 
     private companion object {
@@ -38,14 +40,13 @@ class FlowWorkerApp @Activate constructor(
     }
 
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
-    private var bootstrapConfig: Config? = null
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
         consoleLogger.info("Starting Flow Worker application...")
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
-        bootstrapConfig = getBootstrapConfig(parameters.instanceId.toInt())
+        val bootstrapConfig = getBootstrapConfig(parameters.instanceId.toInt())
 
         log.info("Starting life cycle coordinator for FlowWorker")
         lifeCycleCoordinator = coordinatorFactory.createCoordinator<FlowWorkerApp> { event: LifecycleEvent, _:  LifecycleCoordinator ->
@@ -55,7 +56,7 @@ class FlowWorkerApp @Activate constructor(
             when (event) {
                 is StartEvent -> {
                     configurationReadService.start()
-                    configurationReadService.bootstrapConfig(bootstrapConfig!!)
+                    configurationReadService.bootstrapConfig(smartConfigFactory.create(bootstrapConfig))
                     flowService.start()
                     sandboxService.start()
                 }
