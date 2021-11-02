@@ -38,11 +38,6 @@
     {
       "name": "parentGroupId",
       "type": [ "null", "string" ]
-    },
-    {
-      "name": "requestUserId",
-      "type": "string",
-      "doc": "ID of user who invoked this request."
     }
   ]
 }
