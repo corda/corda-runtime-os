@@ -31,14 +31,14 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
-class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
+class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: Config,
     private val publisher: Publisher,
     private val consumerBuilder: ConsumerBuilder<String, RPCRequest>,
-    private val responderProcessor: RPCResponderProcessor<TREQ, TRESP>,
-    private val serializer: CordaAvroSerializer<TRESP>,
-    private val deserializer: CordaAvroDeserializer<TREQ>
-) : RPCSubscription<TREQ, TRESP> {
+    private val responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>,
+    private val serializer: CordaAvroSerializer<RESPONSE>,
+    private val deserializer: CordaAvroDeserializer<REQUEST>
+) : RPCSubscription<REQUEST, RESPONSE> {
 
     private val log = LoggerFactory.getLogger(
         config.getString(CONSUMER_GROUP_ID)
@@ -100,9 +100,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
                     String::class.java,
                     RPCRequest::class.java
                 ).use {
-                    it.subscribe(
-                        listOf("$topicPrefix$topic")
-                    )
+                    it.subscribeToTopic()
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
@@ -148,7 +146,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
             val rpcRequest = it.record.value()
             val requestBytes = rpcRequest.payload
             val request = deserializer.deserialize(topic, requestBytes.array())
-            val future = CompletableFuture<TRESP>()
+            val future = CompletableFuture<RESPONSE>()
 
             future.whenComplete { response, error ->
                 val record: Record<String, RPCResponse>?

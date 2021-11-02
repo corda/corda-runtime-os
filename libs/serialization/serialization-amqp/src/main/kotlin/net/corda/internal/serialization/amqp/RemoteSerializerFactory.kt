@@ -65,8 +65,7 @@ class DefaultRemoteSerializerFactory(
     private val localTypeModel: LocalTypeModel,
     private val typeLoader: TypeLoader,
     private val localSerializerFactory: LocalSerializerFactory
-) :
-    RemoteSerializerFactory {
+) : RemoteSerializerFactory {
 
     companion object {
         private val logger = contextLogger()

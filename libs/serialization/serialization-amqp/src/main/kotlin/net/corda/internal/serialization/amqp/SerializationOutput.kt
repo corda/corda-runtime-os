@@ -1,12 +1,11 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.classinfo.ClassInfoException
 import net.corda.internal.serialization.CordaSerializationEncoding
 import net.corda.internal.serialization.SectionId
 import net.corda.internal.serialization.byteArrayOutput
 import net.corda.internal.serialization.model.TypeIdentifier
-import net.corda.internal.serialization.osgi.TypeResolver
-import net.corda.sandbox.CpkClassInfo
+import net.corda.sandbox.SandboxException
+import net.corda.sandbox.SandboxGroup
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SerializationContext
@@ -135,31 +134,17 @@ open class SerializationOutput constructor(
     /**
      * Attaches information about the CPKs associated with the serialised objects to the metadata
      */
-    private fun writeTypeToMetadata(type: Type) {
+    private fun writeTypeToMetadata(type: Type, context: SerializationContext) {
         try {
-            val classInfo = TypeResolver.getClassInfoFor(type.asClass())
-            if (classInfo is CpkClassInfo && !metadata.containsKey(type.typeName)) {
+            val classTag = (context.sandboxGroup as? SandboxGroup)?.getEvolvableTag(type.asClass())
+            if (classTag != null && !metadata.containsKey(type.typeName)) {
                 val key = type.typeName
-                val value = listOf(
-                    classInfo.classBundleName,
-                    classInfo.classBundleVersion.toString(),
-                    classInfo.cordappBundleName,
-                    classInfo.cordappBundleVersion.toString(),
-                    classInfo.cpkSignerSummaryHash.toString()
-                )
-                metadata.putValue(key, value)
+                metadata.putValue(key, classTag)
             }
-        } catch (ex: ClassInfoException) {
+        } catch (ex: SandboxException) {
             logger.trace {
                 "Class ${type.typeName} not found in any sandbox. " +
                 "The type is either a PlatformClass or is not installed. "
-            }
-        } catch (ex: NullPointerException) {
-            // This is likely a unit test
-            logger.trace {
-                "Cannot initialise classInfoService. " +
-                "Unable to write metadata due to un-initialised OSGi service. " +
-                        "This code runs outside an OSGi framework. ${ex.message}"
             }
         }
     }
@@ -169,8 +154,8 @@ open class SerializationOutput constructor(
         val serializer = serializerFactory.get(obj.javaClass, type)
         if (serializer !in serializerHistory) {
             serializerHistory.add(serializer)
-            serializer.writeClassInfo(this)
-            writeTypeToMetadata(serializer.type)
+            serializer.writeClassInfo(this, context)
+            writeTypeToMetadata(serializer.type, context)
         }
 
         val retrievedRefCount = objectHistory[obj]
@@ -191,7 +176,7 @@ open class SerializationOutput constructor(
         return schemaHistory.addAll(typeNotation)
     }
 
-    internal open fun requireSerializer(type: Type) {
+    internal open fun requireSerializer(type: Type, context: SerializationContext) {
         if (type != Object::class.java && type.typeName != "?") {
             val resolvedType = when(type) {
                 is WildcardType ->
@@ -203,8 +188,8 @@ open class SerializationOutput constructor(
             val serializer = serializerFactory.get(resolvedType)
             if (serializer !in serializerHistory) {
                 serializerHistory.add(serializer)
-                serializer.writeClassInfo(this)
-                writeTypeToMetadata(serializer.type)
+                serializer.writeClassInfo(this, context)
+                writeTypeToMetadata(serializer.type, context)
             }
         }
     }

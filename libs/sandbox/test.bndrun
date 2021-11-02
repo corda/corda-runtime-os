@@ -4,6 +4,7 @@
 -runtrace: true
 
 -runvm: \
+    -Djava.io.tmpdir=${task.temporaryDir},\
     --add-opens, 'java.base/java.net=ALL-UNNAMED'
 -runsystempackages: \
     javax.xml.stream;version=1.0.0,\
@@ -18,6 +19,7 @@
 
 -runrequires: \
     bnd.identity;id='sandbox-tests',\
+    bnd.identity;id='net.corda.sandbox-hooks',\
     bnd.identity;id='net.corda.application',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
@@ -42,19 +44,19 @@
 	net.corda.cipher-suite;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-internal;version='[5.0.0,5.0.1)',\
-	net.corda.install;version='[5.0.0,5.0.1)',\
+	net.corda.install-legacy;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.32,1.4.33)',\
 	net.corda.kotlin-stdlib-jdk8.osgi-bundle;version='[1.4.32,1.4.33)',\
 	net.corda.membership;version='[5.0.0,5.0.1)',\
 	net.corda.membership-identity;version='[5.0.0,5.0.1)',\
 	net.corda.packaging;version='[5.0.0,5.0.1)',\
 	net.corda.sandbox;version='[5.0.0,5.0.1)',\
+	net.corda.sandbox-hooks;version='[5.0.0,5.0.1)',\
 	net.corda.serialization;version='[5.0.0,5.0.1)',\
 	net.corda.utilities;version='[5.0.0,5.0.1)',\
 	net.i2p.crypto.eddsa;version='[0.3.0,0.3.1)',\
 	org.apache.felix.configadmin;version='[1.9.20,1.9.21)',\
 	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
-	org.assertj.core;version='[3.12.2,3.12.3)',\
 	org.jetbrains.kotlin.osgi-bundle;version='[1.4.32,1.4.33)',\
 	org.opentest4j;version='[1.2.0,1.2.1)',\
 	org.osgi.test.common;version='[1.0.0,1.0.1)',\

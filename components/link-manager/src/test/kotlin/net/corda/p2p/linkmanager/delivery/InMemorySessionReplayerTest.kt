@@ -94,10 +94,10 @@ class InMemorySessionReplayerTest {
                 return publisher
             }
 
-            override fun <TREQ : Any, TRESP : Any> createRPCSender(
-                rpcConfig: RPCConfig<TREQ, TRESP>,
+            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
                 nodeConfig: Config
-            ): RPCSender<TREQ, TRESP> {
+            ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
         }
@@ -181,10 +181,10 @@ class InMemorySessionReplayerTest {
                 return publisher
             }
 
-            override fun <TREQ : Any, TRESP : Any> createRPCSender(
-                rpcConfig: RPCConfig<TREQ, TRESP>,
+            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
                 nodeConfig: Config
-            ): RPCSender<TREQ, TRESP> {
+            ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
         }
@@ -250,10 +250,10 @@ class InMemorySessionReplayerTest {
                 return publisher
             }
 
-            override fun <TREQ : Any, TRESP : Any> createRPCSender(
-                rpcConfig: RPCConfig<TREQ, TRESP>,
+            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
                 nodeConfig: Config
-            ): RPCSender<TREQ, TRESP> {
+            ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
         }
@@ -297,10 +297,10 @@ class InMemorySessionReplayerTest {
                 return publisher
             }
 
-            override fun <TREQ : Any, TRESP : Any> createRPCSender(
-                rpcConfig: RPCConfig<TREQ, TRESP>,
+            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
                 nodeConfig: Config
-            ): RPCSender<TREQ, TRESP> {
+            ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
         }
@@ -343,10 +343,10 @@ class InMemorySessionReplayerTest {
                 return publisher
             }
 
-            override fun <TREQ : Any, TRESP : Any> createRPCSender(
-                rpcConfig: RPCConfig<TREQ, TRESP>,
+            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
                 nodeConfig: Config
-            ): RPCSender<TREQ, TRESP> {
+            ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
         }

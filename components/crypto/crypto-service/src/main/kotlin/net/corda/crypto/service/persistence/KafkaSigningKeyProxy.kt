@@ -92,6 +92,7 @@ class KafkaSigningKeyProxy(
     override val valueClass: Class<SigningKeyRecord> = SigningKeyRecord::class.java
 
     override fun onSnapshot(currentData: Map<String, SigningKeyRecord>) {
+        logger.debug("Processing snapshot of {} items", currentData.size)
         val map = ConcurrentHashMap<String, SigningPersistentKeyInfo>()
         for (record in currentData) {
             map[record.key] = toKeyInfo(record.value)
@@ -104,6 +105,7 @@ class KafkaSigningKeyProxy(
         oldValue: SigningKeyRecord?,
         currentData: Map<String, SigningKeyRecord>
     ) {
+        logger.debug("Processing new update")
         if(newRecord.value == null) {
             keyMap.remove(newRecord.key)
         } else {

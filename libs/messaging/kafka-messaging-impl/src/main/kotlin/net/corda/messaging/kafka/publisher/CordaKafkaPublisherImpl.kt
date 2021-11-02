@@ -156,7 +156,7 @@ class CordaKafkaPublisherImpl(
         try {
             cordaKafkaProducer.beginTransaction()
             block(cordaKafkaProducer)
-            cordaKafkaProducer.tryCommitTransaction()
+            cordaKafkaProducer.commitTransaction()
             future.complete(Unit)
         } catch (ex: Exception) {
             when (ex) {

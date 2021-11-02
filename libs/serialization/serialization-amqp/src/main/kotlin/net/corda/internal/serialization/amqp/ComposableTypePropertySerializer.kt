@@ -65,7 +65,7 @@ interface PropertyWriteStrategy {
     /**
      * Write any [TypeNotation] needed to the [SerializationOutput].
      */
-    fun writeClassInfo(output: SerializationOutput)
+    fun writeClassInfo(output: SerializationOutput, context: SerializationContext)
 
     /**
      * Write the property's value to the [SerializationOutput].
@@ -184,7 +184,7 @@ private val characterTypes = setOf(
 )
 
 object EvolutionPropertyWriteStrategy : PropertyWriteStrategy {
-    override fun writeClassInfo(output: SerializationOutput) =
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) =
             throw UnsupportedOperationException("Evolution serializers cannot write values")
 
     override fun writeProperty(obj: Any?, data: Data, output: SerializationOutput, context: SerializationContext, debugIndent: Int) =
@@ -221,9 +221,9 @@ class DescribedTypeWriteStrategy(private val name: String,
 
     private val nameForDebug get() = "$name(${propertyInformation.type.typeIdentifier.prettyPrint(false)})"
 
-    override fun writeClassInfo(output: SerializationOutput) {
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {
         if (propertyInformation.type !is LocalTypeInformation.Top) {
-            serializer.writeClassInfo(output)
+            serializer.writeClassInfo(output, context)
         }
     }
 
@@ -241,7 +241,7 @@ object AMQPPropertyReadStrategy : PropertyReadStrategy {
 }
 
 class AMQPPropertyWriteStrategy(private val reader: PropertyReader) : PropertyWriteStrategy {
-    override fun writeClassInfo(output: SerializationOutput) {}
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {}
 
     override fun writeProperty(obj: Any?, data: Data, output: SerializationOutput,
                                context: SerializationContext, debugIndent: Int
@@ -265,7 +265,7 @@ object AMQPCharPropertyReadStrategy : PropertyReadStrategy {
 }
 
 class AMQPCharPropertyWriteStategy(private val reader: PropertyReader) : PropertyWriteStrategy {
-    override fun writeClassInfo(output: SerializationOutput) {}
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {}
 
     override fun writeProperty(obj: Any?, data: Data, output: SerializationOutput,
                                context: SerializationContext, debugIndent: Int
