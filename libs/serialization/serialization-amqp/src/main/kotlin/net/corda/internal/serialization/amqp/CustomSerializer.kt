@@ -1,7 +1,6 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.FingerprintWriter
-import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
@@ -17,12 +16,6 @@ interface CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
      * that refer to other custom types etc.
      */
     val additionalSerializers: Iterable<CustomSerializer<out Any>>
-
-    /**
-     * This custom serializer is also allowed to deserialize these classes. This allows us
-     * to deserialize objects into completely different types, e.g. `A` -> `sandbox.A`.
-     */
-    val deserializationAliases: Set<TypeIdentifier>
 
     /**
      * This exists purely for documentation and cross-platform purposes.
@@ -60,8 +53,6 @@ interface CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
             get() = false
         override val additionalSerializers: Iterable<CustomSerializer<out Any>>
             get() = emptyList()
-        override val deserializationAliases: Set<TypeIdentifier>
-            get() = emptySet()
         protected abstract val descriptor: Descriptor
 
         override fun writeObject(
