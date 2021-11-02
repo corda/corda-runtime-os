@@ -174,7 +174,17 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         var attemptSubscription = true
         while (attemptSubscription) {
             try {
-                consumer.subscribe(topics, listener ?: defaultListener)
+                when {
+                    listener != null -> {
+                        consumer.subscribe(topics, listener)
+                    }
+                    defaultListener != null -> {
+                        consumer.subscribe(topics, defaultListener)
+                    }
+                    else -> {
+                        consumer.subscribe(topics)
+                    }
+                }
                 attemptSubscription = false
             } catch (ex: Exception) {
                 val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic"
