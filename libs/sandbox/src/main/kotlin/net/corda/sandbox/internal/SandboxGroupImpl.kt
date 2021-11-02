@@ -54,39 +54,40 @@ internal class SandboxGroupImpl(
     override fun getClass(className: String, serialisedClassTag: String): Class<*> {
         val classTag = classTagFactory.deserialise(serialisedClassTag)
 
-        if (classTag.classType == ClassType.NonBundleClass) {
-            return try {
-                ClassLoader.getSystemClassLoader().loadClass(className)
-            } catch (e: ClassNotFoundException) {
-                throw SandboxException(
-                    "Class $className was not from a bundle, and could not be found in the system classloader."
+        return when (classTag.classType) {
+            ClassType.NonBundleClass -> {
+                try {
+                    ClassLoader.getSystemClassLoader().loadClass(className)
+                } catch (e: ClassNotFoundException) {
+                    throw SandboxException(
+                        "Class $className was not from a bundle, and could not be found in the system classloader."
+                    )
+                }
+            }
+
+            ClassType.CpkSandboxClass -> {
+                val sandbox = when (classTag) {
+                    is StaticTag -> cpkSandboxes.find { sandbox -> sandbox.cpk.metadata.hash == classTag.cpkFileHash }
+                    is EvolvableTag -> cpkSandboxes.find { sandbox ->
+                        sandbox.cpk.metadata.id.signerSummaryHash == classTag.cpkSignerSummaryHash
+                                && sandbox.mainBundle.symbolicName == classTag.mainBundleName
+                    }
+                } ?: throw SandboxException(
+                    "Class tag $serialisedClassTag did not match any sandbox in the sandbox group."
+                )
+                sandbox.loadClass(className, classTag.classBundleName) ?: throw SandboxException(
+                    "Class $className could not be loaded from bundle ${classTag.classBundleName} in sandbox ${sandbox.id}."
                 )
             }
-        }
 
-        if (classTag.classType == ClassType.CpkSandboxClass) {
-            val sandbox = when (classTag) {
-                is StaticTag -> cpkSandboxes.find { sandbox -> sandbox.cpk.metadata.hash == classTag.cpkFileHash }
-                is EvolvableTag -> cpkSandboxes.find { sandbox ->
-                    sandbox.cpk.metadata.id.signerSummaryHash == classTag.cpkSignerSummaryHash
-                            && sandbox.mainBundle.symbolicName == classTag.mainBundleName
-                }
-            } ?: throw SandboxException(
-                "Class tag $serialisedClassTag did not match any sandbox in the sandbox group."
-            )
-            return sandbox.loadClass(className, classTag.classBundleName) ?: throw SandboxException(
-                "Class $className could not be loaded from bundle ${classTag.classBundleName} in sandbox ${sandbox.id}."
-            )
-
-        } else {
-            publicSandboxes.forEach { publicSandbox ->
-                val klass = publicSandbox.loadClass(className, classTag.classBundleName)
-                if (klass != null) return klass
+            ClassType.PublicSandboxClass -> {
+                return publicSandboxes.asSequence().mapNotNull { publicSandbox ->
+                    publicSandbox.loadClass(className, classTag.classBundleName)
+                }.firstOrNull() ?: throw SandboxException(
+                    "Class $className from bundle ${classTag.classBundleName} could not be loaded from any of the public " +
+                            "sandboxes."
+                )
             }
-            throw SandboxException(
-                "Class $className from bundle ${classTag.classBundleName} could not be loaded from any of the public " +
-                        "sandboxes."
-            )
         }
     }
 
