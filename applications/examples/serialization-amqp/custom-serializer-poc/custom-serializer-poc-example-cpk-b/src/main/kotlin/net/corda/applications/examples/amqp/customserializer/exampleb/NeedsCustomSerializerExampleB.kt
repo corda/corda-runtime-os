@@ -1,4 +1,4 @@
-package net.corda.applications.examples.amqp.customserializer
+package net.corda.applications.examples.amqp.customserializer.exampleb
 
 class NeedsCustomSerializerExampleB(a: Int) {
     val b: Int = a

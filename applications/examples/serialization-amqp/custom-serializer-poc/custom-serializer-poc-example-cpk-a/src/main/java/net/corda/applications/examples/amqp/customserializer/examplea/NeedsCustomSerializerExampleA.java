@@ -1,4 +1,4 @@
-package net.corda.applications.examples.amqp.customserializer;
+package net.corda.applications.examples.amqp.customserializer.examplea;
 
 public class NeedsCustomSerializerExampleA {
 
