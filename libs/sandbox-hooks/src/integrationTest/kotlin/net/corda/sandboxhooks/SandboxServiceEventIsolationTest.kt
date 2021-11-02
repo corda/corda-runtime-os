@@ -16,14 +16,23 @@ class SandboxServiceEventIsolationTest {
     }
 
     @Test
-    fun `sandbox group receives service events from its own group, and not from other groups`() {
+    fun `sandbox receives service events from its own sandbox group`() {
+        val thisGroup = sandboxLoader.group1
+
+        // This flow returns all service events visible to this bundle.
+        val serviceEvents = runFlow<List<ServiceEvent>>(thisGroup, SERVICE_EVENTS_FLOW)
+
+        assertTrue(serviceEvents.any { event -> sandboxGroupContainsBundle(thisGroup, event.serviceReference.bundle) })
+    }
+
+    @Test
+    fun `sandbox does not receive service events from other sandbox groups`() {
         val thisGroup = sandboxLoader.group1
         val otherGroup = sandboxLoader.group2
 
         // This flow returns all service events visible to this bundle.
-        val serviceEvents = sandboxLoader.runFlow<List<ServiceEvent>>(SERVICE_EVENTS_FLOW, thisGroup)
+        val serviceEvents = runFlow<List<ServiceEvent>>(thisGroup, SERVICE_EVENTS_FLOW)
 
-        assertTrue(serviceEvents.any { event -> sandboxLoader.containsBundle(thisGroup, event.serviceReference.bundle) })
-        assertTrue(serviceEvents.none { event -> sandboxLoader.containsBundle(otherGroup, event.serviceReference.bundle) })
+        assertTrue(serviceEvents.none { event -> sandboxGroupContainsBundle(otherGroup, event.serviceReference.bundle) })
     }
 }

@@ -60,11 +60,13 @@ This app will start 2 subscriptions:
 * Cluster Admin Events: messages on this topic simply trigger a DB schema migration for the cluster_config table.
 * Config Admin Events: messages on this topic trigger creation or update of a row in the cluster_config table.
 
-## Demo Publisher
+## Persistence Demo Publisher
 
 There is another, small, CLI to publish messages on Kafka that are needed to drive the demo.
 
 To compile the app:
+
+From `applications/examples/persistence/persistence-demo-publisher`
 
 ```shell
 gradle clean assemble
@@ -75,7 +77,7 @@ gradle clean assemble
 Publish a Cluster Admin message like so:
 
 ```shell
-java -jar persistence-demo-publisher/build/bin/corda-persistence-demo-publisher-5.0.0.0-SNAPSHOT.jar cluster-admin --kafka localhost:9093
+java -jar build/bin/corda-persistence-demo-publisher-5.0.0.0-SNAPSHOT.jar cluster-admin --kafka localhost:9093
 ```
 
 ### Config Admin Message
@@ -83,8 +85,19 @@ java -jar persistence-demo-publisher/build/bin/corda-persistence-demo-publisher-
 Publish a Config Create/Update message like so:
 
 ```shell
-java -jar persistence-demo-publisher/build/bin/corda-persistence-demo-publisher-5.0.0.0-SNAPSHOT.jar config-admin --kafka localhost:9093 -c [key] -d [value] -e [version]
+java -jar build/bin/corda-persistence-demo-publisher-5.0.0.0-SNAPSHOT.jar config-admin --kafka localhost:9093 -c [key] -d [value] -e [version]
 ```
 
 Where `[key]` is the config key `[value]` is the config value and `[version]` is an optional config
 version. If not supplied, the version will default to 1.
+
+After that it should be possible to connect to PosgreSQL using:
+```
+Host: localhost
+Port: 5433
+Database: cordacluster
+Username: user
+Password: password
+```
+
+And see that `cluster_config` table indeed has desired `key` and `value` pair.

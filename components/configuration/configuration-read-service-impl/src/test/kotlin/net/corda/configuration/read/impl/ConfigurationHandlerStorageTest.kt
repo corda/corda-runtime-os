@@ -1,7 +1,8 @@
 package net.corda.configuration.read.impl
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -77,11 +78,11 @@ class ConfigurationHandlerStorageTest {
         sub.postEvent(keys, configMap)
     }
 
-    private fun buildConfigMap(keys: Set<String>) : Map<String, Config> {
+    private fun buildConfigMap(keys: Set<String>) : Map<String, SmartConfig> {
         var counter = 0
         return keys.associateWith {
             counter++
-            ConfigFactory.parseMap(mapOf(it to counter))
+            SmartConfigImpl(ConfigFactory.parseMap(mapOf(it to counter)))
         }
     }
 }

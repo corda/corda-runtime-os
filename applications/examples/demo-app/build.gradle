@@ -24,6 +24,7 @@ dependencies {
     implementation project(":components:examples:durable-sub")
     implementation project(":components:examples:pubsub-sub")
     implementation project(":components:examples:state-plus-event-sub")
+    implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-read')
 
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")

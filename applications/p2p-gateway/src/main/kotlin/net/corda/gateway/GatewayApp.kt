@@ -1,6 +1,7 @@
 package net.corda.gateway
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
 import net.corda.libs.configuration.write.factory.ConfigWriterFactory
@@ -33,6 +34,8 @@ class GatewayApp @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = SmartConfigFactory::class)
+    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
     companion object {
         private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
@@ -47,7 +50,8 @@ class GatewayApp @Activate constructor(
         } else {
 
             configurationReadService.start()
-            configurationReadService.bootstrapConfig(arguments.kafkaNodeConfiguration)
+            configurationReadService.bootstrapConfig(
+                smartConfigFactory.create(arguments.kafkaNodeConfiguration))
 
             val writer = configWriterFactory.createWriter(
                 arguments.configTopicName,
@@ -59,7 +63,7 @@ class GatewayApp @Activate constructor(
                     CordaConfigurationVersion("p2p", 1, 0),
                     CordaConfigurationVersion("gateway", 1, 0)
                 ),
-                arguments.gatewayConfiguration
+                smartConfigFactory.create(arguments.gatewayConfiguration)
             )
 
             consoleLogger.info("Starting gateway")

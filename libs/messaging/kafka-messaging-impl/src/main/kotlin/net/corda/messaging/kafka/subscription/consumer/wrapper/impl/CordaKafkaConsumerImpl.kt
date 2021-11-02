@@ -32,7 +32,6 @@ import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.Logger
 import java.time.Duration
-import java.util.*
 
 /**
  * Wrapper for a Kafka Consumer.
@@ -178,6 +177,9 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
+    override fun subscribeToTopic(listener: ConsumerRebalanceListener?) =
+        subscribe(listOf(topicWithPrefix), listener ?: defaultListener)
+
     @Suppress("TooGenericExceptionCaught")
     override fun subscribe(topics: Collection<String>, listener: ConsumerRebalanceListener?) {
         topics.map { topicPrefix + it }
@@ -185,17 +187,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         var attemptSubscription = true
         while (attemptSubscription) {
             try {
-                when {
-                    listener != null -> {
-                        consumer.subscribe(topics, listener)
-                    }
-                    defaultListener != null -> {
-                        consumer.subscribe(topics, defaultListener)
-                    }
-                    else -> {
-                        consumer.subscribe(topics)
-                    }
-                }
+                subscribeToTopics(listener, topics)
                 attemptSubscription = false
             } catch (ex: Exception) {
                 val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic"
@@ -221,8 +213,27 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    override fun subscribeToTopic(listener: ConsumerRebalanceListener?) =
-        subscribe(listOf(topic), listener ?: defaultListener)
+    /**
+     * Subscribe this consumer to the topics. Apply rebalance [listener].
+     * If no [listener] provided, use [defaultListener] if available.
+     */
+    private fun subscribeToTopics(
+        listener: ConsumerRebalanceListener?,
+        topics: Collection<String>
+    ) {
+        when {
+            listener != null -> {
+                consumer.subscribe(topics, listener)
+            }
+            defaultListener != null -> {
+                consumer.subscribe(topics, defaultListener)
+            }
+            else -> {
+                consumer.subscribe(topics)
+            }
+        }
+    }
+
 
     @Suppress("TooGenericExceptionCaught")
     override fun getPartitions(topic: String, duration: Duration): List<TopicPartition> {
