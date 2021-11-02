@@ -1,6 +1,7 @@
 package net.corda.p2p.gateway.messaging.session
 
 import net.corda.lifecycle.Lifecycle
+import com.typesafe.config.Config
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -11,12 +12,13 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.SessionPartitions
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CountDownLatch
 
 class SessionPartitionMapperImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
+    nodeConfiguration: Config,
 ) : SessionPartitionMapper, Lifecycle {
+
     companion object {
         const val CONSUMER_GROUP_ID = "session_partitions_mapper"
     }
@@ -30,7 +32,8 @@ class SessionPartitionMapperImpl(
 
     private val sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS),
-        processor
+        processor,
+        nodeConfiguration
     )
 
     override fun getPartitions(sessionId: String): List<Int>? {

@@ -1,17 +1,17 @@
 package net.corda.p2p.gateway
 
-import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
-import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
+//import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
+//import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
+//import org.assertj.core.api.Assertions.assertThat
+//import org.junit.jupiter.api.Test
+//import org.mockito.kotlin.any
+//import org.mockito.kotlin.anyOrNull
+//import org.mockito.kotlin.doReturn
+//import org.mockito.kotlin.mock
 
 class GatewayTest {
-    @Test
-    fun `children contains inbound message handler and outbound message processor`() {
+//    @Test
+//    fun `children contains inbound message handler and outbound message processor`() {
 //        val gateway = Gateway(
 //            mock(),
 //            mock {
@@ -21,13 +21,15 @@ class GatewayTest {
 //                on { createPublisher(any(), any()) } doReturn mock()
 //            },
 //            mock(),
+//            mock(),
+//            1,
 //        )
 //
-//        val children = gateway.dominoTile.children
+//        val children = gateway.children
 //
 //        assertThat(children)
 //            .hasSize(2)
 //            .hasAtLeastOneElementOfType(InboundMessageHandler::class.java)
 //            .hasAtLeastOneElementOfType(OutboundMessageHandler::class.java)
-    }
+//    }
 }

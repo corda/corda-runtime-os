@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway
 
+import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -8,7 +9,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
-import org.osgi.service.component.annotations.Reference
 
 /**
  * The Gateway is a light component which facilitates the sending and receiving of P2P messages.
@@ -21,15 +21,14 @@ import org.osgi.service.component.annotations.Reference
  * to the internal messaging system.
  *
  */
+@Suppress("LongParameterList")
 class Gateway(
-    @Reference(service = ConfigurationReadService::class)
     configurationReaderService: ConfigurationReadService,
-    @Reference(service = SubscriptionFactory::class)
     subscriptionFactory: SubscriptionFactory,
-    @Reference(service = PublisherFactory::class)
     publisherFactory: PublisherFactory,
-    @Reference(service = LifecycleCoordinatorFactory::class)
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    nodeConfiguration: Config,
+    instanceId: Int,
 ) : Lifecycle {
 
     override val isRunning: Boolean
@@ -40,11 +39,14 @@ class Gateway(
         configurationReaderService,
         publisherFactory,
         subscriptionFactory,
+        nodeConfiguration,
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         subscriptionFactory,
+        nodeConfiguration,
+        instanceId,
     )
 
     private val children: Collection<DominoTile> = listOf(inboundMessageHandler.dominoTile, outboundMessageProcessor.dominoTile)

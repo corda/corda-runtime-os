@@ -39,8 +39,8 @@ class SandboxGroupImplTests {
     private val nonBundleClass = Boolean::class.java
     private val nonSandboxClass = Float::class.java
 
-    private val mockCpkBundle = mockBundle(CPK_BUNDLE_NAME, setOf(cpkClass))
-    private val mockPublicBundle = mockBundle(PUBLIC_BUNDLE_NAME, setOf(publicClass))
+    private val mockCpkBundle = mockBundle(CPK_BUNDLE_NAME, cpkClass)
+    private val mockPublicBundle = mockBundle(PUBLIC_BUNDLE_NAME, publicClass)
     private val mockNonSandboxBundle = mockBundle()
     private val mockCordappBundle = mockBundle(CORDAPP_BUNDLE_NAME)
 

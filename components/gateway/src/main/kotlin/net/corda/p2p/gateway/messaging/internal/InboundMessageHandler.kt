@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.internal
 
+import com.typesafe.config.Config
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.Lifecycle
@@ -35,6 +36,7 @@ internal class InboundMessageHandler(
     configurationReaderService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
+    nodeConfiguration: Config,
 ) : HttpEventListener, Lifecycle {
 
     companion object {
@@ -44,8 +46,8 @@ internal class InboundMessageHandler(
     override val isRunning: Boolean
         get() = dominoTile.isRunning
 
-    private var p2pInPublisher = PublisherWithDominoLogic(publisherFactory, lifecycleCoordinatorFactory, PUBLISHER_ID)
-    private val sessionPartitionMapper = SessionPartitionMapperImpl(lifecycleCoordinatorFactory, subscriptionFactory)
+    private var p2pInPublisher = PublisherWithDominoLogic(publisherFactory, lifecycleCoordinatorFactory, PUBLISHER_ID, nodeConfiguration)
+    private val sessionPartitionMapper = SessionPartitionMapperImpl(lifecycleCoordinatorFactory, subscriptionFactory, nodeConfiguration)
     private val server = ReconfigurableHttpServer(lifecycleCoordinatorFactory, configurationReaderService, this)
     val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, children = listOf(sessionPartitionMapper.dominoTile, p2pInPublisher.dominoTile, server.dominoTile))
 

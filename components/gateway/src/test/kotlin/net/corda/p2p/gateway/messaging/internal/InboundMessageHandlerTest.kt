@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.internal
 
+import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinator
@@ -66,7 +67,8 @@ class InboundMessageHandlerTest {
         lifecycleCoordinatorFactory,
         configurationReaderService,
         publisherFactory,
-        subscriptionFactory
+        subscriptionFactory,
+        ConfigFactory.empty(),
     )
 
     @AfterEach

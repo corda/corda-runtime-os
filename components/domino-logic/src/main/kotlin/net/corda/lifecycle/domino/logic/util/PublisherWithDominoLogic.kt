@@ -1,7 +1,7 @@
 package net.corda.lifecycle.domino.logic.util
 
-import com.typesafe.config.ConfigFactory
 import net.corda.lifecycle.Lifecycle
+import com.typesafe.config.Config
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.messaging.api.publisher.Publisher
@@ -13,11 +13,12 @@ import java.util.concurrent.CompletableFuture
 class PublisherWithDominoLogic(
     private val publisherFactory: PublisherFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val publisherId: String
-) : Lifecycle {
+    private val publisherId: String,
+    private val nodeConfiguration: Config,) : Lifecycle {
 
     override val isRunning: Boolean
         get() = dominoTile.isRunning
+
 
     @Volatile
     private var publisher: Publisher? = null
@@ -26,7 +27,10 @@ class PublisherWithDominoLogic(
 
     private fun createResources(resources: ResourcesHolder) {
         val publisherConfig = PublisherConfig(publisherId)
-        publisher = publisherFactory.createPublisher(publisherConfig, ConfigFactory.empty()).also {
+        publisher = publisherFactory.createPublisher(
+            publisherConfig,
+            nodeConfiguration
+        ).also {
             resources.keep {
                 it.close()
                 publisher = null
