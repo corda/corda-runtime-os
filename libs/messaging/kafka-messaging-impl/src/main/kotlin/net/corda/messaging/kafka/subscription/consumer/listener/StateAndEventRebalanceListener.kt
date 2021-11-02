@@ -48,10 +48,7 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
         val syncablePartitions = filterSyncablePartitions(newStatePartitions)
         log.debug { "Syncing the following new state partitions: $syncablePartitions" }
         partitionsToSync.putAll(syncablePartitions)
-
-        val partitionsToPause = syncablePartitions.map { TopicPartition(eventTopic.topic, it.first) }
-        log.info("${config.loggerName} LORCAN 1: Pausing partitions $partitionsToPause")
-        eventConsumer.pause(partitionsToPause)
+        eventConsumer.pause(syncablePartitions.map { TopicPartition(eventTopic.topic, it.first) })
 
         statePartitions.forEach {
             currentStates.computeIfAbsent(it.partition()) {
