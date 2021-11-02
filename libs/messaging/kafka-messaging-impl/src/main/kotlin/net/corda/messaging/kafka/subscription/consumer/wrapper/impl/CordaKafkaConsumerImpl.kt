@@ -169,7 +169,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    override fun subscribe(listener: ConsumerRebalanceListener?) =
+    override fun subscribeToTopic(listener: ConsumerRebalanceListener?) =
         subscribe(listOf(topicWithPrefix), listener ?: defaultListener)
 
     @Suppress("TooGenericExceptionCaught")
@@ -178,7 +178,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         var attemptSubscription = true
         while (attemptSubscription) {
             try {
-                subscribeTopics(listener, topics)
+                subscribeToTopics(listener, topics)
                 attemptSubscription = false
             } catch (ex: Exception) {
                 val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic"
@@ -208,7 +208,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
      * Subscribe this consumer to the topics. Apply rebalance [listener].
      * If no [listener] provided, use [defaultListener] if available.
      */
-    private fun subscribeTopics(
+    private fun subscribeToTopics(
         listener: ConsumerRebalanceListener?,
         topics: Collection<String>
     ) {

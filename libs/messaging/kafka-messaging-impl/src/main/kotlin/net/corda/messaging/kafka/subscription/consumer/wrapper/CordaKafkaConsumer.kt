@@ -45,7 +45,7 @@ interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable {
      * If a recoverable error occurs retry. If max retries is exceeded or a fatal error occurs then throw a [CordaMessageAPIFatalException]
      * @throws CordaMessageAPIFatalException for fatal errors.
      */
-    fun subscribe(listener: ConsumerRebalanceListener? = null)
+    fun subscribeToTopic(listener: ConsumerRebalanceListener? = null)
 
     /**
      * Assign the given [partitions]
@@ -133,7 +133,7 @@ interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable {
      * Manually assigns the specified partitions of the configured topic to this consumer.
      *
      * Note: manual assignment is an alternative to subscription, where Kafka does not execute any partition assignment logic and lets
-     * the client assign partitions. So, do not use this in conjunction with [subscribe] as they satisfy different use-cases.
+     * the client assign partitions. So, do not use this in conjunction with [subscribeToTopic] as they satisfy different use-cases.
      */
     fun assignPartitionsManually(partitions: Set<Int>)
 
