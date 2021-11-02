@@ -2,6 +2,7 @@ package net.corda.sandboxhooks
 
 import net.corda.install.InstallService
 import net.corda.packaging.CPK
+import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.fail
@@ -24,7 +25,9 @@ class SandboxLoader @Activate constructor(
     @Reference
     private val installService: InstallService,
     @Reference
-    private val sandboxCreationService: SandboxCreationService
+    private val sandboxCreationService: SandboxCreationService,
+    @Reference
+    val sandboxContextService: SandboxContextService
 ) {
     companion object {
         private val baseDirectory = Paths.get(
