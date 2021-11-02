@@ -17,7 +17,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.v5.base.util.contextLogger
-import java.lang.IllegalArgumentException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -26,7 +25,7 @@ import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 @Suppress("TooManyFunctions")
-class DominoTile constructor(
+class DominoTile(
     instanceName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
     val createResources: ((resources: ResourcesHolder) -> Any)? = null,
@@ -40,7 +39,6 @@ class DominoTile constructor(
     }
     private object StartTile : LifecycleEvent
     private data class StopTile(val dueToError: Boolean) : LifecycleEvent
-    private class ConfigUpdate(val callback: () -> Any) : LifecycleEvent
     private class ConfigApplied(val configUpdateResult: ConfigUpdateResult) : LifecycleEvent
     private class ResourcesCreated: LifecycleEvent
     enum class State {
@@ -71,9 +69,7 @@ class DominoTile constructor(
     }
 
     override fun stop() {
-        if (state != State.StoppedByParent) {
-            coordinator.postEvent(StopTile(false))
-        }
+        coordinator.postEvent(StopTile(false))
     }
 
     fun <T> withLifecycleLock(access: () -> T): T {
@@ -94,9 +90,9 @@ class DominoTile constructor(
     private val isOpen = AtomicBoolean(true)
 
     @Volatile
-    private var configReady = configurationChangeHandler == null
+    private var configReady = false
     @Volatile
-    private var resourcesReady = createResources == null
+    private var resourcesReady = false
     @Volatile
     private var configRegistration : AutoCloseable? = null
 
@@ -105,7 +101,6 @@ class DominoTile constructor(
         object NoUpdate: ConfigUpdateResult()
         data class Error(val e: Throwable): ConfigUpdateResult()
     }
-
 
     fun configApplied(configUpdateResult: ConfigUpdateResult) {
         coordinator.postEvent(ConfigApplied(configUpdateResult))
@@ -125,7 +120,12 @@ class DominoTile constructor(
         private var lastConfiguration: C? = null
 
         private fun applyNewConfiguration(newConfiguration: Config) {
-            val configuration = configurationChangeHandler.configFactory(newConfiguration)
+            val configuration = try {
+                configurationChangeHandler.configFactory(newConfiguration)
+            } catch (e: Exception) {
+                configApplied(ConfigUpdateResult.Error(e))
+                return
+            }
             logger.info("Got configuration $name")
             if (configuration == lastConfiguration) {
                 logger.info("Configuration had not changed $name")
@@ -141,9 +141,7 @@ class DominoTile constructor(
             if (changedKeys.contains(configurationChangeHandler.key)) {
                 val newConfiguration = config[configurationChangeHandler.key]
                 if (newConfiguration != null) {
-                    configUpdateFromCoordinator {
-                        applyNewConfiguration(newConfiguration)
-                    }
+                    applyNewConfiguration(newConfiguration)
                 }
             }
         }
@@ -171,10 +169,6 @@ class DominoTile constructor(
         }
     }
 
-    private fun configUpdateFromCoordinator(callback: () -> Any) {
-        coordinator.postEvent(ConfigUpdate(callback))
-    }
-
     private inner class EventHandler : LifecycleEventHandler {
         private fun handleControlEvent(event: LifecycleEvent) {
             when (event) {
@@ -188,12 +182,15 @@ class DominoTile constructor(
                     // Do nothing
                 }
                 is StopTile -> {
-                    if (state != State.StoppedByParent) {
-                        stopTile()
-                        if (event.dueToError) {
-                            updateState(State.StoppedDueToError)
-                        } else {
-                            updateState(State.StoppedByParent)
+                    when (state) {
+                        State.StoppedByParent, State.StoppedDueToBadConfig, State.StoppedDueToError -> {}
+                        else -> {
+                            stopTile()
+                            if (event.dueToError) {
+                                updateState(State.StoppedDueToError)
+                            } else {
+                                updateState(State.StoppedByParent)
+                            }
                         }
                     }
                 }
@@ -203,12 +200,6 @@ class DominoTile constructor(
                         State.Started -> {} // Do nothing
                         State.StoppedDueToError -> logger.warn("Can not start $name, it was stopped due to an error")
                         State.StoppedDueToBadConfig -> logger.warn("Can not start $name, it was stopped due to bad config")
-                    }
-                }
-                is ConfigUpdate -> {
-                    when(state) {
-                        State.StoppedDueToError -> { }
-                        State.Started, State.StoppedDueToBadConfig, State.Created, State.StoppedByParent -> { event.callback.invoke() }
                     }
                 }
                 is RegistrationStatusChangeEvent -> {
@@ -293,10 +284,9 @@ class DominoTile constructor(
 
 
     private fun startKidsIfNeeded() {
-        if (children.map { it.state }.contains(State.StoppedDueToError) || children.map { it.state }.contains(State.StoppedDueToBadConfig) ) {
-            children.filter {
-                !(it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig)
-            }.forEach {
+        val childrenWithErrors = children.filter { it.state == State.StoppedDueToBadConfig || it.state == State.StoppedDueToError }
+        if (childrenWithErrors.isNotEmpty()) {
+            (children - childrenWithErrors).forEach {
                 it.stop()
             }
         } else {
@@ -317,6 +307,14 @@ class DominoTile constructor(
         }
     }
 
+    private fun shouldNotWaitForConfig(): Boolean {
+        return configurationChangeHandler == null || configReady
+    }
+
+    private fun shouldNotWaitForResource(): Boolean {
+        return createResources == null || resourcesReady
+    }
+
     private fun createResourcesAndStart() {
         resources.close()
         createResources?.invoke(resources)
@@ -324,14 +322,14 @@ class DominoTile constructor(
             logger.info("Registering for Config Updates $name.")
             configRegistration = configurationChangeHandler.configurationReaderService.registerForUpdates(Handler(configurationChangeHandler))
         }
-        if (resourcesReady && configReady) {
+        if (shouldNotWaitForResource() && shouldNotWaitForConfig()) {
             updateState(State.Started)
         }
     }
 
     private fun stopTile(stopConfigListener: Boolean = true) {
         resources.close()
-        resourcesReady = (createResources == null)
+        resourcesReady = false
         configResources.close()
 
         if (stopConfigListener) {
@@ -339,7 +337,7 @@ class DominoTile constructor(
             if (configRegistration != null) logger.info("Unregistered for Config Updates $name.")
             configRegistration = null
         }
-        configReady = (configurationChangeHandler == null)
+        configReady = false
         
         children.forEach {
             if (!(it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig)) {
