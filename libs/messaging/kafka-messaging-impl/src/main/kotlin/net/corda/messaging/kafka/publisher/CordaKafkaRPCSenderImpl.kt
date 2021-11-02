@@ -117,7 +117,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     RPCResponse::class.java
                 ).use {
                     it.subscribe(
-                        listOf("$topicPrefix$responseTopic"),
+                        listOf(responseTopic),
                         partitionListener
                     )
                     pollAndProcessRecords(it)
@@ -225,7 +225,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             val request = RPCRequest(
                 correlationId,
                 Instant.now().toEpochMilli(),
-                "$topicPrefix$responseTopic",
+                responseTopic,
                 partition,
                 ByteBuffer.wrap(reqBytes)
             )

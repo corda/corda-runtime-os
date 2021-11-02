@@ -10,7 +10,6 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
@@ -35,7 +34,6 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     )
 
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
-    private val topicPrefix = config.getString(TOPIC_PREFIX)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
 
@@ -93,7 +91,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                 log.debug { "Creating compacted consumer.  Attempt: $attempts" }
                 consumerBuilder.createCompactedConsumer(config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass).use {
                     val partitions = it.getPartitions(
-                        topicPrefix + topic,
+                        topic,
                         Duration.ofSeconds(consumerThreadStopTimeout)
                     )
                     it.assign(partitions)

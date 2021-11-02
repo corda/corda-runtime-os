@@ -103,8 +103,18 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 else -> logErrorAndThrowFatalException("Unexpected error attempting to poll from topic $topic", ex)
             }
         }
-        return consumerRecords
-            .sortedBy { it.timestamp() }
+
+        consumerRecords.map {
+            ConsumerRecord(
+                it.topic().removePrefix(topicPrefix),
+                it.partition(),
+                it.offset(),
+                it.key(),
+                it.value()
+            )
+        }
+
+        return consumerRecords.sortedBy { it.timestamp() }
     }
 
     override fun resetToLastCommittedPositions(offsetStrategy: OffsetResetStrategy) {
@@ -170,6 +180,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     @Suppress("TooGenericExceptionCaught")
     override fun subscribe(topics: Collection<String>, listener: ConsumerRebalanceListener?) {
+        topics.map { topicPrefix + it }
         var attempts = 0L
         var attemptSubscription = true
         while (attemptSubscription) {
@@ -211,12 +222,12 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
     override fun subscribeToTopic(listener: ConsumerRebalanceListener?) =
-        subscribe(listOf(topicWithPrefix), listener ?: defaultListener)
+        subscribe(listOf(topic), listener ?: defaultListener)
 
     @Suppress("TooGenericExceptionCaught")
     override fun getPartitions(topic: String, duration: Duration): List<TopicPartition> {
         val listOfPartitions: List<PartitionInfo> = try {
-            consumer.partitionsFor(topic, duration)
+            consumer.partitionsFor(topicPrefix + topic, duration)
         } catch (ex: Exception) {
             when (ex) {
                 is AuthenticationException,
@@ -240,7 +251,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             ?: logWarningAndThrowIntermittentException("Partitions for topic $topic are null. Kafka may not have completed startup.")
 
         return listOfPartitions.map { partitionInfo ->
-            TopicPartition(partitionInfo.topic(), partitionInfo.partition())
+            TopicPartition(partitionInfo.topic().removePrefix(topicPrefix), partitionInfo.partition())
         }
     }
 

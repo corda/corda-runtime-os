@@ -60,7 +60,8 @@ class CordaKafkaProducerImpl(
     }
 
     override fun send(record: ProducerRecord<Any, Any>, callback: Callback?): Future<RecordMetadata> {
-        return producer.send(record, callback)
+        val prefixedRecord = ProducerRecord(topicPrefix + record.topic(), record.partition(), record.key(), record.value())
+        return producer.send(prefixedRecord, callback)
     }
 
     override fun sendRecords(records: List<Record<*, *>>) {
