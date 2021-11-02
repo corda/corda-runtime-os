@@ -139,7 +139,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                 }
                 producer = producerBuilder.createProducer(config.getConfig(KAFKA_PRODUCER))
                 consumer.use { cordaConsumer ->
-                    cordaConsumer.subscribeToTopic()
+                    cordaConsumer.subscribe()
                     producer.use { cordaProducer ->
                         pollAndProcessRecords(cordaConsumer, cordaProducer)
                     }

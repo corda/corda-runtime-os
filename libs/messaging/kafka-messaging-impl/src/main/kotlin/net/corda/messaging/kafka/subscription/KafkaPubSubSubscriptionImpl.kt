@@ -123,7 +123,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
                 consumerBuilder.createPubSubConsumer(
                     config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass,::logFailedDeserialize
                 ).use {
-                    it.subscribeToTopic()
+                    it.subscribe()
                     pollAndProcessRecords(it)
                 }
                 attempts = 0

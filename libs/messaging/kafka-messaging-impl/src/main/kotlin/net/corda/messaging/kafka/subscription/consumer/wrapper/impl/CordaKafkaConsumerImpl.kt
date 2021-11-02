@@ -169,23 +169,16 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
+    override fun subscribe(listener: ConsumerRebalanceListener?) =
+        subscribe(listOf(topicWithPrefix), listener ?: defaultListener)
+
     @Suppress("TooGenericExceptionCaught")
     override fun subscribe(topics: Collection<String>, listener: ConsumerRebalanceListener?) {
         var attempts = 0L
         var attemptSubscription = true
         while (attemptSubscription) {
             try {
-                when {
-                    listener != null -> {
-                        consumer.subscribe(topics, listener)
-                    }
-                    defaultListener != null -> {
-                        consumer.subscribe(topics, defaultListener)
-                    }
-                    else -> {
-                        consumer.subscribe(topics)
-                    }
-                }
+                subscribeTopics(listener, topics)
                 attemptSubscription = false
             } catch (ex: Exception) {
                 val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic"
@@ -211,8 +204,27 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    override fun subscribeToTopic(listener: ConsumerRebalanceListener?) =
-        subscribe(listOf(topicWithPrefix), listener ?: defaultListener)
+    /**
+     * Subscribe this consumer to the topics. Apply rebalance [listener].
+     * If no [listener] provided, use [defaultListener] if available.
+     */
+    private fun subscribeTopics(
+        listener: ConsumerRebalanceListener?,
+        topics: Collection<String>
+    ) {
+        when {
+            listener != null -> {
+                consumer.subscribe(topics, listener)
+            }
+            defaultListener != null -> {
+                consumer.subscribe(topics, defaultListener)
+            }
+            else -> {
+                consumer.subscribe(topics)
+            }
+        }
+    }
+
 
     @Suppress("TooGenericExceptionCaught")
     override fun getPartitions(topic: String, duration: Duration): List<TopicPartition> {

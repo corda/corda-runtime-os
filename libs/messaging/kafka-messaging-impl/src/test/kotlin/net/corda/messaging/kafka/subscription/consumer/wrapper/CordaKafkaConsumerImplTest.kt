@@ -228,7 +228,7 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        cordaKafkaConsumer.subscribeToTopic()
+        cordaKafkaConsumer.subscribe()
         verify(consumer, times(1)).subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
     }
 
@@ -267,7 +267,7 @@ class CordaKafkaConsumerImplTest {
         doThrow(KafkaException()).whenever(consumer)
             .subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.subscribeToTopic()
+            cordaKafkaConsumer.subscribe()
         }
         verify(consumer, times(3)).subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
     }
@@ -285,7 +285,7 @@ class CordaKafkaConsumerImplTest {
                 Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java)
             )
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.subscribeToTopic()
+            cordaKafkaConsumer.subscribe()
         }
         verify(consumer, times(1)).subscribe(Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java))
     }

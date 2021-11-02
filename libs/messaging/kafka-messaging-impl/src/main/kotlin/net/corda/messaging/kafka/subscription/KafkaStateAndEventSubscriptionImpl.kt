@@ -117,7 +117,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 )
                 stateAndEventConsumer = stateAndEventConsumerTmp
                 eventConsumer = stateAndEventConsumer.eventConsumer
-                eventConsumer.subscribeToTopic(rebalanceListener)
+                eventConsumer.subscribe(rebalanceListener)
 
                 while (!stopped) {
                     stateAndEventConsumer.pollAndUpdateStates(true)
