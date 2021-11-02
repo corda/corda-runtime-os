@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory
 import java.net.URI
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -61,7 +62,6 @@ internal class OutboundMessageHandler(
 
     private val retryThreadPool = Executors.newSingleThreadScheduledExecutor()
 
-    @Suppress("TooGenericExceptionCaught")
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
         withLifecycleLock {
             if (!isRunning) {
@@ -99,12 +99,7 @@ internal class OutboundMessageHandler(
 
             waitUntilComplete(pendingRequests)
             pendingRequests.forEach { pendingMessage ->
-                val (response, error) = try {
-                    val response = pendingMessage.future.get(0, TimeUnit.MILLISECONDS)
-                    response to null
-                } catch (error: Exception) {
-                    null to error
-                }
+                val (response, error) = getResponseOrError(pendingMessage)
                 handleResponse(pendingMessage, response, error, MAX_RETRIES)
             }
 
@@ -119,6 +114,19 @@ internal class OutboundMessageHandler(
                 .get(connectionManager.latestConnectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
         } catch (e: Exception) {
             // Do nothing - results/errors will be processed individually.
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun getResponseOrError(pendingRequest: PendingRequest): Pair<HttpResponse?, Throwable?> {
+        return try {
+            val response = pendingRequest.future.get(0, TimeUnit.MILLISECONDS)
+            response to null
+        } catch (error: Exception) {
+            when {
+                error is ExecutionException && error.cause != null-> null to error.cause
+                else -> null to error
+            }
         }
     }
 

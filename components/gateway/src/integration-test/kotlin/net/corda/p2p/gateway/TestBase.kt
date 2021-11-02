@@ -106,7 +106,6 @@ open class TestBase {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hostAddress", ConfigValueFactory.fromAnyRef(configuration.hostAddress))
                 .withValue("hostPort", ConfigValueFactory.fromAnyRef(configuration.hostPort))
-                .withValue("traceLogging", ConfigValueFactory.fromAnyRef(configuration.traceLogging))
                 .withValue("sslConfig.keyStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.keyStorePassword))
                 .withValue("sslConfig.keyStore", ConfigValueFactory.fromAnyRef(configuration.sslConfig.rawKeyStore.toBase64()))
                 .withValue("sslConfig.trustStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.trustStorePassword))

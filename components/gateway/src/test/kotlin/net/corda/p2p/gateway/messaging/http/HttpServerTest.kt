@@ -45,8 +45,7 @@ class HttpServerTest {
         sslConfig = mock {
             on { keyStore } doReturn mock()
             on { keyStorePassword } doReturn "hi"
-        },
-        traceLogging = false
+        }
     )
     private val address = InetSocketAddress("www.r3.com", 30)
     private val channel = mock<Channel> {

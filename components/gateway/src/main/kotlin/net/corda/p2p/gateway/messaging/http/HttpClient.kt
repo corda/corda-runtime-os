@@ -56,8 +56,6 @@ class HttpClient(
 
     private val lock = ReentrantLock()
 
-    private class Message(val payload: ByteArray)
-
     /**
      * Queue containing messages that will be sent once the connection is established.
      * All queue operations must be synchronized through [writeProcessor].
@@ -128,7 +126,7 @@ class HttpClient(
             } else {
                 val request = HttpHelper.createRequest(message, destinationInfo.uri)
                 channel.writeAndFlush(request)
-                pendingResponses.add(future)
+                pendingResponses.addLast(future)
                 logger.debug("Sent HTTP request $request")
             }
         }

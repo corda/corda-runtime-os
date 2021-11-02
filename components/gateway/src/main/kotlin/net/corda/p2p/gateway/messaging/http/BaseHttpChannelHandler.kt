@@ -25,8 +25,10 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
         val ch = ctx.channel()
         logger.info("Closed client connection ${ch.id()} from ${ch.localAddress()} to ${ch.remoteAddress()}")
         messageBodyBuf?.let {
-            if (it.refCnt() > 0)
+            if (it.refCnt() > 0) {
                 it.release()
+                messageBodyBuf = null
+            }
         }
         eventListener.onClose(HttpConnectionEvent(ch))
         ctx.fireChannelInactive()

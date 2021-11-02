@@ -39,8 +39,7 @@ class ReconfigurableHttpServerTest {
         sslConfig = mock {
             on { keyStore } doReturn mock()
             on { keyStorePassword } doReturn "hi"
-        },
-        traceLogging = false
+        }
     )
 
     private val server = ReconfigurableHttpServer(

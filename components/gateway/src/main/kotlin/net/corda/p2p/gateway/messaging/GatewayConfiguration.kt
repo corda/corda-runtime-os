@@ -20,10 +20,6 @@ data class GatewayConfiguration(
      * Configuration properties used when initiating connections to other Gateways
      */
     val connectionConfig: ConnectionConfiguration = ConnectionConfiguration(),
-    /**
-     * Determines whether HTTP pipeline logging is enabled or not. Should only be turned on when debugging
-     */
-    val traceLogging: Boolean = false
 )
 
 data class ConnectionConfiguration(
@@ -61,8 +57,7 @@ internal fun Config.toGatewayConfiguration(): GatewayConfiguration {
         hostAddress = this.getString("hostAddress"),
         hostPort = this.getInt("hostPort"),
         sslConfig = this.getConfig("sslConfig").toSslConfiguration(),
-        connectionConfig = connectionConfig,
-        traceLogging = this.getBoolean("traceLogging")
+        connectionConfig = connectionConfig
     )
 }
 internal fun Config.toConnectionConfig(): ConnectionConfiguration {

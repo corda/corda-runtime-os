@@ -133,8 +133,11 @@ class GatewayTest : TestBase() {
             val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null)
             HttpClient(serverInfo, bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1), 2.seconds).use { client ->
                 client.start()
-                val response = client.write(gatewayMessage.toByteBuffer().array()).get()
-                assertThat(response.statusCode).isEqualTo(HttpResponseStatus.OK)
+                val httpResponse = client.write(gatewayMessage.toByteBuffer().array()).get()
+                assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
+                assertThat(httpResponse.payload).isNotNull
+                val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
+                assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
             }
         }
 
@@ -177,13 +180,11 @@ class GatewayTest : TestBase() {
             override fun onRequest(request: HttpRequest) {
                 val receivedGatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(request.payload))
                 val p2pMessage = LinkInMessage(receivedGatewayMessage.payload)
-                assertSoftly { softly ->
-                    softly.assertThat(p2pMessage.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
-                        softly.assertThat(String(it.payload.array())).isEqualTo("link out")
-                    }
-                    server?.write(HttpResponseStatus.OK, ByteArray(0), request.source)
-                    messageReceivedLatch.countDown()
+                assertThat(p2pMessage.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
+                    assertThat(String(it.payload.array())).isEqualTo("link out")
                 }
+                server?.write(HttpResponseStatus.OK, ByteArray(0), request.source)
+                messageReceivedLatch.countDown()
             }
         }
         HttpServer(
@@ -234,8 +235,11 @@ class GatewayTest : TestBase() {
                     ).use { secondInboundClient ->
                         secondInboundClient.start()
 
-                        val response = secondInboundClient.write(gatewayMessage.toByteBuffer().array()).get()
-                        assertThat(response.statusCode).isEqualTo(HttpResponseStatus.OK)
+                        val httpResponse = secondInboundClient.write(gatewayMessage.toByteBuffer().array()).get()
+                        assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
+                        assertThat(httpResponse.payload).isNotNull
+                        val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
+                        assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
                     }
 
                     alice.publish(Record(LINK_OUT_TOPIC, "key", linkOutMessage))
@@ -252,7 +256,6 @@ class GatewayTest : TestBase() {
         val clientNumber = 4
         val threadPool = NioEventLoopGroup(clientNumber)
         val serverAddress = URI.create("http://www.alice.net:10000")
-        val clients = mutableListOf<HttpClient>()
         alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
         Gateway(
             createConfigurationServiceFor(GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig)),
@@ -263,21 +266,22 @@ class GatewayTest : TestBase() {
             instanceId.incrementAndGet(),
         ).use {
             it.startAndWaitForStarted()
-            val futures = (1..clientNumber).map { index ->
+            (1..clientNumber).map { index ->
                 val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null)
                 val client = HttpClient(serverInfo, bobSslConfig, threadPool, threadPool, 2.seconds)
                 client.start()
                 val p2pOutMessage = LinkInMessage(authenticatedP2PMessage("Client-$index"))
                 val gatewayMessage = GatewayMessage("msg-${msgNumber.getAndIncrement()}", p2pOutMessage.payload)
                 val future = client.write(gatewayMessage.toByteBuffer().array())
-                clients.add(client)
-                future
+                Triple(client, gatewayMessage, future)
+            }.forEach { (client, gatewayMessage, future) ->
+                val httpResponse = future.get()
+                assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
+                assertThat(httpResponse.payload).isNotNull
+                val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
+                assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
+                client.stop()
             }
-            futures.forEach {
-                val response = it.get()
-                assertThat(response.statusCode).isEqualTo(HttpResponseStatus.OK)
-            }
-            clients.forEach { client -> client.stop() }
         }
 
         // Verify Gateway has received all [clientNumber] messages and that they were forwarded to the P2P_IN topic
