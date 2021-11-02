@@ -7,7 +7,6 @@ import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
 import net.corda.sandbox.internal.ClassTagV1
 import net.corda.sandbox.internal.ClassTagV1.CLASS_BUNDLE_NAME_IDX
 import net.corda.sandbox.internal.ClassTagV1.CLASS_TYPE_IDX
-import net.corda.sandbox.internal.ClassTagV1.VERSION
 import net.corda.sandbox.internal.classtag.ClassType
 import net.corda.sandbox.internal.classtag.StaticTag
 import net.corda.v5.crypto.SecureHash
@@ -18,7 +17,7 @@ internal data class StaticTagImplV1(
     override val classBundleName: String,
     override val cpkFileHash: SecureHash
 ) : StaticTag() {
-    override val version: Int = VERSION
+    override val version: Int = ClassTagV1.VERSION
 
     companion object {
         private const val ENTRIES_LENGTH = 5
