@@ -297,7 +297,7 @@ class OutboundMessageHandlerTest {
             )
         )
 
-        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 2).toInt().millis
+        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
         eventually(waitTime, connectionConfig.retryDelay) {
             assertThat(sentMessages).hasSize(2)
             sentMessages.forEach {
@@ -338,7 +338,7 @@ class OutboundMessageHandlerTest {
             )
         )
 
-        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 2).toInt().millis
+        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
         eventually(waitTime, connectionConfig.retryDelay) {
             assertThat(sentMessages).hasSize(2)
             sentMessages.forEach {
@@ -382,7 +382,7 @@ class OutboundMessageHandlerTest {
             )
         )
 
-        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 2).toInt().millis
+        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
         eventually(waitTime, connectionConfig.retryDelay) {
             assertThat(sentMessages).hasSize(2)
             sentMessages.forEach {
@@ -427,7 +427,7 @@ class OutboundMessageHandlerTest {
             )
         )
 
-        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 2).toInt().millis
+        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
         Thread.sleep(waitTime.toMillis())
         assertThat(sentMessages).hasSize(1)
         assertThat(sentMessages.first().payload).isEqualTo(msgPayload)
