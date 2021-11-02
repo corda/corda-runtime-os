@@ -1,5 +1,6 @@
-package net.corda.sandbox
+package net.corda.sandboxtests
 
+import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
 import org.junit.jupiter.api.fail
 import org.osgi.framework.Bundle

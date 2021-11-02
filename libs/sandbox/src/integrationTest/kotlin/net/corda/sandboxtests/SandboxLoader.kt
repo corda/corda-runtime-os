@@ -1,7 +1,9 @@
-package net.corda.sandbox
+package net.corda.sandboxtests
 
 import net.corda.install.InstallService
 import net.corda.packaging.CPK
+import net.corda.sandbox.SandboxContextService
+import net.corda.sandbox.SandboxCreationService
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.fail
 import org.osgi.framework.FrameworkUtil
@@ -40,7 +42,7 @@ class SandboxLoader @Activate constructor(
         @Suppress("SameParameterValue")
         private fun hashOf(location: URI, algorithm: String): SecureHash {
             val digest = MessageDigest.getInstance(algorithm)
-            DigestInputStream(location.toURL().openStream(), digest).use(::consume)
+            DigestInputStream(location.toURL().openStream(), digest).use(Companion::consume)
             return SecureHash(algorithm, digest.digest())
         }
 
@@ -53,6 +55,7 @@ class SandboxLoader @Activate constructor(
     }
 
     init {
+        println()
         configAdmin.getConfiguration(ConfigurationAdmin::class.java.name)?.also { config ->
             val properties = Hashtable<String, Any>()
             properties[BASE_DIRECTORY_KEY] = baseDirectory.toString()

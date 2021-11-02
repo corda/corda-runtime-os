@@ -1,4 +1,4 @@
-package net.corda.sandbox
+package net.corda.sandboxtests
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

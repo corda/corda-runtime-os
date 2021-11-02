@@ -1,4 +1,4 @@
-package net.corda.sandbox
+package net.corda.sandboxtests
 
 // The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
 @JvmField

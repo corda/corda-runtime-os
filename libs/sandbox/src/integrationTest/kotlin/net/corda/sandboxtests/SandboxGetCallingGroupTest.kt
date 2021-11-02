@@ -1,5 +1,6 @@
-package net.corda.sandbox
+package net.corda.sandboxtests
 
+import net.corda.sandbox.SandboxGroup
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
