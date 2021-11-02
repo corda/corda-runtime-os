@@ -55,7 +55,6 @@ class SandboxLoader @Activate constructor(
     }
 
     init {
-        println()
         configAdmin.getConfiguration(ConfigurationAdmin::class.java.name)?.also { config ->
             val properties = Hashtable<String, Any>()
             properties[BASE_DIRECTORY_KEY] = baseDirectory.toString()
