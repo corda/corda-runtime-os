@@ -3,6 +3,7 @@ package net.corda.libs.configuration.read.file
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfigFactoryImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -28,7 +29,7 @@ class FileConfigReaderImplTest {
     @BeforeEach
     fun beforeEach() {
         createTempTestConfig()
-        service = FileConfigReaderImpl(configRepository, bootstrapConfig())
+        service = FileConfigReaderImpl(configRepository, bootstrapConfig(), SmartConfigFactoryImpl())
         service.start()
     }
 

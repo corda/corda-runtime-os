@@ -10,7 +10,6 @@ import net.corda.sandbox.internal.ClassTagV1.CLASS_TYPE_IDX
 import net.corda.sandbox.internal.ClassTagV1.CPK_SANDBOX_CLASS
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_HASH
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_STRING
-import net.corda.sandbox.internal.ClassTagV1.VERSION
 import net.corda.sandbox.internal.MAIN_BUNDLE_NAME
 import net.corda.sandbox.internal.classtag.v1.EvolvableTagImplV1
 import net.corda.sandbox.internal.classtag.v1.StaticTagImplV1
@@ -45,7 +44,7 @@ class ClassTagFactoryImplTests {
     private fun generateSerialisedTag(
         classTag: String,
         length: Int,
-        version: String = VERSION.toString(),
+        version: String = ClassTagV1.VERSION.toString(),
         classType: String = CPK_SANDBOX_CLASS,
         hash: String? = null
     ): String {

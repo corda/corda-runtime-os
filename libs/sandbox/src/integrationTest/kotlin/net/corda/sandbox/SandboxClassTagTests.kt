@@ -1,4 +1,4 @@
-package net.corda.sandboxhooks
+package net.corda.sandbox
 
 import net.corda.v5.application.flows.Flow
 import org.junit.jupiter.api.Assertions.assertEquals

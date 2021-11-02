@@ -236,7 +236,10 @@ internal class SandboxServiceImpl @Activate constructor(
         }
     }
 
-    /** Returns the [Sandbox] lowest in the stack of calls to this function, or null if no sandbox is on the stack. */
+    /**
+     * Returns the non-public [Sandbox] lowest in the stack of calls to this function, or null if no sandbox is found
+     * on the stack.
+     */
     private fun getCallingSandbox(): Sandbox? {
         val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
 
@@ -246,7 +249,7 @@ internal class SandboxServiceImpl @Activate constructor(
                 .mapNotNull { stackFrame ->
                     val bundle = bundleUtils.getBundle(stackFrame.declaringClass)
                     if (bundle != null) {
-                        sandboxes.values.find { sandbox -> sandbox.containsBundle(bundle) }
+                        (sandboxes.values - publicSandboxes).find { sandbox -> sandbox.containsBundle(bundle) }
                     } else null
                 }
                 .firstOrNull()

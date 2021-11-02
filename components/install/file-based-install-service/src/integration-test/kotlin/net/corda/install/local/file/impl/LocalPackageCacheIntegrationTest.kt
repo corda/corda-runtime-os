@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.install.InstallService
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.packaging.CPI
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
@@ -77,7 +78,8 @@ class LocalPackageCacheIntegrationTest {
                 lock.notify()
             }
         }
-        configReadService.bootstrapConfig(ConfigFactory.parseMap(mapOf("config.file" to configFile.toAbsolutePath().toString())))
+        configReadService.bootstrapConfig(
+            SmartConfigImpl(ConfigFactory.parseMap(mapOf("config.file" to configFile.toAbsolutePath().toString()))))
         synchronized(lock) {
             lock.wait()
         }

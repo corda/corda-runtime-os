@@ -10,7 +10,7 @@ interface Wrapper {
 /** A factory to retrieve [WrapperImpl] from its non-exported package. */
 class WrapperFactory {
     companion object {
-        /** Returns a [FlowImpl] instance. */
+        /** Returns a [WrapperImpl] instance. */
         fun create(): Wrapper = WrapperImpl()
     }
 }

@@ -5,8 +5,8 @@ import org.osgi.framework.Bundle
 /** OSGi service interface for retrieving context on the current sandbox. */
 interface SandboxContextService {
     /**
-     * Finds the sandbox lowest in the stack of calls to this function, and returns the [SandboxGroup] that contains
-     * it. Returns null if no sandbox is on the stack.
+     * Finds the non-public sandbox lowest in the stack of calls to this function, and returns the [SandboxGroup] that
+     * contains it. Returns null if no sandbox is on the stack.
      *
      * A [SandboxException] is thrown if the sandbox bundle's location is not formatted correctly, the ID is not a
      * valid UUID, there is no known sandbox with the given ID, or there is no sandbox group containing the sandbox

@@ -1,8 +1,8 @@
 package net.corda.configuration.read.impl
 
-import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
@@ -24,7 +24,7 @@ class ConfigurationReadServiceImpl @Activate constructor(
     private val lifecycleCoordinator =
         lifecycleCoordinatorFactory.createCoordinator<ConfigurationReadService>(eventHandler)
 
-    override fun bootstrapConfig(config: Config) {
+    override fun bootstrapConfig(config: SmartConfig) {
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
     }
 

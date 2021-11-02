@@ -1,12 +1,12 @@
-package net.corda.sandboxhooks
+package net.corda.sandbox
 
-import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
 import org.junit.jupiter.api.fail
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
+import java.util.function.Function
 
-/** Loads the flow with [className] from sandbox group [group], runs it, and casts the result to [T]. */
+/** Loads the [Flow] with [className] from the sandbox [group], runs it, and casts the result to [T]. */
 internal fun <T : Any> runFlow(group: SandboxGroup, className: String): T {
     val flowClass = group.loadClassFromMainBundles(className, Flow::class.java)
 
@@ -17,6 +17,19 @@ internal fun <T : Any> runFlow(group: SandboxGroup, className: String): T {
 
     @Suppress("unchecked_cast")
     return flow.call() as? T ?: fail("Workflow did not return the correct type.")
+}
+
+/** Loads the [Function] with [className] from the sandbox [group], and applies it with [argument]. */
+internal fun <U: Any, T: Any> applyFunction(group: SandboxGroup, className: String, argument: U): T {
+    val functionClass = group.loadClassFromMainBundles(className, Function::class.java)
+
+    val context = FrameworkUtil.getBundle(functionClass).bundleContext
+    val flowServices = context.getServiceReferences(Function::class.java, null).map(context::getService)
+
+    val flow = flowServices.filterIsInstance(functionClass).firstOrNull() ?: fail("No service for $functionClass.")
+
+    @Suppress("unchecked_cast")
+    return (flow as Function<U, T>).apply(argument)
 }
 
 /** Indicates whether the [sandboxGroup] contains the [bundle]. */

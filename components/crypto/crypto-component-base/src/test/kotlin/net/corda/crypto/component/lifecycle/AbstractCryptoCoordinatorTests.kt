@@ -3,6 +3,7 @@ package net.corda.crypto.component.lifecycle
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -118,11 +119,11 @@ class AbstractCryptoCoordinatorTests {
         configChangeHandler.onNewConfiguration(
             setOf(AbstractCryptoCoordinator.CRYPTO_CONFIG),
             mapOf(
-                AbstractCryptoCoordinator.CRYPTO_CONFIG to ConfigFactory.parseMap(
+                AbstractCryptoCoordinator.CRYPTO_CONFIG to SmartConfigImpl(ConfigFactory.parseMap(
                     mapOf(
                         "some-custom-key" to "some-custom-value"
                     )
-                )
+                ))
             )
         )
         val configHandleCaptor0 = argumentCaptor<CryptoLibraryConfig>()
@@ -153,11 +154,11 @@ class AbstractCryptoCoordinatorTests {
         configChangeHandler.onNewConfiguration(
             setOf(AbstractCryptoCoordinator.CRYPTO_CONFIG),
             mapOf(
-                AbstractCryptoCoordinator.CRYPTO_CONFIG to ConfigFactory.parseMap(
+                AbstractCryptoCoordinator.CRYPTO_CONFIG to SmartConfigImpl(ConfigFactory.parseMap(
                     mapOf(
                         "some-custom-key" to "some-custom-value"
                     )
-                )
+                ))
             )
         )
         val configHandleCaptor0 = argumentCaptor<CryptoLibraryConfig>()
@@ -191,7 +192,7 @@ class AbstractCryptoCoordinatorTests {
                     AbstractCryptoCoordinator.CRYPTO_CONFIG
                 ),
                 mapOf(
-                    AbstractCryptoCoordinator.CRYPTO_CONFIG to ConfigFactory.empty()
+                    AbstractCryptoCoordinator.CRYPTO_CONFIG to SmartConfigImpl(ConfigFactory.empty())
                 )
             )
         }
@@ -217,11 +218,12 @@ class AbstractCryptoCoordinatorTests {
         configChangeHandler.onNewConfiguration(
             setOf("whatever"),
             mapOf(
-                "whatever" to ConfigFactory.parseMap(
+                "whatever" to SmartConfigImpl(ConfigFactory.parseMap(
                     mapOf(
                         "some-custom-key" to "some-custom-value"
                     )
                 )
+            )
             )
         )
         Mockito.verify(subcomponents[0] as Lifecycle, never()).start()

@@ -1,4 +1,4 @@
-package net.corda.sandboxhooks
+package net.corda.sandbox
 
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
