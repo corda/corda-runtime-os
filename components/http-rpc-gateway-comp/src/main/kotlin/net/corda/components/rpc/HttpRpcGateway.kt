@@ -1,6 +1,5 @@
 package net.corda.components.rpc
 
-import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
@@ -16,6 +15,7 @@ import net.corda.httprpc.server.config.models.SsoSettings
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
 import net.corda.httprpc.ssl.SslCertReadService
 import net.corda.httprpc.ssl.SslCertReadServiceFactory
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
@@ -23,8 +23,8 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 
-class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
-class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
+class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, SmartConfig>) : LifecycleEvent
+class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, SmartConfig>) : LifecycleEvent
 
 @Suppress("LongParameterList")
 class HttpRpcGateway(
@@ -52,7 +52,7 @@ class HttpRpcGateway(
     private var receivedSnapshot = false
 
     private var sub: AutoCloseable? = null
-    private var bootstrapConfig: Config? = null
+    private var bootstrapConfig: SmartConfig? = null
 
     private var server: HttpRpcServer? = null
     private var securityManager: RPCSecurityManager? = null
@@ -61,7 +61,7 @@ class HttpRpcGateway(
     override val isRunning: Boolean
         get() = receivedSnapshot
 
-    fun start(bootstrapConfig: Config) {
+    fun start(bootstrapConfig: SmartConfig) {
         log.info("Starting with bootstrap config")
         this.bootstrapConfig = bootstrapConfig
         this.start()
@@ -80,7 +80,7 @@ class HttpRpcGateway(
         configurationReadService.bootstrapConfig(bootstrapConfig!!)
     }
 
-    private fun onConfigurationUpdated(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config>) {
+    private fun onConfigurationUpdated(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, SmartConfig>) {
         log.info("Gateway component received lifecycle event, changedKeys: $changedKeys")
         if (MESSAGING_CONFIG in changedKeys) {
             if (receivedSnapshot) {
@@ -134,7 +134,7 @@ class HttpRpcGateway(
         }
     }
 
-    private fun Config.retrieveSsoOptions(): SsoSettings? {
+    private fun SmartConfig.retrieveSsoOptions(): SsoSettings? {
         return if(!hasPath(AZURE_CLIENT_ID_CONFIG) || !hasPath(AZURE_TENANT_ID_CONFIG)) {
             null
         } else {
@@ -149,7 +149,7 @@ class HttpRpcGateway(
         }
     }
 
-    private fun Config.retrieveMaxContentLength(): Int {
+    private fun SmartConfig.retrieveMaxContentLength(): Int {
         return if (hasPath(MAX_CONTENT_LENGTH_CONFIG)) {
             getInt(MAX_CONTENT_LENGTH_CONFIG)
         } else {

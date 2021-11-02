@@ -15,31 +15,26 @@ interface SandboxCreationService {
 
     /**
      * Creates a new [SandboxGroup] in the [securityDomain] containing a sandbox for each of the CPKs identified by the
-     * [cpkFileHashes].
+     * [cpkHashes].
      *
-     * Duplicate [cpkFileHashes] are discarded (i.e. only one sandbox will be created per unique hash).
+     * Duplicate [cpkHashes] are discarded (i.e. only one sandbox will be created per unique hash).
      *
-     * A [SandboxException] is thrown if the sandbox creation fails.
+     * A [SandboxException] is thrown if the [securityDomain] contains a '/' character, or if the sandbox creation
+     * fails.
      */
-    fun createSandboxGroup(
-        cpkFileHashes: Iterable<SecureHash>,
-        securityDomain: String = DEFAULT_SECURITY_DOMAIN
-    ): SandboxGroup
+    fun createSandboxGroup(cpkHashes: Iterable<SecureHash>, securityDomain: String = ""): SandboxGroup
 
     /**
      * Creates a new [SandboxGroup] in the [securityDomain] containing a sandbox for each of the CPKs identified by the
-     * [cpkFileHashes].
+     * [cpkHashes].
      *
-     * Duplicate [cpkFileHashes] are discarded (i.e. only one sandbox will be created per unique hash).
+     * Duplicate [cpkHashes] are discarded (i.e. only one sandbox will be created per unique hash).
      *
      * The bundles in each sandbox are not started, meaning that their bundle activators are not called.
      *
      * A [SandboxException] is thrown if the sandbox creation fails.
      */
-    fun createSandboxGroupWithoutStarting(
-        cpkFileHashes: Iterable<SecureHash>,
-        securityDomain: String = DEFAULT_SECURITY_DOMAIN
-    ): SandboxGroup
+    fun createSandboxGroupWithoutStarting(cpkHashes: Iterable<SecureHash>, securityDomain: String = ""): SandboxGroup
 
     /**
      * Attempts to uninstall each of the sandbox group's bundles in turn, and removes the sandbox group from the

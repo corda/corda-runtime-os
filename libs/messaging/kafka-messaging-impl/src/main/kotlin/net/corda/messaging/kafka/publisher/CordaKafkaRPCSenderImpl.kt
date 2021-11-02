@@ -40,13 +40,13 @@ import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
 @Component
-class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
+class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: Config,
     private val publisher: Publisher,
     private val consumerBuilder: ConsumerBuilder<String, RPCResponse>,
-    private val serializer: CordaAvroSerializer<TREQ>,
-    private val deserializer: CordaAvroDeserializer<TRESP>
-) : RPCSender<TREQ, TRESP>, RPCSubscription<TREQ, TRESP> {
+    private val serializer: CordaAvroSerializer<REQUEST>,
+    private val deserializer: CordaAvroDeserializer<RESPONSE>
+) : RPCSender<REQUEST, RESPONSE>, RPCSubscription<REQUEST, RESPONSE> {
 
     private companion object {
         private val log: Logger = contextLogger()
@@ -56,7 +56,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private val futureTracker = FutureTracker<TRESP>()
+    private val futureTracker = FutureTracker<RESPONSE>()
 
     override val isRunning: Boolean
         get() = !stopped
@@ -202,9 +202,9 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun sendRequest(req: TREQ): CompletableFuture<TRESP> {
+    override fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE> {
         val correlationId = UUID.randomUUID().toString()
-        val future = CompletableFuture<TRESP>()
+        val future = CompletableFuture<RESPONSE>()
         val partitions = partitionListener.getPartitions()
         var reqBytes: ByteArray? = null
         try {

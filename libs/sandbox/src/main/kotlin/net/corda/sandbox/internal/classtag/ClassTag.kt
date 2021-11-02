@@ -13,8 +13,8 @@ sealed class ClassTag(val version: Int, val isPublicClass: Boolean, val classBun
     /**
      * Serializes the class tag.
      *
-     * Regardless of [version], serialised class tags must obey the format "classTagIdentifier$version$<otherEntries>".
-     * For example, "armAllowance$99$feedback" and "strike$1$premium$leaf" are valid serialised class tags.
+     * Regardless of [version], serialized class tags must obey the format "classTagIdentifier$version$<otherEntries>".
+     * For example, "armAllowance$99$feedback" and "strike$1$premium$leaf" are valid serialized class tags.
      */
     abstract fun serialise(): String
 }
@@ -30,13 +30,13 @@ abstract class StaticTag(version: Int, isPublicClass: Boolean, classBundleName: 
 /**
  * Identifies a sandboxed class in an evolvable way.
  *
- * @param cordappBundleName The symbolic name of the CorDapp bundle of the CPK that the class if from.
+ * @param mainBundleName The symbolic name of the main bundle of the CPK that the class if from.
  * @param cpkSignerSummaryHash A summary hash of the hashes of the public keys that signed the CPK the class is from.
  */
 abstract class EvolvableTag(
     version: Int,
     isPublicClass: Boolean,
     classBundleName: String,
-    val cordappBundleName: String,
+    val mainBundleName: String,
     val cpkSignerSummaryHash: SecureHash?
 ) : ClassTag(version, isPublicClass, classBundleName)

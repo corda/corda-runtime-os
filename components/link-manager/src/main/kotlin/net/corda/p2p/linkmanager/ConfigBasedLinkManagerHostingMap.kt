@@ -1,8 +1,8 @@
 package net.corda.p2p.linkmanager
 
-import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.CONFIG_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITIES_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GPOUP_ID
@@ -70,7 +70,7 @@ class ConfigBasedLinkManagerHostingMap(private val configReadService: Configurat
 
         private val latch = CountDownLatch(1)
 
-        override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, Config>) {
+        override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
             if (changedKeys.contains(CONFIG_KEY)) {
                 val linkManagerConfig = config[CONFIG_KEY]!!
                 val holdingIdentities = linkManagerConfig.getConfigList(LOCALLY_HOSTED_IDENTITIES_KEY).map { identityConfig ->

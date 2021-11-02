@@ -1,6 +1,6 @@
 package net.corda.configuration.read
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 
 /**
  * The user configuration handler.
@@ -22,5 +22,5 @@ fun interface ConfigurationHandler {
      *                    cases where the full configuration is being delivered, all known keys are present.
      * @param config The current full configuration.
      */
-    fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, Config>)
+    fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>)
 }

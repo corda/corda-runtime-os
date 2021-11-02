@@ -67,14 +67,14 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     override fun pollAndUpdateStates(syncPartitions: Boolean) {
         if (stateConsumer.assignment().isEmpty()) {
-            log.trace { "State consumer has no partitions assigned." }
+            log.debug { "State consumer has no partitions assigned." }
             return
         }
 
         val partitionsSynced = mutableSetOf<TopicPartition>()
         val states = stateConsumer.poll()
         for (state in states) {
-            log.trace { "Updating state: $state" }
+            log.debug { "Updating state: $state" }
             updateInMemoryState(state.record)
             partitionsSynced.addAll(getSyncedEventPartitions())
         }
@@ -140,6 +140,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     private fun pauseEventConsumerAndWaitForFutureToFinish(future: CompletableFuture<*>, timeout: Long) {
         val assignment = eventConsumer.assignment() - eventConsumer.paused()
+        log.debug { "Pause partitions and wait for future to finish. Assignment: $assignment"}
         eventConsumer.pause(assignment)
         val maxWaitTime = System.currentTimeMillis() + timeout
         var done = future.isDone
@@ -151,6 +152,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             done = future.isDone
         }
 
+        log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}]. Assignment: $assignment"}
         eventConsumer.resume(assignment)
     }
 
@@ -196,10 +198,12 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override fun resetPollInterval() {
         if (System.currentTimeMillis() > pollIntervalCutoff) {
             val assignment = eventConsumer.assignment() - eventConsumer.paused()
+            log.debug { "Resetting poll interval. Pausing assignment: $assignment"}
             eventConsumer.pause(assignment)
             eventConsumer.poll(PAUSED_POLL_TIMEOUT)
             stateConsumer.poll(PAUSED_POLL_TIMEOUT)
             pollIntervalCutoff = getNextPollIntervalCutoff()
+            log.debug { "Reset of poll interval complete. Resuming assignment: $assignment"}
             eventConsumer.resume(assignment)
         }
     }

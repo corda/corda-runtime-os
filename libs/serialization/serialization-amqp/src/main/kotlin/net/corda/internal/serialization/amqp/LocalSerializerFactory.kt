@@ -7,14 +7,12 @@ import net.corda.internal.serialization.model.LocalTypeModel
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.internal.serialization.model.TypeIdentifier.Parameterised
 import net.corda.internal.serialization.osgi.TypeResolver
-import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.utilities.reflection.kotlinObjectInstance
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.ClassWhitelist
 import net.corda.v5.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Symbol
@@ -147,13 +145,8 @@ class DefaultLocalSerializerFactory(
     override fun getTypeInformation(context: SerializationContext, metadata: Metadata, typeName: String): LocalTypeInformation? {
         return typesByName.getOrPut(typeName) {
             val localType = try {
-                val cpkIdentifierParts = metadata.getValue(typeName) as List<*>
-                val cpkIdentifier = CPK.Identifier.newInstance(
-                    cpkIdentifierParts[0] as String,
-                    cpkIdentifierParts[1] as String,
-                    SecureHash.create(cpkIdentifierParts[4] as String)
-                )
-                (context.sandboxGroup as? SandboxGroup)?.loadClassFromCordappBundle(cpkIdentifier, typeName)
+                val serializedClassTag = metadata.getValue(typeName) as String
+                (context.sandboxGroup as? SandboxGroup)?.getClass(typeName, serializedClassTag)
             } catch (_: SandboxException) {
                 logger.trace { "Failed to load class $typeName from any sandboxes" }
                 null

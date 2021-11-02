@@ -148,8 +148,8 @@ interface SubscriptionFactory {
 
     /**
      * Create an instance of the [RPCSubscription]
-     * This subscription is used to pick up requests of type [TREQ] posted by [RPCSender]
-     * The request is then processed and a response of type [TRESP] is posted back to the sender
+     * This subscription is used to pick up requests of type [REQUEST] posted by [RPCSender]
+     * The request is then processed and a response of type [RESPONSE] is posted back to the sender
      *
      * RPC requests are handled asynchronously. Input messages are consumes as soon as they are posted to the user
      * event handler. RPC responses are unreliable so do not use this pattern if you require reliable responses for
@@ -163,9 +163,9 @@ interface SubscriptionFactory {
      * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
      * @param responderProcessor processor in charge of handling incoming requests
      */
-    fun <TREQ : Any, TRESP : Any> createRPCSubscription(
-        rpcConfig: RPCConfig<TREQ, TRESP>,
+    fun <REQUEST : Any, RESPONSE : Any> createRPCSubscription(
+        rpcConfig: RPCConfig<REQUEST, RESPONSE>,
         nodeConfig: Config = ConfigFactory.empty(),
-        responderProcessor: RPCResponderProcessor<TREQ, TRESP>
-    ): RPCSubscription<TREQ, TRESP>
+        responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
+    ): RPCSubscription<REQUEST, RESPONSE>
 }

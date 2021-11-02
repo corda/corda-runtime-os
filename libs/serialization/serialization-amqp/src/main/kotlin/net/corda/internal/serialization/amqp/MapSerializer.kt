@@ -94,10 +94,10 @@ class MapSerializer(private val declaredType: ParameterizedType, factory: LocalS
     private val inboundValueType = declaredType.actualTypeArguments[1]
     private val outboundValueType = resolveTypeVariables(inboundValueType, null)
 
-    override fun writeClassInfo(output: SerializationOutput) = ifThrowsAppend({ declaredType.typeName }) {
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) = ifThrowsAppend({ declaredType.typeName }) {
         if (output.writeTypeNotations(typeNotation)) {
-            output.requireSerializer(outboundKeyType)
-            output.requireSerializer(outboundValueType)
+            output.requireSerializer(outboundKeyType, context)
+            output.requireSerializer(outboundValueType, context)
         }
     }
 
