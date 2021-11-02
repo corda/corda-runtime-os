@@ -55,13 +55,12 @@ crashlytics-build.properties
 *.swo
 
 # Files you may find useful to have in your working directory.
-PLAN
-NOTES
-TODO
+PLAN*
+NOTES*
+TODO*
 
 # gradle-dependx plugin
 .dependx/
 
 # Directory generated during Resolve and TestOSGi gradle tasks
 bnd/
-

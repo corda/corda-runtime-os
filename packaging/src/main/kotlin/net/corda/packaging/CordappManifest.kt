@@ -43,6 +43,7 @@ data class CordappManifest(
         const val CORDAPP_STATE_AND_REF_PROCESSORS = "Corda-StateAndRefPostProcessor-Classes"
         const val CORDAPP_CUSTOM_QUERY_PROCESSORS = "Corda-CustomQueryPostProcessor-Classes"
         const val CORDAPP_NOTARIES = "Corda-NotaryService-Classes"
+        const val CORDAPP_DIGEST_ALGORITHM_FACTORIES = "Corda-DigestAlgorithmFactory-Classes"
 
         private operator fun Manifest.get(key: String): String? = mainAttributes.getValue(key)
 
@@ -132,6 +133,7 @@ data class CordappManifest(
     val queryPostProcessors: Set<String>
         get() = parseSet(CORDAPP_STATE_AND_REF_PROCESSORS) + parseSet(CORDAPP_CUSTOM_QUERY_PROCESSORS)
     val notaryProtocols: Set<String> get() = parseSet(CORDAPP_NOTARIES)
+    val digestAlgorithmFactories: Set<String> get() = parseSet(CORDAPP_DIGEST_ALGORITHM_FACTORIES)
 }
 
 /** Information on a contract or workflow CorDapp in a [CordappManifest]. */
