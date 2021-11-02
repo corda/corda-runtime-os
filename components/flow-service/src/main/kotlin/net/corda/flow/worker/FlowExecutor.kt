@@ -1,10 +1,10 @@
 package net.corda.flow.worker
 
-import com.typesafe.config.Config
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.manager.FlowManager
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -19,7 +19,7 @@ import net.corda.v5.base.util.debug
 
 class FlowExecutor(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val config: Config,
+    private val config: SmartConfig,
     private val subscriptionFactory: SubscriptionFactory,
     private val flowManager: FlowManager
 ) : Lifecycle {

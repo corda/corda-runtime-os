@@ -55,7 +55,7 @@ class GatewayApp @Activate constructor(
 
             val writer = configWriterFactory.createWriter(
                 arguments.configTopicName,
-                arguments.kafkaNodeConfiguration
+                smartConfigFactory.create(arguments.kafkaNodeConfiguration)
             )
             writer.updateConfiguration(
                 CordaConfigurationKey(
@@ -72,7 +72,7 @@ class GatewayApp @Activate constructor(
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
-                arguments.kafkaNodeConfiguration,
+                smartConfigFactory.create(arguments.kafkaNodeConfiguration),
                 arguments.instanceId,
             ).also { gateway ->
                 gateway.start()

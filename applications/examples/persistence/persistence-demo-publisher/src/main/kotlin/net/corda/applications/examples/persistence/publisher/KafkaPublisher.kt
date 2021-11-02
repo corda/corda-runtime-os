@@ -1,6 +1,7 @@
 package net.corda.applications.examples.persistence.publisher
 
 import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -10,6 +11,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
 class KafkaPublisher(
+    private val smartConfigFactory: SmartConfigFactory,
     private val brokerAddress: String,
     publisherFactory: PublisherFactory
 ) {
@@ -23,10 +25,10 @@ class KafkaPublisher(
     }
 
     private val config by lazy {
-        ConfigFactory.parseMap(mapOf(
+        smartConfigFactory.create(ConfigFactory.parseMap(mapOf(
          ConfigConstants.KAFKA_BOOTSTRAP_SERVER to brokerAddress,
          ConfigConstants.TOPIC_PREFIX_CONFIG_KEY to ConfigConstants.TOPIC_PREFIX
-        ))
+        )))
     }
 
     private val publisher by lazy {

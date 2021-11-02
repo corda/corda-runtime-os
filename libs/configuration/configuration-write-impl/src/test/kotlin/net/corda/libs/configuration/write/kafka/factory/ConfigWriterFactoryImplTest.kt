@@ -1,6 +1,6 @@
 package net.corda.libs.configuration.write.kafka.factory
 
-import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import org.junit.jupiter.api.Assertions
@@ -25,7 +25,7 @@ class ConfigWriterFactoryImplTest {
     fun testCreateCordaWriteService() {
         Mockito.`when`(publisherFactory.createPublisher(any(), any()))
             .thenReturn(publisher)
-        val writeService = cordaWriteServiceFactory.createWriter(topicName, ConfigFactory.empty())
+        val writeService = cordaWriteServiceFactory.createWriter(topicName, SmartConfigImpl.empty())
         Assertions.assertNotNull(writeService)
     }
 }

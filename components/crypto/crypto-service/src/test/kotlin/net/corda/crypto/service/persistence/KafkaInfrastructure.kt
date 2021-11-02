@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.persistence.IHaveMemberId
 import net.corda.crypto.impl.persistence.KeyValuePersistence
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -99,7 +100,7 @@ class KafkaInfrastructure {
                     stop.countDown()
                 }
             },
-            nodeConfig = ConfigFactory.empty()
+            nodeConfig = SmartConfigImpl.empty()
         ).use {
             it.start()
             stop.await(2, TimeUnit.SECONDS)

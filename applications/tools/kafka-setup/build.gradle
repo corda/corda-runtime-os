@@ -17,6 +17,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'
 
+    implementation project(':libs:configuration:configuration-core')
     implementation project(':components:kafka-topic-admin')
     implementation project(':components:kafka-config-write')
     implementation project(":osgi-framework-api")

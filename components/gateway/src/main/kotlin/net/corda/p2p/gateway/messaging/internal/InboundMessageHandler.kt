@@ -3,6 +3,7 @@ package net.corda.p2p.gateway.messaging.internal
 import com.typesafe.config.Config
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.InternalTile
@@ -36,7 +37,7 @@ internal class InboundMessageHandler(
     configurationReaderService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
-    nodeConfiguration: Config,
+    nodeConfiguration: SmartConfig,
 ) :
     HttpEventListener,
     InternalTile(lifecycleCoordinatorFactory) {

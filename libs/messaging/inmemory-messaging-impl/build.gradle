@@ -16,6 +16,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
+    implementation project(":libs:configuration:configuration-core")
     implementation 'org.slf4j:slf4j-api'
 
     integrationTestApi project(":testing:test-utilities")

@@ -6,6 +6,7 @@ import net.corda.components.examples.persistence.config.admin.ConfigAdminSubscri
 import net.corda.components.examples.persistence.config.admin.ConfigState
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.core.PostgresDataSourceFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -37,7 +38,9 @@ class PersistenceDemoApp @Activate constructor(
     @Reference(service = LiquibaseSchemaMigrator::class)
     private val schemaMigrator: LiquibaseSchemaMigrator,
     @Reference(service = EntityManagerFactoryFactory::class)
-    private val entityManagerFactoryFactory: EntityManagerFactoryFactory
+    private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
+    @Reference(service = SmartConfigFactory::class)
+    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
 
     companion object {
@@ -60,12 +63,12 @@ class PersistenceDemoApp @Activate constructor(
             var clusterAdminEventSub: RunClusterAdminEventSubscription? = null
             var configAdminEventSub: ConfigAdminSubscription? = null
 
-            val config = ConfigFactory.parseMap(
+            val config = smartConfigFactory.create(ConfigFactory.parseMap(
                 mapOf(
                     ConfigConstants.KAFKA_BOOTSTRAP_SERVER to parameters.kafka,
                     ConfigConstants.TOPIC_PREFIX_CONFIG_KEY to ConfigConstants.TOPIC_PREFIX
                 )
-            )
+            ))
             val dbSource = PostgresDataSourceFactory().create(
                 parameters.dbUrl,
                 parameters.dbUser,
