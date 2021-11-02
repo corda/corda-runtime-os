@@ -38,10 +38,7 @@ internal class IsolatingResolverBundleHook(private val sandboxService: SandboxCo
         val candidatesFoundInInitiatingSandbox = mutableListOf<BundleCapability>()
 
         val candidatesToRemove = candidates.filter { candidate ->
-            val initiatingSandbox = sandboxService.getSandbox(requirement.revision.bundle)
-            val candidateSandbox = sandboxService.getSandbox(candidate.revision.bundle)
-
-            if (initiatingSandbox != null && (initiatingSandbox === candidateSandbox)) {
+            if (sandboxService.areInSameSandbox(requirement.revision.bundle, candidate.revision.bundle)) {
                 // Initiating bundle and candidate are in the same sandbox.
                 candidatesFoundInInitiatingSandbox.add(candidate)
             }

@@ -27,7 +27,6 @@ dependencies {
 
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-serialization"
-    implementation project(":libs:class-info")
     implementation project(":components:install:install-legacy")
     implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
     implementation project(":libs:sandbox")

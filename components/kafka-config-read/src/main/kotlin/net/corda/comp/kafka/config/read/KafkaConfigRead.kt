@@ -1,6 +1,6 @@
 package net.corda.comp.kafka.config.read
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
@@ -31,12 +31,12 @@ class KafkaConfigRead @Activate constructor(
 
     private var configReader: ConfigReader? = null
     private var sub: AutoCloseable? = null
-    private var bootstrapConfig: Config? = null
+    private var bootstrapConfig: SmartConfig? = null
 
     override val isRunning: Boolean
         get() = receivedSnapshot
 
-    fun start(bootstrapConfig: Config) {
+    fun start(bootstrapConfig: SmartConfig) {
         this.bootstrapConfig = bootstrapConfig
         this.start()
     }
@@ -44,7 +44,7 @@ class KafkaConfigRead @Activate constructor(
     override fun start() {
         if(bootstrapConfig != null){
             configReader = readServiceFactory.createReader(bootstrapConfig!!)
-            val lister = ConfigListener { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config> ->
+            val lister = ConfigListener { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, SmartConfig> ->
                 logger.info("----------New configuration has been posted----------")
                 for (key in changedKeys) {
                     logger.info("$key -> ${currentConfigurationSnapshot[key]}")

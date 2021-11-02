@@ -6,6 +6,7 @@ import net.corda.configuration.read.ConfigKeys.Companion.BOOTSTRAP_KEY
 import net.corda.configuration.read.ConfigKeys.Companion.MESSAGING_KEY
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.manager.FlowManager
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -93,7 +94,7 @@ class FlowService @Activate constructor(
     }
 
     @Suppress("TooGenericExceptionThrown", "UNUSED_PARAMETER")
-    private fun onConfigChange(keys: Set<String>, config: Map<String, Config>) {
+    private fun onConfigChange(keys: Set<String>, config: Map<String, SmartConfig>) {
         if (MESSAGING_KEY in config.keys && BOOTSTRAP_KEY in config.keys && MESSAGING_KEY in config.keys) {
             coordinator.postEvent(
                 NewConfigurationReceived(config)

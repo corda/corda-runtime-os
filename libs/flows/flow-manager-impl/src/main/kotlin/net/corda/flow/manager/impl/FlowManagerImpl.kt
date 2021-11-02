@@ -121,7 +121,7 @@ class FlowManagerImpl @Activate constructor(
     @Suppress("SpreadOperator")
     private fun getOrCreate(sandboxGroup: SandboxGroup, flowName: String, jsonArg: String?): Flow<*> {
         val flowClazz: Class<Flow<*>> =
-            uncheckedCast(sandboxGroup.loadClassFromCordappBundle(flowName, Flow::class.java))
+            uncheckedCast(sandboxGroup.loadClassFromMainBundles(flowName, Flow::class.java))
         val constructor = flowClazz.getDeclaredConstructor(String::class.java)
         return constructor.newInstance(jsonArg)
     }

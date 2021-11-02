@@ -6,6 +6,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.impl.DefaultCryptoServiceProvider
 import net.corda.crypto.component.lifecycle.AbstractCryptoCoordinator
 import net.corda.crypto.service.rpc.CryptoRpcSub
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -93,7 +94,7 @@ class CryptoCoordinatorTests {
                     AbstractCryptoCoordinator.CRYPTO_CONFIG
                 ),
                 mapOf(
-                    AbstractCryptoCoordinator.CRYPTO_CONFIG to ConfigFactory.empty()
+                    AbstractCryptoCoordinator.CRYPTO_CONFIG to SmartConfigImpl(ConfigFactory.empty())
                 )
             )
         }
