@@ -1,0 +1,300 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet author="vkolomeyko" id="rpc-perm-creation-v1.0">
+
+        <createTable tableName="rpc_user">
+            <column name="id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="full_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="login_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enabled" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="salt_value" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="hashed_password" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="password_expiry" type="TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+            <column name="parent_group" type="VARCHAR(36)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="rpc_user" columnNames="id" constraintName="rpc_user_pkey"/>
+        <addUniqueConstraint tableName="rpc_user" columnNames="login_name" constraintName="rpc_user_uc1"/>
+
+        <createTable tableName="rpc_user_props" remarks="Holds properties for an individual user">
+            <column name="id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_ref" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="rpc_user_props" columnNames="id" constraintName="rpc_user_props_pkey"/>
+        <addUniqueConstraint tableName="rpc_user_props" columnNames="user_ref, key" constraintName="rpc_user_props_uc1"/>
+
+        <addForeignKeyConstraint baseTableName="rpc_user_props" baseColumnNames="user_ref"
+                                 referencedTableName="rpc_user" referencedColumnNames="id"
+                                 constraintName="FK__rpc_user_props__user_ref"
+                                 onDelete="CASCADE"/>
+
+        <createTable tableName="rpc_group">
+            <column name="id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parent_group" type="VARCHAR(36)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="rpc_group" columnNames="id" constraintName="rpc_group_pkey"/>
+        <addUniqueConstraint tableName="rpc_group" columnNames="name, parent_group" constraintName="rpc_group_uc1"/>
+
+        <addForeignKeyConstraint baseTableName="rpc_group" baseColumnNames="parent_group"
+                                 referencedTableName="rpc_group" referencedColumnNames="id"
+                                 constraintName="FK__rpc_gr__parent_gr"
+                                 onDelete="SET NULL"/>
+
+        <addForeignKeyConstraint baseTableName="rpc_user" baseColumnNames="parent_group"
+                                 referencedTableName="rpc_group" referencedColumnNames="id"
+                                 constraintName="FK__rpc_user__parent_group"
+                                 onDelete="SET NULL"/>
+
+        <createTable tableName="rpc_group_props" remarks="Holds properties of the group">
+            <column name="id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="group_ref" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="key" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="rpc_group_props" columnNames="id" constraintName="rpc_group_props_pkey"/>
+        <addUniqueConstraint tableName="rpc_group_props" columnNames="group_ref, key" constraintName="rpc_group_props_uc1"/>
+
+        <addForeignKeyConstraint baseTableName="rpc_group_props" baseColumnNames="group_ref"
+                                 referencedTableName="rpc_group" referencedColumnNames="id"
+                                 constraintName="FK__rpc_group_props__group_ref"
+                                 onDelete="CASCADE"/>
+
+        <createTable tableName="rpc_change_audit">
+            <column name="id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="actor_user" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="change_type" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="details" type="VARCHAR(2048)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="rpc_change_audit" columnNames="id" constraintName="rpc_change_audit_pkey"/>
+
+        <createTable tableName="rpc_role">
+            <column name="id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="group_vis" type="VARCHAR(36)" remarks="Indicates which group which has visibility on a given role">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="rpc_role" columnNames="id" constraintName="rpc_role_pkey"/>
+        <addUniqueConstraint tableName="rpc_role" columnNames="name, group_vis" constraintName="rpc_role_uc1"/>
+        <createIndex tableName="rpc_role" indexName="rpc_role__group_vis__idx">
+            <column name="group_vis"/>
+        </createIndex>
+
+        <addForeignKeyConstraint baseTableName="rpc_role" baseColumnNames="group_vis"
+                                 referencedTableName="rpc_group" referencedColumnNames="id"
+                                 constraintName="FK__rpc_role__group_vis"
+                                 onDelete="CASCADE"/>
+
+        <createTable tableName="rpc_role_user_rel" remarks="Represents 1-n relationship between user and roles">
+            <column name="id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="rpc_role_user_rel" columnNames="id" constraintName="rpc_role_user_rel_pkey"/>
+        <addUniqueConstraint tableName="rpc_role_user_rel" columnNames="user_id, role_id" constraintName="rpc_role_user_rel_uc1"/>
+
+        <addForeignKeyConstraint baseTableName="rpc_role_user_rel" baseColumnNames="user_id"
+                                 referencedTableName="rpc_user" referencedColumnNames="id"
+                                 constraintName="FK__rpc_role_user_rel__user_id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="rpc_role_user_rel" baseColumnNames="role_id"
+                                 referencedTableName="rpc_role" referencedColumnNames="id"
+                                 constraintName="FK__rpc_role_user_rel__role_id"
+                                 onDelete="CASCADE"/>
+
+        <createTable tableName="rpc_role_group_rel" remarks="Represents 1-n relationship between group and roles">
+            <column name="id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="group_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="rpc_role_group_rel" columnNames="id" constraintName="rpc_role_group_rel_pkey"/>
+        <addUniqueConstraint tableName="rpc_role_group_rel" columnNames="group_id, role_id" constraintName="rpc_role_group_rel_uc1"/>
+
+        <addForeignKeyConstraint baseTableName="rpc_role_group_rel" baseColumnNames="group_id"
+                                 referencedTableName="rpc_group" referencedColumnNames="id"
+                                 constraintName="FK__rpc_role_group_rel__group_id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="rpc_role_group_rel" baseColumnNames="role_id"
+                                 referencedTableName="rpc_role" referencedColumnNames="id"
+                                 constraintName="FK__rpc_role_group_rel__role_id"
+                                 onDelete="CASCADE"/>
+
+        <createTable tableName="rpc_perm">
+            <column name="id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="group_vis" type="VARCHAR(36)" remarks="Indicates which group which has visibility on a given permission">
+                <constraints nullable="true"/>
+            </column>
+            <column name="virtual_node" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="perm_type" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="perm_string" type="VARCHAR(1024)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="rpc_perm" columnNames="id" constraintName="rpc_perm_pkey"/>
+        <createIndex tableName="rpc_perm" indexName="rpc_perm__group_vis__idx">
+            <column name="group_vis"/>
+        </createIndex>
+
+        <addForeignKeyConstraint baseTableName="rpc_perm" baseColumnNames="group_vis"
+                                 referencedTableName="rpc_group" referencedColumnNames="id"
+                                 constraintName="FK__rpc_perm__group_vis"
+                                 onDelete="CASCADE"/>
+
+        <createTable tableName="rpc_role_perm_rel" remarks="Represents n-n relationship between roles and permissions">
+            <column name="id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="perm_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="rpc_role_perm_rel" columnNames="id" constraintName="rpc_role_perm_rel_pkey"/>
+        <addUniqueConstraint tableName="rpc_role_perm_rel" columnNames="role_id, perm_id" constraintName="rpc_role_perm_rel_uc1"/>
+
+        <addForeignKeyConstraint baseTableName="rpc_role_perm_rel" baseColumnNames="role_id"
+                                 referencedTableName="rpc_role" referencedColumnNames="id"
+                                 constraintName="FK__rpc_role_perm_rel__role_id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="rpc_role_perm_rel" baseColumnNames="perm_id"
+                                 referencedTableName="rpc_perm" referencedColumnNames="id"
+                                 constraintName="FK__rpc_role_perm_rel__perm_id"
+                                 onDelete="CASCADE"/>
+
+    </changeSet>
+</databaseChangeLog>

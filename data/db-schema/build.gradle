@@ -1,0 +1,15 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda-api.common-library'
+}
+
+description 'Definition of Database Schema'
+
+dependencies {
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform(project(':corda-api'))
+
+    compileOnly 'org.osgi:osgi.annotation'
+}
+

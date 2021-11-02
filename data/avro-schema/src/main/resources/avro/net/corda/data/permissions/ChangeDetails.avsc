@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "ChangeDetails",
+  "namespace": "net.corda.data.permissions",
+  "doc": "Details of the most recent update to the entity.",
+  "fields": [
+    {
+      "name": "updateTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds when this entity was last updated."
+    },
+    {
+      "name": "changedBy",
+      "type": "string",
+      "doc": "ID of user who made the most recent update."
+    }
+  ]
+}

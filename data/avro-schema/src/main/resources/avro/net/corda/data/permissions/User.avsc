@@ -1,0 +1,64 @@
+{
+  "type": "record",
+  "name": "User",
+  "namespace": "net.corda.data.permissions",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string"
+    },
+    {
+      "name": "version",
+      "type": "int"
+    },
+    {
+      "name": "lastChangeDetails",
+      "type": "net.corda.data.permissions.ChangeDetails"
+    },
+    {
+      "name": "fullName",
+      "type": "string"
+    },
+    {
+      "name": "enabled",
+      "type": "boolean"
+    },
+    {
+      "name": "email",
+      "type": "string"
+    },
+    {
+      "name": "hashedPassword",
+      "type": [ "null", "string" ]
+    },
+    {
+      "name": "saltValue",
+      "type": [ "null", "string" ]
+    },
+    {
+      "name": "ssoAuth",
+      "type": "boolean"
+    },
+    {
+      "name": "parentGroupId",
+      "type": [ "null", "string" ],
+      "doc": "Optional parent group ID of this User."
+    },
+    {
+      "name": "properties",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.permissions.Property"
+      },
+      "doc": "List of user properties."
+    },
+    {
+      "name": "roleIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "List of role IDs associated with this User."
+    }
+  ]
+}

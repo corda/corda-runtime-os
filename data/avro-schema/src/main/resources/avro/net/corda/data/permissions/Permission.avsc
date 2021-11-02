@@ -1,0 +1,36 @@
+{
+  "type": "record",
+  "name": "Permission",
+  "namespace": "net.corda.data.permissions",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string"
+    },
+    {
+      "name": "version",
+      "type": "int"
+    },
+    {
+      "name": "lastChangeDetails",
+      "type": "net.corda.data.permissions.ChangeDetails"
+    },
+    {
+      "name": "virtualNode",
+      "type": "string"
+    },
+    {
+      "name": "permissionString",
+      "type": "string"
+    },
+    {
+      "name": "type",
+      "type": {
+        "type": "enum",
+        "name": "PermissionType",
+        "symbols": ["ALLOW", "DENY"]
+      },
+      "doc": "The type of the permission."
+    }
+  ]
+}

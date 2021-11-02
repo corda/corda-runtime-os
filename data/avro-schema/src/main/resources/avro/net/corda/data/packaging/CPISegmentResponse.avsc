@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "CPISegmentResponse",
+  "namespace": "net.corda.data.packaging",
+  "fields": [
+    {
+      "name": "segment",
+      "type": "bytes"
+    },
+    {
+      "name": "atEnd",
+      "type": "boolean"
+    }
+  ]
+}

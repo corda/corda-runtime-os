@@ -1,0 +1,31 @@
+{
+  "type": "record",
+  "name": "Role",
+  "namespace": "net.corda.data.permissions",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string"
+    },
+    {
+      "name": "version",
+      "type": "int"
+    },
+    {
+      "name": "lastChangeDetails",
+      "type": "net.corda.data.permissions.ChangeDetails"
+    },
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "permissions",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.permissions.Permission"
+      },
+      "doc": "List of a role's permissions."
+    }
+  ]
+}
