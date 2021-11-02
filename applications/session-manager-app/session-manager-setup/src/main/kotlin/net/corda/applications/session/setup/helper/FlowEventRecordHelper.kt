@@ -7,6 +7,7 @@ import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.records.Record
 import java.time.Instant
+import java.util.*
 
 fun getHelloWorldRPCEventRecord() : Record<*, *>  {
     return getStartRPCEventRecord(
@@ -24,6 +25,6 @@ fun getStartRPCEventRecord(clientId: String, cpiId: String, flowId: String, flow
         Record<*, *> {
     val identity = HoldingIdentity(x500Name, groupId)
     val key = FlowKey(flowId, identity)
-    val rpcStartFlow = StartRPCFlow(clientId, flowName, cpiId, identity, Instant.now(), "args")
+    val rpcStartFlow = StartRPCFlow(clientId, flowName, cpiId, identity, Instant.now(), Collections.emptyList())
     return Record(DEFAULT_DEDUP_TOPIC_VALUE, flowId, FlowEvent(key, rpcStartFlow))
 }
