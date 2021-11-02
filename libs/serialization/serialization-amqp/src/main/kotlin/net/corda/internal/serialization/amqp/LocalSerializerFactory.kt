@@ -1,7 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.ClassWhitelist
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.model.DefaultCacheProvider
 import net.corda.internal.serialization.model.FingerPrinter
 import net.corda.internal.serialization.model.LocalTypeInformation
@@ -11,6 +9,8 @@ import net.corda.internal.serialization.model.TypeIdentifier.Parameterised
 import net.corda.internal.serialization.osgi.TypeResolver
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
+import net.corda.serialization.ClassWhitelist
+import net.corda.serialization.SerializationContext
 import net.corda.utilities.reflection.kotlinObjectInstance
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug

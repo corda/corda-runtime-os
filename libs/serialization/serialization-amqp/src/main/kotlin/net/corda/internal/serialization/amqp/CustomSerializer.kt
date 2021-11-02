@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.model.FingerprintWriter
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
 import java.lang.reflect.Type
@@ -207,23 +207,15 @@ interface CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
         /**
          * Implement these two methods.
          */
-        protected abstract fun toProxy(obj: T, context: SerializationContext): P
+        protected abstract fun toProxy(obj: T): P
 
         protected abstract fun fromProxy(proxy: P): T
 
         /**
-         * Read the proxy object from the serialized input.
+         * These two methods can be overridden, if necessary.
          */
-        protected fun readProxy(
-            obj: Any,
-            serializationSchemas: SerializationSchemas,
-            metadata: Metadata,
-            input: DeserializationInput,
-            context: SerializationContext
-        ): P {
-            @Suppress("unchecked_cast")
-            return proxySerializer.readObject(obj, serializationSchemas, metadata, input, context) as P
-        }
+        protected open fun toProxy(obj: T, context: SerializationContext): P = toProxy(obj)
+        protected open fun fromProxy(proxy: P, context: SerializationContext): T = fromProxy(proxy)
 
         override fun writeDescribedObject(
             obj: T,
@@ -247,8 +239,9 @@ interface CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
             input: DeserializationInput,
             context: SerializationContext
         ): T {
-            val proxy = readProxy(obj, serializationSchemas, metadata, input, context)
-            return fromProxy(proxy)
+            @Suppress("unchecked_cast")
+            val proxy = proxySerializer.readObject(obj, serializationSchemas, metadata, input, context) as P
+            return fromProxy(proxy, context)
         }
     }
 

@@ -1,4 +1,4 @@
-package net.corda.internal.serialization
+package net.corda.serialization
 
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.base.types.sequence

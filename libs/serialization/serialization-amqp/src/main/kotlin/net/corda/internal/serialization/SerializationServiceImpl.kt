@@ -1,5 +1,7 @@
 package net.corda.internal.serialization
 
+import net.corda.serialization.SerializationContext
+import net.corda.serialization.serialize
 import net.corda.v5.application.services.serialization.SerializationService
 import net.corda.v5.base.types.sequence
 import net.corda.v5.serialization.SerializedBytes

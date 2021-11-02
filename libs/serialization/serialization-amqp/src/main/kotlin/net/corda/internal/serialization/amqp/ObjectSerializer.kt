@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.model.LocalConstructorInformation
 import net.corda.internal.serialization.model.LocalPropertyInformation
 import net.corda.internal.serialization.model.LocalTypeInformation
@@ -8,6 +7,7 @@ import net.corda.internal.serialization.model.PropertyName
 import net.corda.internal.serialization.model.RemotePropertyInformation
 import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.serialization.SerializationContext
 import net.corda.v5.serialization.MissingSerializerException
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data

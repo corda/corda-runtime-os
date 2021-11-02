@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
 import java.io.NotSerializableException
@@ -12,7 +12,6 @@ import java.util.Collections
 import java.util.NavigableSet
 import java.util.SortedSet
 import java.util.TreeSet
-import kotlin.collections.LinkedHashSet
 
 /**
  * Serialization / deserialization of predefined set of supported [Collection] types covering mostly [List]s and [Set]s.

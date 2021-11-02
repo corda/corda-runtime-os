@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.AMQPNotSerializableException
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.LocalSerializerFactory
@@ -24,7 +23,7 @@ class ClassSerializer(
         private val logger = contextLogger()
     }
 
-    override fun toProxy(obj: Class<*>, context: SerializationContext): ClassProxy  {
+    override fun toProxy(obj: Class<*>): ClassProxy  {
         logger.trace { "serializer=custom, type=ClassSerializer, name=\"${obj.name}\", action=toProxy" }
         return ClassProxy(obj.name)
     }

@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.SerializerFactory
 import java.time.LocalDate
@@ -16,7 +15,7 @@ class LocalDateSerializer(
     factory,
     withInheritance = false
 ) {
-    override fun toProxy(obj: LocalDate, context: SerializationContext): LocalDateProxy
+    override fun toProxy(obj: LocalDate): LocalDateProxy
         = LocalDateProxy(obj.year, obj.monthValue.toByte(), obj.dayOfMonth.toByte())
 
     override fun fromProxy(proxy: LocalDateProxy): LocalDate

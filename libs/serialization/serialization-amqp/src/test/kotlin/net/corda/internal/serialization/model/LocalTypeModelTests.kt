@@ -18,6 +18,7 @@ import java.lang.reflect.Type
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertTrue
+import net.corda.internal.serialization.amqp.CordaCustomSerializer
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 class LocalTypeModelTests {
@@ -28,6 +29,7 @@ class LocalTypeModelTests {
     private val emptyCustomSerializerRegistry = object : CustomSerializerRegistry {
         override val customSerializerNames: List<String> = emptyList()
         override fun register(customSerializer: CustomSerializer<out Any>) {}
+        override fun registerInternal(customSerializer: CordaCustomSerializer) {}
         override fun registerExternal(customSerializer: CorDappCustomSerializer) {}
         override fun findCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? = null
     }

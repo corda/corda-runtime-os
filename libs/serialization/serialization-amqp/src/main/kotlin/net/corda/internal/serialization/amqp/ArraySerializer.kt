@@ -1,7 +1,7 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.model.resolveAgainst
+import net.corda.serialization.SerializationContext
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.loggerFor

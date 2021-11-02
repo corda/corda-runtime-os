@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.MapSerializer
 import net.corda.internal.serialization.amqp.SerializerFactory
@@ -20,7 +19,7 @@ class EnumSetSerializer(
 ) {
     override val additionalSerializers: Iterable<CustomSerializer<out Any>> = listOf(ClassSerializer(factory))
 
-    override fun toProxy(obj: EnumSet<*>, context: SerializationContext): EnumSetProxy
+    override fun toProxy(obj: EnumSet<*>): EnumSetProxy
         = EnumSetProxy(elementType(obj), obj.toList())
 
     private fun elementType(set: EnumSet<*>): Class<*> {

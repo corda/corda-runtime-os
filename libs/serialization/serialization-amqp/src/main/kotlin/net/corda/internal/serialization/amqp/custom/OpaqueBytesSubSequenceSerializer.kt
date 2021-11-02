@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.v5.base.types.OpaqueBytes
@@ -19,6 +18,8 @@ class OpaqueBytesSubSequenceSerializer(
     factory,
     withInheritance = true
 ) {
-    override fun toProxy(obj: OpaqueBytesSubSequence, context: SerializationContext): OpaqueBytes = OpaqueBytes(obj.copyBytes())
-    override fun fromProxy(proxy: OpaqueBytes): OpaqueBytesSubSequence = OpaqueBytesSubSequence(proxy.bytes, proxy.offset, proxy.size)
+    override fun toProxy(obj: OpaqueBytesSubSequence): OpaqueBytes
+        = OpaqueBytes(obj.copyBytes())
+    override fun fromProxy(proxy: OpaqueBytes): OpaqueBytesSubSequence
+        = OpaqueBytesSubSequence(proxy.bytes, proxy.offset, proxy.size)
 }

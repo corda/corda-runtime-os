@@ -1,8 +1,6 @@
 package net.corda.internal.serialization.amqp.testutils
 
 import net.corda.internal.serialization.AllWhitelist
-import net.corda.internal.serialization.SerializationContext
-import net.corda.internal.serialization.SerializationEncoding
 import net.corda.internal.serialization.TestMutableWhiteList
 import net.corda.internal.serialization.amqp.AMQPSerializer
 import net.corda.internal.serialization.amqp.BytesAndSchemas
@@ -15,6 +13,8 @@ import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.TransformsSchema
+import net.corda.serialization.SerializationContext
+import net.corda.serialization.SerializationEncoding
 import net.corda.utilities.copyTo
 import net.corda.utilities.div
 import net.corda.utilities.isDirectory

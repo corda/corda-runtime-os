@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.CommonPropertyNames
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.LocalSerializerFactory
@@ -8,6 +7,7 @@ import net.corda.internal.serialization.amqp.PropertyReader
 import net.corda.internal.serialization.model.LocalConstructorInformation
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.osgi.TypeResolver
+import net.corda.serialization.SerializationContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.exceptions.CordaThrowable
 import net.corda.v5.base.util.contextLogger
@@ -62,6 +62,10 @@ class ThrowableSerializer(
             emptyArray()
         }
         return ThrowableProxy(obj.javaClass.name, message, stackTraceToInclude, obj.cause, obj.suppressed, extraProperties)
+    }
+
+    override fun toProxy(obj: Throwable): ThrowableProxy {
+        throw UnsupportedOperationException("Creating ThrowableProxy requires SerializationContext")
     }
 
     private fun shouldIncludeInternalInfo(context: SerializationContext): Boolean {

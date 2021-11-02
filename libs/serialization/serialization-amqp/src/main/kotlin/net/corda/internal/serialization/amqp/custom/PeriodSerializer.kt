@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.SerializerFactory
 import java.time.Period
@@ -16,9 +15,11 @@ class PeriodSerializer(
     factory,
     withInheritance = false
 ) {
-    override fun toProxy(obj: Period, context: SerializationContext): PeriodProxy = PeriodProxy(obj.years, obj.months, obj.days)
+    override fun toProxy(obj: Period): PeriodProxy
+        = PeriodProxy(obj.years, obj.months, obj.days)
 
-    override fun fromProxy(proxy: PeriodProxy): Period = Period.of(proxy.years, proxy.months, proxy.days)
+    override fun fromProxy(proxy: PeriodProxy): Period
+        = Period.of(proxy.years, proxy.months, proxy.days)
 
     data class PeriodProxy(val years: Int, val months: Int, val days: Int)
 }

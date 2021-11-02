@@ -1,5 +1,4 @@
 @file:JvmName("AMQPSerializationScheme")
-
 package net.corda.internal.serialization
 
 import net.corda.internal.serialization.amqp.AccessOrderLinkedHashMap
@@ -38,6 +37,8 @@ import net.corda.internal.serialization.amqp.custom.YearSerializer
 import net.corda.internal.serialization.amqp.custom.ZoneIdSerializer
 import net.corda.internal.serialization.amqp.custom.ZonedDateTimeSerializer
 import net.corda.sandbox.SandboxGroup
+import net.corda.serialization.ClassWhitelist
+import net.corda.serialization.SerializationContext
 import net.corda.utilities.toSynchronised
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException

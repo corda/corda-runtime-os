@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -40,10 +39,10 @@ class OptionalSerializerTest {
     }
 
     private fun toProxy(serializer: OptionalSerializer, opt: Optional<*>): OptionalSerializer.OptionalProxy {
-        val method = serializer::class.java.getDeclaredMethod("toProxy", Optional::class.java, SerializationContext::class.java).also {
+        val method = serializer::class.java.getDeclaredMethod("toProxy", Optional::class.java).also {
             it.isAccessible = true
         }
-        return method.invoke(serializer, opt, mock<SerializationContext>()) as OptionalSerializer.OptionalProxy
+        return method.invoke(serializer, opt) as OptionalSerializer.OptionalProxy
     }
 
     private fun <T> fromProxy(serializer: OptionalSerializer, proxy: OptionalSerializer.OptionalProxy): Optional<T> {

@@ -1,6 +1,13 @@
 package net.corda.internal.serialization
 
 import net.corda.internal.serialization.amqp.amqpMagic
+import net.corda.serialization.ClassWhitelist
+import net.corda.serialization.EncodingWhitelist
+import net.corda.serialization.ObjectWithCompatibleContext
+import net.corda.serialization.SerializationContext
+import net.corda.serialization.SerializationEncoding
+import net.corda.serialization.SerializationFactory
+import net.corda.serialization.SerializationMagic
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.serialization.SerializationCustomSerializer

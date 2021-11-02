@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.SerializerFactory
 import java.time.Instant
@@ -16,9 +15,11 @@ class InstantSerializer(
     factory,
     withInheritance = false
 ) {
-    override fun toProxy(obj: Instant, context: SerializationContext): InstantProxy = InstantProxy(obj.epochSecond, obj.nano)
+    override fun toProxy(obj: Instant): InstantProxy
+        = InstantProxy(obj.epochSecond, obj.nano)
 
-    override fun fromProxy(proxy: InstantProxy): Instant = Instant.ofEpochSecond(proxy.epochSeconds, proxy.nanos.toLong())
+    override fun fromProxy(proxy: InstantProxy): Instant
+        = Instant.ofEpochSecond(proxy.epochSeconds, proxy.nanos.toLong())
 
     data class InstantProxy(val epochSeconds: Long, val nanos: Int)
 }

@@ -1,5 +1,8 @@
 package net.corda.internal.serialization
 
+import net.corda.serialization.SerializationContext
+import net.corda.serialization.SerializationFactory
+
 interface SerializationEnvironment {
 
     companion object {

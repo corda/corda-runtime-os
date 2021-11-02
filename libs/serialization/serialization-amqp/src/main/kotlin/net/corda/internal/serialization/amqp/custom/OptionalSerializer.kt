@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.SerializerFactory
 import java.util.Optional
@@ -17,7 +16,7 @@ class OptionalSerializer(
     withInheritance = false
 ) {
 
-    override fun toProxy(obj: Optional<*>, context: SerializationContext): OptionalProxy {
+    override fun toProxy(obj: Optional<*>): OptionalProxy {
         return OptionalProxy(obj.orElse(null))
     }
 

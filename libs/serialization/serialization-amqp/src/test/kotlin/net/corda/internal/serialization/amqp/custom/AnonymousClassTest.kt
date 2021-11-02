@@ -1,7 +1,6 @@
 package net.corda.internal.serialization.amqp.custom
 
 import java.lang.reflect.Type
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.Metadata
@@ -12,6 +11,7 @@ import net.corda.internal.serialization.amqp.SerializationSchemas
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.registerCustomSerializers
+import net.corda.serialization.SerializationContext
 import net.corda.v5.serialization.MissingSerializerException
 import org.apache.qpid.proton.codec.Data
 import org.junit.jupiter.api.Test
@@ -117,7 +117,7 @@ class AnonymousClassTest {
         override fun fromProxy(proxy: ProxyClass): TestAbstractClass {
             return testAnonymousClassFromAbstractClass
         }
-        override fun toProxy(obj: TestAbstractClass, context: SerializationContext): ProxyClass {
+        override fun toProxy(obj: TestAbstractClass): ProxyClass {
             return ProxyClass(obj.booleanProperty)
         }
     }

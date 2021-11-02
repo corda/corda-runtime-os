@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.LocalSerializerFactory
 
@@ -11,7 +10,7 @@ class StackTraceElementSerializer(factory: LocalSerializerFactory)
     factory,
     withInheritance = false
 ) {
-    override fun toProxy(obj: StackTraceElement, context: SerializationContext): StackTraceElementProxy
+    override fun toProxy(obj: StackTraceElement): StackTraceElementProxy
         = StackTraceElementProxy(obj.className, obj.methodName, obj.fileName, obj.lineNumber)
 
     override fun fromProxy(proxy: StackTraceElementProxy): StackTraceElement

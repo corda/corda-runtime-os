@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.SerializerFactory
 import java.time.Year
@@ -16,7 +15,7 @@ class YearSerializer(
     factory,
     withInheritance = false
 ) {
-    override fun toProxy(obj: Year, context: SerializationContext): YearProxy
+    override fun toProxy(obj: Year): YearProxy
         = YearProxy(obj.value)
 
     override fun fromProxy(proxy: YearProxy): Year

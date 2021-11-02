@@ -2,9 +2,6 @@ package net.corda.internal.serialization.amqp;
 
 import com.google.common.collect.ImmutableList;
 import net.corda.v5.serialization.SerializedBytes;
-import net.corda.internal.serialization.amqp.DeserializationInput;
-import net.corda.internal.serialization.amqp.SerializationOutput;
-import net.corda.internal.serialization.amqp.SerializerFactory;
 import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;

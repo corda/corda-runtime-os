@@ -7,6 +7,7 @@ import net.corda.v5.base.types.OpaqueBytes
 import net.corda.internal.serialization.encoding.Encoder
 import net.corda.internal.serialization.encoding.EncoderService
 import net.corda.internal.serialization.encoding.EncoderType
+import net.corda.serialization.SerializationEncoding
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer

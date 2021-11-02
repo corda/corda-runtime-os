@@ -1,13 +1,13 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.AlwaysEmptyWhitelist
-import net.corda.internal.serialization.ClassWhitelist
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvelope
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.amqp.testutils.testName
+import net.corda.serialization.ClassWhitelist
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions

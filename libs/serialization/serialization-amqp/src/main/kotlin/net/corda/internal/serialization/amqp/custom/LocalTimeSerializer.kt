@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.SerializerFactory
 import java.time.LocalTime
@@ -16,7 +15,7 @@ class LocalTimeSerializer(
     factory,
     withInheritance = false
 ) {
-    override fun toProxy(obj: LocalTime, context: SerializationContext): LocalTimeProxy = LocalTimeProxy(
+    override fun toProxy(obj: LocalTime): LocalTimeProxy = LocalTimeProxy(
         obj.hour.toByte(),
         obj.minute.toByte(),
         obj.second.toByte(),

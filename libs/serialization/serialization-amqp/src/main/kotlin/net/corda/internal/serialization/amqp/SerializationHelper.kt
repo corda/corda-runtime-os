@@ -1,9 +1,9 @@
 package net.corda.internal.serialization.amqp
 
 import com.google.common.reflect.TypeToken
-import net.corda.internal.serialization.SerializationContext
-import net.corda.internal.serialization.ClassWhitelist
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.serialization.ClassWhitelist
+import net.corda.serialization.SerializationContext
 import net.corda.v5.base.annotations.CordaSerializable
 import org.apache.qpid.proton.codec.Data
 import java.lang.reflect.GenericArrayType

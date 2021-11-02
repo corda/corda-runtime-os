@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.SerializerFactory
 import java.time.ZoneId
@@ -19,7 +18,7 @@ class ZoneIdSerializer(
     override val revealSubclassesInSchema: Boolean
         get() = true
 
-    override fun toProxy(obj: ZoneId, context: SerializationContext) = ZoneIdProxy(obj.id)
+    override fun toProxy(obj: ZoneId) = ZoneIdProxy(obj.id)
     override fun fromProxy(proxy: ZoneIdProxy): ZoneId = ZoneId.of(proxy.id)
 
     data class ZoneIdProxy(val id: String)

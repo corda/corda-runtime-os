@@ -3,8 +3,6 @@ package net.corda.internal.serialization.amqp
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.AlwaysEmptyWhitelist
 import net.corda.internal.serialization.CordaSerializationEncoding
-import net.corda.internal.serialization.EncodingWhitelist
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.SnappyEncodingWhitelist
 import net.corda.internal.serialization.amqp.custom.BigDecimalSerializer
 import net.corda.internal.serialization.amqp.custom.CurrencySerializer
@@ -16,6 +14,8 @@ import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.internal.serialization.encodingNotPermittedFormat
+import net.corda.serialization.EncodingWhitelist
+import net.corda.serialization.SerializationContext
 import net.corda.v5.application.flows.FlowException
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException

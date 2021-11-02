@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializationCustomSerializer
@@ -25,7 +24,7 @@ class CustomSerializerRegistryTests {
             factory,
             withInheritance = true
         ) {
-            override fun toProxy(obj: Any, context: SerializationContext): String
+            override fun toProxy(obj: Any): String
                 = throw UnsupportedOperationException()
             override fun fromProxy(proxy: String): Any
                 = throw UnsupportedOperationException()
@@ -51,7 +50,7 @@ class CustomSerializerRegistryTests {
             factory,
             withInheritance = true
         ) {
-            override fun toProxy(obj: MyCustomException, context: SerializationContext): String
+            override fun toProxy(obj: MyCustomException): String
                 = throw UnsupportedOperationException()
             override fun fromProxy(proxy: String): MyCustomException
                 = throw UnsupportedOperationException()
@@ -74,7 +73,7 @@ class CustomSerializerRegistryTests {
             factory,
             withInheritance = true
         ) {
-            override fun toProxy(obj: Cash, context: SerializationContext): String
+            override fun toProxy(obj: Cash): String
                 = throw UnsupportedOperationException()
             override fun fromProxy(proxy: String): Cash
                 = throw UnsupportedOperationException()
@@ -108,7 +107,7 @@ class CustomSerializerRegistryTests {
             factory,
             withInheritance = true
         ) {
-            override fun toProxy(obj: Float, context: SerializationContext): String
+            override fun toProxy(obj: Float): String
                 = throw UnsupportedOperationException()
             override fun fromProxy(proxy: String): Float
                 = throw UnsupportedOperationException()

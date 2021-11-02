@@ -1,7 +1,6 @@
 package net.corda.internal.serialization.amqp
 
 import com.google.common.primitives.Primitives
-import net.corda.internal.serialization.ClassWhitelist
 import net.corda.internal.serialization.model.ClassTypeLoader
 import net.corda.internal.serialization.model.ConfigurableLocalTypeModel
 import net.corda.internal.serialization.model.FingerPrinter
@@ -9,6 +8,7 @@ import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeLoader
 import net.corda.internal.serialization.model.TypeModellingFingerPrinter
+import net.corda.serialization.ClassWhitelist
 import java.io.NotSerializableException
 import java.lang.reflect.Method
 import java.util.Collections.unmodifiableMap

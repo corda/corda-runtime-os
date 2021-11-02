@@ -1,11 +1,11 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.AllWhitelist
-import net.corda.internal.serialization.SerializationContext
-import net.corda.internal.serialization.SerializationContext.UseCase.Testing
 import net.corda.internal.serialization.SerializationContextImpl
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
+import net.corda.serialization.SerializationContext
+import net.corda.serialization.SerializationContext.UseCase.Testing
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Java6Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

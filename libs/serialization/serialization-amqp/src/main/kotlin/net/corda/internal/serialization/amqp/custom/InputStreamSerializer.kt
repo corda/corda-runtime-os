@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.DeserializationInput
@@ -9,6 +8,7 @@ import net.corda.internal.serialization.amqp.RestrictedType
 import net.corda.internal.serialization.amqp.Schema
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializationSchemas
+import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.codec.Data
 import java.io.ByteArrayInputStream
 import java.io.InputStream

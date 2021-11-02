@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.SerializerFactory
 import java.time.LocalDateTime
@@ -22,7 +21,7 @@ class OffsetDateTimeSerializer(
         LocalDateTimeSerializer(factory),
     )
 
-    override fun toProxy(obj: OffsetDateTime, context: SerializationContext): OffsetDateTimeProxy
+    override fun toProxy(obj: OffsetDateTime): OffsetDateTimeProxy
         = OffsetDateTimeProxy(obj.toLocalDateTime(), obj.offset.id)
 
     override fun fromProxy(proxy: OffsetDateTimeProxy): OffsetDateTime

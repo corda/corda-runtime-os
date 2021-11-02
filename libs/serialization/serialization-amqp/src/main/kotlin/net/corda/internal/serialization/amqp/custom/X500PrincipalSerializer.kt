@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.SerializerFactory
 import javax.security.auth.x500.X500Principal
@@ -12,9 +11,11 @@ class X500PrincipalSerializer(factory: SerializerFactory
     factory,
     withInheritance = false
 ) {
-    override fun toProxy(obj: X500Principal, context: SerializationContext): X500PrincipalProxy = X500PrincipalProxy(name = obj.name)
+    override fun toProxy(obj: X500Principal): X500PrincipalProxy
+        = X500PrincipalProxy(name = obj.name)
 
-    override fun fromProxy(proxy: X500PrincipalProxy): X500Principal = X500Principal(proxy.name)
+    override fun fromProxy(proxy: X500PrincipalProxy): X500Principal
+        = X500Principal(proxy.name)
 
     data class X500PrincipalProxy(val name: String)
 }

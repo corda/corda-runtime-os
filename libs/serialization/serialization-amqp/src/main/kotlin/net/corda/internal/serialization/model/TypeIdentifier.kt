@@ -1,12 +1,12 @@
 package net.corda.internal.serialization.model
 
 import com.google.common.reflect.TypeToken
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.Metadata
 import net.corda.internal.serialization.amqp.asClass
 import net.corda.internal.serialization.osgi.TypeResolver
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
+import net.corda.serialization.SerializationContext
 import java.io.NotSerializableException
 import java.lang.reflect.GenericArrayType
 import java.lang.reflect.ParameterizedType

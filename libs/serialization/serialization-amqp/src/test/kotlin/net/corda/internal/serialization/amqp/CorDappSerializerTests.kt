@@ -2,7 +2,6 @@ package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.MutableClassWhitelist
-import net.corda.internal.serialization.SerializationContext
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvelope
 import net.corda.internal.serialization.amqp.testutils.serialize
@@ -45,7 +44,7 @@ class CorDappSerializerTests {
     ) {
         data class Proxy(val proxy_a_: String)
 
-        override fun toProxy(obj: NeedsProxy, context: SerializationContext): Proxy {
+        override fun toProxy(obj: NeedsProxy): Proxy {
             return Proxy(obj.a)
         }
 
