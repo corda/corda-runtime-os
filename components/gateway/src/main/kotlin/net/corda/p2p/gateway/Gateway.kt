@@ -1,6 +1,5 @@
 package net.corda.p2p.gateway
 
-import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory

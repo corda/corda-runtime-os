@@ -1,6 +1,5 @@
 package net.corda.messaging.emulation.publisher.factory
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig

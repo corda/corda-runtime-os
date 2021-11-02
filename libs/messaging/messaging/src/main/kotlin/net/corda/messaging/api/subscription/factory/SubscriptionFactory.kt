@@ -1,9 +1,6 @@
 package net.corda.messaging.api.subscription.factory
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor

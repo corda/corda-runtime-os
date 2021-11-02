@@ -1,6 +1,5 @@
 package net.corda.messaging.kafka.subscription.factory
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.messaging.RPCRequest

@@ -1,6 +1,5 @@
 package net.corda.crypto.service.persistence
 
-import com.typesafe.config.ConfigFactory
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.persistence.IHaveMemberId
 import net.corda.crypto.impl.persistence.KeyValuePersistence

@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 @Component
+@Suppress("LongParameterList")
 class PersistenceDemoApp @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,

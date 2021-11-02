@@ -1,6 +1,5 @@
 package net.corda.tools.kafka
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.config.write.KafkaConfigWrite
@@ -19,7 +18,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
-import java.util.*
+import java.util.Properties
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)
