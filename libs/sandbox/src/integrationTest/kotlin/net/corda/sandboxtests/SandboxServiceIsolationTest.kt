@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.service.resolver.Resolver
 import org.osgi.test.common.annotation.InjectService
@@ -29,11 +30,9 @@ class SandboxServiceIsolationTest {
             sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1, Any::class.java)
         )
 
-        assertTrue(
-            expectedServices.all { serviceClass ->
-                serviceClasses.any { service -> serviceClass.isAssignableFrom(service) }
-            }
-        )
+        expectedServices.forEach { serviceClass ->
+            assertTrue(serviceClasses.any { service -> serviceClass.isAssignableFrom(service) })
+        }
     }
 
     @Test
@@ -43,9 +42,7 @@ class SandboxServiceIsolationTest {
 
         val expectedService = sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_2, Any::class.java)
 
-        assertTrue(
-            serviceClasses.any { service -> expectedService.isAssignableFrom(service) }
-        )
+        assertTrue(serviceClasses.any { service -> expectedService.isAssignableFrom(service) })
     }
 
     @Test
@@ -55,11 +52,9 @@ class SandboxServiceIsolationTest {
 
         val expectedServices = setOf(ServiceComponentRuntime::class.java, Resolver::class.java)
 
-        assertTrue(
-            expectedServices.all { serviceClass ->
-                serviceClasses.any { service -> serviceClass.isAssignableFrom(service) }
-            }
-        )
+        expectedServices.forEach { serviceClass ->
+            assertTrue(serviceClasses.any { service -> serviceClass.isAssignableFrom(service) })
+        }
     }
 
     @Test
@@ -86,10 +81,13 @@ class SandboxServiceIsolationTest {
     fun `sandbox cannot see services in private bundles in public sandboxes`() {
         val serviceClasses = runFlow<List<Class<*>>>(sandboxLoader.group1, SERVICES_FLOW_CPK_1)
 
-        val privateBundleInPublicSandboxService = SandboxCreationService::class.java
+        val privateBundleInPublicSandboxServices =
+            setOf(SandboxCreationService::class.java, ConfigurationAdmin::class.java)
 
-        assertFalse(serviceClasses.any { service ->
-            privateBundleInPublicSandboxService.isAssignableFrom(service)
-        })
+        privateBundleInPublicSandboxServices.forEach { privateService ->
+            assertFalse(serviceClasses.any { service ->
+                privateService.isAssignableFrom(service)
+            })
+        }
     }
 }
