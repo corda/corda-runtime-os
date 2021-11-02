@@ -38,6 +38,13 @@ import kotlin.concurrent.write
 
 class UpdatedCPIList(val delta: NavigableSet<CPI.Identifier>) : LifecycleEvent
 
+/**
+ * This component looks CPI files in a filesystem directory.
+ * The directory filepath is established using [ConfigurationReadService] looking for the string key
+ * "corda.cpi.cacheDir". The component does not react to filesystem updates but react to configuration updates
+ * (registered [InstallServiceListener]s will be notified with the new list of [CPI]s
+ * only if "corda.cpi.cacheDir" changes in [ConfigurationReadService])
+ */
 @Component(service = [InstallService::class], scope = ServiceScope.SINGLETON)
 class LocalPackageCache @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
