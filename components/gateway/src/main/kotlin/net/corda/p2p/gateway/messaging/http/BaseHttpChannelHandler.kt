@@ -14,7 +14,26 @@ import javax.net.ssl.SSLException
 abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionListener,
                                       private val logger: Logger): SimpleChannelInboundHandler<HttpObject>() {
 
-    protected var messageBodyBuf: ByteBuf? = null
+    private var messageBodyBuf: ByteBuf? = null
+
+    protected fun allocateBodyBuffer(ctx: ChannelHandlerContext, bytes: Int) {
+        messageBodyBuf = ctx.alloc().buffer(bytes)
+    }
+
+    protected fun readBytesIntoBodyBuffer(buffer: ByteBuf) {
+        buffer.readBytes(messageBodyBuf, buffer.readableBytes())
+    }
+
+    protected fun releaseBodyBuffer() {
+        messageBodyBuf?.release()
+        messageBodyBuf = null
+    }
+
+    protected fun readBytesFromBodyBuffer(): ByteArray {
+        val byteArray = ByteArray(messageBodyBuf!!.readableBytes())
+        messageBodyBuf!!.readBytes(byteArray)
+        return byteArray
+    }
 
     override fun channelActive(ctx: ChannelHandlerContext) {
         val ch = ctx.channel()
@@ -26,8 +45,7 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
         logger.info("Closed client connection ${ch.id()} from ${ch.localAddress()} to ${ch.remoteAddress()}")
         messageBodyBuf?.let {
             if (it.refCnt() > 0) {
-                it.release()
-                messageBodyBuf = null
+                releaseBodyBuffer()
             }
         }
         eventListener.onClose(HttpConnectionEvent(ch))

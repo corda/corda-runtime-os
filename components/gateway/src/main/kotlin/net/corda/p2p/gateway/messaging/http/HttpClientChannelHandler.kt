@@ -23,7 +23,7 @@ class HttpClientChannelHandler(private val clientListener: HttpClientListener,
     override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
         if (msg is HttpResponse) {
             logger.debug("Received response message $msg")
-            messageBodyBuf = ctx.alloc().buffer(msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
+            allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
             responseCode = msg.status()
         }
 
@@ -32,7 +32,7 @@ class HttpClientChannelHandler(private val clientListener: HttpClientListener,
             if (content.isReadable) {
                 logger.debug("Reading message content into local buffer of size ${content.readableBytes()}")
                 try {
-                    content.readBytes(messageBodyBuf, content.readableBytes())
+                    readBytesIntoBodyBuffer(content)
                 } catch (e: IndexOutOfBoundsException) {
                     logger.error("Cannot read request body into buffer. Space not allocated")
                 }
@@ -45,11 +45,10 @@ class HttpClientChannelHandler(private val clientListener: HttpClientListener,
             logger.debug("Read end of response body $msg")
             val sourceAddress = ctx.channel().remoteAddress()
             val targetAddress = ctx.channel().localAddress()
-            val returnByteArray = ByteArray(messageBodyBuf!!.readableBytes())
-            messageBodyBuf!!.readBytes(returnByteArray)
+            val returnByteArray = readBytesFromBodyBuffer()
             clientListener.onResponse(HttpResponse(responseCode!!, returnByteArray, sourceAddress, targetAddress))
 
-            messageBodyBuf?.release()
+            releaseBodyBuffer()
             responseCode = null
         }
     }

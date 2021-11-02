@@ -36,7 +36,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                     "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n")
             // initialise byte array to read the request into
             if (responseCode!! != HttpResponseStatus.LENGTH_REQUIRED) {
-                messageBodyBuf = ctx.alloc().buffer(msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
+                allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
             }
 
             if (HttpUtil.is100ContinueExpected(msg)) {
@@ -49,7 +49,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
             if (content.isReadable) {
                 logger.debug("Reading message content into local buffer of size ${content.readableBytes()}")
                 try {
-                    content.readBytes(messageBodyBuf, content.readableBytes())
+                    readBytesIntoBodyBuffer(content)
                 } catch (e: IndexOutOfBoundsException) {
                     logger.error("Cannot read request body into buffer. Space not allocated")
                 }
@@ -60,8 +60,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
         // the event processor. No trailing headers should exist
         if (msg is LastHttpContent) {
             logger.debug("Read end of response body $msg")
-            val returnByteArray = ByteArray(messageBodyBuf!!.readableBytes())
-            messageBodyBuf!!.readBytes(returnByteArray)
+            val returnByteArray = readBytesFromBodyBuffer()
 
             when(responseCode) {
                 HttpResponseStatus.OK -> {
@@ -75,7 +74,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                 }
             }
 
-            messageBodyBuf?.release()
+            releaseBodyBuffer()
             responseCode = null
         }
     }
