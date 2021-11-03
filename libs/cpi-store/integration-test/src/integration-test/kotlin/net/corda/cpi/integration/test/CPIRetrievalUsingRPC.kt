@@ -28,6 +28,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class)
 class CPIRPCIntegrationTest {
@@ -39,6 +40,7 @@ class CPIRPCIntegrationTest {
     private companion object {
         val logger: Logger = contextLogger()
         const val CLIENT_ID = "integrationTestRPCSender"
+        const val AWAIT_TIMEOUT = 180L
 
         @InjectService(timeout = 4000)
         lateinit var topicAdmin: KafkaTopicAdmin
@@ -111,9 +113,9 @@ class CPIRPCIntegrationTest {
                 }
         }
 
-        initlatch.await()
+        assertTrue(initlatch.await(AWAIT_TIMEOUT, TimeUnit.SECONDS))
         cpiWriter.start()
-        endlatch.await()
+        assertTrue(endlatch.await(AWAIT_TIMEOUT, TimeUnit.SECONDS))
 
         assertEquals( 1, listeners.keys.size)
         val cpiMetadata = listeners.values.first()
@@ -151,9 +153,9 @@ class CPIRPCIntegrationTest {
             }
         }
 
-        initlatch.await()
+        assertTrue(initlatch.await(AWAIT_TIMEOUT, TimeUnit.SECONDS))
         cpiWriter.start()
-        endlatch.await()
+        assertTrue(endlatch.await(AWAIT_TIMEOUT, TimeUnit.SECONDS))
 
         Assertions.assertThat(cpis.keys.size == 1)
         logger.info("CPIs received: ${cpis.toString()}")

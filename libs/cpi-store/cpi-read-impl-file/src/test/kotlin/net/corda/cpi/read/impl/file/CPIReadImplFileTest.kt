@@ -7,6 +7,7 @@ import net.corda.cpi.utils.CPX_FILE_FINDER_ROOT_DIR_CONFIG_PATH
 import net.corda.packaging.CPI
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.InputStream
@@ -16,9 +17,13 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class CPIReadImplFileTest {
 
+    companion object {
+        const val AWAIT_TIMEOUT = 180L
+    }
     private val cpiPath: Path
     = Paths.get("../integration-test/test-resources/workflow-cpk/build/libs/workflow-cpk-5.0.0.0-SNAPSHOT-package.cpb")
 
@@ -52,11 +57,11 @@ class CPIReadImplFileTest {
             firstLatch.countDown()
             secondLatch.countDown()
         }
-        firstLatch.await()
+        assertTrue(firstLatch.await(AWAIT_TIMEOUT, TimeUnit.SECONDS))
         assertEquals(0, snapshot.size)
 
         Files.copy(cpiPath, targetCPI)
-        secondLatch.await()
+        assertTrue(secondLatch.await(AWAIT_TIMEOUT, TimeUnit.SECONDS))
 
         assertEquals(1, snapshot.size)
 
