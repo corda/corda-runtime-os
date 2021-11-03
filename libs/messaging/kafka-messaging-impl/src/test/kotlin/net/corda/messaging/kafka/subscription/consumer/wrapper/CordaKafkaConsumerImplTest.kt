@@ -367,11 +367,11 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).position(TopicPartition(null, 0))
+        doThrow(IllegalStateException()).whenever(consumer).position(TopicPartition("null", 0))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             cordaKafkaConsumer.position(TopicPartition(null, 0))
         }
-        verify(consumer, times(1)).position(TopicPartition(null, 0))
+        verify(consumer, times(1)).position(TopicPartition("null", 0))
     }
 
     @Test
@@ -382,11 +382,11 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).seek(TopicPartition(null, 0), 0)
+        doThrow(IllegalStateException()).whenever(consumer).seek(TopicPartition("null", 0), 0)
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             cordaKafkaConsumer.seek(TopicPartition(null, 0), 0)
         }
-        verify(consumer, times(1)).seek(TopicPartition(null, 0), 0)
+        verify(consumer, times(1)).seek(TopicPartition("null", 0), 0)
     }
 
     @Test
