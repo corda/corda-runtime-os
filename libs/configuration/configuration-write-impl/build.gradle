@@ -16,6 +16,7 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-avro-schema"
 
+    implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-write")
     implementation project(":libs:messaging:messaging")
 

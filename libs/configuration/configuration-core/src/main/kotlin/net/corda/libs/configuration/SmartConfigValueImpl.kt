@@ -55,5 +55,4 @@ class SmartConfigValueImpl(
 
     override fun withOrigin(origin: ConfigOrigin?): SmartConfigValue? =
         SmartConfigValueImpl(typeSafeConfigValue.withOrigin(origin), secretsLookupService)
-
 }

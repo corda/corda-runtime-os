@@ -1,8 +1,8 @@
 package net.corda.p2p.gateway.messaging.internal
 
-import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -71,7 +71,7 @@ class OutboundMessageHandlerTest {
         lifecycleCoordinatorFactory,
         configurationReaderService,
         subscriptionFactory,
-        ConfigFactory.empty(),
+        SmartConfigImpl.empty(),
         2,
     )
 

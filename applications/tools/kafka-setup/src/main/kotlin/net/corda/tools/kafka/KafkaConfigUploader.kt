@@ -1,10 +1,11 @@
 package net.corda.tools.kafka
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
@@ -17,7 +18,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
-import java.util.*
+import java.util.Properties
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)
@@ -27,7 +28,9 @@ class KafkaConfigUploader @Activate constructor(
     @Reference(service = KafkaConfigWrite::class)
     private var configWriter: KafkaConfigWrite,
     @Reference(service = Shutdown::class)
-    private val shutDownService: Shutdown
+    private val shutDownService: Shutdown,
+    @Reference(service = SmartConfigFactory::class)
+    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
 
     private companion object {
@@ -79,14 +82,14 @@ class KafkaConfigUploader @Activate constructor(
         }
     }
 
-    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): Config {
-        return ConfigFactory.empty()
+    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
+        return smartConfigFactory.create(ConfigFactory.empty()
             .withValue(
                 KAFKA_COMMON_BOOTSTRAP_SERVER,
                 ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, KAFKA_BOOTSTRAP_SERVER))
             )
             .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX)))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX))))
     }
 
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String): String {

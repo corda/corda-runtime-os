@@ -308,6 +308,15 @@ class SmartConfigTest {
         assertThat(smartConfig).isEqualTo(config)
     }
 
+    @Test
+    fun `withFallback still works when fallback is smart`() {
+        val smartFallback = SmartConfigImpl(fallbackConfig, secretsLookupService)
+        val c = smartConfig
+            .withFallback(smartFallback)
+
+        assertThat(c.getString("jon")).isEqualTo("fallback-secret")
+    }
+
     enum class Snack {
         DONUTS,
         BISCUITS
