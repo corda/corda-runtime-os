@@ -29,7 +29,7 @@ class ClassTagFactoryImplTests {
     private val mockBundle = mockBundle(CPK_BUNDLE_NAME)
     private val mockMainBundle = mockBundle(MAIN_BUNDLE_NAME)
     private val mockCpk = mockCpk()
-    private val mockSandbox = CpkSandboxImpl(mock(), randomUUID(), mockCpk, mockMainBundle, emptySet())
+    private val mockSandbox = CpkSandboxImpl(randomUUID(), mockCpk, mockMainBundle, emptySet())
 
     /**
      * Returns a serialised class tag.
