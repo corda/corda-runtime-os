@@ -66,7 +66,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
         val sandboxGroupInternal = sandboxGroup as SandboxGroupInternal
-        sandboxGroupInternal.sandboxes.forEach { sandbox ->
+        sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
             sandboxes.remove(sandbox.id)
             sandboxGroups.remove(sandbox.id)
             zombieBundles.addAll((sandbox as Sandbox).unload())
@@ -161,12 +161,12 @@ internal class SandboxServiceImpl @Activate constructor(
             sandbox
         }
 
-        newSandboxes.forEach { newSandbox ->
+        publicSandboxes.forEach { publicSandbox ->
             // The public sandboxes have visibility of all sandboxes.
-            publicSandboxes.forEach { publicSandbox ->
-                publicSandbox.grantVisibility(newSandbox)
-            }
+            publicSandbox.grantVisibility(newSandboxes)
+        }
 
+        newSandboxes.forEach { newSandbox ->
             // Each sandbox requires visibility of the sandboxes of the other CPKs and of the public sandboxes.
             newSandbox.grantVisibility(newSandboxes - newSandbox + publicSandboxes)
         }
@@ -236,7 +236,10 @@ internal class SandboxServiceImpl @Activate constructor(
         }
     }
 
-    /** Returns the [Sandbox] lowest in the stack of calls to this function, or null if no sandbox is on the stack. */
+    /**
+     * Returns the non-public [Sandbox] lowest in the stack of calls to this function, or null if no sandbox is found
+     * on the stack.
+     */
     private fun getCallingSandbox(): Sandbox? {
         val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
 
@@ -246,7 +249,7 @@ internal class SandboxServiceImpl @Activate constructor(
                 .mapNotNull { stackFrame ->
                     val bundle = bundleUtils.getBundle(stackFrame.declaringClass)
                     if (bundle != null) {
-                        sandboxes.values.find { sandbox -> sandbox.containsBundle(bundle) }
+                        (sandboxes.values - publicSandboxes).find { sandbox -> sandbox.containsBundle(bundle) }
                     } else null
                 }
                 .firstOrNull()

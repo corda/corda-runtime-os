@@ -1,8 +1,8 @@
 package net.corda.components.examples.durable
 
-import com.typesafe.config.Config
 import net.corda.components.examples.durable.processor.DemoDurableProcessor
 import net.corda.data.demo.DemoRecord
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -14,7 +14,7 @@ import org.slf4j.Logger
 @Component
 class RunDurableSub(
     private val subscriptionFactory: SubscriptionFactory,
-    private var config: Config,
+    private var config: SmartConfig,
     private val instanceId: Int,
     private val killProcessOnRecord: Int = 0,
     private val delayOnNext: Long = 0,
@@ -33,7 +33,7 @@ class RunDurableSub(
     override val isRunning: Boolean
         get() = subscription?.isRunning ?: false
 
-    fun reStart(newConfig: Config) {
+    fun reStart(newConfig: SmartConfig) {
         log.info("Restarting durable subscription")
         stop()
         config = newConfig

@@ -55,7 +55,7 @@ class GatewayApp @Activate constructor(
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
-                arguments.kafkaNodeConfiguration,
+                smartConfigFactory.create(arguments.kafkaNodeConfiguration),
                 arguments.instanceId,
             ).also { gateway ->
                 gateway.start()
