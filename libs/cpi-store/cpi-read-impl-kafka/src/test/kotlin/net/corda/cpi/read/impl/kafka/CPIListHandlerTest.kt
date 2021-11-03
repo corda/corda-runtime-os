@@ -6,6 +6,7 @@ import net.corda.cpi.utils.CPI_LIST_TOPIC_NAME
 import net.corda.cpi.utils.CPI_SUBSCRIPTION_GROUP_NAME
 import net.corda.cpi.utils.toSerializedString
 import net.corda.data.packaging.CPIMetadata
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -74,8 +75,8 @@ class CPIListHandlerTest {
 
     @BeforeEach
     fun beforeEach() {
-        val config = ConfigFactory.empty()
-        cpiListHandler = CPIListHandler(subscriptionFactory, ConfigFactory.empty())
+        val config = SmartConfigImpl.empty()
+        cpiListHandler = CPIListHandler(subscriptionFactory, SmartConfigImpl.empty())
         Mockito.`when`(
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(CPI_SUBSCRIPTION_GROUP_NAME,

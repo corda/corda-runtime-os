@@ -20,7 +20,7 @@ class CPIWatcherTest {
         val listener = CPIFileListenerTestImpl(countDownLatch)
         val watcher = CPIWatcher(listener)
 
-        var thread = Thread {
+        val thread = Thread {
             watcher.startWatching(tempDir)
             countDownLatch.await()
             watcher.stopWatching()
@@ -40,7 +40,7 @@ class CPIWatcherTest {
         val listener = CPIFileListenerTestImpl(newCPIDownLatch, deletedCPILatch = deletedCPILatch)
         val watcher = CPIWatcher(listener)
 
-        var thread = Thread {
+        val thread = Thread {
             watcher.startWatching(tempDir)
             deletedCPILatch.await()
             watcher.stopWatching()
@@ -61,7 +61,7 @@ private class CPIFileListenerTestImpl(val newCPILatch: CountDownLatch? = null,
                                       val deletedCPILatch: CountDownLatch? = null): CPIFileListener {
     var newCPICount: Int = 0
     var modifiedCPICount: Int = 0
-    var deletedCPICount: Int = 0;
+    var deletedCPICount: Int = 0
 
     override fun newCPI(cpiPath: Path) {
         newCPICount++

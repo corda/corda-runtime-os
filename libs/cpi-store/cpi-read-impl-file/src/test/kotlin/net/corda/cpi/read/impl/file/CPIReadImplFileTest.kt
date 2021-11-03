@@ -19,7 +19,7 @@ import java.util.concurrent.CountDownLatch
 
 class CPIReadImplFileTest {
 
-    val cpiPath = Paths.get("../integration-test/test-resources/workflow-cpk/build/libs/workflow-cpk-5.0.0.0-SNAPSHOT-package.cpb")
+    private val cpiPath: Path = Paths.get("../integration-test/test-resources/workflow-cpk/build/libs/workflow-cpk-5.0.0.0-SNAPSHOT-package.cpb")
 
     @TempDir
     lateinit var cpisLocation: Path
