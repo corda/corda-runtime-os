@@ -114,11 +114,11 @@ class SandboxServiceImplTests {
         val cpkHashes = cpksAndContents.map { contents -> contents.cpk.metadata.hash }
 
         val sandboxGroup = sandboxService.createSandboxGroup(cpkHashes)
-        val sandboxes = (sandboxGroup as SandboxGroupInternal).sandboxes
+        val sandboxes = (sandboxGroup as SandboxGroupInternal).cpkSandboxes
         assertEquals(2, sandboxes.size)
 
         val sandboxesRetrievedFromSandboxGroup =
-            cpksAndContents.map { contents -> sandboxGroup.sandboxes.find { sandbox -> sandbox.cpk === contents.cpk } }
+            cpksAndContents.map { contents -> sandboxGroup.cpkSandboxes.find { sandbox -> sandbox.cpk === contents.cpk } }
         assertEquals(sandboxes.toSet(), sandboxesRetrievedFromSandboxGroup.toSet())
     }
 
@@ -137,7 +137,7 @@ class SandboxServiceImplTests {
     @Test
     fun `a sandbox correctly indicates which CPK it is created from`() {
         val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
-        val sandbox = (sandboxGroup as SandboxGroupInternal).sandboxes.single()
+        val sandbox = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.single()
         assertEquals(cpkOne, sandbox.cpk)
     }
 
@@ -230,7 +230,7 @@ class SandboxServiceImplTests {
     @Test
     fun `two sandboxes in the same group have visibility of each other`() {
         val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash))
-        val sandboxes = (sandboxGroup as SandboxGroupInternal).sandboxes.toList()
+        val sandboxes = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.toList()
         assertEquals(2, sandboxes.size)
         assertTrue(sandboxes[0].hasVisibility(sandboxes[1]))
     }
@@ -261,8 +261,8 @@ class SandboxServiceImplTests {
         // We create the two sandboxes separately so that they don't have visibility of one another.
         val sandboxGroupOne = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
         val sandboxGroupTwo = sandboxService.createSandboxGroup(listOf(cpkTwo.metadata.hash))
-        val sandboxOne = (sandboxGroupOne as SandboxGroupInternal).sandboxes.single()
-        val sandboxTwo = (sandboxGroupTwo as SandboxGroupInternal).sandboxes.single()
+        val sandboxOne = (sandboxGroupOne as SandboxGroupInternal).cpkSandboxes.single()
+        val sandboxTwo = (sandboxGroupTwo as SandboxGroupInternal).cpkSandboxes.single()
 
         val sandboxOneBundles = startedBundles.filter { bundle -> sandboxOne.containsBundle(bundle) }
         val sandboxTwoBundles = startedBundles.filter { bundle -> sandboxTwo.containsBundle(bundle) }
@@ -277,7 +277,7 @@ class SandboxServiceImplTests {
     @Test
     fun `a bundle only has visibility of public bundles in another sandbox it has visibility of`() {
         val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash))
-        val sandboxes = (sandboxGroup as SandboxGroupInternal).sandboxes.toList()
+        val sandboxes = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.toList()
         val sandboxOne = sandboxes[0] as SandboxImpl
         val sandboxTwo = sandboxes[1] as SandboxImpl
 
@@ -299,7 +299,7 @@ class SandboxServiceImplTests {
     @Test
     fun `a bundle only has visibility of the main bundle in another CPK sandbox it has visibility of`() {
         val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash))
-        val sandboxes = (sandboxGroup as SandboxGroupInternal).sandboxes.toList()
+        val sandboxes = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.toList()
         val sandboxOne = sandboxes[0] as CpkSandboxImpl
         val sandboxTwo = sandboxes[1] as CpkSandboxImpl
 
@@ -323,7 +323,7 @@ class SandboxServiceImplTests {
         sandboxService.createPublicSandbox(setOf(publicMockBundle), setOf(privateMockBundle))
 
         val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkTwo.metadata.hash))
-        val sandbox = (sandboxGroup as SandboxGroupInternal).sandboxes.single() as SandboxImpl
+        val sandbox = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.single() as SandboxImpl
         val sandboxBundles = startedBundles.filter { bundle -> sandbox.containsBundle(bundle) }
 
         sandboxBundles.forEach { sandboxOneBundle ->
@@ -353,7 +353,7 @@ class SandboxServiceImplTests {
 
         val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
         val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkAndContentsOne.cpk.metadata.hash))
-        val sandboxMainBundle = (sandboxGroup as SandboxGroupInternal).sandboxes.single().mainBundle
+        val sandboxMainBundle = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.single().mainBundle
 
         whenever(mockBundleUtils.getBundle(any())).thenReturn(sandboxMainBundle)
 

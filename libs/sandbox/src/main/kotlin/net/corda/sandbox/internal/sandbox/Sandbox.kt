@@ -16,20 +16,11 @@ internal interface Sandbox {
     /** Indicates whether any public or private bundle in the sandbox contains the given [bundle]. */
     fun containsBundle(bundle: Bundle): Boolean
 
-    /** Indicates whether any public or private bundle in the sandbox contains the given [klass]. */
-    fun containsClass(klass: Class<*>): Boolean
-
     /** Indicates whether this sandbox has visibility of [otherSandbox]. */
     fun hasVisibility(otherSandbox: Sandbox): Boolean
 
-    /** Grants this sandbox visibility of [otherSandbox]. */
-    fun grantVisibility(otherSandbox: Sandbox)
-
     /** Grants this sandbox visibility of the [otherSandboxes]. */
-    fun grantVisibility(otherSandboxes: List<Sandbox>)
-
-    /** Returns the bundle with symbolic name [bundleName] from sandbox, or null if no bundle has a matching name. */
-    fun getBundle(bundleName: String): Bundle?
+    fun grantVisibility(otherSandboxes: Collection<Sandbox>)
 
     /**
      * Loads the class with [className] from the bundle in the sandbox identified by [bundleName]. Returns null if no

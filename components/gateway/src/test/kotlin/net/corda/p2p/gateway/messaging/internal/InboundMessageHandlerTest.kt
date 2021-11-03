@@ -1,8 +1,8 @@
 package net.corda.p2p.gateway.messaging.internal
 
-import com.typesafe.config.ConfigFactory
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -25,7 +25,9 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
-import net.corda.p2p.gateway.messaging.http.HttpMessage
+import net.corda.p2p.gateway.GatewayMessage
+import net.corda.p2p.gateway.GatewayResponse
+import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
@@ -68,7 +70,7 @@ class InboundMessageHandlerTest {
         configurationReaderService,
         publisherFactory,
         subscriptionFactory,
-        ConfigFactory.empty(),
+        SmartConfigImpl.empty(),
     )
 
     @AfterEach
@@ -91,10 +93,9 @@ class InboundMessageHandlerTest {
     fun `onMessage will respond with error if handler is not running`() {
         val sessionId = "aaa"
         whenever(sessionPartitionMapper.constructed().first().getPartitions(sessionId)).doReturn(listOf(1, 2, 3))
-        handler.onMessage(
-            HttpMessage(
+        handler.onRequest(
+            HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                statusCode = HttpResponseStatus.OK,
                 payload = LinkInMessage(authenticatedP2PMessage(sessionId)).toByteBuffer().array(),
                 destination = InetSocketAddress("www.r3.com", 344),
             )
@@ -109,31 +110,11 @@ class InboundMessageHandlerTest {
     }
 
     @Test
-    fun `onMessage will respond with error if message had error`() {
-        setRunning()
-        handler.onMessage(
-            HttpMessage(
-                source = InetSocketAddress("www.r3.com", 1231),
-                statusCode = HttpResponseStatus.BAD_GATEWAY,
-                payload = byteArrayOf(1),
-                destination = InetSocketAddress("www.r3.com", 344),
-            )
-        )
-
-        verify(server.constructed().first())
-            .writeResponse(
-                HttpResponseStatus.BAD_GATEWAY,
-                InetSocketAddress("www.r3.com", 1231)
-            )
-    }
-
-    @Test
     fun `onMessage will respond with error if message content is wrong`() {
         setRunning()
-        handler.onMessage(
-            HttpMessage(
+        handler.onRequest(
+            HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                statusCode = HttpResponseStatus.OK,
                 payload = byteArrayOf(1, 2, 4),
                 destination = InetSocketAddress("www.r3.com", 344),
             )
@@ -141,7 +122,7 @@ class InboundMessageHandlerTest {
 
         verify(server.constructed().first())
             .writeResponse(
-                HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                HttpResponseStatus.BAD_REQUEST,
                 InetSocketAddress("www.r3.com", 1231)
             )
     }
@@ -151,11 +132,14 @@ class InboundMessageHandlerTest {
         setRunning()
         val sessionId = "aaa"
         whenever(sessionPartitionMapper.constructed().first().getPartitions(sessionId)).doReturn(listOf(1, 2, 3))
-        handler.onMessage(
-            HttpMessage(
+        val msgId = "msg-id"
+        val p2pMessage = authenticatedP2PMessage(sessionId)
+        val gatewayMessage = GatewayMessage(msgId, p2pMessage)
+        val gatewayResponse = GatewayResponse(msgId)
+        handler.onRequest(
+            HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                statusCode = HttpResponseStatus.OK,
-                payload = LinkInMessage(authenticatedP2PMessage(sessionId)).toByteBuffer().array(),
+                payload = gatewayMessage.toByteBuffer().array(),
                 destination = InetSocketAddress("www.r3.com", 344),
             )
 
@@ -164,18 +148,22 @@ class InboundMessageHandlerTest {
         verify(server.constructed().first())
             .writeResponse(
                 HttpResponseStatus.OK,
-                InetSocketAddress("www.r3.com", 1231)
+                InetSocketAddress("www.r3.com", 1231),
+                gatewayResponse.toByteBuffer().array()
             )
     }
 
     @Test
     fun `onMessage will respond with OK with valid unauthenticated message`() {
         setRunning()
-        handler.onMessage(
-            HttpMessage(
+        val msgId = "msg-id"
+        val p2pMessage = unauthenticatedP2PMessage("abc")
+        val gatewayMessage = GatewayMessage(msgId, p2pMessage)
+        val gatewayResponse = GatewayResponse(msgId)
+        handler.onRequest(
+            HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                statusCode = HttpResponseStatus.OK,
-                payload = LinkInMessage(unauthenticatedP2PMessage("")).toByteBuffer().array(),
+                payload = gatewayMessage.toByteBuffer().array(),
                 destination = InetSocketAddress("www.r3.com", 344),
             )
 
@@ -184,7 +172,8 @@ class InboundMessageHandlerTest {
         verify(server.constructed().first())
             .writeResponse(
                 HttpResponseStatus.OK,
-                InetSocketAddress("www.r3.com", 1231)
+                InetSocketAddress("www.r3.com", 1231),
+                gatewayResponse.toByteBuffer().array()
             )
     }
 
@@ -193,12 +182,14 @@ class InboundMessageHandlerTest {
         val published = argumentCaptor<List<Record<*, *>>>()
         whenever(p2pInPublisher.constructed().first().publish(published.capture())).doReturn(mock())
         setRunning()
-        val p2pMessage = LinkInMessage(unauthenticatedP2PMessage("abc"))
-        handler.onMessage(
-            HttpMessage(
+
+        val p2pMessage = unauthenticatedP2PMessage("abc")
+        val gatewayMessage = GatewayMessage("msg-id", p2pMessage)
+        val linkInMessage = LinkInMessage(p2pMessage)
+        handler.onRequest(
+            HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                statusCode = HttpResponseStatus.OK,
-                payload = p2pMessage.toByteBuffer().array(),
+                payload = gatewayMessage.toByteBuffer().array(),
                 destination = InetSocketAddress("www.r3.com", 344),
             )
 
@@ -207,7 +198,7 @@ class InboundMessageHandlerTest {
         assertThat(published.firstValue).hasSize(1)
             .anyMatch {
                 (it.topic == LINK_IN_TOPIC) &&
-                    (it.value == p2pMessage)
+                    (it.value == linkInMessage)
             }
     }
 
@@ -218,12 +209,13 @@ class InboundMessageHandlerTest {
         whenever(sessionPartitionMapper.constructed().first().getPartitions(sessionId)).doReturn(listOf(7, 10, 20))
         whenever(p2pInPublisher.constructed().first().publishToPartition(published.capture())).doReturn(mock())
         setRunning()
-        val p2pMessage = LinkInMessage(authenticatedP2PMessage(sessionId))
-        handler.onMessage(
-            HttpMessage(
+        val p2pMessage = authenticatedP2PMessage(sessionId)
+        val gatewayMessage = GatewayMessage("msg-id", p2pMessage)
+        val linkInMessage = LinkInMessage(p2pMessage)
+        handler.onRequest(
+            HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                statusCode = HttpResponseStatus.OK,
-                payload = p2pMessage.toByteBuffer().array(),
+                payload = gatewayMessage.toByteBuffer().array(),
                 destination = InetSocketAddress("www.r3.com", 344),
             )
 
@@ -232,7 +224,7 @@ class InboundMessageHandlerTest {
         assertThat(published.firstValue).hasSize(1)
             .anyMatch { (partition, record) ->
                 (record.topic == LINK_IN_TOPIC) &&
-                    (record.value == p2pMessage) &&
+                    (record.value == linkInMessage) &&
                     ((partition == 7) || (partition == 10) || (partition == 20))
             }
     }
@@ -241,12 +233,12 @@ class InboundMessageHandlerTest {
     fun `onMessage authenticated message with no partition will reply with an error`() {
         whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
         setRunning()
-        val p2pMessage = LinkInMessage(authenticatedP2PMessage(""))
-        handler.onMessage(
-            HttpMessage(
+        val msgId = "msg-id"
+        val gatewayMessage = GatewayMessage(msgId, authenticatedP2PMessage(""))
+        handler.onRequest(
+            HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                statusCode = HttpResponseStatus.OK,
-                payload = p2pMessage.toByteBuffer().array(),
+                payload = gatewayMessage.toByteBuffer().array(),
                 destination = InetSocketAddress("www.r3.com", 344),
             )
 
@@ -255,32 +247,33 @@ class InboundMessageHandlerTest {
         verify(server.constructed().first())
             .writeResponse(
                 HttpResponseStatus.INTERNAL_SERVER_ERROR,
-                InetSocketAddress("www.r3.com", 1231)
+                InetSocketAddress("www.r3.com", 1231),
+                GatewayResponse(msgId).toByteBuffer().array()
             )
     }
 
     @Test
     fun `onMessage authenticated message will respond with error for invalid session ID`() {
         setRunning()
-        mockStatic(LinkInMessage::class.java).use {
+        val msgId = "msg-id"
+        mockStatic(GatewayMessage::class.java).use {
             val header = mock<CommonHeader> {
                 on { sessionId } doReturn null
             }
             val payload = mock<AuthenticatedDataMessage> {
                 on { getHeader() } doReturn header
             }
-            val message = mock<LinkInMessage> {
+            val message = mock<GatewayMessage> {
                 on { getPayload() } doReturn payload
-                on { schema } doReturn mock()
+                on { id } doReturn msgId
             }
-            it.`when`<LinkInMessage> {
-                LinkInMessage.fromByteBuffer(any())
+            it.`when`<GatewayMessage> {
+                GatewayMessage.fromByteBuffer(any())
             }.doReturn(message)
 
-            handler.onMessage(
-                HttpMessage(
+            handler.onRequest(
+                HttpRequest(
                     source = InetSocketAddress("www.r3.com", 1231),
-                    statusCode = HttpResponseStatus.OK,
                     payload = byteArrayOf(),
                     destination = InetSocketAddress("www.r3.com", 344),
                 )
@@ -289,7 +282,8 @@ class InboundMessageHandlerTest {
             verify(server.constructed().first())
                 .writeResponse(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR,
-                    InetSocketAddress("www.r3.com", 1231)
+                    InetSocketAddress("www.r3.com", 1231),
+                    GatewayResponse(msgId).toByteBuffer().array()
                 )
         }
     }
@@ -304,14 +298,13 @@ class InboundMessageHandlerTest {
                 payload = ByteBuffer.wrap(byteArrayOf())
                 authTag = ByteBuffer.wrap(byteArrayOf())
             }.build()
-        val p2pMessage = LinkInMessage(payload)
+        val gatewayMessage = GatewayMessage("msg-id", payload)
         whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
-        handler.onMessage(
-            HttpMessage(
+        handler.onRequest(
+            HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                statusCode = HttpResponseStatus.OK,
-                payload = p2pMessage.toByteBuffer().array(),
+                payload = gatewayMessage.toByteBuffer().array(),
                 destination = InetSocketAddress("www.r3.com", 344),
             )
         )
@@ -329,14 +322,13 @@ class InboundMessageHandlerTest {
                 encryptedPayload = ByteBuffer.wrap(byteArrayOf())
                 authTag = ByteBuffer.wrap(byteArrayOf())
             }.build()
-        val p2pMessage = LinkInMessage(payload)
+        val gatewayMessage = GatewayMessage("msg-id", payload)
         whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
-        handler.onMessage(
-            HttpMessage(
+        handler.onRequest(
+            HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                statusCode = HttpResponseStatus.OK,
-                payload = p2pMessage.toByteBuffer().array(),
+                payload = gatewayMessage.toByteBuffer().array(),
                 destination = InetSocketAddress("www.r3.com", 344),
             )
         )
@@ -355,14 +347,13 @@ class InboundMessageHandlerTest {
                 supportedModes = emptyList()
                 source = InitiatorHandshakeIdentity(ByteBuffer.wrap(byteArrayOf()), "")
             }.build()
-        val p2pMessage = LinkInMessage(payload)
+        val gatewayMessage = GatewayMessage("msg-id", payload)
         whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
-        handler.onMessage(
-            HttpMessage(
+        handler.onRequest(
+            HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                statusCode = HttpResponseStatus.OK,
-                payload = p2pMessage.toByteBuffer().array(),
+                payload = gatewayMessage.toByteBuffer().array(),
                 destination = InetSocketAddress("www.r3.com", 344),
             )
         )
@@ -380,14 +371,13 @@ class InboundMessageHandlerTest {
                 encryptedData = ByteBuffer.wrap(byteArrayOf())
                 authTag = ByteBuffer.wrap(byteArrayOf())
             }.build()
-        val p2pMessage = LinkInMessage(payload)
+        val gatewayMessage = GatewayMessage("msg-id", payload)
         whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
-        handler.onMessage(
-            HttpMessage(
+        handler.onRequest(
+            HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                statusCode = HttpResponseStatus.OK,
-                payload = p2pMessage.toByteBuffer().array(),
+                payload = gatewayMessage.toByteBuffer().array(),
                 destination = InetSocketAddress("www.r3.com", 344),
             )
         )
@@ -405,14 +395,13 @@ class InboundMessageHandlerTest {
                 responderPublicKey = ByteBuffer.wrap(byteArrayOf())
                 selectedMode = ProtocolMode.AUTHENTICATION_ONLY
             }.build()
-        val p2pMessage = LinkInMessage(payload)
+        val gatewayMessage = GatewayMessage("msg-id", payload)
         whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
-        handler.onMessage(
-            HttpMessage(
+        handler.onRequest(
+            HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                statusCode = HttpResponseStatus.OK,
-                payload = p2pMessage.toByteBuffer().array(),
+                payload = gatewayMessage.toByteBuffer().array(),
                 destination = InetSocketAddress("www.r3.com", 344),
             )
         )
@@ -430,14 +419,13 @@ class InboundMessageHandlerTest {
                 encryptedData = ByteBuffer.wrap(byteArrayOf())
                 authTag = ByteBuffer.wrap(byteArrayOf())
             }.build()
-        val p2pMessage = LinkInMessage(payload)
+        val gatewayMessage = GatewayMessage("msg-id", payload)
         whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
 
-        handler.onMessage(
-            HttpMessage(
+        handler.onRequest(
+            HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                statusCode = HttpResponseStatus.OK,
-                payload = p2pMessage.toByteBuffer().array(),
+                payload = gatewayMessage.toByteBuffer().array(),
                 destination = InetSocketAddress("www.r3.com", 344),
             )
         )

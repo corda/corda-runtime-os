@@ -65,6 +65,7 @@ class CordaKafkaPublisherImpl(
         records.forEach {
             if (it.key.javaClass != String::class.java) {
                 val future = CompletableFuture.failedFuture<Unit>(CordaMessageAPIFatalException("Unsupported Key type, use a String."))
+                log.error("Unsupported Key type, use a String")
                 return listOf(future)
             }
         }
@@ -84,6 +85,7 @@ class CordaKafkaPublisherImpl(
         records.forEach { (_, record) ->
             if (record.key.javaClass != String::class.java) {
                 val future = CompletableFuture.failedFuture<Unit>(CordaMessageAPIFatalException("Unsupported Key type, use a String."))
+                log.error("Unsupported Key type, use a String.")
                 return listOf(future)
             }
         }

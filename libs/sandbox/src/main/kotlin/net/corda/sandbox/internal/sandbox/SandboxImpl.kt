@@ -1,7 +1,6 @@
 package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.SandboxException
-import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.loggerFor
 import org.osgi.framework.Bundle
 import java.util.UUID
@@ -10,11 +9,9 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * An implementation of [Sandbox].
  *
- * @param bundleUtils The [BundleUtils] that all OSGi activity is delegated to for testing purposes
  * @param privateBundles The set of non-public [Bundle]s in this sandbox
  */
 internal open class SandboxImpl(
-    private val bundleUtils: BundleUtils,
     override val id: UUID,
     final override val publicBundles: Set<Bundle>,
     private val privateBundles: Set<Bundle>
@@ -33,26 +30,16 @@ internal open class SandboxImpl(
 
     override fun containsBundle(bundle: Bundle) = bundle in allBundles
 
-    override fun containsClass(klass: Class<*>): Boolean {
-        return bundleUtils.getBundle(klass) in allBundles
-    }
-
     override fun hasVisibility(otherSandbox: Sandbox) = otherSandbox.id in visibleSandboxes
 
-    override fun grantVisibility(otherSandbox: Sandbox) {
-        visibleSandboxes.add(otherSandbox.id)
-    }
-
-    override fun grantVisibility(otherSandboxes: List<Sandbox>) {
+    override fun grantVisibility(otherSandboxes: Collection<Sandbox>) {
         visibleSandboxes.addAll(otherSandboxes.map(Sandbox::id))
     }
 
-    override fun getBundle(bundleName: String) = (publicBundles + privateBundles).find { bundle ->
-        bundle.symbolicName == bundleName
-    }
-
     override fun loadClass(className: String, bundleName: String): Class<*>? {
-        val bundle = getBundle(bundleName) ?: return null
+        val bundle = allBundles.find { bundle ->
+            bundle.symbolicName == bundleName
+        } ?: return null
 
         return try {
             bundle.loadClass(className)

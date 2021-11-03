@@ -3,8 +3,8 @@ package net.corda.p2p.app.simulator
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -53,7 +53,7 @@ class Sender(private val publisherFactory: PublisherFactory,
         val threads = (1..clients).map { client ->
             thread(isDaemon = true) {
                 var messagesSent = 0
-                val kafkaConfig = ConfigFactory.empty()
+                val kafkaConfig = SmartConfigImpl.empty()
                     .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaBoostrapServers))
                     .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-sender-$client"))
                 val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator"), kafkaConfig)

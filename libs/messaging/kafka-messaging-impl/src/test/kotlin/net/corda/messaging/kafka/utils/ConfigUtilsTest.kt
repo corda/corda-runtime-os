@@ -2,6 +2,7 @@ package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.utils
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_PUBLISHER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
@@ -36,7 +37,7 @@ class ConfigUtilsTest {
 
     @Test
     fun `check resolved publisher configuration is correct`() {
-        val nodeConfig = ConfigFactory.empty()
+        val nodeConfig = SmartConfigImpl.empty()
             .withValue("messaging.topic.prefix", ConfigValueFactory.fromAnyRef("demo"))
         val publisherConfig = resolvePublisherConfiguration(
             PublisherConfig("clientId", 1).toConfig(),
@@ -49,7 +50,7 @@ class ConfigUtilsTest {
 
     @Test
     fun `check resolved publisher configuration without instance id doesn't have transactional id`() {
-        val nodeConfig = ConfigFactory.empty()
+        val nodeConfig = SmartConfigImpl.empty()
             .withValue("messaging.topic.prefix", ConfigValueFactory.fromAnyRef("demo"))
         val publisherConfig = resolvePublisherConfiguration(
             PublisherConfig("clientId").toConfig(),
