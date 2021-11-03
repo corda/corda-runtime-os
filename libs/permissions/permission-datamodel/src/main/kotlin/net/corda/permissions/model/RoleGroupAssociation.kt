@@ -11,12 +11,12 @@ import javax.persistence.Table
 import javax.persistence.Version
 
 /**
- * Associates Permissions and Roles.
- * A role can be associated with many permissions and a permission maybe associated in multiple roles.
+ * Associates Groups and Roles.
+ * A role can be associated with many groups and many roles can be associated with a group.
  */
 @Entity
-@Table(name = "rpc_role_perm_rel")
-class RolePermissionAssoc(
+@Table(name = "rpc_role_group_rel")
+class RoleGroupAssociation(
     @Id
     @Column(name = "id", nullable = false, updatable = false)
     val id: String,
@@ -26,8 +26,8 @@ class RolePermissionAssoc(
     val role: Role,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "perm_id")
-    val perm: Permission,
+    @JoinColumn(name = "group_id")
+    val group: Group,
 
     @Column(name = "update_ts", nullable = false)
     var updateTimestamp: Instant,

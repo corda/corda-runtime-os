@@ -36,7 +36,7 @@ class Role(
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_vis")
-    var groupVis: Group?,
+    var groupVisibility: Group?,
 ) {
     /**
      * Version column for optimistic locking.
@@ -48,7 +48,7 @@ class Role(
      * Each role can be associated with multiple permissions. A given permission can belong to multiple roles.
      */
     @OneToMany(mappedBy = "role", orphanRemoval = true, cascade = [CascadeType.ALL])
-    var rolePermAssocs: MutableSet<RolePermissionAssoc> = mutableSetOf()
+    var rolePermAssociations: MutableSet<RolePermissionAssociation> = mutableSetOf()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

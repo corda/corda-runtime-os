@@ -16,7 +16,7 @@ import javax.persistence.Version
  */
 @Entity
 @Table(name = "rpc_role_user_rel")
-class RoleUserAssoc(
+class RoleUserAssociation(
     @Id
     @Column(name = "id", nullable = false, updatable = false)
     val id: String,

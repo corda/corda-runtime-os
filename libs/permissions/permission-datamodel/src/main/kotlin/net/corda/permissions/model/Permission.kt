@@ -31,7 +31,7 @@ class Permission(
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "group_vis")
-    var groupVis: Group?,
+    var groupVisibility: Group?,
 
     /**
      * Optional identifier of the virtual node within which the physical node permission applies to.

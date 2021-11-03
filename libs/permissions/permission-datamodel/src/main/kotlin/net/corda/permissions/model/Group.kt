@@ -47,7 +47,7 @@ class Group(
      * Groups can have multiple roles associated with it.
      */
     @OneToMany(mappedBy = "group", orphanRemoval = true, cascade = [CascadeType.ALL])
-    var roleGroupAssocs: MutableSet<RoleGroupAssoc> = mutableSetOf()
+    var roleGroupAssociations: MutableSet<RoleGroupAssociation> = mutableSetOf()
 
     /**
      * Groups can have multiple properties associated with it.
