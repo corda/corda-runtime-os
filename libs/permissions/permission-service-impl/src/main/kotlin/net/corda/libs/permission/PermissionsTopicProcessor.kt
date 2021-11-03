@@ -8,7 +8,7 @@ import net.corda.v5.base.annotations.VisibleForTesting
 class PermissionsTopicProcessor : CompactedProcessor<String, User> {
 
     @VisibleForTesting
-    var userData: Map<String, User> = mutableMapOf()
+    internal val userData: MutableMap<String, User> = mutableMapOf()
 
     fun getUser(id: String) = userData[id]
 
@@ -16,7 +16,7 @@ class PermissionsTopicProcessor : CompactedProcessor<String, User> {
     override val valueClass = User::class.java
 
     override fun onSnapshot(currentData: Map<String, User>) {
-        userData = userData.plus(currentData)
+        userData.putAll(currentData)
     }
 
     override fun onNext(
@@ -27,10 +27,10 @@ class PermissionsTopicProcessor : CompactedProcessor<String, User> {
         val user = newRecord.value
         val userLogin = newRecord.key
 
-        userData = if (user == null) {
-            userData.minus(userLogin)
+        if (user == null) {
+            userData.remove(userLogin)
         } else {
-            userData.plus(Pair(userLogin, user))
+            userData[userLogin] = user
         }
     }
 }
