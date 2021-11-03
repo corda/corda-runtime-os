@@ -138,7 +138,7 @@ open class SerializationOutput constructor(
         try {
             val classTag = (context.sandboxGroup as? SandboxGroup)?.getEvolvableTag(type.asClass())
             if (classTag != null && !metadata.containsKey(type.typeName)) {
-                val key = type.asClass().typeName
+                val key = type.asClass().name
                 metadata.putValue(key, classTag)
             }
         } catch (ex: SandboxException) {
