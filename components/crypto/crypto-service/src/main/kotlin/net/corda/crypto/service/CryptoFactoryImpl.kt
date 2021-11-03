@@ -130,7 +130,6 @@ class CryptoFactoryImpl @Activate constructor(
             cipherSuiteFactory.getSchemeMap()
         }
 
-        @Suppress("TooGenericExceptionCaught")
         override fun getFreshKeySigningService(memberId: String): FreshKeySigningService =
             try {
                 logger.debug("Getting the fresh key service for memberId=$memberId")
@@ -152,7 +151,6 @@ class CryptoFactoryImpl @Activate constructor(
                 throw CryptoServiceLibraryException("Failed to get fresh key service for '$memberId'", e)
             }
 
-        @Suppress("TooGenericExceptionCaught")
         override fun getSigningService(memberId: String, category: String): SigningService =
             try {
                 logger.debug("Getting the signing service for memberId=$memberId")
@@ -180,7 +178,7 @@ class CryptoFactoryImpl @Activate constructor(
         private fun getServiceConfig(memberId: String, category: String): CryptoServiceConfig =
             memberConfigReader.get(memberId).getCategory(category)
 
-        @Suppress("UNCHECKED_CAST", "TooGenericExceptionCaught")
+        @Suppress("UNCHECKED_CAST")
         private fun getCryptoService(memberId: String, category: String, config: CryptoServiceConfig): CryptoService {
             logger.debug("Getting the crypto service '${config.serviceName}' for '$memberId:$category'")
             val provider =

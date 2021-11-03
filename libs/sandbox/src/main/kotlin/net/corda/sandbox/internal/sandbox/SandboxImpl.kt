@@ -52,7 +52,6 @@ internal open class SandboxImpl(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun unload() = allBundles.mapNotNull { bundle ->
         try {
             bundle.uninstall()

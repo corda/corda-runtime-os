@@ -83,7 +83,6 @@ abstract class InternalTile(coordinatorFactory: LifecycleCoordinatorFactory) : D
         }
         super.close()
         children.reversed().forEach {
-            @Suppress("TooGenericExceptionCaught")
             try {
                 it.close()
             } catch (e: Throwable) {

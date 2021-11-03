@@ -22,7 +22,7 @@ class CordaSecureRandomService(provider: Provider) :
 
     private val instance: SecureRandomSpi = if (SystemUtils.IS_OS_LINUX) tryAndUseLinuxSecureRandomSpi() else CordaSecureRandomSpi()
 
-    @Suppress("TooGenericExceptionCaught", "TooGenericExceptionThrown")
+    @Suppress("TooGenericExceptionThrown")
     private fun tryAndUseLinuxSecureRandomSpi(): SecureRandomSpi = try {
         LinuxSecureRandomSpi()
     } catch (e: Throwable) {

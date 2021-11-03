@@ -29,7 +29,6 @@ class CordaSecurityProvider(
 
     override fun getService(type: String, algorithm: String): Service? = serviceFactory(type, algorithm)
 
-    @Suppress("TooGenericExceptionCaught")
     private val serviceFactory: (String, String) -> Service? = try {
         makeCachingFactory()
     } catch (e: Throwable) {

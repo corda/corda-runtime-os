@@ -151,7 +151,6 @@ class CordaKafkaPublisherImpl(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun executeInTransaction(block: (CordaKafkaProducer) -> Unit): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()
 
@@ -235,7 +234,6 @@ class CordaKafkaPublisherImpl(
     /**
      * Safely close a producer. If an exception is thrown swallow the error to avoid double exceptions
      */
-    @Suppress("TooGenericExceptionCaught")
     override fun close() {
         try {
             cordaKafkaProducer.close(Duration.ofMillis(closeTimeout))

@@ -42,7 +42,6 @@ abstract class ConfigurationAwareLeafTile<C>(
     private var registration: AutoCloseable? = null
 
     private fun applyNewConfiguration(newConfiguration: Config) {
-        @Suppress("TooGenericExceptionCaught")
         try {
             val configuration = configFactory(newConfiguration)
             logger.info("Got configuration $name")

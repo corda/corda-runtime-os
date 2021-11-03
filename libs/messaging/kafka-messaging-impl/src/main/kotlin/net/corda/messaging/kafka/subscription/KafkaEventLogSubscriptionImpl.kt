@@ -175,7 +175,6 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
      * retries have been exceeded.
      * @throws CordaMessageAPIFatalException Fatal unrecoverable error occurred. e.g misconfiguration
      */
-    @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<K, V>, producer: CordaKafkaProducer) {
         var attempts = 0
         while (!stopped) {
@@ -235,7 +234,6 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
      * @throws CordaMessageAPIIntermittentException error occurred that can be retried.
      * @throws CordaMessageAPIFatalException Fatal unrecoverable error occurred. e.g misconfiguration
      */
-    @Suppress("TooGenericExceptionCaught")
     private fun processDurableRecords(
         consumerRecords: List<ConsumerRecordAndMeta<K, V>>,
         producer: CordaKafkaProducer,

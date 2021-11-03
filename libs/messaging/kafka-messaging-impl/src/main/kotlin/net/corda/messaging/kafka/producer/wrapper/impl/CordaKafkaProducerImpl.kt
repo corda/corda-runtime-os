@@ -39,7 +39,6 @@ import java.util.concurrent.Future
  * Delegate actions to kafka [producer].
  * Wrap calls to [producer] with error handling.
  */
-@Suppress("TooGenericExceptionCaught")
 class CordaKafkaProducerImpl(
     config: Config,
     private val producer: Producer<Any, Any>
@@ -223,7 +222,6 @@ class CordaKafkaProducerImpl(
     /**
      * Safely close a producer. If an exception is thrown swallow the error to avoid double exceptions
      */
-    @Suppress("TooGenericExceptionCaught")
     override fun close() {
         try {
             producer.close(Duration.ofMillis(closeTimeout))

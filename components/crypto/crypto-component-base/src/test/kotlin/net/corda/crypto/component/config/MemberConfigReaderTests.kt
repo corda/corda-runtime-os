@@ -111,7 +111,6 @@ class MemberConfigReaderTests {
             }
         }
 
-        @Suppress("TooGenericExceptionCaught")
         private fun <T> wait(key: String, timeout: Duration, retryDelay: Duration, get: (String) -> T?): T {
             val end = Instant.now().plus(timeout)
             do {

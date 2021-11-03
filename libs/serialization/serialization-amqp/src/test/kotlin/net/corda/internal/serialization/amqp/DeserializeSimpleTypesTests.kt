@@ -634,7 +634,6 @@ No custom serializers registered.
 
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun assertFailsWithMessage(expectedMessage: String, block: () -> Unit) {
         try {
             block()
