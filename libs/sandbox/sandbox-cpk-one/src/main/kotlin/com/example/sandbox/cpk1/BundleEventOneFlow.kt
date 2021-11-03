@@ -14,7 +14,5 @@ class BundleEventOneFlow @Activate constructor(
     @Reference(target = "(component.name=sandbox.query)")
     private val sandboxQuery: SandboxQuery
 ) : Flow<List<BundleEvent>> {
-    override fun call(): List<BundleEvent> {
-        return sandboxQuery.getBundleEvents()
-    }
+    override fun call() = sandboxQuery.getBundleEvents()
 }

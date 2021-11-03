@@ -13,8 +13,5 @@ class ServicesThreeFlow @Activate constructor(
     @Reference(target = "(component.name=sandbox.query)")
     private val sandboxQuery: SandboxQuery
 ) : Flow<List<Class<out Any>>> {
-
-    override fun call(): List<Class<out Any>> {
-        return sandboxQuery.getAllServiceClasses()
-    }
+    override fun call() = sandboxQuery.getAllServiceClasses()
 }
