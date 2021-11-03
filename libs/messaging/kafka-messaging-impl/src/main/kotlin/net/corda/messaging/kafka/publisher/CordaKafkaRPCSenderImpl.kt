@@ -219,7 +219,8 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
             )
             log.error(
                 "Serializing your request resulted in an exception. " +
-                "Verify that the fields of the request are populated correctly", ex
+                "Verify that the fields of the request are populated correctly. " +
+                "Request was: $req", ex
             )
         }
 
