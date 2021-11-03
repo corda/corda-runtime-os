@@ -185,7 +185,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                                 "Cause:${response.errorType}. Message: ${response.errorMessage}"
                             )
                         )
-                        log.error("Cause:${response.errorType}. Message: ${response.errorMessage}")
+                        log.warn("Cause:${response.errorType}. Message: ${response.errorMessage}")
                     }
                     ResponseStatus.CANCELLED -> {
                         future.cancel(true)
@@ -219,7 +219,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
             )
             log.error(
                 "Serializing your request resulted in an exception. " +
-                "Verify that the fields of the request are populated correctly"
+                "Verify that the fields of the request are populated correctly", ex
             )
         }
 
@@ -242,7 +242,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                 publisher.publish(listOf(record))
             } catch (ex: Exception) {
                 future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
-                log.error("Failed to publish. Exception: ${ex.message}")
+                log.error("Failed to publish. Exception: ${ex.message}", ex)
             }
         }
 
