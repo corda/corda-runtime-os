@@ -1,11 +1,11 @@
 package net.corda.cpi.read.impl.kafka
 
-import com.typesafe.config.Config
 import net.corda.cpi.read.CPIListener
 import net.corda.cpi.utils.CPI_LIST_TOPIC_NAME
 import net.corda.cpi.utils.CPI_SUBSCRIPTION_GROUP_NAME
 import net.corda.cpi.utils.newInstance
 import net.corda.data.packaging.CPIMetadata
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
@@ -16,7 +16,7 @@ import net.corda.packaging.converters.toCorda
 import java.util.*
 
 class CPIListHandler(private val subscriptionFactory: SubscriptionFactory,
-                     private val nodeConfig: Config
+                     private val nodeConfig: SmartConfig
 ) : CompactedProcessor<String, CPIMetadata> {
 
     val cpiMetadata: MutableMap<CPI.Identifier, CPI.Metadata> = Collections.synchronizedMap(mutableMapOf())

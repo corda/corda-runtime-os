@@ -1,12 +1,12 @@
 package net.corda.cpi.integration.test
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.cpi.read.factory.CPIReadFactory
 import net.corda.cpi.utils.CPX_KAFKA_FILE_CACHE_ROOT_DIR_CONFIG_PATH
 import net.corda.cpi.write.factory.CPIWriteFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
@@ -33,7 +33,7 @@ import java.util.concurrent.CountDownLatch
 class CPIRPCIntegrationTest {
 
     private lateinit var rpcConfig: RPCConfig<String, String>
-    private lateinit var kafkaConfig: Config
+    private lateinit var kafkaConfig: SmartConfig
     private val kafkaProperties = getKafkaProperties()
 
     private companion object {
@@ -71,7 +71,7 @@ class CPIRPCIntegrationTest {
 
     @BeforeEach
     fun beforeEach() {
-        kafkaConfig = ConfigFactory.empty()
+        kafkaConfig = SmartConfigImpl.empty()
             .withValue(
                 IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(
                     IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE

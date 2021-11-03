@@ -1,7 +1,5 @@
 package net.corda.cpi.read.impl.kafka
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 import net.corda.cpi.read.CPIRead
 import net.corda.cpi.read.CPIListener
 import net.corda.cpi.utils.RPC_CPI_CLIENT_NAME
@@ -9,6 +7,7 @@ import net.corda.cpi.utils.RPC_CPI_GROUP_NAME
 import net.corda.cpi.utils.RPC_CPI_TOPIC_NAME
 import net.corda.data.packaging.CPISegmentRequest
 import net.corda.data.packaging.CPISegmentResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
@@ -24,7 +23,7 @@ import kotlin.concurrent.withLock
 class CPIReadImplKafka(
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
-    nodeConfig: Config = ConfigFactory.empty()
+    nodeConfig: SmartConfig
 ) : CPIRead {
 
     private val lock = ReentrantLock()

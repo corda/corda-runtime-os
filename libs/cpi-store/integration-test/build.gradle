@@ -44,6 +44,7 @@ dependencies {
     implementation project(":libs:cpi-store:cpi-read-impl-kafka")
     implementation project(":libs:cpi-store:cpi-write-impl-kafka")
     implementation project(":libs:cpi-store:cpi-utils")
+    implementation project(":libs:configuration:configuration-core")
 
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")

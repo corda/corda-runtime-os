@@ -1,10 +1,10 @@
 package net.corda.cpi.write.impl.kafka.factory
 
-import com.typesafe.config.Config
 import net.corda.cpi.read.factory.CPIReadFactory
 import net.corda.cpi.write.CPIWrite
 import net.corda.cpi.write.factory.CPIWriteFactory
 import net.corda.cpi.write.impl.kafka.CPIWriteImplKafka
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.osgi.service.component.annotations.Activate
@@ -20,7 +20,7 @@ class CPIWriteFactoryImpl @Activate constructor(
     @Reference(service = CPIReadFactory::class, target = "(type=file)")
     private val readFactory: CPIReadFactory
 ) : CPIWriteFactory {
-    override fun createCPIWrite(nodeConfig: Config): CPIWrite {
+    override fun createCPIWrite(nodeConfig: SmartConfig): CPIWrite {
         return CPIWriteImplKafka(subscriptionFactory, publisherFactory, nodeConfig, readFactory)
     }
 }

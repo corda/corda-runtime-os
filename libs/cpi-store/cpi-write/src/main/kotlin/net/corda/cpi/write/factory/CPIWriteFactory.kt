@@ -1,8 +1,8 @@
 package net.corda.cpi.write.factory
 
-import com.typesafe.config.Config
 import net.corda.cpi.write.CPIWrite
+import net.corda.libs.configuration.SmartConfig
 
 interface CPIWriteFactory {
-    fun createCPIWrite(nodeConfig: Config): CPIWrite
+    fun createCPIWrite(nodeConfig: SmartConfig): CPIWrite
 }

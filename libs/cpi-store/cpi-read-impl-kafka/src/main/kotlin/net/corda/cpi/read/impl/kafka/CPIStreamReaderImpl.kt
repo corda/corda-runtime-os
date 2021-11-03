@@ -1,10 +1,10 @@
 package net.corda.cpi.read.impl.kafka
 
-import com.typesafe.config.Config
 import net.corda.cpi.read.impl.kafka.CPIStreamReaderImpl.Companion.logger
 import net.corda.cpi.utils.CPX_KAFKA_FILE_CACHE_ROOT_DIR_CONFIG_PATH
 import net.corda.data.packaging.CPISegmentRequest
 import net.corda.data.packaging.CPISegmentResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -28,7 +28,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class CPIStreamReaderImpl(private val rpcConfig: RPCConfig<CPISegmentRequest, CPISegmentResponse>,
-                          private val nodeConfig: Config,
+                          private val nodeConfig: SmartConfig,
                           private val publisherFactory: PublisherFactory): Lifecycle {
 
     val executorService: ExecutorService = Executors.newFixedThreadPool(10)

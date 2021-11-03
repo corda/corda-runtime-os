@@ -1,6 +1,5 @@
 package net.corda.cpi.write.impl.kafka
 
-import com.typesafe.config.Config
 import net.corda.cpi.read.CPIRead
 import net.corda.cpi.read.CPISegmentReader
 import net.corda.cpi.read.factory.CPIReadFactory
@@ -13,6 +12,7 @@ import net.corda.cpi.utils.toSerializedString
 import net.corda.cpi.write.CPIWrite
 import net.corda.data.packaging.CPISegmentRequest
 import net.corda.data.packaging.CPISegmentResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -29,7 +29,7 @@ import kotlin.concurrent.withLock
 
 class CPIWriteImplKafka(private val subscriptionFactory: SubscriptionFactory,
                         private val publisherFactory: PublisherFactory,
-                        private val nodeConfig: Config,
+                        private val nodeConfig: SmartConfig,
                         private val cpiReadFactory: CPIReadFactory): CPIWrite {
 
     private val rpcConfig = RPCConfig(RPC_CPI_GROUP_NAME,

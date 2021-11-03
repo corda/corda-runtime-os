@@ -1,10 +1,10 @@
 package net.corda.cpi.write.impl.kafka
 
-import com.typesafe.config.Config
 import net.corda.cpi.read.CPISegmentReader
 import net.corda.cpi.utils.CPI_MAX_SEGMENT_SIZE
 import net.corda.data.packaging.CPISegmentRequest
 import net.corda.data.packaging.CPISegmentResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -17,7 +17,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class CPISegmentProcessor(rpcConfig: RPCConfig<CPISegmentRequest, CPISegmentResponse>,
-                          nodeConfig: Config,
+                          nodeConfig: SmartConfig,
                           private val cpiSegmentReader: CPISegmentReader,
                           subscriptionFactory: SubscriptionFactory): RPCResponderProcessor<CPISegmentRequest, CPISegmentResponse>,
          Lifecycle {

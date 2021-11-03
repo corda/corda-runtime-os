@@ -15,4 +15,5 @@ dependencies {
     implementation "net.corda:corda-packaging"
 
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:configuration:configuration-core")
 }

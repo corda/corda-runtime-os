@@ -1,11 +1,11 @@
 package net.corda.cpi.read.factory
 
-import com.typesafe.config.Config
 import net.corda.cpi.read.CPIRead
 import net.corda.cpi.read.CPISegmentReader
+import net.corda.libs.configuration.SmartConfig
 
 interface CPIReadFactory {
-    fun createCPIRead(nodeConfig: Config): CPIRead
-    fun createCPIReadSegment(nodeConfig: Config): CPISegmentReader
+    fun createCPIRead(nodeConfig: SmartConfig): CPIRead
+    fun createCPIReadSegment(nodeConfig: SmartConfig): CPISegmentReader
 }
 

@@ -25,6 +25,7 @@ dependencies {
     implementation project(":libs:cpi-store:cpi-utils")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:configuration:configuration-core")
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
