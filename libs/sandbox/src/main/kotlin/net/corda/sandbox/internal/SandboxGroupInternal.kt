@@ -5,6 +5,6 @@ import net.corda.sandbox.internal.sandbox.CpkSandbox
 
 /** Extends [SandboxGroup] with internal methods. */
 internal interface SandboxGroupInternal : SandboxGroup {
-    /** The sandboxes in the group. */
-    val sandboxes: Collection<CpkSandbox>
+    /** The CPK sandboxes in the group. */
+    val cpkSandboxes: Collection<CpkSandbox>
 }
