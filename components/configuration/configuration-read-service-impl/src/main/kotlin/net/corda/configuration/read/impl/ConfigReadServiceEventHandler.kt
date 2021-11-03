@@ -1,7 +1,7 @@
 package net.corda.configuration.read.impl
 
-import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadException
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.ErrorEvent
@@ -19,7 +19,7 @@ internal class ConfigReadServiceEventHandler(
     private val callbackHandles: ConfigurationHandlerStorage
 ): LifecycleEventHandler {
 
-    private var bootstrapConfig: Config? = null
+    private var bootstrapConfig: SmartConfig? = null
     private var subscription: ConfigReader? = null
 
     private companion object {

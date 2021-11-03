@@ -12,7 +12,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
-    implementation project(":libs:install")
+    implementation project(":components:install:install-legacy")
     implementation "net.corda:corda-packaging"
     implementation project(":libs:sandbox")
     implementation "net.corda:corda-avro-schema"

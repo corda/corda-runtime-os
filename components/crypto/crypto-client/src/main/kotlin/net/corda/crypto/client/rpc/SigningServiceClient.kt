@@ -162,10 +162,10 @@ class SigningServiceClient(
     )
 
     @Suppress("ThrowsCount", "UNCHECKED_CAST", "ComplexMethod")
-    private fun <TRESP> WireSigningRequest.executeWithTimeoutRetry(
-        respClazz: Class<TRESP>,
+    private fun <RESPONSE> WireSigningRequest.executeWithTimeoutRetry(
+        respClazz: Class<RESPONSE>,
         allowNoContentValue: Boolean = false
-    ): TRESP? {
+    ): RESPONSE? {
         var retry = clientRetries
         while (true) {
             try {
@@ -195,7 +195,7 @@ class SigningServiceClient(
                             "received ${response.response::class.java.name} with ${response.context.memberId} member"
                 }
                 logger.debug("Received response {} for member {}", respClazz.name, context.memberId)
-                return response.response as TRESP
+                return response.response as RESPONSE
             } catch (e: TimeoutException) {
                 retry--
                 if (retry < 0) {

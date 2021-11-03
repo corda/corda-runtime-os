@@ -15,6 +15,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-read')
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
+    implementation project(":libs:configuration:configuration-core")
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

@@ -1,21 +1,24 @@
 package net.corda.kryoserialization
 
 import net.corda.bundle1.Cash
+import net.corda.install.InstallService
+import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
-import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.cm.ConfigurationAdmin
+import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
-import java.util.*
+import java.util.Hashtable
 import java.util.concurrent.Executors
 
 @ExtendWith(ServiceExtension::class)
@@ -23,38 +26,47 @@ class KryoCheckpointTest {
 
     companion object {
         @InjectService
+        lateinit var configAdmin: ConfigurationAdmin
+
+        @InjectService
+        lateinit var scr: ServiceComponentRuntime
+
+        @InjectService
+        lateinit var installService: InstallService
+
+        @InjectService
+        lateinit var sandboxCreationService: SandboxCreationService
+
+        @InjectService
         lateinit var checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
 
-        @TempDir
-        lateinit var testDirectory: Path
+        lateinit var sandboxManagementService: SandboxManagementService
 
-        @BeforeAll
         @JvmStatic
-        fun setUp() {
-            val configurationAdmin = ServiceLocator.getConfigurationService()
-            assertThat(configurationAdmin).isNotNull
-
-            // Initialise configurationAdmin
-            configurationAdmin.getConfiguration(ConfigurationAdmin::class.java.name)?.also { config ->
-                val properties = Properties()
+        @BeforeAll
+        fun setup(@TempDir testDirectory: Path) {
+            configAdmin.getConfiguration(ConfigurationAdmin::class.java.name)?.also { config ->
+                val properties = Hashtable<String, Any>()
                 properties[BASE_DIRECTORY_KEY] = testDirectory.toString()
                 properties[BLACKLISTED_KEYS_KEY] = emptyList<String>()
                 properties[PLATFORM_VERSION_KEY] = 999
-                config.update(uncheckedCast(properties))
+                config.update(properties)
             }
+            sandboxManagementService = SandboxManagementService(installService, sandboxCreationService)
+        }
 
-            val allBundles = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles
-            val (publicBundles, privateBundles) = allBundles.partition { bundle ->
-                bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
-            }
-            ServiceLocator.getSandboxCreationService().createPublicSandbox(publicBundles, privateBundles)
+        @JvmStatic
+        @AfterAll
+        fun done() {
+            // Deactivate the InstallService before JUnit removes the TempDir.
+            val installBundle = FrameworkUtil.getBundle(installService::class.java)
+            val dto = scr.getComponentDescriptionDTO(installBundle, installService::class.java.name)
+            scr.disableComponent(dto).value
         }
     }
 
     @Test
     fun `correct serialization of a simple object`() {
-        val sandboxManagementService = SandboxManagementService()
-
         val builder =
             checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group1)
         val serializer = builder
@@ -73,8 +85,6 @@ class KryoCheckpointTest {
 
     @Test
     fun `cross sandbox serialization of a simple object`() {
-        val sandboxManagementService = SandboxManagementService()
-
         val builder1 =
             checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group1)
         val serializerSandbox1 = builder1
@@ -82,7 +92,7 @@ class KryoCheckpointTest {
             .build()
 
         val cash = sandboxManagementService.group1
-            .loadClassFromCordappBundle("net.corda.bundle1.Cash", Any::class.java)
+            .loadClassFromMainBundles("net.corda.bundle1.Cash", Any::class.java)
             .constructors.first().newInstance(1)
 
         // Serialize with serializerSandbox1

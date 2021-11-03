@@ -1,6 +1,5 @@
 package net.corda.sandboxhooks.bundle
 
-import net.corda.sandbox.Sandbox
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandboxhooks.mockBundleCapability
 import net.corda.sandboxhooks.mockBundleRequirement
@@ -59,15 +58,11 @@ class IsolatingResolverBundleHookTests {
     @Test
     fun `a bundle will prioritise matches in its own sandbox`() {
         val candidates = mutableListOf(bundleTwoCapability, bundleThreeCapability)
-        
-        val sandboxOne = mock<Sandbox>()
-        val sandboxTwo = mock<Sandbox>()
 
         val sandboxService = mock<SandboxContextService>().apply {
             whenever(hasVisibility(bundleOne, bundleTwo)).thenReturn(true)
-            whenever(getSandbox(bundleOne)).thenReturn(sandboxOne)
-            whenever(getSandbox(bundleTwo)).thenReturn(sandboxTwo)
-            whenever(getSandbox(bundleThree)).thenReturn(sandboxOne)
+            whenever(areInSameSandbox(bundleOne, bundleTwo)).thenReturn(false)
+            whenever(areInSameSandbox(bundleOne, bundleThree)).thenReturn(true)
         }
 
         val isolatingResolverBundleHook = IsolatingResolverBundleHook(sandboxService)
