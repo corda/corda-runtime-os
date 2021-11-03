@@ -1,3 +1,4 @@
+package net.corda.rpc.permissions
 
 import net.corda.libs.permission.PermissionService
 import net.corda.libs.permission.factory.PermissionServiceFactory
@@ -15,7 +16,7 @@ class PermissionService  (
 
     override val isRunning: Boolean
         get() = receivedSnapshot
-    
+
     override fun start() {
        permissionService?.stop()
         permissionService = permissionServiceFactory.createPermissionService()
