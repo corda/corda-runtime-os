@@ -83,6 +83,7 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
+            publisher.close()
         }
     }
 

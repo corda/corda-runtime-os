@@ -21,6 +21,7 @@ fun CPI.Identifier.Companion.newInstance(src: String): CPI.Identifier {
 const val CPI_MAX_SEGMENT_SIZE = 512 * 512
 const val RPC_CPI_GROUP_NAME = "rpcCPIGroup"
 const val RPC_CPI_CLIENT_NAME = "rpcCPIClient"
+const val RPC_CPI_SERVER_NAME = "rpcCPIServer"
 const val RPC_CPI_TOPIC_NAME = "rpcCPITopicName"
 
 const val CPI_PUBLISHER_CLIENT_ID = "cpiPublisher"

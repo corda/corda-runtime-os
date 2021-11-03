@@ -6,8 +6,8 @@ import net.corda.cpi.read.CPISegmentReader
 import net.corda.cpi.read.factory.CPIReadFactory
 import net.corda.cpi.utils.CPI_LIST_TOPIC_NAME
 import net.corda.cpi.utils.CPI_PUBLISHER_CLIENT_ID
-import net.corda.cpi.utils.RPC_CPI_CLIENT_NAME
 import net.corda.cpi.utils.RPC_CPI_GROUP_NAME
+import net.corda.cpi.utils.RPC_CPI_SERVER_NAME
 import net.corda.cpi.utils.RPC_CPI_TOPIC_NAME
 import net.corda.cpi.utils.toSerializedString
 import net.corda.cpi.write.CPIWrite
@@ -33,7 +33,7 @@ class CPIWriteImplKafka(private val subscriptionFactory: SubscriptionFactory,
                         private val cpiReadFactory: CPIReadFactory): CPIWrite {
 
     private val rpcConfig = RPCConfig(RPC_CPI_GROUP_NAME,
-                                      RPC_CPI_CLIENT_NAME,
+                                      RPC_CPI_SERVER_NAME,
                                       RPC_CPI_TOPIC_NAME, CPISegmentRequest::class.java, CPISegmentResponse::class.java)
 
     private val lock = ReentrantLock()
@@ -58,6 +58,7 @@ class CPIWriteImplKafka(private val subscriptionFactory: SubscriptionFactory,
                 cpiSegmentReader = cpiReadFactory.createCPIReadSegment(nodeConfig)
                 cpiSegmentProcessor = CPISegmentProcessor(rpcConfig, nodeConfig, cpiSegmentReader, subscriptionFactory)
                 publisher = publisherFactory.createPublisher(publisherConfig, nodeConfig)
+                publisher.start()
                 cpiRead.start()
                 cpiSegmentReader.start()
                 cpiListCallbackHandle = cpiRead.registerCallback { changedKeys, currentSnapshot ->
@@ -72,6 +73,7 @@ class CPIWriteImplKafka(private val subscriptionFactory: SubscriptionFactory,
         lock.withLock {
             if (!stopped) {
                 stopped = true
+                publisher.close()
                 cpiListCallbackHandle.close()
                 cpiRead.stop()
                 cpiSegmentReader.stop()

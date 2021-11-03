@@ -84,7 +84,7 @@ class CPIRPCIntegrationTest {
             )
     }
 
-//    @Test
+    @Test
     fun `subscribe to receive CPI identity objects`() {
 
         val initlatch = CountDownLatch(1)
