@@ -1,12 +1,10 @@
 package net.corda.p2p.gateway.messaging.http
 
 import io.netty.handler.codec.http.HttpResponseStatus
+import net.corda.v5.base.util.toBase64
 import java.net.SocketAddress
 
-/**
- * Used to deliver HTTP messages from the transport layer to the application layer
- */
-class HttpMessage(
+class HttpResponse(
     val statusCode: HttpResponseStatus,
     val payload: ByteArray,
     val source: SocketAddress,
@@ -14,6 +12,6 @@ class HttpMessage(
 ) {
 
     override fun toString(): String {
-        return "Status: $statusCode\nsource: $source\ndestination: $destination\npayload: $payload"
+        return "Status: $statusCode\nsource: $source\ndestination: $destination\npayload: ${payload.toBase64()}"
     }
 }
