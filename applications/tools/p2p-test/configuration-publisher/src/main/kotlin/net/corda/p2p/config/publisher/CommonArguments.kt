@@ -65,6 +65,6 @@ internal class CommonArguments(
     fun createWriter(): ConfigWriter =
         configWriterFactory.createWriter(
             configTopicName,
-            kafkaNodeConfiguration
+            smartConfigFactory.create(kafkaNodeConfiguration)
         )
 }
