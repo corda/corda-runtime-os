@@ -1,10 +1,10 @@
 package com.example.sandbox.cpk2
 
 import net.corda.v5.application.flows.Flow
-import org.osgi.service.component.annotations.Component
 import org.joda.time.Chronology
+import org.osgi.service.component.annotations.Component
 
-/** Invokes methods on an implementation class from a non-exported package of another bundle. */
+/** Retrieves the codesource of this sandbox's [Chronology] class. */
 @Suppress("unused")
 @Component(name = "library.version.flow")
 class LibraryVersionFlow: Flow<String> {

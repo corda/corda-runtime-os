@@ -12,11 +12,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.Collections.unmodifiableList
 
-/**
- * This component listens for both [BundleEvent]
- * and [ServiceEvent], and so must be started
- * immediately to hear as much as possible.
- */
+/** An implementation of the [SandboxQuery] interface. */
 @Component(name = "sandbox.query", immediate = true)
 class SandboxQueryImpl @Activate constructor(
     private val context: BundleContext
