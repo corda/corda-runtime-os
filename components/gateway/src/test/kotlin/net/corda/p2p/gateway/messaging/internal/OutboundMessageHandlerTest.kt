@@ -24,11 +24,11 @@ import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpResponse
-import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mockConstruction
@@ -45,6 +45,8 @@ import java.lang.RuntimeException
 import java.net.URI
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class OutboundMessageHandlerTest {
     private val coordinatorHandler = argumentCaptor<LifecycleEventHandler>()
@@ -270,10 +272,12 @@ class OutboundMessageHandlerTest {
     @Test
     fun `when message times out, it is retried once`() {
         startHandler()
+        val messagesLatch = CountDownLatch(2)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
                 val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
                 sentMessages.add(gatewayMessage)
+                messagesLatch.countDown()
                 CompletableFuture<HttpResponse>()
                 // simulate scenario where no response is received.
             }
@@ -297,14 +301,13 @@ class OutboundMessageHandlerTest {
             )
         )
 
-        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
-        eventually(waitTime, connectionConfig.retryDelay) {
-            assertThat(sentMessages).hasSize(2)
-            sentMessages.forEach {
-                assertThat(it.payload).isEqualTo(msgPayload)
-            }
+        assertTrue(messagesLatch.await(1, TimeUnit.SECONDS)) { "Not enough attempts to send message." }
+        assertThat(sentMessages).hasSize(2)
+        sentMessages.forEach {
+            assertThat(it.payload).isEqualTo(msgPayload)
         }
 
+        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
         Thread.sleep(waitTime.toMillis())
         assertThat(sentMessages).hasSize(2)
     }
@@ -312,10 +315,12 @@ class OutboundMessageHandlerTest {
     @Test
     fun `when message fails, it is retried once`() {
         startHandler()
+        val messagesLatch = CountDownLatch(2)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
                 val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
                 sentMessages.add(gatewayMessage)
+                messagesLatch.countDown()
                 CompletableFuture.failedFuture(RuntimeException("some error happened"))
             }
         }
@@ -338,14 +343,13 @@ class OutboundMessageHandlerTest {
             )
         )
 
-        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
-        eventually(waitTime, connectionConfig.retryDelay) {
-            assertThat(sentMessages).hasSize(2)
-            sentMessages.forEach {
-                assertThat(it.payload).isEqualTo(msgPayload)
-            }
+        assertTrue(messagesLatch.await(1, TimeUnit.SECONDS)) { "Not enough attempts to send message." }
+        assertThat(sentMessages).hasSize(2)
+        sentMessages.forEach {
+            assertThat(it.payload).isEqualTo(msgPayload)
         }
 
+        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
         Thread.sleep(waitTime.toMillis())
         assertThat(sentMessages).hasSize(2)
     }
@@ -353,10 +357,12 @@ class OutboundMessageHandlerTest {
     @Test
     fun `when 5xx error code is received, it is retried once`() {
         startHandler()
+        val messagesLatch = CountDownLatch(2)
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
                 val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
                 sentMessages.add(gatewayMessage)
+                messagesLatch.countDown()
                 val response = mock<HttpResponse> {
                     on { statusCode } doReturn HttpResponseStatus.INTERNAL_SERVER_ERROR
                 }
@@ -382,14 +388,13 @@ class OutboundMessageHandlerTest {
             )
         )
 
-        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
-        eventually(waitTime, connectionConfig.retryDelay) {
-            assertThat(sentMessages).hasSize(2)
-            sentMessages.forEach {
-                assertThat(it.payload).isEqualTo(msgPayload)
-            }
+        assertTrue(messagesLatch.await(1, TimeUnit.SECONDS)) { "Not enough attempts to send message." }
+        assertThat(sentMessages).hasSize(2)
+        sentMessages.forEach {
+            assertThat(it.payload).isEqualTo(msgPayload)
         }
 
+        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
         Thread.sleep(waitTime.toMillis())
         assertThat(sentMessages).hasSize(2)
     }
