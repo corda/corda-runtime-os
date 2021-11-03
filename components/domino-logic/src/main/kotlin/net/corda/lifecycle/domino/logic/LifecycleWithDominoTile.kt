@@ -2,7 +2,7 @@ package net.corda.lifecycle.domino.logic
 
 import net.corda.lifecycle.Lifecycle
 
-interface LifecycleWithDominoTile: Lifecycle {
+interface LifecycleWithDominoTile : Lifecycle {
 
     val dominoTile: DominoTile
 

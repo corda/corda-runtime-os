@@ -14,7 +14,8 @@ class PublisherWithDominoLogic(
     private val publisherFactory: PublisherFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val publisherId: String,
-    private val nodeConfiguration: Config,) : LifecycleWithDominoTile {
+    private val nodeConfiguration: Config,
+) : LifecycleWithDominoTile {
 
     @Volatile
     private var publisher: Publisher? = null

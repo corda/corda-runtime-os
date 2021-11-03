@@ -9,7 +9,9 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import org.assertj.core.api.Assertions.assertThat
@@ -18,14 +20,17 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicInteger
 
 class DominoTileTest {
 
@@ -46,7 +51,7 @@ class DominoTileTest {
     @Nested
     inner class SimpleLeafTileTests {
 
-        fun tile(): DominoTile {
+        private fun tile(): DominoTile {
             return DominoTile(TILE_NAME, factory)
         }
 
@@ -67,7 +72,6 @@ class DominoTileTest {
 
             verify(coordinator).start()
         }
-
 
         @Test
         fun `stop will update the status to stopped`() {
@@ -115,18 +119,6 @@ class DominoTileTest {
             assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
         }
 
-//        TODO: We can't verify this anymore (what we should instead verify that children/external components don't start/stop
-//        When this happens
-//    @Test
-//    fun `processEvent will not start the tile the second time`() {
-//        val tile = Tile()
-//        tile.start()
-//
-//        handler.lastValue.processEvent(StartEvent(), coordinator)
-//
-//        assertThat(tile.started).isEqualTo(0)
-//    }
-
         @Test
         fun `handleEvent can handle unknown event`() {
             val tile = tile()
@@ -146,6 +138,13 @@ class DominoTileTest {
             tile()
 
             handler.lastValue.processEvent(StopEvent(), coordinator)
+        }
+
+        @Test
+        fun `processEvent will ignore the start event`() {
+            tile()
+
+            handler.lastValue.processEvent(StartEvent(), coordinator)
         }
 
         @Test
@@ -185,6 +184,35 @@ class DominoTileTest {
             }
 
             assertThat(data).isEqualTo(33)
+        }
+
+        @Test
+        fun `close tile will not be able to start`() {
+            val tile = tile()
+            tile.close()
+
+            tile.start()
+
+            assertThat(tile.state).isNotEqualTo(DominoTile.State.Started)
+        }
+
+        @Test
+        fun `gotError will set the state to error`() {
+            val tile = tile()
+            tile.start()
+
+            tile.resourcesStarted(true)
+
+            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+        }
+
+        @Test
+        fun `gotError for the second time will not throw an exception`() {
+            val tile = tile()
+            tile.start()
+            tile.resourcesStarted(true)
+
+            tile.resourcesStarted(true)
         }
     }
 
@@ -317,6 +345,104 @@ class DominoTileTest {
 
             assertThat(actions).isEqualTo(listOf(1))
         }
+
+        @Test
+        fun `second start will not restart anything`() {
+            val called = AtomicInteger(0)
+            val tile = DominoTile(TILE_NAME, factory, createResources = {
+                called.incrementAndGet()
+            })
+            tile.start()
+            tile.resourcesStarted(false)
+
+            tile.start()
+
+            assertThat(called).hasValue(1)
+        }
+
+        @Test
+        fun `second start will not recreate the resources if it had errors`() {
+            val called = AtomicInteger(0)
+            val tile = DominoTile(TILE_NAME, factory, createResources = {
+                called.incrementAndGet()
+            })
+            tile.start()
+            tile.resourcesStarted(true)
+
+            tile.start()
+
+            assertThat(called).hasValue(1)
+        }
+
+        @Test
+        fun `second start will recreate the resources if it was stopped`() {
+            val called = AtomicInteger(0)
+            val tile = DominoTile(TILE_NAME, factory, createResources = {
+                called.incrementAndGet()
+            })
+            tile.start()
+            tile.resourcesStarted(false)
+            tile.stop()
+
+            tile.start()
+
+            assertThat(called).hasValue(2)
+        }
+
+        @Test
+        fun `resourcesStarted will start tile if possible`() {
+            val tile = DominoTile(TILE_NAME, factory)
+            tile.resourcesStarted(false)
+
+            assertThat(tile.state).isEqualTo(DominoTile.State.Started)
+        }
+
+        @Test
+        fun `resourcesStarted will start tile stopped`() {
+            val tile = DominoTile(TILE_NAME, factory)
+            tile.start()
+            tile.stop()
+
+            tile.resourcesStarted(false)
+
+            assertThat(tile.state).isEqualTo(DominoTile.State.Started)
+        }
+
+        @Test
+        fun `resourcesStarted will start is configuration was bad`() {
+            val tile = DominoTile(TILE_NAME, factory)
+            tile.start()
+            tile.configApplied(DominoTile.ConfigUpdateResult.Error(IOException()))
+
+            tile.resourcesStarted(false)
+
+            assertThat(tile.state).isEqualTo(DominoTile.State.Started)
+        }
+
+        @Test
+        fun `resourcesStarted will not start if it had issues`() {
+            val tile = DominoTile(TILE_NAME, factory)
+            tile.start()
+            tile.resourcesStarted(true)
+
+            tile.resourcesStarted(false)
+
+            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+        }
+
+        @Test
+        fun `resourcesStarted will not recreate the resources`() {
+            val created = AtomicInteger(0)
+            val tile = DominoTile(TILE_NAME, factory, createResources = {
+                created.incrementAndGet()
+            })
+            tile.start()
+            tile.resourcesStarted(false)
+
+            tile.resourcesStarted(false)
+
+            assertThat(created).hasValue(1)
+        }
     }
 
     private data class Configuration(val data: Int)
@@ -351,7 +477,7 @@ class DominoTileTest {
             }
         }
 
-        fun tile(): DominoTile {
+        private fun tile(): DominoTile {
             return DominoTile(TILE_NAME, factory, configurationChangeHandler = TileConfigurationChangeHandler())
         }
 
@@ -591,6 +717,504 @@ class DominoTileTest {
             tile.stop()
 
             verify(registration).close()
+        }
+
+        @Test
+        fun `applyNewConfiguration handle exceptions`() {
+            whenever(configFactory.invoke(any())).thenThrow(RuntimeException("Bad configuration"))
+            val config = mock<Config>()
+            whenever(service.registerForUpdates(any())).doAnswer {
+                val handler = it.arguments[0] as ConfigurationHandler
+                handler.onNewConfiguration(setOf(key), mapOf(key to config))
+                registration
+            }
+            val tile = tile()
+
+            tile.start()
+
+            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
+        }
+
+        @Test
+        fun `second start will not restart if the configuration had error`() {
+            val resourceCreated = AtomicInteger(0)
+            whenever(configFactory.invoke(any())).thenThrow(RuntimeException("Bad configuration"))
+            val config = mock<Config>()
+            whenever(service.registerForUpdates(any())).doAnswer {
+                val handler = it.arguments[0] as ConfigurationHandler
+                handler.onNewConfiguration(setOf(key), mapOf(key to config))
+                registration
+            }
+            val tile = DominoTile(
+                TILE_NAME,
+                factory,
+                configurationChangeHandler = TileConfigurationChangeHandler(),
+                createResources =
+                {
+                    resourceCreated.incrementAndGet()
+                }
+            )
+            tile.start()
+
+            tile.start()
+
+            assertThat(resourceCreated).hasValue(1)
+        }
+    }
+
+    @Nested
+    inner class InternalTileTest {
+        private fun tile(children: Collection<DominoTile>): DominoTile = DominoTile(
+            TILE_NAME,
+            factory,
+            children = children
+        )
+
+        @Nested
+        inner class StartTileTests {
+            @Test
+            fun `startTile will register to follow all the tiles on the first run`() {
+                val children = (1..3).map {
+                    DominoTile(
+                        "name-$it",
+                        mock {
+                            on { createCoordinator(any(), any()) } doReturn mock()
+                        }
+                    )
+                }
+                val tile = tile(children)
+
+                tile.start()
+
+                verify(coordinator).followStatusChangesByName(setOf(children[1].name))
+            }
+
+            @Test
+            fun `startTile will not register to follow any tile for the second time`() {
+                val children = (1..3).map {
+                    DominoTile(
+                        "name-$it",
+                        mock {
+                            on { createCoordinator(any(), any()) } doReturn mock()
+                        }
+                    )
+                }
+                val tile = tile(children)
+
+                tile.start()
+                tile.start()
+
+                verify(coordinator, times(1)).followStatusChangesByName(setOf(children[1].name))
+            }
+
+            @Test
+            fun `startTile will start all the children`() {
+                val children = listOf<DominoTile>(mock(), mock(), mock())
+                val tile = tile(children)
+
+                tile.start()
+
+                children.forEach {
+                    verify(it, atLeast(1)).start()
+                }
+            }
+        }
+
+        @Nested
+        inner class StartKidsIfNeededTests {
+            @Test
+            fun `startKidsIfNeeded will start all if there is no error child`() {
+                val children = listOf<DominoTile>(
+                    mock {
+                        on { state } doReturn DominoTile.State.StoppedByParent
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.Started
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.Created
+                    },
+                )
+
+                tile(children)
+                handler.lastValue.processEvent(
+                    RegistrationStatusChangeEvent(
+                        mock(),
+                        LifecycleStatus.UP
+                    ),
+                    coordinator
+                )
+
+                verify(children[0]).start()
+                verify(children[1]).start()
+                verify(children[2]).start()
+            }
+
+            @Test
+            fun `startKidsIfNeeded will set status to up if all are running`() {
+                val children = listOf<DominoTile>(
+                    mock {
+                        on { state } doReturn DominoTile.State.Started
+                        on { isRunning } doReturn true
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.Started
+                        on { isRunning } doReturn true
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.Started
+                        on { isRunning } doReturn true
+                    },
+                )
+
+                val tile = tile(children)
+                handler.lastValue.processEvent(
+                    RegistrationStatusChangeEvent(
+                        mock(),
+                        LifecycleStatus.UP
+                    ),
+                    coordinator
+                )
+
+                assertThat(tile.isRunning).isTrue
+            }
+
+            @Test
+            fun `startKidsIfNeeded will not start any if there is error child`() {
+                val children = listOf<DominoTile>(
+                    mock {
+                        on { state } doReturn DominoTile.State.StoppedByParent
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.Started
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.StoppedDueToError
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.Created
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.StoppedDueToBadConfig
+                    },
+                )
+
+                tile(children)
+                handler.lastValue.processEvent(
+                    RegistrationStatusChangeEvent(
+                        mock(),
+                        LifecycleStatus.UP
+                    ),
+                    coordinator
+                )
+
+                children.forEach {
+                    verify(it, never()).start()
+                }
+            }
+
+            @Test
+            fun `startKidsIfNeeded will stop all non error children`() {
+                val children = listOf<DominoTile>(
+                    mock {
+                        on { state } doReturn DominoTile.State.StoppedByParent
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.Started
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.StoppedDueToError
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.Created
+                    },
+                )
+
+                tile(children)
+                handler.lastValue.processEvent(
+                    RegistrationStatusChangeEvent(
+                        mock(),
+                        LifecycleStatus.UP
+                    ),
+                    coordinator
+                )
+
+                verify(children[0]).stop()
+                verify(children[1]).stop()
+                verify(children[3]).stop()
+            }
+
+            @Test
+            fun `Tests for startKidsIfNeeded`() {
+                val children = listOf<DominoTile>(
+                    mock {
+                        on { state } doReturn DominoTile.State.StoppedByParent
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.StoppedDueToError
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.Created
+                    },
+                )
+
+                tile(children)
+                handler.lastValue.processEvent(
+                    RegistrationStatusChangeEvent(
+                        mock(),
+                        LifecycleStatus.UP
+                    ),
+                    coordinator
+                )
+
+                verify(children[1], never()).start()
+            }
+
+            @Test
+            fun `startKidsIfNeeded will set the status to UP if all the children are running`() {
+                val children = listOf<DominoTile>(
+                    mock {
+                        on { isRunning } doReturn true
+                    },
+                    mock {
+                        on { isRunning } doReturn true
+                    },
+                    mock {
+                        on { isRunning } doReturn true
+                    },
+                )
+
+                val tile = tile(children)
+                handler.lastValue.processEvent(
+                    RegistrationStatusChangeEvent(
+                        mock(),
+                        LifecycleStatus.UP
+                    ),
+                    coordinator
+                )
+
+                assertThat(tile.isRunning).isTrue
+            }
+            @Test
+            fun `startKidsIfNeeded will not set the status to UP if a child is not running`() {
+                val children = listOf<DominoTile>(
+                    mock {
+                        on { isRunning } doReturn true
+                    },
+                    mock {
+                        on { isRunning } doReturn false
+                    },
+                    mock {
+                        on { isRunning } doReturn true
+                    },
+                )
+
+                val tile = tile(children)
+                handler.lastValue.processEvent(
+                    RegistrationStatusChangeEvent(
+                        mock(),
+                        LifecycleStatus.UP
+                    ),
+                    coordinator
+                )
+
+                assertThat(tile.isRunning).isFalse
+            }
+        }
+
+        @Nested
+        inner class HandleEventTests {
+            @Test
+            fun `up will start the tile`() {
+                val children = listOf<DominoTile>(
+                    mock {
+                        on { isRunning } doReturn true
+                    },
+                    mock {
+                        on { isRunning } doReturn true
+                    },
+                    mock {
+                        on { isRunning } doReturn true
+                    },
+                )
+                tile(children)
+
+                handler.lastValue.processEvent(
+                    RegistrationStatusChangeEvent(
+                        mock(),
+                        LifecycleStatus.UP
+                    ),
+                    coordinator
+                )
+
+                verify(children.first()).start()
+            }
+
+            @Test
+            fun `other events will not throw an exception`() {
+                val children = listOf<DominoTile>(
+                    mock(),
+                )
+                tile(children)
+                class Event : LifecycleEvent
+
+                assertDoesNotThrow {
+                    handler.lastValue.processEvent(
+                        Event(),
+                        coordinator
+                    )
+                }
+            }
+
+            @Test
+            fun `down without error will stop the tile`() {
+                val children = listOf(
+                    mock<DominoTile> {
+                        on { state } doReturn DominoTile.State.StoppedByParent
+                    }
+                )
+
+                tile(children)
+                handler.lastValue.processEvent(
+                    RegistrationStatusChangeEvent(
+                        mock(),
+                        LifecycleStatus.DOWN
+                    ),
+                    coordinator
+                )
+
+                verify(children.first()).stop()
+            }
+
+            @Test
+            fun `down with error will post error`() {
+                val children = listOf(
+                    mock {
+                        on { state } doReturn DominoTile.State.StoppedDueToError
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.StoppedDueToBadConfig
+                    },
+                    mock<DominoTile> {
+                        on { state } doReturn DominoTile.State.StoppedByParent
+                    }
+                )
+
+                val tile = tile(children)
+                handler.lastValue.processEvent(
+                    RegistrationStatusChangeEvent(
+                        mock(),
+                        LifecycleStatus.ERROR
+                    ),
+                    coordinator
+                )
+
+                assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+            }
+        }
+
+        @Nested
+        inner class StopTileTests {
+            @Test
+            fun `stopTile will stop all the non error children`() {
+                val children = listOf<DominoTile>(
+                    mock {
+                        on { state } doReturn DominoTile.State.Started
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.StoppedDueToError
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.Created
+                    }
+                )
+                val tile = tile(children)
+
+                tile.stop()
+
+                verify(children[0]).stop()
+                verify(children[2]).stop()
+            }
+
+            @Test
+            fun `stopTile will not stop error children`() {
+                val children = listOf<DominoTile>(
+                    mock {
+                        on { state } doReturn DominoTile.State.Started
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.StoppedDueToError
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.Created
+                    }
+                )
+                val tile = tile(children)
+
+                tile.stop()
+
+                verify(children[1], never()).stop()
+            }
+        }
+
+        @Nested
+        inner class CloseTests {
+            @Test
+            fun `close will close the registrations`() {
+                val children = listOf<DominoTile>(mock())
+                val registration = mock<RegistrationHandle>()
+                doReturn(registration).whenever(coordinator).followStatusChangesByName(any())
+                val tile = tile(children)
+                tile.start()
+
+                tile.close()
+
+                verify(registration).close()
+            }
+
+            @Test
+            fun `close will not try to close registration if non where open`() {
+                val children = listOf<DominoTile>(mock())
+                val registration = mock<RegistrationHandle>()
+                doReturn(registration).whenever(coordinator).followStatusChangesByName(any())
+                val tile = tile(children)
+
+                tile.close()
+
+                verify(registration, never()).close()
+            }
+
+            @Test
+            fun `close will close the coordinator`() {
+                val children = listOf<DominoTile>(mock())
+                val tile = tile(children)
+
+                tile.close()
+
+                verify(coordinator).close()
+            }
+
+            @Test
+            fun `close will close the children`() {
+                val children = listOf<DominoTile>(mock())
+                val tile = tile(children)
+
+                tile.close()
+
+                verify(children.first()).close()
+            }
+
+            @Test
+            fun `close will not fail if closing a child fails`() {
+                val children = listOf<DominoTile>(
+                    mock {
+                        on { close() } doThrow RuntimeException("")
+                    }
+                )
+                val tile = tile(children)
+
+                tile.close()
+            }
         }
     }
 }
