@@ -1,6 +1,5 @@
 package net.corda.cpi.read.impl.kafka
 
-import com.typesafe.config.ConfigFactory
 import net.corda.cpi.read.CPIListener
 import net.corda.cpi.utils.CPI_LIST_TOPIC_NAME
 import net.corda.cpi.utils.CPI_SUBSCRIPTION_GROUP_NAME
