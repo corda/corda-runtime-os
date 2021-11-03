@@ -27,7 +27,7 @@ class CPIReadImplFileTest {
 
     @Test
     fun `start and stop CPI read in empty directory sends an empty snapshot`() {
-        val config: Config = ConfigFactory.parseMap(mapOf(CPX_FILE_FINDER_ROOT_DIR_CONFIG_PATH to "src/test/resources"))
+        val config: Config = ConfigFactory.parseMap(mapOf(CPX_FILE_FINDER_ROOT_DIR_CONFIG_PATH to cpisLocation.toString()))
         val cpiListenerImpl = CPIListenerImpl()
         val cpiReadImplFile = CPIReadImplFile(config)
         cpiReadImplFile.start()
