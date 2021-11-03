@@ -1,8 +1,8 @@
 package net.corda.messaging.kafka.integration.subscription
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -27,7 +27,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher
-    private lateinit var kafkaConfig: Config
+    private lateinit var kafkaConfig: SmartConfig
 
     private companion object {
         const val CLIENT_ID = "eventLogTestPublisher"
@@ -44,7 +44,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
     @BeforeEach
     fun beforeEach() {
-        kafkaConfig = ConfigFactory.empty()
+        kafkaConfig = SmartConfigImpl.empty()
             .withValue(IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE))
             .withValue(IntegrationTestProperties.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }

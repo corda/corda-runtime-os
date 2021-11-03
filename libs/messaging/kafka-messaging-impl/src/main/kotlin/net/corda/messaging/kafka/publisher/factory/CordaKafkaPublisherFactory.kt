@@ -1,9 +1,9 @@
 package net.corda.messaging.kafka.publisher.factory
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.messaging.RPCResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -43,11 +43,11 @@ class CordaKafkaPublisherFactory @Activate constructor(
 
     override fun createPublisher(
         publisherConfig: PublisherConfig,
-        nodeConfig: Config
+        kafkaConfig: SmartConfig
     ): Publisher {
         val config = resolvePublisherConfiguration(
             publisherConfig.toConfig(),
-            nodeConfig,
+            kafkaConfig,
             clientIdCounter.getAndIncrement(),
             PATTERN_PUBLISHER
         )
@@ -57,7 +57,7 @@ class CordaKafkaPublisherFactory @Activate constructor(
 
     override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-        nodeConfig: Config
+        kafkaConfig: SmartConfig
     ): RPCSender<REQUEST, RESPONSE> {
 
         val publisherConfiguration = ConfigFactory.empty()
@@ -67,12 +67,12 @@ class CordaKafkaPublisherFactory @Activate constructor(
 
         val publisherConfig = resolvePublisherConfiguration(
             publisherConfiguration,
-            nodeConfig,
+            kafkaConfig,
             clientIdCounter.getAndIncrement(),
             PATTERN_RPC_SENDER
         )
 
-        val publisher = createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig)
+        val publisher = createPublisher(PublisherConfig(rpcConfig.clientName), kafkaConfig)
 
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<String, RPCResponse>(avroSchemaRegistry)
         val serializer = CordaAvroSerializer<REQUEST>(avroSchemaRegistry)
