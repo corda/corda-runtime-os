@@ -1,6 +1,5 @@
 package net.corda.applications.flowworker.setup
 
-import com.typesafe.config.Config
 import net.corda.applications.common.ConfigHelper
 import net.corda.applications.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
 import net.corda.applications.common.ConfigHelper.Companion.getBootstrapConfig
@@ -9,6 +8,8 @@ import net.corda.applications.flowworker.setup.helper.getHelloWorldRPCEventRecor
 import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.components.examples.publisher.CommonPublisher
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -46,6 +47,8 @@ class FlowWorkerSetup @Activate constructor(
     private var configWriter: KafkaConfigWrite,
     @Reference(service = KafkaTopicAdmin::class)
     private var kafkaTopicAdmin: KafkaTopicAdmin,
+    @Reference(service = SmartConfigFactory::class)
+    private val smartConfigFactory: SmartConfigFactory
 ) : Application {
 
     private companion object {
@@ -68,7 +71,7 @@ class FlowWorkerSetup @Activate constructor(
         val instanceId = parameters.instanceId?.toInt()
         val configurationFile = parameters.configurationFile
         val topicTemplate = parameters.topicTemplate
-        val bootstrapConfig = getBootstrapConfig(instanceId)
+        val bootstrapConfig =  smartConfigFactory.create(getBootstrapConfig(instanceId))
 
         lifeCycleCoordinator =
             coordinatorFactory.createCoordinator<FlowWorkerSetup> { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
@@ -114,7 +117,7 @@ class FlowWorkerSetup @Activate constructor(
         lifeCycleCoordinator!!.start()
     }
 
-    private fun writeConfig(configurationFile: File?, bootstrapConfig: Config) {
+    private fun writeConfig(configurationFile: File?, bootstrapConfig: SmartConfig) {
         if (configurationFile != null) {
             log.info("Writing config to topic")
             consoleLogger.info("Writing config")

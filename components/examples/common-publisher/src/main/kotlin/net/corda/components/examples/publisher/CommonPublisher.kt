@@ -1,6 +1,6 @@
 package net.corda.components.examples.publisher
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -21,7 +21,7 @@ class CommonPublisher (
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     private val publisherFactory: PublisherFactory,
     private val instanceId: Int?,
-    private val config: Config
+    private val config: SmartConfig
     ) : Lifecycle {
 
     private var publisher: Publisher? = null

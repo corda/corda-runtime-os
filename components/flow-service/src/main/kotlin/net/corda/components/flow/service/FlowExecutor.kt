@@ -1,6 +1,5 @@
 package net.corda.components.flow.service
 
-import com.typesafe.config.Config
 import net.corda.components.sandbox.service.SandboxService
 import net.corda.configuration.read.ConfigKeys.Companion.BOOTSTRAP_KEY
 import net.corda.configuration.read.ConfigKeys.Companion.FLOW_KEY
@@ -26,7 +25,6 @@ import net.corda.v5.base.util.debug
 @Suppress("LongParameterList")
 class FlowExecutor(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val config: SmartConfig,
     private val configs: Map<String, SmartConfig>,
     private val subscriptionFactory: SubscriptionFactory,
     private val flowManager: FlowManager,

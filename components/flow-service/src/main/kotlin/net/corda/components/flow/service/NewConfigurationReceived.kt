@@ -1,6 +1,6 @@
 package net.corda.components.flow.service
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleEvent
 
-data class NewConfigurationReceived(val configs: Map<String, Config>) : LifecycleEvent
+data class NewConfigurationReceived(val configs: Map<String, SmartConfig>) : LifecycleEvent

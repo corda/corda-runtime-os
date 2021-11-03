@@ -1,6 +1,5 @@
 package net.corda.components.flow.service
 
-import com.typesafe.config.Config
 import net.corda.components.sandbox.service.SandboxService
 import net.corda.configuration.read.ConfigKeys.Companion.BOOTSTRAP_KEY
 import net.corda.configuration.read.ConfigKeys.Companion.MESSAGING_KEY
