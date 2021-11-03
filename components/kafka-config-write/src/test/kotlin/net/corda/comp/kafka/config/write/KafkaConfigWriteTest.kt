@@ -1,6 +1,6 @@
 package net.corda.comp.kafka.config.write
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.ConfigWriter
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
@@ -23,7 +23,7 @@ class KafkaConfigWriteTest {
     private lateinit var kafkaConfigWrite: KafkaConfigWrite
     private val configWriterFactory: ConfigWriterFactory = mock()
     private val configWriter: ConfigWriter = mock()
-    private val config: Config = mock()
+    private val config: SmartConfig = mock()
 
     @Captor
     var keyCaptor: ArgumentCaptor<CordaConfigurationKey> = ArgumentCaptor.forClass(CordaConfigurationKey::class.java)

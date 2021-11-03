@@ -1,8 +1,8 @@
 package net.corda.components.examples.persistence.config.admin
 
-import com.typesafe.config.Config
 import net.corda.components.examples.persistence.config.admin.processor.ConfigAdminProcessor
 import net.corda.data.poc.persistence.ConfigAdminEvent
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -14,7 +14,7 @@ import javax.persistence.EntityManagerFactory
 @Component
 class ConfigAdminSubscription(
     private val subscriptionFactory: SubscriptionFactory,
-    private var config: Config,
+    private var config: SmartConfig,
     private val instanceId: Int,
     private val entityManagerFactory: EntityManagerFactory,
     private val logger: Logger,
@@ -31,7 +31,7 @@ class ConfigAdminSubscription(
     override val isRunning: Boolean
         get() = subscription?.isRunning ?: false
 
-    fun reStart(newConfig: Config) {
+    fun reStart(newConfig: SmartConfig) {
         logger.info("Restarting durable subscription for $inputTopic")
         stop()
         config = newConfig

@@ -3,6 +3,7 @@ package net.corda.p2p.gateway
 import com.typesafe.config.ConfigFactory
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -62,7 +63,7 @@ class GatewayTest : TestBase() {
     private val sessionId = "session-1"
     private val instanceId = AtomicInteger(0)
 
-    private val nodeConfig = ConfigFactory.empty()
+    private val nodeConfig = SmartConfigImpl.empty()
 
     private class Node(private val name: String) {
         private val topicService = TopicServiceImpl()
@@ -96,7 +97,7 @@ class GatewayTest : TestBase() {
                     override val keyClass = Any::class.java
                     override val valueClass = Any::class.java
                 },
-                nodeConfig = ConfigFactory.empty(),
+                nodeConfig = SmartConfigImpl.empty(),
                 partitionAssignmentListener = null
             ).use {
                 it.start()
@@ -394,7 +395,7 @@ class GatewayTest : TestBase() {
                 override val keyClass = Any::class.java
                 override val valueClass = Any::class.java
             },
-            nodeConfig = ConfigFactory.empty(),
+            nodeConfig = SmartConfigImpl.empty(),
             partitionAssignmentListener = null
         )
         bobSubscription.start()
@@ -413,7 +414,7 @@ class GatewayTest : TestBase() {
                 override val keyClass = Any::class.java
                 override val valueClass = Any::class.java
             },
-            nodeConfig = ConfigFactory.empty(),
+            nodeConfig = SmartConfigImpl.empty(),
             partitionAssignmentListener = null
         )
         aliceSubscription.start()
