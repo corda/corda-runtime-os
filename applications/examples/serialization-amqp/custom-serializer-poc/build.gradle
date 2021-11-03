@@ -5,6 +5,13 @@ plugins {
 
 description 'Custom AMQP serializer Proof of Concept'
 
+configurations {
+    cpks {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
