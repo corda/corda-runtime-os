@@ -33,6 +33,7 @@ dependencies {
 
     kafkaIntegrationTestImplementation project(":components:kafka-topic-admin")
 
+    kafkaIntegrationTestImplementation project(":libs:configuration:configuration-core")
     kafkaIntegrationTestImplementation project(":libs:messaging:messaging")
     kafkaIntegrationTestImplementation project(":libs:messaging:kafka-messaging-impl")
     kafkaIntegrationTestImplementation project(":libs:lifecycle:lifecycle")

@@ -1,6 +1,6 @@
 package net.corda.libs.configuration.write.factory
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.ConfigWriter
 
 /**
@@ -11,5 +11,5 @@ interface ConfigWriterFactory {
     /**
      * @return An instance of [ConfigWriter]
      */
-    fun createWriter(destination: String, config: Config) : ConfigWriter
+    fun createWriter(destination: String, config: SmartConfig) : ConfigWriter
 }

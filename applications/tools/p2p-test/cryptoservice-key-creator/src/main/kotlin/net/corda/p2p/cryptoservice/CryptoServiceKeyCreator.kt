@@ -2,6 +2,7 @@ package net.corda.p2p.cryptoservice
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -31,7 +32,9 @@ class CryptoServiceKeyCreator @Activate constructor(
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = SmartConfigFactory::class)
+    private val smartConfigFactory: SmartConfigFactory,
 ): Application {
 
     private companion object {
@@ -74,9 +77,9 @@ class CryptoServiceKeyCreator @Activate constructor(
 
 
             val topic = parameters.topic ?: CRYPTO_KEYS_TOPIC
-            val publisherConfig = ConfigFactory.empty()
+            val publisherConfig = smartConfigFactory.create(ConfigFactory.empty()
                 .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
-                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("crypto-key-creator"))
+                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("crypto-key-creator")))
             val publisher = publisherFactory.createPublisher(PublisherConfig("key-creator"), publisherConfig)
 
             publisher.start()

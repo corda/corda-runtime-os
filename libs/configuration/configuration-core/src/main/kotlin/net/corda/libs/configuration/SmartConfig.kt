@@ -21,6 +21,14 @@ interface SmartConfig : Config {
     fun isSecret(path: String): Boolean
 
     /**
+     * Convert a [Config] into a [SmartConfig] with the same extensions as [this]
+     *
+     * @param config
+     * @return
+     */
+    fun convert(config: Config): SmartConfig
+
+    /**
      * Returns an instance of [SmartConfig] that never reveals secrets.
      */
     fun toSafeConfig(): Config

@@ -1,7 +1,6 @@
 package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.SandboxException
-import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.loggerFor
 import org.osgi.framework.Bundle
 import java.util.UUID
@@ -10,11 +9,9 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * An implementation of [Sandbox].
  *
- * @param bundleUtils The [BundleUtils] that all OSGi activity is delegated to for testing purposes
  * @param privateBundles The set of non-public [Bundle]s in this sandbox
  */
 internal open class SandboxImpl(
-    private val bundleUtils: BundleUtils,
     override val id: UUID,
     final override val publicBundles: Set<Bundle>,
     private val privateBundles: Set<Bundle>
@@ -40,7 +37,7 @@ internal open class SandboxImpl(
     }
 
     override fun loadClass(className: String, bundleName: String): Class<*>? {
-        val bundle = (publicBundles + privateBundles).find { bundle ->
+        val bundle = allBundles.find { bundle ->
             bundle.symbolicName == bundleName
         } ?: return null
 

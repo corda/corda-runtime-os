@@ -1,5 +1,5 @@
 package net.corda.p2p.gateway.messaging.http
 
-open class ListenerWithServer : HttpEventListener {
+abstract class ListenerWithServer : HttpServerListener {
     var server: HttpServer? = null
 }

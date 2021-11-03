@@ -185,6 +185,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                                 "Cause:${response.errorType}. Message: ${response.errorMessage}"
                             )
                         )
+                        log.warn("Cause:${response.errorType}. Message: ${response.errorMessage}")
                     }
                     ResponseStatus.CANCELLED -> {
                         future.cancel(true)
@@ -216,10 +217,16 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     "Verify that the fields of the request are populated correctly", ex
                 )
             )
+            log.error(
+                "Serializing your request resulted in an exception. " +
+                "Verify that the fields of the request are populated correctly. " +
+                "Request was: $req", ex
+            )
         }
 
         if (partitions.isEmpty()) {
             future.completeExceptionally(CordaRPCAPISenderException("No partitions. Couldn't send"))
+            log.error("No partitions. Couldn't send")
         } else {
             val partition = partitions[0].partition()
             val request = RPCRequest(
@@ -236,6 +243,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 publisher.publish(listOf(record))
             } catch (ex: Exception) {
                 future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
+                log.error("Failed to publish. Exception: ${ex.message}", ex)
             }
         }
 

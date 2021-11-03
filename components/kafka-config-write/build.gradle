@@ -13,6 +13,7 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"
+    implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-write')
     implementation 'org.slf4j:slf4j-api'
 
