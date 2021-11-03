@@ -21,7 +21,6 @@ import org.assertj.core.api.Assertions.fail
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.FrameworkUtil
@@ -33,10 +32,11 @@ import java.io.NotSerializableException
 import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Instant
 import java.util.Hashtable
 import java.util.concurrent.TimeUnit
 
-@Timeout(value = 30, unit = TimeUnit.SECONDS)
+//@Timeout(value = 30, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class)
 class AMQPwithOSGiSerializationTests {
 
@@ -169,16 +169,19 @@ class AMQPwithOSGiSerializationTests {
                 cashInstance.javaClass
             ).newInstance(cashInstance)
 
-            val content = "This is a transfer document"
-
             val documentClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle2.Document", Any::class.java)
+            val content = "This is a transfer document"
             val documentInstance = documentClass.getConstructor(String::class.java).newInstance(content)
+
+            // Container is used to test amqp serialization works for OSGi bundled generic types.
+            val containerClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle5.Container", Any::class.java)
+            val containerInstance = containerClass.getConstructor(Object::class.java).newInstance(5)
 
             val transferClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle4.Transfer", Any::class.java)
 
             val transferInstance = transferClass.getConstructor(
-                obligationInstance.javaClass, documentInstance.javaClass
-            ).newInstance(obligationInstance, documentInstance)
+                obligationInstance.javaClass, documentInstance.javaClass, containerInstance.javaClass
+            ).newInstance(obligationInstance, documentInstance, containerInstance)
 
             val serialised = SerializationOutput(factory1).serialize(transferInstance, testSerializationContext)
 
@@ -197,10 +200,11 @@ class AMQPwithOSGiSerializationTests {
                 document?.javaClass?.getDeclaredField("content").also { it?.trySetAccessible() }?.get(document)
             assertThat(deserialisedValue).isEqualTo(content)
 
-            assertThat(deserialised.envelope.metadata.values).hasSize(4)
+            assertThat(deserialised.envelope.metadata.values).hasSize(5)
             assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle1.Cash")
             assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle2.Document")
             assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle3.Obligation")
+            assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle5.Container")
             assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle4.Transfer")
         }
     }
