@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "PermissionManagementRequest",
+  "namespace": "net.corda.data.permissions.management",
+  "fields": [
+    {
+      "name": "requestUserId",
+      "type": "string",
+      "doc": "ID of user who invoked this request."
+    },
+    {
+      "name": "virtualNodeId",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "ID of virtual node or null"
+    },
+    {
+      "name": "request",
+      "type": [
+        "net.corda.data.permissions.management.user.CreateUserRequest"
+      ]
+    }
+  ]
+}
