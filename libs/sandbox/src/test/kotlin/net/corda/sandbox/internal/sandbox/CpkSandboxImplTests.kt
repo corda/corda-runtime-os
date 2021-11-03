@@ -15,7 +15,7 @@ class CpkSandboxImplTests {
     @Test
     fun `can load class from main bundles in CPK sandbox`() {
         val mainBundle = mockBundle(klass = String::class.java)
-        val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), mainBundle, emptySet())
+        val sandbox = CpkSandboxImpl(randomUUID(), mock(), mainBundle, emptySet())
 
         assertEquals(String::class.java, sandbox.loadClassFromMainBundle(String::class.java.name))
     }
@@ -24,7 +24,7 @@ class CpkSandboxImplTests {
     fun `cannot load class from other bundles in CPK sandbox`() {
         val mainBundle = mockBundle()
         val otherBundle = mockBundle(klass = Int::class.java)
-        val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), mainBundle, setOf(otherBundle))
+        val sandbox = CpkSandboxImpl(randomUUID(), mock(), mainBundle, setOf(otherBundle))
 
         assertThrows<SandboxException> {
             sandbox.loadClassFromMainBundle(Int::class.java.name)
@@ -36,7 +36,7 @@ class CpkSandboxImplTests {
         val mainBundle = mock<Bundle>().apply {
             whenever(loadClass(any())).thenThrow(IllegalStateException::class.java)
         }
-        val sandbox = CpkSandboxImpl(mock(), randomUUID(), mock(), mainBundle, emptySet())
+        val sandbox = CpkSandboxImpl(randomUUID(), mock(), mainBundle, emptySet())
 
         assertThrows<SandboxException> {
             sandbox.loadClassFromMainBundle(Int::class.java.name)

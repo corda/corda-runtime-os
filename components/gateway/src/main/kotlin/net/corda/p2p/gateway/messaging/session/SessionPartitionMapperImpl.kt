@@ -1,6 +1,6 @@
 package net.corda.p2p.gateway.messaging.session
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.LeafTile
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 class SessionPartitionMapperImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
-    nodeConfiguration: Config,
+    nodeConfiguration: SmartConfig,
 ) : SessionPartitionMapper,
     LeafTile(
         lifecycleCoordinatorFactory

@@ -1,6 +1,6 @@
 package net.corda.messaging.emulation.subscription.factory
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -41,7 +41,7 @@ class InMemSubscriptionFactory @Activate constructor(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService?,
-        nodeConfig: Config
+        nodeConfig: SmartConfig
     ): Subscription<K, V> {
         return PubSubSubscription(subscriptionConfig, processor, executor, topicService)
     }
@@ -49,7 +49,7 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createDurableSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
-        nodeConfig: Config,
+        nodeConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         return DurableSubscription(
@@ -63,7 +63,7 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createCompactedSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: CompactedProcessor<K, V>,
-        nodeConfig: Config
+        nodeConfig: SmartConfig
     ): CompactedSubscription<K, V> {
         return InMemoryCompactedSubscription(
             subscriptionConfig,
@@ -75,7 +75,7 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
-        nodeConfig: Config,
+        nodeConfig: SmartConfig,
         stateAndEventListener: StateAndEventListener<K, S>?,
     ): StateAndEventSubscription<K, S, E> {
         return InMemoryStateAndEventSubscription(
@@ -89,7 +89,7 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
-        nodeConfig: Config,
+        nodeConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         return EventLogSubscription(
@@ -102,7 +102,7 @@ class InMemSubscriptionFactory @Activate constructor(
 
     override fun <K : Any, V : Any> createRandomAccessSubscription(
         subscriptionConfig: SubscriptionConfig,
-        nodeConfig: Config,
+        nodeConfig: SmartConfig,
         keyClass: Class<K>,
         valueClass: Class<V>
     ): RandomAccessSubscription<K, V> {
@@ -111,7 +111,7 @@ class InMemSubscriptionFactory @Activate constructor(
 
     override fun <REQUEST : Any, RESPONSE : Any> createRPCSubscription(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-        nodeConfig: Config,
+        nodeConfig: SmartConfig,
         responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE> {
         TODO("Not yet implemented")

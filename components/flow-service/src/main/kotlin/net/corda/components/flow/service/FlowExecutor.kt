@@ -9,6 +9,7 @@ import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.manager.FlowManager
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -25,7 +26,8 @@ import net.corda.v5.base.util.debug
 @Suppress("LongParameterList")
 class FlowExecutor(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val configs: Map<String, Config>,
+    private val config: SmartConfig,
+    private val configs: Map<String, SmartConfig>,
     private val subscriptionFactory: SubscriptionFactory,
     private val flowManager: FlowManager,
     private val sandboxService: SandboxService,
@@ -38,9 +40,9 @@ class FlowExecutor(
         private const val INSTANCE_ID_KEY = "instance-id"
     }
 
-    private val bootstrapConfig: Config = configs[BOOTSTRAP_KEY] ?: throw CordaRuntimeException("Bootstrap config can not be null")
-    private val flowConfig: Config = configs[FLOW_KEY] ?: throw CordaRuntimeException("Flow config can not be null")
-    private val messagingConfig: Config = configs[MESSAGING_KEY] ?: throw CordaRuntimeException("Messaging config can not be null")
+    private val bootstrapConfig: SmartConfig = configs[BOOTSTRAP_KEY] ?: throw CordaRuntimeException("Bootstrap config can not be null")
+    private val flowConfig: SmartConfig = configs[FLOW_KEY] ?: throw CordaRuntimeException("Flow config can not be null")
+    private val messagingConfig: SmartConfig = configs[MESSAGING_KEY] ?: throw CordaRuntimeException("Messaging config can not be null")
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
 

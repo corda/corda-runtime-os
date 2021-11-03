@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.ConfigProperties
@@ -24,14 +25,15 @@ class ConfigUtils {
 
         fun resolvePublisherConfiguration(
             subscriptionConfiguration: Config,
-            nodeConfig: Config,
+            kafkaConfig: SmartConfig,
             clientIdCounter: Int,
             pattern: String
         ): Config {
-            val config = enforced
+            // turn enforced in to a SmartConfig like kafkaConfig first so everything is a "smart" config
+            val config = kafkaConfig.convert(enforced)
                 .withFallback(subscriptionConfiguration)
                 .withValue(ConfigProperties.CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientIdCounter))
-                .withFallback(nodeConfig)
+                .withFallback(kafkaConfig)
                 .withFallback(defaults)
                 .resolve()
                 .getConfig(pattern)
@@ -46,14 +48,15 @@ class ConfigUtils {
 
         fun resolveSubscriptionConfiguration(
             subscriptionConfiguration: Config,
-            nodeConfig: Config,
+            kafkaConfig: SmartConfig,
             clientIdCounter: Int,
             pattern: String
         ): Config {
-            return enforced
+            // turn enforced in to a SmartConfig like kafkaConfig first so everything is a "smart" config
+            return  kafkaConfig.convert(enforced)
                 .withFallback(subscriptionConfiguration)
                 .withValue(ConfigProperties.CLIENT_ID_COUNTER, ConfigValueFactory.fromAnyRef(clientIdCounter))
-                .withFallback(nodeConfig)
+                .withFallback(kafkaConfig)
                 .withFallback(defaults)
                 .resolve()
                 .getConfig(pattern)

@@ -53,7 +53,7 @@ internal class SandboxServiceImpl @Activate constructor(
     private val logger = loggerFor<SandboxServiceImpl>()
 
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
-        val publicSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
+        val publicSandbox = SandboxImpl(UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
         sandboxes[publicSandbox.id] = publicSandbox
         publicSandboxes.add(publicSandbox)
     }
@@ -66,7 +66,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
         val sandboxGroupInternal = sandboxGroup as SandboxGroupInternal
-        sandboxGroupInternal.sandboxes.forEach { sandbox ->
+        sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
             sandboxes.remove(sandbox.id)
             sandboxGroups.remove(sandbox.id)
             zombieBundles.addAll((sandbox as Sandbox).unload())
@@ -155,18 +155,18 @@ internal class SandboxServiceImpl @Activate constructor(
             bundles.addAll(libraryBundles)
             bundles.add(mainBundle)
 
-            val sandbox = CpkSandboxImpl(bundleUtils, sandboxId, cpk, mainBundle, libraryBundles)
+            val sandbox = CpkSandboxImpl(sandboxId, cpk, mainBundle, libraryBundles)
             sandboxes[sandboxId] = sandbox
 
             sandbox
         }
 
-        newSandboxes.forEach { newSandbox ->
+        publicSandboxes.forEach { publicSandbox ->
             // The public sandboxes have visibility of all sandboxes.
-            publicSandboxes.forEach { publicSandbox ->
-                publicSandbox.grantVisibility(newSandbox)
-            }
+            publicSandbox.grantVisibility(newSandboxes)
+        }
 
+        newSandboxes.forEach { newSandbox ->
             // Each sandbox requires visibility of the sandboxes of the other CPKs and of the public sandboxes.
             newSandbox.grantVisibility(newSandboxes - newSandbox + publicSandboxes)
         }

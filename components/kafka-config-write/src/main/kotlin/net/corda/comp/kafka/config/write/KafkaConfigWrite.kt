@@ -3,6 +3,7 @@ package net.corda.comp.kafka.config.write
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.ConfigWriter
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
@@ -24,7 +25,7 @@ class KafkaConfigWrite @Activate constructor(
         private val log: Logger = contextLogger()
     }
 
-    fun updateConfig(destination: String, appConfig: Config, configurationFile: String) {
+    fun updateConfig(destination: String, appConfig: SmartConfig, configurationFile: String) {
         writer = configWriterFactory.createWriter(destination, appConfig)
         val configuration = ConfigFactory.parseString(configurationFile)
 
