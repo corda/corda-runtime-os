@@ -14,14 +14,10 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    
     implementation project(":libs:messaging:messaging")
-
     implementation project(":libs:lifecycle:lifecycle")
-
     implementation project(":libs:permissions:permission-service")
-
-    implementation "net.corda:corda-avro-schema:5.0.0.17-SNAPSHOT"
+    implementation "net.corda:corda-avro-schema"
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
