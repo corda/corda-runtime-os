@@ -78,15 +78,6 @@ class InboundMessageHandlerTest {
         p2pInPublisher.close()
     }
 
-//    @Test
-//    fun `children return the correct children`() {
-//        assertThat(handler.children).containsExactlyInAnyOrder(
-//            p2pInPublisher.constructed().first(),
-//            sessionPartitionMapper.constructed().first(),
-//            server.constructed().first()
-//        )
-//    }
-
     @Test
     fun `onMessage will respond with error if handler is not running`() {
         val sessionId = "aaa"

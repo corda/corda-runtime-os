@@ -9,6 +9,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
+import net.corda.v5.base.annotations.VisibleForTesting
 
 /**
  * The Gateway is a light component which facilitates the sending and receiving of P2P messages.
@@ -46,7 +47,8 @@ class Gateway(
         instanceId,
     )
 
-    private val children: Collection<DominoTile> = listOf(inboundMessageHandler.dominoTile, outboundMessageProcessor.dominoTile)
+    @VisibleForTesting
+    val children: Collection<DominoTile> = listOf(inboundMessageHandler.dominoTile, outboundMessageProcessor.dominoTile)
     override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, children = children)
 
     companion object {

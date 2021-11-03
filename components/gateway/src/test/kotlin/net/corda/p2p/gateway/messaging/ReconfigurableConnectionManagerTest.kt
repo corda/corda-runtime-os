@@ -1,11 +1,13 @@
 package net.corda.p2p.gateway.messaging
 
+import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.p2p.gateway.Gateway.Companion.CONFIG_KEY
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import org.junit.jupiter.api.Test
@@ -15,30 +17,35 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import java.net.URI
 
 class ReconfigurableConnectionManagerTest {
     private val manager = mock<ConnectionManager>()
     private val handler = argumentCaptor<LifecycleEventHandler>()
+    private val event = argumentCaptor<LifecycleEvent>()
     private val coordinator = mock<LifecycleCoordinator> {
         on { start() } doAnswer {
             handler.lastValue.processEvent(StartEvent(), mock)
+        }
+        on { postEvent(event.capture()) } doAnswer {
+            handler.lastValue.processEvent(event.lastValue, mock)
         }
     }
     private val factory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
+
+    private val configHandler = argumentCaptor<ConfigurationHandler>()
     private val service = mock<ConfigurationReadService> {
-        on { registerForUpdates(any()) } doReturn mock()
+        on { registerForUpdates(configHandler.capture()) } doReturn mock()
     }
     private val listener = mock<HttpEventListener>()
-    private val configuration = mock<GatewayConfiguration> {
-        on { sslConfig } doReturn mock()
-    }
-
-    private val resourcesHolder = mock<ResourcesHolder>()
+//    private val configuration = mock<GatewayConfiguration> {
+//        on { sslConfig } doReturn mock()
+//    }
+//
+//    private val resourcesHolder = mock<ResourcesHolder>()
 
     private val connectionManager = ReconfigurableConnectionManager(factory, service, listener) { manager }
 
@@ -49,25 +56,27 @@ class ReconfigurableConnectionManagerTest {
         }
     }
 
-//    @Test
-//    fun `acquire will call the manager`() {
-//        val resources = ResourcesHolder()
-//        connectionManager.start()
-//        connectionManager.applyNewConfiguration(configuration, null, resources)
-//        val info = DestinationInfo(
-//            URI("http://www.r3.com:3000"),
-//            "",
-//            null
-//        )
-//
-//        connectionManager
-//            .acquire(
-//                info
-//            )
-//
-//        verify(manager).acquire(info)
-//    }
-//
+    @Test
+    fun `acquire will call the manager`() {
+        //val resources = ResourcesHolder()
+        connectionManager.start()
+        Thread.sleep(3000)
+        configHandler.lastValue.onNewConfiguration(setOf(CONFIG_KEY), mapOf(CONFIG_KEY to mock()))
+        //connectionManager.applyNewConfiguration(configuration, null, resources)
+        val info = DestinationInfo(
+            URI("http://www.r3.com:3000"),
+            "",
+            null
+        )
+
+        connectionManager
+            .acquire(
+                info
+            )
+
+        verify(manager).acquire(info)
+    }
+
 //    @Test
 //    fun `applyNewConfiguration will close manager`() {
 //        connectionManager.start()

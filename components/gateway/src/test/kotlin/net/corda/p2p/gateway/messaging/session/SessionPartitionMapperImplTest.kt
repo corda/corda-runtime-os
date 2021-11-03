@@ -97,10 +97,8 @@ class SessionPartitionMapperImplTest {
     @Test
     fun `stop will stop the subscription`() {
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
-
-        sessionPartitionMapper.createResources(resourcesHolder)
+        sessionPartitionMapper.start()
         sessionPartitionMapper.stop()
-
         verify(subscription).stop()
     }
 
