@@ -29,7 +29,9 @@ class Group(
     var name: String,
 
     /**
-     * Group can have 1 parent group. Parent group is null when the group is a "root" level group. One group can be the parent for many groups.
+     * Group can have 1 parent group.
+     * Parent group is null when the group is a "root" level group.
+     * One group can be the parent for many groups.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_group")

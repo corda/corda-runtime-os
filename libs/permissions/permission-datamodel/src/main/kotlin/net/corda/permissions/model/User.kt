@@ -12,6 +12,7 @@ import javax.persistence.OneToMany
 import javax.persistence.Table
 import javax.persistence.Version
 
+@Suppress("LongParameterList")
 @Entity
 @Table(name = "rpc_user")
 class User(

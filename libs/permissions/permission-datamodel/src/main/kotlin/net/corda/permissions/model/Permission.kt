@@ -15,6 +15,7 @@ import javax.persistence.Version
 /**
  * A given permission can belong to multiple roles.
  */
+@Suppress("LongParameterList")
 @Entity
 @Table(name = "rpc_perm")
 class Permission(
