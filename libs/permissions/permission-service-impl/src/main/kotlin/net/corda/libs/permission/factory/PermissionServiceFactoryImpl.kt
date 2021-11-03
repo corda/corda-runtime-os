@@ -1,5 +1,4 @@
 package net.corda.libs.permission.factory
-import com.typesafe.config.Config
 import net.corda.libs.permission.PermissionServiceImpl
 import net.corda.libs.permission.PermissionsTopicProcessor
 import org.osgi.service.component.annotations.Activate
