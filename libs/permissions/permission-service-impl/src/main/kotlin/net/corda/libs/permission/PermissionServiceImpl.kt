@@ -30,7 +30,8 @@ class PermissionServiceImpl(
 
         // Review given new topics definition
         //val permissionRequested = PermissionUrl.fromUrl(permission).permissionRequested
-        //return user.roleIds.flatMap { it.permissions }.any { it.type == PermissionType.ALLOW && it.permissionString == permissionRequested }
+        //return user.roleIds.flatMap { it.permissions }.any { it.type == PermissionType.ALLOW &&
+        // it.permissionString == permissionRequested }
     }
 
     override val isRunning: Boolean
