@@ -1,5 +1,6 @@
 package net.corda.libs.permission
 
+import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.User
 
 import kotlin.test.assertTrue
@@ -11,8 +12,11 @@ import kotlin.test.assertFalse
 
 class PermissionTopicProcessorTest {
 
-    private val user = User("id", Instant.now(), "full name", true, "email", false, null, null, null)
-    private val userUpdated = User("id", Instant.now(), "full name", false, "email", false, null, null, null)
+    private val user = User("id", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true, "email",
+        "hashedPassword", "saltValue", false, null, null, null)
+
+    private val userUpdated = User("id", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", false, "email",
+        "hashedPassword", "saltValue", false, null, null, null)
 
     @Test
     fun `New processor does not have user data`() {

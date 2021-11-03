@@ -1,5 +1,6 @@
 package net.corda.libs.permission
 
+import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.Permission
 import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.Role
@@ -29,23 +30,28 @@ class PermissionServiceImplTest {
 
         private const val permissionUrlRequest = "https://host:1234/node-rpc/5e0a07a6-c25d-413a-be34-647a792f4f58/${permissionString}"
 
-        private val permission = Permission("5e0a07a6-c25d-413a-be34-647a792f4f58",
-                Instant.now(),
+        private val permission = Permission("5e0a07a6-c25d-413a-be34-647a792f4f58", 1,
+                ChangeDetails(Instant.now(), "changeUser"),
                 virtualNode,
                 permissionString,
                 PermissionType.ALLOW)
 
-        private val permissionDenied = Permission("5e0a07a6-c25d-413a-be34-647a792f4f58",
-                Instant.now(),
+        private val permissionDenied = Permission("5e0a07a6-c25d-413a-be34-647a792f4f58", 1,
+                ChangeDetails(Instant.now(), "changeUser"),
                 virtualNode,
                 permissionString,
                 PermissionType.DENY)
 
-        private val role = Role("81b6096e-d9dd-4966-a9e5-2b77c4d3b213", Instant.now(), "STARTFLOW-MYFLOW", listOf(permission))
-        private val roleWithPermDenied = Role("81b6096e-d9dd-4966-a9e5-2b77c4d3b213", Instant.now(), "STARTFLOW-MYFLOW", listOf(permissionDenied))
-        private val user = User("id", Instant.now(), "full name", true, "email", false, null, null, listOf(role))
-        private val userWithPermDenied = User("id", Instant.now(), "full name", true, "email", false, null, null, listOf(roleWithPermDenied))
-        private val disabledUser = User("id", Instant.now(), "full name", false, "email", false, null, null, listOf(role))
+        private val role = Role("81b6096e-d9dd-4966-a9e5-2b77c4d3b213", 1,
+            ChangeDetails(Instant.now(), "changeUser"), "STARTFLOW-MYFLOW", listOf(permission))
+        private val roleWithPermDenied = Role("81b6096e-d9dd-4966-a9e5-2b77c4d3b213", 1,
+            ChangeDetails(Instant.now(), "changeUser"), "STARTFLOW-MYFLOW", listOf(permissionDenied))
+        private val user = User("id", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true, "email",
+            "hashedPassword", "saltValue", false, null, null, listOf(role).map { it.id })
+        private val userWithPermDenied = User("id", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true, "email",
+            "hashedPassword", "saltValue", false, null, null, listOf(roleWithPermDenied).map { it.id })
+        private val disabledUser = User("id", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", false, "email",
+            "hashedPassword", "saltValue",false, null, null, listOf(role).map { it.id })
 
         @BeforeAll
         @JvmStatic

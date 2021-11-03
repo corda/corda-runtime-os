@@ -1,6 +1,5 @@
 package net.corda.libs.permission
 
-import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.User
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -27,9 +26,11 @@ class PermissionServiceImpl(
 
         if (!user.enabled) return false
 
-        val permissionRequested = PermissionUrl.fromUrl(permission).permissionRequested
+        return false
 
-        return user.roles.flatMap { it.permissions }.any { it.type == PermissionType.ALLOW && it.permissionString == permissionRequested }
+        // Review given new topics definition
+        //val permissionRequested = PermissionUrl.fromUrl(permission).permissionRequested
+        //return user.roleIds.flatMap { it.permissions }.any { it.type == PermissionType.ALLOW && it.permissionString == permissionRequested }
     }
 
     override val isRunning: Boolean
