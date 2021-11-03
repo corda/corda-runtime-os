@@ -16,7 +16,9 @@ cordapp {
 }
 
 dependencies {
-    cordapp "net.corda:corda-flows:$cordaVersion"
+    cordaProvided platform(group: "net.corda", name: "corda-api", version: cordaApiVersion)
+    cordaProvided group: 'net.corda', name: 'corda-application'
+    cordaProvided group: 'net.corda', name: 'corda-flows'
 }
 
 jar {
