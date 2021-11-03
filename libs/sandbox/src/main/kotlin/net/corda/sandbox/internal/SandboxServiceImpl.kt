@@ -53,7 +53,7 @@ internal class SandboxServiceImpl @Activate constructor(
     private val logger = loggerFor<SandboxServiceImpl>()
 
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
-        val publicSandbox = SandboxImpl(bundleUtils, UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
+        val publicSandbox = SandboxImpl(UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
         sandboxes[publicSandbox.id] = publicSandbox
         publicSandboxes.add(publicSandbox)
     }
@@ -155,7 +155,7 @@ internal class SandboxServiceImpl @Activate constructor(
             bundles.addAll(libraryBundles)
             bundles.add(mainBundle)
 
-            val sandbox = CpkSandboxImpl(bundleUtils, sandboxId, cpk, mainBundle, libraryBundles)
+            val sandbox = CpkSandboxImpl(sandboxId, cpk, mainBundle, libraryBundles)
             sandboxes[sandboxId] = sandbox
 
             sandbox
