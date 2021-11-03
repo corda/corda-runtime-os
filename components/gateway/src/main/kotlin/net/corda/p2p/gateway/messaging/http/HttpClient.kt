@@ -4,32 +4,33 @@ import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelInitializer
+import io.netty.channel.ChannelOption
 import io.netty.channel.EventLoop
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http.HttpClientCodec
-import io.netty.handler.timeout.IdleStateHandler
 import net.corda.lifecycle.Lifecycle
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
-import java.lang.IllegalStateException
 import java.net.URI
+import java.time.Duration
 import java.util.LinkedList
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.TrustManagerFactory
 import kotlin.concurrent.withLock
 
 /**
  * The [HttpClient] sends serialised application messages via POST requests to a given URI. It automatically initiates
- * HTTP(s) connection is on the first message. This connection can be also reused to deliver the subsequent messages,
- * however it's closed after certain period of inactivity, when a new connection will be established on demand.
- * [HttpClient] can have at most one connection at a given moment of time.
+ * HTTP(s) connection when [start] is invoked. Until connection is established, messages are queued in-memory.
+ * If the connection is terminated for some reason (e.g. closed by the other side), the client initiates a new connection automatically.
+ * The only exception to that is when the client is stopped (via [stop]) explicitly.
  *
- * [HttpClient] allows to send multiple HTTP requests without waiting a response. Every request is queued until getting
- * the response. Responses are matched with requests according to the order, as they arrive. Failed requests (including
- * connection and send failures, as well as missing response) are resent multiple times as defined by message TTL setting.
+ * [HttpClient] allows to send multiple HTTP requests without waiting for a response.
+ * Responses are matched with requests according to the order, as they arrive.
+ * Clients of this class can make use of the returned futures to wait on the responses, when needed.
  *
  * [HttpClient] uses shared thread pool for Netty callbacks and another one for message queuing.
  *
@@ -37,35 +38,34 @@ import kotlin.concurrent.withLock
  * @param sslConfiguration the configuration to be used for the one-way TLS handshake
  * @param writeGroup event loop group (thread pool) for processing message writes and reconnects
  * @param nettyGroup event loop group (thread pool) for processing netty callbacks
+ * @param listener an (optional) listener that can be used to be informed when connection is established/closed.
  */
+@Suppress("LongParameterList")
 class HttpClient(
     private val destinationInfo: DestinationInfo,
     private val sslConfiguration: SslConfiguration,
     private val writeGroup: EventLoopGroup,
     private val nettyGroup: EventLoopGroup,
-    private val listener: HttpEventListener,
-) : Lifecycle, HttpEventListener {
+    private val connectionTimeout: Duration,
+    private val listener: HttpConnectionListener? = null,
+) : Lifecycle, HttpClientListener {
 
     companion object {
         private val logger = LoggerFactory.getLogger(HttpClient::class.java)
-
-        /**
-         * Number of attempts to send the message before giving up on failure.
-         */
-        private const val MESSAGE_TTL = 3
-
-        /**
-         * The channel will be closed if neither read nor write was performed for the specified period of time.
-         */
-        private const val CLIENT_IDLE_TIME_SECONDS = 5
     }
 
     private val lock = ReentrantLock()
 
-    private class Message(val payload: ByteArray, var ttl: Int)
+    /**
+     * Queue containing messages that will be sent once the connection is established.
+     * All queue operations must be synchronized through [writeProcessor].
+     */
+    private val requestQueue = LinkedList<Pair<HttpRequestPayload, CompletableFuture<HttpResponse>>>()
 
-    // All queue operations must be synchronized through writeProcessor.
-    private val requestQueue = LinkedList<Message>()
+    /**
+     * A list of futures for the expected responses, in the order they are expected.
+     */
+    private val pendingResponses = LinkedList<CompletableFuture<HttpResponse>>()
 
     @Volatile
     private var writeProcessor: EventLoop? = null
@@ -75,6 +75,9 @@ class HttpClient(
 
     override val isRunning: Boolean
         get() = (writeProcessor != null)
+
+    @Volatile
+    private var explicitlyClosed: Boolean = false
 
     private val connectListener = ChannelFutureListener { future ->
         if (!future.isSuccess) {
@@ -91,13 +94,16 @@ class HttpClient(
                 logger.info("HTTP client to ${destinationInfo.uri} already started")
                 return
             }
+            explicitlyClosed = false
             writeProcessor = writeGroup.next()
+            connect()
         }
     }
 
     override fun stop() {
         lock.withLock {
             logger.info("Stopping HTTP client to ${destinationInfo.uri}")
+            explicitlyClosed = true
             clientChannel?.close()?.sync()
             writeProcessor = null
             logger.info("Stopped HTTP client ${destinationInfo.uri}")
@@ -109,26 +115,23 @@ class HttpClient(
      * @param message the bytes payload to be sent
      * @throws IllegalStateException if the connection is down
      */
-    fun write(message: ByteArray) {
-        write(Message(message, ttl = MESSAGE_TTL), addToQueue = true)
-    }
-
-    private fun write(message: Message, addToQueue: Boolean) {
+    fun write(message: HttpRequestPayload): CompletableFuture<HttpResponse> {
+        val future = CompletableFuture<HttpResponse>()
         writeProcessor?.execute {
             val channel = clientChannel
-            // Connect on demand on the first message. Message itself will be queued and sent later.
-            if (channel == null && requestQueue.isEmpty()) {
-                connect()
-            }
-            if (channel != null) {
-                val request = HttpHelper.createRequest(message.payload, destinationInfo.uri)
+
+            if (channel == null) {
+                // Queuing messages to be sent once connection is established.
+                requestQueue.offer(message to future)
+            } else {
+                val request = HttpHelper.createRequest(message, destinationInfo.uri)
                 channel.writeAndFlush(request)
+                pendingResponses.addLast(future)
                 logger.debug("Sent HTTP request $request")
             }
-            if (addToQueue) {
-                requestQueue.offer(message)
-            }
         }
+
+        return future
     }
 
     private fun connect() {
@@ -137,7 +140,10 @@ class HttpClient(
         }
         logger.info("Connecting to ${destinationInfo.uri}")
         val bootstrap = Bootstrap()
-        bootstrap.group(nettyGroup).channel(NioSocketChannel::class.java).handler(ClientChannelInitializer())
+        bootstrap.group(nettyGroup)
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectionTimeout.toMillis().toInt())
+            .channel(NioSocketChannel::class.java)
+            .handler(ClientChannelInitializer())
         val clientFuture = bootstrap.connect(destinationInfo.uri.host, destinationInfo.uri.port)
         clientFuture.addListener(connectListener)
     }
@@ -145,36 +151,42 @@ class HttpClient(
     override fun onOpen(event: HttpConnectionEvent) {
         writeProcessor?.execute {
             clientChannel = event.channel
-            // Resend all undelivered messages.
-            requestQueue.forEach { write(it, addToQueue = false) }
+            // Send all queued messages.
+            while (requestQueue.isNotEmpty()) {
+                val (message, future) = requestQueue.removeFirst()
+                val request = HttpHelper.createRequest(message, destinationInfo.uri)
+                clientChannel!!.writeAndFlush(request)
+                pendingResponses.add(future)
+                logger.debug("Sent HTTP request $request")
+            }
         }
-        listener.onOpen(event)
+        listener?.onOpen(event)
     }
 
     override fun onClose(event: HttpConnectionEvent) {
         writeProcessor?.execute {
             clientChannel = null
-            // Reduce TTL of undelivered messages: they will be resent on the next connection if TTL > 0.
-            requestQueue.forEach { it.ttl-- }
-            requestQueue.removeIf { it.ttl <= 0 }
 
-            // Automatically reconnect if there are pending messages in queue.
-            if (requestQueue.isNotEmpty()) {
-                logger.info("${requestQueue.size} pending message(s) in queue for ${destinationInfo.uri}")
+            // Fail futures for pending requests that are never going to complete and queued requests, as connection was disrupted.
+            while (pendingResponses.isNotEmpty()) {
+                pendingResponses.removeFirst().completeExceptionally(RuntimeException("Connection was closed."))
+            }
+            while (requestQueue.isNotEmpty()) {
+                requestQueue.removeFirst().second.completeExceptionally(RuntimeException("Connection was closed."))
+            }
+
+            // If the connection wasn't explicitly closed on our side, we try to reconnect.
+            if (!explicitlyClosed) {
+                logger.info("Previous connection to ${destinationInfo.uri} was closed, a new attempt will be made to connect again.")
                 connect()
             }
         }
-        listener.onClose(event)
+        listener?.onClose(event)
     }
 
-    override fun onMessage(message: HttpMessage) {
-        writeProcessor?.execute {
-            if (clientChannel != null) {
-                // Remove first pending message from queue on the ack.
-                requestQueue.poll()
-            }
-        }
-        listener.onMessage(message)
+    override fun onResponse(httpResponse: HttpResponse) {
+        val future = pendingResponses.removeFirst()
+        future.complete(httpResponse)
     }
 
     private inner class ClientChannelInitializer : ChannelInitializer<SocketChannel>() {
@@ -198,9 +210,8 @@ class HttpClient(
                     trustManagerFactory
                 )
             )
-            pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, CLIENT_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpClientCodec())
-            pipeline.addLast(HttpChannelHandler(this@HttpClient, logger))
+            pipeline.addLast(HttpClientChannelHandler(this@HttpClient, logger))
         }
     }
 }
@@ -212,3 +223,5 @@ class HttpClient(
  * will use standard target identity check
  */
 data class DestinationInfo(val uri: URI, val sni: String, val legalName: X500Name?)
+
+typealias HttpRequestPayload = ByteArray
