@@ -16,10 +16,6 @@
       "type": "boolean"
     },
     {
-      "name": "email",
-      "type": "string"
-    },
-    {
       "name": "initialHashedPassword",
       "type": [ "null", "string" ]
     },

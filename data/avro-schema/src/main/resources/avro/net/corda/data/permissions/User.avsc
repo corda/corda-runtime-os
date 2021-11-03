@@ -24,10 +24,6 @@
       "type": "boolean"
     },
     {
-      "name": "email",
-      "type": "string"
-    },
-    {
       "name": "hashedPassword",
       "type": [ "null", "string" ]
     },
