@@ -51,8 +51,4 @@ class DbAccessProviderPostgresTest: DbAccessProviderTestBase() {
     override fun getPassword(): String {
         return postgresqlServer.password
     }
-
-    override fun dbNullOrBlank(): Boolean {
-        return System.getProperty("postgresqlServer").isNullOrBlank();
-    }
 }

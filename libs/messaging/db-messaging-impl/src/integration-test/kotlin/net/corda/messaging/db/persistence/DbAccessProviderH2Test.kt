@@ -52,8 +52,4 @@ class DbAccessProviderH2Test: DbAccessProviderTestBase() {
     override fun getPassword(): String {
         return password
     }
-
-    override fun dbNullOrBlank(): Boolean {
-        return System.getProperty("server").isNullOrBlank();
-    }
 }

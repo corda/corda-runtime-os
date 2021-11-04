@@ -40,8 +40,4 @@ class DbAccessProviderOracleTest: DbAccessProviderTestBase() {
     override fun getPassword(): String {
         return oracleServer.password
     }
-
-    override fun dbNullOrBlank(): Boolean {
-        return System.getProperty("oracleServer").isNullOrBlank();
-    }
 }

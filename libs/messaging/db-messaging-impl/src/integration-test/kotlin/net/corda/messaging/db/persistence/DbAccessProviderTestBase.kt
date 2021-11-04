@@ -36,14 +36,12 @@ abstract class DbAccessProviderTestBase {
 
     abstract fun getPassword(): String
 
-    abstract fun dbNullOrBlank(): Boolean
-
     @BeforeClass
     fun checkIfTestsShouldBeSkipped() {
-        if (variables are defined) {
-            //use them
+        if (System.getProperty("postgresHost").isNullOrBlank()) {
+            org.junit.Assume.assumeTrue();
         } else {
-            org.junit.Assume.assumeTrue(!dbNullOrBlank());
+
         }
     }
 
