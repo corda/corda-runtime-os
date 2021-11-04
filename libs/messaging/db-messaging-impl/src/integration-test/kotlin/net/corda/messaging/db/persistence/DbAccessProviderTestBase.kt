@@ -41,6 +41,8 @@ abstract class DbAccessProviderTestBase {
     @BeforeClass
     fun checkIfTestsShouldBeSkipped() {
         if (variables are defined) {
+            //use them
+        } else {
             org.junit.Assume.assumeTrue(!dbNullOrBlank());
         }
     }

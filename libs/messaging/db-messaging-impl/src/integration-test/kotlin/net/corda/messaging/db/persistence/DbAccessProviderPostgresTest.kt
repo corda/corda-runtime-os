@@ -7,8 +7,17 @@ import org.testcontainers.containers.PostgreSQLContainer
 import java.lang.reflect.Type
 import java.sql.DriverManager
 
+/*
+To run locally:
+- start your local postgres
+- populate the variables (below) in gradle.properties with your local postgres values.
+  postgresHost=
+  postgresPort=
+  postgresDb=
+  postgresUser=
+  postgresPassword=
+ */
 
-//@Disabled("Disabled for CI until we have a shared database hosted by the infrastructure team. See INFRA-1485")
 class DbAccessProviderPostgresTest: DbAccessProviderTestBase() {
     private val postgresqlServer = PostgreSQLContainer<Nothing>("postgres:9.6")
 
