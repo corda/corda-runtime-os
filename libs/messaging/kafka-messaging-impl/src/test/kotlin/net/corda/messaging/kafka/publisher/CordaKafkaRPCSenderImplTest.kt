@@ -89,7 +89,7 @@ class CordaKafkaRPCSenderImplTest {
 
     @Test
     fun `test send request finishes exceptionally due to lack of partitions`() {
-        cordaSenderImpl = CordaKafkaRPCSenderImpl(mock(), mock(), mock(), serializer, deserializer)
+        cordaSenderImpl = CordaKafkaRPCSenderImpl(config, mock(), mock(), serializer, deserializer)
 
         val future = cordaSenderImpl.sendRequest("test")
         assertThrows<CordaRPCAPISenderException> { future.getOrThrow() }

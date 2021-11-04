@@ -271,7 +271,7 @@ class CordaKafkaProducerImpl(
         for (topicPartition in consumer.assignment()) {
             val prefixedTopicPartition =
                 TopicPartition(topicPrefix + topicPartition.topic(), topicPartition.partition())
-            offsets[prefixedTopicPartition] = OffsetAndMetadata(consumer.position(prefixedTopicPartition))
+            offsets[prefixedTopicPartition] = OffsetAndMetadata(consumer.position(topicPartition))
         }
         return offsets
     }

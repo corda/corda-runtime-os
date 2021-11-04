@@ -24,7 +24,6 @@ import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
-import org.apache.kafka.clients.producer.Producer
 import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread

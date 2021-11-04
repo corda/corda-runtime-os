@@ -58,7 +58,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
-            if(this::consumer.isInitialized) {
+            if (this::consumer.isInitialized) {
                 consumer.close()
             }
         }
@@ -93,7 +93,11 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 log.debug { "Creating compacted consumer.  Attempt: $attempts" }
-                consumer = consumerBuilder.createCompactedConsumer(config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass)
+                consumer = consumerBuilder.createCompactedConsumer(
+                    config.getConfig(KAFKA_CONSUMER),
+                    processor.keyClass,
+                    processor.valueClass
+                )
                 consumer.use {
                     val partitions = it.getPartitions(
                         topic,
