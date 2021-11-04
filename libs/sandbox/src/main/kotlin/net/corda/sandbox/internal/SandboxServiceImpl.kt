@@ -21,7 +21,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.io.InputStream
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.streams.asSequence
 
 /** An implementation of [SandboxCreationService] and [SandboxContextService]. */
@@ -39,16 +38,16 @@ internal class SandboxServiceImpl @Activate constructor(
         )
 
     // Maps each bundle ID to the sandbox that the bundle is part of.
-    private val bundleIdToSandbox = ConcurrentHashMap<Long, Sandbox>()
+    private val bundleIdToSandbox = mutableMapOf<Long, Sandbox>()
 
     // Maps each bundle ID to the sandbox group that the bundle is part of.
-    private val bundleIdToSandboxGroup = ConcurrentHashMap<Long, SandboxGroup>()
+    private val bundleIdToSandboxGroup = mutableMapOf<Long, SandboxGroup>()
 
     // The public sandboxes that have been created.
-    private val publicSandboxes = ConcurrentHashMap.newKeySet<Sandbox>()
+    private val publicSandboxes = mutableSetOf<Sandbox>()
 
     // Bundles that failed to uninstall when a sandbox group was unloaded.
-    private val zombieBundles = ConcurrentHashMap.newKeySet<Bundle>()
+    private val zombieBundles = mutableSetOf<Bundle>()
 
     private val logger = loggerFor<SandboxServiceImpl>()
 
@@ -68,12 +67,14 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
         val sandboxGroupInternal = sandboxGroup as SandboxGroupInternal
+
+        bundleIdToSandboxGroup.forEach { entry ->
+            if (entry.value == sandboxGroup) bundleIdToSandboxGroup.remove(entry.key)
+        }
+
         sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
             bundleIdToSandbox.forEach { entry ->
                 if (entry.value == sandbox) bundleIdToSandbox.remove(entry.key)
-            }
-            bundleIdToSandboxGroup.forEach { entry ->
-                if (entry.value == sandboxGroup) bundleIdToSandbox.remove(entry.key)
             }
             zombieBundles.addAll((sandbox as Sandbox).unload())
         }
@@ -92,6 +93,8 @@ internal class SandboxServiceImpl @Activate constructor(
             lookedAtSandbox === lookingSandbox -> true
             // Does only one of the bundles belong to a sandbox?
             lookedAtSandbox == null || lookingSandbox == null -> false
+            // Is the looked-at bundle a public bundle in a public sandbox?
+            lookedAtBundle in publicSandboxes.flatMap { sandbox -> sandbox.publicBundles } -> true
             // Does the looking sandbox not have visibility of the looked at sandbox?
             !lookingSandbox.hasVisibility(lookedAtSandbox) -> false
             // Is the looked-at bundle a public bundle in the looked-at sandbox?
@@ -179,14 +182,9 @@ internal class SandboxServiceImpl @Activate constructor(
             sandbox
         }
 
-        publicSandboxes.forEach { publicSandbox ->
-            // The public sandboxes have visibility of all sandboxes.
-            publicSandbox.grantVisibility(newSandboxes)
-        }
-
         newSandboxes.forEach { newSandbox ->
             // Each sandbox requires visibility of the sandboxes of the other CPKs and of the public sandboxes.
-            newSandbox.grantVisibility(newSandboxes - newSandbox + publicSandboxes)
+            newSandbox.grantVisibility(newSandboxes - newSandbox)
         }
 
         // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are
