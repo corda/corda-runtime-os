@@ -134,11 +134,11 @@ open class SerializationOutput constructor(
     /**
      * Attaches information about the CPKs associated with the serialised objects to the metadata
      */
-    private fun writeTypeToMetadata(type: Type, context: SerializationContext) {
+    private fun putTypeToMetadata(type: Type, context: SerializationContext) {
         try {
             val classTag = (context.sandboxGroup as? SandboxGroup)?.getEvolvableTag(type.asClass())
             if (classTag != null && !metadata.containsKey(type.typeName)) {
-                val key = type.typeName
+                val key = type.asClass().name
                 metadata.putValue(key, classTag)
             }
         } catch (ex: SandboxException) {
@@ -155,7 +155,7 @@ open class SerializationOutput constructor(
         if (serializer !in serializerHistory) {
             serializerHistory.add(serializer)
             serializer.writeClassInfo(this, context)
-            writeTypeToMetadata(serializer.type, context)
+            putTypeToMetadata(serializer.type, context)
         }
 
         val retrievedRefCount = objectHistory[obj]
@@ -189,7 +189,7 @@ open class SerializationOutput constructor(
             if (serializer !in serializerHistory) {
                 serializerHistory.add(serializer)
                 serializer.writeClassInfo(this, context)
-                writeTypeToMetadata(serializer.type, context)
+                putTypeToMetadata(serializer.type, context)
             }
         }
     }

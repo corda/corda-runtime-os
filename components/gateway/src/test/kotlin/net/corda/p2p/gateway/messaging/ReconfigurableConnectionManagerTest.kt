@@ -6,7 +6,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.StartEvent
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
-import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -32,12 +31,12 @@ class ReconfigurableConnectionManagerTest {
     private val service = mock<ConfigurationReadService> {
         on { registerForUpdates(any()) } doReturn mock()
     }
-    private val listener = mock<HttpEventListener>()
     private val configuration = mock<GatewayConfiguration> {
         on { sslConfig } doReturn mock()
+        on { connectionConfig } doReturn mock()
     }
 
-    private val connectionManager = ReconfigurableConnectionManager(factory, service, listener) { manager }
+    private val connectionManager = ReconfigurableConnectionManager(factory, service) { _, _ -> manager }
 
     @Test
     fun `acquire will throw an exception if configuration is not ready`() {
@@ -71,6 +70,7 @@ class ReconfigurableConnectionManagerTest {
 
         val secondConfiguration = mock<GatewayConfiguration> {
             on { sslConfig } doReturn mock()
+            on { connectionConfig } doReturn mock()
         }
         connectionManager.applyNewConfiguration(secondConfiguration, configuration)
 
@@ -80,11 +80,14 @@ class ReconfigurableConnectionManagerTest {
     @Test
     fun `applyNewConfiguration will not close the manager if same configuration`() {
         val sslConfiguration = mock<SslConfiguration>()
+        val connectionConfiguration = mock<ConnectionConfiguration>()
         val firstConfiguration = mock<GatewayConfiguration> {
             on { sslConfig } doReturn sslConfiguration
+            on { connectionConfig } doReturn connectionConfiguration
         }
         val secondConfiguration = mock<GatewayConfiguration> {
             on { sslConfig } doReturn sslConfiguration
+            on { connectionConfig } doReturn connectionConfiguration
         }
         connectionManager.start()
         connectionManager.applyNewConfiguration(firstConfiguration, null)

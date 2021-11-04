@@ -1,6 +1,6 @@
 package net.corda.sandbox.internal
 
-import net.corda.install.InstallService
+import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
@@ -11,7 +11,6 @@ import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.base.util.loggerFor
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleException
@@ -28,8 +27,6 @@ import kotlin.streams.asSequence
 @Component(service = [SandboxCreationService::class, SandboxContextService::class])
 @Suppress("TooManyFunctions")
 internal class SandboxServiceImpl @Activate constructor(
-    @Reference
-    private val installService: InstallService,
     @Reference
     private val bundleUtils: BundleUtils
 ) : SandboxCreationService, SandboxContextService, SingletonSerializeAsToken {
@@ -58,11 +55,11 @@ internal class SandboxServiceImpl @Activate constructor(
         publicSandboxes.add(publicSandbox)
     }
 
-    override fun createSandboxGroup(cpkHashes: Iterable<SecureHash>, securityDomain: String) =
-        createSandboxes(cpkHashes, securityDomain, startBundles = true)
+    override fun createSandboxGroup(cpks: Iterable<CPK>, securityDomain: String) =
+        createSandboxes(cpks, securityDomain, startBundles = true)
 
-    override fun createSandboxGroupWithoutStarting(cpkHashes: Iterable<SecureHash>, securityDomain: String) =
-        createSandboxes(cpkHashes, securityDomain, startBundles = false)
+    override fun createSandboxGroupWithoutStarting(cpks: Iterable<CPK>, securityDomain: String) =
+        createSandboxes(cpks, securityDomain, startBundles = false)
 
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
         val sandboxGroupInternal = sandboxGroup as SandboxGroupInternal
@@ -111,26 +108,18 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     /**
-     * Retrieves the CPKs from the [installService] based on their [cpkFileHashes], and verifies the CPKs.
-     *
-     * Creates a [SandboxGroup] in the [securityDomain], containing a [Sandbox] for each of the CPKs. On the first run,
-     * also initialises a public sandbox. [startBundles] controls whether the CPK bundles are also started.
+     * Creates a [SandboxGroup] in the [securityDomain], containing a [Sandbox] for each of the [cpks]. On the first
+     * run, also initialises a public sandbox. [startBundles] controls whether the CPK bundles are also started.
      *
      * Grants each sandbox visibility of the public sandboxes and of the other sandboxes in the group.
      */
     private fun createSandboxes(
-        cpkFileHashes: Iterable<SecureHash>,
+        cpks: Iterable<CPK>,
         securityDomain: String,
         startBundles: Boolean
     ): SandboxGroup {
         if (securityDomain.contains('/'))
             throw SandboxException("Security domain cannot contain a '/' character.")
-
-        val cpks = cpkFileHashes.mapTo(LinkedHashSet()) { cpkFileHash ->
-            installService.getCpk(cpkFileHash)
-                ?: throw SandboxException("No CPK is installed for CPK file hash $cpkFileHash.")
-        }
-        installService.verifyCpkGroup(cpks)
 
         // We track the bundles that are being created, so that we can start them all at once at the end if needed.
         val bundles = mutableSetOf<Bundle>()

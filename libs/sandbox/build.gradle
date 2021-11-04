@@ -23,7 +23,6 @@ dependencies {
     compileOnly "org.osgi:osgi.core"
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(":components:install:install-legacy")
     implementation 'net.corda:corda-packaging'
     implementation 'net.corda:corda-serialization'
 
@@ -35,6 +34,7 @@ dependencies {
     cpks project(path: 'sandbox-cpk-one', configuration: 'cordaCPK')
     cpks project(path: 'sandbox-cpk-two', configuration: 'cordaCPK')
     cpks project(path: 'sandbox-cpk-three', configuration: 'cordaCPK')
+    cpks project(path: 'sandbox-irresolvable-cpk', configuration: 'cordaCPK')
 
     integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"

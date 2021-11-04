@@ -4,6 +4,7 @@ import net.corda.install.InstallService
 import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
+import net.corda.sandbox.SandboxGroup
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.fail
 import org.osgi.framework.FrameworkUtil
@@ -55,7 +56,6 @@ class SandboxLoader @Activate constructor(
     }
 
     init {
-        println()
         configAdmin.getConfiguration(ConfigurationAdmin::class.java.name)?.also { config ->
             val properties = Hashtable<String, Any>()
             properties[BASE_DIRECTORY_KEY] = baseDirectory.toString()
@@ -71,12 +71,13 @@ class SandboxLoader @Activate constructor(
         sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
     }
 
-    private val cpk1 = loadCPK(resourceName = CPK_ONE)
-    private val cpk2 = loadCPK(resourceName = CPK_TWO)
-    private val cpk3 = loadCPK(resourceName = CPK_THREE)
+    val group1 = createSandboxGroupFor(CPK_ONE, CPK_TWO)
+    val group2 = createSandboxGroupFor(CPK_THREE)
 
-    val group1 = createSandboxGroupFor(cpk1, cpk2)
-    val group2 = createSandboxGroupFor(cpk3)
+    fun createSandboxGroupFor(vararg cpkResources: String): SandboxGroup {
+        val cpks = cpkResources.map(::loadCPK)
+        return sandboxCreationService.createSandboxGroup(cpks)
+    }
 
     private fun loadCPK(resourceName: String): CPK {
         val location = loadResource(resourceName)
@@ -84,7 +85,4 @@ class SandboxLoader @Activate constructor(
             installService.loadCpk(hashOf(location, SHA256), source)
         }
     }
-
-    private fun createSandboxGroupFor(vararg cpks: CPK) =
-        sandboxCreationService.createSandboxGroup(cpks.map { cpk -> cpk.metadata.hash })
 }

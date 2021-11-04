@@ -31,10 +31,10 @@ import kotlin.concurrent.withLock
  * in which case the body will contain additional information.
  */
 class HttpServer(
-    private val eventListener: HttpEventListener,
+    private val eventListener: HttpServerListener,
     private val configuration: GatewayConfiguration,
 ) : Lifecycle,
-    HttpEventListener {
+    HttpServerListener {
 
     companion object {
         private val logger = contextLogger()
@@ -46,8 +46,11 @@ class HttpServer(
 
         /**
          * The channel will be closed if neither read nor write was performed for the specified period of time.
+         * Note: Inactive connections are normally closed by clients.
+         *       Closing them eagerly on the server side too would be wasteful as clients would automatically try to reconnect.
+         *       This is just a last resort to protect against misbehaving clients.
          */
-        private const val SERVER_IDLE_TIME_SECONDS = 5
+        private const val SERVER_IDLE_TIME_SECONDS = 60 * 10
     }
 
     private val clientChannels = ConcurrentHashMap<SocketAddress, Channel>()
@@ -85,8 +88,8 @@ class HttpServer(
         eventListener.onClose(event)
     }
 
-    override fun onMessage(message: HttpMessage) {
-        eventListener.onMessage(message)
+    override fun onRequest(request: HttpRequest) {
+        eventListener.onRequest(request)
     }
 
     private inner class ServerChannelInitializer : ChannelInitializer<SocketChannel>() {
@@ -104,7 +107,7 @@ class HttpServer(
             pipeline.addLast("sslHandler", createServerSslHandler(configuration.sslConfig.keyStore, keyManagerFactory))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
-            pipeline.addLast(HttpChannelHandler(this@HttpServer, logger))
+            pipeline.addLast(HttpServerChannelHandler(this@HttpServer, logger))
         }
     }
 
