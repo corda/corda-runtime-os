@@ -45,10 +45,10 @@ internal class SandboxServiceImpl @Activate constructor(
     private val sandboxGroups = ConcurrentHashMap<UUID, SandboxGroup>()
 
     // The created public sandboxes.
-    private val publicSandboxes = mutableListOf<Sandbox>()
+    private val publicSandboxes = ConcurrentHashMap.newKeySet<Sandbox>()
 
     // Bundles that failed to uninstall when a sandbox group was unloaded.
-    private val zombieBundles = mutableListOf<Bundle>()
+    private val zombieBundles = ConcurrentHashMap.newKeySet<Bundle>()
 
     private val logger = loggerFor<SandboxServiceImpl>()
 
