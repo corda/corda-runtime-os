@@ -13,8 +13,5 @@ class LibrarySingletonServiceHolderFlow @Activate constructor(
     @Reference
     private val librarySingletonService: LibrarySingletonService
 ): Flow<Int> {
-    override fun call(): Int {
-        librarySingletonService.counter++
-        return librarySingletonService.counter
-    }
+    override fun call() = ++librarySingletonService.counter
 }
