@@ -5,12 +5,11 @@ import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.Metadata
 import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.Companion.serializeDeserializeAssert
-import net.corda.internal.serialization.amqp.Schema
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializationSchemas
-import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.registerCustomSerializers
+import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.SerializationContext
 import net.corda.v5.serialization.MissingSerializerException
 import org.apache.qpid.proton.codec.Data
@@ -70,7 +69,7 @@ class AnonymousClassTest {
     private val factoryWithSerializersRegistered = testDefaultFactory().also {
         registerCustomSerializers(it)
         it.register(SerializerForInterface())
-        it.register(SerializerForAbstractClass(it))
+        it.register(SerializerForAbstractClass(), it)
     }
 
     class ProxyClass(val value: Boolean)
@@ -86,8 +85,6 @@ class AnonymousClassTest {
     }
 
     class SerializerForInterface : CustomSerializer.Implements<TestInterface>(TestInterface::class.java) {
-        override val schemaForDocumentation = Schema(emptyList())
-
         override fun readObject(
             obj: Any,
             serializationSchemas: SerializationSchemas,
@@ -108,12 +105,12 @@ class AnonymousClassTest {
             data.putBoolean(obj.booleanProperty)
         }
     }
-    class SerializerForAbstractClass(factory: SerializerFactory) : CustomSerializer.Proxy<TestAbstractClass, ProxyClass>(
-        clazz = TestAbstractClass::class.java,
-        proxyClass = ProxyClass::class.java,
-        factory = factory,
-        withInheritance = true
-    ) {
+
+    class SerializerForAbstractClass : InternalCustomSerializer<TestAbstractClass, ProxyClass> {
+        override val type: Class<TestAbstractClass> get() = TestAbstractClass::class.java
+        override val proxyType: Class<ProxyClass> get() = ProxyClass::class.java
+        override val withInheritance: Boolean get() = true
+
         override fun fromProxy(proxy: ProxyClass): TestAbstractClass {
             return testAnonymousClassFromAbstractClass
         }

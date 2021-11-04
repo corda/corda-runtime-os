@@ -1,11 +1,8 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.Metadata
-import net.corda.internal.serialization.amqp.RestrictedType
-import net.corda.internal.serialization.amqp.Schema
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializationSchemas
 import net.corda.serialization.SerializationContext
@@ -19,18 +16,7 @@ import java.lang.reflect.Type
  * and deserializes into a [ByteArrayInputStream].
  */
 object InputStreamSerializer
-    : CustomSerializer.Implements<InputStream>(InputStream::class.java) {
-    override val revealSubclassesInSchema: Boolean
-        get() = true
-
-    override val schemaForDocumentation = Schema(listOf(RestrictedType(
-        type.toString(),
-        "",
-        listOf(type.toString()),
-        AMQPTypeIdentifiers.primitiveTypeName(ByteArray::class.java),
-        descriptor,
-        emptyList()
-    )))
+    : CustomSerializer.Implements<InputStream>(InputStream::class.java, revealSubClassesInSchema = true) {
 
     override fun writeDescribedObject(
         obj: InputStream,

@@ -4,12 +4,14 @@ import com.google.common.reflect.TypeToken
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.AMQPSerializer
 import net.corda.internal.serialization.amqp.CachingCustomSerializerRegistry
-import net.corda.internal.serialization.amqp.CorDappCustomSerializer
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.CustomSerializerRegistry
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
+import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.WhitelistBasedTypeModelConfiguration
+import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.base.annotations.SerializableCalculatedProperty
+import net.corda.v5.serialization.SerializationCustomSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -18,7 +20,6 @@ import java.lang.reflect.Type
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertTrue
-import net.corda.internal.serialization.amqp.CordaCustomSerializer
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 class LocalTypeModelTests {
@@ -29,8 +30,8 @@ class LocalTypeModelTests {
     private val emptyCustomSerializerRegistry = object : CustomSerializerRegistry {
         override val customSerializerNames: List<String> = emptyList()
         override fun register(customSerializer: CustomSerializer<out Any>) {}
-        override fun registerInternal(customSerializer: CordaCustomSerializer) {}
-        override fun registerExternal(customSerializer: CorDappCustomSerializer) {}
+        override fun register(serializer: InternalCustomSerializer<out Any, out Any>, factory: SerializerFactory) {}
+        override fun registerExternal(serializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {}
         override fun findCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? = null
     }
     private val modelWithoutOpacity =

@@ -3,7 +3,6 @@ package net.corda.internal.serialization.amqp.custom
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import org.mockito.kotlin.mock
 import java.util.Optional
 import java.util.concurrent.TimeUnit
 
@@ -13,28 +12,28 @@ class OptionalSerializerTest {
     @Test
     fun `should convert optional with item to proxy`() {
         val opt = Optional.of("GenericTestString")
-        val proxy = toProxy(OptionalSerializer(mock()), opt)
+        val proxy = toProxy(OptionalSerializer(), opt)
         assertThat(proxy.item).isEqualTo("GenericTestString")
     }
 
     @Test
     fun `should convert optional without item to empty proxy`() {
         val opt = Optional.ofNullable<String>(null)
-        val proxy = toProxy(OptionalSerializer(mock()), opt)
+        val proxy = toProxy(OptionalSerializer(), opt)
         assertThat(proxy.item).isNull()
     }
 
     @Test
     fun `should convert proxy without item to empty optional `() {
         val proxy = OptionalSerializer.OptionalProxy(null)
-        val opt = fromProxy<Any>(OptionalSerializer(mock()), proxy)
+        val opt = fromProxy<Any>(OptionalSerializer(), proxy)
         assertThat(opt.isPresent).isFalse
     }
 
     @Test
     fun `should convert proxy with item to empty optional `() {
         val proxy = OptionalSerializer.OptionalProxy("GenericTestString")
-        val opt = fromProxy<String>(OptionalSerializer(mock()), proxy)
+        val opt = fromProxy<String>(OptionalSerializer(), proxy)
         assertThat(opt.get()).isEqualTo("GenericTestString")
     }
 

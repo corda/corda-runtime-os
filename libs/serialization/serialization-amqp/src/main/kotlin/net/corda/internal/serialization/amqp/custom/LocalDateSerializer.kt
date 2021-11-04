@@ -1,20 +1,16 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.CustomSerializer
-import net.corda.internal.serialization.amqp.SerializerFactory
+import net.corda.serialization.InternalCustomSerializer
 import java.time.LocalDate
 
 /**
  * A serializer for [LocalDate] that uses a proxy object to write out the year, month and day.
  */
-class LocalDateSerializer(
-    factory: SerializerFactory
-) : CustomSerializer.Proxy<LocalDate, LocalDateSerializer.LocalDateProxy>(
-    LocalDate::class.java,
-    LocalDateProxy::class.java,
-    factory,
-    withInheritance = false
-) {
+class LocalDateSerializer : InternalCustomSerializer<LocalDate, LocalDateSerializer.LocalDateProxy> {
+    override val type: Class<LocalDate> get() = LocalDate::class.java
+    override val proxyType: Class<LocalDateProxy> get() = LocalDateProxy::class.java
+    override val withInheritance: Boolean get() = false
+
     override fun toProxy(obj: LocalDate): LocalDateProxy
         = LocalDateProxy(obj.year, obj.monthValue.toByte(), obj.dayOfMonth.toByte())
 

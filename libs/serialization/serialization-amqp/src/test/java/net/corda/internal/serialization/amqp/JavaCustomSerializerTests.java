@@ -83,7 +83,7 @@ public class JavaCustomSerializerTests {
         l.add(20);
         ClassThatNeedsCustomSerializer e = new ClassThatNeedsCustomSerializer(l);
 
-        factory.registerExternal(new CorDappCustomSerializer(new ExampleSerializer(), factory));
+        factory.registerExternal(new ExampleSerializer(), factory);
 
         var serializedBytes = ser.serialize(e, TestSerializationContext.testSerializationContext);
         var deserialize = new DeserializationInput(factory).deserialize(serializedBytes, ClassThatNeedsCustomSerializer.class, TestSerializationContext.testSerializationContext);

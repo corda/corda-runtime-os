@@ -1,20 +1,16 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.CustomSerializer
-import net.corda.internal.serialization.amqp.SerializerFactory
+import net.corda.serialization.InternalCustomSerializer
 import java.time.Duration
 
 /**
  * A serializer for [Duration] that uses a proxy object to write out the seconds and the nanos.
  */
-class DurationSerializer(
-    factory: SerializerFactory
-) : CustomSerializer.Proxy<Duration, DurationSerializer.DurationProxy>(
-    Duration::class.java,
-    DurationProxy::class.java,
-    factory,
-    withInheritance = false
-) {
+class DurationSerializer : InternalCustomSerializer<Duration, DurationSerializer.DurationProxy> {
+    override val type: Class<Duration> get() = Duration::class.java
+    override val proxyType: Class<DurationProxy> get() = DurationProxy::class.java
+    override val withInheritance: Boolean get() = false
+
     override fun toProxy(obj: Duration): DurationProxy
         = DurationProxy(obj.seconds, obj.nano)
 

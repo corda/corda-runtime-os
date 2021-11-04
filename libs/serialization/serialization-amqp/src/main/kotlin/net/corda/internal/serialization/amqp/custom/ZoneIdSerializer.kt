@@ -1,22 +1,16 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.CustomSerializer
-import net.corda.internal.serialization.amqp.SerializerFactory
+import net.corda.internal.serialization.amqp.CustomSerializer.RevealSubclasses
+import net.corda.serialization.InternalCustomSerializer
 import java.time.ZoneId
 
 /**
  * A serializer for [ZoneId] that uses a proxy object to write out the string form.
  */
-class ZoneIdSerializer(
-    factory: SerializerFactory
-) : CustomSerializer.Proxy<ZoneId, ZoneIdSerializer.ZoneIdProxy>(
-    ZoneId::class.java,
-    ZoneIdProxy::class.java,
-    factory,
-    withInheritance = true
-) {
-    override val revealSubclassesInSchema: Boolean
-        get() = true
+class ZoneIdSerializer : InternalCustomSerializer<ZoneId, ZoneIdSerializer.ZoneIdProxy>, RevealSubclasses {
+    override val type: Class<ZoneId> get() = ZoneId::class.java
+    override val proxyType: Class<ZoneIdProxy> get() = ZoneIdProxy::class.java
+    override val withInheritance: Boolean get() = true
 
     override fun toProxy(obj: ZoneId) = ZoneIdProxy(obj.id)
     override fun fromProxy(proxy: ZoneIdProxy): ZoneId = ZoneId.of(proxy.id)

@@ -16,11 +16,15 @@ class EnumSerializer(declaredType: Type, declaredClass: Class<*>, factory: Local
     init {
         @Suppress("unchecked_cast")
         typeNotation = RestrictedType(
-                AMQPTypeIdentifiers.nameForType(declaredType),
-                null, emptyList(), "list", Descriptor(typeDescriptor),
-                (declaredClass as Class<out Enum<*>>).enumConstants.zip(IntRange(0, declaredClass.enumConstants.size)).map {
-                    Choice(it.first.name, it.second.toString())
-                })
+            AMQPTypeIdentifiers.nameForType(declaredType),
+            null,
+            emptyList(),
+            "list",
+            Descriptor(typeDescriptor),
+            (declaredClass as Class<out Enum<*>>).enumConstants.zip(IntRange(0, declaredClass.enumConstants.size)).map {
+                Choice(it.first.name, it.second.toString())
+            }
+        )
     }
 
     override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {
@@ -28,8 +32,7 @@ class EnumSerializer(declaredType: Type, declaredClass: Class<*>, factory: Local
     }
 
     override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,
-                            input: DeserializationInput, context: SerializationContext
-    ): Any {
+                            input: DeserializationInput, context: SerializationContext): Any {
         val enumName = (obj as List<*>)[0] as String
         val enumOrd = obj[1] as Int
         val fromOrd = type.asClass().enumConstants[enumOrd] as Enum<*>?
@@ -43,9 +46,10 @@ class EnumSerializer(declaredType: Type, declaredClass: Class<*>, factory: Local
     }
 
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
-                             context: SerializationContext, debugIndent: Int
-    ) {
-        if (obj !is Enum<*>) throw AMQPNotSerializableException(type, "Serializing $obj as enum when it isn't")
+                             context: SerializationContext, debugIndent: Int) {
+        if (obj !is Enum<*>) {
+            throw AMQPNotSerializableException(type, "Serializing $obj as enum when it isn't")
+        }
 
         data.withDescribed(typeNotation.descriptor) {
             withList {

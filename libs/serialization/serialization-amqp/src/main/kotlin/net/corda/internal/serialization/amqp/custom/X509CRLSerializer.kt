@@ -1,11 +1,8 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers
 import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.Metadata
-import net.corda.internal.serialization.amqp.RestrictedType
-import net.corda.internal.serialization.amqp.Schema
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializationSchemas
 import net.corda.serialization.SerializationContext
@@ -16,18 +13,10 @@ import java.security.cert.X509CRL
 
 object X509CRLSerializer
     : CustomSerializer.Implements<X509CRL>(X509CRL::class.java) {
-    override val schemaForDocumentation = Schema(listOf(RestrictedType(
-        type.toString(),
-        "",
-        listOf(type.toString()),
-        AMQPTypeIdentifiers.primitiveTypeName(ByteArray::class.java),
-        descriptor,
-        emptyList()
-    )))
 
     override fun writeDescribedObject(obj: X509CRL, data: Data, type: Type, output: SerializationOutput,
                                       context: SerializationContext) {
-        output.writeObject(obj.encoded, data, clazz, context)
+        output.writeObject(obj.encoded, data, this.type, context)
     }
 
     override fun readObject(

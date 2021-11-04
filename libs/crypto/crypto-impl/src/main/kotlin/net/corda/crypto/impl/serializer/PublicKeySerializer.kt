@@ -15,6 +15,9 @@ class PublicKeySerializer @Activate constructor(
     @Reference(service = CryptoLibraryFactory::class)
     private val cryptoLibraryFactory: CryptoLibraryFactory
 ) : InternalCustomSerializer<PublicKey, ByteArray> {
+    override val type: Class<PublicKey> get() = PublicKey::class.java
+    override val proxyType: Class<ByteArray> get() = ByteArray::class.java
+    override val withInheritance: Boolean get() = true
 
     override fun toProxy(obj: PublicKey): ByteArray =
         cryptoLibraryFactory.getKeyEncodingService().encodeAsByteArray(obj)

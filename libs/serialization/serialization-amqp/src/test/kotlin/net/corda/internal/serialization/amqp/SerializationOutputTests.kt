@@ -495,12 +495,12 @@ class SerializationOutputTests {
     @Test
     fun `test throwables serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(ThrowableSerializer(factory))
-        factory.register(StackTraceElementSerializer(factory))
+        factory.register(ThrowableSerializer(factory), factory)
+        factory.register(StackTraceElementSerializer(), factory)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(ThrowableSerializer(factory2))
-        factory2.register(StackTraceElementSerializer(factory2))
+        factory2.register(ThrowableSerializer(factory2), factory2)
+        factory2.register(StackTraceElementSerializer(), factory2)
 
         val t = IllegalAccessException("message").fillInStackTrace()
 
@@ -518,12 +518,12 @@ class SerializationOutputTests {
     @Test
     fun `test complex throwables serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(ThrowableSerializer(factory))
-        factory.register(StackTraceElementSerializer(factory))
+        factory.register(ThrowableSerializer(factory), factory)
+        factory.register(StackTraceElementSerializer(), factory)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(ThrowableSerializer(factory2))
-        factory2.register(StackTraceElementSerializer(factory2))
+        factory2.register(ThrowableSerializer(factory2), factory2)
+        factory2.register(StackTraceElementSerializer(), factory2)
 
         try {
             try {
@@ -548,12 +548,12 @@ class SerializationOutputTests {
     @Test
     fun `test suppressed throwables serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(ThrowableSerializer(factory))
-        factory.register(StackTraceElementSerializer(factory))
+        factory.register(ThrowableSerializer(factory), factory)
+        factory.register(StackTraceElementSerializer(), factory)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(ThrowableSerializer(factory2))
-        factory2.register(StackTraceElementSerializer(factory))
+        factory2.register(ThrowableSerializer(factory2), factory2)
+        factory2.register(StackTraceElementSerializer(), factory)
 
         try {
             try {
@@ -572,12 +572,12 @@ class SerializationOutputTests {
     @Test
     fun `test flow corda exception subclasses serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(ThrowableSerializer(factory))
-        factory.register(StackTraceElementSerializer(factory))
+        factory.register(ThrowableSerializer(factory), factory)
+        factory.register(StackTraceElementSerializer(), factory)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(ThrowableSerializer(factory2))
-        factory2.register(StackTraceElementSerializer(factory2))
+        factory2.register(ThrowableSerializer(factory2), factory2)
+        factory2.register(StackTraceElementSerializer(), factory2)
 
         val obj = FlowException("message").fillInStackTrace()
         serdesThrowableWithInternalInfo(obj, factory, factory2)

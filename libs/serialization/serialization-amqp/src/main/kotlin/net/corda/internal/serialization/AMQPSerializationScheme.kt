@@ -2,7 +2,6 @@
 package net.corda.internal.serialization
 
 import net.corda.internal.serialization.amqp.AccessOrderLinkedHashMap
-import net.corda.internal.serialization.amqp.CorDappCustomSerializer
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
@@ -99,7 +98,7 @@ abstract class AbstractAMQPSerializationScheme private constructor(
 
         val serializersToRegister = context.customSerializers ?: cordappCustomSerializers
         serializersToRegister.forEach { customSerializer ->
-            factory.registerExternal(CorDappCustomSerializer(customSerializer, factory))
+            factory.registerExternal(customSerializer, factory)
         }
     }
 
@@ -139,34 +138,34 @@ abstract class AbstractAMQPSerializationScheme private constructor(
 
 fun registerCustomSerializers(factory: SerializerFactory) {
     with(factory) {
-        register(ThrowableSerializer(this))
-        register(StackTraceElementSerializer(this))
+        register(ThrowableSerializer(this), this)
+        register(StackTraceElementSerializer(), this)
         register(BigDecimalSerializer)
         register(BigIntegerSerializer)
         register(CurrencySerializer)
-        register(OpaqueBytesSubSequenceSerializer(this))
-        register(InstantSerializer(this))
-        register(DurationSerializer(this))
-        register(LocalDateSerializer(this))
-        register(LocalDateTimeSerializer(this))
-        register(LocalTimeSerializer(this))
-        register(ZonedDateTimeSerializer(this))
-        register(ZoneIdSerializer(this))
-        register(OffsetTimeSerializer(this))
-        register(OffsetDateTimeSerializer(this))
-        register(OptionalSerializer(this))
-        register(YearSerializer(this))
-        register(YearMonthSerializer(this))
-        register(MonthDaySerializer(this))
-        register(PeriodSerializer(this))
-        register(ClassSerializer(this))
+        register(OpaqueBytesSubSequenceSerializer(), this)
+        register(InstantSerializer(), this)
+        register(DurationSerializer(), this)
+        register(LocalDateSerializer(), this)
+        register(LocalDateTimeSerializer(), this)
+        register(LocalTimeSerializer(), this)
+        register(ZonedDateTimeSerializer(), this)
+        register(ZoneIdSerializer(), this)
+        register(OffsetTimeSerializer(), this)
+        register(OffsetDateTimeSerializer(), this)
+        register(OptionalSerializer(), this)
+        register(YearSerializer(), this)
+        register(YearMonthSerializer(), this)
+        register(MonthDaySerializer(), this)
+        register(PeriodSerializer(), this)
+        register(ClassSerializer(), this)
         register(X509CertificateSerializer)
         register(X509CRLSerializer)
-        register(CertPathSerializer(this))
+        register(CertPathSerializer(), this)
         register(StringBufferSerializer)
         register(InputStreamSerializer)
-        register(BitSetSerializer(this))
-        register(EnumSetSerializer(this))
-        register(X500PrincipalSerializer(this))
+        register(BitSetSerializer(), this)
+        register(EnumSetSerializer(), this)
+        register(X500PrincipalSerializer(), this)
     }
 }

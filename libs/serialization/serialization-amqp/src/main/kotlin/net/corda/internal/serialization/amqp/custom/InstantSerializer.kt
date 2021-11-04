@@ -1,20 +1,16 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.CustomSerializer
-import net.corda.internal.serialization.amqp.SerializerFactory
+import net.corda.serialization.InternalCustomSerializer
 import java.time.Instant
 
 /**
  * A serializer for [Instant] that uses a proxy object to write out the seconds since the epoch and the nanos.
  */
-class InstantSerializer(
-    factory: SerializerFactory
-) : CustomSerializer.Proxy<Instant, InstantSerializer.InstantProxy>(
-    Instant::class.java,
-    InstantProxy::class.java,
-    factory,
-    withInheritance = false
-) {
+class InstantSerializer : InternalCustomSerializer<Instant, InstantSerializer.InstantProxy> {
+    override val type: Class<Instant> get() = Instant::class.java
+    override val proxyType: Class<InstantProxy> get() = InstantProxy::class.java
+    override val withInheritance: Boolean get() = false
+
     override fun toProxy(obj: Instant): InstantProxy
         = InstantProxy(obj.epochSecond, obj.nano)
 

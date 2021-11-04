@@ -2,6 +2,7 @@ package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.DefaultCacheProvider
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaThrowable
 import net.corda.v5.base.util.contextLogger
@@ -50,18 +51,18 @@ interface CustomSerializerRegistry {
      * This serializer is defined by an [InternalCustomSerializer][net.corda.serialization.InternalCustomSerializer]
      * inside an external Corda module.
      *
-     * @param customSerializer a [CordaCustomSerializer] that converts the target type to/from a proxy object
+     * @param serializer an [InternalCustomSerializer] that converts the target type to/from a proxy object
      */
-    fun registerInternal(customSerializer: CordaCustomSerializer)
+    fun register(serializer: InternalCustomSerializer<out Any, out Any>, factory: SerializerFactory)
 
     /**
      * Register a user defined custom serializer for any type that cannot be serialized or deserialized by the default
      * serializer that expects to find getters and a constructor with a parameter for each property.
      * This serializer is defined by a [SerializationCustomSerializer] inside a CorDapp.
      *
-     * @param customSerializer a [CorDappCustomSerializer] that converts the target type to/from a proxy object
+     * @param serializer a [SerializationCustomSerializer] that converts the target type to/from a proxy object
      */
-    fun registerExternal(customSerializer: CorDappCustomSerializer)
+    fun registerExternal(serializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory)
 
     /**
      * Try to find a custom serializer for the actual class, and declared type, of a value.
@@ -113,16 +114,16 @@ class CachingCustomSerializerRegistry(
     private val customSerializers: MutableList<SerializerFor> = mutableListOf()
 
     override fun register(customSerializer: CustomSerializer<out Any>) {
-        logger.trace { "action=\"Registering built-in custom serializer\", class=\"${customSerializer.type}\"" }
+        logger.trace { "action=\"Registering custom serializer\", class=\"${customSerializer.type}\"" }
         registerCustomSerializer(customSerializer)
     }
 
-    override fun registerInternal(customSerializer: CordaCustomSerializer) {
-        logger.trace { "action=\"Registering internal Corda serializer\", class=\"${customSerializer.type}\"" }
-        registerCustomSerializer(customSerializer)
+    override fun register(serializer: InternalCustomSerializer<out Any, out Any>, factory: SerializerFactory) {
+        register(CustomSerializer.Proxy(serializer, factory))
     }
 
-    override fun registerExternal(customSerializer: CorDappCustomSerializer) {
+    override fun registerExternal(serializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {
+        val customSerializer = CorDappCustomSerializer(serializer, factory)
         logger.trace { "action=\"Registering external serializer\", class=\"${customSerializer.type}\"" }
         registerCustomSerializer(customSerializer)
     }
@@ -143,6 +144,8 @@ class CachingCustomSerializerRegistry(
 
         val descriptor = customSerializer.typeDescriptor.toString()
         val actualSerializer = descriptorBasedSerializerRegistry.getOrBuild(descriptor) {
+            // We only register this serializer if one has not
+            // already been registered for this type descriptor.
             customSerializers += customSerializer
             customSerializer
         }
@@ -201,13 +204,7 @@ class CachingCustomSerializerRegistry(
             throw IllegalCustomSerializerException(declaredSerializers.first(), clazz)
         }
 
-        return declaredSerializers.first().let {
-            if (it is CustomSerializer<Any>) {
-                it.specialiseFor(declaredType)
-            } else {
-                it
-            }
-        }
+        return declaredSerializers.first()
     }
 
     private val Class<*>.isCustomSerializationForbidden: Boolean get() = when {

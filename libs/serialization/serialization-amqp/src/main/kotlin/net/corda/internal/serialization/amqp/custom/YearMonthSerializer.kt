@@ -1,20 +1,16 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.CustomSerializer
-import net.corda.internal.serialization.amqp.SerializerFactory
+import net.corda.serialization.InternalCustomSerializer
 import java.time.YearMonth
 
 /**
  * A serializer for [YearMonth] that uses a proxy object to write out the integer form.
  */
-class YearMonthSerializer(
-    factory: SerializerFactory
-) : CustomSerializer.Proxy<YearMonth, YearMonthSerializer.YearMonthProxy>(
-    YearMonth::class.java,
-    YearMonthProxy::class.java,
-    factory,
-    withInheritance = false
-) {
+class YearMonthSerializer : InternalCustomSerializer<YearMonth, YearMonthSerializer.YearMonthProxy> {
+    override val type: Class<YearMonth> get() = YearMonth::class.java
+    override val proxyType: Class<YearMonthProxy> get() = YearMonthProxy::class.java
+    override val withInheritance: Boolean get() = false
+
     override fun toProxy(obj: YearMonth): YearMonthProxy
         = YearMonthProxy(obj.year, obj.monthValue.toByte())
 

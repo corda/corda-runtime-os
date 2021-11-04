@@ -27,15 +27,15 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
         // NB: Order matters in this map, the most specific classes should be listed at the end
         private val supportedTypes: Map<Class<out Collection<*>>, (List<*>) -> Collection<*>> = Collections.unmodifiableMap(
             linkedMapOf(
-                Collection::class.java to { list -> Collections.unmodifiableCollection(list) },
-                List::class.java to { list -> Collections.unmodifiableList(list) },
+                Collection::class.java to Collections::unmodifiableCollection,
+                List::class.java to Collections::unmodifiableList,
                 Set::class.java to { list -> Collections.unmodifiableSet(LinkedHashSet(list)) },
                 SortedSet::class.java to { list -> Collections.unmodifiableSortedSet(TreeSet(list)) },
                 NavigableSet::class.java to { list -> Collections.unmodifiableNavigableSet(TreeSet(list)) }
             )
         )
 
-        private val supportedTypeIdentifiers = supportedTypes.keys.asSequence().map { TypeIdentifier.forClass(it) }.toSet()
+        private val supportedTypeIdentifiers = supportedTypes.keys.mapTo(LinkedHashSet(), TypeIdentifier::forClass)
 
         /**
          * Replace erased collection types with parameterised types with wildcard type parameters, so that they are represented
@@ -100,7 +100,7 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
     private val outboundType = resolveTypeVariables(declaredType.actualTypeArguments[0], null)
     private val inboundType = declaredType.actualTypeArguments[0]
 
-    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) = ifThrowsAppend({ declaredType.typeName }) {
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) = ifThrowsAppend(declaredType::getTypeName) {
         if (output.writeTypeNotations(typeNotation)) {
             output.requireSerializer(outboundType, context)
         }
@@ -113,7 +113,7 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
         output: SerializationOutput,
         context: SerializationContext,
         debugIndent: Int
-    ) = ifThrowsAppend({ declaredType.typeName }) {
+    ) = ifThrowsAppend(declaredType::getTypeName) {
         // Write described
         data.withDescribed(typeNotation.descriptor) {
             withList {
@@ -130,7 +130,7 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
         metadata: Metadata,
         input: DeserializationInput,
         context: SerializationContext
-    ): Any = ifThrowsAppend({ declaredType.typeName }) {
+    ): Any = ifThrowsAppend(declaredType::getTypeName) {
         // TODO: Can we verify the entries in the list?
         concreteBuilder(
             (obj as List<*>).map {

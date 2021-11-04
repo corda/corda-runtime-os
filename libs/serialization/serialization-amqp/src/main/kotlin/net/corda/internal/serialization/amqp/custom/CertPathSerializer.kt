@@ -1,20 +1,16 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.CustomSerializer
-import net.corda.internal.serialization.amqp.SerializerFactory
+import net.corda.serialization.InternalCustomSerializer
 import java.io.NotSerializableException
 import java.security.cert.CertPath
 import java.security.cert.CertificateException
 import java.security.cert.CertificateFactory
 
-class CertPathSerializer(
-    factory: SerializerFactory
-) : CustomSerializer.Proxy<CertPath, CertPathSerializer.CertPathProxy>(
-    CertPath::class.java,
-    CertPathProxy::class.java,
-    factory,
-    withInheritance = true
-) {
+class CertPathSerializer : InternalCustomSerializer<CertPath, CertPathSerializer.CertPathProxy> {
+    override val type: Class<CertPath> get() = CertPath::class.java
+    override val proxyType: Class<CertPathProxy> get() = CertPathProxy::class.java
+    override val withInheritance: Boolean get() = true
+
     override fun toProxy(obj: CertPath): CertPathProxy = CertPathProxy(obj.type, obj.encoded)
 
     override fun fromProxy(proxy: CertPathProxy): CertPath {

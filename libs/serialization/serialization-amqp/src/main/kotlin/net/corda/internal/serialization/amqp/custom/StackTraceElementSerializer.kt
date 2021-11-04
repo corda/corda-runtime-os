@@ -1,15 +1,12 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.CustomSerializer
-import net.corda.internal.serialization.amqp.LocalSerializerFactory
+import net.corda.serialization.InternalCustomSerializer
 
-class StackTraceElementSerializer(factory: LocalSerializerFactory)
-    : CustomSerializer.Proxy<StackTraceElement, StackTraceElementSerializer.StackTraceElementProxy>(
-    StackTraceElement::class.java,
-    StackTraceElementProxy::class.java,
-    factory,
-    withInheritance = false
-) {
+class StackTraceElementSerializer : InternalCustomSerializer<StackTraceElement, StackTraceElementSerializer.StackTraceElementProxy> {
+    override val type: Class<StackTraceElement> get() = StackTraceElement::class.java
+    override val proxyType: Class<StackTraceElementProxy> get() = StackTraceElementProxy::class.java
+    override val withInheritance: Boolean get() = false
+
     override fun toProxy(obj: StackTraceElement): StackTraceElementProxy
         = StackTraceElementProxy(obj.className, obj.methodName, obj.fileName, obj.lineNumber)
 

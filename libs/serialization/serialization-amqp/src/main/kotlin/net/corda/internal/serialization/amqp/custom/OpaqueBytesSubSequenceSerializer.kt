@@ -1,7 +1,6 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.CustomSerializer
-import net.corda.internal.serialization.amqp.SerializerFactory
+import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.base.types.OpaqueBytesSubSequence
 
@@ -10,14 +9,11 @@ import net.corda.v5.base.types.OpaqueBytesSubSequence
  * to save on network bandwidth
  * Uses [OpaqueBytes] as a proxy
  */
-class OpaqueBytesSubSequenceSerializer(
-    factory: SerializerFactory
-) : CustomSerializer.Proxy<OpaqueBytesSubSequence, OpaqueBytes>(
-    OpaqueBytesSubSequence::class.java,
-    OpaqueBytes::class.java,
-    factory,
-    withInheritance = true
-) {
+class OpaqueBytesSubSequenceSerializer : InternalCustomSerializer<OpaqueBytesSubSequence, OpaqueBytes> {
+    override val type: Class<OpaqueBytesSubSequence> get() = OpaqueBytesSubSequence::class.java
+    override val proxyType: Class<OpaqueBytes> get() = OpaqueBytes::class.java
+    override val withInheritance: Boolean get() = true
+
     override fun toProxy(obj: OpaqueBytesSubSequence): OpaqueBytes
         = OpaqueBytes(obj.copyBytes())
     override fun fromProxy(proxy: OpaqueBytes): OpaqueBytesSubSequence

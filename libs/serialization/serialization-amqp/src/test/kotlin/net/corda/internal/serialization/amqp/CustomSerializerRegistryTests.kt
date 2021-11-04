@@ -1,5 +1,6 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializationCustomSerializer
@@ -18,19 +19,18 @@ class CustomSerializerRegistryTests {
         @CordaSerializable
         class AnnotatedWithCordaSerializable
         class NotAnnotatedWithCordaSerializable
-        class EverythingCustomSerializer(factory: SerializerFactory) : CustomSerializer.Proxy<Any, String>(
-            clazz = Any::class.java,
-            proxyClass = String::class.java,
-            factory,
-            withInheritance = true
-        ) {
+        class EverythingCustomSerializer : InternalCustomSerializer<Any, String> {
+            override val type: Class<Any> get() = Any::class.java
+            override val proxyType: Class<String> get() = String::class.java
+            override val withInheritance: Boolean get() = true
+
             override fun toProxy(obj: Any): String
                 = throw UnsupportedOperationException()
             override fun fromProxy(proxy: String): Any
                 = throw UnsupportedOperationException()
         }
 
-        val serializerForEverything = EverythingCustomSerializer(mock())
+        val serializerForEverything = CustomSerializer.Proxy(EverythingCustomSerializer(), mock())
         unit.register(serializerForEverything)
 
         assertSame(serializerForEverything, unit.find(NotAnnotatedWithCordaSerializable::class.java))
@@ -44,19 +44,18 @@ class CustomSerializerRegistryTests {
 
     @Test
     fun `exception types can have custom serializers`() {
-        class ExceptionCustomSerializer(factory: SerializerFactory) : CustomSerializer.Proxy<MyCustomException, String>(
-            clazz = MyCustomException::class.java,
-            proxyClass = String::class.java,
-            factory,
-            withInheritance = true
-        ) {
+        class ExceptionCustomSerializer : InternalCustomSerializer<MyCustomException, String> {
+            override val type: Class<MyCustomException> get() = MyCustomException::class.java
+            override val proxyType: Class<String> get() = String::class.java
+            override val withInheritance: Boolean get() = true
+
             override fun toProxy(obj: MyCustomException): String
                 = throw UnsupportedOperationException()
             override fun fromProxy(proxy: String): MyCustomException
                 = throw UnsupportedOperationException()
         }
 
-        val customExceptionSerializer = ExceptionCustomSerializer(mock())
+        val customExceptionSerializer = CustomSerializer.Proxy(ExceptionCustomSerializer(), mock())
 
         unit.register(customExceptionSerializer)
         assertSame(customExceptionSerializer, unit.find(MyCustomException::class.java))
@@ -67,12 +66,11 @@ class CustomSerializerRegistryTests {
 
     @Test
     fun `two custom serializers cannot register to serialize the same type`() {
-        class CordaCashCustomSerializer(factory: SerializerFactory) : CustomSerializer.Proxy<Cash, String>(
-            clazz = Cash::class.java,
-            proxyClass = String::class.java,
-            factory,
-            withInheritance = true
-        ) {
+        class CordaCashCustomSerializer : InternalCustomSerializer<Cash, String> {
+            override val type: Class<Cash> get() = Cash::class.java
+            override val proxyType: Class<String> get() = String::class.java
+            override val withInheritance: Boolean get() = true
+
             override fun toProxy(obj: Cash): String
                 = throw UnsupportedOperationException()
             override fun fromProxy(proxy: String): Cash
@@ -86,14 +84,14 @@ class CustomSerializerRegistryTests {
                 = throw UnsupportedOperationException()
         }
 
-        val weSerializeCash = CordaCashCustomSerializer(mock())
+        val weSerializeCash = CustomSerializer.Proxy(CordaCashCustomSerializer(), mock())
         val weMaliciouslySerializeCash = EvilCorDappCashSerializer()
 
         unit.run {
             // First registration wins!
             register(weSerializeCash)
             // This second registration should be ignored.
-            registerExternal(CorDappCustomSerializer(weMaliciouslySerializeCash, mock()))
+            registerExternal(weMaliciouslySerializeCash, mock())
         }
 
         assertSame(weSerializeCash, unit.find(Cash::class.java))
@@ -101,18 +99,17 @@ class CustomSerializerRegistryTests {
 
     @Test
     fun `primitive types cannot have custom serializers`() {
-        class TestCustomSerializer(factory: SerializerFactory) : CustomSerializer.Proxy<Float, String>(
-            clazz = Float::class.java,
-            proxyClass = String::class.java,
-            factory,
-            withInheritance = true
-        ) {
+        class TestCustomSerializer: InternalCustomSerializer<Float, String> {
+            override val type: Class<Float> get() = Float::class.java
+            override val proxyType: Class<String> get() = String::class.java
+            override val withInheritance: Boolean get() = true
+
             override fun toProxy(obj: Float): String
                 = throw UnsupportedOperationException()
             override fun fromProxy(proxy: String): Float
                 = throw UnsupportedOperationException()
         }
-        unit.register(TestCustomSerializer(mock()))
+        unit.register(TestCustomSerializer(), mock())
 
         assertFailsWith<IllegalCustomSerializerException> {
             unit.find(Float::class.java)
