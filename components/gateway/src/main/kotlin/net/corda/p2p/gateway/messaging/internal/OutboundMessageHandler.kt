@@ -107,7 +107,7 @@ internal class OutboundMessageHandler(
 
 
     private fun createResources(resources: ResourcesHolder) {
-        resources.keep(p2pMessageSubscription::stop)
+        resources.keep(p2pMessageSubscription)
         p2pMessageSubscription.start()
         dominoTile.resourcesStarted(false)
     }

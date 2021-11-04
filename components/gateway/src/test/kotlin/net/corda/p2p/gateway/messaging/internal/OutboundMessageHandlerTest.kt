@@ -7,6 +7,8 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.subscription.Subscription
@@ -67,6 +69,13 @@ class OutboundMessageHandlerTest {
     }
     private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java)
 
+    private val lifecycleLockLambdaCaptor = argumentCaptor<() -> Any>()
+    private val dominoTile = mockConstruction(DominoTile::class.java) { mock, context ->
+        whenever(mock.withLifecycleLock(lifecycleLockLambdaCaptor.capture())).doAnswer {lifecycleLockLambdaCaptor.lastValue.invoke()}
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.createResources).doAnswer { context.arguments()[2] as ((ResourcesHolder) -> Any) }
+    }
+
     private val handler = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
@@ -78,24 +87,35 @@ class OutboundMessageHandlerTest {
     @AfterEach
     fun cleanUp() {
         connectionManager.close()
+        dominoTile.close()
     }
 
     @Test
-    fun `start will start a subscription`() {
-        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
+    fun `createResources will start a subscription`() {
+        startHandler()
 
-        handler.start()
+        val resourcesHolder = mock<ResourcesHolder>()
+        dominoTile.constructed().last().createResources?.invoke(resourcesHolder)
 
         verify(subscription).start()
     }
 
     @Test
-    fun `stop will stop the subscription`() {
+    fun `createResources keeps the subscription in the resource holder`() {
         startHandler()
 
-        handler.stop()
+        val resourcesHolder = mock<ResourcesHolder>()
+        dominoTile.constructed().last().createResources?.invoke(resourcesHolder)
+        verify(resourcesHolder).keep(subscription)
+    }
 
-        verify(subscription).stop()
+    @Test
+    fun `createResources sets resourceStarted`() {
+        startHandler()
+
+        val resourcesHolder = mock<ResourcesHolder>()
+        dominoTile.constructed().last().createResources?.invoke(resourcesHolder)
+        verify(dominoTile.constructed().last()).resourcesStarted(false)
     }
 
     @Test
@@ -304,6 +324,7 @@ class OutboundMessageHandlerTest {
 
     private fun startHandler() {
         whenever(connectionManager.constructed().first().isRunning).doReturn(true)
+        whenever(dominoTile.constructed().first().isRunning).doReturn(true)
         handler.start()
     }
 }

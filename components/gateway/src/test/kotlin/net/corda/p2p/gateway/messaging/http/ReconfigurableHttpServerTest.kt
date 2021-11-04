@@ -6,6 +6,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import org.junit.jupiter.api.AfterEach
@@ -16,6 +17,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.net.InetSocketAddress
@@ -44,6 +46,16 @@ class ReconfigurableHttpServerTest {
         },
         traceLogging = false
     )
+    private val badConfigurationException = RuntimeException("Bad Config")
+    private val badConfiguration = mock<GatewayConfiguration> {
+        on { hostPort } doThrow(badConfigurationException)
+    }
+
+    private lateinit var configHandler: ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler
+    private val dominoTile = mockConstruction(DominoTile::class.java) { _, context ->
+        @Suppress("UNCHECKED_CAST")
+        configHandler = (context.arguments()[4] as ReconfigurableHttpServer.ReconfigurableHttpServerConfigChangeHandler)
+    }
 
     private val server = ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
@@ -54,6 +66,7 @@ class ReconfigurableHttpServerTest {
     @AfterEach
     fun cleanUp() {
         serverMock.close()
+        dominoTile.close()
     }
 
     @Test
@@ -63,45 +76,58 @@ class ReconfigurableHttpServerTest {
         }
     }
 
-//    @Test
-//    fun `writeResponse will write to server if ready`() {
-//        server.applyNewConfiguration(configuration, null, resourcesHolder)
-//
-//        server.writeResponse(HttpResponseStatus.CREATED, address)
-//
-//        verify(serverMock.constructed().first()).write(HttpResponseStatus.CREATED, ByteArray(0), address)
-//    }
-//
-//    @Test
-//    fun `applyNewConfiguration will start a new server`() {
-//        server.applyNewConfiguration(configuration, null, resourcesHolder)
-//
-//        verify(serverMock.constructed().first()).start()
-//    }
-//
-//    @Test
-//    fun `applyNewConfiguration will stop the previous server`() {
-//        server.applyNewConfiguration(configuration, null, resourcesHolder)
-//        server.applyNewConfiguration(configuration.copy(hostAddress = "aaa"), configuration, resourcesHolder)
-//
-//        verify(serverMock.constructed().first()).stop()
-//        verify(serverMock.constructed()[1]).start()
-//    }
-//
-//    @Test
-//    fun `applyNewConfiguration will stop the previous server in different port`() {
-//        server.applyNewConfiguration(configuration, null, resourcesHolder)
-//        server.applyNewConfiguration(configuration.copy(hostPort = 13), configuration, resourcesHolder)
-//
-//        verify(serverMock.constructed().first()).stop()
-//        verify(serverMock.constructed()[1]).start()
-//    }
-//
-//    @Test
-//    fun `stop will stop the server`() {
-//        server.applyNewConfiguration(configuration, null, resourcesHolder)
-//        server.stop()
-//
-//        verify(serverMock.constructed().first()).stop()
-//    }
+    @Test
+    fun `writeResponse will write to server if ready`() {
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+
+        server.writeResponse(HttpResponseStatus.CREATED, address)
+
+        verify(serverMock.constructed().first()).write(HttpResponseStatus.CREATED, ByteArray(0), address)
+    }
+
+    @Test
+    fun `applyNewConfiguration will start a new server`() {
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+
+        verify(serverMock.constructed().first()).start()
+    }
+
+    @Test
+    fun `applyNewConfiguration sets configApplied`() {
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+
+        verify(dominoTile.constructed().last()).configApplied(DominoTile.ConfigUpdateResult.Success)
+    }
+
+    @Test
+    fun `applyNewConfiguration sets configApplied if bad config`() {
+        configHandler.applyNewConfiguration(badConfiguration, null, resourcesHolder)
+
+        verify(dominoTile.constructed().last()).configApplied(DominoTile.ConfigUpdateResult.Error(badConfigurationException))
+    }
+
+    @Test
+    fun `applyNewConfiguration will stop the previous server`() {
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+        configHandler.applyNewConfiguration(configuration.copy(hostAddress = "aaa"), configuration, resourcesHolder)
+
+        verify(serverMock.constructed().first()).stop()
+        verify(serverMock.constructed()[1]).start()
+    }
+
+    @Test
+    fun `applyNewConfiguration will stop the previous server in different port`() {
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+        configHandler.applyNewConfiguration(configuration.copy(hostPort = 13), configuration, resourcesHolder)
+
+        verify(serverMock.constructed().first()).stop()
+        verify(serverMock.constructed()[1]).start()
+    }
+
+    @Test
+    fun `applyNewConfiguration keeps the sever in the resource holder`() {
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+
+        verify(resourcesHolder).keep(serverMock.constructed().last())
+    }
 }

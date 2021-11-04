@@ -7,6 +7,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -32,6 +33,7 @@ import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.mockito.Captor
 import org.mockito.Mockito.mockConstruction
 import org.mockito.Mockito.mockStatic
 import org.mockito.kotlin.any
@@ -63,6 +65,11 @@ class InboundMessageHandlerTest {
     private val sessionPartitionMapper = mockConstruction(SessionPartitionMapperImpl::class.java)
     private val p2pInPublisher = mockConstruction(PublisherWithDominoLogic::class.java)
 
+    private val lifecycleLockLambdaCaptor = argumentCaptor<() -> Any>()
+    private val dominoTile = mockConstruction(DominoTile::class.java) { mock, _ ->
+        whenever(mock.withLifecycleLock(lifecycleLockLambdaCaptor.capture())).doAnswer {lifecycleLockLambdaCaptor.lastValue.invoke()}
+    }
+
     private val handler = InboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
@@ -76,6 +83,7 @@ class InboundMessageHandlerTest {
         server.close()
         sessionPartitionMapper.close()
         p2pInPublisher.close()
+        dominoTile.close()
     }
 
     @Test
@@ -437,6 +445,7 @@ class InboundMessageHandlerTest {
     }
 
     private fun setRunning() {
+        whenever(dominoTile.constructed().first().isRunning).doReturn(true)
         whenever(server.constructed().first().isRunning).doReturn(true)
         whenever(sessionPartitionMapper.constructed().first().isRunning).doReturn(true)
         whenever(p2pInPublisher.constructed().first().isRunning).doReturn(true)

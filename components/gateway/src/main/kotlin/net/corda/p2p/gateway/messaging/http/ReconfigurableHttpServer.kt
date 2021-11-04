@@ -67,7 +67,7 @@ class ReconfigurableHttpServer(
                         "${newConfiguration.hostAddress}:${newConfiguration.hostPort}")
                     val newServer = HttpServer(listener, newConfiguration)
                     newServer.start()
-                    resources.keep(newServer::stop)
+                    resources.keep(newServer)
                     serverLock.write {
                         val oldServer = httpServer
                         httpServer = null
