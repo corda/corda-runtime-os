@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "GatewayMessage",
-  "namespace": "net.corda.p2p.gateway",
+  "namespace": "net.corda.data.p2p.gateway",
   "doc": "A request to the p2p gateway component",
   "fields": [
     {
