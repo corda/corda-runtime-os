@@ -13,7 +13,12 @@ import java.net.InetAddress
 import java.net.UnknownHostException
 import java.time.Duration
 
-@Command(name = "gateway", description = ["Publish the P2P gateway configuration"])
+@Command(
+    name = "gateway",
+    description = ["Publish the P2P gateway configuration"],
+    showAtFileInUsageHelp = true,
+    showDefaultValues = true,
+)
 class GatewayConfiguration : ConfigProducer() {
     companion object {
         private fun getDefaultHostname(): String {
@@ -39,37 +44,37 @@ class GatewayConfiguration : ConfigProducer() {
 
     @Option(
         names = ["--host"],
-        description = ["The name of the HTTP host (default: \${DEFAULT-VALUE})"]
+        description = ["The name of the HTTP host"]
     )
     var hostname = getDefaultHostname()
 
     @Option(
         names = ["--port"],
-        description = ["The HTTP port (default: \${DEFAULT-VALUE})"]
+        description = ["The HTTP port"]
     )
     var port = 80
 
     @Option(
         names = ["--keyStore"],
-        description = ["The key store file (default: keystore.jks)"]
+        description = ["The key store file"]
     )
     var keyStoreFile = File("keystore.jks")
 
     @Option(
         names = ["--keyStorePassword"],
-        description = ["The key store password (default: \${DEFAULT-VALUE})"]
+        description = ["The key store password"]
     )
     var keyStorePassword = "password"
 
     @Option(
         names = ["--trustStore"],
-        description = ["The trust store file (default: truststore.jks)"]
+        description = ["The trust store file"]
     )
     var trustStoreFile = File("truststore.jks")
 
     @Option(
         names = ["--trustStorePassword"],
-        description = ["The trust store password (default: \${DEFAULT-VALUE})"]
+        description = ["The trust store password"]
     )
     var trustStorePassword = "password"
 
@@ -81,31 +86,31 @@ class GatewayConfiguration : ConfigProducer() {
 
     @Option(
         names = ["--maxClientConnections"],
-        description = ["The maximal number of client connections (default: \${DEFAULT-VALUE})"]
+        description = ["The maximal number of client connections"]
     )
     var maxClientConnections = 100L
 
     @Option(
         names = ["--acquireTimeoutSec"],
-        description = ["The client connection acquire timeout in seconds (default: \${DEFAULT-VALUE})"]
+        description = ["The client connection acquire timeout in seconds"]
     )
     var acquireTimeoutSec = 10L
 
     @Option(
         names = ["--connectionIdleTimeoutSec"],
-        description = ["The amount of time to keep inactive client connection before closing it in seconds (default: \${DEFAULT-VALUE})"]
+        description = ["The amount of time to keep inactive client connection before closing it in seconds"]
     )
     var connectionIdleTimeoutSec = 60L
 
     @Option(
         names = ["--responseTimeoutMilliSecs"],
-        description = ["Time after which a message delivery is considered failed in milliseconds (default: \${DEFAULT-VALUE})"]
+        description = ["Time after which a message delivery is considered failed in milliseconds"]
     )
     var responseTimeoutMilliSecs = 1_000L
 
     @Option(
         names = ["--retryDelayMilliSecs"],
-        description = ["Time after which a message is retried, when previously failed in milliseconds (default: \${DEFAULT-VALUE})"]
+        description = ["Time after which a message is retried, when previously failed in milliseconds"]
     )
     var retryDelayMilliSecs = 1_000L
 

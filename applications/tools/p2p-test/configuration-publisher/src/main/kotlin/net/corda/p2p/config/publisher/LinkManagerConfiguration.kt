@@ -12,7 +12,9 @@ import picocli.CommandLine.TypeConversionException
 @Command(
     name = "link-manager",
     aliases = ["lm", "linkmanager", "link_manager"],
-    description = ["Publish the P2P Link Manager configuration"]
+    description = ["Publish the P2P Link Manager configuration"],
+    showAtFileInUsageHelp = true,
+    showDefaultValues = true,
 )
 class LinkManagerConfiguration : ConfigProducer() {
     @Option(
@@ -24,31 +26,31 @@ class LinkManagerConfiguration : ConfigProducer() {
 
     @Option(
         names = ["--maxMessageSize"],
-        description = ["The maximal message size (default: \${DEFAULT-VALUE})"]
+        description = ["The maximal message size"]
     )
     var maxMessageSize = 500
 
     @Option(
         names = ["--protocolMode"],
-        description = ["Supported protocol mode (out of: \${COMPLETION-CANDIDATES}; default: \${DEFAULT-VALUE})"]
+        description = ["Supported protocol mode (out of: \${COMPLETION-CANDIDATES})"]
     )
     var protocolModes: List<ProtocolMode> = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
 
     @Option(
         names = ["--messageReplayPeriodSecs"],
-        description = ["message replay period in seconds (default: \${DEFAULT-VALUE})"]
+        description = ["message replay period in seconds"]
     )
     var messageReplayPeriodSecs = 2L
 
     @Option(
         names = ["--heartbeatMessagePeriodMilliSecs"],
-        description = ["Heartbeat message period in milli seconds (default: \${DEFAULT-VALUE})"]
+        description = ["Heartbeat message period in milli seconds"]
     )
     var heartbeatMessagePeriodMilliSecs = 2_000L
 
     @Option(
         names = ["--sessionTimeoutMilliSecs"],
-        description = ["Session timeout in milliseconds (default: \${DEFAULT-VALUE})"]
+        description = ["Session timeout in milliseconds"]
     )
     var sessionTimeoutMilliSecs = 10_000L
 

@@ -13,11 +13,12 @@ import picocli.CommandLine.Option
     subcommands = [
         GatewayConfiguration::class,
         LinkManagerConfiguration::class,
-        FileConfiguration::class,
     ],
     description = [
         "Publish configuration to the P2P components"
-    ]
+    ],
+    showAtFileInUsageHelp = true,
+    showDefaultValues = true,
 )
 internal class CommonArguments(
     private val configWriterFactory: ConfigWriterFactory,
@@ -32,19 +33,19 @@ internal class CommonArguments(
 
     @Option(
         names = ["-k", "--kafka-servers"],
-        description = ["The kafka servers (default: \${DEFAULT-VALUE})"]
+        description = ["The kafka servers"]
     )
     var kafkaServers = "localhost:9092"
 
     @Option(
         names = ["--config-topic-name"],
-        description = ["The config topic name (default: \${DEFAULT-VALUE})"]
+        description = ["The config topic name"]
     )
     private var configTopicName = "ConfigTopic"
 
     @Option(
         names = ["--topic-prefix"],
-        description = ["The topic prefix (default: \${DEFAULT-VALUE})"]
+        description = ["The topic prefix"]
     )
     var topicPrefix = ""
 
