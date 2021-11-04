@@ -1,5 +1,7 @@
 package net.corda.libs.permission.factory
+import net.corda.libs.permission.GroupTopicProcessor
 import net.corda.libs.permission.PermissionServiceImpl
+import net.corda.libs.permission.RoleTopicProcessor
 import net.corda.libs.permission.UserTopicProcessor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -12,6 +14,7 @@ class PermissionServiceFactoryImpl @Activate constructor(
         private val subscriptionFactory: SubscriptionFactory
 ): PermissionServiceFactory {
     override fun createPermissionService(): PermissionServiceImpl {
-        return PermissionServiceImpl(subscriptionFactory, UserTopicProcessor())
+        return PermissionServiceImpl(subscriptionFactory,
+            UserTopicProcessor(), GroupTopicProcessor(), RoleTopicProcessor())
     }
 }
