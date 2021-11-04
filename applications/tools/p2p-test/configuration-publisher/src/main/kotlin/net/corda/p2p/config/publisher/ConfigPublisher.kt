@@ -27,13 +27,19 @@ class ConfigPublisher @Activate constructor(
     }
 
     override fun startup(args: Array<String>) {
+        val argumentsFile = System.getenv("ARGUMENTS_FILE")
+        val allArguments = if (argumentsFile != null) {
+            args + "@$argumentsFile"
+        } else {
+            args
+        }
         val arguments = CommonArguments(configWriterFactory, smartConfigFactory)
         val commandLine = CommandLine(arguments)
         commandLine.isCaseInsensitiveEnumValuesAllowed = true
         @Suppress("TooGenericExceptionCaught")
         try {
             @Suppress("SpreadOperator")
-            commandLine.execute(*args)
+            commandLine.execute(*allArguments)
         } catch (e: Exception) {
             consoleLogger.warn("Could not publish configuration", e)
         }
