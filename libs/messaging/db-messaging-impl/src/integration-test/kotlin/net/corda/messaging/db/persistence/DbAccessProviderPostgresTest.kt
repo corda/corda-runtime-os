@@ -45,10 +45,10 @@ class DbAccessProviderPostgresTest: DbAccessProviderTestBase() {
     }
 
     override fun getUsername(): String {
-        return postgresqlServer.username
+        return System.getProperty("postgresUser")
     }
 
     override fun getPassword(): String {
-        return postgresqlServer.password
+        return System.getProperty("postgresPassword")
     }
 }
