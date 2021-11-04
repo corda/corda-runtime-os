@@ -164,6 +164,7 @@ class Main @Activate constructor(
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
         // Register platform serializers
         for (customSerializer in internalCustomSerializers) {
+            consoleLogger.info("Registering internal serializer " + customSerializer.javaClass.name)
             factory.register(customSerializer, true)
         }
         // Build CorDapp serializers
@@ -173,6 +174,7 @@ class Main @Activate constructor(
         }
         // Register CorDapp serializers
         for (customSerializer in cordappCustomSerializers) {
+            consoleLogger.info("Registering CorDapp serializer " + customSerializer.javaClass.name)
             factory.registerExternal(customSerializer)
         }
         return factory
@@ -185,7 +187,9 @@ class Main @Activate constructor(
     private fun differentSerializersPerSandboxGroup(sandboxA: SandboxAndSerializers, sandboxB: SandboxAndSerializers) {
 
         consoleLogger.info("REQUIREMENT - Building serialisation environments with different custom serialisers")
+        consoleLogger.info("sandboxA")
         val serializationA = configureSerialization(sandboxA)
+        consoleLogger.info("sandboxB")
         val serializationB = configureSerialization(sandboxB)
 
         val outputA = SerializationOutput(serializationA)
