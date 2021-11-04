@@ -1,15 +1,6 @@
 // TODO: Change this when the version in gradle.properties had changed
 def cordaVersion = '5.0.0-1626712413904-beta'
 
-@Field
-String postgresHost = 'localhost'
-@Field
-String postgresPort = '5432'
-@Field
-String postgresCredentialsId = 'e2e-postgresql-credentials'
-@Field
-String postgresDb = "test_${UUID.randomUUID()}"
-
 pipeline {
     agent {
         docker {
@@ -79,77 +70,6 @@ pipeline {
             }
         }
     }
-        stage('Create DBs') {
-                        when {
-                            expression { return config.createPostgresDb }
-                        }
-                        steps {
-                            // port forwarding from K8s
-                            withEnv(["PGPORT=${postgresPort}"]) {
-                                withCredentials([file(credentialsId: 'e2e-tests-credentials', variable: 'KUBECONFIG')]) {
-                                    sh 'kubectl port-forward --namespace postgres svc/postgres-postgresql "${PGPORT}":"${PGPORT}" &'
-                                }
-                            }
-                            // create new DB
-                            withEnv([
-                                "PGHOST=${postgresHost}",
-                                "PGPORT=${postgresPort}",
-                                "DATABASE=${postgresDb}"
-                            ]) {
-                                withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
-                                    passwordVariable: 'PGPASSWORD',
-                                    usernameVariable: 'PGUSER')]) {
-                                    // wait for port-forwarding
-                                    sh '''\
-                                        maxTries=3
-                                        while ! psql --quiet --tuples-only -c 'select 1'
-                                        do
-                                            maxTries=`expr ${maxTries} - 1`
-                                            if [ ${maxTries} -eq 0 ]
-                                            then
-                                                echo "Waiting for database connection timeout out!!!!" >&2
-                                                exit 1
-                                            fi
-                                            echo "Port forwarding for Postgres has been set up yet, ${maxTries} left"
-                                            sleep 5
-                                        done
-                                    '''.stripIndent()
-                                    sh 'createdb -w "${DATABASE}"'
-                                }
-                            }
-                        }
-        }
-        stage('Tests and Code Quality') {
-                        parallel {
-                            stage('Unit Tests') {
-                                options {
-                                    timeout(time: 30, unit: 'MINUTES')
-                                }
-                                steps {
-                                    gradlew('test')
-                                }
-                            }
-                            stage('Integration Tests') {
-                                when {
-                                    expression { return config.runIntegrationTests == true }
-                                }
-                                options {
-                                    timeout(time: 30, unit: 'MINUTES')
-                                }
-                                steps {
-                                    script {
-                                        if (config.createPostgresDb) {
-                                            withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
-                                                passwordVariable: 'PGPASSWORD',
-                                                usernameVariable: 'PGUSER')]) {
-                                                gradlew('integrationTest', "-PpostgresHost=${postgresHost}", "-PpostgresPort=${postgresPort}", "-PpostgresDb=${postgresDb}", '-PpostgresUser="${PGUSER}"', '-PpostgresPassword="${PGPASSWORD}"')
-                                            }
-                                        } else {
-                                            gradlew('integrationTest')
-                                        }
-                                    }
-                                }
-                            }
     post {
         cleanup {
             junit allowEmptyResults: true, testResults: '**/build/test-results/**/TEST-*.xml'
@@ -158,21 +78,6 @@ pipeline {
                 enabledForFailure: true, aggregatingResults: true,
                 tools: [kotlin(), java(), detekt(pattern: '**/build/detekt-report.xml')]
             )
-            script {
-                                if (config.createPostgresDb) {
-                                    withEnv([
-                                        "PGHOST=${postgresHost}",
-                                        "PGPORT=${postgresPort}",
-                                        "DATABASE=${postgresDb}"
-                                    ]) {
-                                        withCredentials([usernamePassword(credentialsId: postgresCredentialsId,
-                                            passwordVariable: 'PGPASSWORD',
-                                            usernameVariable: 'PGUSER')]) {
-                                            sh 'dropdb -w "${DATABASE}" || true'
-                                        }
-                                    }
-                                }
-            }
             jacoco(
                 execPattern: '**/build/**/*.exec',
                 runAlways: true,
