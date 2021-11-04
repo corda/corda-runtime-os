@@ -1,6 +1,6 @@
 package net.corda.messaging.db.persistence
 
-import junit.framework.Assert.assertEquals
+//import junit.framework.Assert.assertEquals
 import net.corda.messaging.db.util.DbUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -40,8 +40,7 @@ abstract class DbAccessProviderTestBase {
 
     @BeforeClass
     fun checkIfTestsShouldBeSkipped() {
-        org.junit.Assume.assumeThat(System.getProperty("postgresHost"), isNotNull());
-        assertEquals("run", "RUN".toLowerCase());
+        org.junit.Assume.assumeThat(System.getProperty("postgresHost"), isNotNull())
     }
 
     @BeforeAll
@@ -73,7 +72,7 @@ abstract class DbAccessProviderTestBase {
     }
 
     @Test
-    fun `getTopics returns topics with their number of partitions successfuly`() {
+    fun `getTopics returns topics with their number of partitions successfully`() {
         val topicsWithPartitions = dbAccessProvider.getTopics()
 
         assertThat(topicsWithPartitions).containsExactlyEntriesOf(mapOf(
