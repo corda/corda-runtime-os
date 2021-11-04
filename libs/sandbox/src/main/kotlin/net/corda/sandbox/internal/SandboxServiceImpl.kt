@@ -38,11 +38,11 @@ internal class SandboxServiceImpl @Activate constructor(
             "The sandbox service cannot run without the Service Component Runtime bundle installed."
         )
 
-    // Maps each bundle ID to the sandbox the bundle is part of.
+    // Maps each bundle ID to the sandbox that the bundle is part of.
     private val bundleIdToSandbox = ConcurrentHashMap<Long, Sandbox>()
 
-    // Maps each sandbox ID to the sandbox group that the sandbox is part of.
-    private val sandboxIdToGroup = ConcurrentHashMap<UUID, SandboxGroup>()
+    // Maps each bundle ID to the sandbox group that the bundle is part of.
+    private val bundleIdToSandboxGroup = ConcurrentHashMap<Long, SandboxGroup>()
 
     // The public sandboxes that have been created.
     private val publicSandboxes = ConcurrentHashMap.newKeySet<Sandbox>()
@@ -54,8 +54,8 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
         val publicSandbox = SandboxImpl(UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
-        (publicBundles + privateBundles).forEach {
-            bundleIdToSandbox[it.bundleId] = publicSandbox
+        (publicBundles + privateBundles).forEach { bundle ->
+            bundleIdToSandbox[bundle.bundleId] = publicSandbox
         }
         publicSandboxes.add(publicSandbox)
     }
@@ -72,7 +72,9 @@ internal class SandboxServiceImpl @Activate constructor(
             bundleIdToSandbox.forEach { entry ->
                 if (entry.value == sandbox) bundleIdToSandbox.remove(entry.key)
             }
-            sandboxIdToGroup.remove(sandbox.id)
+            bundleIdToSandboxGroup.forEach { entry ->
+                if (entry.value == sandboxGroup) bundleIdToSandbox.remove(entry.key)
+            }
             zombieBundles.addAll((sandbox as Sandbox).unload())
         }
     }
@@ -100,10 +102,19 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     override fun getCallingSandboxGroup(): SandboxGroup? {
-        val sandbox = getCallingSandbox() ?: return null
-        return sandboxIdToGroup[sandbox.id] ?: throw SandboxException(
-            "A sandbox was found, but it was not part of any sandbox group."
-        )
+        val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
+
+        return stackWalkerInstance.walk { stackFrameStream ->
+            stackFrameStream
+                .asSequence()
+                .mapNotNull { stackFrame ->
+                    val bundle = bundleUtils.getBundle(stackFrame.declaringClass)
+                    if (bundle != null) {
+                        bundleIdToSandboxGroup[bundle.bundleId]
+                    } else null
+                }
+                .firstOrNull()
+        }
     }
 
     override fun isSandboxed(bundle: Bundle) = bundleIdToSandbox[bundle.bundleId] != null
@@ -161,8 +172,8 @@ internal class SandboxServiceImpl @Activate constructor(
 
             val sandbox = CpkSandboxImpl(sandboxId, cpk, mainBundle, libraryBundles)
 
-            (libraryBundles + mainBundle).forEach {
-                bundleIdToSandbox[it.bundleId] = sandbox
+            (libraryBundles + mainBundle).forEach { bundle ->
+                bundleIdToSandbox[bundle.bundleId] = sandbox
             }
 
             sandbox
@@ -186,8 +197,8 @@ internal class SandboxServiceImpl @Activate constructor(
 
         val sandboxGroup = SandboxGroupImpl(newSandboxes, publicSandboxes, ClassTagFactoryImpl(), bundleUtils)
 
-        newSandboxes.forEach { sandbox ->
-            sandboxIdToGroup[sandbox.id] = sandboxGroup
+        bundles.forEach { bundle ->
+            bundleIdToSandboxGroup[bundle.bundleId] = sandboxGroup
         }
 
         return sandboxGroup
@@ -240,27 +251,6 @@ internal class SandboxServiceImpl @Activate constructor(
             } catch (e: BundleException) {
                 throw SandboxException("Bundle $bundle could not be started.", e)
             }
-        }
-    }
-
-    /**
-     * Returns the non-public [Sandbox] lowest in the stack of calls to this function, or null if no sandbox is found
-     * on the stack.
-     */
-    private fun getCallingSandbox(): Sandbox? {
-        val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-
-        return stackWalkerInstance.walk { stackFrameStream ->
-            stackFrameStream
-                .asSequence()
-                .mapNotNull { stackFrame ->
-                    val bundle = bundleUtils.getBundle(stackFrame.declaringClass)
-                    if (bundle != null) {
-                        val sandbox = bundleIdToSandbox[bundle.bundleId]
-                        if (sandbox != null && sandbox !in publicSandboxes) sandbox else null
-                    } else null
-                }
-                .firstOrNull()
         }
     }
 }
