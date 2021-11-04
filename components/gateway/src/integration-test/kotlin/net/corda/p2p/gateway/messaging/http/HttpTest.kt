@@ -283,7 +283,9 @@ class HttpTest : TestBase() {
                 // Check HandshakeException is thrown and logged
                 val expectedMessage = "Bad certificate identity or path. " +
                     "Certificate name doesn't match. Expected $expectedX500Name but received C=GB,L=London,O=PartyA"
-                loggingInterceptor.assertMessageExists(expectedMessage, Level.ERROR)
+                eventually {
+                    loggingInterceptor.assertMessageExists(expectedMessage, Level.ERROR)
+                }
             }
         }
     }
@@ -353,10 +355,12 @@ class HttpTest : TestBase() {
             }
         }
 
-        loggingInterceptor.assertMessageExists(
-            "Could not find a certificate matching the requested SNI value [hostname = ${bobSNI[0]}",
-            Level.WARN
-        )
+        eventually {
+            loggingInterceptor.assertMessageExists(
+                "Could not find a certificate matching the requested SNI value [hostname = ${bobSNI[0]}",
+                Level.WARN
+            )
+        }
     }
 
     @Test
@@ -393,11 +397,13 @@ class HttpTest : TestBase() {
             }
         }
 
-        loggingInterceptor.assertMessageExists(
-            "Bad certificate identity or path. PKIX path validation failed: " +
-                "java.security.cert.CertPathValidatorException: Certificate has been revoked",
-            Level.ERROR
-        )
+        eventually {
+            loggingInterceptor.assertMessageExists(
+                "Bad certificate identity or path. PKIX path validation failed: " +
+                        "java.security.cert.CertPathValidatorException: Certificate has been revoked",
+                Level.ERROR
+            )
+        }
     }
 
     // Lightweight testing server which ignores SNI checks and presents invalid certificates
