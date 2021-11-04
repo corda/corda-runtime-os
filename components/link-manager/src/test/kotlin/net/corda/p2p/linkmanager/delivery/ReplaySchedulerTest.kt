@@ -1,12 +1,29 @@
 package net.corda.p2p.linkmanager.delivery
 
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.p2p.linkmanager.AutoClosableScheduledExecutorService
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
+import net.corda.test.util.eventually
+import net.corda.v5.base.util.millis
+import net.corda.v5.base.util.seconds
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.isA
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -15,6 +32,7 @@ import java.util.concurrent.CountDownLatch
 class ReplaySchedulerTest {
 
     companion object {
+        private const val REPLAY_PERIOD_KEY = "REPLAY PERIOD"
         private val replayPeriod = Duration.ofMillis(2)
         lateinit var loggingInterceptor: LoggingInterceptor
 
@@ -25,17 +43,59 @@ class ReplaySchedulerTest {
         }
     }
 
+    private val coordinatorFactory = mock<LifecycleCoordinatorFactory> ()
+    private val service = mock<ConfigurationReadService>()
+    private val resourcesHolder = mock<ResourcesHolder>()
+    private val configResourcesHolder = mock<ResourcesHolder>()
+
+    private lateinit var createResources: ((resources: ResourcesHolder) -> Unit)
+    private lateinit var configHandler: ReplayScheduler<*>.ReplaySchedulerConfigurationChangeHandler
+    private val lifecycleLockLambdaCaptor = argumentCaptor<() -> Any>()
+    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
+        whenever(mock.withLifecycleLock(lifecycleLockLambdaCaptor.capture())).doAnswer { lifecycleLockLambdaCaptor.lastValue.invoke() }
+        @Suppress("UNCHECKED_CAST")
+        createResources = context.arguments()[2] as ((ResourcesHolder) -> Unit)
+        configHandler = context.arguments()[4] as ReplayScheduler<*>.ReplaySchedulerConfigurationChangeHandler
+    }
+
     @AfterEach
-    fun resetLogging() {
+    fun cleanUp() {
         loggingInterceptor.reset()
+        dominoTile.close()
+        resourcesHolder.close()
+        configResourcesHolder.close()
     }
 
     @Test
     fun `The ReplayScheduler will not replay before start`() {
-        val replayManager = ReplayScheduler(replayPeriod, { _: Any -> } ) { 0 }
+        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }, emptySet()) { 0 }
         assertThrows<IllegalStateException> {
             replayManager.addForReplay(0,"", Any())
         }
+    }
+
+    @Test
+    fun `on applyNewConfiguration calls configApplied config is invalid`() {
+        ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }, emptySet()) { 0 }
+        configHandler.applyNewConfiguration(Duration.ofMillis(-10), null, configResourcesHolder)
+
+        verify(dominoTile.constructed().last()).configApplied(isA<DominoTile.ConfigUpdateResult.Error>())
+    }
+
+    @Test
+    fun `on applyNewConfiguration calls configApplied if config is valid`() {
+        ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }, emptySet()) { 0 }
+        configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder)
+
+        verify(dominoTile.constructed().last()).configApplied(DominoTile.ConfigUpdateResult.Success)
+    }
+
+    @Test
+    fun `on createResource the ReplayScheduler adds a executor service to the resource holder`() {
+        ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }, emptySet()) { 0 }
+        createResources(resourcesHolder)
+        verify(resourcesHolder).keep(isA<AutoClosableScheduledExecutorService>())
+        verify(dominoTile.constructed().last()).resourcesStarted(false)
     }
 
     @Test
@@ -43,9 +103,11 @@ class ReplaySchedulerTest {
         val messages = 9
 
         val tracker = TrackReplayedMessages(messages)
+        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage, emptySet()) { 0 }
+        setRunning()
+        createResources(resourcesHolder)
+        configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder)
 
-        val replayManager = ReplayScheduler(replayPeriod, tracker::replayMessage) { 0 }
-        replayManager.start()
         for (i in 0 until messages) {
             val messageId = UUID.randomUUID().toString()
             replayManager.addForReplay(
@@ -64,9 +126,10 @@ class ReplaySchedulerTest {
         val messages = 8
 
         val tracker = TrackReplayedMessages(messages)
-
-        val replayManager = ReplayScheduler(replayPeriod, tracker::replayMessage) { 0 }
-        replayManager.start()
+        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage, emptySet()) { 0 }
+        setRunning()
+        createResources(resourcesHolder)
+        configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder)
 
         val messageIdsToRemove = mutableListOf<String>()
         val messageIdsToNotRemove = mutableListOf<String>()
@@ -105,14 +168,50 @@ class ReplaySchedulerTest {
     fun `The ReplayScheduler handles exceptions`() {
         val message = "message"
         val tracker = TrackReplayedMessages(2, 1)
-        val replayManager = ReplayScheduler(replayPeriod, tracker::replayMessage) { 0 }
+        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage, emptySet()) { 0 }
         replayManager.start()
+        setRunning()
+        createResources(resourcesHolder)
+        configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder)
+
         replayManager.addForReplay(0, "", message)
         tracker.await()
         loggingInterceptor.assertErrorContains(
             "An exception was thrown when replaying a message. The task will be retried again in ${replayPeriod.toMillis()} ms.")
         replayManager.stop()
         assertTrue(tracker.numberOfReplays[message]!! >= 1)
+    }
+
+    @Test
+    fun `The ReplayScheduler replays added messages after config update`() {
+        val tracker = TrackReplayedMessages( 2)
+        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage, emptySet()) { 0 }
+        replayManager.start()
+        setRunning()
+        createResources(resourcesHolder)
+        configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder)
+
+        val messageId = UUID.randomUUID().toString()
+        replayManager.addForReplay(
+           0,
+            messageId,
+            messageId
+        )
+
+        configHandler.applyNewConfiguration(replayPeriod.multipliedBy(2), null, configResourcesHolder)
+
+        val messageIdAfterUpdate = UUID.randomUUID().toString()
+        replayManager.addForReplay(
+            0,
+            messageIdAfterUpdate,
+            messageIdAfterUpdate
+        )
+
+        eventually(5.seconds, 5.millis) {
+            assertThat(tracker.numberOfReplays.containsKey(messageIdAfterUpdate))
+        }
+
+        replayManager.stop()
     }
 
     class TrackReplayedMessages(numReplayedMessages: Int, private val totalNumberOfExceptions: Int = 0) {
@@ -137,5 +236,9 @@ class ReplaySchedulerTest {
         fun await() {
             latch.await()
         }
+    }
+
+    private fun setRunning() {
+        whenever(dominoTile.constructed().first().isRunning).doReturn(true)
     }
 }

@@ -11,6 +11,7 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.linkmanager.AutoClosableScheduledExecutorService
 import net.corda.v5.base.util.contextLogger
+import java.lang.IllegalArgumentException
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
@@ -47,11 +48,17 @@ class ReplayScheduler<M>(
         private val logger = contextLogger()
     }
 
-    private inner class ReplaySchedulerConfigurationChangeHandler: ConfigurationChangeHandler<Duration>(configReadService,
-        LinkManagerConfiguration.CONFIG_KEY,
+    inner class ReplaySchedulerConfigurationChangeHandler: ConfigurationChangeHandler<Duration>(configReadService,
+        replayPeriodKey,
         ::fromConfig) {
         override fun applyNewConfiguration(newConfiguration: Duration, oldConfiguration: Duration?, resources: ResourcesHolder) {
             if (newConfiguration != oldConfiguration) {
+                if (newConfiguration.isNegative) {
+                    dominoTile.configApplied(DominoTile.ConfigUpdateResult.Error(
+                        IllegalArgumentException("The duration configuration (with key $replayPeriod) must be positive.")
+                    ))
+                    return
+                }
                 replayPeriod.set(newConfiguration)
                 dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
             } else {
@@ -61,7 +68,7 @@ class ReplayScheduler<M>(
     }
 
     private fun fromConfig(config: Config): Duration {
-        return Duration.ofMillis(config.getLong(replayPeriodKey))
+        return config.getDuration(replayPeriodKey)
     }
 
     private fun createResources(resources: ResourcesHolder) {
