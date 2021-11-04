@@ -1,6 +1,5 @@
 package net.corda.components.flow.service
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.components.flow.service.stubs.StateAndEventSubscriptionStub
@@ -12,6 +11,8 @@ import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.manager.FlowManager
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -37,10 +38,12 @@ class FlowExecutorTest {
     }
 
     private val coordinatorFactory: LifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl()
-    private val bootstrapConfig: Config = ConfigFactory.empty().withValue(INSTANCE_ID_KEY, ConfigValueFactory.fromAnyRef(1))
-    private val flowConfig: Config = ConfigFactory.empty().withValue(TOPIC_KEY, ConfigValueFactory.fromAnyRef("Topic1"))
-        .withValue(GROUP_NAME_KEY, ConfigValueFactory.fromAnyRef("Group1"))
-    private val messagingConfig: Config = ConfigFactory.empty()
+    private val bootstrapConfig: SmartConfig = SmartConfigImpl(ConfigFactory.empty().withValue(INSTANCE_ID_KEY, ConfigValueFactory
+        .fromAnyRef(1)))
+    private val flowConfig: SmartConfig = SmartConfigImpl(ConfigFactory.empty().withValue(TOPIC_KEY, ConfigValueFactory.fromAnyRef
+        ("Topic1"))
+        .withValue(GROUP_NAME_KEY, ConfigValueFactory.fromAnyRef("Group1")))
+    private val messagingConfig: SmartConfig = SmartConfigImpl(ConfigFactory.empty())
     private val subscriptionFactory: SubscriptionFactory = mock()
     private val flowManager: FlowManager = mock()
     private val sandboxService: SandboxService = mock()

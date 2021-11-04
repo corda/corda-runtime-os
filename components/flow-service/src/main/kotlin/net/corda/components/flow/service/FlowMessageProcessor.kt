@@ -1,5 +1,7 @@
 package net.corda.components.flow.service
 
+import net.corda.components.flow.service.exception.FlowHospitalException
+import net.corda.components.flow.service.exception.FlowMessageSkipException
 import net.corda.components.sandbox.service.SandboxService
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
@@ -8,7 +10,6 @@ import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowMetaData
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 
@@ -22,10 +23,14 @@ class FlowMessageProcessor(
         state: Checkpoint?,
         event: Record<FlowKey, FlowEvent>
     ): StateAndEventProcessor.Response<Checkpoint> {
-        val flowEvent = event.value ?: throw CordaMessageAPIIntermittentException("FlowEvent was null")
+        //TODO - not sure what an event of null really means in this case. Should it go to flow hospital?
+        val flowEvent = event.value ?: throw FlowMessageSkipException("FlowEvent was null")
         val result = when (val payload = flowEvent.payload) {
             is StartRPCFlow -> {
                 val flowName = payload.flowName
+                if (state != null) {
+                    throw FlowMessageSkipException("State should be null for StartRPCFlow. Duplicate message.")
+                }
                 val cpiId = payload.cpiId
                 val sandboxGroup = sandboxService.getSandboxGroupFor(payload.cpiId, flowName)
                 flowManager.startInitiatingFlow(
@@ -37,7 +42,7 @@ class FlowMessageProcessor(
                 )
             }
             is Wakeup -> {
-                val checkpoint = state ?: throw CordaMessageAPIIntermittentException("State for wakeup FlowEvent was null")
+                val checkpoint = state ?: throw FlowHospitalException("State for wakeup FlowEvent was null")
                 val sandboxGroup = sandboxService.getSandboxGroupFor(payload.cpiId, payload.flowName)
                 flowManager.wakeFlow(checkpoint, flowEvent, flowEventTopic, sandboxGroup)
             }

@@ -14,6 +14,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.slf4j.Logger
 import java.util.concurrent.CompletableFuture
 
@@ -44,7 +45,7 @@ class CommonPublisher (
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        log.info("CommonPublisher received: $event")
+        log.debug { "CommonPublisher received: $event" }
         when (event) {
             is StartEvent -> {
                 publisher?.close()

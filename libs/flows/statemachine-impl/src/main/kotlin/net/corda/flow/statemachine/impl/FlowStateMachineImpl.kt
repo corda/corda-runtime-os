@@ -22,6 +22,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.Try
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import org.slf4j.MDC
@@ -77,9 +78,9 @@ class FlowStateMachineImpl<R>(
     @Suspendable
     override fun run() {
         setLoggingContext()
-        log.info("Calling flow: $logic")
+        log.debug { "Calling flow: $logic" }
         val resultOrError = executeFlowLogic()
-        log.info("flow ended $id")
+        log.debug { "flow ended $id. isSuccess: ${resultOrError.isSuccess}" }
 
         when (resultOrError) {
             is Try.Success -> {

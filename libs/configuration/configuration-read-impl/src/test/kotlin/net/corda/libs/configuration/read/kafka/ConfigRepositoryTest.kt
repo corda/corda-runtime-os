@@ -1,6 +1,7 @@
 package net.corda.libs.configuration.read.kafka
 
 import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.read.kafka.ConfigRepository.Companion.BOOTSTRAP_KEY
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -11,7 +12,7 @@ class ConfigRepositoryTest {
 
     @BeforeEach
     fun beforeEach() {
-        configRepository = ConfigRepository(ConfigFactory.empty())
+        configRepository = ConfigRepository(SmartConfigImpl(ConfigFactory.empty()))
     }
 
     @Test

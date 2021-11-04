@@ -23,6 +23,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -56,74 +57,81 @@ class FlowWorkerSetup @Activate constructor(
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
     }
 
-    private var lifeCycleCoordinator: LifecycleCoordinator? = null
+    private var lifeCycleCoordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<FlowWorkerSetup>(::eventHandler)
 
     private var registration: RegistrationHandle? = null
-
     private var publisher: CommonPublisher? = null
+    private var instanceId: Int? = null
+    private var configurationFile : File? = null
+    private var topicTemplate : File? = null
+    private var bootstrapConfig : SmartConfig? = null
 
-    @Suppress("SpreadOperator", "ComplexMethod")
+
+    @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
         consoleLogger.info("Starting flow worker setup tool...")
 
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
-        val instanceId = parameters.instanceId?.toInt()
-        val configurationFile = parameters.configurationFile
-        val topicTemplate = parameters.topicTemplate
-        val bootstrapConfig =  smartConfigFactory.create(getBootstrapConfig(instanceId))
+        instanceId = parameters.instanceId?.toInt()
+        configurationFile = parameters.configurationFile
+        topicTemplate = parameters.topicTemplate
+        bootstrapConfig =  smartConfigFactory.create(getBootstrapConfig(instanceId))
 
-        lifeCycleCoordinator =
-            coordinatorFactory.createCoordinator<FlowWorkerSetup> { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
-                log.info("LifecycleEvent received: $event")
-                when (event) {
-                    is StartEvent -> {
-                        createTopics(topicTemplate)
-                        coordinator.postEvent(TopicsCreated())
-                    }
-                    is TopicsCreated -> {
-                        writeConfig(configurationFile, bootstrapConfig)
-                        coordinator.postEvent(ConfigWritten())
-                    }
-                    is ConfigWritten -> {
-                        consoleLogger.info("Creating publisher")
-                        publisher?.close()
-                        registration?.close()
-                        publisher = CommonPublisher(coordinatorFactory, publisherFactory, instanceId, bootstrapConfig)
-                        registration =
-                            coordinator.followStatusChangesByName(setOf(LifecycleCoordinatorName.forComponent<CommonPublisher>()))
-                        publisher?.start()
-                        consoleLogger.info("Publisher created")
-                    }
-                    is RegistrationStatusChangeEvent -> {
-                        if (event.status == LifecycleStatus.UP) {
-                            consoleLogger.info("Publishing RPCRecord")
-                            publisher?.publishRecords(listOf(getHelloWorldRPCEventRecord()))?.forEach { it.get() }
-                            consoleLogger.info("Published RPCRecord")
-                            shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
-                        } else {
-                            publisher?.close()
-                        }
-                    }
-                    is StopEvent -> {
-                        publisher?.close()
-                    }
-                    else -> {
-                        log.error("$event unexpected!")
-                    }
-                }
-            }
-
-        lifeCycleCoordinator!!.start()
+        lifeCycleCoordinator.start()
     }
 
-    private fun writeConfig(configurationFile: File?, bootstrapConfig: SmartConfig) {
+    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        log.info("LifecycleEvent received: $event")
+        when (event) {
+            is StartEvent -> {
+                createTopics(topicTemplate)
+                coordinator.postEvent(TopicsCreated())
+            }
+            is TopicsCreated -> {
+                writeConfig(configurationFile)
+                coordinator.postEvent(ConfigWritten())
+            }
+            is ConfigWritten -> {
+                setupPublisher(coordinator)
+            }
+            is RegistrationStatusChangeEvent -> {
+                if (event.status == LifecycleStatus.UP) {
+                    consoleLogger.info("Publishing RPCRecord")
+                    publisher?.publishRecords(listOf(getHelloWorldRPCEventRecord()))?.forEach { it.get() }
+                    consoleLogger.info("Published RPCRecord")
+                    shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
+                } else {
+                    publisher?.close()
+                }
+            }
+            is StopEvent -> {
+                publisher?.close()
+            }
+            else -> {
+                log.error("$event unexpected!")
+            }
+        }
+    }
+
+    private fun setupPublisher(coordinator: LifecycleCoordinator) {
+        consoleLogger.info("Creating publisher")
+        val config = bootstrapConfig ?: throw CordaRuntimeException("BootstrapConfig is null")
+        publisher = CommonPublisher(coordinatorFactory, publisherFactory, instanceId, config)
+        registration =
+            coordinator.followStatusChangesByName(setOf(LifecycleCoordinatorName.forComponent<CommonPublisher>()))
+        publisher?.start()
+        consoleLogger.info("Publisher created")
+    }
+
+    private fun writeConfig(configurationFile: File?) {
+        val config = bootstrapConfig ?: throw CordaRuntimeException("BootstrapConfig is null")
         if (configurationFile != null) {
             log.info("Writing config to topic")
             consoleLogger.info("Writing config")
             configWriter.updateConfig(
                 getConfigValue(ConfigHelper.SYSTEM_ENV_CONFIG_TOPIC_PATH, ConfigHelper.DEFAULT_CONFIG_TOPIC_VALUE),
-                bootstrapConfig,
+                config,
                 configurationFile.readText()
             )
             log.info("Write of config to topic completed")
@@ -150,6 +158,6 @@ class FlowWorkerSetup @Activate constructor(
     override fun shutdown() {
         consoleLogger.info("Stopping Flow Worker setup tool")
         log.info("Stopping Flow Worker setup tool")
-        lifeCycleCoordinator?.stop()
+        lifeCycleCoordinator.stop()
     }
 }

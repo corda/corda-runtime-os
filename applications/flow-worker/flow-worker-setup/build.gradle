@@ -25,7 +25,7 @@ dependencies {
 
     implementation project(":components:examples:common-publisher")
     implementation project(':components:kafka-topic-admin')
-    implementation project(':components:kafka-config-write')
+    implementation project(':components:configuration:configuration-write-service-impl')
 
     runtimeOnly project(":libs:configuration:configuration-write-impl")
     runtimeOnly project(":libs:configuration:configuration-read-impl")

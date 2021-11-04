@@ -9,7 +9,6 @@ import net.corda.sandbox.internal.classtag.StaticTag
 import net.corda.sandbox.internal.sandbox.CpkSandbox
 import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
-import org.osgi.framework.FrameworkUtil
 
 /**
  * An implementation of the [SandboxGroup] interface.
@@ -103,7 +102,6 @@ internal class SandboxGroupImpl(
      */
     private fun getClassTag(klass: Class<*>, isStaticTag: Boolean): String {
         val bundle = bundleUtils.getBundle(klass)
-            ?: FrameworkUtil.getBundle(this::class.java)?.bundleContext?.getBundle(0)
             ?: return classTagFactory.createSerialisedTag(isStaticTag, null, null)
 
         val publicSandbox = publicSandboxes.find { sandbox -> sandbox.containsBundle(bundle) }

@@ -2,6 +2,7 @@ package net.corda.components.flow.service
 
 import net.corda.components.sandbox.service.SandboxService
 import net.corda.configuration.read.ConfigKeys.Companion.BOOTSTRAP_KEY
+import net.corda.configuration.read.ConfigKeys.Companion.FLOW_KEY
 import net.corda.configuration.read.ConfigKeys.Companion.MESSAGING_KEY
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.manager.FlowManager
@@ -57,7 +58,7 @@ class FlowService @Activate constructor(
     private val coordinator = coordinatorFactory.createCoordinator<FlowService>(::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        consoleLogger.info("FlowService received: $event")
+        logger.debug { "FlowService received: $event" }
         when (event) {
             is StartEvent -> {
                 logger.debug { "Starting flow runner component." }
@@ -94,7 +95,7 @@ class FlowService @Activate constructor(
 
     @Suppress("TooGenericExceptionThrown", "UNUSED_PARAMETER")
     private fun onConfigChange(keys: Set<String>, config: Map<String, SmartConfig>) {
-        if (MESSAGING_KEY in config.keys && BOOTSTRAP_KEY in config.keys && MESSAGING_KEY in config.keys) {
+        if (MESSAGING_KEY in config.keys && BOOTSTRAP_KEY in config.keys && FLOW_KEY in config.keys) {
             coordinator.postEvent(
                 NewConfigurationReceived(config)
             )
