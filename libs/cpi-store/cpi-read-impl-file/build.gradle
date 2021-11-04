@@ -28,3 +28,12 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(path: ':libs:cpi-store:integration-test:test-resources:workflow-cpk', configuration: 'outputcpb')
 }
+
+Provider<Task> cpkTaskProvider = project(':libs:cpi-store:integration-test:test-resources:workflow-cpk').tasks.named('cpb')
+ext {
+    cpiPath = cpkTaskProvider.get().outputs.files.asPath
+}
+
+test {
+    systemProperty "cpiPath", "$cpiPath"
+}

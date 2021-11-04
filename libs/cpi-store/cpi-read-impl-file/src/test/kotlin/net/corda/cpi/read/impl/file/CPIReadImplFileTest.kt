@@ -24,8 +24,7 @@ class CPIReadImplFileTest {
     companion object {
         const val AWAIT_TIMEOUT = 180L
     }
-    private val cpiPath: Path
-    = Paths.get("../integration-test/test-resources/workflow-cpk/build/libs/workflow-cpk-5.0.0.0-SNAPSHOT-package.cpb")
+    private val cpiPath: Path = Paths.get(System.getProperty("cpiPath"))
 
     @TempDir
     lateinit var cpisLocation: Path
