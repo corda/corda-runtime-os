@@ -4,13 +4,14 @@ import net.corda.data.permissions.User
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.annotations.VisibleForTesting
+import java.util.*
 
-class PermissionsTopicProcessor : CompactedProcessor<String, User> {
+class UserTopicProcessor : CompactedProcessor<String, User> {
 
     @VisibleForTesting
-    internal val userData: MutableMap<String, User> = mutableMapOf()
+    internal val userData: MutableMap<String, User> = Collections.synchronizedMap(mutableMapOf())
 
-    fun getUser(id: String) = userData[id]
+    fun getUser(userLogin: String) = userData[userLogin]
 
     override val keyClass = String::class.java
     override val valueClass = User::class.java

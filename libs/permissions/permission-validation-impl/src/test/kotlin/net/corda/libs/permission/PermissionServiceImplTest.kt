@@ -19,7 +19,7 @@ import kotlin.test.assertTrue
 class PermissionServiceImplTest {
 
     companion object {
-        private val processor = PermissionsTopicProcessor()
+        private val processor = UserTopicProcessor()
         private val subsFactory: SubscriptionFactory = mock {
             on { createCompactedSubscription(any(), eq(processor), any()) } doReturn mock()
         }

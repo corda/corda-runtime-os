@@ -12,7 +12,5 @@ internal data class PermissionUrl(val uuid: String, val permissionRequested: Str
             val uuidAndPermList = uuidAndPerm.split("/".toRegex(), 2)
             return PermissionUrl(uuidAndPermList.first(), uuidAndPermList.last())
         }
-
-
     }
 }

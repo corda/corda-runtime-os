@@ -20,14 +20,14 @@ class PermissionTopicProcessorTest {
 
     @Test
     fun `New processor does not have user data`() {
-        with (PermissionsTopicProcessor()) {
+        with (UserTopicProcessor()) {
             assertTrue(userData.isEmpty())
         }
     }
 
     @Test
     fun `onSnapshot will add to or update the user data`() {
-        with(PermissionsTopicProcessor()) {
+        with(UserTopicProcessor()) {
             onSnapshot(mapOf("user1" to User()))
             assertTrue(userData.size == 1)
             userData.containsKey("user1")
@@ -49,7 +49,7 @@ class PermissionTopicProcessorTest {
     fun `onNext will add to or update the user data`() {
 
 
-        with(PermissionsTopicProcessor()) {
+        with(UserTopicProcessor()) {
             onNext(Record("topic", "user1", User()), null, emptyMap())
             assertTrue(userData.size == 1)
             userData.containsKey("user1")
@@ -70,7 +70,7 @@ class PermissionTopicProcessorTest {
 
     @Test
     fun `onNext null Record value will delete user`() {
-        with(PermissionsTopicProcessor()) {
+        with(UserTopicProcessor()) {
             onNext(Record("topic", "user1", User()), null, emptyMap())
             assertTrue(userData.size == 1)
             userData.containsKey("user1")

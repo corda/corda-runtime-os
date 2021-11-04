@@ -7,7 +7,7 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 
 class PermissionServiceImpl(
         private val subscriptionFactory: SubscriptionFactory,
-        private val processor: PermissionsTopicProcessor
+        private val userTopicProcessor: UserTopicProcessor
 ) : PermissionService {
 
     companion object {
@@ -22,7 +22,7 @@ class PermissionServiceImpl(
 
     override fun authorizeUser(requestId: String, loginName: String, permission: String): Boolean {
 
-        val user = processor.getUser(loginName) ?: return false
+        val user = userTopicProcessor.getUser(loginName) ?: return false
 
         if (!user.enabled) return false
 
@@ -45,7 +45,7 @@ class PermissionServiceImpl(
                                         CONSUMER_GROUP,
                                         USER_PERMISSION_TOPIC
                                 ),
-                                processor
+                                userTopicProcessor
                         )
                 subscription!!.start()
                 stopped = false
