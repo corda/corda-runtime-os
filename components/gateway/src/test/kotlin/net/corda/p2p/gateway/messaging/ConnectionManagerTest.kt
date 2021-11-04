@@ -9,6 +9,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mockConstruction
+import org.mockito.Mockito.timeout
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -134,7 +135,7 @@ class ConnectionManagerTest {
             )
 
         connectionManager.close()
-        verify(mockedClient.constructed().first(), times(1)).stop()
+        verify(mockedClient.constructed().first(), timeout(1_000).times(1)).stop()
     }
 
     @Test
