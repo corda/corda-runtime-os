@@ -90,4 +90,16 @@ class SandboxServiceIsolationTest {
             })
         }
     }
+
+    @Test
+    fun `two sandboxes in the same group get their own copy of a singleton service defined in both sandboxes' private bundles`() {
+        // The counter for each `LibrarySingletonServiceUser` is independent.
+
+        // We increment the counter of CPK 1's `LibrarySingletonService.
+        assertEquals(1, runFlow(sandboxLoader.group1, LIB_SINGLETON_SERVICE_FLOW_CPK_1))
+        assertEquals(2, runFlow(sandboxLoader.group1, LIB_SINGLETON_SERVICE_FLOW_CPK_1))
+
+        // The counter of CPK 2's `LibrarySingletonService` is unaffected.
+        assertEquals(1, runFlow(sandboxLoader.group1, LIB_SINGLETON_SERVICE_FLOW_CPK_2))
+    }
 }
