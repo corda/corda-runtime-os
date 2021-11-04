@@ -3,11 +3,11 @@ package net.corda.libs.permission
 import net.corda.data.permissions.Group
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 class GroupTopicProcessor : CompactedProcessor<String, Group> {
 
-    private val groupData: MutableMap<String, Group> = Collections.synchronizedMap(mutableMapOf())
+    private val groupData: MutableMap<String, Group> = ConcurrentHashMap()
 
     fun getGroup(id: String) = groupData[id]
 

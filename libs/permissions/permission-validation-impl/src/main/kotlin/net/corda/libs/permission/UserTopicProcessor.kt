@@ -3,11 +3,13 @@ package net.corda.libs.permission
 import net.corda.data.permissions.User
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import java.util.*
+import net.corda.v5.base.annotations.VisibleForTesting
+import java.util.concurrent.ConcurrentHashMap
 
 class UserTopicProcessor : CompactedProcessor<String, User> {
 
-    private val userData: MutableMap<String, User> = Collections.synchronizedMap(mutableMapOf())
+    @VisibleForTesting
+    internal val userData: MutableMap<String, User> = ConcurrentHashMap()
 
     fun getUser(userLogin: String) = userData[userLogin]
 
