@@ -10,12 +10,12 @@ import kotlin.test.assertNotNull
 import java.time.Instant
 import kotlin.test.assertFalse
 
-class PermissionTopicProcessorTest {
+class UserTopicProcessorTest {
 
-    private val user = User("id", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
+    private val user = User("id1", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
         "hashedPassword", "saltValue", false, null, null, null)
 
-    private val userUpdated = User("id", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", false,
+    private val userUpdated = User("id2", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", false,
         "hashedPassword", "saltValue", false, null, null, null)
 
     @Test
