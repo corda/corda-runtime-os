@@ -48,30 +48,22 @@ class LifecycleCoordinatorImpl(
         private val logger: Logger = contextLogger()
 
         /**
-         * The minimum number of threads to keep active in the threadpool.
-         *
-         * Under load, the number of threads may increase. By keeping a minimum of one, the lifecycle library should
-         * remain responsive to change while not consuming excessive resources.
-         */
-        private const val MIN_THREADS = 1
-
-        /**
          * The executor on which events are processed. Note that all events should be processed on an executor thread,
          * but they may be posted from any thread. Different events may be processed on different executor threads.
          *
          * The coordinator guarantees that the event processing task is only scheduled once. This means that event
          * processing is effectively single threaded in the sense that no event processing will happen concurrently.
          *
-         * By sharing a threadpool among coordinators, it should be possible to reduce resource usage when in a stable
+         * By sharing a thread pool among coordinators, it should be possible to reduce resource usage when in a stable
          * state.
          */
-        private val executor = Executors.newCachedThreadPool() { runnable ->
+        private val executor = Executors.newCachedThreadPool { runnable ->
             val thread = Thread(runnable)
             thread.isDaemon = true
             thread
         }
 
-        private val timerExecutor = Executors.newScheduledThreadPool(MIN_THREADS) { runnable ->
+        private val timerExecutor = Executors.newSingleThreadScheduledExecutor() { runnable ->
             val thread = Thread(runnable)
             thread.isDaemon = true
             thread
@@ -81,7 +73,7 @@ class LifecycleCoordinatorImpl(
     /**
      * The event queue and timer state for this lifecycle processor.
      */
-    internal val lifecycleState = LifecycleStateManager(batchSize)
+    private val lifecycleState = LifecycleStateManager(batchSize)
 
     /**
      * The processor for this coordinator.

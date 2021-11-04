@@ -1,6 +1,7 @@
 package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
@@ -92,8 +93,13 @@ internal class Registration(
      */
     override fun close() {
         if (!isClosed.getAndSet(true)) {
-            registeringCoordinator.postEvent(StopTrackingRegistration(this))
-            coordinators.forEach { it.postEvent(CancelRegistration(this)) }
+            try {
+                registeringCoordinator.postEvent(StopTrackingRegistration(this))
+                coordinators.forEach { it.postEvent(CancelRegistration(this)) }
+            } catch (_: LifecycleException) {
+                // An error here means we're probably already in the process of closing, so we can safely ignore it
+            }
+
         }
     }
 
