@@ -35,6 +35,7 @@ dependencies {
     cpks project(path: 'sandbox-cpk-one', configuration: 'cordaCPK')
     cpks project(path: 'sandbox-cpk-two', configuration: 'cordaCPK')
     cpks project(path: 'sandbox-cpk-three', configuration: 'cordaCPK')
+    cpks project(path: 'sandbox-irresolvable-cpk', configuration: 'cordaCPK')
 
     integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
