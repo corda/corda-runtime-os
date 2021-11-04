@@ -3,13 +3,11 @@ package net.corda.libs.permission
 import net.corda.data.permissions.Group
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.annotations.VisibleForTesting
 import java.util.*
 
 class GroupTopicProcessor : CompactedProcessor<String, Group> {
 
-    @VisibleForTesting
-    internal val groupData: MutableMap<String, Group> = Collections.synchronizedMap(mutableMapOf())
+    private val groupData: MutableMap<String, Group> = Collections.synchronizedMap(mutableMapOf())
 
     fun getGroup(id: String) = groupData[id]
 

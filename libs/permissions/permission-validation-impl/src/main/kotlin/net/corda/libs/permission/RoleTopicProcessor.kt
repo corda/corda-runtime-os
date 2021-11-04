@@ -3,13 +3,11 @@ package net.corda.libs.permission
 import net.corda.data.permissions.Role
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.annotations.VisibleForTesting
 import java.util.*
 
 class RoleTopicProcessor : CompactedProcessor<String, Role> {
 
-    @VisibleForTesting
-    internal val roleData: MutableMap<String, Role> = Collections.synchronizedMap(mutableMapOf())
+    private val roleData: MutableMap<String, Role> = Collections.synchronizedMap(mutableMapOf())
 
     fun getRole(id: String) = roleData[id]
 
