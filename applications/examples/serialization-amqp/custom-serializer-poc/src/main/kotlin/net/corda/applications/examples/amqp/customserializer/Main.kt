@@ -57,11 +57,8 @@ class Main @Activate constructor(
     }
 
     private val bundle = FrameworkUtil.getBundle(this::class.java)
-    private val bundleContext = bundle.bundleContext
 
     private fun exit() = shutDownService.shutdown(bundle)
-
-    private val factory = SerializerFactoryBuilder.build(AllWhitelist)
 
     override fun startup(args: Array<String>) {
 
@@ -84,38 +81,6 @@ class Main @Activate constructor(
         consoleLogger.info("------------------------------------------------")
         registerCorDappSerializers()
         consoleLogger.info("------------------------------------------------")
-
-//
-//        // Prepare a sandbox group
-//        val conf = configurationAdmin.getConfiguration(ConfigurationAdmin::class.java.name, null)
-//        val tmpDir = args[0]
-//        val cpk = Path.of(args[1])
-//
-//        conf?.update(Hashtable(mapOf("baseDirectory" to tmpDir,
-//            "platformVersion" to 999,
-//            "blacklistedKeys" to emptyList<Any>())))
-//
-//        val outputStream = ByteArrayOutputStream()
-//        CPI.assemble(outputStream, "cpi", "1.0", listOf(cpk))
-//        val loadCpb: CPI = installService.loadCpb(ByteArrayInputStream(outputStream.toByteArray()))
-//        val sandboxGroup = sandboxCreationService.createSandboxGroup(loadCpb.cpks.map { it.metadata.hash })
-//
-//        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-//
-//        // Save output
-////        val output = SerializationOutput(factory)
-////        val example =
-////            sandboxGroup.loadClassFromMainBundles<Any>("net.corda.applications.examples.amqp.typeevolution.Example", Any::class.java)
-////        val method = example.getMethod("saveResourceFiles")
-////        val result = method.invoke(example.getConstructor().newInstance()) as Map<*, *>
-////        for (i in result) {
-////            File(i.key as String).writeBytes(output.serialize(i.value!!, AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxGroup)).bytes)
-////        }
-//
-//
-//        // Test
-//        val input = DeserializationInput(factory)
-//        runExample(input, AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxGroup))
 
         exit()
     }
@@ -146,18 +111,6 @@ class Main @Activate constructor(
     override fun shutdown() {
         consoleLogger.info("Shutting down")
     }
-
-//    @Suppress("MaxLineLength")
-//    private fun runExample(input: DeserializationInput, serializationContext: SerializationContext){
-//        consoleLogger.info("AddNullableProperty = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("addNullableProperty.bin")!!.readBytes()), Any::class.java, serializationContext)))
-//        consoleLogger.info("AddNonNullableProperty = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("addNonNullableProperty.bin")!!.readBytes()), Any::class.java, serializationContext)))
-//        consoleLogger.info("MultipleEvolutions = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("multipleEvolutions.bin")!!.readBytes()), Any::class.java, serializationContext)))
-//        consoleLogger.info("MultipleEvolutions = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("multipleEvolutions-2.bin")!!.readBytes()), Any::class.java, serializationContext)))
-//        consoleLogger.info("RemovingProperties = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("removingProperties.bin")!!.readBytes()), Any::class.java, serializationContext)))
-//        consoleLogger.info("ReorderConstructorParameters = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("reorderConstructorParameters.bin")!!.readBytes()), Any::class.java, serializationContext)))
-//        // consoleLogger.info("RenameEnum = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("renameEnum.bin")!!.readBytes()), Any::class.java, serializationContext)))
-//        consoleLogger.info("AddEnumValue = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("addEnumValue.bin")!!.readBytes()), Any::class.java, serializationContext)))
-//    }
 
     private fun configureSerialization(sandboxAndSerializers: SandboxAndSerializers): SerializerFactory {
         // Create SerializerFactory
