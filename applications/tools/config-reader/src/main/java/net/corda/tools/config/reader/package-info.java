@@ -1,4 +1,4 @@
 @Export
-package net.corda.comp.kafka.config.read;
+package net.corda.tools.config.reader;
 
 import org.osgi.annotation.bundle.Export;
