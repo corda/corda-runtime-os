@@ -1,13 +1,13 @@
 package net.corda.rpc.permissions
 
 import net.corda.libs.permission.PermissionValidator
-import net.corda.libs.permission.factory.PermissionServiceFactory
+import net.corda.libs.permission.factory.PermissionValidatorFactory
 import net.corda.lifecycle.Lifecycle
 import org.osgi.service.component.annotations.Reference
 
 class PermissionServiceComponent(
-    @Reference(service = PermissionServiceFactory::class)
-    private val permissionServiceFactory: PermissionServiceFactory
+    @Reference(service = PermissionValidatorFactory::class)
+    private val permissionValidatorFactory: PermissionValidatorFactory
 ) : Lifecycle {
 
     @Volatile
@@ -18,7 +18,7 @@ class PermissionServiceComponent(
 
     override fun start() {
         permissionValidator?.stop()
-        permissionValidator = permissionServiceFactory.createPermissionService()
+        permissionValidator = permissionValidatorFactory.createPermissionValidator()
     }
 
     override fun stop() {

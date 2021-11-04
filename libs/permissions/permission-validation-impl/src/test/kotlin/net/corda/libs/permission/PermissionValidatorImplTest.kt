@@ -13,14 +13,14 @@ import java.time.Instant
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class PermissionServiceImplTest {
+class PermissionValidatorImplTest {
 
     companion object {
         private val userProcessor = UserTopicProcessor()
         private val groupProcessor = GroupTopicProcessor()
         private val roleProcessor = RoleTopicProcessor()
         private val subsFactory: SubscriptionFactory = mock()
-        private val permissionService = PermissionServiceImpl(subsFactory, userProcessor, groupProcessor, roleProcessor)
+        private val permissionService = PermissionValidatorImpl(subsFactory, userProcessor, groupProcessor, roleProcessor)
 
         private const val virtualNode = "f39d810f-6ee6-4742-ab7c-d1fe274ab85e"
         private const val permissionString = "flow/start/com.myapp.MyFlow"

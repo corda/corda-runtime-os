@@ -12,12 +12,12 @@ import net.corda.v5.base.util.debug
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class PermissionServiceImpl(
+class PermissionValidatorImpl(
         private val subscriptionFactory: SubscriptionFactory,
         private val userTopicProcessor: UserTopicProcessor,
         private val groupTopicProcessor: GroupTopicProcessor,
         private val roleTopicProcessor: RoleTopicProcessor
-) : PermissionService {
+) : PermissionValidator {
 
     companion object {
 
