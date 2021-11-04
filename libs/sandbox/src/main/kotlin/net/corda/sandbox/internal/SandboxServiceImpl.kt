@@ -68,14 +68,13 @@ internal class SandboxServiceImpl @Activate constructor(
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
         val sandboxGroupInternal = sandboxGroup as SandboxGroupInternal
 
-        bundleIdToSandboxGroup.forEach { entry ->
-            if (entry.value == sandboxGroup) bundleIdToSandboxGroup.remove(entry.key)
-        }
+        val sandboxGroupsToRemove = bundleIdToSandboxGroup.filter { entry -> entry.value === sandboxGroup }
+        sandboxGroupsToRemove.forEach { entry -> bundleIdToSandboxGroup.remove(entry.key) }
 
         sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
-            bundleIdToSandbox.forEach { entry ->
-                if (entry.value == sandbox) bundleIdToSandbox.remove(entry.key)
-            }
+            val sandboxesToRemove = bundleIdToSandbox.filter { entry -> entry.value === sandbox }
+            sandboxesToRemove.forEach { entry -> bundleIdToSandbox.remove(entry.key) }
+
             zombieBundles.addAll((sandbox as Sandbox).unload())
         }
     }
