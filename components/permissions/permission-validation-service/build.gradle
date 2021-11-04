@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Permissions component'
+description 'Permissions Validation component'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -15,7 +15,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(':libs:permissions:permission-service')
+    implementation project(':libs:permissions:permission-validation')
 
     implementation project(":osgi-framework-api")
 }

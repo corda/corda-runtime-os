@@ -46,11 +46,11 @@ class PermissionServiceImplTest {
             ChangeDetails(Instant.now(), "changeUser"), "STARTFLOW-MYFLOW", listOf(permission))
         private val roleWithPermDenied = Role("81b6096e-d9dd-4966-a9e5-2b77c4d3b213", 1,
             ChangeDetails(Instant.now(), "changeUser"), "STARTFLOW-MYFLOW", listOf(permissionDenied))
-        private val user = User("id", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true, "email",
+        private val user = User("id", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
             "hashedPassword", "saltValue", false, null, null, listOf(role).map { it.id })
-        private val userWithPermDenied = User("id", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true, "email",
+        private val userWithPermDenied = User("id", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
             "hashedPassword", "saltValue", false, null, null, listOf(roleWithPermDenied).map { it.id })
-        private val disabledUser = User("id", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", false, "email",
+        private val disabledUser = User("id", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", false,
             "hashedPassword", "saltValue",false, null, null, listOf(role).map { it.id })
 
         @BeforeAll
