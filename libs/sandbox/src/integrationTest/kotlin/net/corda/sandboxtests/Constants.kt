@@ -49,6 +49,8 @@ internal const val SERVICES_FLOW_CPK_1 = "com.example.sandbox.cpk1.ServicesOneFl
 internal const val SERVICES_FLOW_CPK_2 = "com.example.sandbox.cpk2.ServicesTwoFlow"
 internal const val SERVICES_FLOW_CPK_3 = "com.example.sandbox.cpk3.ServicesThreeFlow"
 internal const val GET_CALLING_SANDBOX_GROUP_FUNCTION = "com.example.sandbox.cpk1.GetCallingSandboxGroupFunction"
+internal const val LIB_SINGLETON_SERVICE_FLOW_CPK_1 = "com.example.sandbox.cpk1.LibrarySingletonServiceHolderFlow"
+internal const val LIB_SINGLETON_SERVICE_FLOW_CPK_2 = "com.example.sandbox.cpk2.LibrarySingletonServiceHolderFlow"
 
 internal const val LIBRARY_QUERY_CLASS = "com.example.sandbox.library.SandboxQuery"
 internal const val LIBRARY_QUERY_IMPL_CLASS = "com.example.sandbox.library.impl.SandboxQueryImpl"

@@ -76,7 +76,7 @@ class SandboxLoader @Activate constructor(
 
     fun createSandboxGroupFor(vararg cpkResources: String): SandboxGroup {
         val cpks = cpkResources.map(::loadCPK)
-        return sandboxCreationService.createSandboxGroup(cpks.map { cpk -> cpk.metadata.hash })
+        return sandboxCreationService.createSandboxGroup(cpks)
     }
 
     private fun loadCPK(resourceName: String): CPK {
