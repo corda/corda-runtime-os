@@ -25,8 +25,8 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
-import net.corda.p2p.gateway.GatewayMessage
-import net.corda.p2p.gateway.GatewayResponse
+import net.corda.data.p2p.gateway.GatewayMessage
+import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
