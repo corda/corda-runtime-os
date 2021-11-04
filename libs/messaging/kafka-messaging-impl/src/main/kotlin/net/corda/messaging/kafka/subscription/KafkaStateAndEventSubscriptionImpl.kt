@@ -13,7 +13,6 @@ import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuil
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.types.StateAndEventConfig
-import net.corda.messaging.kafka.types.Topic
 import net.corda.messaging.kafka.utils.getEventsByBatch
 import net.corda.messaging.kafka.utils.tryGetResult
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -51,9 +50,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private val cordaAvroSerializer = CordaAvroSerializer<Any>(avroSchemaRegistry)
 
-    private val topicPrefix = config.topicPrefix
-    private val eventTopic = Topic(topicPrefix, config.eventTopic)
-    private val stateTopic = Topic(topicPrefix, config.stateTopic)
+    private val eventTopic = config.eventTopic
+    private val stateTopic = config.stateTopic
     private val groupName = config.eventGroupName
     private val producerClientId: String = config.producerClientId
     private val consumerThreadStopTimeout = config.consumerThreadStopTimeout
@@ -218,12 +216,12 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         if (thisEventUpdates == null) {
             log.warn("Sending event: $event, and state: $state to dead letter queue. Processor failed to complete.")
             outputRecords.add(generateDeadLetterRecord(event, state))
-            outputRecords.add(Record(stateTopic.suffix, key, null))
+            outputRecords.add(Record(stateTopic, key, null))
             updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = null
         } else {
             outputRecords.addAll(thisEventUpdates.responseEvents)
             val updatedState = thisEventUpdates.updatedState
-            outputRecords.add(Record(stateTopic.suffix, key, updatedState))
+            outputRecords.add(Record(stateTopic, key, updatedState))
             updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
             log.debug { "Completed event: $event" }
         }
@@ -238,12 +236,12 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun generateDeadLetterRecord(event: ConsumerRecord<K, E>, state: S?): Record<*, *> {
-        val keyBytes = ByteBuffer.wrap(cordaAvroSerializer.serialize(stateTopic.topic, event.key()))
+        val keyBytes = ByteBuffer.wrap(cordaAvroSerializer.serialize(stateTopic, event.key()))
         val stateBytes =
-            if (state != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(stateTopic.topic, state)) else null
-        val eventBytes = ByteBuffer.wrap(cordaAvroSerializer.serialize(eventTopic.topic, event.value()))
+            if (state != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(stateTopic, state)) else null
+        val eventBytes = ByteBuffer.wrap(cordaAvroSerializer.serialize(eventTopic, event.value()))
         return Record(
-            eventTopic.suffix + deadLetterQueueSuffix, event.key(),
+            eventTopic + deadLetterQueueSuffix, event.key(),
             StateAndEventDeadLetterRecord(clock.instant(), keyBytes, stateBytes, eventBytes)
         )
     }

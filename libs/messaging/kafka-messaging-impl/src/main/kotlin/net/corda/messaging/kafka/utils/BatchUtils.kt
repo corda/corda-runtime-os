@@ -32,13 +32,13 @@ fun<K: Any, E : Any> getEventsByBatch(events: List<ConsumerRecord<K, E>>): List<
 /**
  * Generate the consumer offsets for a given list of [records]
  */
-fun getRecordListOffsets(records: List<ConsumerRecord<*, *>>): Map<TopicPartition, OffsetAndMetadata> {
+fun getRecordListOffsets(records: List<ConsumerRecord<*, *>>, topicPrefix: String): Map<TopicPartition, OffsetAndMetadata> {
     if (records.isEmpty()) {
         return mutableMapOf()
     }
 
     return records.fold(mutableMapOf()) { offsets, record ->
-        val key = TopicPartition(record.topic(), record.partition())
+        val key = TopicPartition(topicPrefix + record.topic(), record.partition())
         val currentOffset = offsets[key]?.offset() ?: 0L
         if (currentOffset <= record.offset()) {
             offsets[key] = OffsetAndMetadata(record.offset() + 1)

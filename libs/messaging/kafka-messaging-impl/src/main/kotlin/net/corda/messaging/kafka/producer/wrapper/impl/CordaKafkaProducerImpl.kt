@@ -60,7 +60,8 @@ class CordaKafkaProducerImpl(
     }
 
     override fun send(record: ProducerRecord<Any, Any>, callback: Callback?): Future<RecordMetadata> {
-        val prefixedRecord = ProducerRecord(topicPrefix + record.topic(), record.partition(), record.key(), record.value())
+        val prefixedRecord =
+            ProducerRecord(topicPrefix + record.topic(), record.partition(), record.key(), record.value())
         return producer.send(prefixedRecord, callback)
     }
 
@@ -178,12 +179,18 @@ class CordaKafkaProducerImpl(
         trySendOffsetsToTransaction(consumer, null)
     }
 
-    override fun sendRecordOffsetsToTransaction(consumer: CordaKafkaConsumer<*, *>, records: List<ConsumerRecord<*, *>>) {
+    override fun sendRecordOffsetsToTransaction(
+        consumer: CordaKafkaConsumer<*, *>,
+        records: List<ConsumerRecord<*, *>>
+    ) {
         trySendOffsetsToTransaction(consumer, records)
     }
 
     @Suppress("ThrowsCount")
-    private fun trySendOffsetsToTransaction(consumer: CordaKafkaConsumer<*, *>, records: List<ConsumerRecord<*, *>>? = null) {
+    private fun trySendOffsetsToTransaction(
+        consumer: CordaKafkaConsumer<*, *>,
+        records: List<ConsumerRecord<*, *>>? = null
+    ) {
         try {
             producer.sendOffsetsToTransaction(consumerOffsets(consumer, records), consumer.groupMetadata())
         } catch (ex: Exception) {
@@ -202,7 +209,7 @@ class CordaKafkaProducerImpl(
                 }
                 is TimeoutException,
                 is InterruptException,
-                //Failure to commit here might be due to consumer kicked from group. return as intermittent to trigger retry
+                    //Failure to commit here might be due to consumer kicked from group. return as intermittent to trigger retry
                 is CommitFailedException,
                 is KafkaException -> {
                     abortTransaction()
@@ -252,7 +259,7 @@ class CordaKafkaProducerImpl(
         return if (records == null) {
             getConsumerOffsets(consumer)
         } else {
-            getRecordListOffsets(records)
+            getRecordListOffsets(records, topicPrefix)
         }
     }
 
@@ -260,9 +267,11 @@ class CordaKafkaProducerImpl(
      * Generate the consumer offsets for poll position in each consumer partition
      */
     private fun getConsumerOffsets(consumer: CordaKafkaConsumer<*, *>): Map<TopicPartition, OffsetAndMetadata> {
-        val offsets =  mutableMapOf<TopicPartition, OffsetAndMetadata>()
+        val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
         for (topicPartition in consumer.assignment()) {
-            offsets[topicPartition] = OffsetAndMetadata(consumer.position(topicPartition))
+            val prefixedTopicPartition =
+                TopicPartition(topicPrefix + topicPartition.topic(), topicPartition.partition())
+            offsets[prefixedTopicPartition] = OffsetAndMetadata(consumer.position(prefixedTopicPartition))
         }
         return offsets
     }

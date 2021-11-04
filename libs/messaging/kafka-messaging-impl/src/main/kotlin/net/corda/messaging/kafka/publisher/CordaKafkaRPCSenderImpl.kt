@@ -62,12 +62,11 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         get() = !stopped
 
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
-    private val topicPrefix = config.getString(TOPIC_PREFIX)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
     private val responseTopic = config.getString(RESPONSE_TOPIC)
     private var partitionListener = RPCConsumerRebalanceListener(
-        "$topicPrefix$responseTopic",
+        responseTopic,
         "RPC Response listener",
         futureTracker
     )

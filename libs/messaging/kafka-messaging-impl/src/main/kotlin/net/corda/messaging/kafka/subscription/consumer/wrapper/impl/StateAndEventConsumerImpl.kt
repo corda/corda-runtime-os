@@ -71,7 +71,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         val partitionsSynced = mutableSetOf<TopicPartition>()
         val states = stateConsumer.poll()
-        for (state in states) {
+        for (state in states) {0
             log.debug { "Updating state: $state" }
             updateInMemoryState(state)
             partitionsSynced.addAll(getSyncedEventPartitions())
