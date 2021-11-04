@@ -39,7 +39,7 @@ internal class SandboxServiceImpl @Activate constructor(
         )
 
     // These sandboxes are not persisted in any way; they are recreated on node startup.
-    private val sandboxes = ConcurrentHashMap<UUID, Sandbox>()
+    private val sandboxes = ConcurrentHashMap.newKeySet<Sandbox>()
 
     // Maps each sandbox ID to the sandbox group that the sandbox is part of.
     private val sandboxGroups = ConcurrentHashMap<UUID, SandboxGroup>()
@@ -54,7 +54,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
         val publicSandbox = SandboxImpl(UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
-        sandboxes[publicSandbox.id] = publicSandbox
+        sandboxes.add(publicSandbox)
         publicSandboxes.add(publicSandbox)
     }
 
@@ -67,7 +67,7 @@ internal class SandboxServiceImpl @Activate constructor(
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
         val sandboxGroupInternal = sandboxGroup as SandboxGroupInternal
         sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
-            sandboxes.remove(sandbox.id)
+            sandboxes.remove(sandbox)
             sandboxGroups.remove(sandbox.id)
             zombieBundles.addAll((sandbox as Sandbox).unload())
         }
@@ -75,8 +75,8 @@ internal class SandboxServiceImpl @Activate constructor(
 
     @Suppress("ComplexMethod")
     override fun hasVisibility(lookingBundle: Bundle, lookedAtBundle: Bundle): Boolean {
-        val lookingSandbox = sandboxes.values.find { sandbox -> sandbox.containsBundle(lookingBundle) }
-        val lookedAtSandbox = sandboxes.values.find { sandbox -> sandbox.containsBundle(lookedAtBundle) }
+        val lookingSandbox = sandboxes.find { sandbox -> sandbox.containsBundle(lookingBundle) }
+        val lookedAtSandbox = sandboxes.find { sandbox -> sandbox.containsBundle(lookedAtBundle) }
 
         return when {
             lookingBundle in zombieBundles || lookedAtBundle in zombieBundles -> false
@@ -102,11 +102,11 @@ internal class SandboxServiceImpl @Activate constructor(
         )
     }
 
-    override fun isSandboxed(bundle: Bundle) = sandboxes.values.any { sandbox -> sandbox.containsBundle(bundle) }
+    override fun isSandboxed(bundle: Bundle) = sandboxes.any { sandbox -> sandbox.containsBundle(bundle) }
 
     override fun areInSameSandbox(bundleOne: Bundle, bundleTwo: Bundle): Boolean {
-        val sandboxOne = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundleOne) }
-        val sandboxTwo = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundleTwo) }
+        val sandboxOne = sandboxes.find { sandbox -> sandbox.containsBundle(bundleOne) }
+        val sandboxTwo = sandboxes.find { sandbox -> sandbox.containsBundle(bundleTwo) }
         return sandboxOne != null && sandboxOne === sandboxTwo
     }
 
@@ -156,7 +156,7 @@ internal class SandboxServiceImpl @Activate constructor(
             bundles.add(mainBundle)
 
             val sandbox = CpkSandboxImpl(sandboxId, cpk, mainBundle, libraryBundles)
-            sandboxes[sandboxId] = sandbox
+            sandboxes.add(sandbox)
 
             sandbox
         }
@@ -249,7 +249,7 @@ internal class SandboxServiceImpl @Activate constructor(
                 .mapNotNull { stackFrame ->
                     val bundle = bundleUtils.getBundle(stackFrame.declaringClass)
                     if (bundle != null) {
-                        (sandboxes.values - publicSandboxes).find { sandbox -> sandbox.containsBundle(bundle) }
+                        (sandboxes - publicSandboxes).find { sandbox -> sandbox.containsBundle(bundle) }
                     } else null
                 }
                 .firstOrNull()
