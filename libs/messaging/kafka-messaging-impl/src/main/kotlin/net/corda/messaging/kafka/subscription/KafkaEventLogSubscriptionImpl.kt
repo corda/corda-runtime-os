@@ -24,6 +24,7 @@ import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
+import org.apache.kafka.clients.producer.Producer
 import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
@@ -65,6 +66,8 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
     private val topic = config.getString(TOPIC_NAME)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val producerClientId: String = config.getString(PRODUCER_CLIENT_ID)
+    private lateinit var producer: CordaKafkaProducer
+    private lateinit var consumer: CordaKafkaConsumer<K, V>
 
     /**
      * Is the subscription running.
@@ -108,6 +111,12 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
+            if(this::producer.isInitialized) {
+                producer.close()
+            }
+            if(this::consumer.isInitialized) {
+                consumer.close()
+            }
         }
     }
 
@@ -122,8 +131,6 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
     @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
     fun runConsumeLoop() {
         var attempts = 0
-        var consumer: CordaKafkaConsumer<K, V>?
-        var producer: CordaKafkaProducer?
         while (!stopped) {
             attempts++
             try {

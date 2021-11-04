@@ -58,6 +58,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
     private var consumeLoopThread: Thread? = null
     private val topic = config.getString(TOPIC_NAME)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
+    private lateinit var consumer: CordaKafkaConsumer<K, V>
 
     /**
      * Is the subscription running.
@@ -102,6 +103,9 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
             }
             executor?.shutdown()
             thread?.join(consumerThreadStopTimeout)
+            if (this::consumer.isInitialized){
+                consumer.close()
+            }
         }
     }
 
@@ -120,9 +124,10 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
         while (!stopped) {
             attempts++
             try {
-                consumerBuilder.createPubSubConsumer(
+                consumer = consumerBuilder.createPubSubConsumer(
                     config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass,::logFailedDeserialize
-                ).use {
+                )
+                consumer.use {
                     it.subscribeToTopic()
                     pollAndProcessRecords(it)
                 }

@@ -53,6 +53,7 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
+    private lateinit var consumer: CordaKafkaConsumer<String, RPCRequest>
 
     override val isRunning: Boolean
         get() = !stopped
@@ -83,6 +84,10 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
+            publisher.close()
+            if(this::consumer.isInitialized) {
+                consumer.close()
+            }
         }
     }
 
@@ -93,11 +98,12 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc consumer.  Attempt: $attempts" }
-                consumerBuilder.createRPCConsumer(
+                consumer = consumerBuilder.createRPCConsumer(
                     config.getConfig(KAFKA_CONSUMER),
                     String::class.java,
                     RPCRequest::class.java
-                ).use {
+                )
+                consumer.use {
                     it.subscribeToTopic()
                     pollAndProcessRecords(it)
                 }

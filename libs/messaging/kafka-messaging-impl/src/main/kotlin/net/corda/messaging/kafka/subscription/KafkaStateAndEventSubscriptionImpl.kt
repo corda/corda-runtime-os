@@ -96,6 +96,16 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
+
+            if (this::stateAndEventConsumer.isInitialized) {
+                stateAndEventConsumer.close()
+            }
+            if (this::eventConsumer.isInitialized) {
+                eventConsumer.close()
+            }
+            if (this::producer.isInitialized) {
+                producer.close()
+            }
         }
     }
 

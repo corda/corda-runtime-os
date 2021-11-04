@@ -103,7 +103,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             }
         }
 
-        consumerRecords.map {
+        return consumerRecords.map {
             ConsumerRecord(
                 it.topic().removePrefix(topicPrefix),
                 it.partition(),
@@ -111,9 +111,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 it.key(),
                 it.value()
             )
-        }
-
-        return consumerRecords.sortedBy { it.timestamp() }
+        }.sortedBy { it.timestamp() }
     }
 
     override fun resetToLastCommittedPositions(offsetStrategy: OffsetResetStrategy) {
@@ -182,12 +180,18 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     @Suppress("TooGenericExceptionCaught")
     override fun subscribe(topics: Collection<String>, listener: ConsumerRebalanceListener?) {
-        topics.map { topicPrefix + it }
+        val newTopics = topics.map {
+            if(!it.contains(topicPrefix)) {
+                topicPrefix + it
+            } else {
+                it
+            }
+        }
         var attempts = 0L
         var attemptSubscription = true
         while (attemptSubscription) {
             try {
-                subscribeToTopics(listener, topics)
+                subscribeToTopics(listener, newTopics)
                 attemptSubscription = false
             } catch (ex: Exception) {
                 val message = "CordaKafkaConsumer failed to subscribe a consumer from group $groupName to topic $topic"
@@ -304,8 +308,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     @Suppress("TooGenericExceptionCaught")
     override fun assign(partitions: Collection<TopicPartition>) {
         try {
-            partitions.map { TopicPartition(topicPrefix + it.topic(), it.partition()) }
-            consumer.assign(partitions)
+            val newPartition = partitions.map { TopicPartition(topicPrefix + it.topic(), it.partition()) }
+            consumer.assign(newPartition)
         } catch (ex: Exception) {
             when (ex) {
                 is ConcurrentModificationException -> {
@@ -329,7 +333,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     override fun assignment(): Set<TopicPartition> {
         return try {
             val partitionSet = consumer.assignment()
-            partitionSet.map { TopicPartition(topicPrefix + it.topic(), it.partition()) }.toSet()
+            partitionSet.map { TopicPartition(it.topic().removePrefix(topicPrefix), it.partition()) }.toSet()
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException -> {
@@ -405,8 +409,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     @Suppress("TooGenericExceptionCaught")
     override fun seekToBeginning(partitions: Collection<TopicPartition>) {
         try {
-            partitions.map { TopicPartition(topicPrefix + it.topic(), it.partition()) }
-            consumer.seekToBeginning(partitions)
+            val newPartitions = partitions.map { TopicPartition(topicPrefix + it.topic(), it.partition()) }
+            consumer.seekToBeginning(newPartitions)
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalArgumentException,
@@ -432,8 +436,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     @Suppress("TooGenericExceptionCaught")
     override fun beginningOffsets(partitions: Collection<TopicPartition>): Map<TopicPartition, Long> {
         return try {
-            partitions.map { TopicPartition(topicPrefix + it.topic(), it.partition()) }
-            val partitionMap = consumer.beginningOffsets(partitions)
+            val newPartitions = partitions.map { TopicPartition(topicPrefix + it.topic(), it.partition()) }
+            val partitionMap = consumer.beginningOffsets(newPartitions)
             partitionMap.map { (key, value) ->
                 TopicPartition(
                     key.topic().removePrefix(topicPrefix),
@@ -464,8 +468,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     @Suppress("TooGenericExceptionCaught")
     override fun endOffsets(partitions: Collection<TopicPartition>): Map<TopicPartition, Long> {
         return try {
-            partitions.map { TopicPartition(topicPrefix + it.topic(), it.partition()) }
-            val partitionMap = consumer.endOffsets(partitions)
+            val newPartitions = partitions.map { TopicPartition(topicPrefix + it.topic(), it.partition()) }
+            val partitionMap = consumer.endOffsets(newPartitions)
             partitionMap.map { (key, value) ->
                 TopicPartition(
                     key.topic().removePrefix(topicPrefix),
@@ -495,8 +499,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     @Suppress("TooGenericExceptionCaught")
     override fun resume(partitions: Collection<TopicPartition>) {
         try {
-            partitions.map { TopicPartition(topicPrefix + it.topic(), it.partition()) }
-            consumer.resume(partitions)
+            val newPartitions = partitions.map { TopicPartition(topicPrefix + it.topic(), it.partition()) }
+            consumer.resume(newPartitions)
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException -> {
@@ -512,8 +516,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     @Suppress("TooGenericExceptionCaught")
     override fun pause(partitions: Collection<TopicPartition>) {
         try {
-            partitions.map { TopicPartition(topicPrefix + it.topic(), it.partition()) }
-            consumer.pause(partitions)
+            val newPartitions = partitions.map { TopicPartition(topicPrefix + it.topic(), it.partition()) }
+            consumer.pause(newPartitions)
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException -> {
