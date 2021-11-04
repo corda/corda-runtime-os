@@ -53,10 +53,6 @@ class DbAccessProviderH2Test: DbAccessProviderTestBase() {
         return password
     }
 
-    override fun nameOfCallingClass(): String {
-        return "DbAccessProviderH2Test";
-    }
-
     override fun dbNullOrBlank(): Boolean {
         return System.getProperty("server").isNullOrBlank();
     }

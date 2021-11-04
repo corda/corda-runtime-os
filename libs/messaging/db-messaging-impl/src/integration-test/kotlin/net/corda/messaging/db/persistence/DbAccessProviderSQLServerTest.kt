@@ -41,10 +41,6 @@ class DbAccessProviderSQLServerTest: DbAccessProviderTestBase() {
         return sqlServer.password
     }
 
-    override fun nameOfCallingClass(): String {
-        return "DbAccessProviderSQLServerTest";
-    }
-
     override fun dbNullOrBlank(): Boolean {
         return System.getProperty("sqlServer").isNullOrBlank();
     }

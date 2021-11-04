@@ -36,14 +36,11 @@ abstract class DbAccessProviderTestBase {
 
     abstract fun getPassword(): String
 
-    abstract fun nameOfCallingClass(): String
-
     abstract fun dbNullOrBlank(): Boolean
 
     @BeforeClass
     fun checkIfTestsShouldBeSkipped() {
-        if (nameOfCallingClass() == "DbAccessProviderPostgresTest" ||
-            nameOfCallingClass() == "DbAccessProviderSQLServerTest") {
+        if (variables are defined) {
             org.junit.Assume.assumeTrue(!dbNullOrBlank());
         }
     }
