@@ -38,13 +38,13 @@ internal class SandboxServiceImpl @Activate constructor(
             "The sandbox service cannot run without the Service Component Runtime bundle installed."
         )
 
-    // These sandboxes are not persisted in any way; they are recreated on node startup.
-    private val sandboxes = ConcurrentHashMap.newKeySet<Sandbox>()
+    // Maps each bundle ID to the sandbox the bundle is part of.
+    private val bundleIdToSandbox = ConcurrentHashMap<Long, Sandbox>()
 
     // Maps each sandbox ID to the sandbox group that the sandbox is part of.
-    private val sandboxGroups = ConcurrentHashMap<UUID, SandboxGroup>()
+    private val sandboxIdToGroup = ConcurrentHashMap<UUID, SandboxGroup>()
 
-    // The created public sandboxes.
+    // The public sandboxes that have been created.
     private val publicSandboxes = ConcurrentHashMap.newKeySet<Sandbox>()
 
     // Bundles that failed to uninstall when a sandbox group was unloaded.
@@ -54,7 +54,9 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
         val publicSandbox = SandboxImpl(UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
-        sandboxes.add(publicSandbox)
+        (publicBundles + privateBundles).forEach {
+            bundleIdToSandbox[it.bundleId] = publicSandbox
+        }
         publicSandboxes.add(publicSandbox)
     }
 
@@ -67,16 +69,18 @@ internal class SandboxServiceImpl @Activate constructor(
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
         val sandboxGroupInternal = sandboxGroup as SandboxGroupInternal
         sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
-            sandboxes.remove(sandbox)
-            sandboxGroups.remove(sandbox.id)
+            bundleIdToSandbox.forEach { entry ->
+                if (entry.value == sandbox) bundleIdToSandbox.remove(entry.key)
+            }
+            sandboxIdToGroup.remove(sandbox.id)
             zombieBundles.addAll((sandbox as Sandbox).unload())
         }
     }
 
     @Suppress("ComplexMethod")
     override fun hasVisibility(lookingBundle: Bundle, lookedAtBundle: Bundle): Boolean {
-        val lookingSandbox = sandboxes.find { sandbox -> sandbox.containsBundle(lookingBundle) }
-        val lookedAtSandbox = sandboxes.find { sandbox -> sandbox.containsBundle(lookedAtBundle) }
+        val lookingSandbox = bundleIdToSandbox[lookingBundle.bundleId]
+        val lookedAtSandbox = bundleIdToSandbox[lookedAtBundle.bundleId]
 
         return when {
             lookingBundle in zombieBundles || lookedAtBundle in zombieBundles -> false
@@ -97,16 +101,16 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun getCallingSandboxGroup(): SandboxGroup? {
         val sandbox = getCallingSandbox() ?: return null
-        return sandboxGroups[sandbox.id] ?: throw SandboxException(
+        return sandboxIdToGroup[sandbox.id] ?: throw SandboxException(
             "A sandbox was found, but it was not part of any sandbox group."
         )
     }
 
-    override fun isSandboxed(bundle: Bundle) = sandboxes.any { sandbox -> sandbox.containsBundle(bundle) }
+    override fun isSandboxed(bundle: Bundle) = bundleIdToSandbox[bundle.bundleId] != null
 
     override fun areInSameSandbox(bundleOne: Bundle, bundleTwo: Bundle): Boolean {
-        val sandboxOne = sandboxes.find { sandbox -> sandbox.containsBundle(bundleOne) }
-        val sandboxTwo = sandboxes.find { sandbox -> sandbox.containsBundle(bundleTwo) }
+        val sandboxOne = bundleIdToSandbox[bundleOne.bundleId]
+        val sandboxTwo = bundleIdToSandbox[bundleTwo.bundleId]
         return sandboxOne != null && sandboxOne === sandboxTwo
     }
 
@@ -156,7 +160,10 @@ internal class SandboxServiceImpl @Activate constructor(
             bundles.add(mainBundle)
 
             val sandbox = CpkSandboxImpl(sandboxId, cpk, mainBundle, libraryBundles)
-            sandboxes.add(sandbox)
+
+            (libraryBundles + mainBundle).forEach {
+                bundleIdToSandbox[it.bundleId] = sandbox
+            }
 
             sandbox
         }
@@ -180,7 +187,7 @@ internal class SandboxServiceImpl @Activate constructor(
         val sandboxGroup = SandboxGroupImpl(newSandboxes, publicSandboxes, ClassTagFactoryImpl(), bundleUtils)
 
         newSandboxes.forEach { sandbox ->
-            sandboxGroups[sandbox.id] = sandboxGroup
+            sandboxIdToGroup[sandbox.id] = sandboxGroup
         }
 
         return sandboxGroup
@@ -249,7 +256,8 @@ internal class SandboxServiceImpl @Activate constructor(
                 .mapNotNull { stackFrame ->
                     val bundle = bundleUtils.getBundle(stackFrame.declaringClass)
                     if (bundle != null) {
-                        (sandboxes - publicSandboxes).find { sandbox -> sandbox.containsBundle(bundle) }
+                        val sandbox = bundleIdToSandbox[bundle.bundleId]
+                        if (sandbox != null && sandbox !in publicSandboxes) sandbox else null
                     } else null
                 }
                 .firstOrNull()
