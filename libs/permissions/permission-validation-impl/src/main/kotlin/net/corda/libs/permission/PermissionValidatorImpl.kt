@@ -13,10 +13,10 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class PermissionValidatorImpl(
-        private val subscriptionFactory: SubscriptionFactory,
-        private val userTopicProcessor: UserTopicProcessor,
-        private val groupTopicProcessor: GroupTopicProcessor,
-        private val roleTopicProcessor: RoleTopicProcessor
+    private val subscriptionFactory: SubscriptionFactory,
+    private val userTopicProcessor: UserTopicProcessor,
+    private val groupTopicProcessor: GroupTopicProcessor,
+    private val roleTopicProcessor: RoleTopicProcessor
 ) : PermissionValidator {
 
     companion object {
@@ -37,9 +37,9 @@ class PermissionValidatorImpl(
     private val lock = ReentrantLock()
 
     private var subscriptions: Triple<
-                CompactedSubscription<String, User>,
-                CompactedSubscription<String, Group>,
-                CompactedSubscription<String, Role>
+            CompactedSubscription<String, User>,
+            CompactedSubscription<String, Group>,
+            CompactedSubscription<String, Role>
             >? = null
 
 
@@ -103,7 +103,11 @@ class PermissionValidatorImpl(
         return performCheckRec(user.roleIds, user.parentGroupId, permission)
     }
 
-    private tailrec fun performCheckRec(roleIds: Collection<String>, parentGroupId: String?, permission: String): Boolean {
+    private tailrec fun performCheckRec(
+        roleIds: Collection<String>,
+        parentGroupId: String?,
+        permission: String
+    ): Boolean {
 
         logger.debug { "Checking permissions for: $permission - $roleIds - $parentGroupId" }
 
