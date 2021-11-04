@@ -6,7 +6,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-/** Returns a list of services visible to this sandbox. */
+/** Returns services visible to this sandbox. */
 @Suppress("unused")
 @Component(name = "services.one.flow")
 class ServicesOneFlow @Activate constructor(

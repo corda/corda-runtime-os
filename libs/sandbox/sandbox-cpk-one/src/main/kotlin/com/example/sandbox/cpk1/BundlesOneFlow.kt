@@ -7,7 +7,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-/** Returns a list of [Bundle]s visible to this sandbox. */
+/** Returns [Bundle]s visible to this sandbox. */
 @Suppress("unused")
 @Component(name = "bundles.one.flow")
 class BundlesOneFlow @Activate constructor(

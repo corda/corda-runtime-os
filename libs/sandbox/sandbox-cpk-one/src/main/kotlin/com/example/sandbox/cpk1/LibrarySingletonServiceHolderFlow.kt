@@ -9,9 +9,12 @@ import org.osgi.service.component.annotations.Reference
 /** Returns the value of the [LibrarySingletonService]'s counter and increments the counter. */
 @Suppress("unused")
 @Component(name = "library.singleton.user.one")
-class LibrarySingletonServiceUser @Activate constructor(
+class LibrarySingletonServiceHolderFlow @Activate constructor(
     @Reference
     private val librarySingletonService: LibrarySingletonService
 ): Flow<Int> {
-    override fun call() = librarySingletonService.counter++
+    override fun call(): Int {
+        librarySingletonService.counter++
+        return librarySingletonService.counter
+    }
 }
