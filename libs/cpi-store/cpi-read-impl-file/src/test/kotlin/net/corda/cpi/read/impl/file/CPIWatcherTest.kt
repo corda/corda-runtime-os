@@ -1,57 +1,53 @@
 package net.corda.cpi.read.impl.file
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 
 class CPIWatcherTest {
-
+    companion object {
+        const val AWAIT_TIMEOUT = 180L
+    }
 
     @TempDir
     lateinit var tempDir: Path
+    @Volatile
+    var newCPILatch: CountDownLatch? = null
+    @Volatile
+    var deletedCPILatch: CountDownLatch? = null
 
     @Test
     fun watchCPIFileCreation() {
-        val countDownLatch = CountDownLatch(1)
-        val listener = CPIFileListenerTestImpl(countDownLatch)
+        newCPILatch = CountDownLatch(1)
+        val listener = CPIFileListenerTestImpl(newCPILatch)
         val watcher = CPIWatcher(listener)
-
-        val thread = Thread {
-            watcher.startWatching(tempDir)
-            countDownLatch.await()
-            watcher.stopWatching()
-        }
-        thread.start()
+        watcher.startWatching(tempDir)
         Files.createFile(tempDir.resolve("a.cpi"))
-        // Files.delete(tempDir.resolve("a.cpi"))
-        thread.join()
+        assertTrue(newCPILatch!!.await(AWAIT_TIMEOUT, TimeUnit.SECONDS))
         assertEquals(1, listener.newCPICount)
-        // assertEquals(1, listener.deletedCPICount)
+        watcher.stopWatching()
     }
 
     @Test
     fun watchCPIFileCreationThenDeletion() {
-        val newCPIDownLatch = CountDownLatch(1)
-        val deletedCPILatch = CountDownLatch( 1)
-        val listener = CPIFileListenerTestImpl(newCPIDownLatch, deletedCPILatch = deletedCPILatch)
+        newCPILatch = CountDownLatch(1)
+        deletedCPILatch = CountDownLatch(1)
+        val listener = CPIFileListenerTestImpl(newCPILatch, deletedCPILatch = deletedCPILatch)
         val watcher = CPIWatcher(listener)
-
-        val thread = Thread {
-            watcher.startWatching(tempDir)
-            deletedCPILatch.await()
-            watcher.stopWatching()
-        }
-        thread.start()
+        watcher.startWatching(tempDir)
         Files.createFile(tempDir.resolve("a.cpi"))
-        newCPIDownLatch.await()
+        assertTrue(newCPILatch!!.await(AWAIT_TIMEOUT, TimeUnit.SECONDS))
         Files.delete(tempDir.resolve("a.cpi"))
-        thread.join()
+        assertTrue(deletedCPILatch!!.await(AWAIT_TIMEOUT, TimeUnit.SECONDS))
         assertEquals(1, listener.newCPICount)
         assertEquals(1, listener.deletedCPICount)
+        watcher.stopWatching()
     }
 }
 

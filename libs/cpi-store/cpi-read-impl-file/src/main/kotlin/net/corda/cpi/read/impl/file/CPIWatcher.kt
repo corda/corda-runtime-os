@@ -24,6 +24,7 @@ class CPIWatcher(private val cpiFileListener: CPIFileListener): Runnable {
 
     private val keys = mutableMapOf<WatchKey, Path>()
     private val watcher = FileSystems.getDefault().newWatchService()
+    @Volatile
     private var stopped = true
     private val matcher = FileSystems.getDefault().getPathMatcher("glob:$CPX_FILE_FINDER_PATTERN")
     private var watchingThread = Thread(this)

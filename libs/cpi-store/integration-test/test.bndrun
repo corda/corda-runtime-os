@@ -11,7 +11,7 @@
     --add-opens, 'java.base/java.net=ALL-UNNAMED'
 
 #uncomment to remote debug
-#-runjdb: 5005
+-runjdb: 5005
 
 -runproperties: \
     cpi.path=${project.cpiPath}, \
