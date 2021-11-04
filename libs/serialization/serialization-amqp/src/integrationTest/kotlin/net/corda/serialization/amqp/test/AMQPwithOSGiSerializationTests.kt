@@ -21,6 +21,7 @@ import org.assertj.core.api.Assertions.fail
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.FrameworkUtil
@@ -32,11 +33,10 @@ import java.io.NotSerializableException
 import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
-import java.time.Instant
 import java.util.Hashtable
 import java.util.concurrent.TimeUnit
 
-//@Timeout(value = 30, unit = TimeUnit.SECONDS)
+@Timeout(value = 30, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class)
 class AMQPwithOSGiSerializationTests {
 
