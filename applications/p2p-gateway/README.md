@@ -13,18 +13,18 @@ To run the application use:
 ### Command arguments:
 ```
       --config-topic-name=<configTopicName>
-                          The config topic name (default: ConfigTopic)
-  -h, --help              Display help and exit
+               The config topic name (default: ConfigTopic)
+  -h, --help   Display help and exit
   -i, --instance-id=<instanceId>
-                          The unique instance ID (default to random number)
+               The unique instance ID (default to random number)
   -k, --kafka-servers=<kafkaServers>
-                          The kafka servers (default: localhost:9092)
+               The kafka servers (default: localhost:9092)
       --topic-prefix=<topicPrefix>
-                          The topic prefix (default: gateway)
+               The topic prefix (default: )
 ```
 
 ## Example
-1. Before starting the application, run a kafka cluster. See examples in See examples in [here](../../testing/message-patterns/README.md).
+1. Before starting the application, run a kafka cluster. See examples in [here](../../testing/message-patterns/README.md).
 2. Start the app:
 ```bash
 java \

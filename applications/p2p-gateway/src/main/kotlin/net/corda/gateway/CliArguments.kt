@@ -46,7 +46,7 @@ internal class CliArguments {
         names = ["--topic-prefix"],
         description = ["The topic prefix (default: \${DEFAULT-VALUE})"]
     )
-    var topicPrefix = "p2p"
+    var topicPrefix = ""
 
     @Option(
         names = ["-i", "--instance-id"],

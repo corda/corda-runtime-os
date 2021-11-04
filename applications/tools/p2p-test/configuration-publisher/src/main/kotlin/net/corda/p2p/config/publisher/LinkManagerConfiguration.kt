@@ -17,9 +17,10 @@ import picocli.CommandLine.TypeConversionException
 class LinkManagerConfiguration : ConfigProducer() {
     @Option(
         names = ["--locallyHostedIdentity"],
-        description = ["Local hosted identity (in the form of <x500Name>:<groupId>)"]
+        description = ["Local hosted identity (in the form of <x500Name>:<groupId>)"],
+        required = true,
     )
-    var locallyHostedIdentity: List<String> = emptyList()
+    lateinit var locallyHostedIdentity: List<String>
 
     @Option(
         names = ["--maxMessageSize"],
@@ -29,27 +30,27 @@ class LinkManagerConfiguration : ConfigProducer() {
 
     @Option(
         names = ["--protocolMode"],
-        description = ["Supported protocol mode (out of: \${COMPLETION-CANDIDATES})"]
+        description = ["Supported protocol mode (out of: \${COMPLETION-CANDIDATES}; default: \${DEFAULT-VALUE})"]
     )
-    var protocolModes: List<ProtocolMode> = emptyList()
+    var protocolModes: List<ProtocolMode> = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
 
     @Option(
-        names = ["--messageReplayPeriod"],
-        description = ["message replay period (default: \${DEFAULT-VALUE})"]
+        names = ["--messageReplayPeriodSecs"],
+        description = ["message replay period in seconds (default: \${DEFAULT-VALUE})"]
     )
-    var messageReplayPeriod = 1000L
+    var messageReplayPeriodSecs = 2L
 
     @Option(
-        names = ["--heartbeatMessagePeriod"],
-        description = ["Heartbeat message period (default: \${DEFAULT-VALUE})"]
+        names = ["--heartbeatMessagePeriodMilliSecs"],
+        description = ["Heartbeat message period in milli seconds (default: \${DEFAULT-VALUE})"]
     )
-    var heartbeatMessagePeriod = 1000L
+    var heartbeatMessagePeriodMilliSecs = 2_000L
 
     @Option(
-        names = ["--sessionTimeout"],
-        description = ["Session timeout (default: \${DEFAULT-VALUE})"]
+        names = ["--sessionTimeoutMilliSecs"],
+        description = ["Session timeout in milliseconds (default: \${DEFAULT-VALUE})"]
     )
-    var sessionTimeout = 1000L
+    var sessionTimeoutMilliSecs = 10_000L
 
     override val configuration by lazy {
         val locallyHostedIdentities = locallyHostedIdentity.map {
@@ -81,15 +82,15 @@ class LinkManagerConfiguration : ConfigProducer() {
             )
             .withValue(
                 "messageReplayPeriod",
-                ConfigValueFactory.fromAnyRef(messageReplayPeriod)
+                ConfigValueFactory.fromAnyRef(messageReplayPeriodSecs)
             )
             .withValue(
                 "heartbeatMessagePeriod",
-                ConfigValueFactory.fromAnyRef(heartbeatMessagePeriod)
+                ConfigValueFactory.fromAnyRef(heartbeatMessagePeriodMilliSecs)
             )
             .withValue(
                 "sessionTimeout",
-                ConfigValueFactory.fromAnyRef(sessionTimeout)
+                ConfigValueFactory.fromAnyRef(sessionTimeoutMilliSecs)
             )
     }
 

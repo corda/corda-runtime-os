@@ -11,6 +11,7 @@ import picocli.CommandLine.Option
 import java.io.File
 import java.net.InetAddress
 import java.net.UnknownHostException
+import java.time.Duration
 
 @Command(name = "gateway", description = ["Publish the P2P gateway configuration"])
 class GatewayConfiguration : ConfigProducer() {
@@ -78,6 +79,36 @@ class GatewayConfiguration : ConfigProducer() {
     )
     var revocationCheck = RevocationConfigMode.OFF
 
+    @Option(
+        names = ["--maxClientConnections"],
+        description = ["The maximal number of client connections (default: \${DEFAULT-VALUE})"]
+    )
+    var maxClientConnections = 100L
+
+    @Option(
+        names = ["--acquireTimeoutSec"],
+        description = ["The client connection acquire timeout in seconds (default: \${DEFAULT-VALUE})"]
+    )
+    var acquireTimeoutSec = 10L
+
+    @Option(
+        names = ["--connectionIdleTimeoutSec"],
+        description = ["The amount of time to keep inactive client connection before closing it in seconds (default: \${DEFAULT-VALUE})"]
+    )
+    var connectionIdleTimeoutSec = 60L
+
+    @Option(
+        names = ["--responseTimeoutMilliSecs"],
+        description = ["Time after which a message delivery is considered failed in milliseconds (default: \${DEFAULT-VALUE})"]
+    )
+    var responseTimeoutMilliSecs = 1_000L
+
+    @Option(
+        names = ["--retryDelayMilliSecs"],
+        description = ["Time after which a message is retried, when previously failed in milliseconds (default: \${DEFAULT-VALUE})"]
+    )
+    var retryDelayMilliSecs = 1_000L
+
     override val configuration by lazy {
         ConfigFactory.empty()
             .withValue(
@@ -87,10 +118,6 @@ class GatewayConfiguration : ConfigProducer() {
             .withValue(
                 "hostPort",
                 ConfigValueFactory.fromAnyRef(port)
-            )
-            .withValue(
-                "traceLogging",
-                ConfigValueFactory.fromAnyRef(true)
             )
             .withValue(
                 "sslConfig.keyStorePassword",
@@ -115,6 +142,26 @@ class GatewayConfiguration : ConfigProducer() {
             .withValue(
                 "sslConfig.revocationCheck.mode",
                 ConfigValueFactory.fromAnyRef(revocationCheck.toString())
+            )
+            .withValue(
+                "connectionConfig.maxClientConnections",
+                ConfigValueFactory.fromAnyRef(maxClientConnections)
+            )
+            .withValue(
+                "connectionConfig.acquireTimeout",
+                ConfigValueFactory.fromAnyRef(Duration.ofSeconds(acquireTimeoutSec))
+            )
+            .withValue(
+                "connectionConfig.connectionIdleTimeout",
+                ConfigValueFactory.fromAnyRef(Duration.ofSeconds(connectionIdleTimeoutSec))
+            )
+            .withValue(
+                "connectionConfig.responseTimeout",
+                ConfigValueFactory.fromAnyRef(Duration.ofMillis(responseTimeoutMilliSecs))
+            )
+            .withValue(
+                "connectionConfig.retryDelay",
+                ConfigValueFactory.fromAnyRef(Duration.ofMillis(retryDelayMilliSecs))
             )
     }
 

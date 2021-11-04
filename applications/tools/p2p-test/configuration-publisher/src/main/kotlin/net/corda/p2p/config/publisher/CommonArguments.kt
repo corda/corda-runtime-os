@@ -13,9 +13,10 @@ import picocli.CommandLine.Option
     subcommands = [
         GatewayConfiguration::class,
         LinkManagerConfiguration::class,
+        FileConfiguration::class,
     ],
     description = [
-        "Publish configuration to the P2P applications"
+        "Publish configuration to the P2P components"
     ]
 )
 internal class CommonArguments(
@@ -45,7 +46,7 @@ internal class CommonArguments(
         names = ["--topic-prefix"],
         description = ["The topic prefix (default: \${DEFAULT-VALUE})"]
     )
-    var topicPrefix = "p2p"
+    var topicPrefix = ""
 
     private val kafkaNodeConfiguration: Config by lazy {
         ConfigFactory.empty()
