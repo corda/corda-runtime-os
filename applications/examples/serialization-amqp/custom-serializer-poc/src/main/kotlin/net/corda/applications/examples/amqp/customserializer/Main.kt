@@ -13,12 +13,14 @@ import net.corda.osgi.api.Shutdown
 import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
+import net.corda.v5.serialization.MissingSerializerException
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
@@ -36,7 +38,7 @@ import java.util.Hashtable
 // - Register the list of internal serializers for use by the sandbox
 // - Register the list of CorDapp custom serializers for use by the sandbox
 
-
+@Suppress("MaxLineLength")
 @Component
 class Main @Activate constructor(
     @Reference
@@ -47,6 +49,8 @@ class Main @Activate constructor(
     private val configurationAdmin: ConfigurationAdmin,
     @Reference
     private val installService: InstallService,
+    @Reference(cardinality = ReferenceCardinality.MULTIPLE)
+    private val internalCustomSerializers: List<SerializationCustomSerializer<*, *>>
 ) : Application {
     private companion object {
         private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
@@ -67,19 +71,19 @@ class Main @Activate constructor(
 
         val cpkA = Path.of(args[1])
         val cpkB = Path.of(args[2])
-        val cpkFiles = listOf(cpkA, cpkB)
-        val sandbox = prepareSandbox(cpkFiles)
+        val sandboxA = prepareSandbox(listOf(cpkA))
+        val sandboxB = prepareSandbox(listOf(cpkB))
 
-        differentSerializersPerSandboxGroup()
-        println("------------------------------------------------")
-        platformTakesPriority()
-        println("------------------------------------------------")
+        differentSerializersPerSandboxGroup(sandboxA, sandboxB)
+        consoleLogger.info("------------------------------------------------")
+        platformTakesPriority(sandboxA)
+        consoleLogger.info("------------------------------------------------")
         logMessageIfAttemptToReplacePlatform()
-        println("------------------------------------------------")
+        consoleLogger.info("------------------------------------------------")
         registerInternalSerializers()
-        println("------------------------------------------------")
+        consoleLogger.info("------------------------------------------------")
         registerCorDappSerializers()
-        println("------------------------------------------------")
+        consoleLogger.info("------------------------------------------------")
 
 //
 //        // Prepare a sandbox group
@@ -116,11 +120,14 @@ class Main @Activate constructor(
         exit()
     }
 
-    private fun prepareSandbox(cpkFiles: List<Path>): SandboxGroup {
+    data class SandboxAndSerializers(val sandboxGroup: SandboxGroup, val serializers: List<String>)
+
+    private fun prepareSandbox(cpkFiles: List<Path>): SandboxAndSerializers {
         val outputStream = ByteArrayOutputStream()
         CPI.assemble(outputStream, "cpi", "1.0", cpkFiles)
         val loadCpb: CPI = installService.loadCpb(ByteArrayInputStream(outputStream.toByteArray()))
-        return sandboxCreationService.createSandboxGroup(loadCpb.cpks.map { it.metadata.hash })
+        val serializers: List<String> = loadCpb.metadata.cpks.flatMap { it.cordappManifest.serializers }
+        return SandboxAndSerializers(sandboxCreationService.createSandboxGroup(loadCpb.cpks.map { it.metadata.hash }), serializers)
     }
 
     private fun configureSystem(tmpDir: String) {
@@ -152,15 +159,17 @@ class Main @Activate constructor(
 //        consoleLogger.info("AddEnumValue = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("addEnumValue.bin")!!.readBytes()), Any::class.java, serializationContext)))
 //    }
 
-    private fun configureSerialization(
-        internalCustomSerializers: List<SerializationCustomSerializer<*, *>>,
-        cordappCustomSerializers: List<SerializationCustomSerializer<*, *>>
-    ): SerializerFactory {
+    private fun configureSerialization(sandboxAndSerializers: SandboxAndSerializers): SerializerFactory {
         // Create SerializerFactory
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
         // Register platform serializers
         for (customSerializer in internalCustomSerializers) {
             factory.register(customSerializer, true)
+        }
+        // Build CorDapp serializers
+        val cordappCustomSerializers = sandboxAndSerializers.serializers.map {
+            val classFromMainBundles = sandboxAndSerializers.sandboxGroup.loadClassFromMainBundles(it, SerializationCustomSerializer::class.java)
+            classFromMainBundles.getConstructor().newInstance()
         }
         // Register CorDapp serializers
         for (customSerializer in cordappCustomSerializers) {
@@ -173,33 +182,35 @@ class Main @Activate constructor(
      * Prove that we can have two different configurations of serialisation in memory at the same time
      * with different custom serialisers
      */
-    private fun differentSerializersPerSandboxGroup() {
+    private fun differentSerializersPerSandboxGroup(sandboxA: SandboxAndSerializers, sandboxB: SandboxAndSerializers) {
 
         consoleLogger.info("REQUIREMENT - Building serialisation environments with different custom serialisers")
-        val sandboxA = configureSerialization(emptyList(), listOf(CustomSerializerA()))
-        val sandboxB = configureSerialization(emptyList(), listOf(CustomSerializerB()))
+        val serializationA = configureSerialization(sandboxA)
+        val serializationB = configureSerialization(sandboxB)
 
-        val outputA = SerializationOutput(sandboxA)
-        val outputB = SerializationOutput(sandboxB)
+        val outputA = SerializationOutput(serializationA)
+        val outputB = SerializationOutput(serializationB)
 
-        val inputA = DeserializationInput(sandboxA)
-        val inputB = DeserializationInput(sandboxB)
+        val inputA = DeserializationInput(serializationA)
+        val inputB = DeserializationInput(serializationB)
 
         consoleLogger.info("Check custom serialisers work in environment A")
-        val objA = NeedsCustomSerializerExampleA(1)
-        val serializedBytesA = outputA.serialize(objA, AMQP_STORAGE_CONTEXT)
+        val objA = sandboxA.sandboxGroup.loadClassFromMainBundles("net.corda.applications.examples.amqp.customserializer.examplea.NeedsCustomSerializerExampleA", Any::class.java).getConstructor(Integer.TYPE).newInstance(1)
+        val contextA = AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxA)
+        val serializedBytesA = outputA.serialize(objA, contextA)
         consoleLogger.info("SUCCESS - Serialise successful in environment A")
-        val deserializeA = inputA.deserialize(serializedBytesA, AMQP_STORAGE_CONTEXT)
+        val deserializeA = inputA.deserialize(serializedBytesA, contextA)
         consoleLogger.info("SUCCESS - Deserialise successful in environment A")
         consoleLogger.info("Original object: $objA")
         consoleLogger.info("Deserialised object: $deserializeA")
 
 
         consoleLogger.info("Check custom serialisers work in environment B")
-        val objB = NeedsCustomSerializerExampleB(2)
-        val serializedBytesB = outputB.serialize(objB, AMQP_STORAGE_CONTEXT)
+        val objB = sandboxB.sandboxGroup.loadClassFromMainBundles("net.corda.applications.examples.amqp.customserializer.exampleb.NeedsCustomSerializerExampleB", Any::class.java).getConstructor(Int::class.java).newInstance(2)
+        val contextB = AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxB)
+        val serializedBytesB = outputB.serialize(objB, contextB)
         consoleLogger.info("SUCCESS - Serialise successful in environment B")
-        val deserializeB = inputB.deserialize(serializedBytesB, AMQP_STORAGE_CONTEXT)
+        val deserializeB = inputB.deserialize(serializedBytesB, contextB)
         consoleLogger.info("SUCCESS - Deserialise successful in environment B")
         consoleLogger.info("Original object: $objB")
         consoleLogger.info("Deserialised object: $deserializeB")
@@ -207,7 +218,7 @@ class Main @Activate constructor(
         consoleLogger.info("Check that environments are independent")
         var worked = false
         try {
-            outputA.serialize(objB, AMQP_STORAGE_CONTEXT)
+            outputA.serialize(objB, contextA)
         } catch (e: MissingSerializerException) {
             consoleLogger.info("SUCCESS - Environment A does not have serializer from environment B")
             worked = true
@@ -218,7 +229,7 @@ class Main @Activate constructor(
         }
 
         try {
-            outputB.serialize(objA, AMQP_STORAGE_CONTEXT)
+            outputB.serialize(objA, contextB)
         } catch (e: MissingSerializerException) {
             consoleLogger.info("SUCCESS - Environment B does not have serializer from environment A")
             worked = true
@@ -231,7 +242,7 @@ class Main @Activate constructor(
     /**
      * Prove that we can't replace the platform serialisers
      */
-    private fun platformTakesPriority() {
+    private fun platformTakesPriority(sandboxA: SandboxAndSerializers) {
         consoleLogger.info("REQUIREMENT - Check that platform serialisers take priority over CorDapp serialisers")
         consoleLogger.info("Difference from my earlier expectation - Throws exception instead of priority/log message")
         consoleLogger.info("Only when we attempt to work with serialiser target type")
@@ -239,14 +250,31 @@ class Main @Activate constructor(
 
         consoleLogger.info("Attempt to override platform serialiser:")
 
-        val factory = configureSerialization(listOf(CustomSerializerA()), listOf(CustomSerializerA()))
+        // Create SerializerFactory
+        val factory = SerializerFactoryBuilder.build(AllWhitelist)
+        // Build CorDapp serializers
+        val cordappCustomSerializers = sandboxA.serializers.map {
+            val classFromMainBundles = sandboxA.sandboxGroup.loadClassFromMainBundles(it, SerializationCustomSerializer::class.java)
+            classFromMainBundles.getConstructor().newInstance()
+        }
+        // Register platform serializers
+        for (customSerializer in internalCustomSerializers) {
+            factory.register(customSerializer, true)
+        }
+        // Register SandBox A custom serializers as platform serializers and CorDapp serialisers
+        for (customSerializer in cordappCustomSerializers) {
+            factory.register(customSerializer, true)
+            factory.registerExternal(customSerializer)
+        }
         val output = SerializationOutput(factory)
 
-        val obj = NeedsCustomSerializerExampleA(5)
+        // Build test object
+        val obj = sandboxA.sandboxGroup.loadClassFromMainBundles("net.corda.applications.examples.amqp.customserializer.examplea.NeedsCustomSerializerExampleA", Any::class.java).getConstructor(Integer.TYPE).newInstance(5)
 
+        // Run object through serialization
         var worked = false
         try {
-            output.serialize(obj, AMQP_STORAGE_CONTEXT)
+            output.serialize(obj, AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxA.sandboxGroup))
         } catch (e: DuplicateCustomSerializerException) {
             consoleLogger.info("SUCCESS - Exception thrown attempting to replace platform serialiser:")
             consoleLogger.info(e.message)
