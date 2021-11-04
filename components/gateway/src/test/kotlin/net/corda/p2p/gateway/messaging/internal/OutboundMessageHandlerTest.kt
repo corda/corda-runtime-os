@@ -69,11 +69,12 @@ class OutboundMessageHandlerTest {
     }
     private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java)
 
+    private lateinit var createResources: ((resources: ResourcesHolder) -> Unit)
     private val lifecycleLockLambdaCaptor = argumentCaptor<() -> Any>()
     private val dominoTile = mockConstruction(DominoTile::class.java) { mock, context ->
         whenever(mock.withLifecycleLock(lifecycleLockLambdaCaptor.capture())).doAnswer {lifecycleLockLambdaCaptor.lastValue.invoke()}
         @Suppress("UNCHECKED_CAST")
-        whenever(mock.createResources).doAnswer { context.arguments()[2] as ((ResourcesHolder) -> Any) }
+        createResources = context.arguments()[2] as ((ResourcesHolder) -> Unit)
     }
 
     private val handler = OutboundMessageHandler(
@@ -95,7 +96,7 @@ class OutboundMessageHandlerTest {
         startHandler()
 
         val resourcesHolder = mock<ResourcesHolder>()
-        dominoTile.constructed().last().createResources?.invoke(resourcesHolder)
+        createResources(resourcesHolder)
 
         verify(subscription).start()
     }
@@ -105,7 +106,7 @@ class OutboundMessageHandlerTest {
         startHandler()
 
         val resourcesHolder = mock<ResourcesHolder>()
-        dominoTile.constructed().last().createResources?.invoke(resourcesHolder)
+        createResources(resourcesHolder)
         verify(resourcesHolder).keep(subscription)
     }
 
@@ -114,7 +115,7 @@ class OutboundMessageHandlerTest {
         startHandler()
 
         val resourcesHolder = mock<ResourcesHolder>()
-        dominoTile.constructed().last().createResources?.invoke(resourcesHolder)
+        createResources(resourcesHolder)
         verify(dominoTile.constructed().last()).resourcesStarted(false)
     }
 
