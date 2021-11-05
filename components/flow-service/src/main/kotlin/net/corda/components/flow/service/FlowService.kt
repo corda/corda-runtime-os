@@ -24,8 +24,6 @@ import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 /**
  * This component is a sketch of how the flow service might be structured using the configuration service and the flow
@@ -48,7 +46,6 @@ class FlowService @Activate constructor(
 
     companion object {
         private val logger = contextLogger()
-        private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
     }
 
     private var registration: RegistrationHandle? = null
@@ -80,7 +77,7 @@ class FlowService @Activate constructor(
             }
             is NewConfigurationReceived -> {
                 executor?.stop()
-                val newExecutor = FlowExecutor(coordinatorFactory, event.configs, subscriptionFactory, flowManager, sandboxService)
+                val newExecutor = FlowExecutor(coordinatorFactory, event.config, subscriptionFactory, flowManager, sandboxService)
                 newExecutor.start()
                 executor = newExecutor
             }
@@ -97,7 +94,7 @@ class FlowService @Activate constructor(
     private fun onConfigChange(keys: Set<String>, config: Map<String, SmartConfig>) {
         if (MESSAGING_KEY in config.keys && BOOTSTRAP_KEY in config.keys && FLOW_KEY in config.keys) {
             coordinator.postEvent(
-                NewConfigurationReceived(config)
+                NewConfigurationReceived(config[BOOTSTRAP_KEY]!!.withFallback(config[MESSAGING_KEY]).withFallback(config[FLOW_KEY]))
             )
         }
     }

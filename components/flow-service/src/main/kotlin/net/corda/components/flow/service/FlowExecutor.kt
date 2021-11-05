@@ -1,9 +1,6 @@
 package net.corda.components.flow.service
 
 import net.corda.components.sandbox.service.SandboxService
-import net.corda.configuration.read.ConfigKeys.Companion.BOOTSTRAP_KEY
-import net.corda.configuration.read.ConfigKeys.Companion.FLOW_KEY
-import net.corda.configuration.read.ConfigKeys.Companion.MESSAGING_KEY
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
@@ -18,14 +15,13 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
 @Suppress("LongParameterList")
 class FlowExecutor(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val configs: Map<String, SmartConfig>,
+    private val config: SmartConfig,
     private val subscriptionFactory: SubscriptionFactory,
     private val flowManager: FlowManager,
     private val sandboxService: SandboxService,
@@ -38,10 +34,6 @@ class FlowExecutor(
         private const val INSTANCE_ID_KEY = "instance-id"
     }
 
-    private val bootstrapConfig: SmartConfig = configs[BOOTSTRAP_KEY] ?: throw CordaRuntimeException("Bootstrap config can not be null")
-    private val flowConfig: SmartConfig = configs[FLOW_KEY] ?: throw CordaRuntimeException("Flow config can not be null")
-    private val messagingConfig: SmartConfig = configs[MESSAGING_KEY] ?: throw CordaRuntimeException("Messaging config can not be null")
-
     private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
 
     private var messagingSubscription: StateAndEventSubscription<FlowKey, Checkpoint, FlowEvent>? = null
@@ -50,14 +42,14 @@ class FlowExecutor(
         when (event) {
             is StartEvent -> {
                 logger.debug { "Starting the flow executor" }
-                val topic = flowConfig.getString(TOPIC_KEY)
-                val groupName = flowConfig.getString(GROUP_NAME_KEY)
-                val instanceId = bootstrapConfig.getInt(INSTANCE_ID_KEY)
+                val topic = config.getString(TOPIC_KEY)
+                val groupName = config.getString(GROUP_NAME_KEY)
+                val instanceId = config.getInt(INSTANCE_ID_KEY)
                 val processor = FlowMessageProcessor(flowManager, sandboxService, topic)
                 messagingSubscription = subscriptionFactory.createStateAndEventSubscription(
                     SubscriptionConfig(groupName, topic, instanceId),
                     processor,
-                    messagingConfig
+                    config
                 )
                 messagingSubscription?.start()
             }
