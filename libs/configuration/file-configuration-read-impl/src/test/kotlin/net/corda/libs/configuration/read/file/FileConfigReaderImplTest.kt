@@ -57,6 +57,29 @@ class FileConfigReaderImplTest {
         assertTrue(configRepository.getConfigurations()["corda.rpc"]!!.hasPath("address"))
     }
 
+    @Test
+    fun `test that listeners still work after stop start`() {
+        var lambdaFlag = false
+        var changedKeys = setOf<String>()
+        var configSnapshot = mapOf<String, Config>()
+
+        service.registerCallback { keys: Set<String>, config: Map<String, Config> ->
+            lambdaFlag = true
+            changedKeys = keys
+            configSnapshot = config
+        }
+
+        service.stop()
+        service.start()
+
+        assertThat(lambdaFlag).isTrue
+        assertThat(changedKeys.size).isEqualTo(2)
+        assertNotNull(configRepository.getConfigurations()["corda.rpc"])
+        assertNotNull(configRepository.getConfigurations()["corda.another_rpc"])
+        assertThat(configSnapshot["corda.rpc"]).isEqualTo(configRepository.getConfigurations()["corda.rpc"])
+        assertTrue(configRepository.getConfigurations()["corda.rpc"]!!.hasPath("address"))
+    }
+
     private fun createTempTestConfig() {
         tempDirectoryPath = Files.createTempDirectory(TEMP_DIRECTORY_PREFIX)
         val testConfContent = File(this::class.java.classLoader.getResource(TEST_CONF_NAME)!!.toURI()).inputStream().readAllBytes()

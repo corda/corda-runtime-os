@@ -107,7 +107,7 @@ internal class OutboundMessageHandler(
         return emptyList()
     }
 
-    @Suppress("TooGenericExceptionCaught", "SpreadOperator")
+    @Suppress("SpreadOperator")
     private fun waitUntilComplete(pendingRequests: List<PendingRequest>) {
         try {
             CompletableFuture.allOf( *pendingRequests.map{ it.future }.toTypedArray() )
@@ -117,7 +117,6 @@ internal class OutboundMessageHandler(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun getResponseOrError(pendingRequest: PendingRequest): Pair<HttpResponse?, Throwable?> {
         return try {
             val response = pendingRequest.future.get(0, TimeUnit.MILLISECONDS)

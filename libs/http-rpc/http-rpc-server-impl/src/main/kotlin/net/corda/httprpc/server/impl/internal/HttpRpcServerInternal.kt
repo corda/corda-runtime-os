@@ -49,7 +49,7 @@ import java.io.OutputStream
 import java.io.PrintStream
 import javax.security.auth.login.FailedLoginException
 
-@Suppress("TooManyFunctions", "TooGenericExceptionThrown", "TooGenericExceptionCaught")
+@Suppress("TooManyFunctions", "TooGenericExceptionThrown")
 internal class HttpRpcServerInternal(
     private val resourceProvider: RouteProvider,
     private val securityManager: HttpRpcSecurityManager,

@@ -121,7 +121,6 @@ class HttpServer(
     override fun stop() {
         lock.withLock {
             shutdownSequence.forEach {
-                @Suppress("TooGenericExceptionCaught")
                 try {
                     it.invoke()
                 } catch (e: Throwable) {

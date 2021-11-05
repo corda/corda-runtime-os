@@ -30,7 +30,6 @@ class ConfigPublisher @Activate constructor(
         val arguments = CommonArguments(configWriterFactory, smartConfigFactory)
         val commandLine = CommandLine(arguments)
         commandLine.isCaseInsensitiveEnumValuesAllowed = true
-        @Suppress("TooGenericExceptionCaught")
         try {
             @Suppress("SpreadOperator")
             commandLine.execute(*args)

@@ -516,7 +516,6 @@ class SerializationOutputTests {
     }
 
     @Test
-    @SuppressWarnings("TooGenericExceptionCaught")
     fun `test complex throwables serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
         factory.register(ThrowableSerializer(factory), true)
@@ -547,7 +546,6 @@ class SerializationOutputTests {
     }
 
     @Test
-    @SuppressWarnings("TooGenericExceptionCaught")
     fun `test suppressed throwables serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
         factory.register(ThrowableSerializer(factory), true)

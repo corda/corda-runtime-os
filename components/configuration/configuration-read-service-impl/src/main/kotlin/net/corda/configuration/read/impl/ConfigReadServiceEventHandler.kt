@@ -2,6 +2,7 @@ package net.corda.configuration.read.impl
 
 import net.corda.configuration.read.ConfigurationReadException
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.ErrorEvent
@@ -19,6 +20,7 @@ internal class ConfigReadServiceEventHandler(
     private val callbackHandles: ConfigurationHandlerStorage
 ): LifecycleEventHandler {
 
+    private var serviceUpCallback: AutoCloseable? = null
     private var bootstrapConfig: SmartConfig? = null
     private var subscription: ConfigReader? = null
 
@@ -45,14 +47,15 @@ internal class ConfigReadServiceEventHandler(
                 coordinator.postEvent(SetupSubscription())
             }
             is SetupSubscription -> {
-                setupSubscription()
-                coordinator.updateStatus(LifecycleStatus.UP, "Connected to configuration repository.")
+                setupSubscription(coordinator)
             }
             is StopEvent -> {
                 logger.debug { "Configuration read service stopping." }
                 callbackHandles.removeSubscription()
                 subscription?.stop()
                 subscription = null
+                serviceUpCallback?.close()
+                serviceUpCallback = null
             }
             is ErrorEvent -> {
                 logger.error(
@@ -63,7 +66,7 @@ internal class ConfigReadServiceEventHandler(
         }
     }
 
-    private fun setupSubscription() {
+    private fun setupSubscription(coordinator: LifecycleCoordinator) {
         val config = bootstrapConfig
             ?: throw IllegalArgumentException("Cannot setup the subscription with no bootstrap configuration")
         if (subscription != null) {
@@ -72,7 +75,18 @@ internal class ConfigReadServiceEventHandler(
         val sub = readServiceFactory.createReader(config)
         subscription = sub
         callbackHandles.addSubscription(sub)
+        serviceUpCallback = sub.registerCallback(ServiceUpHandler(coordinator))
         sub.start()
+    }
+
+    internal class ServiceUpHandler(
+        private val coordinator: LifecycleCoordinator
+    ): ConfigListener {
+        override fun onUpdate(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, SmartConfig>) {
+            if (coordinator.status == LifecycleStatus.DOWN) {
+                coordinator.updateStatus(LifecycleStatus.UP, "Connected to configuration repository.")
+            }
+        }
     }
 
 }

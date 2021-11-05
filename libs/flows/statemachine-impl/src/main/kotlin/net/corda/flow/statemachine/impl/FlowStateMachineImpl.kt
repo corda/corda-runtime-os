@@ -30,7 +30,7 @@ import java.nio.ByteBuffer
 
 class TransientReference<out A>(@Transient val value: A)
 
-@Suppress("TooManyFunctions", "ComplexMethod", "TooGenericExceptionCaught", "LongParameterList")
+@Suppress("TooManyFunctions", "ComplexMethod")
 class FlowStateMachineImpl<R>(
     private val clientId: String?,
     private val id: FlowKey,
@@ -113,7 +113,6 @@ class FlowStateMachineImpl<R>(
             Try.Failure(t)
         }
     }
-
 
     private fun handleSuccess(resultOrError: Try.Success<R>) {
         if (clientId != null) {

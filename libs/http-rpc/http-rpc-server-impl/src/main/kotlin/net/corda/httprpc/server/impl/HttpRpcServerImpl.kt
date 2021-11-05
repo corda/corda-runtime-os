@@ -22,7 +22,7 @@ import net.corda.httprpc.RpcOps
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.write
 
-@SuppressWarnings("TooGenericExceptionThrown", "TooGenericExceptionCaught", "LongParameterList")
+@SuppressWarnings("TooGenericExceptionThrown", "LongParameterList")
 class HttpRpcServerImpl(
     rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
     rpcSecurityManager: RPCSecurityManager,

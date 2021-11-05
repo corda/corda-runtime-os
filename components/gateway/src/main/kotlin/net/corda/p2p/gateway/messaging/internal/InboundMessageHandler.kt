@@ -58,7 +58,6 @@ internal class InboundMessageHandler(
         withLifecycleLock { handleRequest(request) }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun handleRequest(request: HttpRequest) {
         if (!isRunning) {
             logger.error("Received message from ${request.source}, while handler is stopped. Discarding it and returning error code.")

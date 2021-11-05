@@ -44,7 +44,6 @@ class FreshKeysServiceRpcProcessor(
         )
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun onNext(request: WireFreshKeysRequest, respFuture: CompletableFuture<WireFreshKeysResponse>) {
         try {
             logger.info("Handling {} for member {}", request.request::class.java.name, request.context.memberId)

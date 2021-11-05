@@ -40,7 +40,6 @@ internal class AzureAdIssuerJWSKeySelector(
         }
 
         return keySelectors.computeIfAbsent(iss) { issuer ->
-            @Suppress("TooGenericExceptionCaught")
             try {
                 val config = AzureAdConfiguration.fromIssuer(issuer, resourceRetriever)
                 val jwksUri = config.jwksUri
