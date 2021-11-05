@@ -18,11 +18,15 @@ interface Lifecycle : AutoCloseable {
 
     /**
      * Override to define how the component starts.
+     *
+     * It should be safe to call start multiple times without side effects.
      */
     fun start()
 
     /**
      * Override to define how the component stops: close and release resources in this method.
+     *
+     * It should be safe to call stop multiple times without side effects.
      */
     fun stop()
 
@@ -30,6 +34,8 @@ interface Lifecycle : AutoCloseable {
 
     /**
      * Automatically called when this component is out of try-with-resource scope.
+     *
+     * Further, it is not expected that a closed object should be restarted.
      *
      * See [AutoCloseable.close]
      */
