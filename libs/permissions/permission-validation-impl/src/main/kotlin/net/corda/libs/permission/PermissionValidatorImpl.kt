@@ -1,9 +1,6 @@
 package net.corda.libs.permission
 
-import net.corda.data.permissions.Group
 import net.corda.data.permissions.PermissionType
-import net.corda.data.permissions.Role
-import net.corda.data.permissions.User
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -36,11 +33,7 @@ class PermissionValidatorImpl(
 
     private val lock = ReentrantLock()
 
-    private var subscriptions: Triple<
-            CompactedSubscription<String, User>,
-            CompactedSubscription<String, Group>,
-            CompactedSubscription<String, Role>
-            >? = null
+    private var subscriptions: List<CompactedSubscription<String, *>>? = null
 
 
     override val isRunning: Boolean
@@ -73,7 +66,7 @@ class PermissionValidatorImpl(
                         ),
                         roleTopicProcessor
                     ).also { it.start() }
-                subscriptions = Triple(userSubscription, groupSubscription, roleSubscription)
+                subscriptions = listOf(userSubscription, groupSubscription, roleSubscription)
                 running = true
             }
         }
@@ -82,7 +75,7 @@ class PermissionValidatorImpl(
     override fun stop() {
         lock.withLock {
             if (running) {
-                subscriptions?.toList()?.forEach { it.stop() }
+                subscriptions?.forEach { it.stop() }
                 subscriptions = null
                 running = false
             }
