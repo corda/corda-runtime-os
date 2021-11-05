@@ -46,10 +46,10 @@ To build a docker image, run:
 
 ### Running a container
 You can configure the image using those environment variables:
-* `KAFKA_SERVERS` - The list of Kafka server
+* `KAFKA_SERVERS` - The list of Kafka server (default to `localhost:9092`)
 * `CONFIG_TOPIC` - The  name of the configuration topic (default to `ConfigTopic`)
 * `TOPIC_PREFIX` - The topic prefix (default to empty string)
-* `INSTANCE_ID` - The Gateway instance ID (default to random number, default to `localhost:9092`)
+* `INSTANCE_ID` - The Gateway instance ID (default to random number)
 
 ### Example
 1. Before starting the application, run a kafka cluster. See examples in [here](../../../../testing/message-patterns/README.md).
