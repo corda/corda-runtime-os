@@ -94,16 +94,16 @@ class PermissionValidatorImpl(
             return false
         }
 
-        return performCheckRec(user.roleIds, user.parentGroupId, permission)
+        return performCheckRec(user.roleIds, user.parentGroupId, PermissionUrl.fromUrl(permission))
     }
 
     private tailrec fun performCheckRec(
         roleIds: Collection<String>,
         parentGroupId: String?,
-        permission: String
+        permissionUrl: PermissionUrl
     ): Boolean {
 
-        logger.debug { "Checking permissions for: $permission - $roleIds - $parentGroupId" }
+        logger.debug { "Checking permissions for: $permissionUrl - $roleIds - $parentGroupId" }
 
         if (roleIds.isEmpty() && parentGroupId == null) {
             logger.debug { "Roles are empty and no parent group left" }
@@ -113,7 +113,7 @@ class PermissionValidatorImpl(
         // Should we report roles that cannot be found?
         val roles = roleIds.mapNotNull { roleTopicProcessor.getRole(it) }
 
-        val permissionRequested = PermissionUrl.fromUrl(permission).permissionRequested
+        val permissionRequested: String = permissionUrl.permissionRequested
         val allPermissions = roles.flatMap { it.permissions }
 
         // Perform checks, with deny taking priority over allow
@@ -138,10 +138,10 @@ class PermissionValidatorImpl(
             return false
         }
         val rolesIdsForGroup = parentGroup.roleIds
-        return performCheckRec(rolesIdsForGroup, parentGroup.parentGroupId, permission)
+        return performCheckRec(rolesIdsForGroup, parentGroup.parentGroupId, permissionUrl)
     }
 
-    private fun wildcardMatch(existingPermission: Permission, permissionRequested: String) : Boolean {
+    private fun wildcardMatch(existingPermission: Permission, permissionRequested: String): Boolean {
         return permissionRequested.matches(existingPermission.permissionString.toRegex())
     }
 }
