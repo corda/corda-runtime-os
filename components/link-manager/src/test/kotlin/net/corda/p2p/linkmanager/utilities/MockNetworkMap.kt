@@ -6,6 +6,7 @@ import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions
+import org.mockito.kotlin.mock
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
@@ -76,9 +77,7 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
                 return LinkManagerNetworkMap.NetworkType.CORDA_5
             }
 
-            override fun getDominoTile(): DominoTile? {
-                return null
-            }
+            override val dominoTile = mock<DominoTile>()
         }
     }
 }

@@ -48,6 +48,7 @@ import net.corda.p2p.schema.Schema
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
+import net.corda.v5.base.annotations.VisibleForTesting
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -92,7 +93,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         nodeConfiguration
     )
 
-    private fun createInboundResources(resources: ResourcesHolder) {
+    @VisibleForTesting
+    internal fun createInboundResources(resources: ResourcesHolder) {
         val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, 1),
             InboundMessageProcessor(sessionManager, linkManagerNetworkMap),
@@ -103,7 +105,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         //We set resource started inside inboundAssignmentListener.
     }
 
-    private fun createOutboundResources(resources: ResourcesHolder) {
+    @VisibleForTesting
+    internal fun createOutboundResources(resources: ResourcesHolder) {
         val outboundMessageProcessor = OutboundMessageProcessor(
             sessionManager,
             linkManagerHostingMap,
@@ -407,7 +410,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         nodeConfiguration: Config
     ): PendingSessionMessageQueues, LifecycleWithDominoTile {
         private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<AuthenticatedMessageAndKey>>()
-        private val publisher = PublisherWithDominoLogic(publisherFactory, coordinatorFactory, LINK_MANAGER_PUBLISHER_CLIENT_ID, nodeConfiguration)
+        private val publisher = PublisherWithDominoLogic(
+            publisherFactory,
+            coordinatorFactory,
+            LINK_MANAGER_PUBLISHER_CLIENT_ID,
+            nodeConfiguration
+        )
         override val dominoTile = publisher.dominoTile
 
         /**
