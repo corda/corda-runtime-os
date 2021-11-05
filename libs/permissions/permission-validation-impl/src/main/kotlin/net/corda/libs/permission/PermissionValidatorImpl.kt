@@ -1,5 +1,6 @@
 package net.corda.libs.permission
 
+import net.corda.data.permissions.Permission
 import net.corda.data.permissions.PermissionType
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -117,17 +118,18 @@ class PermissionValidatorImpl(
 
         // Perform checks, with deny taking priority over allow
         val (denies, allows) = allPermissions.partition { it.type == PermissionType.DENY }
-        if (denies.any { it.permissionString == permissionRequested }) {
-            logger.debug { "Explicitly denied by: '${denies.first { it.permissionString == permissionRequested }}'" }
+        if (denies.any { wildcardMatch(it, permissionRequested) }) {
+            logger.debug { "Explicitly denied by: '${denies.first { wildcardMatch(it, permissionRequested) }}'" }
             return false
         }
-        if (allows.any { it.permissionString == permissionRequested }) {
-            logger.debug { "Explicitly allowed by: '${allows.first { it.permissionString == permissionRequested }}'" }
+        if (allows.any { wildcardMatch(it, permissionRequested) }) {
+            logger.debug { "Explicitly allowed by: '${allows.first { wildcardMatch(it, permissionRequested) }}'" }
             return true
         }
 
         // If we could not reach decision yet, try referring to the parent
         if (parentGroupId == null) {
+            logger.debug { "No parent group left" }
             return false
         }
         val parentGroup = groupTopicProcessor.getGroup(parentGroupId)
@@ -137,5 +139,9 @@ class PermissionValidatorImpl(
         }
         val rolesIdsForGroup = parentGroup.roleIds
         return performCheckRec(rolesIdsForGroup, parentGroup.parentGroupId, permission)
+    }
+
+    private fun wildcardMatch(existingPermission: Permission, permissionRequested: String) : Boolean {
+        return permissionRequested.matches(existingPermission.permissionString.toRegex())
     }
 }
