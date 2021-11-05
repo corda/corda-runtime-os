@@ -5,6 +5,7 @@ import net.corda.data.permissions.PermissionType
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.rpc.schema.Schema
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import java.util.concurrent.locks.ReentrantLock
@@ -20,11 +21,6 @@ class PermissionValidatorImpl(
     companion object {
 
         private val logger = contextLogger()
-
-        // Those are to be removed in favor of constants from Corda-API
-        private const val RPC_PERM_USER_TOPIC = "rpc.permissions.user"
-        private const val RPC_PERM_GROUP_TOPIC = "rpc.permissions.group"
-        private const val RPC_PERM_ROLE_TOPIC = "rpc.permissions.role"
 
         internal const val CONSUMER_GROUP = "PERMISSION_SERVICE"
     }
@@ -47,7 +43,7 @@ class PermissionValidatorImpl(
                     subscriptionFactory.createCompactedSubscription(
                         SubscriptionConfig(
                             CONSUMER_GROUP,
-                            RPC_PERM_USER_TOPIC
+                            Schema.RPC_PERM_USER_TOPIC
                         ),
                         userTopicProcessor
                     ).also { it.start() }
@@ -55,7 +51,7 @@ class PermissionValidatorImpl(
                     subscriptionFactory.createCompactedSubscription(
                         SubscriptionConfig(
                             CONSUMER_GROUP,
-                            RPC_PERM_GROUP_TOPIC
+                            Schema.RPC_PERM_GROUP_TOPIC
                         ),
                         groupTopicProcessor
                     ).also { it.start() }
@@ -63,7 +59,7 @@ class PermissionValidatorImpl(
                     subscriptionFactory.createCompactedSubscription(
                         SubscriptionConfig(
                             CONSUMER_GROUP,
-                            RPC_PERM_ROLE_TOPIC
+                            Schema.RPC_PERM_ROLE_TOPIC
                         ),
                         roleTopicProcessor
                     ).also { it.start() }
