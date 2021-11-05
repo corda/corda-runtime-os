@@ -1,5 +1,8 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -31,7 +34,6 @@ import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.LinkManagerConfig
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
@@ -54,6 +56,7 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -66,6 +69,7 @@ import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -80,20 +84,15 @@ class SessionManagerTest {
         val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
 
         private const val longPeriodMilliSec = 10000000L
-        private val configNoHeartbeat = LinkManagerConfig(
-            MAX_MESSAGE_SIZE,
-            setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            longPeriodMilliSec,
-            longPeriodMilliSec,
-            longPeriodMilliSec
+        private val configWithHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+            Duration.ofMillis(100),
+            Duration.ofMillis(500)
         )
-        private val configWithHeartbeat = LinkManagerConfig(
-            MAX_MESSAGE_SIZE,
-            setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            longPeriodMilliSec,
-            100,
-            500
+        private val configNoHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+            Duration.ofMillis(longPeriodMilliSec),
+            Duration.ofMillis(longPeriodMilliSec)
         )
+
         val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
         val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
 
@@ -121,9 +120,32 @@ class SessionManagerTest {
     }
 
     @AfterEach
-    fun resetLogging() {
+    fun cleanUp() {
+        dominoTile.close()
+        //mockHeartbeatManager.close()
         sessionManager.stop()
         loggingInterceptor.reset()
+    }
+
+    private lateinit var configHandler: SessionManagerImpl.SessionManagerConfigChangeHandler
+    private lateinit var heartbeatConfigHandler: SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
+    private var createResourcesCallbacks = mutableMapOf<String, (resources: ResourcesHolder) -> Unit>()
+    private val lifecycleLockLambdaCaptor = argumentCaptor<() -> Any>()
+    private val lifecycleWriteLockLambdaCaptor = argumentCaptor<() -> Any>()
+    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
+        whenever(mock.withLifecycleLock(lifecycleLockLambdaCaptor.capture())).doAnswer { lifecycleLockLambdaCaptor.lastValue.invoke() }
+        whenever(mock.withLifecycleWriteLock (lifecycleWriteLockLambdaCaptor.capture()))
+            .doAnswer { lifecycleWriteLockLambdaCaptor.lastValue.invoke() }
+        if (context.arguments()[4] is SessionManagerImpl.SessionManagerConfigChangeHandler) {
+            configHandler = context.arguments()[4] as SessionManagerImpl.SessionManagerConfigChangeHandler
+        }
+        if (context.arguments()[4] is SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler) {
+            heartbeatConfigHandler = context.arguments()[4] as SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
+        }
+        if (context.arguments()[2] != null) {
+            @Suppress("UNCHECKED_CAST")
+            createResourcesCallbacks[context.arguments()[0] as String] = context.arguments()[2] as (ResourcesHolder) -> Unit
+        }
     }
 
     private val networkMap = mock<LinkManagerNetworkMap> {
@@ -149,14 +171,23 @@ class SessionManagerTest {
         on {createPublisher(any(), any())} doReturn publisher
     }
     private val sessionManager = SessionManagerImpl(
-        configNoHeartbeat,
         networkMap,
         cryptoService,
         pendingSessionMessageQueues,
         publisherFactory,
+        mock(),
+        mock(),
+        mock(),
         protocolFactory,
         sessionReplayer
-    )
+    ).apply {
+        setRunning()
+        configHandler.applyNewConfiguration(
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)), null, mock()
+        )
+        heartbeatConfigHandler.applyNewConfiguration(configNoHeartbeat, null, mock())
+        createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
+    }
 
     private fun MessageDigest.hash(data: ByteArray): ByteArray {
         this.reset()
@@ -203,6 +234,12 @@ class SessionManagerTest {
         }
 
         override fun close() {}
+    }
+
+    private fun setRunning() {
+        for (tile in dominoTile.constructed()) {
+            whenever(tile.isRunning).doReturn(true)
+        }
     }
 
     @Test
@@ -738,14 +775,25 @@ class SessionManagerTest {
     @Test
     fun `when responder hello is received, the session is pending, if no response is received, the session times out`() {
         val sessionManager = SessionManagerImpl(
-            configWithHeartbeat,
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
             publisherFactory,
+            mock(),
+            mock(),
+            mock(),
             protocolFactory,
             sessionReplayer
-        )
+        ).apply {
+            setRunning()
+            configHandler.applyNewConfiguration(
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                null,
+                mock()
+            )
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
+        }
         sessionManager.start()
 
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
@@ -757,7 +805,7 @@ class SessionManagerTest {
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         sessionManager.processSessionMessage(LinkInMessage(responderHello))
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionAlreadyPending)
-        eventually(Duration.ofMillis(4 * configWithHeartbeat.sessionTimeoutMilliSecs), 5.millis) {
+        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(4), 5.millis) {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         sessionManager.stop()
@@ -766,14 +814,25 @@ class SessionManagerTest {
     @Test
     fun `when responder handshake is received, the session is established, if no message is sent, the session times out`() {
         val sessionManager = SessionManagerImpl(
-            configWithHeartbeat,
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
             publisherFactory,
+            mock(),
+            mock(),
+            mock(),
             protocolFactory,
             sessionReplayer
-        )
+        ).apply {
+            setRunning()
+            configHandler.applyNewConfiguration(
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                null,
+                mock()
+            )
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
+        }
         sessionManager.start()
 
         val initiatorHello = mock<InitiatorHelloMessage>()
@@ -789,7 +848,7 @@ class SessionManagerTest {
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
 
-        eventually(Duration.ofMillis(4 * configWithHeartbeat.sessionTimeoutMilliSecs), 5.millis) {
+        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(4), 5.millis) {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         sessionManager.stop()
@@ -808,14 +867,25 @@ class SessionManagerTest {
         val publisher = CallbackPublisher(::callback)
         whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(publisher)
         val sessionManager = SessionManagerImpl(
-            configWithHeartbeat,
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
             publisherFactory,
+            mock(),
+            mock(),
+            mock(),
             protocolFactory,
             sessionReplayer
-        )
+        ).apply {
+            setRunning()
+            configHandler.applyNewConfiguration(
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                null,
+                mock()
+            )
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
+        }
         sessionManager.start()
 
         val initiatorHello = mock<InitiatorHelloMessage>()
@@ -833,7 +903,7 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
 
-        eventually(Duration.ofMillis(4 * configWithHeartbeat.sessionTimeoutMilliSecs), 5.millis) {
+        eventually(configWithHeartbeat.sessionTimeout.multipliedBy(4), 5.millis) {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         sessionManager.stop()
@@ -846,10 +916,10 @@ class SessionManagerTest {
 
     @Test
     fun `when a data message is sent, heartbeats are sent, if these are acknowledged the session does not time out`() {
-        val heartbeatsBeforeTimeout = configWithHeartbeat.sessionTimeoutMilliSecs / configWithHeartbeat.heartbeatMessagePeriodMilliSecs - 1
+        val heartbeatsBeforeTimeout = configWithHeartbeat.sessionTimeout.toMillis() / configWithHeartbeat.heartbeatPeriod.toMillis() - 1
         val publishLatch = CountDownLatch(2 * heartbeatsBeforeTimeout.toInt() - 1)
 
-        val messages = mutableListOf<AuthenticatedDataMessage>()
+        val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
         var sessionManager: SessionManager? = null
         fun callback(records: List<Record<*, *>>) {
             val record = records.single()
@@ -867,14 +937,26 @@ class SessionManagerTest {
         val publisher = CallbackPublisher(::callback)
         whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(publisher)
         sessionManager = SessionManagerImpl(
-            configWithHeartbeat,
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
             publisherFactory,
+            mock(),
+            mock(),
+            mock(),
             protocolFactory,
             sessionReplayer
-        )
+        ).apply {
+            setRunning()
+            configHandler.applyNewConfiguration(
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                null,
+                mock()
+            )
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
+            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock()) }
+        }
         sessionManager.start()
 
         val initiatorHello = mock<InitiatorHelloMessage>()
@@ -895,14 +977,16 @@ class SessionManagerTest {
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
-        assertTrue(publishLatch.await(4 * configWithHeartbeat.sessionTimeoutMilliSecs, TimeUnit.MILLISECONDS))
+        assertTrue(publishLatch.await(configWithHeartbeat.sessionTimeout.multipliedBy(4).toMillis(), TimeUnit.MILLISECONDS))
 
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
 
         sessionManager.stop()
-        for (message in messages) {
+        synchronized(messages) {
+            for (message in messages) {
               val heartbeatMessage = DataMessagePayload.fromByteBuffer(message.payload)
               assertThat(heartbeatMessage.message).isInstanceOf(HeartbeatMessage::class.java)
+            }
         }
     }
 
@@ -912,14 +996,26 @@ class SessionManagerTest {
         val throwingPublisher = CallbackPublisher({ publishLatch.countDown() }, true)
         whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(throwingPublisher)
         val sessionManager = SessionManagerImpl(
-            configWithHeartbeat,
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
             publisherFactory,
+            mock(),
+            mock(),
+            mock(),
             protocolFactory,
             sessionReplayer
-        )
+        ).apply {
+            setRunning()
+            configHandler.applyNewConfiguration(
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                null,
+                mock()
+            )
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
+            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock()) }
+        }
         sessionManager.start()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
         val sessionState = sessionManager.processOutboundMessage(message)
@@ -927,7 +1023,10 @@ class SessionManagerTest {
 
         sessionManager.dataMessageSent(authenticatedSession)
 
-        assertTrue(publishLatch.await(20 * configWithHeartbeat.heartbeatMessagePeriodMilliSecs, TimeUnit.MILLISECONDS))
+        assertTrue(publishLatch.await(
+            configWithHeartbeat.sessionTimeout.multipliedBy(20).toMillis(),
+            TimeUnit.MILLISECONDS)
+        )
         loggingInterceptor.assertSingleWarningContains("An exception was thrown when sending a heartbeat message.")
         sessionManager.stop()
     }

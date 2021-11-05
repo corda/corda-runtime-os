@@ -47,6 +47,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerH
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
 import net.corda.p2p.schema.Schema
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -136,12 +137,13 @@ open class SessionManagerImpl(
         }
     }
 
-    private data class SessionManagerConfig(
+    @VisibleForTesting
+    internal data class SessionManagerConfig(
         val maxMessageSize: Int,
         val protocolModes: Set<ProtocolMode>,
     )
 
-    private inner class SessionManagerConfigChangeHandler: ConfigurationChangeHandler<SessionManagerConfig>(
+    internal inner class SessionManagerConfigChangeHandler: ConfigurationChangeHandler<SessionManagerConfig>(
         configurationReaderService,
         LinkManagerConfiguration.CONFIG_KEY,
         ::fromConfig
@@ -528,12 +530,14 @@ open class SessionManagerImpl(
 
         private val config = AtomicReference<HeartbeatManagerConfig>()
 
-        private data class HeartbeatManagerConfig(
+        @VisibleForTesting
+        internal data class HeartbeatManagerConfig(
             val heartbeatPeriod: Duration,
             val sessionTimeout: Duration
         )
 
-        private inner class HeartbeatManagerConfigChangeHandler: ConfigurationChangeHandler<HeartbeatManagerConfig>(
+        @VisibleForTesting
+        internal inner class HeartbeatManagerConfigChangeHandler: ConfigurationChangeHandler<HeartbeatManagerConfig>(
             configurationReaderService,
             LinkManagerConfiguration.CONFIG_KEY,
             ::fromConfig
