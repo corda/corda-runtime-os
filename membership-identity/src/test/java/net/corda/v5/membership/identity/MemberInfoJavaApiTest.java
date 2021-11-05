@@ -29,10 +29,10 @@ public class MemberInfoJavaApiTest {
 
     @Test
     public void getMgmProvidedContext() {
-        MemberContext test = mock(MemberContext.class);
+        MGMContext test = mock(MGMContext.class);
         when(memberInfo.getMgmProvidedContext()).thenReturn(test);
 
-        MemberContext result = memberInfo.getMgmProvidedContext();
+        MGMContext result = memberInfo.getMgmProvidedContext();
 
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result).isEqualTo(test);

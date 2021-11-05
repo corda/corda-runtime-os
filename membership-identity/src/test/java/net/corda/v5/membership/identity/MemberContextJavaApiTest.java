@@ -3,6 +3,7 @@ package net.corda.v5.membership.identity;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
 import java.util.Set;
 
 import static org.mockito.Mockito.mock;
@@ -17,25 +18,25 @@ public class MemberContextJavaApiTest {
     @Test
     public void get() {
         final String key = "key";
-        final Object object = new Object();
-        when(memberContext.get(key)).thenReturn(object);
+        final String value = "value";
+        when(memberContext.get(key)).thenReturn(value);
 
         final Object obj = memberContext.get(key);
 
         Assertions.assertThat(obj).isNotNull();
-        Assertions.assertThat(obj).isEqualTo(object);
+        Assertions.assertThat(obj).isEqualTo(value);
         verify(memberContext, times(1)).get(key);
     }
 
     @Test
     public void getKeys() {
-        Set<String> keys = Set.of("key1", "key2");
-        when(memberContext.getKeys()).thenReturn(keys);
+        Set<Map.Entry<String, String>> entries = Map.of("key", "value").entrySet();
+        when(memberContext.getEntries()).thenReturn(entries);
 
-        Set<String> keysTest = memberContext.getKeys();
+        Set<Map.Entry<String, String>> entriesTest = memberContext.getEntries();
 
-        Assertions.assertThat(keysTest).isNotNull();
-        Assertions.assertThat(keysTest).isEqualTo(keys);
-        verify(memberContext, times(1)).getKeys();
+        Assertions.assertThat(entriesTest).isNotNull();
+        Assertions.assertThat(entriesTest).isEqualTo(entries);
+        verify(memberContext, times(1)).getEntries();
     }
 }
