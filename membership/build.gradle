@@ -13,4 +13,6 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     api project(':base')
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
 }

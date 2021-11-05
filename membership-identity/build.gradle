@@ -17,4 +17,6 @@ dependencies {
     implementation project(":membership-conversion")
 
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
 }
