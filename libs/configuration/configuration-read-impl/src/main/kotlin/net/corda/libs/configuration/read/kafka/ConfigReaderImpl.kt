@@ -66,10 +66,16 @@ class ConfigReaderImpl(
             if (!stopped) {
                 subscription?.stop()
                 subscription = null
-                configUpdates.clear()
                 stopped = true
                 snapshotReceived = false
             }
+        }
+    }
+
+    override fun close() {
+        lock.withLock {
+            stop()
+            configUpdates.clear()
         }
     }
 

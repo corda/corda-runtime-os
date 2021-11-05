@@ -12,6 +12,8 @@ import net.corda.lifecycle.Lifecycle
  *
  * Note that calling start or stop on this service is idempotent, so it is safe for other services to call start to make
  * sure that the service is up.
+ *
+ * This service will transition to [LifecycleStatus.UP] once the first snapshot of configuration is received.
  */
 interface ConfigurationReadService : Lifecycle {
 
