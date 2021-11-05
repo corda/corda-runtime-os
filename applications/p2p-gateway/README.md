@@ -59,7 +59,7 @@ You can configure the image using those environment variables:
 docker run \
 --rm \
 --network kafka-docker_default \
--eKAFKA_SERVERS="broker1:9093" \
+-e KAFKA_SERVERS="broker1:9093" \
 -p 3123:5603 \
 --hostname www.alice.net \
 engineering-docker-dev.software.r3.com/corda-os-p2p-gateway:5.0.0.0-SNAPSHOT
