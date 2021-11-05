@@ -17,11 +17,13 @@ class PermissionServiceComponent(
         get() = permissionValidator.let { it?.isRunning ?: false }
 
     override fun start() {
-        permissionValidator?.stop()
-        permissionValidator = permissionValidatorFactory.createPermissionValidator()
+        if (permissionValidator == null) {
+            permissionValidator = permissionValidatorFactory.createPermissionValidator().also { it.start() }
+        }
     }
 
     override fun stop() {
         permissionValidator?.stop()
+        permissionValidator = null
     }
 }
