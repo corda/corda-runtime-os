@@ -42,13 +42,14 @@ class SandboxServiceImpl @Activate constructor(
 
         //tmp stuff until cpi service is available
         private val configuredBaseDir: String? = System.getProperty("base.directory")
+        private val cpbDirPath: String? = System.getProperty("cpb.directory")
         private val baseDirectory = if (!configuredBaseDir.isNullOrEmpty()) {
             Paths.get(URI.create(configuredBaseDir))
         } else {
-            Paths.get(".")
+            Paths.get("")
         }.toAbsolutePath().toString()
-        private val cpbFile = "../../testing/cpbs/helloworld/build/libs/corda-helloworld-cpb-5.0.0.0-SNAPSHOT-package.cpb"
     }
+
 
     private var cache = ConcurrentHashMap<String, SandboxGroup>()
     private var cpiForFlow = ConcurrentHashMap<String, CPI.Identifier>()
@@ -76,7 +77,7 @@ class SandboxServiceImpl @Activate constructor(
                 initPublicSandboxes(configurationAdmin, sandboxCreationService, baseDirectory)
                 cache = ConcurrentHashMap()
                 cpiForFlow = ConcurrentHashMap()
-                loadCpbs(listOf(cpbFile))
+                loadCpbs(getCPBFiles())
                 coordinator.updateStatus(LifecycleStatus.UP, "Connected to configuration repository.")
             }
             is StopEvent -> {
@@ -85,6 +86,13 @@ class SandboxServiceImpl @Activate constructor(
                 cpiForFlow.clear()
             }
         }
+    }
+
+    private fun getCPBFiles(): List<String> {
+        if (cpbDirPath == null) {
+            return emptyList()
+        }
+        return File(cpbDirPath).listFiles().filter { it.name.endsWith("cpb") }.map { it.toPath().toString() }
     }
 
     /**
