@@ -5,7 +5,7 @@ import java.security.PublicKey
 
 /**
  * The member info consist of two parts:
- * Member provided context: Parameters added and signed by member as a part of initial MemberInfo proposal.
+ * Member provided context: Parameters added and signed by member as part of the initial MemberInfo proposal.
  * MGM provided context: Parameters added by MGM as a part of member acceptance.
  */
 @CordaSerializable
@@ -13,7 +13,7 @@ interface MemberInfo {
 
     val memberProvidedContext: MemberContext
 
-    val mgmProvidedContext: MemberContext
+    val mgmProvidedContext: MGMContext
 
     /**
      * Member's X.500 name.

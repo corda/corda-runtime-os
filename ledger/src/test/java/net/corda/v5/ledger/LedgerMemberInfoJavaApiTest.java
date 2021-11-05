@@ -6,6 +6,7 @@ import net.corda.v5.membership.identity.MemberInfo;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import static net.corda.v5.ledger.LedgerMemberInfo.NOTARY_SERVICE_PARTY;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -17,7 +18,7 @@ public class LedgerMemberInfoJavaApiTest {
 
     @Test
     public void getNotaryServiceParty() {
-        when(memberContext.get(LedgerMemberInfo.NOTARY_SERVICE_PARTY)).thenReturn(party);
+        when(memberContext.parseOrNull(NOTARY_SERVICE_PARTY, Party.class)).thenReturn(party);
         when(memberInfo.getMemberProvidedContext()).thenReturn(memberContext);
         var result = LedgerMemberInfo.getNotaryServiceParty(memberInfo);
 

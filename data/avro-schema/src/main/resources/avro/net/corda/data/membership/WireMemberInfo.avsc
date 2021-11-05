@@ -6,12 +6,12 @@
   "fields": [
     {
       "name": "memberContext",
-      "doc": "Member provided data in MemberInfo in a <List<Pair<String, String>> format.",
+      "doc": "Member provided data in MemberInfo in a <List<Pair<String, String?>> format.",
       "type": { "type": "array", "items": "net.corda.data.WireKeyValuePair" }
     },
     {
       "name": "mgmContext",
-      "doc": "MGM provided data in MemberInfo in a <List<Pair<String, String>> format.",
+      "doc": "MGM provided data in MemberInfo in a <List<Pair<String, String?>> format.",
       "type": { "type": "array", "items": "net.corda.data.WireKeyValuePair" }
     }
   ]

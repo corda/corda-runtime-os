@@ -3,7 +3,7 @@ package net.corda.v5.application.membership
 
 import net.corda.v5.application.identity.Party
 import net.corda.v5.membership.identity.MemberInfo
-import net.corda.v5.membership.identity.getValue
+import net.corda.v5.membership.conversion.parse
 
 const val PARTY = "corda.party"
 
@@ -12,4 +12,4 @@ const val PARTY = "corda.party"
  * Party name is unique within the group and cannot be changed while the membership exists.
  */
 val MemberInfo.party: Party
-    get() = memberProvidedContext.getValue(PARTY)
+    get() = memberProvidedContext.parse(PARTY)

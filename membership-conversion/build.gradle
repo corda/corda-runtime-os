@@ -4,7 +4,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
 }
 
-description 'Corda Membership Identity'
+description 'Corda Membership Conversion'
 
 dependencies {
     api platform(project(':corda-api'))
@@ -13,8 +13,6 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     api project(':base')
-    implementation project(":membership")
-    implementation project(":membership-conversion")
 
     implementation "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
 }

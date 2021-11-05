@@ -7,7 +7,7 @@ import org.bouncycastle.asn1.x500.AttributeTypeAndValue
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x500.X500NameBuilder
 import org.bouncycastle.asn1.x500.style.BCStyle
-import java.util.*
+import java.util.Locale
 import javax.security.auth.x500.X500Principal
 
 /**

@@ -17,6 +17,7 @@ dependencies {
         api project(':data:db-schema')
         api project(':ledger')
         api project(':membership')
+        api project(':membership-conversion')
         api project(':membership-identity')
         api project(':packaging')
         api project(':packaging:packaging-avro-converters')

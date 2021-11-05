@@ -6,7 +6,7 @@
   "fields": [
     {
       "name": "groupParameters",
-      "doc": "GroupParameters in a <List<Pair<String, String>> format.",
+      "doc": "GroupParameters in a <List<Pair<String, String?>> format.",
       "type": { "type": "array", "items": "net.corda.data.WireKeyValuePair" }
     }
   ]
