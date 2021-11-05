@@ -119,7 +119,7 @@ object SerializerFactoryBuilder {
                 mustPreserveDataWhenEvolving)
     }
 
-    @Suppress("TooGenericExceptionCaught", "LongParameterList")
+    @Suppress("LongParameterList")
     private fun makeFactory(whitelist: ClassWhitelist,
                             descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
                             allowEvolution: Boolean,

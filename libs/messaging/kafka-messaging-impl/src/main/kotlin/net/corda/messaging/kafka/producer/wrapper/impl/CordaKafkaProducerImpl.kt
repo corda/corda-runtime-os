@@ -269,7 +269,7 @@ class CordaKafkaProducerImpl(
      * @throws CordaMessageAPIFatalException fatal error occurred.
      * @throws CordaMessageAPIIntermittentException error occurred that can be retried.
      */
-    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
+    @Suppress("ThrowsCount")
     private fun initTransactionForProducer() {
         try {
             producer.initTransactions()

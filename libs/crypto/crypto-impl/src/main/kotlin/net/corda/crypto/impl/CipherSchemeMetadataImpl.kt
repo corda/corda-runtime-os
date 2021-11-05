@@ -77,7 +77,7 @@ open class CipherSchemeMetadataImpl(
         throw CryptoServiceLibraryException("Failed to decode public key", e)
     }
 
-    @Suppress("TooGenericExceptionCaught", "ComplexMethod")
+    @Suppress("ComplexMethod")
     override fun decodePublicKey(encodedKey: String): PublicKey = try {
         val pemContent = parsePemContent(encodedKey)
         val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)

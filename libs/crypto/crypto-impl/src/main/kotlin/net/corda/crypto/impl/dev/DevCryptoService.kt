@@ -170,7 +170,7 @@ class DevCryptoService(
         return defaultCryptoService.sign(wrappedKey, data, context)
     }
 
-    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
+    @Suppress("ThrowsCount")
     private fun generateKeyPair(
         alias: String,
         signatureScheme: SignatureScheme,

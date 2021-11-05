@@ -19,7 +19,7 @@ class HttpClientChannelHandler(private val clientListener: HttpClientListener,
     /**
      * Reads the HTTP objects into a [ByteBuf] and publishes them to all subscribers
      */
-    @Suppress("TooGenericExceptionCaught", "ComplexMethod")
+    @Suppress("ComplexMethod")
     override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
         if (msg is HttpResponse) {
             logger.debug("Received response message $msg")

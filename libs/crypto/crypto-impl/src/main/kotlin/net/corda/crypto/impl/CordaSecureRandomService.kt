@@ -45,7 +45,7 @@ private class CordaSecureRandomSpi : SecureRandomSpi() {
     override fun engineGenerateSeed(numBytes: Int): ByteArray = secureRandom.generateSeed(numBytes)
 }
 
-@Suppress("TooGenericExceptionCaught", "TooGenericExceptionThrown")
+@Suppress("TooGenericExceptionThrown")
 private class LinuxSecureRandomSpi : SecureRandomSpi() {
     private fun openURandom(): InputStream {
         try {

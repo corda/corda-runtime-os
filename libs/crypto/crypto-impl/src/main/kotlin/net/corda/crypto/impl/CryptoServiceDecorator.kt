@@ -23,7 +23,7 @@ class CryptoServiceDecorator(
         private val logger = contextLogger()
     }
 
-    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
+    @Suppress("ThrowsCount")
     private fun <T> executeWithTimeOut(func: () -> T): T {
         var retry = retries
         val num = UUID.randomUUID()
