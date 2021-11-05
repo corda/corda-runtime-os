@@ -5,6 +5,7 @@ import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -102,7 +103,7 @@ internal class Registration(
                 coordinators.forEach { it.postEvent(CancelRegistration(this)) }
             } catch (ex: LifecycleException) {
                 // An error here means we're probably already in the process of closing, so we can safely ignore it
-                logger.debug("Caught but ignoring exception during Registration close: $ex")
+                logger.debug { "Caught but ignoring exception during Registration close: $ex" }
             }
 
         }
