@@ -30,7 +30,7 @@ import java.nio.ByteBuffer
 
 class TransientReference<out A>(@Transient val value: A)
 
-@Suppress("TooManyFunctions", "ComplexMethod", "TooGenericExceptionCaught")
+@Suppress("TooManyFunctions", "ComplexMethod")
 class FlowStateMachineImpl<R>(
     private val clientId: String?,
     private val id: FlowKey,

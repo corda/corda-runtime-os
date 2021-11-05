@@ -130,7 +130,6 @@ class DefaultLocalSerializerFactory(
 
     override fun getTypeInformation(type: Type): LocalTypeInformation = typeModel.inspect(type)
 
-    @Suppress("TooGenericExceptionCaught")
     override fun getTypeInformation(typeName: String): LocalTypeInformation? {
         return typesByName.getOrPut(typeName) {
             val localType = try {

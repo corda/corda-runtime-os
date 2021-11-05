@@ -54,7 +54,6 @@ class DefaultCryptoKeyCacheImpl(
         persistence.put(partitionedAlias, entity)
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun find(alias: String): DefaultCryptoCachedKeyInfo? {
         logger.debug("Looking for public key with alias={} for member={}", alias, memberId)
         val partitionedAlias = effectiveAlias(alias)

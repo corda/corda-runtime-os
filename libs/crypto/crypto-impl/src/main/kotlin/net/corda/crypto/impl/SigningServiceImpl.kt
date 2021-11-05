@@ -45,7 +45,6 @@ open class SigningServiceImpl(
     override fun findPublicKey(alias: String): PublicKey? =
         cryptoService.findPublicKey(alias)
 
-    @Suppress("TooGenericExceptionCaught")
     override fun generateKeyPair(alias: String, context: Map<String, String>): PublicKey =
         try {
             logger.info("Generating key pair for alias={}", alias)
@@ -86,7 +85,6 @@ open class SigningServiceImpl(
                 "The member doesn't own public key '${publicKey.toStringShort()}'."
             )
 
-    @Suppress("TooGenericExceptionCaught")
     private fun doSign(
         publicKey: PublicKey,
         signatureSpec: SignatureSpec?,
@@ -137,7 +135,6 @@ open class SigningServiceImpl(
         }
 
 
-    @Suppress("TooGenericExceptionCaught")
     private fun doSign(
         alias: String,
         signatureSpec: SignatureSpec?,

@@ -70,7 +70,6 @@ class ReplayScheduler<M>(
         removedFuture?.cancel(false)
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun replay(message: M, uniqueId: String) {
         try {
             replayMessage(message)

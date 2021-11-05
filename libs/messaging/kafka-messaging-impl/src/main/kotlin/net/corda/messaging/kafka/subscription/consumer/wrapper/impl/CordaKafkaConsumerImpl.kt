@@ -57,7 +57,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     private val topicWithPrefix = "$topicPrefix$topic"
     private val groupName = config.getString(CommonClientConfigs.GROUP_ID_CONFIG)
 
-    @Suppress("TooGenericExceptionCaught")
     override fun close() {
         try {
             consumer.close(consumerCloseTimeout)
@@ -66,7 +65,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun close(timeout: Duration) {
         try {
             consumer.close(timeout)
@@ -80,7 +78,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun poll(timeout: Duration): List<ConsumerRecordAndMeta<K, V>> {
         val consumerRecords = try {
             consumer.poll(timeout)
@@ -126,7 +123,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun commitSyncOffsets(event: ConsumerRecord<K, V>, metaData: String?) {
         val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
         val topicPartition = TopicPartition(event.topic(), event.partition())
@@ -172,7 +168,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     override fun subscribeToTopic(listener: ConsumerRebalanceListener?) =
         subscribe(listOf(topicWithPrefix), listener ?: defaultListener)
 
-    @Suppress("TooGenericExceptionCaught")
     override fun subscribe(topics: Collection<String>, listener: ConsumerRebalanceListener?) {
         var attempts = 0L
         var attemptSubscription = true
@@ -226,7 +221,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
 
-    @Suppress("TooGenericExceptionCaught")
     override fun getPartitions(topic: String, duration: Duration): List<TopicPartition> {
         val listOfPartitions: List<PartitionInfo> = try {
             consumer.partitionsFor(topic, duration)
@@ -292,7 +286,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         throw CordaMessageAPIIntermittentException(errorMessage, ex)
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun assign(partitions: Collection<TopicPartition>) {
         try {
             consumer.assign(partitions)
@@ -315,7 +308,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun assignment(): Set<TopicPartition> {
         return try {
             consumer.assignment()
@@ -337,7 +329,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun position(partition: TopicPartition): Long {
         return try {
             consumer.position(partition)
@@ -365,7 +356,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun seek(partition: TopicPartition, offset: Long) {
         try {
             consumer.seek(partition, offset)
@@ -391,7 +381,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun seekToBeginning(partitions: Collection<TopicPartition>) {
         try {
             consumer.seekToBeginning(partitions)
@@ -417,7 +406,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun beginningOffsets(partitions: Collection<TopicPartition>): Map<TopicPartition, Long> {
         return try {
             consumer.beginningOffsets(partitions)
@@ -442,7 +430,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
 
-    @Suppress("TooGenericExceptionCaught")
     override fun endOffsets(partitions: Collection<TopicPartition>): Map<TopicPartition, Long> {
         return try {
             consumer.endOffsets(partitions)
@@ -466,7 +453,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun resume(partitions: Collection<TopicPartition>) {
         try {
             consumer.resume(partitions)
@@ -482,7 +468,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun pause(partitions: Collection<TopicPartition>) {
         try {
             consumer.pause(partitions)
@@ -498,7 +483,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun paused(): Set<TopicPartition> {
         return try {
             consumer.paused()
@@ -523,7 +507,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun groupMetadata(): ConsumerGroupMetadata {
         return try {
             consumer.groupMetadata()

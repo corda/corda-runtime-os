@@ -15,7 +15,7 @@ internal class TestURLStreamHandlerFactory(content: Map<String, String>) : URLSt
     companion object {
         const val PROTOCOL = "mock"
 
-        @Suppress("TooGenericExceptionThrown", "TooGenericExceptionCaught")
+        @Suppress("TooGenericExceptionThrown")
         private fun forceSetURLStreamHandlerFactory(factory: URLStreamHandlerFactory?) {
             try {
                 URL.setURLStreamHandlerFactory(factory)

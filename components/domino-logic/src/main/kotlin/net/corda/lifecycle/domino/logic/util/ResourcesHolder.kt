@@ -15,7 +15,6 @@ class ResourcesHolder : AutoCloseable {
     override fun close() {
         while (resources.isNotEmpty()) {
             val resource = resources.pollFirst()
-            @Suppress("TooGenericExceptionCaught")
             try {
                 resource.close()
             } catch (e: Throwable) {

@@ -193,7 +193,6 @@ internal class LifecycleProcessor(
         registry.updateStatus(coordinator.name, newStatus, reason)
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun runUserEventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator): Boolean {
         return try {
             userEventHandler.processEvent(event, coordinator)
