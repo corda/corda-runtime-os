@@ -54,7 +54,7 @@ class InMemorySessionReplayer(
         val sessionId: String,
         val source: LinkManagerNetworkMap.HoldingIdentity,
         val dest: LinkManagerNetworkMap.HoldingIdentity,
-        val sentSessionMessageCallback: (key: SessionManager.SessionKey, sessionId: String) -> Any
+        val sentSessionMessageCallback: (key: SessionManager.SessionKey, sessionId: String) -> Unit
     )
 
     fun addMessageForReplay(
