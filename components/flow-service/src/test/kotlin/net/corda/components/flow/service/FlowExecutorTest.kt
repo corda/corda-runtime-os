@@ -4,9 +4,6 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.components.flow.service.stubs.StateAndEventSubscriptionStub
 import net.corda.components.sandbox.service.SandboxService
-import net.corda.configuration.read.ConfigKeys.Companion.BOOTSTRAP_KEY
-import net.corda.configuration.read.ConfigKeys.Companion.FLOW_KEY
-import net.corda.configuration.read.ConfigKeys.Companion.MESSAGING_KEY
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
@@ -38,12 +35,13 @@ class FlowExecutorTest {
     }
 
     private val coordinatorFactory: LifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl()
-    private val bootstrapConfig: SmartConfig = SmartConfigImpl(ConfigFactory.empty().withValue(INSTANCE_ID_KEY, ConfigValueFactory
-        .fromAnyRef(1)))
-    private val flowConfig: SmartConfig = SmartConfigImpl(ConfigFactory.empty().withValue(TOPIC_KEY, ConfigValueFactory.fromAnyRef
-        ("Topic1"))
-        .withValue(GROUP_NAME_KEY, ConfigValueFactory.fromAnyRef("Group1")))
-    private val messagingConfig: SmartConfig = SmartConfigImpl(ConfigFactory.empty())
+    private val config: SmartConfig = SmartConfigImpl(
+        ConfigFactory.empty().withValue(
+            INSTANCE_ID_KEY, ConfigValueFactory
+                .fromAnyRef(1)
+        ).withValue(TOPIC_KEY, ConfigValueFactory.fromAnyRef("Topic1"))
+        .withValue(GROUP_NAME_KEY, ConfigValueFactory.fromAnyRef("Group1"))
+    )
     private val subscriptionFactory: SubscriptionFactory = mock()
     private val flowManager: FlowManager = mock()
     private val sandboxService: SandboxService = mock()
@@ -62,14 +60,8 @@ class FlowExecutorTest {
             anyOrNull()
         )
 
-        val configs = mapOf(
-            MESSAGING_KEY to messagingConfig,
-            FLOW_KEY to flowConfig,
-            BOOTSTRAP_KEY to bootstrapConfig
-        )
-
         val flowExecutor =
-            FlowExecutor(coordinatorFactory, configs, subscriptionFactory, flowManager, sandboxService)
+            FlowExecutor(coordinatorFactory, config, subscriptionFactory, flowManager, sandboxService)
 
         flowExecutor.start()
         assertTrue(startLatch.await(5, TimeUnit.SECONDS))
