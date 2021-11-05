@@ -1,32 +1,18 @@
 package net.corda.p2p.linkmanager
 
 import com.typesafe.config.ConfigFactory
-import net.corda.configuration.read.ConfigurationHandler
-import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.p2p.app.HoldingIdentity
-import net.corda.p2p.linkmanager.delivery.ReplayScheduler
-import net.corda.p2p.linkmanager.delivery.ReplaySchedulerTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.concurrent.CountDownLatch
-import kotlin.concurrent.thread
 
 class ConfigBasedLinkManagerHostingMapTest {
 

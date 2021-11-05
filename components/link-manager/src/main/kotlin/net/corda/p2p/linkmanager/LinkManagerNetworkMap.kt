@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import java.security.PublicKey

@@ -1,4 +1,4 @@
-package net.corda.p2p.linkmanager
+package net.corda.p2p.linkmanager.utilities
 
 import java.util.concurrent.ScheduledExecutorService
 

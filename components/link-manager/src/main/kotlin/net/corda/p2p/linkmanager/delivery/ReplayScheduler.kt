@@ -2,16 +2,13 @@ package net.corda.p2p.linkmanager.delivery
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.p2p.linkmanager.AutoClosableScheduledExecutorService
+import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.v5.base.util.contextLogger
-import java.lang.IllegalArgumentException
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
@@ -20,13 +17,11 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
 
 /**
  * This class keeps track of messages which may need to be replayed.
  */
+@Suppress("LongParameterList")
 class ReplayScheduler<M>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val configReadService: ConfigurationReadService,
@@ -36,7 +31,13 @@ class ReplayScheduler<M>(
     private val currentTimestamp: () -> Long = { Instant.now().toEpochMilli() },
     ) : LifecycleWithDominoTile {
 
-    override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources, children, ReplaySchedulerConfigurationChangeHandler())
+    override val dominoTile = DominoTile(
+        this::class.java.simpleName,
+        coordinatorFactory,
+        ::createResources,
+        children,
+        ReplaySchedulerConfigurationChangeHandler()
+    )
 
     private val replayPeriod = AtomicReference<Duration>()
 

@@ -48,7 +48,12 @@ internal class OutboundMessageHandler(
         this,
     )
 
-    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, children = listOf(connectionManager.dominoTile), createResources = ::createResources)
+    override val dominoTile = DominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        children = listOf(connectionManager.dominoTile),
+        createResources = ::createResources
+    )
 
     private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC, instanceId),

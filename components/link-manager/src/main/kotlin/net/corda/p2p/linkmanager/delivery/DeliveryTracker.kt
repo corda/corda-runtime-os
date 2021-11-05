@@ -23,6 +23,7 @@ import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 class DeliveryTracker(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configReadService: ConfigurationReadService,
@@ -73,7 +74,12 @@ class DeliveryTracker(
             const val MESSAGE_REPLAYER_CLIENT_ID = "message-replayer-client"
         }
 
-        private val publisher = PublisherWithDominoLogic(publisherFactory, coordinatorFactory, MESSAGE_REPLAYER_CLIENT_ID, nodeConfiguration)
+        private val publisher = PublisherWithDominoLogic(
+            publisherFactory,
+            coordinatorFactory,
+            MESSAGE_REPLAYER_CLIENT_ID,
+            nodeConfiguration
+        )
 
         override val dominoTile = publisher.dominoTile
 

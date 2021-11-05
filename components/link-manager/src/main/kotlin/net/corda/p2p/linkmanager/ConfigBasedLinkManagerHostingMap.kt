@@ -6,11 +6,9 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITIES_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_GPOUP_ID
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.LOCALLY_HOSTED_IDENTITY_X500_NAME
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import java.util.concurrent.ConcurrentHashMap
 
@@ -22,7 +20,11 @@ class ConfigBasedLinkManagerHostingMap(
     coordinatorFactory: LifecycleCoordinatorFactory
 ): LinkManagerHostingMap {
 
-    override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, configurationChangeHandler = HostingMapConfigurationChangeHandler())
+    override val dominoTile = DominoTile(
+        this::class.java.simpleName,
+        coordinatorFactory,
+        configurationChangeHandler = HostingMapConfigurationChangeHandler()
+    )
 
     private val locallyHostedIdentities = ConcurrentHashMap.newKeySet<LinkManagerNetworkMap.HoldingIdentity>()
 

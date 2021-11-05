@@ -9,7 +9,6 @@ import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAndKey
@@ -29,7 +28,7 @@ import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
-import net.corda.p2p.linkmanager.AutoClosableScheduledExecutorService
+import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
@@ -568,7 +567,12 @@ open class SessionManagerImpl(
 
         private val trackedSessions = ConcurrentHashMap<String, TrackedSession>()
 
-        private val publisher = PublisherWithDominoLogic(publisherFactory, coordinatorFactory, HEARTBEAT_MANAGER_CLIENT_ID, nodeConfiguration)
+        private val publisher = PublisherWithDominoLogic(
+            publisherFactory,
+            coordinatorFactory,
+            HEARTBEAT_MANAGER_CLIENT_ID,
+            nodeConfiguration
+        )
 
         override val dominoTile = DominoTile(
             this::class.java.simpleName,

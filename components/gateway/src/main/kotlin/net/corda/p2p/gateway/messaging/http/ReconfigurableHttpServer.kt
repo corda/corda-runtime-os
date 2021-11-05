@@ -26,7 +26,11 @@ class ReconfigurableHttpServer(
     private var httpServer: HttpServer? = null
     private val serverLock = ReentrantReadWriteLock()
 
-    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler())
+    override val dominoTile = DominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        configurationChangeHandler = ReconfigurableHttpServerConfigChangeHandler()
+    )
 
     companion object {
         private val logger = contextLogger()

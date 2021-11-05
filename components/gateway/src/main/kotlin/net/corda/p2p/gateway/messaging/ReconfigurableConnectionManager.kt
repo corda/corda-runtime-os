@@ -21,7 +21,11 @@ class ReconfigurableConnectionManager(
     @Volatile
     private var manager: ConnectionManager? = null
 
-    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, configurationChangeHandler = ConnectionManagerConfigChangeHandler())
+    override val dominoTile = DominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        configurationChangeHandler = ConnectionManagerConfigChangeHandler()
+    )
 
     companion object {
         private val logger = contextLogger()
