@@ -20,13 +20,6 @@ dependencies {
     cordaProvided group: 'net.corda', name: 'corda-flows'
 
     cordaProvided group: 'net.corda.kotlin', name: 'kotlin-stdlib-jdk8-osgi'
-//    cordaProvided platform(project(':corda-api'))
-//    cordaProvided project(':application')
-//    cordaProvided project(':ledger')
-//    cordaProvided project(':crypto')
-//    // TODO:  using corda5 dev preview to build a cpk for the packaging unit tests, these libs aren't in corda-api yet
-//    cordapp "net.corda:corda-flows:$cordaDevPreviewVersion"
-
     cordapp project(':libs:cpi-store:integration-test:test-resources:contract-cpk')
     cordapp "net.corda:corda-flows:$cordaDevPreviewVersion"
 

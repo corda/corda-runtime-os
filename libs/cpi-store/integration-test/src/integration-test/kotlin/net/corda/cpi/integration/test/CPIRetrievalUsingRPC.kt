@@ -7,8 +7,6 @@ import net.corda.cpi.utils.CPX_KAFKA_FILE_CACHE_ROOT_DIR_CONFIG_PATH
 import net.corda.cpi.write.factory.CPIWriteFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.packaging.CPI
 import net.corda.v5.base.util.contextLogger
@@ -54,12 +52,6 @@ class CPIRPCIntegrationTest {
             topicAdmin.createTopics(kafkaProperties, TopicTemplates.RPC_RESPONSE_TOPIC_TEMPLATE)
         }
     }
-
-    @InjectService(timeout = 4000)
-    lateinit var publisherFactory: PublisherFactory
-
-    @InjectService(timeout = 4000)
-    lateinit var subscriptionFactory: SubscriptionFactory
 
     @InjectService(timeout = 4000, filter = "(type=kafka)")
     lateinit var readFactory: CPIReadFactory
