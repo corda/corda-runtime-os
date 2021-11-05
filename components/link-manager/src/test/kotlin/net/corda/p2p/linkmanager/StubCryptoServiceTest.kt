@@ -1,5 +1,10 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.StartEvent
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
@@ -9,7 +14,9 @@ import net.corda.p2p.test.KeyPairEntry
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
@@ -27,7 +34,21 @@ class StubCryptoServiceTest {
         }
     }
 
-    private val cryptoService = StubCryptoService(subscriptionFactory).apply {
+    private val handler = argumentCaptor<LifecycleEventHandler>()
+    private val event = argumentCaptor<LifecycleEvent>()
+    private val coordinator = mock<LifecycleCoordinator> {
+        on { start() } doAnswer {
+            handler.lastValue.processEvent(StartEvent(), mock)
+        }
+        on { postEvent(event.capture()) } doAnswer {
+            handler.lastValue.processEvent(event.lastValue, mock)
+        }
+    }
+    private val coordinatorFactory = mock<LifecycleCoordinatorFactory>() {
+        on { createCoordinator(any(), handler.capture()) } doReturn coordinator
+    }
+
+    private val cryptoService = StubCryptoService(coordinatorFactory, subscriptionFactory).apply {
         start()
     }
 

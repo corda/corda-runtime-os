@@ -49,12 +49,14 @@ class ConfigBasedLinkManagerHostingMap(
         }
     }
 
-    fun fromConfig(config: Config): Set<LinkManagerNetworkMap.HoldingIdentity> {
+    private fun fromConfig(config: Config): Set<LinkManagerNetworkMap.HoldingIdentity> {
         val holdingIdentitiesConfig = config.getConfigList(LOCALLY_HOSTED_IDENTITIES_KEY)
         if (holdingIdentitiesConfig == null) {
-            dominoTile.configApplied(DominoTile.ConfigUpdateResult.Error(
-                InvalidLinkManagerConfigException(
-                    "Invalid LinkManager config. $LOCALLY_HOSTED_IDENTITIES_KEY was not present in the config.")
+            dominoTile.configApplied(
+                DominoTile.ConfigUpdateResult.Error(
+                    InvalidLinkManagerConfigException(
+                        "Invalid LinkManager config. getConfigList with key = $LOCALLY_HOSTED_IDENTITIES_KEY returned null."
+                    )
                 )
             )
             return emptySet()

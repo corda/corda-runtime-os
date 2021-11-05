@@ -3,7 +3,6 @@ package net.corda.p2p.linkmanager.delivery
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -20,10 +19,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.fail
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -150,7 +147,7 @@ class DeliveryTrackerTest {
     }
 
     @Test
-    fun `The DeliveryTracker submits messages to be replayed (by the replayScheduler) after the markers state topic is committed`() {
+    fun `The DeliveryTracker adds a message to be replayed (by the replayScheduler) after the markers state topic is committed`() {
         val (tracker, _, listener) = createTracker()
 
         tracker.start()
@@ -166,7 +163,7 @@ class DeliveryTrackerTest {
     }
 
     @Test
-    fun `The DeliveryTracker submits messages to be replayed when their is state in the markers state topic (on assignment)`() {
+    fun `The DeliveryTracker adds a message to be replayed when their is state in the markers state topic (on assignment)`() {
         val (tracker, _, listener) = createTracker()
 
         tracker.start()

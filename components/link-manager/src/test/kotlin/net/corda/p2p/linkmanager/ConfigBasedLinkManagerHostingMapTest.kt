@@ -8,43 +8,43 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.p2p.app.HoldingIdentity
+import net.corda.p2p.linkmanager.delivery.ReplayScheduler
+import net.corda.p2p.linkmanager.delivery.ReplaySchedulerTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
 
-class ConfigBasedLinkManagerHostingMaptest {
+class ConfigBasedLinkManagerHostingMapTest {
 
-    private var listeners = mutableListOf<ConfigurationHandler>()
-    private val latch = CountDownLatch(1)
-
-    private val configReadService = mock<ConfigurationReadService> {
-        on { registerForUpdates(any()) } doAnswer {invocation ->
-            @Suppress("UNCHECKED_CAST")
-            listeners.add(invocation.arguments[0] as ConfigurationHandler)
-            latch.countDown()
-            mock
-        }
+    private lateinit var configHandler: ConfigBasedLinkManagerHostingMap.HostingMapConfigurationChangeHandler
+    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { _, context ->
+        @Suppress("UNCHECKED_CAST")
+        configHandler = context.arguments()[4] as ConfigBasedLinkManagerHostingMap.HostingMapConfigurationChangeHandler
     }
 
-    private val lifecycleEventHandler = argumentCaptor<LifecycleEventHandler>()
-    private val coordinator = mock<LifecycleCoordinator> {
-        on { postEvent(any()) } doAnswer {
-            lifecycleEventHandler.lastValue.processEvent(it.getArgument(0) as LifecycleEvent, mock)
-        }
-    }
-    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
-        on { createCoordinator(any(), lifecycleEventHandler.capture()) } doReturn coordinator
+    @AfterEach
+    fun cleanUp() {
+        dominoTile.close()
     }
 
     private val alice = LinkManagerNetworkMap.HoldingIdentity("O=Alice, L=London, C=GB", "group1")
     private val bob = LinkManagerNetworkMap.HoldingIdentity("O=Bob, L=London, C=GB", "group1")
     private val charlie = LinkManagerNetworkMap.HoldingIdentity("O=Charlie, L=London, C=GB", "group1")
+    private val configResourcesHolder = mock<ResourcesHolder>()
 
     private val config = ConfigFactory.parseString(
         """
@@ -61,25 +61,28 @@ class ConfigBasedLinkManagerHostingMaptest {
         """
     )
 
-    private val hostingMap = ConfigBasedLinkManagerHostingMap(configReadService, lifecycleCoordinatorFactory)
+    private val hostingMap = ConfigBasedLinkManagerHostingMap(mock(), mock())
 
     @Test
     fun `locally hosted identities received via configuration are parsed properly and advised on lookups`() {
-        val hostingMapStarted = thread { hostingMap.start() }
-        latch.await()
+        setRunning()
+        val typedConfig = configHandler.configFactory(config)
+        configHandler.applyNewConfiguration(typedConfig, null, configResourcesHolder)
 
-        listeners.forEach { listener ->
-            listener.onNewConfiguration(setOf(LinkManagerConfiguration.CONFIG_KEY), mapOf(
-                LinkManagerConfiguration.CONFIG_KEY to config
-            ))
-        }
-
-        hostingMapStarted.join()
-
-        assertThat(hostingMap.isRunning).isTrue
         assertThat(hostingMap.isHostedLocally(alice)).isTrue
         assertThat(hostingMap.isHostedLocally(bob)).isTrue
         assertThat(hostingMap.isHostedLocally(charlie)).isFalse
+        verify(dominoTile.constructed().last()).configApplied(DominoTile.ConfigUpdateResult.Success)
     }
 
+    @Test
+    fun `if config is invalid the config factory throws an exception`() {
+        assertThrows<Exception> {
+            configHandler.configFactory(ConfigFactory.parseString(""))
+        }
+    }
+
+    private fun setRunning() {
+        whenever(dominoTile.constructed().first().isRunning).doReturn(true)
+    }
 }

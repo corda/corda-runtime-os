@@ -1,7 +1,6 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.data.identity.HoldingIdentity
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -9,19 +8,15 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.schema.TestSchema
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.NetworkMapEntry
-import net.corda.p2p.NetworkType
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import java.lang.IllegalStateException
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
 
 class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                      subscriptionFactory: SubscriptionFactory): LinkManagerNetworkMap {
@@ -35,9 +30,8 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 
     private fun createResources(resources: ResourcesHolder) {
         subscription.start()
-        resources.keep {
-            subscription.stop()
-        }
+        resources.keep (subscription)
+        dominoTile.resourcesStarted(false)
     }
 
     @Suppress("TYPE_INFERENCE_ONLY_INPUT_TYPES_WARNING")
