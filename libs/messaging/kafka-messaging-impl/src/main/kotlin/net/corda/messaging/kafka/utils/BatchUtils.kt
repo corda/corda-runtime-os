@@ -1,6 +1,5 @@
 package net.corda.messaging.kafka.utils
 
-import net.corda.messaging.api.records.Record
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
@@ -46,8 +45,4 @@ fun getRecordListOffsets(records: List<ConsumerRecord<*, *>>, topicPrefix: Strin
         }
         offsets
     }
-}
-
-fun <K: Any, V: Any> ConsumerRecord<K, V>.toRecord(): Record<K, V> {
-    return Record(this.topic(), this.key(), this.value())
 }
