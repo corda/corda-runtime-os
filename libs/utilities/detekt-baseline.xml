@@ -13,7 +13,6 @@
     <ID>SpreadOperator:PathUtils.kt$(this, lines, charset, *options)</ID>
     <ID>SpreadOperator:PathUtils.kt$(this, target, *options)</ID>
     <ID>SpreadOperator:PathUtils.kt$(this, targetFile, *options)</ID>
-    <ID>TooGenericExceptionCaught:LazyMappedList.kt$LazyMappedList$ex: RuntimeException</ID>
     <ID>TooManyFunctions:PathUtils.kt$net.corda.utilities.PathUtils.kt</ID>
   </CurrentIssues>
 </SmellBaseline>

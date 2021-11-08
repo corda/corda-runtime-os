@@ -88,7 +88,6 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun runConsumeLoop() {
         var attempts = 0
         while (!stopped) {
@@ -118,7 +117,6 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<String, RPCRequest>) {
         while (!stopped) {
             val consumerRecords = consumer.poll()
@@ -140,7 +138,6 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<String, RPCRequest>>) {
         consumerRecords.forEach {
             val rpcRequest = it.record.value()

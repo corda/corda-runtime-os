@@ -149,7 +149,6 @@ open class SerializationOutput constructor(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     fun writeObject(obj: Any, data: Data, type: Type, context: SerializationContext, debugIndent: Int = 0) {
         val serializer = serializerFactory.get(obj.javaClass, type)
         if (serializer !in serializerHistory) {

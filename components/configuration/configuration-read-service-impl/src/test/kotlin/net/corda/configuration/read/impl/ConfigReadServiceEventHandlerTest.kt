@@ -1,5 +1,6 @@
 package net.corda.configuration.read.impl
 
+import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.ErrorEvent
@@ -15,6 +16,7 @@ import org.mockito.ArgumentCaptor
 import org.mockito.Captor
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.capture
 import org.mockito.kotlin.firstValue
 import org.mockito.kotlin.mock
@@ -39,6 +41,9 @@ internal class ConfigReadServiceEventHandlerTest {
 
     private lateinit var configReadServiceEventHandler: ConfigReadServiceEventHandler
 
+    @Captor
+    private val callbackCaptor = argumentCaptor<ConfigListener>()
+
     @BeforeEach
     fun setUp() {
         configReaderFactory = mock()
@@ -61,11 +66,17 @@ internal class ConfigReadServiceEventHandlerTest {
     fun `Event handler works when states in correct order`() {
         configReadServiceEventHandler.processEvent(BootstrapConfigProvided(mock()), coordinator)
         configReadServiceEventHandler.processEvent(SetupSubscription(), coordinator)
+        `when`(coordinator.status).thenReturn(LifecycleStatus.DOWN)
+
+        verify(configReader).start()
+        verify(callbackHandles).addSubscription(any())
+        verify(configReader, times(1)).registerCallback(callbackCaptor.capture())
+
+        // This callback should trigger the UP state as it's a "snapshot"
+        callbackCaptor.firstValue.onUpdate(emptySet(), emptyMap())
 
         verify(coordinator).updateStatus(capture(lifecycleStatusCaptor), any())
         assertThat(lifecycleStatusCaptor.firstValue).isEqualTo(LifecycleStatus.UP)
-        verify(configReader).start()
-        verify(callbackHandles).addSubscription(any())
     }
 
     @Test

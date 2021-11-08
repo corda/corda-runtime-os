@@ -85,12 +85,6 @@
     <ID>ThrowsCount:AMQPTypeIdentifierParser.kt$AMQPTypeIdentifierParser$// Make sure our inputs aren't designed to blow things up. private fun validate(typeString: String)</ID>
     <ID>ThrowsCount:EnumTransforms.kt$EnumTransforms$ private fun validateNoCycles(constants: Map&lt;String, Int&gt;)</ID>
     <ID>ThrowsCount:PropertyDescriptor.kt$PropertyDescriptor$ fun validate()</ID>
-    <ID>TooGenericExceptionCaught:AMQPExceptions.kt$th: Throwable</ID>
-    <ID>TooGenericExceptionCaught:DeserializationInput.kt$DeserializationInput$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:SerializationOutput.kt$SerializationOutput$ex: NullPointerException</ID>
-    <ID>TooGenericExceptionCaught:ThrowableSerializer.kt$ThrowableSerializer$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:TransformTypes.kt$TransformTypes.Companion$e: IndexOutOfBoundsException</ID>
-    <ID>TooGenericExceptionCaught:TypeResolver.kt$TypeResolver.Companion$ex: Exception</ID>
     <ID>TooManyFunctions:LocalSerializerFactory.kt$DefaultLocalSerializerFactory : LocalSerializerFactory</ID>
     <ID>TooManyFunctions:LocalTypeInformationBuilder.kt$LocalTypeInformationBuilder</ID>
     <ID>TooManyFunctions:PropertyDescriptor.kt$net.corda.internal.serialization.amqp.PropertyDescriptor.kt</ID>

@@ -66,7 +66,6 @@ class HttpRpcConnectionListenerDistributor<I : RpcOps>
         log.trace { "On permanent failure completed." }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun safeForEachListener(action: HttpRpcConnectionListener<I>.() -> Unit) {
         log.trace { "Safe for each listener." }
         listeners.forEach {

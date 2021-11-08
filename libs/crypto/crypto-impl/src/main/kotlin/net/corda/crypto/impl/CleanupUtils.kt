@@ -1,7 +1,6 @@
 @file:JvmName("CleanupUtils")
 package net.corda.crypto.impl
 
-@Suppress("TooGenericExceptionCaught")
 fun AutoCloseable.closeGracefully() {
     try {
         close()

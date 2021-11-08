@@ -23,7 +23,7 @@ class CryptoServiceDecorator(
         private val logger = contextLogger()
     }
 
-    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
+    @Suppress("ThrowsCount")
     private fun <T> executeWithTimeOut(func: () -> T): T {
         var retry = retries
         val num = UUID.randomUUID()
@@ -52,7 +52,6 @@ class CryptoServiceDecorator(
         (cryptoService as? AutoCloseable)?.close()
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun requiresWrappingKey(): Boolean {
         try {
             return cryptoService.requiresWrappingKey()
@@ -63,7 +62,6 @@ class CryptoServiceDecorator(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun supportedSchemes(): Array<SignatureScheme> {
         try {
             return cryptoService.supportedSchemes()
@@ -74,7 +72,6 @@ class CryptoServiceDecorator(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun supportedWrappingSchemes(): Array<SignatureScheme> {
         try {
             return cryptoService.supportedWrappingSchemes()
@@ -85,7 +82,6 @@ class CryptoServiceDecorator(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun containsKey(alias: String): Boolean {
         try {
             return executeWithTimeOut { cryptoService.containsKey(alias) }
@@ -96,7 +92,6 @@ class CryptoServiceDecorator(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun findPublicKey(alias: String): PublicKey? {
         try {
             return executeWithTimeOut { cryptoService.findPublicKey(alias) }
@@ -107,7 +102,6 @@ class CryptoServiceDecorator(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean) {
         try {
             return executeWithTimeOut { cryptoService.createWrappingKey(masterKeyAlias, failIfExists) }
@@ -120,7 +114,6 @@ class CryptoServiceDecorator(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun generateKeyPair(
         alias: String,
         signatureScheme: SignatureScheme,
@@ -137,7 +130,6 @@ class CryptoServiceDecorator(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun generateWrappedKeyPair(
         masterKeyAlias: String,
         wrappedSignatureScheme: SignatureScheme,
@@ -156,7 +148,6 @@ class CryptoServiceDecorator(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun sign(
         alias: String,
         signatureScheme: SignatureScheme,
@@ -174,7 +165,6 @@ class CryptoServiceDecorator(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun sign(wrappedKey: WrappedPrivateKey, data: ByteArray, context: Map<String, String>): ByteArray {
         try {
             return executeWithTimeOut {

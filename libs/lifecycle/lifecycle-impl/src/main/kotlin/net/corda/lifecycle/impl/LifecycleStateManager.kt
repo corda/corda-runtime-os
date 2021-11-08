@@ -24,7 +24,7 @@ internal class LifecycleStateManager(
     /**
      * The set of registrations to post status updates to when this coordinator's status changes.
      */
-    val registrations = ConcurrentHashMap<Registration, Unit>()
+    val registrations: MutableSet<Registration> = ConcurrentHashMap.newKeySet()
 
     /**
      * The set of registrations this coordinator has on other groups of registrations.
@@ -32,7 +32,7 @@ internal class LifecycleStateManager(
      * This is used to ensure that an UP event is delivered to this coordinator if the registration is UP at coordinator
      * start time.
      */
-    val trackedRegistrations = ConcurrentHashMap<Registration, Unit>()
+    val trackedRegistrations: MutableSet<Registration> = ConcurrentHashMap.newKeySet()
 
     @Volatile
     var isRunning: Boolean = false

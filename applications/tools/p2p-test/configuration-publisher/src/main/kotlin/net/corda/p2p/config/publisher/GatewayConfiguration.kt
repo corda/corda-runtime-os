@@ -27,7 +27,6 @@ class GatewayConfiguration : ConfigProducer() {
             } catch (e: UnknownHostException) {
                 // getLocalHost might fail if the local host name can not be
                 // resolved (for example, when custom hosts file is used)
-                @Suppress("TooGenericExceptionCaught")
                 return try {
                     ProcessBuilder()
                         .command("hostname")
