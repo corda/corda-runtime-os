@@ -12,12 +12,16 @@ object DbUtils {
 
     private val logger: Logger = LoggerFactory.getLogger("DbUtils")
 
-    fun getEntityManagerConfiguration(): EntityManagerConfiguration? {
-        return if (!System.getProperty("postgresDb").isNullOrBlank()) {
+    /**
+     * Get a Postgres EntityManager configuration if system properties set as necessary. Otherwise, falls back on
+     * in-memory implementation.
+     */
+    fun getEntityManagerConfiguration(inMemoryDbName: String): EntityManagerConfiguration {
+        val postgresDb = System.getProperty("postgresDb")
+        return if (!postgresDb.isNullOrBlank()) {
             logger.info("Using Postgres on port ${System.getProperty("postgresPort")}".emphasise())
             val jdbcUrl =
-                "jdbc:postgresql://${System.getProperty("postgresHost")}:${System.getProperty("postgresPort")}/" +
-                        System.getProperty("postgresDb")
+                "jdbc:postgresql://${System.getProperty("postgresHost")}:${System.getProperty("postgresPort")}/$postgresDb"
             val ds = PostgresDataSourceFactory().create(
                 jdbcUrl,
                 System.getProperty("postgresUser"),
@@ -25,7 +29,8 @@ object DbUtils {
             )
             DbEntityManagerConfiguration(ds, true, true, DdlManage.UPDATE)
         } else {
-            null
+            logger.info("Using in-memory (HSQL) DB".emphasise())
+            InMemoryEntityManagerConfiguration(inMemoryDbName)
         }
     }
 }
