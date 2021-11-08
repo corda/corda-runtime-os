@@ -1,6 +1,6 @@
 package net.corda.virtual.node.sandboxgroup
 
-enum class SandboxType {
+enum class SandboxGroupType {
     FLOW,
     VERIFICATION,
     PERSISTENCE,
