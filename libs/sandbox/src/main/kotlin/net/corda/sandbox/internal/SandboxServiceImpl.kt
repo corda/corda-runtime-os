@@ -20,7 +20,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.io.InputStream
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.streams.asSequence
 
 /** An implementation of [SandboxCreationService] and [SandboxContextService]. */
@@ -35,23 +34,25 @@ internal class SandboxServiceImpl @Activate constructor(
             "The sandbox service cannot run without the Service Component Runtime bundle installed."
         )
 
-    // These sandboxes are not persisted in any way; they are recreated on node startup.
-    private val sandboxes = ConcurrentHashMap<UUID, Sandbox>()
+    // Maps each bundle ID to the sandbox that the bundle is part of.
+    private val bundleIdToSandbox = mutableMapOf<Long, Sandbox>()
 
-    // Maps each sandbox ID to the sandbox group that the sandbox is part of.
-    private val sandboxGroups = ConcurrentHashMap<UUID, SandboxGroup>()
+    // Maps each bundle ID to the sandbox group that the bundle is part of.
+    private val bundleIdToSandboxGroup = mutableMapOf<Long, SandboxGroup>()
 
-    // The created public sandboxes.
-    private val publicSandboxes = mutableListOf<Sandbox>()
+    // The public sandboxes that have been created.
+    private val publicSandboxes = mutableSetOf<Sandbox>()
 
     // Bundles that failed to uninstall when a sandbox group was unloaded.
-    private val zombieBundles = mutableListOf<Bundle>()
+    private val zombieBundles = mutableSetOf<Bundle>()
 
     private val logger = loggerFor<SandboxServiceImpl>()
 
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
         val publicSandbox = SandboxImpl(UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
-        sandboxes[publicSandbox.id] = publicSandbox
+        (publicBundles + privateBundles).forEach { bundle ->
+            bundleIdToSandbox[bundle.bundleId] = publicSandbox
+        }
         publicSandboxes.add(publicSandbox)
     }
 
@@ -63,17 +64,22 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
         val sandboxGroupInternal = sandboxGroup as SandboxGroupInternal
+
+        val sandboxGroupsToRemove = bundleIdToSandboxGroup.filter { entry -> entry.value === sandboxGroup }
+        sandboxGroupsToRemove.forEach { entry -> bundleIdToSandboxGroup.remove(entry.key) }
+
         sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
-            sandboxes.remove(sandbox.id)
-            sandboxGroups.remove(sandbox.id)
+            val sandboxesToRemove = bundleIdToSandbox.filter { entry -> entry.value === sandbox }
+            sandboxesToRemove.forEach { entry -> bundleIdToSandbox.remove(entry.key) }
+
             zombieBundles.addAll((sandbox as Sandbox).unload())
         }
     }
 
     @Suppress("ComplexMethod")
     override fun hasVisibility(lookingBundle: Bundle, lookedAtBundle: Bundle): Boolean {
-        val lookingSandbox = sandboxes.values.find { sandbox -> sandbox.containsBundle(lookingBundle) }
-        val lookedAtSandbox = sandboxes.values.find { sandbox -> sandbox.containsBundle(lookedAtBundle) }
+        val lookingSandbox = bundleIdToSandbox[lookingBundle.bundleId]
+        val lookedAtSandbox = bundleIdToSandbox[lookedAtBundle.bundleId]
 
         return when {
             lookingBundle in zombieBundles || lookedAtBundle in zombieBundles -> false
@@ -83,6 +89,8 @@ internal class SandboxServiceImpl @Activate constructor(
             lookedAtSandbox === lookingSandbox -> true
             // Does only one of the bundles belong to a sandbox?
             lookedAtSandbox == null || lookingSandbox == null -> false
+            // Is the looked-at bundle a public bundle in a public sandbox?
+            lookedAtBundle in publicSandboxes.flatMap { sandbox -> sandbox.publicBundles } -> true
             // Does the looking sandbox not have visibility of the looked at sandbox?
             !lookingSandbox.hasVisibility(lookedAtSandbox) -> false
             // Is the looked-at bundle a public bundle in the looked-at sandbox?
@@ -93,17 +101,26 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     override fun getCallingSandboxGroup(): SandboxGroup? {
-        val sandbox = getCallingSandbox() ?: return null
-        return sandboxGroups[sandbox.id] ?: throw SandboxException(
-            "A sandbox was found, but it was not part of any sandbox group."
-        )
+        val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
+
+        return stackWalkerInstance.walk { stackFrameStream ->
+            stackFrameStream
+                .asSequence()
+                .mapNotNull { stackFrame ->
+                    val bundle = bundleUtils.getBundle(stackFrame.declaringClass)
+                    if (bundle != null) {
+                        bundleIdToSandboxGroup[bundle.bundleId]
+                    } else null
+                }
+                .firstOrNull()
+        }
     }
 
-    override fun isSandboxed(bundle: Bundle) = sandboxes.values.any { sandbox -> sandbox.containsBundle(bundle) }
+    override fun isSandboxed(bundle: Bundle) = bundleIdToSandbox[bundle.bundleId] != null
 
     override fun areInSameSandbox(bundleOne: Bundle, bundleTwo: Bundle): Boolean {
-        val sandboxOne = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundleOne) }
-        val sandboxTwo = sandboxes.values.find { sandbox -> sandbox.containsBundle(bundleTwo) }
+        val sandboxOne = bundleIdToSandbox[bundleOne.bundleId]
+        val sandboxTwo = bundleIdToSandbox[bundleTwo.bundleId]
         return sandboxOne != null && sandboxOne === sandboxTwo
     }
 
@@ -145,19 +162,17 @@ internal class SandboxServiceImpl @Activate constructor(
             bundles.add(mainBundle)
 
             val sandbox = CpkSandboxImpl(sandboxId, cpk, mainBundle, libraryBundles)
-            sandboxes[sandboxId] = sandbox
+
+            (libraryBundles + mainBundle).forEach { bundle ->
+                bundleIdToSandbox[bundle.bundleId] = sandbox
+            }
 
             sandbox
         }
 
-        publicSandboxes.forEach { publicSandbox ->
-            // The public sandboxes have visibility of all sandboxes.
-            publicSandbox.grantVisibility(newSandboxes)
-        }
-
         newSandboxes.forEach { newSandbox ->
             // Each sandbox requires visibility of the sandboxes of the other CPKs and of the public sandboxes.
-            newSandbox.grantVisibility(newSandboxes - newSandbox + publicSandboxes)
+            newSandbox.grantVisibility(newSandboxes - newSandbox)
         }
 
         // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are
@@ -168,8 +183,8 @@ internal class SandboxServiceImpl @Activate constructor(
 
         val sandboxGroup = SandboxGroupImpl(newSandboxes, publicSandboxes, ClassTagFactoryImpl(), bundleUtils)
 
-        newSandboxes.forEach { sandbox ->
-            sandboxGroups[sandbox.id] = sandboxGroup
+        bundles.forEach { bundle ->
+            bundleIdToSandboxGroup[bundle.bundleId] = sandboxGroup
         }
 
         return sandboxGroup
@@ -222,26 +237,6 @@ internal class SandboxServiceImpl @Activate constructor(
             } catch (e: BundleException) {
                 throw SandboxException("Bundle $bundle could not be started.", e)
             }
-        }
-    }
-
-    /**
-     * Returns the non-public [Sandbox] lowest in the stack of calls to this function, or null if no sandbox is found
-     * on the stack.
-     */
-    private fun getCallingSandbox(): Sandbox? {
-        val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-
-        return stackWalkerInstance.walk { stackFrameStream ->
-            stackFrameStream
-                .asSequence()
-                .mapNotNull { stackFrame ->
-                    val bundle = bundleUtils.getBundle(stackFrame.declaringClass)
-                    if (bundle != null) {
-                        (sandboxes.values - publicSandboxes).find { sandbox -> sandbox.containsBundle(bundle) }
-                    } else null
-                }
-                .firstOrNull()
         }
     }
 }
