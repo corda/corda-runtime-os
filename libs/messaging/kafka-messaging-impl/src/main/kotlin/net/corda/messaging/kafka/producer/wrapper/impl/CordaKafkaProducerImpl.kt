@@ -208,7 +208,7 @@ class CordaKafkaProducerImpl(
                 }
                 is TimeoutException,
                 is InterruptException,
-                    //Failure to commit here might be due to consumer kicked from group. return as intermittent to trigger retry
+                //Failure to commit here might be due to consumer kicked from group. return as intermittent to trigger retry
                 is CommitFailedException,
                 is KafkaException -> {
                     abortTransaction()

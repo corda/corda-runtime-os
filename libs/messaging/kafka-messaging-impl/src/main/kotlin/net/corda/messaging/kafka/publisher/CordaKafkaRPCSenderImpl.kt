@@ -69,7 +69,6 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         "RPC Response listener",
         futureTracker
     )
-    private lateinit var consumer: CordaKafkaConsumer<String, RPCResponse>
 
     private val errorMsg = "Failed to read records from group $groupName, topic $topic"
 
@@ -100,10 +99,6 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
-            publisher.close()
-            if (this::consumer.isInitialized) {
-                consumer.close()
-            }
         }
     }
 
@@ -113,12 +108,11 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc response consumer.  Attempt: $attempts" }
-                consumer = consumerBuilder.createRPCConsumer(
+                consumerBuilder.createRPCConsumer(
                     config.getConfig(KAFKA_CONSUMER),
                     String::class.java,
                     RPCResponse::class.java
-                )
-                consumer.use {
+                ).use {
                     it.subscribe(
                         listOf(responseTopic),
                         partitionListener

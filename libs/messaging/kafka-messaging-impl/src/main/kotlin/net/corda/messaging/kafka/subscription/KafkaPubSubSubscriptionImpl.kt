@@ -4,7 +4,6 @@ import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.PubSubProcessor
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
@@ -14,6 +13,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAM
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.utils.render
+import net.corda.messaging.kafka.utils.toRecord
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -58,7 +58,6 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
     private var consumeLoopThread: Thread? = null
     private val topic = config.getString(TOPIC_NAME)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
-    private lateinit var consumer: CordaKafkaConsumer<K, V>
 
     /**
      * Is the subscription running.
@@ -120,10 +119,9 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
         while (!stopped) {
             attempts++
             try {
-                consumer = consumerBuilder.createPubSubConsumer(
+                consumerBuilder.createPubSubConsumer(
                     config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass,::logFailedDeserialize
-                )
-                consumer.use {
+                ).use {
                     it.subscribeToTopic()
                     pollAndProcessRecords(it)
                 }
@@ -191,9 +189,9 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
     private fun processPubSubRecords(consumerRecords: List<ConsumerRecord<K, V>>, consumer: CordaKafkaConsumer<K, V>) {
         consumerRecords.forEach {
             if (executor != null) {
-                executor.submit { processor.onNext(Record(it.topic(), it.key(), it.value()) ) }.get()
+                executor.submit { processor.onNext(it.toRecord()) }.get()
             } else {
-                processor.onNext(Record(it.topic(), it.key(), it.value()))
+                processor.onNext(it.toRecord())
             }
             consumer.commitSyncOffsets(it)
         }

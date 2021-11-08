@@ -43,7 +43,6 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private lateinit var consumer: CordaKafkaConsumer<K, V>
 
     private var latestValues: MutableMap<K, V>? = null
 
@@ -89,12 +88,11 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 log.debug { "Creating compacted consumer.  Attempt: $attempts" }
-                consumer = consumerBuilder.createCompactedConsumer(
+                consumerBuilder.createCompactedConsumer(
                     config.getConfig(KAFKA_CONSUMER),
                     processor.keyClass,
                     processor.valueClass
-                )
-                consumer.use {
+                ).use {
                     val partitions = it.getPartitions(
                         topic,
                         Duration.ofSeconds(consumerThreadStopTimeout)
