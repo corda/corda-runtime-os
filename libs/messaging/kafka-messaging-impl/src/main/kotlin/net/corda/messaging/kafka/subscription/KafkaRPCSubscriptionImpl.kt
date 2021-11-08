@@ -85,9 +85,6 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             }
             thread?.join(consumerThreadStopTimeout)
             publisher.close()
-            if(this::consumer.isInitialized) {
-                consumer.close()
-            }
         }
     }
 

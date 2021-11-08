@@ -103,9 +103,6 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
             }
             executor?.shutdown()
             thread?.join(consumerThreadStopTimeout)
-            if (this::consumer.isInitialized){
-                consumer.close()
-            }
         }
     }
 

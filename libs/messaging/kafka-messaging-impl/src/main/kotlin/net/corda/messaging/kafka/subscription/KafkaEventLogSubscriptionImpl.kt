@@ -110,12 +110,6 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
-            if(this::producer.isInitialized) {
-                producer.close()
-            }
-            if(this::consumer.isInitialized) {
-                consumer.close()
-            }
         }
     }
 

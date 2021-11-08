@@ -58,9 +58,6 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
-            if (this::consumer.isInitialized) {
-                consumer.close()
-            }
         }
     }
 
