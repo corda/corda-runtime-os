@@ -17,8 +17,8 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.app.HoldingIdentity
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
-import net.corda.p2p.gateway.GatewayMessage
-import net.corda.p2p.gateway.GatewayResponse
+import net.corda.data.p2p.gateway.GatewayMessage
+import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo

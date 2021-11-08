@@ -35,7 +35,6 @@ class CordaPublisher(
     }
 
     private fun runAndCreateFutures(size: Int, block: () -> Unit): List<CompletableFuture<Unit>> {
-        @Suppress("TooGenericExceptionCaught")
         val future = try {
             block()
             CompletableFuture.completedFuture(Unit)

@@ -62,7 +62,6 @@ class HttpRpcClient<I : RpcOps> internal constructor(
             // Use nanoTime as it's monotonic.
             val now = System.nanoTime()
             var failed = false
-            @Suppress("TooGenericExceptionCaught")
             try {
                 return body()
             } catch (th: Throwable) {
@@ -86,7 +85,6 @@ class HttpRpcClient<I : RpcOps> internal constructor(
     @VisibleForTesting
     internal lateinit var ops: I
 
-    @Suppress("TooGenericExceptionCaught")
     fun start(): HttpRpcConnection<I> {
         log.trace { "Start." }
         return log.logElapsedTime("Http Rpc client") {
@@ -157,7 +155,7 @@ class HttpRpcClient<I : RpcOps> internal constructor(
             .also { log.trace { "Schedule periodic health check completed." } }
     }
 
-    @Suppress("TooGenericExceptionThrown", "TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionThrown")
     private fun healthCheck(): Boolean =
         try {
             if (ops.protocolVersion != serverProtocolVersion) {

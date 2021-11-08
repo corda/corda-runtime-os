@@ -52,7 +52,7 @@ class VirtualNodeCacheImpl @Activate constructor(
                 ?: throw CordaRuntimeException("Flow not available in cordapp")
             val cpb = installService.getCpb(cpbIdentifier)
                 ?: throw CordaRuntimeException("Could not get cpb from its identifier $cpbIdentifier")
-            sandboxCreationService.createSandboxGroup(cpb.cpks.map { it.metadata.hash })
+            sandboxCreationService.createSandboxGroup(cpb.cpks)
         }
     }
 }

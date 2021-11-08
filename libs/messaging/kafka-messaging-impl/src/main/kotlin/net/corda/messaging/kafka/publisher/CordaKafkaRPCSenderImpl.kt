@@ -107,7 +107,6 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun runConsumeLoop() {
         var attempts = 0
         while (!stopped) {
@@ -141,7 +140,6 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<String, RPCResponse>) {
         while (!stopped) {
             val consumerRecords = consumer.poll()
@@ -206,7 +204,6 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE> {
         val correlationId = UUID.randomUUID().toString()
         val future = CompletableFuture<RESPONSE>()

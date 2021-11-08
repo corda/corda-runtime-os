@@ -1,6 +1,7 @@
 package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import org.junit.jupiter.api.Test
@@ -97,6 +98,16 @@ class RegistrationTest {
         harness.verifyDeliveredEvents(1, 0)
     }
 
+    @Test
+    fun `closing a registration when coordinator is closed does not throw`() {
+        val coordinatorName = LifecycleCoordinatorName("test", "1")
+        val coordinator = LifecycleCoordinatorImpl(coordinatorName, 1, mock(), mock())
+        val listeningMock = mock<LifecycleCoordinator>()
+        val registration = Registration(setOf(coordinator), listeningMock)
+        coordinator.close()
+        registration.close()
+    }
+
     private inner class RegistrationTestHarness {
         private val childMocks = listOf<LifecycleCoordinator>(mock(), mock(), mock())
         private val listeningMock = mock<LifecycleCoordinator>()
@@ -131,6 +142,12 @@ class RegistrationTest {
             registration.close()
             childMocks.forEach {
                 verify(it).postEvent(CancelRegistration(registration))
+            }
+        }
+
+        fun closeCoordinators() {
+            childMocks.forEach {
+                it.close()
             }
         }
     }

@@ -31,7 +31,7 @@ internal object ParameterRetrieverFactory {
         }
 }
 
-@Suppress("TooGenericExceptionThrown", "TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionThrown")
 private class PathParameterRetriever(private val parameter: Parameter) : ParameterRetriever {
     private companion object {
         private val log = contextLogger()
@@ -53,7 +53,7 @@ private class PathParameterRetriever(private val parameter: Parameter) : Paramet
     }
 }
 
-@Suppress("TooGenericExceptionThrown", "TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionThrown")
 private class QueryParameterListRetriever(private val parameter: Parameter) : ParameterRetriever {
     private companion object {
         private val log = contextLogger()
@@ -78,7 +78,7 @@ private class QueryParameterListRetriever(private val parameter: Parameter) : Pa
     }
 }
 
-@Suppress("TooGenericExceptionThrown", "TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionThrown")
 private class QueryParameterRetriever(private val parameter: Parameter) : ParameterRetriever {
     private companion object {
         private val log = contextLogger()
@@ -103,7 +103,7 @@ private class QueryParameterRetriever(private val parameter: Parameter) : Parame
     }
 }
 
-@Suppress("TooGenericExceptionThrown", "TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionThrown")
 private class BodyParameterRetriever(private val parameter: Parameter) : ParameterRetriever {
     private companion object {
         private val log = contextLogger()

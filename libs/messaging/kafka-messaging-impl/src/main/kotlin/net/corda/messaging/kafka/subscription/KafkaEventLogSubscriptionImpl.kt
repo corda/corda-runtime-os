@@ -121,7 +121,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
      * If an error occurs while processing, reset the consumers position on the topic to the last committed position.
      * If subscription is stopped close the consumer.
      */
-    @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
+    @Suppress("NestedBlockDepth")
     fun runConsumeLoop() {
         var attempts = 0
         while (!stopped) {
@@ -180,7 +180,6 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
      * retries have been exceeded.
      * @throws CordaMessageAPIFatalException Fatal unrecoverable error occurred. e.g misconfiguration
      */
-    @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<K, V>, producer: CordaKafkaProducer) {
         var attempts = 0
         while (!stopped) {
@@ -240,7 +239,6 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
      * @throws CordaMessageAPIIntermittentException error occurred that can be retried.
      * @throws CordaMessageAPIFatalException Fatal unrecoverable error occurred. e.g misconfiguration
      */
-    @Suppress("TooGenericExceptionCaught")
     private fun processDurableRecords(
         consumerRecords: List<ConsumerRecord<K, V>>,
         producer: CordaKafkaProducer,

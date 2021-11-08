@@ -2,6 +2,8 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.p2p.gateway.GatewayMessage
+import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
@@ -19,8 +21,6 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
-import net.corda.p2p.gateway.GatewayMessage
-import net.corda.p2p.gateway.GatewayResponse
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
@@ -58,9 +58,6 @@ internal class InboundMessageHandler(
         withLifecycleLock { handleRequest(request) }
     }
 
-
-
-    @Suppress("TooGenericExceptionCaught")
     private fun handleRequest(request: HttpRequest) {
         if (!isRunning) {
             logger.error("Received message from ${request.source}, while handler is stopped. Discarding it and returning error code.")

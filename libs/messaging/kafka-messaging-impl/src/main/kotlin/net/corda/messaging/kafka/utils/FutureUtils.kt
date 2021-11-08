@@ -7,7 +7,6 @@ import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
-@Suppress("TooGenericExceptionCaught")
 fun CompletableFuture<*>.tryGetResult(timeout: Long, cancelOnTimeout: Boolean = false): Any? {
     return try {
         get(timeout, TimeUnit.MILLISECONDS)
@@ -16,7 +15,6 @@ fun CompletableFuture<*>.tryGetResult(timeout: Long, cancelOnTimeout: Boolean = 
     }
 }
 
-@Suppress("TooGenericExceptionCaught")
 fun CompletableFuture<*>.tryGetResult(): Any? {
     return try {
         get()

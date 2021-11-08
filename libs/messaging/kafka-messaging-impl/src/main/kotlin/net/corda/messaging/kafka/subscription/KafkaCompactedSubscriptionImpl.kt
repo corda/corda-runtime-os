@@ -83,7 +83,6 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
 
     override fun getValue(key: K): V? = latestValues?.get(key)
 
-    @Suppress("TooGenericExceptionCaught")
     private fun runConsumeLoop() {
         var attempts = 0
         while (!stopped) {
@@ -159,7 +158,6 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
         processor.onSnapshot(currentData)
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<K, V>) {
         while (!stopped) {
             val consumerRecords = consumer.poll()

@@ -97,7 +97,6 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     fun runConsumeLoop() {
         var attempts = 0
         while (!stopped) {
@@ -146,7 +145,6 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         stateAndEventConsumer.close()
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun processEvents() {
         var attempts = 0
         var pollAndProcessSuccessful = false

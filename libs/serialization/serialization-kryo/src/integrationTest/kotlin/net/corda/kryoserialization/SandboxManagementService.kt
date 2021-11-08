@@ -58,6 +58,6 @@ class SandboxManagementService(
     }
 
     private fun createSandboxGroupFor(vararg cpks: CPK): SandboxGroup {
-        return sandboxCreationService.createSandboxGroup(cpks.map { it.metadata.hash })
+        return sandboxCreationService.createSandboxGroup(cpks.toSet())
     }
 }

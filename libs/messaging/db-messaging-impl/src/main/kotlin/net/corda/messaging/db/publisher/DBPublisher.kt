@@ -95,7 +95,6 @@ class DBPublisher(private val publisherConfig: PublisherConfig,
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun publishTransactionally(recordEntries: List<RecordDbEntry>): CompletableFuture<Unit> {
         return CompletableFuture.supplyAsync({
             try {

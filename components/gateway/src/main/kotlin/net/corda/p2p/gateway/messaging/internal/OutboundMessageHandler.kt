@@ -14,7 +14,7 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.Gateway.Companion.CONSUMER_GROUP_ID
-import net.corda.p2p.gateway.GatewayMessage
+import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
@@ -107,7 +107,7 @@ internal class OutboundMessageHandler(
         return emptyList()
     }
 
-    @Suppress("TooGenericExceptionCaught", "SpreadOperator")
+    @Suppress("SpreadOperator")
     private fun waitUntilComplete(pendingRequests: List<PendingRequest>) {
         try {
             CompletableFuture.allOf( *pendingRequests.map{ it.future }.toTypedArray() )
@@ -117,7 +117,6 @@ internal class OutboundMessageHandler(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun getResponseOrError(pendingRequest: PendingRequest): Pair<HttpResponse?, Throwable?> {
         return try {
             val response = pendingRequest.future.get(0, TimeUnit.MILLISECONDS)
