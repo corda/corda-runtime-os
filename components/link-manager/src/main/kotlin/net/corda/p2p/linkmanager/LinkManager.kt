@@ -124,7 +124,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             publisherFactory,
             nodeConfiguration,
             subscriptionFactory,
-            setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoService.dominoTile, sessionManager.dominoTile)
+            linkManagerNetworkMap,
+            linkManagerCryptoService,
+            sessionManager,
         ) { outboundMessageProcessor.processAuthenticatedMessage(it, true) }
         deliveryTracker.start()
         resources.keep(deliveryTracker)

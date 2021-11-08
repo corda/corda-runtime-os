@@ -104,7 +104,9 @@ class DeliveryTrackerTest {
             publisherFactory,
             mock(),
             subscriptionFactory,
-            emptySet(),
+            mock(),
+            mock(),
+            mock(),
             ::processAuthenticatedMessage
         )
         createResources(resourcesHolder)

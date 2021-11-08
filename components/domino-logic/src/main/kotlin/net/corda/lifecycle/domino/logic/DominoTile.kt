@@ -27,7 +27,7 @@ import kotlin.concurrent.write
 
 @Suppress("TooManyFunctions")
 class DominoTile(
-    instanceName: String,
+    componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val createResources: ((resources: ResourcesHolder) -> Unit)? = null,
     private val children: Collection<DominoTile> = emptySet(),
@@ -51,8 +51,8 @@ class DominoTile(
     }
 
     val name = LifecycleCoordinatorName(
-        instanceName,
-        instancesIndex.compute(instanceName) { _, last ->
+        componentName,
+        instancesIndex.compute(componentName) { _, last ->
             if (last == null) {
                 1
             } else {
@@ -230,7 +230,7 @@ class DominoTile(
                     // check if children are started, config has been applied etc. and signal UP, if so.
                     when (state) {
                         State.StoppedDueToBadConfig, State.Created, State.StoppedByParent -> {
-                            logger.info("Resource ready for $name.")
+                            logger.info("Resources ready for $name.")
                             setStartedIfCan()
                         }
                         State.StoppedDueToError, State.Started -> {} // Do nothing
@@ -311,7 +311,7 @@ class DominoTile(
                     gotError(e)
                 }
             } else {
-                logger.info(
+                logger.debug(
                     "Not all child tiles started yet.\n " +
                         "Started Children = ${children.filter{ it.isRunning }}.\n " +
                         "Not Started Children = ${children.filter { !it.isRunning }}."

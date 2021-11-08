@@ -68,7 +68,7 @@ class ReplaySchedulerTest {
 
     @Test
     fun `The ReplayScheduler will not replay before start`() {
-        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }, emptySet()) { 0 }
+        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
         assertThrows<IllegalStateException> {
             replayManager.addForReplay(0,"", Any())
         }
@@ -76,7 +76,7 @@ class ReplaySchedulerTest {
 
     @Test
     fun `on applyNewConfiguration calls configApplied config is invalid`() {
-        ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }, emptySet()) { 0 }
+        ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
         configHandler.applyNewConfiguration(Duration.ofMillis(-10), null, configResourcesHolder)
 
         verify(dominoTile.constructed().last()).configApplied(isA<DominoTile.ConfigUpdateResult.Error>())
@@ -84,7 +84,7 @@ class ReplaySchedulerTest {
 
     @Test
     fun `on applyNewConfiguration calls configApplied if config is valid`() {
-        ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }, emptySet()) { 0 }
+        ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
         configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder)
 
         verify(dominoTile.constructed().last()).configApplied(DominoTile.ConfigUpdateResult.Success)
@@ -92,7 +92,7 @@ class ReplaySchedulerTest {
 
     @Test
     fun `on createResource the ReplayScheduler adds a executor service to the resource holder`() {
-        ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }, emptySet()) { 0 }
+        ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
         createResources(resourcesHolder)
         verify(resourcesHolder).keep(isA<AutoClosableScheduledExecutorService>())
         verify(dominoTile.constructed().last()).resourcesStarted(false)
@@ -103,7 +103,7 @@ class ReplaySchedulerTest {
         val messages = 9
 
         val tracker = TrackReplayedMessages(messages)
-        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage, emptySet()) { 0 }
+        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage) { 0 }
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder)
@@ -126,7 +126,7 @@ class ReplaySchedulerTest {
         val messages = 8
 
         val tracker = TrackReplayedMessages(messages)
-        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage, emptySet()) { 0 }
+        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage) { 0 }
         setRunning()
         createResources(resourcesHolder)
         configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder)
@@ -168,7 +168,7 @@ class ReplaySchedulerTest {
     fun `The ReplayScheduler handles exceptions`() {
         val message = "message"
         val tracker = TrackReplayedMessages(2, 1)
-        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage, emptySet()) { 0 }
+        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage) { 0 }
         replayManager.start()
         setRunning()
         createResources(resourcesHolder)
@@ -185,7 +185,7 @@ class ReplaySchedulerTest {
     @Test
     fun `The ReplayScheduler replays added messages after config update`() {
         val tracker = TrackReplayedMessages( 2)
-        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage, emptySet()) { 0 }
+        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage) { 0 }
         replayManager.start()
         setRunning()
         createResources(resourcesHolder)

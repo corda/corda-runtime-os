@@ -27,7 +27,6 @@ class ReplayScheduler<M>(
     private val configReadService: ConfigurationReadService,
     private val replayPeriodKey: String,
     private val replayMessage: (message: M) -> Unit,
-    children: Set<DominoTile>,
     private val currentTimestamp: () -> Long = { Instant.now().toEpochMilli() },
     ) : LifecycleWithDominoTile {
 
@@ -35,8 +34,7 @@ class ReplayScheduler<M>(
         this::class.java.simpleName,
         coordinatorFactory,
         ::createResources,
-        children,
-        ReplaySchedulerConfigurationChangeHandler()
+        configurationChangeHandler = ReplaySchedulerConfigurationChangeHandler()
     )
 
     private val replayPeriod = AtomicReference<Duration>()

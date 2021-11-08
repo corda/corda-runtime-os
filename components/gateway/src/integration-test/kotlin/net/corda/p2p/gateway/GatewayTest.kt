@@ -1,6 +1,5 @@
 package net.corda.p2p.gateway
 
-import com.typesafe.config.ConfigFactory
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.data.p2p.gateway.GatewayMessage
@@ -37,7 +36,6 @@ import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout

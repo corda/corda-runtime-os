@@ -17,6 +17,9 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
+import net.corda.p2p.linkmanager.LinkManagerCryptoService
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
@@ -30,7 +33,9 @@ class DeliveryTracker(
     publisherFactory: PublisherFactory,
     private val nodeConfiguration: SmartConfig,
     private val subscriptionFactory: SubscriptionFactory,
-    childrenUsedByProcessAuthenticatedMessage: Set<DominoTile>,
+    networkMap: LinkManagerNetworkMap,
+    cryptoService: LinkManagerCryptoService,
+    sessionManager: SessionManager,
     processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>,
     ): LifecycleWithDominoTile {
 
@@ -45,11 +50,17 @@ class DeliveryTracker(
         configReadService,
         MESSAGE_REPLAY_PERIOD_KEY,
         appMessageReplayer::replayMessage,
-        childrenUsedByProcessAuthenticatedMessage + appMessageReplayer.dominoTile
     )
 
     override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources,
-        setOf(replayScheduler.dominoTile))
+        setOf(
+            replayScheduler.dominoTile,
+            networkMap.dominoTile,
+            cryptoService.dominoTile,
+            sessionManager.dominoTile,
+            appMessageReplayer.dominoTile
+        )
+    )
 
     private fun createResources(resources: ResourcesHolder) {
         val messageTracker = MessageTracker(replayScheduler)

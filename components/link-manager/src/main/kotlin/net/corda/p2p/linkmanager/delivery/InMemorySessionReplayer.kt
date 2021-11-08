@@ -34,12 +34,12 @@ class InMemorySessionReplayer(
     private val publisher = PublisherWithDominoLogic(publisherFactory, coordinatorFactory, MESSAGE_REPLAYER_CLIENT_ID, nodeConfiguration)
 
     private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService,
-        LinkManagerConfiguration.MESSAGE_REPLAY_PERIOD_KEY, ::replayMessage, setOf(networkMap.dominoTile))
+        LinkManagerConfiguration.MESSAGE_REPLAY_PERIOD_KEY, ::replayMessage)
 
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
-        children = setOf(replayScheduler.dominoTile, publisher.dominoTile)
+        children = setOf(replayScheduler.dominoTile, publisher.dominoTile, networkMap.dominoTile)
     )
 
     data class SessionMessageReplay(

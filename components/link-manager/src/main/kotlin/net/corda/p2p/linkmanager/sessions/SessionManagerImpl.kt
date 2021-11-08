@@ -79,7 +79,7 @@ open class SessionManagerImpl(
         nodeConfiguration,
         networkMap
     )
-) : SessionManager, LifecycleWithDominoTile {
+) : SessionManager {
 
     companion object {
         fun getSessionKeyFromMessage(message: AuthenticatedMessage): SessionKey {
@@ -121,21 +121,6 @@ open class SessionManagerImpl(
         ),
         configurationChangeHandler = SessionManagerConfigChangeHandler()
     )
-
-    override val isRunning: Boolean
-        get() = dominoTile.isRunning
-
-    override fun start() {
-        if (!isRunning) {
-            dominoTile.start()
-        }
-    }
-
-    override fun stop() {
-        if (isRunning) {
-            dominoTile.stop()
-        }
-    }
 
     @VisibleForTesting
     internal data class SessionManagerConfig(

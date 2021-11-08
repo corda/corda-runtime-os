@@ -63,7 +63,7 @@ class ReconfigurableHttpServer(
                         oldServer?.stop()
                         val newServer = HttpServer(listener, newConfiguration)
                         newServer.start()
-                        resources.keep(newServer::stop)
+                        resources.keep(newServer)
                         httpServer = newServer
                     }
                 } else {
