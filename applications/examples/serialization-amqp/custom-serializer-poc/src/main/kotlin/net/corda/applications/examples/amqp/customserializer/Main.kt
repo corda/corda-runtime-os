@@ -92,7 +92,7 @@ class Main @Activate constructor(
         CPI.assemble(outputStream, "cpi", "1.0", cpkFiles)
         val loadCpb: CPI = installService.loadCpb(ByteArrayInputStream(outputStream.toByteArray()))
         val serializers: List<String> = loadCpb.metadata.cpks.flatMap { it.cordappManifest.serializers }
-        return SandboxAndSerializers(sandboxCreationService.createSandboxGroup(loadCpb.cpks.map { it.metadata.hash }), serializers)
+        return SandboxAndSerializers(sandboxCreationService.createSandboxGroup(loadCpb.cpks), serializers)
     }
 
     private fun configureSystem(tmpDir: String) {
