@@ -1,7 +1,5 @@
 package net.corda.applications.examples.amqp.typeevolution
 
-import net.corda.v5.serialization.annotations.CordaSerializationTransformRename
-import net.corda.v5.serialization.annotations.CordaSerializationTransformRenames
 import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
 
 // Before
@@ -26,8 +24,9 @@ import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserializ
 //data class ReorderConstructorParameters(val a: Int, val b: Int)
 //
 //// Rename enum
+//@CordaSerializationTransformRenames(CordaSerializationTransformRename(from ="A", to = "AA"))
 //enum class RenameEnum {
-//    A, B
+//    AA, B
 //}
 //
 //// Add enum value
@@ -63,9 +62,8 @@ data class RemovingProperties(val a: Int)
 data class ReorderConstructorParameters(val b: Int, val a: Int)
 
 // Rename enum
-@CordaSerializationTransformRenames(CordaSerializationTransformRename(to = "C", from = "B"))
 enum class RenameEnum {
-    A, C
+    A, B
 }
 
 // Add enum value

@@ -92,7 +92,7 @@ class Main @Activate constructor(
         consoleLogger.info("MultipleEvolutions = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("multipleEvolutions-2.bin")!!.readBytes()), Any::class.java, serializationContext)))
         consoleLogger.info("RemovingProperties = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("removingProperties.bin")!!.readBytes()), Any::class.java, serializationContext)))
         consoleLogger.info("ReorderConstructorParameters = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("reorderConstructorParameters.bin")!!.readBytes()), Any::class.java, serializationContext)))
-        // consoleLogger.info("RenameEnum = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("renameEnum.bin")!!.readBytes()), Any::class.java, serializationContext)))
+        consoleLogger.info("RenameEnum = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("renameEnum.bin")!!.readBytes()), Any::class.java, serializationContext)))
         consoleLogger.info("AddEnumValue = " + (input.deserialize(ByteSequence.of(this::class.java.getResource("addEnumValue.bin")!!.readBytes()), Any::class.java, serializationContext)))
     }
 

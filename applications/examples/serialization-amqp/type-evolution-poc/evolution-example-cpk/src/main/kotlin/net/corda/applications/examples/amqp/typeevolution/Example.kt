@@ -12,7 +12,7 @@ class Example {
 //        val multipleEvolutions = MultipleEvolutions(10)
 //        val removingProperties = RemovingProperties(1, 2)
 //        val reorderConstructorParameters = ReorderConstructorParameters(1, 2)
-//        val renameEnum = RenameEnum.B
+//        val renameEnum = RenameEnum.AA
 //        val addEnumValue = AddEnumValue.C
 //
 //        return mapOf(
