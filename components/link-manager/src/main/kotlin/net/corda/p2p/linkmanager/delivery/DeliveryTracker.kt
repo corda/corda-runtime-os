@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager.delivery
 
-import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
@@ -28,7 +28,7 @@ class DeliveryTracker(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configReadService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
-    private val nodeConfiguration: Config,
+    private val nodeConfiguration: SmartConfig,
     private val subscriptionFactory: SubscriptionFactory,
     childrenUsedByProcessAuthenticatedMessage: Set<DominoTile>,
     processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>,
@@ -66,7 +66,7 @@ class DeliveryTracker(
     private class AppMessageReplayer(
         coordinatorFactory: LifecycleCoordinatorFactory,
         publisherFactory: PublisherFactory,
-        nodeConfiguration: Config,
+        nodeConfiguration: SmartConfig,
         private val processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
     ): LifecycleWithDominoTile {
 

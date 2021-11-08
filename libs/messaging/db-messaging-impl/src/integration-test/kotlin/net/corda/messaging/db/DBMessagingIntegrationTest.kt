@@ -115,8 +115,8 @@ class DBMessagingIntegrationTest {
 
     @Test
     fun `test messages are published and consumed via a durable subscription successfully`() {
-        val topic1ProcessedRecords = mutableListOf<Record<String, String>>()
-        val topic2ProcessedRecords = mutableListOf<Record<String, String>>()
+        val topic1ProcessedRecords = Collections.synchronizedList<Record<String, String>>(mutableListOf())
+        val topic2ProcessedRecords = Collections.synchronizedList<Record<String, String>>(mutableListOf())
         val processor1 = InMemoryDurableProcessor(topic1ProcessedRecords, String::class.java, String::class.java, topic2)
         val processor2 = InMemoryDurableProcessor(topic2ProcessedRecords, String::class.java, String::class.java, null)
         val subscriptionTopic1 = DBDurableSubscription(subscriptionConfigTopic1, processor1, null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout)
@@ -132,10 +132,14 @@ class DBMessagingIntegrationTest {
         publisher.publish(topic1Records).map { it.get() }
 
         eventually(5.seconds, 5.millis) {
-            assertThat(topic1ProcessedRecords.size).`as`("not enough records read from topic 1").isGreaterThanOrEqualTo(topic1Records.size)
-            assertThat(topic1ProcessedRecords).containsAll(topic1Records)
-            assertThat(topic2ProcessedRecords.size).`as`("not enough records read from topic 2").isGreaterThanOrEqualTo(topic1Records.size)
-            assertThat(topic2ProcessedRecords).containsAll(topic2ExpectedRecords)
+            synchronized(topic1ProcessedRecords) {
+                assertThat(topic1ProcessedRecords.size).`as`("not enough records read from topic 1").isGreaterThanOrEqualTo(topic1Records.size)
+                assertThat(topic1ProcessedRecords).containsAll(topic1Records)
+            }
+            synchronized(topic2ProcessedRecords) {
+                assertThat(topic2ProcessedRecords.size).`as`("not enough records read from topic 2").isGreaterThanOrEqualTo(topic1Records.size)
+                assertThat(topic2ProcessedRecords).containsAll(topic2ExpectedRecords)
+            }
         }
 
         subscriptionTopic1.stop()
@@ -145,8 +149,8 @@ class DBMessagingIntegrationTest {
 
     @Test
     fun `test messages are published and consumed via a log event subscription successfully`() {
-        val topic1ProcessedRecords = mutableListOf<Record<String, String>>()
-        val topic2ProcessedRecords = mutableListOf<Record<String, String>>()
+        val topic1ProcessedRecords = Collections.synchronizedList<Record<String, String>>(mutableListOf())
+        val topic2ProcessedRecords = Collections.synchronizedList<Record<String, String>>(mutableListOf())
         val processor1 = InMemoryEventLogProcessor(topic1ProcessedRecords, String::class.java, String::class.java, topic2)
         val processor2 = InMemoryEventLogProcessor(topic2ProcessedRecords, String::class.java, String::class.java, null)
         val subscriptionTopic1 = DBEventLogSubscription(subscriptionConfigTopic1, processor1, null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout)
@@ -162,10 +166,14 @@ class DBMessagingIntegrationTest {
         publisher.publish(topic1Records).map { it.get() }
 
         eventually(5.seconds, 5.millis) {
-            assertThat(topic1ProcessedRecords.size).`as`("not enough records read from topic 1").isGreaterThanOrEqualTo(topic1Records.size)
-            assertThat(topic1ProcessedRecords).containsAll(topic1Records)
-            assertThat(topic2ProcessedRecords.size).`as`("not enough records read from topic 2").isGreaterThanOrEqualTo(topic1Records.size)
-            assertThat(topic2ProcessedRecords).containsAll(topic2ExpectedRecords)
+            synchronized(topic1ProcessedRecords) {
+                assertThat(topic1ProcessedRecords.size).`as`("not enough records read from topic 1").isGreaterThanOrEqualTo(topic1Records.size)
+                assertThat(topic1ProcessedRecords).containsAll(topic1Records)
+            }
+            synchronized(topic2ProcessedRecords) {
+                assertThat(topic2ProcessedRecords.size).`as`("not enough records read from topic 2").isGreaterThanOrEqualTo(topic1Records.size)
+                assertThat(topic2ProcessedRecords).containsAll(topic2ExpectedRecords)
+            }
         }
 
         subscriptionTopic1.stop()
@@ -195,8 +203,8 @@ class DBMessagingIntegrationTest {
 
     @Test
     fun `messages can be consumed in parallel by multiple subscriptions`() {
-        val topic1ProcessedRecords = Collections.synchronizedList(mutableListOf<Record<String, String>>())
-        val topic2ProcessedRecords = mutableListOf<Record<String, String>>()
+        val topic1ProcessedRecords = Collections.synchronizedList<Record<String, String>>(mutableListOf())
+        val topic2ProcessedRecords = Collections.synchronizedList<Record<String, String>>(mutableListOf())
         val processor1 = InMemoryDurableProcessor(topic1ProcessedRecords, String::class.java, String::class.java, topic2)
         val processor2 = InMemoryDurableProcessor(topic2ProcessedRecords, String::class.java, String::class.java, null)
         val subscriptionsForTopic1 = (1..3).map {
@@ -214,10 +222,14 @@ class DBMessagingIntegrationTest {
         publisher.publish(topic1Records).map { it.get() }
 
         eventually(5.seconds, 5.millis) {
-            assertThat(topic1ProcessedRecords.size).`as`("not enough records read from topic 1").isGreaterThanOrEqualTo(topic1Records.size)
-            assertThat(topic1ProcessedRecords).containsAll(topic1Records)
-            assertThat(topic2ProcessedRecords.size).`as`("not enough records read from topic 2").isGreaterThanOrEqualTo(topic1Records.size)
-            assertThat(topic2ProcessedRecords).containsAll(topic2ExpectedRecords)
+            synchronized(topic1ProcessedRecords) {
+                assertThat(topic1ProcessedRecords.size).`as`("not enough records read from topic 1").isGreaterThanOrEqualTo(topic1Records.size)
+                assertThat(topic1ProcessedRecords).containsAll(topic1Records)
+            }
+            synchronized(topic2ProcessedRecords) {
+                assertThat(topic2ProcessedRecords.size).`as`("not enough records read from topic 2").isGreaterThanOrEqualTo(topic1Records.size)
+                assertThat(topic2ProcessedRecords).containsAll(topic2ExpectedRecords)
+            }
         }
 
         subscriptionsForTopic1.forEach { it.stop() }

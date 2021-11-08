@@ -4,5 +4,6 @@ cordaPipeline(
     nexusAppId: 'flow-worker-5.0',
     runIntegrationTests: true,
     publishRepoPrefix: 'corda-ent-maven',
-    createPostgresDb: true
+    createPostgresDb: true,
+    publishOSGiImage: true
     )

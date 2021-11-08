@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager
 
-import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
@@ -63,7 +63,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                   val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                   @Reference(service = ConfigurationReadService::class)
                   val configurationReaderService: ConfigurationReadService,
-                  private val nodeConfiguration: Config,
+                  private val nodeConfiguration: SmartConfig,
                   val linkManagerNetworkMap: LinkManagerNetworkMap,
                   private val linkManagerHostingMap: LinkManagerHostingMap,
                   private val linkManagerCryptoService: LinkManagerCryptoService,
@@ -407,7 +407,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     class PendingSessionMessageQueuesImpl(
         publisherFactory: PublisherFactory,
         coordinatorFactory: LifecycleCoordinatorFactory,
-        nodeConfiguration: Config
+        nodeConfiguration: SmartConfig
     ): PendingSessionMessageQueues, LifecycleWithDominoTile {
         private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<AuthenticatedMessageAndKey>>()
         private val publisher = PublisherWithDominoLogic(

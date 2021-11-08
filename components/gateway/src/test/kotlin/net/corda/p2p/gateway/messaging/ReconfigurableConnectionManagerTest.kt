@@ -8,7 +8,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
-import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -38,9 +37,9 @@ class ReconfigurableConnectionManagerTest {
     private val service = mock<ConfigurationReadService> {
         on { registerForUpdates(any()) } doReturn mock()
     }
-    private val listener = mock<HttpEventListener>()
     private val configuration = mock<GatewayConfiguration> {
         on { sslConfig } doReturn mock()
+        on { connectionConfig } doReturn mock()
     }
     private val badConfigurationException = RuntimeException("Bad Config")
     private val badConfiguration = mock<GatewayConfiguration> {
@@ -56,7 +55,7 @@ class ReconfigurableConnectionManagerTest {
         configHandler = (context.arguments()[4] as ReconfigurableConnectionManager.ConnectionManagerConfigChangeHandler)
     }
 
-    private val connectionManager = ReconfigurableConnectionManager(factory, service, listener) { manager }
+    private val connectionManager = ReconfigurableConnectionManager(factory, service) { _, _ -> manager }
 
     @AfterEach
     fun cleanUp() {
@@ -96,6 +95,7 @@ class ReconfigurableConnectionManagerTest {
 
         val secondConfiguration = mock<GatewayConfiguration> {
             on { sslConfig } doReturn mock()
+            on { connectionConfig } doReturn mock()
         }
         configHandler.applyNewConfiguration(secondConfiguration, configuration, resourcesHolder)
 
@@ -119,11 +119,14 @@ class ReconfigurableConnectionManagerTest {
     @Test
     fun `applyNewConfiguration will not close the manager if same configuration`() {
         val sslConfiguration = mock<SslConfiguration>()
+        val connectionConfiguration = mock<ConnectionConfiguration>()
         val firstConfiguration = mock<GatewayConfiguration> {
             on { sslConfig } doReturn sslConfiguration
+            on { connectionConfig } doReturn connectionConfiguration
         }
         val secondConfiguration = mock<GatewayConfiguration> {
             on { sslConfig } doReturn sslConfiguration
+            on { connectionConfig } doReturn connectionConfiguration
         }
         connectionManager.start()
         configHandler.applyNewConfiguration(firstConfiguration, null, resourcesHolder)

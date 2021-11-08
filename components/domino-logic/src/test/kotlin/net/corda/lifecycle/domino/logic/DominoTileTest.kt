@@ -3,6 +3,7 @@ package net.corda.lifecycle.domino.logic
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -528,7 +529,7 @@ class DominoTileTest {
 
         @Test
         fun `onNewConfiguration will cause the tile to stop if bad config`() {
-            val config = mock<Config>()
+            val config = mock<SmartConfig>()
             val tile = tile()
             tile.start()
 
@@ -543,7 +544,7 @@ class DominoTileTest {
 
         @Test
         fun `onNewConfiguration will apply correct configuration if valid`() {
-            val config = mock<Config> {
+            val config = mock<SmartConfig> {
                 on { getInt(any()) } doReturn 33
             }
             val tile = tile()
@@ -558,7 +559,7 @@ class DominoTileTest {
 
         @Test
         fun `onNewConfiguration will set the state to started if valid`() {
-            val config = mock<Config> {
+            val config = mock<SmartConfig> {
                 on { getInt(any()) } doReturn 33
             }
             val tile = tile()
@@ -574,10 +575,10 @@ class DominoTileTest {
 
         @Test
         fun `onNewConfiguration will call only once if the configuration did not changed`() {
-            val config1 = mock<Config> {
+            val config1 = mock<SmartConfig> {
                 on { getInt(any()) } doReturn 33
             }
-            val config2 = mock<Config> {
+            val config2 = mock<SmartConfig> {
                 on { getInt(any()) } doReturn 33
             }
             val tile = tile()
@@ -593,10 +594,10 @@ class DominoTileTest {
 
         @Test
         fun `onNewConfiguration will call on every change`() {
-            val config1 = mock<Config> {
+            val config1 = mock<SmartConfig> {
                 on { getInt(any()) } doReturn 33
             }
-            val config2 = mock<Config> {
+            val config2 = mock<SmartConfig> {
                 on { getInt(any()) } doReturn 25
             }
             val tile = tile()
@@ -613,7 +614,7 @@ class DominoTileTest {
 
         @Test
         fun `onNewConfiguration will not apply new configuration if not started`() {
-            val config = mock<Config> {
+            val config = mock<SmartConfig> {
                 on { getInt(any()) } doReturn 11
             }
             whenever(service.registerForUpdates(any())).doAnswer {
@@ -629,10 +630,10 @@ class DominoTileTest {
 
         @Test
         fun `onNewConfiguration will re-apply after error`() {
-            val badConfig = mock<Config> {
+            val badConfig = mock<SmartConfig> {
                 on { getInt(any()) } doReturn 5
             }
-            val goodConfig = mock<Config> {
+            val goodConfig = mock<SmartConfig> {
                 on { getInt(any()) } doReturn 17
             }
 
@@ -651,7 +652,7 @@ class DominoTileTest {
 
         @Test
         fun `if config is the same after error then the tile stays stopped`() {
-            val badConfig = mock<Config> {
+            val badConfig = mock<SmartConfig> {
                 on { getInt(any()) } doReturn 5
             }
 
@@ -671,7 +672,7 @@ class DominoTileTest {
 
         @Test
         fun `startTile will apply new configuration when started`() {
-            val config = mock<Config> {
+            val config = mock<SmartConfig> {
                 on { getInt(any()) } doReturn 11
             }
             whenever(service.registerForUpdates(any())).doAnswer {
@@ -722,7 +723,7 @@ class DominoTileTest {
         @Test
         fun `applyNewConfiguration handle exceptions`() {
             whenever(configFactory.invoke(any())).thenThrow(RuntimeException("Bad configuration"))
-            val config = mock<Config>()
+            val config = mock<SmartConfig>()
             whenever(service.registerForUpdates(any())).doAnswer {
                 val handler = it.arguments[0] as ConfigurationHandler
                 handler.onNewConfiguration(setOf(key), mapOf(key to config))
@@ -739,7 +740,7 @@ class DominoTileTest {
         fun `second start will not restart if the configuration had error`() {
             val resourceCreated = AtomicInteger(0)
             whenever(configFactory.invoke(any())).thenThrow(RuntimeException("Bad configuration"))
-            val config = mock<Config>()
+            val config = mock<SmartConfig>()
             whenever(service.registerForUpdates(any())).doAnswer {
                 val handler = it.arguments[0] as ConfigurationHandler
                 handler.onNewConfiguration(setOf(key), mapOf(key to config))

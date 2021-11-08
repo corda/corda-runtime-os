@@ -5,9 +5,9 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordList
 import org.apache.kafka.clients.consumer.CommitFailedException
-import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -30,7 +30,7 @@ class CordaKafkaProducerImplTest {
 
     private val config: Config = mock()
     private val producer: Producer<Any, Any> = mock()
-    private val consumer: Consumer<*, *> = mock()
+    private val consumer: CordaKafkaConsumer<*, *> = mock()
     private lateinit var cordaKafkaProducer: CordaKafkaProducerImpl
 
     private val record: Record<Any, Any> = Record("topic", "key", "value")
@@ -82,7 +82,7 @@ class CordaKafkaProducerImplTest {
 
     @Test
     fun testTryCommitTransaction() {
-        cordaKafkaProducer.tryCommitTransaction()
+        cordaKafkaProducer.commitTransaction()
         verify(producer, times(1)).commitTransaction()
         verify(producer, times(0)).abortTransaction()
     }
@@ -90,14 +90,14 @@ class CordaKafkaProducerImplTest {
     @Test
     fun testTryCommitTransactionFatal() {
         doThrow(IllegalStateException()).whenever(producer).commitTransaction()
-        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.tryCommitTransaction() }
+        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.commitTransaction() }
         verify(producer, times(1)).commitTransaction()
     }
 
     @Test
     fun testTryCommitTransactionIntermittent() {
         doThrow(KafkaException()).whenever(producer).commitTransaction()
-        assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaProducer.tryCommitTransaction() }
+        assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaProducer.commitTransaction() }
         verify(producer, times(1)).abortTransaction()
         verify(producer, times(1)).commitTransaction()
     }

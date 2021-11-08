@@ -26,7 +26,6 @@ fun <V> Collection<CompletableFuture<out V>>.transpose(): CompletableFuture<List
 }
 
 /** Run the given block (in the foreground) and set this future to its outcome. */
-@Suppress("TooGenericExceptionCaught")
 fun <V> CompletableFuture<V>.capture(block: () -> V): Boolean {
     return complete(
         try {

@@ -1,11 +1,20 @@
 package net.corda.messaging.kafka.producer.wrapper
 
 import net.corda.messaging.api.records.Record
-import org.apache.kafka.clients.consumer.Consumer
+import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.apache.kafka.clients.producer.Producer
+import org.apache.kafka.clients.producer.Callback
+import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.clients.producer.RecordMetadata
+import java.time.Duration
+import java.util.concurrent.Future
 
-interface CordaKafkaProducer : AutoCloseable, Producer<Any, Any> {
+interface CordaKafkaProducer : AutoCloseable {
+
+    /**
+     * Send a [record] to kafka with a [callback]
+     */
+    fun send(record: ProducerRecord<Any, Any>, callback: Callback?): Future<RecordMetadata>
 
     /**
      * Send [records] of varying key and value types to their respective topics
@@ -24,7 +33,7 @@ interface CordaKafkaProducer : AutoCloseable, Producer<Any, Any> {
      * @throws CordaMessageAPIFatalException Fatal error
      * @throws CordaMessageAPIIntermittentException Retryable error
      */
-    fun sendRecordOffsetsToTransaction(consumer: Consumer<*, *>, records: List<ConsumerRecord<*, *>>)
+    fun sendRecordOffsetsToTransaction(consumer: CordaKafkaConsumer<*, *>, records: List<ConsumerRecord<*, *>>)
 
 
     /**
@@ -32,12 +41,28 @@ interface CordaKafkaProducer : AutoCloseable, Producer<Any, Any> {
      * @throws CordaMessageAPIFatalException Fatal error
      * @throws CordaMessageAPIIntermittentException Retryable error
      */
-    fun sendAllOffsetsToTransaction(consumer: Consumer<*, *>)
+    fun sendAllOffsetsToTransaction(consumer: CordaKafkaConsumer<*, *>)
 
     /**
      * Try to commit a transaction. If the transaction fails. Abort it.
      * @throws CordaMessageAPIFatalException Fatal error
      * @throws CordaMessageAPIIntermittentException Retryable error
      */
-    fun tryCommitTransaction()
+    fun commitTransaction()
+
+    /**
+     * Starts up the transaction
+     */
+    fun beginTransaction()
+
+    /**
+     * Aborts the transaction
+     */
+    fun abortTransaction()
+
+    /**
+     * Close the Producer with a [timeout]
+     * @param timeout
+     */
+    fun close(timeout: Duration)
 }

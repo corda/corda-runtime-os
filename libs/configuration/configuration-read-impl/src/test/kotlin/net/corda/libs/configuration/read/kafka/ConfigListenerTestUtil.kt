@@ -1,13 +1,13 @@
 package net.corda.libs.configuration.read.kafka
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.read.ConfigListener
 
 class ConfigListenerTestUtil : ConfigListener {
     var update = false
-    var lastSnapshot = mapOf<String,Config>()
+    var lastSnapshot = mapOf<String, SmartConfig>()
 
-    override fun onUpdate(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config>) {
+    override fun onUpdate(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, SmartConfig>) {
         update = true
         lastSnapshot = currentConfigurationSnapshot
     }

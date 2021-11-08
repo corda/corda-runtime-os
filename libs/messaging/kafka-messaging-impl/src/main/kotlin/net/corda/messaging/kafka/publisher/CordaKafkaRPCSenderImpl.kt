@@ -40,13 +40,13 @@ import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
 @Component
-class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
+class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: Config,
     private val publisher: Publisher,
     private val consumerBuilder: ConsumerBuilder<String, RPCResponse>,
-    private val serializer: CordaAvroSerializer<TREQ>,
-    private val deserializer: CordaAvroDeserializer<TRESP>
-) : RPCSender<TREQ, TRESP>, RPCSubscription<TREQ, TRESP> {
+    private val serializer: CordaAvroSerializer<REQUEST>,
+    private val deserializer: CordaAvroDeserializer<RESPONSE>
+) : RPCSender<REQUEST, RESPONSE>, RPCSubscription<REQUEST, RESPONSE> {
 
     private companion object {
         private val log: Logger = contextLogger()
@@ -56,7 +56,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private val futureTracker = FutureTracker<TRESP>()
+    private val futureTracker = FutureTracker<RESPONSE>()
 
     override val isRunning: Boolean
         get() = !stopped
@@ -104,7 +104,6 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun runConsumeLoop() {
         var attempts = 0
         while (!stopped) {
@@ -137,7 +136,6 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<String, RPCResponse>) {
         while (!stopped) {
             val consumerRecords = consumer.poll()
@@ -159,7 +157,6 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<String, RPCResponse>>) {
         consumerRecords.forEach {
             val correlationKey = it.record.key()
@@ -185,6 +182,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                                 "Cause:${response.errorType}. Message: ${response.errorMessage}"
                             )
                         )
+                        log.warn("Cause:${response.errorType}. Message: ${response.errorMessage}")
                     }
                     ResponseStatus.CANCELLED -> {
                         future.cancel(true)
@@ -201,10 +199,9 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
-    override fun sendRequest(req: TREQ): CompletableFuture<TRESP> {
+    override fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE> {
         val correlationId = UUID.randomUUID().toString()
-        val future = CompletableFuture<TRESP>()
+        val future = CompletableFuture<RESPONSE>()
         val partitions = partitionListener.getPartitions()
         var reqBytes: ByteArray? = null
         try {
@@ -216,10 +213,16 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                     "Verify that the fields of the request are populated correctly", ex
                 )
             )
+            log.error(
+                "Serializing your request resulted in an exception. " +
+                "Verify that the fields of the request are populated correctly. " +
+                "Request was: $req", ex
+            )
         }
 
         if (partitions.isEmpty()) {
             future.completeExceptionally(CordaRPCAPISenderException("No partitions. Couldn't send"))
+            log.error("No partitions. Couldn't send")
         } else {
             val partition = partitions[0].partition()
             val request = RPCRequest(
@@ -236,6 +239,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                 publisher.publish(listOf(record))
             } catch (ex: Exception) {
                 future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
+                log.error("Failed to publish. Exception: ${ex.message}", ex)
             }
         }
 

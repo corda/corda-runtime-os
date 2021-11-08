@@ -1,6 +1,6 @@
 package net.corda.configuration.read.impl
 
-import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.ErrorEvent
@@ -16,6 +16,7 @@ import org.mockito.ArgumentCaptor
 import org.mockito.Captor
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.capture
 import org.mockito.kotlin.firstValue
 import org.mockito.kotlin.mock
@@ -40,6 +41,9 @@ internal class ConfigReadServiceEventHandlerTest {
 
     private lateinit var configReadServiceEventHandler: ConfigReadServiceEventHandler
 
+    @Captor
+    private val callbackCaptor = argumentCaptor<ConfigListener>()
+
     @BeforeEach
     fun setUp() {
         configReaderFactory = mock()
@@ -53,25 +57,31 @@ internal class ConfigReadServiceEventHandlerTest {
 
     @Test
     fun `BootstrapConfigProvided has correct output`() {
-        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(ConfigFactory.empty()), coordinator)
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(mock()), coordinator)
         verify(coordinator).postEvent(capture(lifecycleEventCaptor))
         assertThat(lifecycleEventCaptor.firstValue is SetupSubscription)
     }
 
     @Test
     fun `Event handler works when states in correct order`() {
-        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(ConfigFactory.empty()), coordinator)
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(mock()), coordinator)
         configReadServiceEventHandler.processEvent(SetupSubscription(), coordinator)
+        `when`(coordinator.status).thenReturn(LifecycleStatus.DOWN)
+
+        verify(configReader).start()
+        verify(callbackHandles).addSubscription(any())
+        verify(configReader, times(1)).registerCallback(callbackCaptor.capture())
+
+        // This callback should trigger the UP state as it's a "snapshot"
+        callbackCaptor.firstValue.onUpdate(emptySet(), emptyMap())
 
         verify(coordinator).updateStatus(capture(lifecycleStatusCaptor), any())
         assertThat(lifecycleStatusCaptor.firstValue).isEqualTo(LifecycleStatus.UP)
-        verify(configReader).start()
-        verify(callbackHandles).addSubscription(any())
     }
 
     @Test
     fun `Start event works when bootstrap config provided`() {
-        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(ConfigFactory.empty()), coordinator)
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(mock()), coordinator)
         configReadServiceEventHandler.processEvent(StartEvent(), coordinator)
         // The first value captured will be from the BootstrapConfig being provided
         verify(coordinator, times(2)).postEvent(capture(lifecycleEventCaptor))
@@ -87,7 +97,7 @@ internal class ConfigReadServiceEventHandlerTest {
 
     @Test
     fun `Stop event removes the subscription`() {
-        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(ConfigFactory.empty()), coordinator)
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(mock()), coordinator)
         configReadServiceEventHandler.processEvent(SetupSubscription(), coordinator)
         configReadServiceEventHandler.processEvent(StopEvent(), coordinator)
         // The first value captured will be from the BootstrapConfig being provided

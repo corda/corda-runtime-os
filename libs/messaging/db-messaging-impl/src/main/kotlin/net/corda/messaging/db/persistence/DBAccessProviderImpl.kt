@@ -421,7 +421,6 @@ class DBAccessProviderImpl(private val jdbcUrl: String,
      *
      * The provided callback function [postTxFn] will be invoked in the end regardless of whether the transaction was successful or not.
      */
-    @Suppress("TooGenericExceptionCaught")
     private fun executeWithErrorHandling(operation: (connection: Connection) -> Unit,
                                          operationName: String, postTxFn: (txResult: TransactionResult) -> Unit = {}) {
         var txResult: TransactionResult? = null

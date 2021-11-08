@@ -1,9 +1,9 @@
 package net.corda.crypto.component.lifecycle
 
-import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -77,7 +77,7 @@ abstract class AbstractCryptoCoordinator(
         }
     }
 
-    private fun onConfigChange(keys: Set<String>, config: Map<String, Config>) {
+    private fun onConfigChange(keys: Set<String>, config: Map<String, SmartConfig>) {
         if (CRYPTO_CONFIG in keys) {
             val newConfig = config[CRYPTO_CONFIG]
             val libraryConfig = if(newConfig == null || newConfig.isEmpty) {

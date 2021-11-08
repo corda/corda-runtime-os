@@ -1,0 +1,24 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpk'
+}
+
+description 'Corda Sandbox Irresolvable CPK'
+
+group 'com.example.sandbox'
+version ''
+
+cordapp {
+    targetPlatformVersion 999 as Integer
+    workflow {
+        name 'Sandbox Irresolvable-CPK'
+        versionId 1
+        vendor 'R3'
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda:corda-application'
+    // Corda does not actually provide this dependency, so an error will be thrown at sandbox creation time.
+    cordaProvided "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+}

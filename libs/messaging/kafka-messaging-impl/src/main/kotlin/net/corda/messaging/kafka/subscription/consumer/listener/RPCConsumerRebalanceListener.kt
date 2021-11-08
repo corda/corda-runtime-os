@@ -7,10 +7,10 @@ import org.apache.kafka.common.TopicPartition
 import org.slf4j.Logger
 import java.util.*
 
-class RPCConsumerRebalanceListener<TRESP>(
+class RPCConsumerRebalanceListener<RESPONSE>(
     private val topic: String,
     private val groupName: String,
-    private val tracker: FutureTracker<TRESP>
+    private val tracker: FutureTracker<RESPONSE>
 ) : ConsumerRebalanceListener {
 
     private val partitions = mutableListOf<TopicPartition>()

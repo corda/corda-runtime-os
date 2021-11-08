@@ -2,6 +2,7 @@ package net.corda.lifecycle.domino.logic
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -146,7 +147,7 @@ class DominoTile(
             }
         }
 
-        override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, Config>) {
+        override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
             if (changedKeys.contains(configurationChangeHandler.key)) {
                 val newConfiguration = config[configurationChangeHandler.key]
                 if (newConfiguration != null) {

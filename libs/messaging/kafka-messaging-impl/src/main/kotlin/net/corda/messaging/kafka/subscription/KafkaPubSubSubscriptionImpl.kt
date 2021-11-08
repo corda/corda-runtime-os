@@ -114,7 +114,6 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
      * If subscription is stopped close the consumer.
      * @throws CordaMessageAPIFatalException if unrecoverable error occurs
      */
-    @Suppress("TooGenericExceptionCaught")
     fun runConsumeLoop() {
         var attempts = 0
         while (!stopped) {
@@ -156,7 +155,6 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
      * @throws CordaMessageAPIIntermittentException if the records cannot be polled at the current position or cannot be processed and max
      * retries have been exceeded.
      */
-    @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<K, V>) {
         var attempts = 0
         while (!stopped) {

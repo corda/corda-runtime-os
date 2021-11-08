@@ -1,0 +1,38 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
+}
+
+evaluationDependsOn(':components:install:test-resources:contract-cpk')
+evaluationDependsOn(':components:install:test-resources:workflow-cpk')
+
+dependencies {
+    compileOnly group: "org.osgi", name: "osgi.annotation"
+    compileOnly group: "org.osgi", name: "osgi.core"
+    compileOnly group: "org.osgi", name: "org.osgi.service.component.annotations"
+    compileOnly group: "org.osgi", name: "org.osgi.service.cm", version: osgiCmVersion
+
+    implementation platform(group: "net.corda", name: "corda-api", version: cordaApiVersion)
+    implementation 'org.slf4j:slf4j-api'
+    api project(":components:install:install")
+
+    implementation project(":components:configuration:configuration-read-service")
+
+    integrationTestCompileOnly group: "org.osgi", name: "osgi.core"
+    integrationTestCompileOnly group: "org.osgi", name: "org.osgi.service.component", version: osgiServiceComponentVersion
+    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
+    integrationTestRuntimeOnly project(":libs:configuration:file-configuration-read-impl")
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:inmemory-messaging-impl")
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+}
+
+Provider<Task> cpkTaskProvider = project(':components:install:test-resources:workflow-cpk').tasks.named('cpb')
+ext {
+    cpiPath = cpkTaskProvider.get().outputs.files.asPath
+}
+
+testOSGi {
+    inputs.files(cpkTaskProvider)
+}

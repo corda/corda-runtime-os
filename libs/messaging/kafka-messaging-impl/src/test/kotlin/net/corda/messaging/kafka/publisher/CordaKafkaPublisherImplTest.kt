@@ -28,7 +28,6 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.function.Executable
-import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
@@ -36,7 +35,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 
@@ -74,7 +72,7 @@ class CordaKafkaPublisherImplTest {
         publish(false, listOf(record, record, record))
         verify(producer, times(3)).send(any(), any())
         verify(producer, times(0)).beginTransaction()
-        verify(producer, times(0)).tryCommitTransaction()
+        verify(producer, times(0)).commitTransaction()
     }
 
     @Test
@@ -148,7 +146,7 @@ class CordaKafkaPublisherImplTest {
         publish(true, listOf(record, record, record))
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).tryCommitTransaction()
+        verify(producer, times(1)).commitTransaction()
     }
 
     @Test
@@ -157,7 +155,7 @@ class CordaKafkaPublisherImplTest {
         publishToPartition(true, recordsWithPartitions)
         verify(producer, times(1)).sendRecordsToPartitions(recordsWithPartitions)
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).tryCommitTransaction()
+        verify(producer, times(1)).commitTransaction()
     }
 
     @Test
@@ -167,7 +165,7 @@ class CordaKafkaPublisherImplTest {
         assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(0)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(0)).tryCommitTransaction()
+        verify(producer, times(0)).commitTransaction()
     }
 
     @Test
@@ -177,7 +175,7 @@ class CordaKafkaPublisherImplTest {
         assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(0)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(0)).tryCommitTransaction()
+        verify(producer, times(0)).commitTransaction()
     }
 
     @Test
@@ -187,7 +185,7 @@ class CordaKafkaPublisherImplTest {
         assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(0)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(0)).tryCommitTransaction()
+        verify(producer, times(0)).commitTransaction()
     }
 
     @Test
@@ -197,7 +195,7 @@ class CordaKafkaPublisherImplTest {
         assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(0)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(0)).tryCommitTransaction()
+        verify(producer, times(0)).commitTransaction()
     }
 
     @Test
@@ -207,7 +205,7 @@ class CordaKafkaPublisherImplTest {
         assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(0)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(0)).tryCommitTransaction()
+        verify(producer, times(0)).commitTransaction()
     }
 
     @Test
@@ -217,107 +215,107 @@ class CordaKafkaPublisherImplTest {
         assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(0)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(0)).tryCommitTransaction()
+        verify(producer, times(0)).commitTransaction()
     }
 
     @Test
     fun testTransactionCommitFailureTimeout() {
-        doThrow(CordaMessageAPIIntermittentException("")).whenever(producer).tryCommitTransaction()
+        doThrow(CordaMessageAPIIntermittentException("")).whenever(producer).commitTransaction()
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).tryCommitTransaction()
+        verify(producer, times(1)).commitTransaction()
     }
 
     @Test
     fun testTransactionCommitFailureTimeoutForPublishToPartition() {
-        doThrow(CordaMessageAPIIntermittentException("")).whenever(producer).tryCommitTransaction()
+        doThrow(CordaMessageAPIIntermittentException("")).whenever(producer).commitTransaction()
         val futures = publishToPartition(true, listOf(1 to record))
         assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(1)).sendRecordsToPartitions(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).tryCommitTransaction()
+        verify(producer, times(1)).commitTransaction()
     }
 
     @Test
     fun testTransactionCommitFailureEpochException() {
-        doThrow(InvalidProducerEpochException("")).whenever(producer).tryCommitTransaction()
+        doThrow(InvalidProducerEpochException("")).whenever(producer).commitTransaction()
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).tryCommitTransaction()
+        verify(producer, times(1)).commitTransaction()
     }
 
     @Test
     fun testTransactionCommitFailureEpochExceptionForPublishToPartition() {
-        doThrow(InvalidProducerEpochException("")).whenever(producer).tryCommitTransaction()
+        doThrow(InvalidProducerEpochException("")).whenever(producer).commitTransaction()
         val futures = publishToPartition(true, listOf(1 to record))
         assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(1)).sendRecordsToPartitions(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).tryCommitTransaction()
+        verify(producer, times(1)).commitTransaction()
     }
 
     @Test
     fun testTransactionCommitFailureInterruptException() {
-        doThrow(CordaMessageAPIIntermittentException("")).whenever(producer).tryCommitTransaction()
+        doThrow(CordaMessageAPIIntermittentException("")).whenever(producer).commitTransaction()
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).tryCommitTransaction()
+        verify(producer, times(1)).commitTransaction()
     }
 
     @Test
     fun testTransactionCommitFailureInterruptExceptionForPublishToPartition() {
-        doThrow(CordaMessageAPIIntermittentException("")).whenever(producer).tryCommitTransaction()
+        doThrow(CordaMessageAPIIntermittentException("")).whenever(producer).commitTransaction()
         val futures = publishToPartition(true, listOf(1 to record))
         assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(1)).sendRecordsToPartitions(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).tryCommitTransaction()
+        verify(producer, times(1)).commitTransaction()
     }
 
     @Test
     fun testTransactionCommitFailureCordaMessageAPIFatalException() {
-        doThrow(CordaMessageAPIFatalException("")).whenever(producer).tryCommitTransaction()
+        doThrow(CordaMessageAPIFatalException("")).whenever(producer).commitTransaction()
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).tryCommitTransaction()
+        verify(producer, times(1)).commitTransaction()
     }
 
     @Test
     fun testTransactionCommitFailureCordaMessageAPIFatalExceptionForPublishToPartition() {
-        doThrow(CordaMessageAPIFatalException("")).whenever(producer).tryCommitTransaction()
+        doThrow(CordaMessageAPIFatalException("")).whenever(producer).commitTransaction()
         val futures = publishToPartition(true, listOf(1 to record))
         assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(1)).sendRecordsToPartitions(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).tryCommitTransaction()
+        verify(producer, times(1)).commitTransaction()
     }
 
     @Test
     fun testTransactionCommitFailureUnknownException() {
-        doThrow(IllegalArgumentException("")).whenever(producer).tryCommitTransaction()
+        doThrow(IllegalArgumentException("")).whenever(producer).commitTransaction()
         val futures = publish(true, listOf(record))
         assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).tryCommitTransaction()
+        verify(producer, times(1)).commitTransaction()
     }
 
     @Test
     fun testTransactionCommitFailureUnknownExceptionForPublishToPartition() {
-        doThrow(IllegalArgumentException("")).whenever(producer).tryCommitTransaction()
+        doThrow(IllegalArgumentException("")).whenever(producer).commitTransaction()
         val futures = publishToPartition(true, listOf(1 to record))
         assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
         verify(producer, times(1)).sendRecordsToPartitions(any())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).tryCommitTransaction()
+        verify(producer, times(1)).commitTransaction()
     }
 
     @Test
@@ -325,7 +323,7 @@ class CordaKafkaPublisherImplTest {
         cordaKafkaPublisherImpl = CordaKafkaPublisherImpl(kafkaConfig, producer)
 
         cordaKafkaPublisherImpl.close()
-        verify(producer, times(1)).close(Mockito.any(Duration::class.java))
+        verify(producer, times(1)).close(any())
     }
 
     private fun publish(isTransaction: Boolean = false, records: List<Record<*, *>>): List<CompletableFuture<Unit>> {

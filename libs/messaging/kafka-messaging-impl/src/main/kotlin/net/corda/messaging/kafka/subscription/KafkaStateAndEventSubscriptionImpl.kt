@@ -20,7 +20,6 @@ import net.corda.messaging.kafka.utils.getEventsByBatch
 import net.corda.messaging.kafka.utils.tryGetResult
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
@@ -102,7 +101,6 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     fun runConsumeLoop() {
         var attempts = 0
         while (!stopped) {
@@ -151,7 +149,6 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         stateAndEventConsumer.close()
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun processEvents() {
         var attempts = 0
         var pollAndProcessSuccessful = false
@@ -182,7 +179,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val outputRecords = mutableListOf<Record<*, *>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
 
-        log.trace { "Processing events(size: ${events.size})" }
+        log.debug { "Processing events(size: ${events.size})" }
         for (event in events) {
             stateAndEventConsumer.resetPollInterval()
             processEvent(event, outputRecords, updatedStates)
@@ -191,8 +188,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         producer.beginTransaction()
         producer.sendRecords(outputRecords)
         producer.sendRecordOffsetsToTransaction(eventConsumer, events.map { it.record })
-        producer.tryCommitTransaction()
-        log.trace { "Processing of events(size: ${events.size}) complete" }
+        producer.commitTransaction()
+        log.debug { "Processing of events(size: ${events.size}) complete" }
 
         stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
     }
@@ -202,7 +199,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         outputRecords: MutableList<Record<*, *>>,
         updatedStates: MutableMap<Int, MutableMap<K, S?>>
     ) {
-        log.trace { "Processing event: $event" }
+        log.debug { "Processing event: $event" }
         val key = event.record.key()
         val state = stateAndEventConsumer.getInMemoryStateValue(key)
         val partitionId = event.record.partition()
@@ -218,7 +215,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             val updatedState = thisEventUpdates.updatedState
             outputRecords.add(Record(stateTopic.suffix, key, updatedState))
             updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
-            log.trace { "Completed event: $event" }
+            log.debug { "Completed event: $event" }
         }
     }
 

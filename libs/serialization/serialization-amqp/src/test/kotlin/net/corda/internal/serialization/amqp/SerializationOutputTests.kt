@@ -13,13 +13,11 @@ import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
-import net.corda.internal.serialization.custom.PublicKeySerializer
 import net.corda.internal.serialization.encodingNotPermittedFormat
 import net.corda.v5.application.flows.FlowException
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.OpaqueBytes
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.serialization.EncodingWhitelist
 import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.annotations.ConstructorForDeserialization
@@ -47,14 +45,11 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.IOException
 import java.io.InputStream
 import java.io.NotSerializableException
 import java.math.BigDecimal
-import java.security.KeyPairGenerator
 import java.time.DayOfWeek
 import java.time.Month
 import java.util.Currency
@@ -495,30 +490,6 @@ class SerializationOutputTests {
     }
 
     @Test
-    fun `test custom serializers on public key`() {
-
-        // Generate new key for testing
-        val publicKey = KeyPairGenerator.getInstance("RSA").genKeyPair().public
-
-        // Setup PublicKeySerializer with mock CipherSchemeMetadata
-        val cipherSchemeMetadata: CipherSchemeMetadata = mock<CipherSchemeMetadata>().also {
-            whenever(it.decodePublicKey(eq(publicKey.encoded))).thenReturn(publicKey)
-        }
-        val publicKeySerializer = PublicKeySerializer(cipherSchemeMetadata)
-
-        // Build serialization factory
-        val serializerFactory = SerializerFactoryBuilder.build(AllWhitelist)
-        serializerFactory.register(publicKeySerializer, true)
-
-        // Build deserialization factory
-        val freshDeserializationFactory = SerializerFactoryBuilder.build(AllWhitelist)
-        freshDeserializationFactory.register(publicKeySerializer, true)
-
-        // Run public key through serialization/deserialization and compare
-        serdes(publicKey, serializerFactory, freshDeserializationFactory)
-    }
-
-    @Test
     fun `test annotation is inherited`() {
         val obj = InheritAnnotation("blah")
         serdes(obj, SerializerFactoryBuilder.build(AlwaysEmptyWhitelist))
@@ -554,7 +525,6 @@ class SerializationOutputTests {
     }
 
     @Test
-    @SuppressWarnings("TooGenericExceptionCaught")
     fun `test complex throwables serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
         factory.register(ThrowableSerializer(factory), true)
@@ -585,7 +555,6 @@ class SerializationOutputTests {
     }
 
     @Test
-    @SuppressWarnings("TooGenericExceptionCaught")
     fun `test suppressed throwables serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
         factory.register(ThrowableSerializer(factory), true)

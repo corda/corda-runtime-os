@@ -11,7 +11,6 @@ abstract class HttpRpcIntegrationTestBase {
         const val password = "admin"
         val userAlice = User("admin", password, setOf())
         val securityManager = RPCSecurityManagerFactoryStubImpl().createRPCSecurityManager()
-        val classLoader = ClassLoader.getSystemClassLoader()
         val context = HttpRpcContext("1", "api", "HttpRpcContext test title ", "HttpRpcContext test description")
     }
 }

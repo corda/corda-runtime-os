@@ -36,23 +36,17 @@ import net.corda.internal.serialization.amqp.custom.YearMonthSerializer
 import net.corda.internal.serialization.amqp.custom.YearSerializer
 import net.corda.internal.serialization.amqp.custom.ZoneIdSerializer
 import net.corda.internal.serialization.amqp.custom.ZonedDateTimeSerializer
-import net.corda.internal.serialization.custom.PrivateKeySerializer
-import net.corda.internal.serialization.custom.PublicKeySerializer
 import net.corda.sandbox.SandboxGroup
 import net.corda.utilities.toSynchronised
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.ByteSequence
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.serialization.ClassWhitelist
 import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SerializationWhitelist
 import net.corda.v5.serialization.SerializedBytes
-import java.security.PublicKey
 import java.util.Collections
-
-val AMQP_ENABLED get() = effectiveSerializationEnv.p2pContext.preferredSerializationVersion == amqpMagic
 
 data class SerializationFactoryCacheKey(val classWhitelist: ClassWhitelist,
                                         val sandboxGroup: SandboxGroup?,
@@ -76,14 +70,12 @@ abstract class AbstractAMQPSerializationScheme private constructor(
         private val cordappCustomSerializers: Set<SerializationCustomSerializer<*, *>>,
         private val cordappSerializationWhitelists: Set<SerializationWhitelist>,
         maybeNotConcurrentSerializerFactoriesForContexts: MutableMap<SerializationFactoryCacheKey, SerializerFactory>,
-        cipherSchemeMetadata: CipherSchemeMetadata,
         val sff: SerializerFactoryFactory = createSerializerFactoryFactory()
 ) : SerializationScheme {
-    constructor(cipherSchemeMetadata: CipherSchemeMetadata) : this(
+    constructor() : this(
         emptySet<SerializationCustomSerializer<*, *>>(),
         emptySet<SerializationWhitelist>(),
-        AccessOrderLinkedHashMap<SerializationFactoryCacheKey, SerializerFactory>(128).toSynchronised(),
-        cipherSchemeMetadata
+        AccessOrderLinkedHashMap<SerializationFactoryCacheKey, SerializerFactory>(128).toSynchronised()
     )
 
     @VisibleForTesting
@@ -103,7 +95,6 @@ abstract class AbstractAMQPSerializationScheme private constructor(
     }
 
     private fun registerCustomSerializers(context: SerializationContext, factory: SerializerFactory) {
-        factory.register(publicKeySerializer, true)
         registerCustomSerializers(factory)
 
         val serializersToRegister = context.customSerializers ?: cordappCustomSerializers
@@ -120,9 +111,6 @@ abstract class AbstractAMQPSerializationScheme private constructor(
             factory.addToWhitelist(it.whitelist)
         }
     }
-
-    // Not used as a simple direct import to facilitate testing
-    open val publicKeySerializer: SerializationCustomSerializer<PublicKey, ByteArray> = PublicKeySerializer(cipherSchemeMetadata)
 
     fun getSerializerFactory(context: SerializationContext): SerializerFactory {
         val sandboxGroup = context.sandboxGroup as? SandboxGroup
@@ -180,7 +168,6 @@ fun registerCustomSerializers(factory: SerializerFactory) {
         register(BitSetSerializer(), true)
         register(EnumSetSerializer(), true)
         register(X500PrincipalSerializer(), true)
-        register(PrivateKeySerializer, true)
     }
 }
 

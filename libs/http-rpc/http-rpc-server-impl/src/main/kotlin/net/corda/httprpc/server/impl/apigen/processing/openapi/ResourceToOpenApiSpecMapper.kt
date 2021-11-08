@@ -64,7 +64,7 @@ internal fun List<Resource>.toOpenAPI(schemaModelContextHolder: SchemaModelConte
     }.also { log.trace { "Map \"${this.size}\" resources to OpenAPI completed." } }
 }
 
-@Suppress("TooGenericExceptionThrown", "TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionThrown")
 @VisibleForTesting
 internal fun EndpointParameter.toOpenApiParameter(schemaModelProvider: SchemaModelProvider): Parameter {
     try {
@@ -159,7 +159,7 @@ internal fun Endpoint.toOperation(path: String, schemaModelProvider: SchemaModel
 fun String.toValidMethodName() = toLowerCase().replace(Regex("\\W"), "_")
 private fun String.pathToSchemaSchemaName() = this.split("/").joinToString("") { it.capitalize() }
 
-@Suppress("TooGenericExceptionThrown", "TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionThrown")
 private fun ApiResponse.withResponseBodyFrom(
     endpoint: Endpoint,
     schemaModelProvider: SchemaModelProvider

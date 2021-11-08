@@ -1,7 +1,7 @@
 package net.corda.messaging.api.publisher.factory
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -14,13 +14,13 @@ import net.corda.messaging.api.subscription.factory.config.RPCConfig
 interface PublisherFactory {
 
     /**
-     * Create a publisher which publishes to a topic with a given [publisherConfig] and map of [nodeConfig].
+     * Create a publisher which publishes to a topic with a given [publisherConfig] and map of [kafkaConfig].
      * @return A publisher of events.
      * @throws CordaMessageAPIException Exception in generating a Publisher.
      */
     fun createPublisher(
         publisherConfig: PublisherConfig,
-        nodeConfig: Config = ConfigFactory.empty()
+        kafkaConfig: SmartConfig = SmartConfigImpl.empty()
     ): Publisher
 
     /**
@@ -36,12 +36,12 @@ interface PublisherFactory {
      * The responder side can be found in [SubscriptionFactory] under [createRPCSubscription]
      *
      * @param rpcConfig configuration object used to initialize the subscription
-     * @param nodeConfig other configuration settings if needed
+     * @param kafkaConfig other configuration settings if needed
      */
-    fun <TREQ: Any, TRESP: Any> createRPCSender(
-        rpcConfig: RPCConfig<TREQ, TRESP>,
-        nodeConfig: Config = ConfigFactory.empty(),
-    ): RPCSender<TREQ, TRESP>
+    fun <REQUEST: Any, RESPONSE: Any> createRPCSender(
+        rpcConfig: RPCConfig<REQUEST, RESPONSE>,
+        kafkaConfig: SmartConfig = SmartConfigImpl.empty(),
+    ): RPCSender<REQUEST, RESPONSE>
 
 
 }

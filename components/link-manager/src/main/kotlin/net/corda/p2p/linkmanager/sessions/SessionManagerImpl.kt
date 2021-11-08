@@ -2,6 +2,7 @@ package net.corda.p2p.linkmanager.sessions
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
@@ -69,7 +70,7 @@ open class SessionManagerImpl(
     publisherFactory: PublisherFactory,
     private val configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    nodeConfiguration: Config,
+    nodeConfiguration: SmartConfig,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
     private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
         publisherFactory,
@@ -517,7 +518,7 @@ open class SessionManagerImpl(
         publisherFactory: PublisherFactory,
         private val configurationReaderService: ConfigurationReadService,
         coordinatorFactory: LifecycleCoordinatorFactory,
-        nodeConfiguration: Config,
+        nodeConfiguration: SmartConfig,
         private val networkMap: LinkManagerNetworkMap,
         private val destroySession: (key: SessionKey, sessionId: String) -> Any
     ) : LifecycleWithDominoTile {
@@ -667,12 +668,14 @@ open class SessionManagerImpl(
         }
 
         private fun sendHeartbeat(sessionKey: SessionKey, session: Session) {
-            val sessionInfo = trackedSessions[session.sessionId] ?: return
-            val timeSinceLastAck = timeStamp() - sessionInfo.lastAckTimestamp
-            val timeSinceLastSend = timeStamp() - sessionInfo.lastSendTimestamp
+            val sessionInfo = trackedSessions[session.sessionId]
+            if (sessionInfo == null) {
+                logger.info("Stopped sending heartbeats for session (${session.sessionId}), which expired.")
+                return
+            }
             val config = config.get()
 
-            if (timeSinceLastAck >= config.sessionTimeout.toMillis()) return
+            val timeSinceLastSend = timeStamp() - sessionInfo.lastSendTimestamp
             if (timeSinceLastSend >= config.heartbeatPeriod.toMillis()) {
                 logger.trace("Sending heartbeat message between ${sessionKey.ourId} (our Identity) and ${sessionKey.responderId}.")
                 sendHeartbeatMessage(

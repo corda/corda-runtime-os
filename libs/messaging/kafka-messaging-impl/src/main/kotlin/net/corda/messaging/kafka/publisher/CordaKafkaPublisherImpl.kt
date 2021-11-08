@@ -67,6 +67,7 @@ class CordaKafkaPublisherImpl(
         records.forEach {
             if (it.key.javaClass != String::class.java) {
                 val future = CompletableFuture.failedFuture<Unit>(CordaMessageAPIFatalException("Unsupported Key type, use a String."))
+                log.error("Unsupported Key type, use a String")
                 return listOf(future)
             }
         }
@@ -86,6 +87,7 @@ class CordaKafkaPublisherImpl(
         records.forEach { (_, record) ->
             if (record.key.javaClass != String::class.java) {
                 val future = CompletableFuture.failedFuture<Unit>(CordaMessageAPIFatalException("Unsupported Key type, use a String."))
+                log.error("Unsupported Key type, use a String.")
                 return listOf(future)
             }
         }
@@ -149,14 +151,13 @@ class CordaKafkaPublisherImpl(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun executeInTransaction(block: (CordaKafkaProducer) -> Unit): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()
 
         try {
             cordaKafkaProducer.beginTransaction()
             block(cordaKafkaProducer)
-            cordaKafkaProducer.tryCommitTransaction()
+            cordaKafkaProducer.commitTransaction()
             future.complete(Unit)
         } catch (ex: Exception) {
             when (ex) {
@@ -233,7 +234,6 @@ class CordaKafkaPublisherImpl(
     /**
      * Safely close a producer. If an exception is thrown swallow the error to avoid double exceptions
      */
-    @Suppress("TooGenericExceptionCaught")
     override fun close() {
         try {
             cordaKafkaProducer.close(Duration.ofMillis(closeTimeout))

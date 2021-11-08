@@ -60,7 +60,7 @@ internal class CorDappCustomSerializer(
     override val typeDescriptor: Symbol = typeDescriptorFor(type)
     val descriptor: Descriptor = Descriptor(typeDescriptor)
 
-    override fun writeClassInfo(output: SerializationOutput) {}
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {}
 
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
                              context: SerializationContext, debugIndent: Int

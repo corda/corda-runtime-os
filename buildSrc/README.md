@@ -417,3 +417,73 @@ The `appJar` task depends on the tasks
   file `system_bundles`.
 
 See [The bootable JAR](#the_bootable_jar) section to know how is made the internal structure of the bootable JAR.
+
+## Create Docker Image Custom Gradle Task
+A custom Gradle task has been provided to allow for the containerization of deployable Jars in the Corda-runtime-os project.
+An example of how to apply this task to a project can be seen in the applications/http-rpc-gateway application. 
+
+``` groovy
+tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
+    description "Builds the docker image for the deployable OSGi application"
+
+    if (project.hasProperty('jibRemotePublish')) {
+        remotePublish = jibRemotePublish.toBoolean()
+    }
+
+    if (project.hasProperty('releaseCandidate')) {
+        releaseCandidate = releaseCandidate.toBoolean()
+    }
+}
+```
+
+Once triggered this task will produce a docker image tagging it with the following labels.
+- latest
+- the project version
+- git revision
+
+If ran locally with no Gradle properties passed the task will publish images to the local Docker Daemon. 
+
+if jibRemotePublish is true images will be published to artifactory under:
+
+    engineering-docker-dev.software.r3.com/corda-os-${projectName}
+
+CI builds will automatically publish to the remote repo.
+
+Optionally an 'arguments' array may be provided to the task which will bake parameters into the image to be passed to the java -jar command.
+Unless necessary this should be avoided and use environment variable JAVA_TOOL_OPTIONS to pass properties at run time instead, as follows:
+
+    docker run -p 8888:8888 -e "JAVA_TOOL_OPTIONS=-DinstanceId=1" engineering-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
+
+If a kafka.properties file exists in the project root as follows:
+
+```
+    http-rpc-gateway
+        +--- src
+        +--- build.gradle
+        +--- kafka.properties
+```
+
+The file will be copied to the container and "--kafka", "/opt/pathToFile" will also be passed ot the java -jar command.
+If this file does not exist in the project and therefore is never copied ot the container properties may be passed at container run time using JAVA_TOOL_OPTIONS as described previously.
+
+    docker run -e  "JAVA_TOOL_OPTIONS=-Dconfig.topic.name=ConfigTopic,-Dmessaging.topic.prefix=http-rpc-gateway,-Dbootstrap.servers=localhost:9092"
+
+### Running the container
+
+```
+docker run -it -p 8888:8888 -e "JAVA_TOOL_OPTIONS=-DinstanceId=1" engineering-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
+```
+
+### Debugging the container
+To debug a running container we can use the JAVA_TOOL_OPTIONS environment variable to pass arguments at runtime e.g.
+
+```
+docker run -it -p 8888:8888 -p 5005:5005 -e "JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005 -DinstanceId=1"" engineering-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
+```
+
+__NOTE:__ `-p 5005:5005` which forwards internal container debug port to a local port such that remote debugger can
+be attached.
+
+__NOTE:__ Extra parameters can be passed to the java -jar command at run time by passing these within the JAVA_TOOL_OPTIONS environment variable.
+
+    docker run -e "JAVA_TOOL_OPTIONS=<JVM flags>" <image name>

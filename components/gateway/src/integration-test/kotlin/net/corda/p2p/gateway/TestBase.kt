@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
+import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.configuration.read.kafka.factory.ConfigReaderFactoryImpl
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
@@ -82,6 +83,8 @@ open class TestBase {
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
 
+    protected val smartConfifFactory = SmartConfigFactoryImpl()
+
     protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl()
     protected inner class ConfigPublisher {
         private val configurationTopicService = TopicServiceImpl()
@@ -90,7 +93,7 @@ open class TestBase {
         val readerService by lazy {
             ConfigurationReadServiceImpl(
                 LifecycleCoordinatorFactoryImpl(),
-                ConfigReaderFactoryImpl(InMemSubscriptionFactory(configurationTopicService)),
+                ConfigReaderFactoryImpl(InMemSubscriptionFactory(configurationTopicService), smartConfifFactory),
             ).also {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()
@@ -98,7 +101,7 @@ open class TestBase {
                         "config.topic.name",
                         ConfigValueFactory.fromAnyRef(topicName)
                     )
-                it.bootstrapConfig(bootstrapper)
+                it.bootstrapConfig(smartConfifFactory.create(bootstrapper))
             }
         }
 
@@ -106,7 +109,6 @@ open class TestBase {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hostAddress", ConfigValueFactory.fromAnyRef(configuration.hostAddress))
                 .withValue("hostPort", ConfigValueFactory.fromAnyRef(configuration.hostPort))
-                .withValue("traceLogging", ConfigValueFactory.fromAnyRef(configuration.traceLogging))
                 .withValue("sslConfig.keyStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.keyStorePassword))
                 .withValue("sslConfig.keyStore", ConfigValueFactory.fromAnyRef(configuration.sslConfig.rawKeyStore.toBase64()))
                 .withValue("sslConfig.trustStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.trustStorePassword))

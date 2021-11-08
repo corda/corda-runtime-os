@@ -12,11 +12,11 @@ import java.util.concurrent.ConcurrentHashMap
  * [futuresInPartitionMap] is a map where the key is the partition number we listen for responses on for the futures we
  * hold in the value part of this map
  */
-class FutureTracker<TRESP> {
+class FutureTracker<RESPONSE> {
 
-    private val futuresInPartitionMap = ConcurrentHashMap<Int, WeakValueHashMap<String, CompletableFuture<TRESP>>>()
+    private val futuresInPartitionMap = ConcurrentHashMap<Int, WeakValueHashMap<String, CompletableFuture<RESPONSE>>>()
 
-    fun addFuture(correlationId: String, future: CompletableFuture<TRESP>, partition: Int) {
+    fun addFuture(correlationId: String, future: CompletableFuture<RESPONSE>, partition: Int) {
         if (futuresInPartitionMap[partition] == null) {
             future.completeExceptionally(
                 CordaRPCAPISenderException(
@@ -28,7 +28,7 @@ class FutureTracker<TRESP> {
         }
     }
 
-    fun getFuture(correlationId: String, partition: Int): CompletableFuture<TRESP>? {
+    fun getFuture(correlationId: String, partition: Int): CompletableFuture<RESPONSE>? {
         return futuresInPartitionMap[partition]?.get(correlationId)
     }
 

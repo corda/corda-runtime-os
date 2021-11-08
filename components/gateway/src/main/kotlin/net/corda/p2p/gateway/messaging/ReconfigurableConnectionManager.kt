@@ -9,23 +9,29 @@ import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.Gateway.Companion.CONFIG_KEY
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
-import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import net.corda.v5.base.util.contextLogger
 
 class ReconfigurableConnectionManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     val configurationReaderService: ConfigurationReadService,
-    listener: HttpEventListener,
-    private val managerFactory: (SslConfiguration) -> ConnectionManager = { ConnectionManager(it, listener) }
+    private val managerFactory: (sslConfig: SslConfiguration, connectionConfig: ConnectionConfiguration) -> ConnectionManager =
+    { sslConfig, connectionConfig -> ConnectionManager(sslConfig, connectionConfig) }
 ) : LifecycleWithDominoTile {
-    @Volatile
-    private var manager: ConnectionManager? = null
 
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         configurationChangeHandler = ConnectionManagerConfigChangeHandler()
     )
+
+    @Volatile
+    private var manager: ConnectionManager? = null
+
+    // When the updated domino logic (supporting internal tile with configuration) is in place, this will be updated. See: CORE-2876.
+    @Volatile
+    var latestConnectionConfig = ConnectionConfiguration()
+
+    fun latestConnectionConfig() = latestConnectionConfig
 
     companion object {
         private val logger = contextLogger()
@@ -52,9 +58,11 @@ class ReconfigurableConnectionManager(
         ) {
             @Suppress("TooGenericExceptionCaught")
             try {
-                if (newConfiguration.sslConfig != oldConfiguration?.sslConfig) {
-                    logger.info("New SSL configuration, clients for ${dominoTile.name} will be reconnected")
-                    val newManager = managerFactory(newConfiguration.sslConfig)
+                if (newConfiguration.sslConfig != oldConfiguration?.sslConfig ||
+                    newConfiguration.connectionConfig != oldConfiguration.connectionConfig) {
+                    logger.info("New configuration, clients for ${dominoTile.name} will be reconnected")
+                    latestConnectionConfig = newConfiguration.connectionConfig
+                    val newManager = managerFactory(newConfiguration.sslConfig, newConfiguration.connectionConfig)
                     resources.keep(newManager)
                     val oldManager = manager
                     manager = null

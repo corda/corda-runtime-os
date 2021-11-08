@@ -88,7 +88,6 @@ class DevCryptoService(
 
     override fun supportedWrappingSchemes(): Array<SignatureScheme> = supportedSchemes
 
-    @Suppress("TooGenericExceptionCaught")
     override fun containsKey(alias: String): Boolean {
         logger.debug("containsKey(alias={})", alias)
         return try {
@@ -100,7 +99,6 @@ class DevCryptoService(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun findPublicKey(alias: String): PublicKey? {
         logger.debug("findPublicKey(alias={})", alias)
         return try {
@@ -138,7 +136,6 @@ class DevCryptoService(
         return defaultCryptoService.generateWrappedKeyPair(masterKeyAlias, wrappedSignatureScheme, context)
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun sign(
         alias: String,
         signatureScheme: SignatureScheme,
@@ -173,7 +170,7 @@ class DevCryptoService(
         return defaultCryptoService.sign(wrappedKey, data, context)
     }
 
-    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
+    @Suppress("ThrowsCount")
     private fun generateKeyPair(
         alias: String,
         signatureScheme: SignatureScheme,

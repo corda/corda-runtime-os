@@ -1,6 +1,5 @@
 package net.corda.applications.rpc
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.components.rpc.ConfigReceivedEvent
@@ -12,6 +11,8 @@ import net.corda.httprpc.RpcOps
 import net.corda.httprpc.security.read.RPCSecurityManagerFactory
 import net.corda.httprpc.server.factory.HttpRpcServerFactory
 import net.corda.httprpc.ssl.SslCertReadServiceFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -59,7 +60,9 @@ class HttpRpcGatewayApp @Activate constructor(
     @Reference(service = SslCertReadServiceFactory::class)
     private val sslCertReadServiceFactory: SslCertReadServiceFactory,
     @Reference(service = PluggableRPCOps::class, cardinality = ReferenceCardinality.MULTIPLE)
-    private val rpcOps: List<PluggableRPCOps<out RpcOps>>
+    private val rpcOps: List<PluggableRPCOps<out RpcOps>>,
+    @Reference(service = SmartConfigFactory::class)
+    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
 
     private companion object {
@@ -162,12 +165,12 @@ class HttpRpcGatewayApp @Activate constructor(
         return configFilePath.toString()
     }
 
-    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): Config {
+    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
 
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
         val configFile = createConfigFile()
         log.debug { "Config file saved to: $configFile" }
-        return ConfigFactory.empty()
+        return smartConfigFactory.create(ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
             .withValue(
                 CONFIG_TOPIC_NAME,
@@ -177,7 +180,7 @@ class HttpRpcGatewayApp @Activate constructor(
                 TOPIC_PREFIX,
                 ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, ""))
             )
-            .withValue("config.file", ConfigValueFactory.fromAnyRef(configFile))
+            .withValue("config.file", ConfigValueFactory.fromAnyRef(configFile)))
     }
 
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {

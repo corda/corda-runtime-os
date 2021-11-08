@@ -3,6 +3,7 @@ package net.corda.libs.configuration.read.file
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfigFactoryImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -28,7 +29,7 @@ class FileConfigReaderImplTest {
     @BeforeEach
     fun beforeEach() {
         createTempTestConfig()
-        service = FileConfigReaderImpl(configRepository, bootstrapConfig())
+        service = FileConfigReaderImpl(configRepository, bootstrapConfig(), SmartConfigFactoryImpl())
         service.start()
     }
 
@@ -48,6 +49,29 @@ class FileConfigReaderImplTest {
             changedKeys = keys
             configSnapshot = config
         }
+        assertThat(lambdaFlag).isTrue
+        assertThat(changedKeys.size).isEqualTo(2)
+        assertNotNull(configRepository.getConfigurations()["corda.rpc"])
+        assertNotNull(configRepository.getConfigurations()["corda.another_rpc"])
+        assertThat(configSnapshot["corda.rpc"]).isEqualTo(configRepository.getConfigurations()["corda.rpc"])
+        assertTrue(configRepository.getConfigurations()["corda.rpc"]!!.hasPath("address"))
+    }
+
+    @Test
+    fun `test that listeners still work after stop start`() {
+        var lambdaFlag = false
+        var changedKeys = setOf<String>()
+        var configSnapshot = mapOf<String, Config>()
+
+        service.registerCallback { keys: Set<String>, config: Map<String, Config> ->
+            lambdaFlag = true
+            changedKeys = keys
+            configSnapshot = config
+        }
+
+        service.stop()
+        service.start()
+
         assertThat(lambdaFlag).isTrue
         assertThat(changedKeys.size).isEqualTo(2)
         assertNotNull(configRepository.getConfigurations()["corda.rpc"])

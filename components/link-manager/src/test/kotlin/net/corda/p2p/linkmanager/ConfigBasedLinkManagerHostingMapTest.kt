@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager
 
 import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -32,7 +33,7 @@ class ConfigBasedLinkManagerHostingMapTest {
     private val charlie = LinkManagerNetworkMap.HoldingIdentity("O=Charlie, L=London, C=GB", "group1")
     private val configResourcesHolder = mock<ResourcesHolder>()
 
-    private val config = ConfigFactory.parseString(
+    private val config = SmartConfigImpl(ConfigFactory.parseString(
         """
             ${LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITIES_KEY}: [
                 {
@@ -45,7 +46,7 @@ class ConfigBasedLinkManagerHostingMapTest {
                 }
             ]
         """
-    )
+    ))
 
     private val hostingMap = ConfigBasedLinkManagerHostingMap(mock(), mock())
 

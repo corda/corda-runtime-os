@@ -1,11 +1,11 @@
 package net.corda.p2p.gateway.messaging
 
+import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.RemovalListener
 import io.netty.channel.nio.NioEventLoopGroup
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
-import net.corda.p2p.gateway.messaging.http.HttpEventListener
 import java.net.URI
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * The [ConnectionManager] is responsible for creating an HTTP connection and caching it. If a connection to the requested
@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class ConnectionManager(
     private val sslConfiguration: SslConfiguration,
-    private val listener: HttpEventListener,
+    private val connectionConfiguration: ConnectionConfiguration,
     nioEventLoopGroupFactory: (Int) -> NioEventLoopGroup = { NioEventLoopGroup(it) }
 ) : AutoCloseable {
 
@@ -27,7 +27,11 @@ class ConnectionManager(
         private const val NUM_CLIENT_NETTY_THREADS = 2
     }
 
-    private val clientPool = ConcurrentHashMap<URI, HttpClient>()
+    private val clientPool = Caffeine.newBuilder()
+        .maximumSize(connectionConfiguration.maxClientConnections)
+        .removalListener( RemovalListener<URI, HttpClient> { _, value, _ -> value?.stop() } )
+        .expireAfterAccess(connectionConfiguration.connectionIdleTimeout)
+        .build<URI, HttpClient>()
     private var writeGroup = nioEventLoopGroupFactory(NUM_CLIENT_WRITE_THREADS)
     private var nettyGroup = nioEventLoopGroupFactory(NUM_CLIENT_NETTY_THREADS)
 
@@ -36,30 +40,25 @@ class ConnectionManager(
      * @param destinationInfo the [DestinationInfo] object containing the destination's URI, SNI, and legal name
      */
     fun acquire(destinationInfo: DestinationInfo): HttpClient {
-
-        return clientPool.computeIfAbsent(destinationInfo.uri) {
-            HttpClient(
+        return clientPool.get(destinationInfo.uri) {
+            val client = HttpClient(
                 destinationInfo,
                 sslConfiguration,
                 writeGroup,
                 nettyGroup,
-                listener
+                connectionConfiguration.acquireTimeout
             )
-        }.also {
-            if (!it.isRunning) {
-                it.start()
-            }
+            client.start()
+            client
         }
     }
 
     override fun close() {
-        clientPool.values.forEach {
-            it.stop()
-        }
-        clientPool.clear()
+        clientPool.invalidateAll()
         writeGroup.shutdownGracefully()
         writeGroup.terminationFuture().sync()
         nettyGroup.shutdownGracefully()
         nettyGroup.terminationFuture().sync()
     }
+
 }

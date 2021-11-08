@@ -21,7 +21,6 @@ internal open class JwtAuthenticationProvider(
     }
 
     override fun doAuthenticate(credential: BearerTokenAuthenticationCredentials): AuthorizingSubject {
-        @Suppress("TooGenericExceptionCaught")
         val jwt = try {
             JWTParser.parse(credential.token)
         } catch (e: Exception) {

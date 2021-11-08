@@ -23,7 +23,7 @@ class EnumSerializer(declaredType: Type, declaredClass: Class<*>, factory: Local
                 })
     }
 
-    override fun writeClassInfo(output: SerializationOutput) {
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {
         output.writeTypeNotations(typeNotation)
     }
 

@@ -35,7 +35,6 @@ class GatewayConfigurationTest {
                 hostPort = 231,
                 hostAddress = "address",
                 connectionConfig = ConnectionConfiguration(),
-                traceLogging = false,
                 sslConfig = SslConfiguration(
                     rawTrustStore = byteArrayOf(4, 5),
                     rawKeyStore = byteArrayOf(1, 2, 3),
@@ -86,7 +85,6 @@ class GatewayConfigurationTest {
                     responseTimeout = 20.seconds,
                     retryDelay = 21.minutes
                 ),
-                traceLogging = false,
                 sslConfig = SslConfiguration(
                     rawTrustStore = byteArrayOf(4, 5),
                     rawKeyStore = byteArrayOf(1, 2, 3),
