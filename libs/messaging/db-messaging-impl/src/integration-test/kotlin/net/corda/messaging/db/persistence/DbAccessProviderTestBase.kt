@@ -1,6 +1,5 @@
 package net.corda.messaging.db.persistence
 
-//import junit.framework.Assert.assertEquals
 import net.corda.messaging.db.util.DbUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -40,7 +39,7 @@ abstract class DbAccessProviderTestBase {
 
     @BeforeClass
     fun checkIfTestsShouldBeSkipped() {
-        org.junit.Assume.assumeThat(System.getProperty("postgresHost"), isNotNull())
+        org.junit.Assume.assumeThat(System.getProperty("postgresDb"), isNotNull())
     }
 
     @BeforeAll

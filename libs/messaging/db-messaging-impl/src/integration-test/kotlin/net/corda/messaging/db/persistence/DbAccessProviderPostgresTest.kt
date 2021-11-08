@@ -41,7 +41,7 @@ class DbAccessProviderPostgresTest: DbAccessProviderTestBase() {
     }
 
     override fun getJdbcUrl(): String {
-        return postgresqlServer.jdbcUrl
+        return "jdbc:postgresql://${System.getProperty("postgresHost")}:${System.getProperty("postgresPort")}/${System.getProperty("postgresDb")}"
     }
 
     override fun getUsername(): String {
