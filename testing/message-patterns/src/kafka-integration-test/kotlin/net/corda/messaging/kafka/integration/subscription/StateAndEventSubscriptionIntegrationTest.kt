@@ -105,7 +105,7 @@ class StateAndEventSubscriptionIntegrationTest {
         stateEventSub2.start()
 
 
-        assertTrue(stateAndEventLatch.await(4000, TimeUnit.SECONDS))
+        assertTrue(stateAndEventLatch.await(40, TimeUnit.SECONDS))
 
         stateEventSub1.stop()
         stateEventSub2.stop()
