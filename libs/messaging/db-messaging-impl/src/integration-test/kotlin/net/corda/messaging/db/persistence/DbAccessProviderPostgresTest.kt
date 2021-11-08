@@ -4,7 +4,6 @@ import net.corda.messaging.db.util.DbUtils.Companion.createOffsetsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicRecordsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicsTableStmt
 import org.testcontainers.containers.PostgreSQLContainer
-import java.lang.reflect.Type
 import java.sql.DriverManager
 
 /*
