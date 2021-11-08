@@ -17,7 +17,7 @@ interface SandboxGroupService {
      */
     fun get(holdingIdentity: HoldingIdentity,
             cpi : CPI.Identifier,
-            workerType: WorkerType,
+            sandboxType: SandboxType,
             initializer: (sandboxGroup: SandboxGroup) -> Unit
     ) : SandboxGroupContext
 }

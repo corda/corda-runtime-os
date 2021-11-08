@@ -1,8 +1,8 @@
 package net.corda.virtual.node.sandboxgroup
 
-enum class WorkerType {
-    GENERIC,
+enum class SandboxType {
     FLOW,
+    VERIFICATION,
     PERSISTENCE,
-    // ...more?
+    CORDA_SERVICE
 }
