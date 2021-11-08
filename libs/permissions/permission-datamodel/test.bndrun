@@ -47,6 +47,7 @@
 	net.corda.db-core;version='[5.0.0,5.0.1)',\
 	net.corda.db-orm;version='[5.0.0,5.0.1)',\
 	net.corda.db-orm-impl;version='[5.0.0,5.0.1)',\
+	net.corda.db-schema;version='[5.0.0,5.0.1)',\
 	net.corda.db-testkit;version='[5.0.0,5.0.1)',\
 	net.corda.test-utilities;version='[5.0.0,5.0.1)',\
 	net.corda.testing-cats;version='[5.0.0,5.0.1)',\

@@ -2,6 +2,7 @@ package net.corda.permissions.model
 
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
+import net.corda.db.schema.Schema
 import net.corda.db.testkit.DbUtils.getEntityManagerConfiguration
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
@@ -21,23 +22,15 @@ import javax.persistence.EntityManagerFactory
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Order
 import org.osgi.framework.FrameworkUtil
 import org.osgi.test.common.annotation.InjectService
 
-/**
- * These tests are here to prove that we can persist JPA annotated entities from separate bundles.
- * This means we get the bundles at runtime and create instances of these entities using
- * reflection.
- * This is not a suggestion of good practise, but proves out something a DB worker may do
- * when processing a serialised entity.
- *
- */
+
 @ExtendWith(ServiceExtension::class)
 class RpcRbacEntitiesTest {
     companion object {
-        private const val DOG_CLASS_NAME = "net.corda.testing.bundles.dogs.Dog"
-        private const val CAT_CLASS_NAME = "net.corda.testing.bundles.cats.Cat"
-        private const val OWNER_CLASS_NAME = "net.corda.testing.bundles.cats.Owner"
+
 
         private val logger = contextLogger()
 
@@ -48,53 +41,25 @@ class RpcRbacEntitiesTest {
 
         lateinit var emf: EntityManagerFactory
 
-        private val dogBundle = run {
-            val bundle = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.single { bundle ->
-                bundle.symbolicName == "net.corda.testing-dogs"
-            }
-            logger.info("Dog bundle $bundle".emphasise())
-            bundle
-        }
-
-        private val catBundle = run {
-            val bundle = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.single { bundle ->
-                bundle.symbolicName == "net.corda.testing-cats"
-            }
-            logger.info("Cat bundle $bundle".emphasise())
-            bundle
-        }
-
-        private val dogClass = dogBundle.loadClass(DOG_CLASS_NAME)
-        private val ownerClass = catBundle.loadClass(OWNER_CLASS_NAME)
-        private val catClass = catBundle.loadClass(CAT_CLASS_NAME)
-
-        private val dogCtor = dogClass.getDeclaredConstructor(UUID::class.java, String::class.java, LocalDate::class.java, String::class.java)
-        private val ownerCtor = ownerClass.getDeclaredConstructor(UUID::class.java, String::class.java, Int::class.java)
-        private val catCtor = catClass.getDeclaredConstructor(UUID::class.java, String::class.java, String::class.java, ownerClass)
-
-        private val dogId = UUID.randomUUID()
-        private val dog = dogCtor.newInstance(dogId, "Faraway", LocalDate.of(2020, 2, 26), "Bob")
-        private val ownerId = UUID.randomUUID()
-        private val owner = ownerCtor.newInstance(ownerId, "Bob", 26)
-        private val catId = UUID.randomUUID()
-        private val cat = catCtor.newInstance(catId, "Stray", "Tabby", owner)
-
         private val dbConfig: EntityManagerConfiguration = getEntityManagerConfiguration() ?: run {
             logger.info("Using in-memory (HSQL) DB".emphasise())
-            InMemoryEntityManagerConfiguration("pets")
+            InMemoryEntityManagerConfiguration("rbac")
         }
 
         @Suppress("unused")
         @JvmStatic
         @BeforeAll
         fun setupEntities() {
+
+            val schemaClass = Schema::class.java
+            val bundle = FrameworkUtil.getBundle(schemaClass)
+            logger.info("RBAC schema bundle $bundle".emphasise())
+
             logger.info("Create Schema for ${dbConfig.dataSource.connection.metaData.url}".emphasise())
             val cl = ClassloaderChangeLog(
                 linkedSetOf(
                     ClassloaderChangeLog.ChangeLogResourceFiles(
-                        catClass.packageName, listOf("migration/db.changelog-master.xml"), classLoader = catClass.classLoader),
-                    ClassloaderChangeLog.ChangeLogResourceFiles(
-                        dogClass.packageName, listOf("migration/db.changelog-master.xml"), classLoader = dogClass.classLoader)
+                        schemaClass.packageName + ".rbac", listOf("migration/db.changelog-master.xml"), classLoader = schemaClass.classLoader)
             ))
             StringWriter().use {
                 lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it)
@@ -105,7 +70,7 @@ class RpcRbacEntitiesTest {
             logger.info("Create Entities".emphasise())
 
             emf = entityManagerFactoryFactory.create(
-                "pets",
+                "RPC RBAC",
                 listOf(catClass, ownerClass, dogClass),
                 dbConfig
             )
@@ -127,6 +92,12 @@ class RpcRbacEntitiesTest {
         fun done() {
             emf.close()
         }
+    }
+
+    @Test
+    @Order(1)
+    fun `test user creation`() {
+
     }
 
     @Test
