@@ -30,7 +30,7 @@ import java.nio.ByteBuffer
 
 class TransientReference<out A>(@Transient val value: A)
 
-@Suppress("TooManyFunctions", "ComplexMethod")
+@Suppress("TooManyFunctions", "ComplexMethod", "LongParameterList")
 class FlowStateMachineImpl<R>(
     private val clientId: String?,
     private val id: FlowKey,
@@ -118,6 +118,7 @@ class FlowStateMachineImpl<R>(
         if (clientId != null) {
             nonSerializableState.eventsOut += FlowEvent(
                 id,
+                cpiId,
                 RPCFlowResult(
                     clientId,
                     logic.javaClass.name,
@@ -133,6 +134,7 @@ class FlowStateMachineImpl<R>(
         if (clientId != null) {
             nonSerializableState.eventsOut += FlowEvent(
                 id,
+                cpiId,
                 RPCFlowResult(
                     clientId,
                     logic.javaClass.name,
@@ -181,7 +183,8 @@ class FlowStateMachineImpl<R>(
             FlowIORequest.ForceCheckpoint -> {
                 nonSerializableState.eventsOut += FlowEvent(
                     id,
-                    Wakeup(flowName, cpiId)
+                    cpiId,
+                    Wakeup(flowName)
                 )
             }
             is FlowIORequest.CloseSessions -> TODO()

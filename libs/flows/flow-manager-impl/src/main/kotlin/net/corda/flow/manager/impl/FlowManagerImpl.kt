@@ -19,7 +19,6 @@ import net.corda.flow.statemachine.impl.FlowStateMachineImpl
 import net.corda.messaging.api.records.Record
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.CheckpointSerializer
-import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
@@ -30,8 +29,6 @@ import java.time.Clock
 
 @Component(service = [FlowManager::class])
 class FlowManagerImpl @Activate constructor(
-    @Reference(service = CheckpointSerializerBuilderFactory::class)
-    private val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory,
     @Reference(service = DependencyInjectionService::class)
     private val dependencyInjector: DependencyInjectionService,
     @Reference(service = FlowStateMachineFactory::class)
@@ -43,19 +40,12 @@ class FlowManagerImpl @Activate constructor(
     }
 
     private val scheduler = FiberExecutorScheduler("Same thread scheduler", ScheduledSingleThreadExecutor())
-    private var checkpointSerializers = mutableMapOf<SandboxGroup, CheckpointSerializer>()
-
-    // Should be set up by the configration service
-    private val resultTopic = ""
-    private val wakeupTopic = ""
-    private val deadLetterTopic = ""
 
     override fun startInitiatingFlow(
         flowMetaData: FlowMetaData,
         clientId: String,
-        flowEventTopic: String,
-        cpiId: String,
-        sandboxGroup: SandboxGroup
+        sandboxGroup: SandboxGroup,
+        checkpointSerializer: CheckpointSerializer
     ): FlowResult {
         val flowName = flowMetaData.flowName
         val jsonArg = flowMetaData.jsonArg
@@ -65,7 +55,7 @@ class FlowManagerImpl @Activate constructor(
             clientId,
             flowMetaData.flowKey,
             flow,
-            cpiId,
+            flowMetaData.cpiId,
             flowName,
             scheduler,
         )
@@ -77,13 +67,13 @@ class FlowManagerImpl @Activate constructor(
                 mutableListOf()
             )
         )
-        setupFlow(stateMachine, sandboxGroup)
+        setupFlow(stateMachine, checkpointSerializer)
         stateMachine.startFlow()
         val (checkpoint, events) = stateMachine.waitForCheckpoint()
 
         return FlowResult(
             checkpoint,
-            events.toRecordsWithKey(flowEventTopic)
+            events.toRecordsWithKey(flowMetaData.flowEventTopic)
         )
     }
 
@@ -98,9 +88,9 @@ class FlowManagerImpl @Activate constructor(
         lastCheckpoint: Checkpoint,
         wakeupEvent: FlowEvent,
         flowEventTopic: String,
-        sandboxGroup: SandboxGroup,
+        checkpointSerializer: CheckpointSerializer,
     ): FlowResult {
-        val flowStateMachine = getCheckpointSerializer(sandboxGroup).deserialize(
+        val flowStateMachine = checkpointSerializer.deserialize(
             lastCheckpoint.fiber.array(),
             FlowStateMachineImpl::class.java
         )
@@ -111,7 +101,7 @@ class FlowManagerImpl @Activate constructor(
         val housekeepingState = HousekeepingState(flowState.suspendCount, flowState.isKilled, flowEvents)
         flowStateMachine.housekeepingState(housekeepingState)
 
-        setupFlow(flowStateMachine, sandboxGroup)
+        setupFlow(flowStateMachine, checkpointSerializer)
         Fiber.unparkDeserialized(flowStateMachine, scheduler)
         val (checkpoint, events) = flowStateMachine.waitForCheckpoint()
         return FlowResult(checkpoint, events.toRecordsWithKey(flowEventTopic))
@@ -125,9 +115,7 @@ class FlowManagerImpl @Activate constructor(
         return constructor.newInstance(jsonArg)
     }
 
-    private fun setupFlow(flow: FlowStateMachine<*>, sandboxGroup: SandboxGroup) {
-        val checkpointSerializer = getCheckpointSerializer(sandboxGroup)
-
+    private fun setupFlow(flow: FlowStateMachine<*>, checkpointSerializer: CheckpointSerializer) {
         with(flow) {
             nonSerializableState(
                 NonSerializableState(
@@ -138,13 +126,6 @@ class FlowManagerImpl @Activate constructor(
         }
 
         dependencyInjector.injectDependencies(flow.getFlowLogic(), flow)
-    }
-
-    private fun getCheckpointSerializer(sandboxGroup: SandboxGroup): CheckpointSerializer {
-        val checkpointSerializer = checkpointSerializers.computeIfAbsent(sandboxGroup) {
-            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(it).build()
-        }
-        return checkpointSerializer
     }
 
     private fun List<FlowEvent>.toRecordsWithKey(flowEventTopic: String): List<Record<FlowKey, FlowEvent>> {

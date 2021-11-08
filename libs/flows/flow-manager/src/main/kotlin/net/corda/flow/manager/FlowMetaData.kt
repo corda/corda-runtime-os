@@ -6,4 +6,6 @@ data class FlowMetaData(
     val flowName: String,
     val flowKey: FlowKey,
     val jsonArg: String,
+    val cpiId: String,
+    val flowEventTopic: String,
 )

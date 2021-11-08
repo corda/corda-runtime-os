@@ -1,6 +1,6 @@
-package net.corda.components.flow.service
+package net.corda.flow.service
 
-import net.corda.components.sandbox.service.SandboxService
+import net.corda.sandbox.service.SandboxService
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent

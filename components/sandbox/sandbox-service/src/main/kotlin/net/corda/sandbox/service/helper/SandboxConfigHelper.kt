@@ -1,7 +1,7 @@
-package net.corda.components.sandbox.service.helper
+package net.corda.sandbox.service.helper
 
-import net.corda.components.sandbox.service.SandboxService
 import net.corda.sandbox.SandboxCreationService
+import net.corda.sandbox.service.SandboxService
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.cm.ConfigurationAdmin
 import java.util.*

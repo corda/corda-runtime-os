@@ -1,4 +1,4 @@
 @Export
-package net.corda.components.sandbox.service;
+package net.corda.sandbox.service;
 
 import org.osgi.annotation.bundle.Export;

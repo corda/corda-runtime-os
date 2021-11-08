@@ -1,4 +1,4 @@
 @Export
-package net.corda.components.flow.service;
+package net.corda.flow.service;
 
 import org.osgi.annotation.bundle.Export;

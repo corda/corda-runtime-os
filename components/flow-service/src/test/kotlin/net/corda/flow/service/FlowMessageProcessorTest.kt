@@ -1,8 +1,5 @@
-package net.corda.components.flow.service
+package net.corda.flow.service
 
-import net.corda.components.flow.service.exception.FlowHospitalException
-import net.corda.components.flow.service.exception.FlowMessageSkipException
-import net.corda.components.sandbox.service.SandboxService
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
@@ -11,7 +8,10 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowResult
+import net.corda.flow.service.exception.FlowHospitalException
+import net.corda.flow.service.exception.FlowMessageSkipException
 import net.corda.messaging.api.records.Record
+import net.corda.sandbox.service.SandboxService
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -27,43 +27,53 @@ class FlowMessageProcessorTest {
 
     private val flowManager: FlowManager = mock()
     private val sandboxService: SandboxService = mock()
+    private val holdingIdentity = HoldingIdentity("", "")
 
     @Test
     fun `Start RPC flow`() {
-        val flowKey = FlowKey("1", HoldingIdentity())
-        val startRPCFlow = Record("Topic1", flowKey, FlowEvent(flowKey, StartRPCFlow("", "", "", HoldingIdentity(), Instant.now(), "")))
+        val flowKey = FlowKey("1", holdingIdentity)
+        val startRPCFlow = Record(
+            "Topic1", flowKey, FlowEvent(
+                flowKey, "cpid", StartRPCFlow(
+                    "", "", holdingIdentity, Instant.now(), ""
+                )
+            )
+        )
         val flowMessageProcessor = FlowMessageProcessor(flowManager, sandboxService, "")
 
         doReturn(FlowResult(null, emptyList())).whenever(flowManager)
-            .startInitiatingFlow(any(), any(), any(), any(), anyOrNull())
+            .startInitiatingFlow(any(), any(), anyOrNull(), anyOrNull())
 
         flowMessageProcessor.onNext(null, startRPCFlow)
 
-        verify(sandboxService, times(1)).getSandboxGroupFor(any(), any())
-        verify(flowManager, times(1)).startInitiatingFlow(any(), any(), any(), any(), anyOrNull())
+        verify(sandboxService, times(1)).getSandboxGroupFor(any(), any(), any())
+        verify(sandboxService, times(1)).getSerializerForSandbox(anyOrNull())
+        verify(flowManager, times(1)).startInitiatingFlow(any(), any(), anyOrNull(), anyOrNull())
     }
 
     @Test
     fun `Start RPC flow non null state`() {
-        val flowKey = FlowKey("1", HoldingIdentity())
-        val startRPCFlow = Record("Topic1", flowKey, FlowEvent(flowKey, StartRPCFlow("", "", "", HoldingIdentity(), Instant.now(), "")))
+        val flowKey = FlowKey("1", holdingIdentity)
+        val startRPCFlow = Record("Topic1", flowKey, FlowEvent(flowKey, "cpidId", StartRPCFlow("", "", holdingIdentity, Instant.now(),
+            "")))
         val flowMessageProcessor = FlowMessageProcessor(flowManager, sandboxService, "")
 
         doReturn(FlowResult(null, emptyList())).whenever(flowManager)
-            .startInitiatingFlow(any(), any(), any(), any(), anyOrNull())
+            .startInitiatingFlow(any(), any(), any(), any())
 
         assertThrows<FlowMessageSkipException> {
             flowMessageProcessor.onNext(Checkpoint(), startRPCFlow)
         }
 
-        verify(sandboxService, times(0)).getSandboxGroupFor(any(), any())
-        verify(flowManager, times(0)).startInitiatingFlow(any(), any(), any(), any(), anyOrNull())
+        verify(sandboxService, times(0)).getSandboxGroupFor(any(), any(), any())
+        verify(sandboxService, times(0)).getSerializerForSandbox(anyOrNull())
+        verify(flowManager, times(0)).startInitiatingFlow(any(), any(), any(), any())
     }
 
     @Test
     fun `Null event`() {
-        val flowKey = FlowKey("1", HoldingIdentity())
-        val flowEvent :FlowEvent? = null
+        val flowKey = FlowKey("1", holdingIdentity)
+        val flowEvent: FlowEvent? = null
         val startRPCFlow = Record("Topic1", flowKey, flowEvent)
         val flowMessageProcessor = FlowMessageProcessor(flowManager, sandboxService, "")
 
@@ -71,33 +81,36 @@ class FlowMessageProcessorTest {
             flowMessageProcessor.onNext(Checkpoint(), startRPCFlow)
         }
 
-        verify(sandboxService, times(0)).getSandboxGroupFor(any(), any())
-        verify(flowManager, times(0)).startInitiatingFlow(any(), any(), any(), any(), anyOrNull())
+        verify(sandboxService, times(0)).getSandboxGroupFor(any(), any(), any())
+        verify(sandboxService, times(0)).getSerializerForSandbox(anyOrNull())
+        verify(flowManager, times(0)).startInitiatingFlow(any(), any(), any(), any())
     }
 
     @Test
     fun `Wakeup flow`() {
-        val flowKey = FlowKey("1", HoldingIdentity())
-        val wakeupFlow = Record("Topic1", flowKey, FlowEvent(flowKey, Wakeup("flowName", "cpiId")))
+        val flowKey = FlowKey("1", holdingIdentity)
+        val wakeupFlow = Record("Topic1", flowKey, FlowEvent(flowKey,"cpidId", Wakeup("flowName")))
         val flowMessageProcessor = FlowMessageProcessor(flowManager, sandboxService, "")
         doReturn(FlowResult(null, emptyList())).whenever(flowManager).wakeFlow(any(), any(), any(), anyOrNull())
 
         flowMessageProcessor.onNext(Checkpoint(), wakeupFlow)
 
-        verify(sandboxService, times(1)).getSandboxGroupFor(any(), any())
+        verify(sandboxService, times(1)).getSandboxGroupFor(any(), any(), any())
+        verify(sandboxService, times(1)).getSerializerForSandbox(anyOrNull())
         verify(flowManager, times(1)).wakeFlow(any(), any(), any(), anyOrNull())
     }
 
     @Test
     fun `Wakeup flow no state`() {
-        val flowKey = FlowKey("1", HoldingIdentity())
-        val wakeupFlow = Record("Topic1", flowKey, FlowEvent(flowKey, Wakeup("flowName", "cpiId")))
+        val flowKey = FlowKey("1", holdingIdentity)
+        val wakeupFlow = Record("Topic1", flowKey, FlowEvent(flowKey, "cpiId", Wakeup("flowName")))
         val flowMessageProcessor = FlowMessageProcessor(flowManager, sandboxService, "")
 
         assertThrows<FlowHospitalException> {
             flowMessageProcessor.onNext(null, wakeupFlow)
         }
-        verify(sandboxService, times(0)).getSandboxGroupFor(any(), any())
+        verify(sandboxService, times(0)).getSandboxGroupFor(any(), any(), any())
+        verify(sandboxService, times(0)).getSerializerForSandbox(anyOrNull())
         verify(flowManager, times(0)).wakeFlow(any(), any(), any(), anyOrNull())
     }
 }

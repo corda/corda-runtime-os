@@ -1,4 +1,4 @@
-package net.corda.components.flow.service.stubs
+package net.corda.flow.service.stubs
 
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey

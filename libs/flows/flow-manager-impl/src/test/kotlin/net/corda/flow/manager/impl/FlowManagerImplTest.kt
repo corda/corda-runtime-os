@@ -61,7 +61,8 @@ class FlowManagerImplTest {
             emptyList()
         )
         val checkpoint = Checkpoint(flowKey, ByteBuffer.allocate(1), stateMachineState)
-        val eventsOut = listOf(FlowEvent(flowKey, rpcFlowResult))
+        val cpiId = "cpidId"
+        val eventsOut = listOf(FlowEvent(flowKey, cpiId, rpcFlowResult))
         val serialized = "Test".toByteArray()
         val topic = "Topic1"
 
@@ -73,17 +74,15 @@ class FlowManagerImplTest {
         doReturn(serialized).`when`(checkpointSerializer).serialize(any())
 
         val flowManager = FlowManagerImpl(
-            checkpointSerializerBuilderFactory,
             dependencyInjector,
             flowStateMachineFactory
         )
 
         val result = flowManager.startInitiatingFlow(
-            FlowMetaData(flowName, flowKey, "jsonArg"),
+            FlowMetaData(flowName, flowKey, "jsonArg", cpiId, topic),
             "clientId",
-            topic,
-            "cpiId123",
-            sandboxGroup
+            sandboxGroup,
+            checkpointSerializer
         )
 
         assertThat(result.checkpoint).isEqualTo(checkpoint)

@@ -1,8 +1,5 @@
-package net.corda.components.flow.service
+package net.corda.flow.service
 
-import net.corda.components.flow.service.exception.FlowHospitalException
-import net.corda.components.flow.service.exception.FlowMessageSkipException
-import net.corda.components.sandbox.service.SandboxService
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
@@ -10,8 +7,11 @@ import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowMetaData
+import net.corda.flow.service.exception.FlowHospitalException
+import net.corda.flow.service.exception.FlowMessageSkipException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.sandbox.service.SandboxService
 
 class FlowMessageProcessor(
     private val flowManager: FlowManager,
@@ -23,28 +23,30 @@ class FlowMessageProcessor(
         state: Checkpoint?,
         event: Record<FlowKey, FlowEvent>
     ): StateAndEventProcessor.Response<Checkpoint> {
-        //TODO - not sure what an event of null really means in this case. Should it go to flow hospital?
         val flowEvent = event.value ?: throw FlowMessageSkipException("FlowEvent was null")
+        val flowKey = event.key
+        val cpiId = flowEvent.cpiId
+        val identity = flowKey.identity.x500Name
         val result = when (val payload = flowEvent.payload) {
             is StartRPCFlow -> {
                 val flowName = payload.flowName
                 if (state != null) {
                     throw FlowMessageSkipException("State should be null for StartRPCFlow. Duplicate message.")
                 }
-                val cpiId = payload.cpiId
-                val sandboxGroup = sandboxService.getSandboxGroupFor(payload.cpiId, flowName)
+                val sandboxGroup = sandboxService.getSandboxGroupFor(cpiId, identity, flowName)
+                val checkpointSerializer = sandboxService.getSerializerForSandbox(sandboxGroup)
                 flowManager.startInitiatingFlow(
-                    FlowMetaData(flowName, event.key, payload.jsonArgs),
+                    FlowMetaData(flowName, flowKey, payload.jsonArgs, cpiId, flowEventTopic),
                     payload.clientId,
-                    flowEventTopic,
-                    cpiId,
-                    sandboxGroup
+                    sandboxGroup,
+                    checkpointSerializer
                 )
             }
             is Wakeup -> {
                 val checkpoint = state ?: throw FlowHospitalException("State for wakeup FlowEvent was null")
-                val sandboxGroup = sandboxService.getSandboxGroupFor(payload.cpiId, payload.flowName)
-                flowManager.wakeFlow(checkpoint, flowEvent, flowEventTopic, sandboxGroup)
+                val checkpointSerializer =
+                    sandboxService.getSerializerForSandbox(sandboxService.getSandboxGroupFor(cpiId, identity, payload.flowName))
+                flowManager.wakeFlow(checkpoint, flowEvent, flowEventTopic, checkpointSerializer)
             }
             else -> {
                 throw NotImplementedError()

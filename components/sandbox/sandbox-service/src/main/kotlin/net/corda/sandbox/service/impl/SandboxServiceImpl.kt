@@ -1,7 +1,5 @@
-package net.corda.components.sandbox.service.impl
+package net.corda.sandbox.service.impl
 
-import net.corda.components.sandbox.service.SandboxService
-import net.corda.components.sandbox.service.helper.initPublicSandboxes
 import net.corda.install.InstallService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -13,6 +11,10 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
+import net.corda.sandbox.service.SandboxService
+import net.corda.sandbox.service.helper.initPublicSandboxes
+import net.corda.serialization.CheckpointSerializer
+import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -35,6 +37,8 @@ class SandboxServiceImpl @Activate constructor(
     private val sandboxCreationService: SandboxCreationService,
     @Reference(service = ConfigurationAdmin::class)
     private val configurationAdmin: ConfigurationAdmin,
+    @Reference(service = CheckpointSerializerBuilderFactory::class)
+    private val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory,
 ) : SandboxService {
 
     companion object {
@@ -50,19 +54,25 @@ class SandboxServiceImpl @Activate constructor(
         }.toAbsolutePath().toString()
     }
 
-
-    private var cache = ConcurrentHashMap<String, SandboxGroup>()
+    private val checkpointSerializers = mutableMapOf<SandboxGroup, CheckpointSerializer>()
+    private var cache = ConcurrentHashMap<Pair<String, String>, SandboxGroup>()
     private var cpiForFlow = ConcurrentHashMap<String, CPI.Identifier>()
     private val coordinator = coordinatorFactory.createCoordinator<SandboxService>(::eventHandler)
 
-    override fun getSandboxGroupFor(cpiId: String, flowName: String): SandboxGroup {
-        return cache.computeIfAbsent(cpiId) {
-            //hacky stuff until cpi service component is available
+    override fun getSandboxGroupFor(cpiId: String, identity: String, flowName: String): SandboxGroup {
+        return cache.computeIfAbsent(Pair(cpiId, identity)) {
+            //hacky stuff until cpi service component is available. e.g dummy load logic doesnt handle multiple groups
             val cpbIdentifier = cpiForFlow[flowName]
                 ?: throw CordaRuntimeException("Flow not available in cordapp")
             val cpb = installService.getCpb(cpbIdentifier)
                 ?: throw CordaRuntimeException("Could not get cpb from its identifier $cpbIdentifier")
             sandboxCreationService.createSandboxGroup(cpb.cpks)
+        }
+    }
+
+    override fun getSerializerForSandbox(sandboxGroup: SandboxGroup): CheckpointSerializer {
+        return checkpointSerializers.computeIfAbsent(sandboxGroup) {
+            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(it).build()
         }
     }
 

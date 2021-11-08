@@ -1,6 +1,6 @@
-package net.corda.components.flow.service
+package net.corda.flow.service
 
-import net.corda.components.sandbox.service.SandboxService
+import net.corda.sandbox.service.SandboxService
 import net.corda.configuration.read.ConfigKeys.Companion.BOOTSTRAP_KEY
 import net.corda.configuration.read.ConfigKeys.Companion.FLOW_KEY
 import net.corda.configuration.read.ConfigKeys.Companion.MESSAGING_KEY
