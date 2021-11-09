@@ -2,7 +2,7 @@ plugins {
     id 'net.corda.plugins.cordapp-cpk'
 }
 
-description 'Corda Sandbox Irresolvable CPK'
+description 'Corda Sandbox SCR-Using CPK'
 
 group 'com.example.sandbox'
 version ''
@@ -10,15 +10,16 @@ version ''
 cordapp {
     targetPlatformVersion 999 as Integer
     workflow {
-        name 'Sandbox Irresolvable-CPK'
+        name 'Sandbox SCR-Using-CPK'
         versionId 1
         vendor 'R3'
     }
 }
 
 dependencies {
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    cordaProvided "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
-    // Corda does not actually provide this dependency, so an error will be thrown at sandbox creation time.
-    cordaProvided "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+    cordaProvided "org.osgi:osgi.core"
 }
