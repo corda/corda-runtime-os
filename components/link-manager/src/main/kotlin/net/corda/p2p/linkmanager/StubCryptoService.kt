@@ -17,8 +17,6 @@ import java.lang.IllegalStateException
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
 
 class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                         subscriptionFactory: SubscriptionFactory): LinkManagerCryptoService {

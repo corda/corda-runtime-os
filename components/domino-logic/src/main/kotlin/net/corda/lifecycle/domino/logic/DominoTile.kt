@@ -224,7 +224,6 @@ class DominoTile(
                 }
                 is ResourcesCreated -> {
                     resourcesReady = true
-                    // check if children are started, config has been applied etc. and signal UP, if so.
                     when (state) {
                         State.StoppedDueToBadConfig, State.Created, State.StoppedByParent -> {
                             logger.info("Resources ready for $name.")
@@ -238,7 +237,6 @@ class DominoTile(
                         ConfigUpdateResult.Success -> {
                             configReady = true
                             when (state) {
-                                // check if children are started, config has been applied etc. and signal UP, if so.
                                 State.StoppedDueToBadConfig, State.Created, State.StoppedByParent -> {
                                     logger.info("Config ready for $name.")
                                     setStartedIfCan()
