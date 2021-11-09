@@ -1,6 +1,6 @@
 package net.corda.applications.examples.amqp.typeevolution
 
-class RebuildResorceFiles {
+class RebuildResourceFiles {
 
     // Save resource files
     // Uncomment to rebuild resource files
