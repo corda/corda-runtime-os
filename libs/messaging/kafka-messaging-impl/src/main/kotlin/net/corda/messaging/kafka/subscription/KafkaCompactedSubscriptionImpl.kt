@@ -14,6 +14,7 @@ import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.messaging.kafka.utils.render
+import net.corda.messaging.kafka.utils.toRecord
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.LoggerFactory
@@ -191,7 +192,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                 currentData[it.key()] = newValue
             }
 
-            processor.onNext(Record(it.topic(), it.key(), it.value()), oldValue, currentData)
+            processor.onNext(it.toRecord(), oldValue, currentData)
         }
     }
 }

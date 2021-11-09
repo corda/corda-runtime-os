@@ -21,6 +21,7 @@ import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.ForwardingRebalanceListener
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.utils.render
+import net.corda.messaging.kafka.utils.toEventLogRecord
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
@@ -65,8 +66,6 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
     private val topic = config.getString(TOPIC_NAME)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val producerClientId: String = config.getString(PRODUCER_CLIENT_ID)
-    private lateinit var producer: CordaKafkaProducer
-    private lateinit var consumer: CordaKafkaConsumer<K, V>
 
     /**
      * Is the subscription running.
@@ -124,6 +123,8 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
     @Suppress("NestedBlockDepth")
     fun runConsumeLoop() {
         var attempts = 0
+        var consumer: CordaKafkaConsumer<K, V>?
+        var producer: CordaKafkaProducer?
         while (!stopped) {
             attempts++
             try {
@@ -250,15 +251,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
 
         try {
             producer.beginTransaction()
-            producer.sendRecords(processor.onNext(consumerRecords.map {
-                EventLogRecord(
-                    it.topic(),
-                    it.key(),
-                    it.value(),
-                    it.partition(),
-                    it.offset()
-                )
-            }))
+            producer.sendRecords(processor.onNext(consumerRecords.map { it.toEventLogRecord() }))
             producer.sendAllOffsetsToTransaction(consumer)
             producer.commitTransaction()
         } catch (ex: Exception) {

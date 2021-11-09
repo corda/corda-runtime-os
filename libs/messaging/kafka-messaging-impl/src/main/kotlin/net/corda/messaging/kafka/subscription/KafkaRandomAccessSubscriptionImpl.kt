@@ -10,6 +10,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CON
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
+import net.corda.messaging.kafka.utils.toRecord
 import net.corda.v5.base.util.seconds
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.TopicPartition
@@ -87,8 +88,7 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
                         null
                     }
                     records.size == 1 -> {
-                        val record = records.single()
-                        Record(record.topic(), record.key(), record.value())
+                        records.single().toRecord()
                     }
                     else -> {
                         val errorMsg = "Multiple records located for partition=$partition, offset=$offset, topic=$topic : $records."

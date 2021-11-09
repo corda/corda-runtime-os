@@ -84,9 +84,6 @@ class StateAndEventSubscriptionIntegrationTest {
     @Test
     fun `create topic with two partitions, start two statevent sub, publish records with two keys, no outputs`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC1_TEMPLATE)
-        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC1)
-        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        publisher.publish(getDemoRecords(EVENT_TOPIC1, 5, 2)).forEach { it.get() }
 
         val stateAndEventLatch = CountDownLatch(10)
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
@@ -104,6 +101,9 @@ class StateAndEventSubscriptionIntegrationTest {
         stateEventSub1.start()
         stateEventSub2.start()
 
+        publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC1)
+        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+        publisher.publish(getDemoRecords(EVENT_TOPIC1, 5, 2)).forEach { it.get() }
 
         assertTrue(stateAndEventLatch.await(40, TimeUnit.SECONDS))
 

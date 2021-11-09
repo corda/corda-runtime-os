@@ -14,6 +14,7 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsume
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.types.StateAndEventConfig
 import net.corda.messaging.kafka.utils.getEventsByBatch
+import net.corda.messaging.kafka.utils.toRecord
 import net.corda.messaging.kafka.utils.tryGetResult
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.debug
@@ -217,7 +218,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private fun getUpdatesForEvent(state: S?, event: ConsumerRecord<K, E>): StateAndEventProcessor.Response<S>? {
         val future = stateAndEventConsumer.waitForFunctionToFinish(
-            { processor.onNext(state, Record(event.topic(), event.key(), event.value())) }, processorTimeout,
+            { processor.onNext(state, event.toRecord()) }, processorTimeout,
             "Failed to finish within the time limit for state: $state and event: $event"
         )
         return uncheckedCast(future.tryGetResult())
