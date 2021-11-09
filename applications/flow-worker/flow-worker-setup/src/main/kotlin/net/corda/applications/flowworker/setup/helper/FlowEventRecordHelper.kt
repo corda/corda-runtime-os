@@ -12,7 +12,7 @@ const val DEFAULT_FLOW_EVENT_TOPIC_VALUE = "FlowEventTopic"
 fun getHelloWorldRPCEventRecord() : Record<*, *>  {
     return getStartRPCEventRecord(
         clientId = "test123",
-        cpiId = "1",
+        cpiId = "corda-helloworld-cpb",
         flowId = "1",
         flowName = "net.corda.linearstatesample.flows.HelloWorldFlowInitiator",
         x500Name = "x500name",

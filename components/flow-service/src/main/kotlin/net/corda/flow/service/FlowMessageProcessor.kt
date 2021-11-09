@@ -33,7 +33,7 @@ class FlowMessageProcessor(
                 if (state != null) {
                     throw FlowMessageSkipException("State should be null for StartRPCFlow. Duplicate message.")
                 }
-                val sandboxGroup = sandboxService.getSandboxGroupFor(cpiId, identity, flowName)
+                val sandboxGroup = sandboxService.getSandboxGroupFor(cpiId, identity)
                 val checkpointSerializer = sandboxService.getSerializerForSandbox(sandboxGroup)
                 flowManager.startInitiatingFlow(
                     FlowMetaData(flowName, flowKey, payload.jsonArgs, cpiId, flowEventTopic),
@@ -45,7 +45,7 @@ class FlowMessageProcessor(
             is Wakeup -> {
                 val checkpoint = state ?: throw FlowHospitalException("State for wakeup FlowEvent was null")
                 val checkpointSerializer =
-                    sandboxService.getSerializerForSandbox(sandboxService.getSandboxGroupFor(cpiId, identity, payload.flowName))
+                    sandboxService.getSerializerForSandbox(sandboxService.getSandboxGroupFor(cpiId, identity))
                 flowManager.wakeFlow(checkpoint, flowEvent, flowEventTopic, checkpointSerializer)
             }
             else -> {

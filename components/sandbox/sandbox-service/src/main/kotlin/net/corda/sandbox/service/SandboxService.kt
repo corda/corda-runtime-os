@@ -11,10 +11,10 @@ import net.corda.serialization.CheckpointSerializer
 interface SandboxService : Lifecycle {
 
     /**
-     * Get the sandbox for a given [cpiId], [identity] and [flowName].
+     * Get the sandbox for a given [cpiId], [identity].
      * Creates a new sandbox if it doesn't already exist.
      */
-    fun getSandboxGroupFor(cpiId: String, identity: String, flowName: String): SandboxGroup
+    fun getSandboxGroupFor(cpiId: String, identity: String): SandboxGroup
 
     /**
      * Get the checkpoint serializer for a [sandboxGroup]

@@ -46,7 +46,7 @@ class FlowMessageProcessorTest {
 
         flowMessageProcessor.onNext(null, startRPCFlow)
 
-        verify(sandboxService, times(1)).getSandboxGroupFor(any(), any(), any())
+        verify(sandboxService, times(1)).getSandboxGroupFor(any(), any())
         verify(sandboxService, times(1)).getSerializerForSandbox(anyOrNull())
         verify(flowManager, times(1)).startInitiatingFlow(any(), any(), anyOrNull(), anyOrNull())
     }
@@ -65,7 +65,7 @@ class FlowMessageProcessorTest {
             flowMessageProcessor.onNext(Checkpoint(), startRPCFlow)
         }
 
-        verify(sandboxService, times(0)).getSandboxGroupFor(any(), any(), any())
+        verify(sandboxService, times(0)).getSandboxGroupFor(any(), any())
         verify(sandboxService, times(0)).getSerializerForSandbox(anyOrNull())
         verify(flowManager, times(0)).startInitiatingFlow(any(), any(), any(), any())
     }
@@ -81,7 +81,7 @@ class FlowMessageProcessorTest {
             flowMessageProcessor.onNext(Checkpoint(), startRPCFlow)
         }
 
-        verify(sandboxService, times(0)).getSandboxGroupFor(any(), any(), any())
+        verify(sandboxService, times(0)).getSandboxGroupFor(any(), any())
         verify(sandboxService, times(0)).getSerializerForSandbox(anyOrNull())
         verify(flowManager, times(0)).startInitiatingFlow(any(), any(), any(), any())
     }
@@ -95,7 +95,7 @@ class FlowMessageProcessorTest {
 
         flowMessageProcessor.onNext(Checkpoint(), wakeupFlow)
 
-        verify(sandboxService, times(1)).getSandboxGroupFor(any(), any(), any())
+        verify(sandboxService, times(1)).getSandboxGroupFor(any(), any())
         verify(sandboxService, times(1)).getSerializerForSandbox(anyOrNull())
         verify(flowManager, times(1)).wakeFlow(any(), any(), any(), anyOrNull())
     }
@@ -109,7 +109,7 @@ class FlowMessageProcessorTest {
         assertThrows<FlowHospitalException> {
             flowMessageProcessor.onNext(null, wakeupFlow)
         }
-        verify(sandboxService, times(0)).getSandboxGroupFor(any(), any(), any())
+        verify(sandboxService, times(0)).getSandboxGroupFor(any(), any())
         verify(sandboxService, times(0)).getSerializerForSandbox(anyOrNull())
         verify(flowManager, times(0)).wakeFlow(any(), any(), any(), anyOrNull())
     }

@@ -55,17 +55,18 @@ class SandboxServiceImpl @Activate constructor(
     }
 
     private val checkpointSerializers = mutableMapOf<SandboxGroup, CheckpointSerializer>()
-    private var cache = ConcurrentHashMap<Pair<String, String>, SandboxGroup>()
-    private var cpiForFlow = ConcurrentHashMap<String, CPI.Identifier>()
+    private var cache = ConcurrentHashMap<SandboxCacheKey, SandboxGroup>()
+    //tmp stuff until cpi service is available
+    private var cpiIdentifierById = ConcurrentHashMap<String, CPI.Identifier>()
     private val coordinator = coordinatorFactory.createCoordinator<SandboxService>(::eventHandler)
 
-    override fun getSandboxGroupFor(cpiId: String, identity: String, flowName: String): SandboxGroup {
-        return cache.computeIfAbsent(Pair(cpiId, identity)) {
+    override fun getSandboxGroupFor(cpiId: String, identity: String): SandboxGroup {
+        return cache.computeIfAbsent(SandboxCacheKey(identity, cpiId)) {
             //hacky stuff until cpi service component is available. e.g dummy load logic doesnt handle multiple groups
-            val cpbIdentifier = cpiForFlow[flowName]
-                ?: throw CordaRuntimeException("Flow not available in cordapp")
-            val cpb = installService.getCpb(cpbIdentifier)
-                ?: throw CordaRuntimeException("Could not get cpb from its identifier $cpbIdentifier")
+            val cpiIdentifier = cpiIdentifierById[cpiId]
+                ?: throw CordaRuntimeException("Could not get cpi identifier")
+            val cpb = installService.getCpb(cpiIdentifier)
+                ?: throw CordaRuntimeException("Could not get cpi from its identifier $cpiIdentifier")
             sandboxCreationService.createSandboxGroup(cpb.cpks)
         }
     }
@@ -86,14 +87,14 @@ class SandboxServiceImpl @Activate constructor(
                 logger.debug { "Starting sandbox component." }
                 initPublicSandboxes(configurationAdmin, sandboxCreationService, baseDirectory)
                 cache = ConcurrentHashMap()
-                cpiForFlow = ConcurrentHashMap()
+                cpiIdentifierById = ConcurrentHashMap()
                 loadCpbs(getCPBFiles())
                 coordinator.updateStatus(LifecycleStatus.UP, "Connected to configuration repository.")
             }
             is StopEvent -> {
                 logger.debug { "Stopping sandbox component." }
                 cache.clear()
-                cpiForFlow.clear()
+                cpiIdentifierById.clear()
             }
         }
     }
@@ -114,12 +115,8 @@ class SandboxServiceImpl @Activate constructor(
         for (cpbFile in CPBs) {
             val cpbInputStream = File(cpbFile).inputStream()
             val cpb = installService.loadCpb(cpbInputStream)
-            val cpbEx = installService.getCpb(cpb.metadata.id)
-            cpbEx?.cpks?.forEach { cpk ->
-                cpk.metadata.cordappManifest.flows.forEach { flow ->
-                    cpiForFlow.computeIfAbsent(flow) { cpb.metadata.id }
-                }
-            }
+            val cpiIdentifier = cpb.metadata.id
+            cpiIdentifierById[cpiIdentifier.name] = cpiIdentifier
         }
     }
 
@@ -130,4 +127,6 @@ class SandboxServiceImpl @Activate constructor(
     override fun stop() {
         coordinator.stop()
     }
+
+    data class SandboxCacheKey(val identity: String, val cpiId: String)
 }
