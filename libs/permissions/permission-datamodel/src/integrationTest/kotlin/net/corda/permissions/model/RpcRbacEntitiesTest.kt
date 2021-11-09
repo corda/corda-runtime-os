@@ -102,21 +102,30 @@ class RpcRbacEntitiesTest {
         }
     }
 
+    // Have to do it via reflection to ensure the correct classloader will be used
+    private fun createUser(): Any {
+        val userCtor = userClass.getDeclaredConstructor(
+            String::class.java, Instant::class.java, String::class.java,
+            String::class.java, Boolean::class.java, String::class.java, String::class.java, Instant::class.java,
+            groupClass
+        )
+        return userCtor.newInstance(
+            "userId", Instant.now(), "fullName", "loginName", true,
+            "saltValue", "hashedPassword", null, null
+        )
+    }
+
     @Test
     fun `test user creation`() {
         val em = emf.createEntityManager()
         try {
             em.transaction.begin()
-            val user = User(
-                "userId", Instant.now(), "fullName", "loginName", true,
-                "saltValue", "hashedPassword", null, null
-            )
+            val user = createUser()
             em.persist(user)
             em.transaction.commit()
 
-            assertThat(
-                em.createQuery("from User", userClass).resultList
-            ).contains(user)
+            val resultList = em.createQuery("from User", userClass).resultList
+            assertThat(resultList).contains(user)
         } finally {
             em.close()
         }
