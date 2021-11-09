@@ -27,6 +27,8 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+
+    integrationTestImplementation project(":testing:db-testkit")
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
 }
 
