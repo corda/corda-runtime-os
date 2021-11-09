@@ -124,10 +124,15 @@ class StubNetworkMapTest {
     @Test
     fun `create resource starts the subscription and adds it to the resource tracker`() {
         createResources(resourcesHolder)
-        verify(dominoTile.constructed().last()).resourcesStarted(false)
         val capture = argumentCaptor<AutoCloseable>()
         verify(resourcesHolder).keep(capture.capture())
         verify(capture.lastValue as CompactedSubscription<*, *>).start()
+    }
+
+    @Test
+    fun `onSnapshot sets resource started`() {
+        clientProcessor!!.onSnapshot(emptyMap())
+        verify(dominoTile.constructed().last()).resourcesStarted(false)
     }
 
     private fun calculateHash(publicKey: ByteArray): ByteArray {

@@ -31,7 +31,6 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private fun createResources(resources: ResourcesHolder) {
         subscription.start()
         resources.keep (subscription)
-        dominoTile.resourcesStarted(false)
     }
 
     @Suppress("TYPE_INFERENCE_ONLY_INPUT_TYPES_WARNING")
