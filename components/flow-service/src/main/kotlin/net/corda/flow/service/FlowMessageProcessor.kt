@@ -29,43 +29,38 @@ class FlowMessageProcessor(
         event: Record<FlowKey, FlowEvent>
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEventTopic = event.topic
-        try {
-            val flowEvent = event.value ?: throw FlowHospitalException("FlowEvent was null")
-            val flowKey = event.key
-            val cpiId = flowEvent.cpiId
-            val identity = flowKey.identity.x500Name
-            val result = when (val payload = flowEvent.payload) {
-                is StartRPCFlow -> {
-                    val flowName = payload.flowName
-                    if (state != null) {
-                        logger.warn("Skipping record with key ${event.key}")
-                        FlowResult(state, emptyList())
-                    } else {
-                        val sandboxGroup = sandboxService.getSandboxGroupFor(cpiId, identity, SandboxType.FLOW)
-                        val checkpointSerializer = sandboxService.getSerializerForSandbox(sandboxGroup)
-                        flowManager.startInitiatingFlow(
-                            FlowMetaData(flowName, flowKey, payload.jsonArgs, cpiId, flowEventTopic),
-                            payload.clientId,
-                            sandboxGroup,
-                            checkpointSerializer
-                        )
-                    }
-                }
-                is Wakeup -> {
-                    val checkpoint = state ?: throw FlowHospitalException("State for wakeup FlowEvent was null")
-                    val checkpointSerializer =
-                        sandboxService.getSerializerForSandbox(sandboxService.getSandboxGroupFor(cpiId, identity, SandboxType.FLOW))
-                    flowManager.wakeFlow(checkpoint, flowEvent, flowEventTopic, checkpointSerializer)
-                }
-                else -> {
-                    throw NotImplementedError()
+        val flowEvent = event.value ?: throw FlowHospitalException("FlowEvent was null")
+        val flowKey = event.key
+        val cpiId = flowEvent.cpiId
+        val identity = flowKey.identity.x500Name
+        val result = when (val payload = flowEvent.payload) {
+            is StartRPCFlow -> {
+                val flowName = payload.flowName
+                if (state != null) {
+                    logger.warn("Skipping record with key ${event.key}")
+                    FlowResult(state, emptyList())
+                } else {
+                    val sandboxGroup = sandboxService.getSandboxGroupFor(cpiId, identity, SandboxType.FLOW)
+                    val checkpointSerializer = sandboxService.getSerializerForSandbox(sandboxGroup)
+                    flowManager.startInitiatingFlow(
+                        FlowMetaData(flowName, flowKey, payload.jsonArgs, cpiId, flowEventTopic),
+                        payload.clientId,
+                        sandboxGroup,
+                        checkpointSerializer
+                    )
                 }
             }
-            return StateAndEventProcessor.Response(result.checkpoint, result.events)
-        } catch (ex: FlowHospitalException) {
-            //TODO - how do we dead letter queue this? i.e put it into the flow hospital
-            return StateAndEventProcessor.Response(null, emptyList())
+            is Wakeup -> {
+                val checkpoint = state ?: throw FlowHospitalException("State for wakeup FlowEvent was null")
+                val checkpointSerializer =
+                    sandboxService.getSerializerForSandbox(sandboxService.getSandboxGroupFor(cpiId, identity, SandboxType.FLOW))
+                flowManager.wakeFlow(checkpoint, flowEvent, flowEventTopic, checkpointSerializer)
+            }
+            else -> {
+                throw NotImplementedError()
+            }
         }
+        return StateAndEventProcessor.Response(result.checkpoint, result.events)
     }
 
     override val keyClass = FlowKey::class.java

@@ -8,10 +8,12 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowResult
+import net.corda.flow.service.exception.FlowHospitalException
 import net.corda.messaging.api.records.Record
 import net.corda.sandbox.service.SandboxService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
@@ -76,9 +78,9 @@ class FlowMessageProcessorTest {
         val flowMessageProcessor = FlowMessageProcessor(flowManager, sandboxService)
 
         val state = Checkpoint()
-        val result = flowMessageProcessor.onNext(state, startRPCFlow)
-        assertThat(result.updatedState).isEqualTo(null)
-        assertThat(result.responseEvents).isEmpty()
+        assertThrows<FlowHospitalException> {
+            flowMessageProcessor.onNext(state, startRPCFlow)
+        }
 
         verify(sandboxService, times(0)).getSandboxGroupFor(any(), any(), any())
         verify(sandboxService, times(0)).getSerializerForSandbox(anyOrNull())
@@ -105,10 +107,9 @@ class FlowMessageProcessorTest {
         val wakeupFlow = Record("Topic1", flowKey, FlowEvent(flowKey, "cpiId", Wakeup("flowName")))
         val flowMessageProcessor = FlowMessageProcessor(flowManager, sandboxService)
 
-        val result = flowMessageProcessor.onNext(null, wakeupFlow)
-        assertThat(result.updatedState).isEqualTo(null)
-        assertThat(result.responseEvents).isEmpty()
-
+        assertThrows<FlowHospitalException> {
+            flowMessageProcessor.onNext(null, wakeupFlow)
+        }
         verify(sandboxService, times(0)).getSandboxGroupFor(any(), any(), any())
         verify(sandboxService, times(0)).getSerializerForSandbox(anyOrNull())
         verify(flowManager, times(0)).wakeFlow(any(), any(), any(), anyOrNull())
