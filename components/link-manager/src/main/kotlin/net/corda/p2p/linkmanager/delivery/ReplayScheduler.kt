@@ -51,18 +51,14 @@ class ReplayScheduler<M>(
         replayPeriodKey,
         ::fromConfig) {
         override fun applyNewConfiguration(newConfiguration: Duration, oldConfiguration: Duration?, resources: ResourcesHolder) {
-            if (newConfiguration != oldConfiguration) {
-                if (newConfiguration.isNegative) {
-                    dominoTile.configApplied(DominoTile.ConfigUpdateResult.Error(
-                        IllegalArgumentException("The duration configuration (with key $replayPeriod) must be positive.")
-                    ))
-                    return
-                }
-                replayPeriod.set(newConfiguration)
-                dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
-            } else {
-                dominoTile.configApplied(DominoTile.ConfigUpdateResult.NoUpdate)
+            if (newConfiguration.isNegative) {
+                dominoTile.configApplied(DominoTile.ConfigUpdateResult.Error(
+                    IllegalArgumentException("The duration configuration (with key $replayPeriod) must be positive.")
+                ))
+                return
             }
+            replayPeriod.set(newConfiguration)
+            dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
         }
     }
 

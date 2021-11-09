@@ -37,8 +37,6 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
     override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
 
-    private val lock = ReentrantReadWriteLock()
-
     private fun createResources(resources: ResourcesHolder) {
         subscription.start()
         resources.keep {
@@ -47,7 +45,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     }
 
     override fun signData(publicKey: PublicKey, data: ByteArray): ByteArray {
-        lock.read {
+        return dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("signData operation invoked while component was stopped.")
             }
@@ -55,7 +53,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
             val (privateKey, keyAlgo) = keyPairEntryProcessor.getPrivateKey(publicKey)
                 ?: throw LinkManagerCryptoService.NoPrivateKeyForGroupException(publicKey)
 
-            return when (keyAlgo) {
+            return@withLifecycleLock when (keyAlgo) {
                 KeyAlgorithm.RSA -> {
                     synchronized(rsaSignature) {
                         rsaSignature.initSign(privateKey)

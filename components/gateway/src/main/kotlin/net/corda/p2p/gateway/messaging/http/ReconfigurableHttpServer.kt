@@ -79,11 +79,10 @@ class ReconfigurableHttpServer(
                         httpServer = newServer
                     }
                 }
+                this@ReconfigurableHttpServer.dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
             } catch (e: Throwable) {
                 this@ReconfigurableHttpServer.dominoTile.configApplied(DominoTile.ConfigUpdateResult.Error(e))
-                return
             }
-            this@ReconfigurableHttpServer.dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
         }
     }
 }
