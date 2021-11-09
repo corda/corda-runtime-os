@@ -1,4 +1,4 @@
-package net.corda.orm.impl
+package net.corda.db.testkit
 
 import net.corda.db.core.InMemoryDataSourceFactory
 import net.corda.orm.DdlManage
@@ -16,4 +16,3 @@ class InMemoryEntityManagerConfiguration(dbName: String) : EntityManagerConfigur
     override val ddlManage: DdlManage
         get() = DdlManage.UPDATE
 }
-
