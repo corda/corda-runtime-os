@@ -41,13 +41,12 @@ class FlowMessageProcessorTest {
         val flowMessageProcessor = FlowMessageProcessor(flowManager, sandboxService)
 
         doReturn(FlowResult(null, emptyList())).whenever(flowManager)
-            .startInitiatingFlow(any(), any(), anyOrNull(), anyOrNull())
+            .startInitiatingFlow(any(), any(), anyOrNull())
 
         flowMessageProcessor.onNext(null, startRPCFlow)
 
         verify(sandboxService, times(1)).getSandboxGroupFor(any(), any(), any())
-        verify(sandboxService, times(1)).getSerializerForSandbox(anyOrNull())
-        verify(flowManager, times(1)).startInitiatingFlow(any(), any(), anyOrNull(), anyOrNull())
+        verify(flowManager, times(1)).startInitiatingFlow(any(), any(), anyOrNull())
     }
 
     @Test
@@ -58,7 +57,7 @@ class FlowMessageProcessorTest {
         val flowMessageProcessor = FlowMessageProcessor(flowManager, sandboxService)
 
         doReturn(FlowResult(null, emptyList())).whenever(flowManager)
-            .startInitiatingFlow(any(), any(), any(), any())
+            .startInitiatingFlow(any(), any(), any())
 
         val state = Checkpoint()
         val result = flowMessageProcessor.onNext(state, startRPCFlow)
@@ -66,8 +65,7 @@ class FlowMessageProcessorTest {
         assertThat(result.responseEvents).isEmpty()
 
         verify(sandboxService, times(0)).getSandboxGroupFor(any(), any(), any())
-        verify(sandboxService, times(0)).getSerializerForSandbox(anyOrNull())
-        verify(flowManager, times(0)).startInitiatingFlow(any(), any(), any(), any())
+        verify(flowManager, times(0)).startInitiatingFlow(any(), any(), any())
     }
 
     @Test
@@ -83,8 +81,7 @@ class FlowMessageProcessorTest {
         }
 
         verify(sandboxService, times(0)).getSandboxGroupFor(any(), any(), any())
-        verify(sandboxService, times(0)).getSerializerForSandbox(anyOrNull())
-        verify(flowManager, times(0)).startInitiatingFlow(any(), any(), any(), any())
+        verify(flowManager, times(0)).startInitiatingFlow(any(), any(), any())
     }
 
     @Test
@@ -97,7 +94,6 @@ class FlowMessageProcessorTest {
         flowMessageProcessor.onNext(Checkpoint(), wakeupFlow)
 
         verify(sandboxService, times(1)).getSandboxGroupFor(any(), any(), any())
-        verify(sandboxService, times(1)).getSerializerForSandbox(anyOrNull())
         verify(flowManager, times(1)).wakeFlow(any(), any(), any(), anyOrNull())
     }
 
@@ -111,7 +107,6 @@ class FlowMessageProcessorTest {
             flowMessageProcessor.onNext(null, wakeupFlow)
         }
         verify(sandboxService, times(0)).getSandboxGroupFor(any(), any(), any())
-        verify(sandboxService, times(0)).getSerializerForSandbox(anyOrNull())
         verify(flowManager, times(0)).wakeFlow(any(), any(), any(), anyOrNull())
     }
 }

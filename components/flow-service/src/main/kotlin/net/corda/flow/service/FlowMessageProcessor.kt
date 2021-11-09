@@ -41,20 +41,21 @@ class FlowMessageProcessor(
                     FlowResult(state, emptyList())
                 } else {
                     val sandboxGroup = sandboxService.getSandboxGroupFor(cpiId, identity, SandboxType.FLOW)
-                    val checkpointSerializer = sandboxService.getSerializerForSandbox(sandboxGroup)
                     flowManager.startInitiatingFlow(
                         FlowMetaData(flowName, flowKey, payload.jsonArgs, cpiId, flowEventTopic),
                         payload.clientId,
-                        sandboxGroup,
-                        checkpointSerializer
+                        sandboxGroup
                     )
                 }
             }
             is Wakeup -> {
                 val checkpoint = state ?: throw FlowHospitalException("State for wakeup FlowEvent was null")
-                val checkpointSerializer =
-                    sandboxService.getSerializerForSandbox(sandboxService.getSandboxGroupFor(cpiId, identity, SandboxType.FLOW))
-                flowManager.wakeFlow(checkpoint, flowEvent, flowEventTopic, checkpointSerializer)
+                flowManager.wakeFlow(
+                    checkpoint,
+                    flowEvent,
+                    flowEventTopic,
+                    sandboxService.getSandboxGroupFor(cpiId, identity, SandboxType.FLOW)
+                )
             }
             else -> {
                 throw NotImplementedError()
