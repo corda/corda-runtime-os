@@ -172,7 +172,7 @@ class GatewayTest : TestBase() {
 
         val configPublisher = ConfigPublisher()
 
-        val messageReceivedLatch = CountDownLatch(1)
+        var messageReceivedLatch = CountDownLatch(1)
         val listenToOutboundMessages = object : ListenerWithServer() {
             override fun onOpen(event: HttpConnectionEvent) {
                 assertThat(event.channel.localAddress()).isInstanceOfSatisfying(InetSocketAddress::class.java) {
@@ -245,6 +245,7 @@ class GatewayTest : TestBase() {
                         assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
                     }
 
+                    messageReceivedLatch = CountDownLatch(1)
                     alice.publish(Record(LINK_OUT_TOPIC, "key", linkOutMessage))
                     messageReceivedLatch.await()
                 }
