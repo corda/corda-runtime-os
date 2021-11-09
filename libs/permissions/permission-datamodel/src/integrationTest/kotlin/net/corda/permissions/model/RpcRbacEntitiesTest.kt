@@ -96,7 +96,9 @@ class RpcRbacEntitiesTest {
         @AfterAll
         @JvmStatic
         fun done() {
-            emf.close()
+            if (this::emf.isInitialized) {
+                emf.close()
+            }
         }
     }
 
