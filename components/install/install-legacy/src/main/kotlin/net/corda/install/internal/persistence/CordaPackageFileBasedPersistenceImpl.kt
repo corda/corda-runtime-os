@@ -105,7 +105,6 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
     override fun putCpk(inputStream : InputStream) : CPK {
         val tmpFile = Files.createTempFile(cpkDirectory, null, ".cpk")
         val expansionLocation = Files.createTempDirectory(expansionDirectory, "cpk")
-        @Suppress("TooGenericExceptionCaught")
         val cpk = TeeInputStream(inputStream, Files.newOutputStream(tmpFile)).use { teeStream ->
             try {
                 CPK.from(

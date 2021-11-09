@@ -61,6 +61,8 @@ NOTES:
 * Change the port forwarding if needed.
 * Other postgres properties could be added (e.g. host etc)
 * System property must be set in the bndrun file, which can use gradle properties: `postgresPort=${project.postgresPort}`
+* If integration test has to be executed repeatedly `clean` or `cleanTestOSGi` target has to be executed before `integrationTest`
+or else Gradle may skip execution.
 
 ### Testing
 

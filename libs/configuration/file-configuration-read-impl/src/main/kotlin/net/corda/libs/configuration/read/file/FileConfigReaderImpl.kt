@@ -12,7 +12,7 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import java.io.File
 import java.io.IOException
-import java.util.Collections
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -55,6 +55,13 @@ class FileConfigReaderImpl(
             if (!stopped) {
                 stopped = true
             }
+        }
+    }
+
+    override fun close() {
+        lock.withLock {
+            stop()
+            configUpdates.clear()
         }
     }
 

@@ -1,12 +1,12 @@
 package net.corda.messaging.kafka.integration.subscription
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
@@ -42,7 +42,7 @@ class RPCSubscriptionIntegrationTest {
 
     private lateinit var rpcConfig: RPCConfig<String, String>
     private lateinit var rpcSender: RPCSender<String, String>
-    private lateinit var kafkaConfig: Config
+    private lateinit var kafkaConfig: SmartConfig
 
     private companion object {
         const val CLIENT_ID = "integrationTestRPCSender"
@@ -68,13 +68,12 @@ class RPCSubscriptionIntegrationTest {
 
     @BeforeEach
     fun beforeEach() {
-        kafkaConfig = ConfigFactory.empty()
+        kafkaConfig = SmartConfigImpl.empty()
             .withValue(
                 IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(
                     IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE
-                )
-            )
-            .withValue(IntegrationTestProperties.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+                ))
+            .withValue(IntegrationTestProperties.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TopicTemplates.TEST_TOPIC_PREFIX))
     }
 
     @Test

@@ -2,7 +2,6 @@ package net.corda.sandbox.internal.sandbox
 
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.mockBundle
-import net.corda.sandbox.internal.utilities.BundleUtils
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -32,12 +31,6 @@ class SandboxImplTests {
     private val privateBundle = mockUninstallableBundle(PRIVATE_BUNDLE_NAME, privateBundleClass)
     private val nonSandboxBundle = mockUninstallableBundle("", nonSandboxClass)
 
-    private val mockBundleUtils = mock<BundleUtils>().apply {
-        whenever(getBundle(publicBundleClass)).thenReturn(publicBundle)
-        whenever(getBundle(privateBundleClass)).thenReturn(privateBundle)
-        whenever(getBundle(nonSandboxClass)).thenReturn(nonSandboxBundle)
-    }
-
     /** Creates a mock [Bundle] that tracks its own uninstallation. */
     private fun mockUninstallableBundle(bundleSymbolicName: String, klass: Class<*>) = mockBundle(
         bundleSymbolicName = bundleSymbolicName,
@@ -48,7 +41,7 @@ class SandboxImplTests {
 
     /** Creates a [SandboxImpl] for testing. */
     private fun createSandboxImpl() =
-        SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
+        SandboxImpl(randomUUID(), setOf(publicBundle), setOf(privateBundle))
 
     @AfterEach
     fun resetUninstalledBundles() = uninstalledBundles.clear()
@@ -116,11 +109,7 @@ class SandboxImplTests {
             whenever(loadClass(any())).thenThrow(IllegalStateException::class.java)
         }
 
-        val mockBundleUtils = mock<BundleUtils>().apply {
-            whenever(getBundle(publicBundleClass)).thenReturn(publicBundle)
-        }
-
-        val sandbox = SandboxImpl(mockBundleUtils, randomUUID(), setOf(publicBundle), setOf(privateBundle))
+        val sandbox = SandboxImpl(randomUUID(), setOf(publicBundle), setOf(privateBundle))
         assertThrows<SandboxException> {
             sandbox.loadClass(privateBundleClass.name, PUBLIC_BUNDLE_NAME)
         }
@@ -144,7 +133,6 @@ class SandboxImplTests {
         }
 
         SandboxImpl(
-            mockBundleUtils,
             randomUUID(),
             setOf(cantBeUninstalledMainBundle, libraryBundle),
             emptySet()

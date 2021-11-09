@@ -21,6 +21,7 @@ dependencies {
 
     implementation project(":osgi-framework-api")
 
+    implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-admin")
     implementation project(":libs:db:db-orm")

@@ -1,7 +1,7 @@
 package net.corda.messaging.api.subscription.factory
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -49,7 +49,7 @@ interface SubscriptionFactory {
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService?,
-        nodeConfig: Config = ConfigFactory.empty()
+        nodeConfig: SmartConfig = SmartConfigImpl.empty()
     ): Subscription<K, V>
 
     /**
@@ -71,7 +71,7 @@ interface SubscriptionFactory {
     fun <K : Any, V : Any> createDurableSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
-        nodeConfig: Config = ConfigFactory.empty(),
+        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V>
 
@@ -90,7 +90,7 @@ interface SubscriptionFactory {
     fun <K : Any, V : Any> createCompactedSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: CompactedProcessor<K, V>,
-        nodeConfig: Config = ConfigFactory.empty(),
+        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
     ): CompactedSubscription<K, V>
 
     /**
@@ -116,7 +116,7 @@ interface SubscriptionFactory {
     fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
-        nodeConfig: Config = ConfigFactory.empty(),
+        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
         stateAndEventListener: StateAndEventListener<K, S>? = null
     ): StateAndEventSubscription<K, S, E>
 
@@ -130,7 +130,7 @@ interface SubscriptionFactory {
     fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
-        nodeConfig: Config = ConfigFactory.empty(),
+        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V>
 
@@ -141,7 +141,7 @@ interface SubscriptionFactory {
      */
     fun <K : Any, V : Any> createRandomAccessSubscription(
         subscriptionConfig: SubscriptionConfig,
-        nodeConfig: Config = ConfigFactory.empty(),
+        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
         keyClass: Class<K>,
         valueClass: Class<V>
     ): RandomAccessSubscription<K, V>
@@ -165,7 +165,7 @@ interface SubscriptionFactory {
      */
     fun <REQUEST : Any, RESPONSE : Any> createRPCSubscription(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-        nodeConfig: Config = ConfigFactory.empty(),
+        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
         responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE>
 }

@@ -1,6 +1,5 @@
 package net.corda.sandbox.internal
 
-import net.corda.install.InstallService
 import net.corda.packaging.CPK
 import net.corda.packaging.CordappManifest
 import net.corda.sandbox.SandboxException
@@ -40,7 +39,6 @@ class SandboxServiceImplTests {
     private val cpkAndContentsTwo = CpkAndContents(List::class.java, Set::class.java)
     private val cpkTwo = cpkAndContentsTwo.cpk
 
-    private val mockInstallService = mockInstallService(setOf(cpkAndContentsOne, cpkAndContentsTwo))
     private val sandboxService = createSandboxService(setOf(cpkAndContentsOne, cpkAndContentsTwo))
 
     // Lists that are mutated to track which bundles have been started and uninstalled so far.
@@ -53,19 +51,10 @@ class SandboxServiceImplTests {
     /**
      * Creates a [SandboxServiceImpl].
      *
-     * @param cpksAndContents Used to set up the mock [InstallService] and [BundleUtils] that back the sandbox service
+     * @param cpksAndContents Used to set up the mock [BundleUtils] that back the sandbox service
      */
-    private fun createSandboxService(cpksAndContents: Collection<CpkAndContents>): SandboxServiceImpl {
-        return SandboxServiceImpl(mockInstallService(cpksAndContents), mockBundleUtils(cpksAndContents))
-    }
-
-    /** Mocks an [InstallService] that returns the CPKs from the [cpksAndContents] when passed their hash or ID. */
-    private fun mockInstallService(cpksAndContents: Collection<CpkAndContents>) = mock<InstallService>().apply {
-        cpksAndContents.map { contents -> contents.cpk }.forEach { cpk ->
-            whenever(getCpk(cpk.metadata.hash)).thenReturn(cpk)
-            whenever(getCpk(cpk.metadata.id)).thenReturn(cpk)
-        }
-    }
+    private fun createSandboxService(cpksAndContents: Collection<CpkAndContents>) =
+        SandboxServiceImpl(mockBundleUtils(cpksAndContents))
 
     /** Mocks a [BundleUtils] that tracks which bundles have been started and uninstalled so far. */
     private fun mockBundleUtils(
@@ -110,51 +99,41 @@ class SandboxServiceImplTests {
 
     @Test
     fun `can create sandboxes and retrieve them`() {
-        val cpksAndContents = setOf(cpkAndContentsOne, cpkAndContentsTwo)
-        val cpkHashes = cpksAndContents.map { contents -> contents.cpk.metadata.hash }
+        val cpks = setOf(cpkOne, cpkTwo)
 
-        val sandboxGroup = sandboxService.createSandboxGroup(cpkHashes)
+        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne, cpkTwo))
         val sandboxes = (sandboxGroup as SandboxGroupInternal).cpkSandboxes
         assertEquals(2, sandboxes.size)
 
         val sandboxesRetrievedFromSandboxGroup =
-            cpksAndContents.map { contents -> sandboxGroup.cpkSandboxes.find { sandbox -> sandbox.cpk === contents.cpk } }
+            cpks.map { cpk -> sandboxGroup.cpkSandboxes.find { sandbox -> sandbox.cpk === cpk } }
         assertEquals(sandboxes.toSet(), sandboxesRetrievedFromSandboxGroup.toSet())
     }
 
     @Test
     fun `creating a sandbox installs and starts its bundles`() {
-        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        sandboxService.createSandboxGroup(setOf(cpkOne))
         assertEquals(2, startedBundles.size)
     }
 
     @Test
     fun `can create a sandbox without starting its bundles`() {
-        sandboxService.createSandboxGroupWithoutStarting(listOf(cpkOne.metadata.hash))
+        sandboxService.createSandboxGroupWithoutStarting(setOf(cpkOne))
         assertEquals(0, startedBundles.size)
     }
 
     @Test
     fun `a sandbox correctly indicates which CPK it is created from`() {
-        val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne))
         val sandbox = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.single()
         assertEquals(cpkOne, sandbox.cpk)
     }
 
     @Test
-    fun `does not complain if asked to create a sandbox for an empty list of CPK hashes`() {
+    fun `does not complain if asked to create a sandbox for an empty list of CPKs`() {
         assertDoesNotThrow {
-            sandboxService.createSandboxGroup(emptyList())
+            sandboxService.createSandboxGroup(emptySet())
         }
-    }
-
-    @Test
-    fun `throws if asked to create a sandbox for an unstored CPK hash`() {
-        val sandboxService = SandboxServiceImpl(mock(), mockBundleUtils())
-        val e = assertThrows<SandboxException> {
-            sandboxService.createSandboxGroup(listOf(randomSecureHash()))
-        }
-        assertTrue(e.message!!.contains("No CPK is installed for CPK file hash "))
     }
 
     @Test
@@ -163,38 +142,36 @@ class SandboxServiceImplTests {
             setOf(cpkAndContentsOne),
             notInstallableBundles = setOf(cpkAndContentsOne.mainBundleName!!)
         )
-        val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
+        val sandboxService = SandboxServiceImpl(mockBundleUtils)
 
         val e = assertThrows<SandboxException> {
-            sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+            sandboxService.createSandboxGroup(setOf(cpkOne))
         }
         assertTrue(e.message!!.contains("Could not install "))
     }
 
     @Test
     fun `throws if a CPK's main bundle does not have a symbolic name`() {
-        val cpkWithBadMainBundle = cpkAndContentsOne.copy(mainBundleName = null)
+        val cpkAndContentsWithBadMainBundle = cpkAndContentsOne.copy(mainBundleName = null)
         val sandboxService = SandboxServiceImpl(
-            mockInstallService(setOf(cpkWithBadMainBundle)),
-            mockBundleUtils(setOf(cpkWithBadMainBundle))
+            mockBundleUtils(setOf(cpkAndContentsWithBadMainBundle))
         )
 
         val e = assertThrows<SandboxException> {
-            sandboxService.createSandboxGroup(listOf(cpkWithBadMainBundle.cpk.metadata.hash))
+            sandboxService.createSandboxGroup(listOf(cpkAndContentsWithBadMainBundle.cpk))
         }
         assertTrue(e.message!!.contains(" does not have a symbolic name, which would prevent serialisation."))
     }
 
     @Test
     fun `throws if a CPK's library bundle does not have a symbolic name`() {
-        val cpkWithBadMainBundle = cpkAndContentsOne.copy(libraryBundleName = null)
+        val cpkAndContentsWithBadLibraryBundle = cpkAndContentsOne.copy(libraryBundleName = null)
         val sandboxService = SandboxServiceImpl(
-            mockInstallService(setOf(cpkWithBadMainBundle)),
-            mockBundleUtils(setOf(cpkWithBadMainBundle))
+            mockBundleUtils(setOf(cpkAndContentsWithBadLibraryBundle))
         )
 
         val e = assertThrows<SandboxException> {
-            sandboxService.createSandboxGroup(listOf(cpkWithBadMainBundle.cpk.metadata.hash))
+            sandboxService.createSandboxGroup(listOf(cpkAndContentsWithBadLibraryBundle.cpk))
         }
         assertTrue(e.message!!.contains(" does not have a symbolic name, which would prevent serialisation."))
     }
@@ -205,10 +182,10 @@ class SandboxServiceImplTests {
             setOf(cpkAndContentsOne),
             notStartableBundles = setOf(cpkAndContentsOne.mainBundleName!!)
         )
-        val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
+        val sandboxService = SandboxServiceImpl(mockBundleUtils)
 
         val e = assertThrows<SandboxException> {
-            sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+            sandboxService.createSandboxGroup(setOf(cpkOne))
         }
         assertTrue(e.message!!.contains(" could not be started."))
     }
@@ -219,17 +196,17 @@ class SandboxServiceImplTests {
             setOf(cpkAndContentsOne),
             notStartableBundles = setOf(cpkAndContentsOne.libraryBundleName!!)
         )
-        val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
+        val sandboxService = SandboxServiceImpl(mockBundleUtils)
 
         val e = assertThrows<SandboxException> {
-            sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+            sandboxService.createSandboxGroup(setOf(cpkOne))
         }
         assertTrue(e.message!!.contains(" could not be started."))
     }
 
     @Test
     fun `two sandboxes in the same group have visibility of each other`() {
-        val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash))
+        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne, cpkTwo))
         val sandboxes = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.toList()
         assertEquals(2, sandboxes.size)
         assertTrue(sandboxes[0].hasVisibility(sandboxes[1]))
@@ -242,13 +219,13 @@ class SandboxServiceImplTests {
 
     @Test
     fun `two bundles in the same sandbox have visibility of one another`() {
-        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        sandboxService.createSandboxGroup(setOf(cpkOne))
         assertTrue(sandboxService.hasVisibility(startedBundles[0], startedBundles[1]))
     }
 
     @Test
     fun `an unsandboxed bundle and a sandboxed bundle do not have visibility of one another`() {
-        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        sandboxService.createSandboxGroup(setOf(cpkOne))
 
         startedBundles.forEach { bundle ->
             assertFalse(sandboxService.hasVisibility(mockBundle(), bundle))
@@ -259,8 +236,8 @@ class SandboxServiceImplTests {
     @Test
     fun `a bundle doesn't have visibility of a bundle in a sandbox it doesn't have visibility of`() {
         // We create the two sandboxes separately so that they don't have visibility of one another.
-        val sandboxGroupOne = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
-        val sandboxGroupTwo = sandboxService.createSandboxGroup(listOf(cpkTwo.metadata.hash))
+        val sandboxGroupOne = sandboxService.createSandboxGroup(setOf(cpkOne))
+        val sandboxGroupTwo = sandboxService.createSandboxGroup(setOf(cpkTwo))
         val sandboxOne = (sandboxGroupOne as SandboxGroupInternal).cpkSandboxes.single()
         val sandboxTwo = (sandboxGroupTwo as SandboxGroupInternal).cpkSandboxes.single()
 
@@ -276,7 +253,7 @@ class SandboxServiceImplTests {
 
     @Test
     fun `a bundle only has visibility of public bundles in another sandbox it has visibility of`() {
-        val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash))
+        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne, cpkTwo))
         val sandboxes = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.toList()
         val sandboxOne = sandboxes[0] as SandboxImpl
         val sandboxTwo = sandboxes[1] as SandboxImpl
@@ -298,7 +275,7 @@ class SandboxServiceImplTests {
 
     @Test
     fun `a bundle only has visibility of the main bundle in another CPK sandbox it has visibility of`() {
-        val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash))
+        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne, cpkTwo))
         val sandboxes = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.toList()
         val sandboxOne = sandboxes[0] as CpkSandboxImpl
         val sandboxTwo = sandboxes[1] as CpkSandboxImpl
@@ -322,7 +299,7 @@ class SandboxServiceImplTests {
         val privateMockBundle = mockBundle()
         sandboxService.createPublicSandbox(setOf(publicMockBundle), setOf(privateMockBundle))
 
-        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkTwo.metadata.hash))
+        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkTwo))
         val sandbox = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.single() as SandboxImpl
         val sandboxBundles = startedBundles.filter { bundle -> sandbox.containsBundle(bundle) }
 
@@ -338,7 +315,7 @@ class SandboxServiceImplTests {
             whenever(allBundles).thenReturn(listOf(frameworkBundle))
         }
 
-        val e = assertThrows<SandboxException> { SandboxServiceImpl(mockInstallService, mockBundleUtils) }
+        val e = assertThrows<SandboxException> { SandboxServiceImpl(mockBundleUtils) }
         assertEquals(
             "The sandbox service cannot run without the Service Component Runtime bundle installed.",
             e.message
@@ -351,8 +328,8 @@ class SandboxServiceImplTests {
             whenever(getServiceRuntimeComponentBundle()).thenReturn(scrBundle)
         }
 
-        val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
-        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkAndContentsOne.cpk.metadata.hash))
+        val sandboxService = SandboxServiceImpl(mockBundleUtils)
+        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne))
         val sandboxMainBundle = (sandboxGroup as SandboxGroupInternal).cpkSandboxes.single().mainBundle
 
         whenever(mockBundleUtils.getBundle(any())).thenReturn(sandboxMainBundle)
@@ -366,15 +343,15 @@ class SandboxServiceImplTests {
             whenever(getBundle(any())).thenReturn(mock())
         }
 
-        val sandboxService = SandboxServiceImpl(mockInstallService, mockBundleUtils)
-        sandboxService.createSandboxGroup(setOf(cpkAndContentsOne.cpk.metadata.hash))
+        val sandboxService = SandboxServiceImpl(mockBundleUtils)
+        sandboxService.createSandboxGroup(setOf(cpkOne))
 
         assertNull(sandboxService.getCallingSandboxGroup())
     }
 
     @Test
     fun `sandbox group can be unloaded`() {
-        val sandboxGroup = sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash, cpkTwo.metadata.hash))
+        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne, cpkTwo))
         sandboxService.unloadSandboxGroup(sandboxGroup)
 
         val bundleNames = setOf(cpkAndContentsOne, cpkAndContentsTwo).flatMap(CpkAndContents::bundleNames)
@@ -390,14 +367,13 @@ class SandboxServiceImplTests {
     @Test
     fun `unloading a sandbox group attempts to uninstall all bundles`() {
         val sandboxService = SandboxServiceImpl(
-            mockInstallService,
             mockBundleUtils(
                 setOf(cpkAndContentsOne),
                 notUninstallableBundles = setOf(cpkAndContentsOne.mainBundleName!!)
             )
         )
 
-        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne.metadata.hash))
+        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne))
         sandboxService.unloadSandboxGroup(sandboxGroup)
 
         assertEquals(cpkAndContentsOne.libraryBundleName, uninstalledBundles.single().symbolicName)
@@ -406,14 +382,13 @@ class SandboxServiceImplTests {
     @Test
     fun `there is no visibility between unsandboxed bundles and leftover bundles from unloaded sandbox groups`() {
         val sandboxService = SandboxServiceImpl(
-            mockInstallService,
             mockBundleUtils(
                 setOf(cpkAndContentsOne),
                 notUninstallableBundles = setOf(cpkAndContentsOne.mainBundleName!!)
             )
         )
 
-        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne.metadata.hash))
+        val sandboxGroup = sandboxService.createSandboxGroup(setOf(cpkOne))
         sandboxService.unloadSandboxGroup(sandboxGroup)
 
         val leftoverBundle = startedBundles.find { bundle ->
@@ -425,7 +400,7 @@ class SandboxServiceImplTests {
 
     @Test
     fun `correctly indicates that a sandboxed bundle is sandboxed`() {
-        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        sandboxService.createSandboxGroup(setOf(cpkOne))
         startedBundles.forEach { bundle ->
             assertTrue(sandboxService.isSandboxed(bundle))
         }
@@ -445,7 +420,7 @@ class SandboxServiceImplTests {
 
     @Test
     fun `correctly indicates that an unsandboxed bundle is not in the same sandbox as a sandboxed bundle`() {
-        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        sandboxService.createSandboxGroup(setOf(cpkOne))
         startedBundles.forEach { bundle ->
             assertFalse(sandboxService.areInSameSandbox(mock(), bundle))
         }
@@ -453,7 +428,7 @@ class SandboxServiceImplTests {
 
     @Test
     fun `correctly indicates that two bundles in the same sandbox are in the same sandbox`() {
-        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        sandboxService.createSandboxGroup(setOf(cpkOne))
         startedBundles.forEach { bundleOne ->
             startedBundles.forEach { bundleTwo ->
                 assertTrue(sandboxService.areInSameSandbox(bundleOne, bundleTwo))
@@ -463,10 +438,10 @@ class SandboxServiceImplTests {
 
     @Test
     fun `correctly indicates that two bundles in different sandboxes are not in the same sandbox`() {
-        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        sandboxService.createSandboxGroup(setOf(cpkOne))
         val bundlesFromSandboxGroupOne = startedBundles.toList()
 
-        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        sandboxService.createSandboxGroup(setOf(cpkOne))
         val bundlesFromSandboxGroupTwo = startedBundles - bundlesFromSandboxGroupOne
 
         bundlesFromSandboxGroupOne.forEach { bundleOne ->
@@ -478,7 +453,7 @@ class SandboxServiceImplTests {
 
     @Test
     fun `a sandbox's security domain defaults to an empty string`() {
-        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash))
+        sandboxService.createSandboxGroup(setOf(cpkOne))
         startedBundles.forEach { bundle ->
             assertTrue(bundle.location.startsWith(""))
         }
@@ -487,7 +462,7 @@ class SandboxServiceImplTests {
     @Test
     fun `a sandbox's security domain can be specified`() {
         val customSecurityDomain = "custom_sec_domain"
-        sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash), securityDomain = customSecurityDomain)
+        sandboxService.createSandboxGroup(setOf(cpkOne), securityDomain = customSecurityDomain)
         startedBundles.forEach { bundle ->
             assertTrue(bundle.location.startsWith(customSecurityDomain))
         }
@@ -497,7 +472,7 @@ class SandboxServiceImplTests {
     fun `a sandbox's security domain cannot contain a forward slash`() {
         val customSecurityDomain = "custom/sec_domain"
         assertThrows<SandboxException> {
-            sandboxService.createSandboxGroup(listOf(cpkOne.metadata.hash), securityDomain = customSecurityDomain)
+            sandboxService.createSandboxGroup(setOf(cpkOne), securityDomain = customSecurityDomain)
         }
     }
 }

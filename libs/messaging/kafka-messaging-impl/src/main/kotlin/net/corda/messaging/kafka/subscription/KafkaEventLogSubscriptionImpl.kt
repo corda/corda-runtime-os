@@ -18,11 +18,11 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.ForwardingRebalanceListener
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import net.corda.messaging.kafka.subscription.consumer.wrapper.asEventLogRecord
 import net.corda.messaging.kafka.utils.render
+import net.corda.messaging.kafka.utils.toEventLogRecord
 import net.corda.v5.base.util.debug
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
@@ -49,7 +49,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
     private val producerBuilder: ProducerBuilder,
     private val processor: EventLogProcessor<K, V>,
     private val partitionAssignmentListener: PartitionAssignmentListener?
-): Subscription<K, V> {
+) : Subscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
         "${config.getString(CONSUMER_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
@@ -119,7 +119,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
      * If an error occurs while processing, reset the consumers position on the topic to the last committed position.
      * If subscription is stopped close the consumer.
      */
-    @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
+    @Suppress("NestedBlockDepth")
     fun runConsumeLoop() {
         var attempts = 0
         var consumer: CordaKafkaConsumer<K, V>?
@@ -130,12 +130,17 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                 log.debug { "Attempt: $attempts" }
                 consumer = if (partitionAssignmentListener != null) {
                     val consumerGroup = config.getString(CONSUMER_GROUP_ID)
-                    val rebalanceListener = ForwardingRebalanceListener(topic, consumerGroup, partitionAssignmentListener)
-                    consumerBuilder.createDurableConsumer(config.getConfig(KAFKA_CONSUMER), processor.keyClass,
-                        processor.valueClass, consumerRebalanceListener = rebalanceListener)
+                    val rebalanceListener =
+                        ForwardingRebalanceListener(topic, consumerGroup, partitionAssignmentListener)
+                    consumerBuilder.createDurableConsumer(
+                        config.getConfig(KAFKA_CONSUMER), processor.keyClass,
+                        processor.valueClass, consumerRebalanceListener = rebalanceListener
+                    )
                 } else {
-                    consumerBuilder.createDurableConsumer(config.getConfig(KAFKA_CONSUMER),
-                        processor.keyClass, processor.valueClass)
+                    consumerBuilder.createDurableConsumer(
+                        config.getConfig(KAFKA_CONSUMER),
+                        processor.keyClass, processor.valueClass
+                    )
                 }
                 producer = producerBuilder.createProducer(config.getConfig(KAFKA_PRODUCER))
                 consumer.use { cordaConsumer ->
@@ -175,7 +180,6 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
      * retries have been exceeded.
      * @throws CordaMessageAPIFatalException Fatal unrecoverable error occurred. e.g misconfiguration
      */
-    @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<K, V>, producer: CordaKafkaProducer) {
         var attempts = 0
         while (!stopped) {
@@ -235,9 +239,8 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
      * @throws CordaMessageAPIIntermittentException error occurred that can be retried.
      * @throws CordaMessageAPIFatalException Fatal unrecoverable error occurred. e.g misconfiguration
      */
-    @Suppress("TooGenericExceptionCaught")
     private fun processDurableRecords(
-        consumerRecords: List<ConsumerRecordAndMeta<K, V>>,
+        consumerRecords: List<ConsumerRecord<K, V>>,
         producer: CordaKafkaProducer,
         consumer: CordaKafkaConsumer<K, V>
     ) {
@@ -247,7 +250,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
 
         try {
             producer.beginTransaction()
-            producer.sendRecords(processor.onNext(consumerRecords.map { it.asEventLogRecord() }))
+            producer.sendRecords(processor.onNext(consumerRecords.map { it.toEventLogRecord() }))
             producer.sendAllOffsetsToTransaction(consumer)
             producer.commitTransaction()
         } catch (ex: Exception) {

@@ -7,13 +7,12 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+/** Returns a list of [ServiceEvent]s visible to this sandbox. */
 @Suppress("unused")
 @Component(name = "service-event.one.flow")
 class ServiceEventOneFlow @Activate constructor(
     @Reference(target = "(component.name=sandbox.query)")
     private val sandboxQuery: SandboxQuery
 ) : Flow<List<ServiceEvent>> {
-    override fun call(): List<ServiceEvent> {
-        return sandboxQuery.getServiceEvents()
-    }
+    override fun call() = sandboxQuery.getServiceEvents()
 }

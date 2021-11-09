@@ -99,7 +99,6 @@ class TestSerializationOutput(
     }
 }
 
-@Suppress("TooGenericExceptionCaught")
 fun testName(): String {
     val classLoader = Thread.currentThread().contextClassLoader
     return Thread.currentThread().stackTrace.first {

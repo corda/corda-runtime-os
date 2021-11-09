@@ -1,9 +1,9 @@
 package net.corda.messaging.kafka.integration.subscription
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -35,7 +35,7 @@ class DurableSubscriptionIntegrationTest {
 
     private lateinit var publisherConfig: PublisherConfig
     private lateinit var publisher: Publisher
-    private lateinit var kafkaConfig: Config
+    private lateinit var kafkaConfig: SmartConfig
     private val kafkaProperties = getKafkaProperties()
 
     private companion object {
@@ -56,7 +56,7 @@ class DurableSubscriptionIntegrationTest {
 
     @BeforeEach
     fun beforeEach() {
-        kafkaConfig = ConfigFactory.empty()
+        kafkaConfig = SmartConfigImpl.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(BOOTSTRAP_SERVERS_VALUE))
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }

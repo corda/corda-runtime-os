@@ -13,7 +13,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
@@ -31,9 +31,10 @@ class ConfigReaderImplTest {
 
     @BeforeEach
     fun beforeEach() {
-        val config = SmartConfigImpl(BufferedReader(this::class.java.classLoader.getResourceAsStream("kafka.conf").reader()).use {
-            ConfigFactory.parseString(it.readText())
-        })
+        val config = SmartConfigImpl(
+            BufferedReader(this::class.java.classLoader.getResourceAsStream("kafka.conf")!!.reader()).use {
+                ConfigFactory.parseString(it.readText())
+            })
 
         configUpdateUtil = ConfigListenerTestUtil()
         configRepository = ConfigRepository()
@@ -62,8 +63,8 @@ class ConfigReaderImplTest {
             Configuration(config.root().render(ConfigRenderOptions.concise()), config.getString("componentVersion"))
         configReader.onSnapshot(mapOf("corda.database" to avroConfig))
 
-        Assertions.assertThat(configUpdateUtil.update).isTrue
-        Assertions.assertThat(configRepository.getConfigurations()["corda.database"])
+        assertThat(configUpdateUtil.update).isTrue
+        assertThat(configRepository.getConfigurations()["corda.database"])
             .isEqualTo(configMap["corda.database"])
     }
 
@@ -76,7 +77,7 @@ class ConfigReaderImplTest {
         configReader.onSnapshot(mapOf("corda.database" to avroConfig))
 
         configReader.registerCallback(configUpdateUtil)
-        Assertions.assertThat(configRepository.getConfigurations()["corda.database"])
+        assertThat(configRepository.getConfigurations()["corda.database"])
             .isEqualTo(configMap["corda.database"])
     }
 
@@ -96,8 +97,8 @@ class ConfigReaderImplTest {
 
         configReader.onSnapshot(topicMap)
 
-        Assertions.assertThat(configUpdateUtil.update).isTrue
-        Assertions.assertThat(configRepository.getConfigurations()["corda.database"])
+        assertThat(configUpdateUtil.update).isTrue
+        assertThat(configRepository.getConfigurations()["corda.database"])
             .isEqualTo(configMap["corda.database"])
 
         val securityConfig = configMap["corda.security"]!!
@@ -110,7 +111,7 @@ class ConfigReaderImplTest {
         topicMap["corda.security"] = avroSecurityConfig
         configReader.onNext(Record("", "corda.security", avroSecurityConfig), null, topicMap)
 
-        Assertions.assertThat(configRepository.getConfigurations()["corda.security"])
+        assertThat(configRepository.getConfigurations()["corda.security"])
             .isEqualTo(configMap["corda.security"])
     }
 
@@ -130,8 +131,8 @@ class ConfigReaderImplTest {
 
         configReader.onSnapshot(topicMap)
 
-        Assertions.assertThat(configUpdateUtil.update).isTrue
-        Assertions.assertThat(configUpdateUtil.lastSnapshot["corda.database"])
+        assertThat(configUpdateUtil.update).isTrue
+        assertThat(configUpdateUtil.lastSnapshot["corda.database"])
             .isEqualTo(configMap["corda.database"])
 
         listenerSubscription.close()
@@ -146,7 +147,7 @@ class ConfigReaderImplTest {
         topicMap["corda.security"] = avroSecurityConfig
         configReader.onNext(Record("", "corda.security", avroSecurityConfig), null, topicMap)
 
-        Assertions.assertThat(configUpdateUtil.lastSnapshot["corda.security"]).isNull()
+        assertThat(configUpdateUtil.lastSnapshot["corda.security"]).isNull()
     }
 
     @Test
@@ -162,9 +163,9 @@ class ConfigReaderImplTest {
 
         configReader.registerCallback(listener)
 
-        Assertions.assertThat(lambdaFlag).isFalse
-        Assertions.assertThat(changedKeys).isEmpty()
-        Assertions.assertThat(configSnapshot).isEmpty()
+        assertThat(lambdaFlag).isFalse
+        assertThat(changedKeys).isEmpty()
+        assertThat(configSnapshot).isEmpty()
 
         val configMap = ConfigUtil.testConfigMap()
         val config = configMap["corda.database"]!!
@@ -172,17 +173,17 @@ class ConfigReaderImplTest {
             Configuration(config.root().render(ConfigRenderOptions.concise()), config.getString("componentVersion"))
         configReader.onSnapshot(mapOf("corda.database" to avroConfig))
 
-        Assertions.assertThat(lambdaFlag).isTrue
-        Assertions.assertThat(changedKeys.size)
+        assertThat(lambdaFlag).isTrue
+        assertThat(changedKeys.size)
             .isEqualTo(1)
-        Assertions.assertThat(configSnapshot["corda.database"])
+        assertThat(configSnapshot["corda.database"])
             .isEqualTo(configRepository.getConfigurations()["corda.database"])
     }
 
     @Test
-    fun `test that listeners get unregistered correctly when service stops`() {
+    fun `test that listeners get unregistered correctly when service closes`() {
         configReader.start()
-        Assertions.assertThat(configReader.isRunning).isTrue
+        assertThat(configReader.isRunning).isTrue
         configReader.registerCallback(configUpdateUtil)
 
         val configMap = ConfigUtil.testConfigMap()
@@ -197,8 +198,47 @@ class ConfigReaderImplTest {
 
         configReader.onSnapshot(topicMap)
 
-        Assertions.assertThat(configUpdateUtil.update).isTrue
-        Assertions.assertThat(configUpdateUtil.lastSnapshot["corda.database"])
+        assertThat(configUpdateUtil.update).isTrue
+        assertThat(configUpdateUtil.lastSnapshot["corda.database"])
+            .isEqualTo(configMap["corda.database"])
+
+        configReader.close()
+        configReader.start()
+
+        val securityConfig = configMap["corda.security"]!!
+        val avroSecurityConfig =
+            Configuration(
+                securityConfig.root().render(ConfigRenderOptions.concise()),
+                securityConfig.getString("componentVersion")
+            )
+
+        topicMap["corda.security"] = avroSecurityConfig
+        configReader.onNext(Record("", "corda.security", avroSecurityConfig), null, topicMap)
+
+        assertThat(configUpdateUtil.lastSnapshot["corda.security"]).isNull()
+
+    }
+
+    @Test
+    fun `test that listeners still work after stop start`() {
+        configReader.start()
+        assertThat(configReader.isRunning).isTrue
+        configReader.registerCallback(configUpdateUtil)
+
+        val configMap = ConfigUtil.testConfigMap()
+        val databaseConfig = configMap["corda.database"]!!
+        val avroDatabaseConfig =
+            Configuration(
+                databaseConfig.root().render(ConfigRenderOptions.concise()),
+                databaseConfig.getString("componentVersion")
+            )
+
+        val topicMap = mutableMapOf("corda.database" to avroDatabaseConfig)
+
+        configReader.onSnapshot(topicMap)
+
+        assertThat(configUpdateUtil.update).isTrue
+        assertThat(configUpdateUtil.lastSnapshot["corda.database"])
             .isEqualTo(configMap["corda.database"])
 
         configReader.stop()
@@ -214,7 +254,6 @@ class ConfigReaderImplTest {
         topicMap["corda.security"] = avroSecurityConfig
         configReader.onNext(Record("", "corda.security", avroSecurityConfig), null, topicMap)
 
-        Assertions.assertThat(configUpdateUtil.lastSnapshot["corda.security"]).isNull()
-
+        assertThat(configUpdateUtil.lastSnapshot["corda.security"]).isEqualTo(configMap["corda.security"])
     }
 }

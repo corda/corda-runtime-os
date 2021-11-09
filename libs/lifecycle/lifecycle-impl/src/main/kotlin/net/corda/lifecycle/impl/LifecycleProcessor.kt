@@ -90,7 +90,7 @@ internal class LifecycleProcessor(
                 }
             }
             is NewRegistration -> {
-                state.registrations[event.registration] = Unit
+                state.registrations.add(event.registration)
                 event.registration.updateCoordinatorStatus(coordinator, state.status)
                 true
             }
@@ -99,7 +99,7 @@ internal class LifecycleProcessor(
                 true
             }
             is TrackRegistration -> {
-                state.trackedRegistrations[event.registration] = Unit
+                state.trackedRegistrations.add(event.registration)
                 true
             }
             is StopTrackingRegistration -> {
@@ -134,9 +134,10 @@ internal class LifecycleProcessor(
     }
 
     private fun processStartEvent(event: StartEvent, coordinator: LifecycleCoordinator): Boolean {
+        logger.trace { "Processing start event for ${coordinator.name}" }
         return if (!state.isRunning) {
             state.isRunning = true
-            state.trackedRegistrations.keys.forEach { it.notifyCurrentStatus() }
+            state.trackedRegistrations.forEach { it.notifyCurrentStatus() }
             // If there was previously an error, clear this now.
             updateStatus(coordinator, LifecycleStatus.DOWN, STARTED_REASON)
             runUserEventHandler(event, coordinator)
@@ -147,6 +148,7 @@ internal class LifecycleProcessor(
     }
 
     private fun processStopEvent(event: StopEvent, coordinator: LifecycleCoordinator): Boolean {
+        logger.trace { "Processing stop event for ${coordinator.name}" }
         if (state.isRunning) {
             state.isRunning = false
             val (newStatus, reason) = if (event.errored) {
@@ -166,6 +168,7 @@ internal class LifecycleProcessor(
         event: SetUpTimer,
         timerGenerator: (TimerEvent, Long) -> ScheduledFuture<*>
     ): Boolean {
+        logger.trace { "Processing setup timer event for ${event.key}" }
         if (state.isRunning) {
             state.setTimer(
                 event.key,
@@ -178,7 +181,18 @@ internal class LifecycleProcessor(
     }
 
     private fun processClose(coordinator: LifecycleCoordinator): Boolean {
+        logger.trace { "Closing coordinator ${coordinator.name}" }
         state.isRunning = false
+        state.trackedRegistrations.forEach {
+            logger.trace { "Closing $it on ${coordinator.name}." }
+            it.close()
+        }
+        state.trackedRegistrations.clear()
+        state.registrations.forEach {
+            logger.error("$it on ${coordinator.name} not closed.")
+            it.updateCoordinatorStatus(coordinator, LifecycleStatus.ERROR)
+        }
+        state.registrations.clear()
         registry.removeCoordinator(coordinator.name)
         return true
     }
@@ -189,11 +203,10 @@ internal class LifecycleProcessor(
      */
     private fun updateStatus(coordinator: LifecycleCoordinator, newStatus: LifecycleStatus, reason: String) {
         state.status = newStatus
-        state.registrations.keys.forEach { it.updateCoordinatorStatus(coordinator, newStatus) }
+        state.registrations.forEach { it.updateCoordinatorStatus(coordinator, newStatus) }
         registry.updateStatus(coordinator.name, newStatus, reason)
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun runUserEventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator): Boolean {
         return try {
             userEventHandler.processEvent(event, coordinator)

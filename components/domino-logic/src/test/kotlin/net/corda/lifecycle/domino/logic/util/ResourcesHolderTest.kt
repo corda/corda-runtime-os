@@ -73,7 +73,6 @@ class ResourcesHolder : AutoCloseable {
         do {
             val resource = resources.pollFirst()
             if (resource != null) {
-                @Suppress("TooGenericExceptionCaught")
                 try {
                     resource.close()
                 } catch (e: Throwable) {

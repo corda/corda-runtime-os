@@ -15,13 +15,12 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.debug
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -45,7 +44,6 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     )
 
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
-    private val topicPrefix = config.getString(TOPIC_PREFIX)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
 
@@ -88,7 +86,6 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun runConsumeLoop() {
         var attempts = 0
         while (!stopped) {
@@ -118,7 +115,6 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<String, RPCRequest>) {
         while (!stopped) {
             val consumerRecords = consumer.poll()
@@ -141,9 +137,9 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<String, RPCRequest>>) {
+    private fun processRecords(consumerRecords: List<ConsumerRecord<String, RPCRequest>>) {
         consumerRecords.forEach {
-            val rpcRequest = it.record.value()
+            val rpcRequest = it.value()
             val requestBytes = rpcRequest.payload
             val request = deserializer.deserialize(topic, requestBytes.array())
             val future = CompletableFuture<RESPONSE>()

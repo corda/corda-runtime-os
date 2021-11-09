@@ -1,6 +1,6 @@
 package net.corda.lifecycle.domino.logic.util
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.LeafTile
 import net.corda.messaging.api.publisher.Publisher
@@ -13,7 +13,7 @@ class PublisherWithDominoLogic(
     private val publisherFactory: PublisherFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val publisherId: String,
-    private val nodeConfiguration: Config,
+    private val nodeConfiguration: SmartConfig,
 ) :
     LeafTile(coordinatorFactory) {
 

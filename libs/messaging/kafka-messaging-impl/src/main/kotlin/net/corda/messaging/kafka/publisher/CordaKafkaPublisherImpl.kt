@@ -9,7 +9,6 @@ import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_CLOSE_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.utils.getStringOrNull
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -50,7 +49,6 @@ class CordaKafkaPublisherImpl(
     }
 
     private val closeTimeout = kafkaConfig.getLong(PRODUCER_CLOSE_TIMEOUT)
-    private val topicPrefix = kafkaConfig.getString(TOPIC_PREFIX)
     private val transactionalId = kafkaConfig.getStringOrNull(PRODUCER_TRANSACTIONAL_ID)
     private val clientId = kafkaConfig.getString(PRODUCER_CLIENT_ID)
 
@@ -67,6 +65,7 @@ class CordaKafkaPublisherImpl(
         records.forEach {
             if (it.key.javaClass != String::class.java) {
                 val future = CompletableFuture.failedFuture<Unit>(CordaMessageAPIFatalException("Unsupported Key type, use a String."))
+                log.error("Unsupported Key type, use a String")
                 return listOf(future)
             }
         }
@@ -86,6 +85,7 @@ class CordaKafkaPublisherImpl(
         records.forEach { (_, record) ->
             if (record.key.javaClass != String::class.java) {
                 val future = CompletableFuture.failedFuture<Unit>(CordaMessageAPIFatalException("Unsupported Key type, use a String."))
+                log.error("Unsupported Key type, use a String.")
                 return listOf(future)
             }
         }
@@ -107,7 +107,7 @@ class CordaKafkaPublisherImpl(
         records.forEach {
             val fut = CompletableFuture<Unit>()
             futures.add(fut)
-            cordaKafkaProducer.send(ProducerRecord(topicPrefix + it.topic, it.key, it.value)) { _, ex ->
+            cordaKafkaProducer.send(ProducerRecord(it.topic, it.key, it.value)) { _, ex ->
                 setFutureFromResponse(ex, fut, it.topic)
             }
         }
@@ -121,7 +121,7 @@ class CordaKafkaPublisherImpl(
         recordsWithPartitions.forEach { (partition, record) ->
             val fut = CompletableFuture<Unit>()
             futures.add(fut)
-            cordaKafkaProducer.send(ProducerRecord(topicPrefix + record.topic, partition, record.key, record.value)) { _, ex ->
+            cordaKafkaProducer.send(ProducerRecord(record.topic, partition, record.key, record.value)) { _, ex ->
                 setFutureFromResponse(ex, fut, record.topic)
             }
         }
@@ -149,7 +149,6 @@ class CordaKafkaPublisherImpl(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun executeInTransaction(block: (CordaKafkaProducer) -> Unit): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()
 
@@ -233,7 +232,6 @@ class CordaKafkaPublisherImpl(
     /**
      * Safely close a producer. If an exception is thrown swallow the error to avoid double exceptions
      */
-    @Suppress("TooGenericExceptionCaught")
     override fun close() {
         try {
             cordaKafkaProducer.close(Duration.ofMillis(closeTimeout))
