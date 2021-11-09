@@ -169,10 +169,7 @@ class StateAndEventConsumerImplTest {
 
         val topicPartitions = setOf(TopicPartition(TOPIC, 0))
 
-        val state = ConsumerRecordAndMeta<String, String>(
-            TOPIC_PREFIX,
-            ConsumerRecord(TOPIC, 0, 0, "key", "state5")
-        )
+        val state = ConsumerRecord(TOPIC_PREFIX + TOPIC, 0, 0, "key", "state5")
 
         doAnswer { topicPartitions }.whenever(stateConsumer).assignment()
         doAnswer { listOf(state) }.whenever(stateConsumer).poll()

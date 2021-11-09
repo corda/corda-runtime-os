@@ -9,7 +9,6 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_PROCESSOR_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_STATEANDEVENT
 import net.corda.messaging.kafka.subscription.consumer.builder.StateAndEventBuilder
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
@@ -58,12 +57,16 @@ class KafkaStateAndEventSubscriptionImplTest {
         val builder: StateAndEventBuilder<String, String, String> = mock()
 
         val topicPartition = TopicPartition(TOPIC, 0)
-        val state = ConsumerRecordAndMeta<String, String>(
-            TOPIC_PREFIX,
-            ConsumerRecord(TOPIC, 0, 0, "key", "state5")
-        )
+        val state = ConsumerRecord(TOPIC_PREFIX + TOPIC, 0, 0, "key", "state5")
 
-        doAnswer { CompletableFuture.completedFuture(StateAndEventProcessor.Response("newstate", emptyList())) }.whenever(
+        doAnswer {
+            CompletableFuture.completedFuture(
+                StateAndEventProcessor.Response(
+                    "newstate",
+                    emptyList()
+                )
+            )
+        }.whenever(
             stateAndEventConsumer
         ).waitForFunctionToFinish(any(), any(), any())
         doAnswer { eventConsumer }.whenever(stateAndEventConsumer).eventConsumer
@@ -74,7 +77,7 @@ class KafkaStateAndEventSubscriptionImplTest {
         doAnswer { Pair(stateAndEventConsumer, rebalanceListener) }.whenever(builder)
             .createStateEventConsumerAndRebalanceListener(any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())
 
-        val mockConsumerRecords = generateMockConsumerRecordAndMetaList(iterations, TOPIC, 0)
+        val mockConsumerRecords = generateMockConsumerRecordList(iterations, TOPIC, 0)
         var eventsPaused = false
 
 
@@ -120,7 +123,13 @@ class KafkaStateAndEventSubscriptionImplTest {
         }
 
         val eventConsumer = stateAndEventConsumer.eventConsumer
-        verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())
+        verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(
+            any(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
+        )
         verify(builder, times(1)).createProducer(any())
         verify(eventConsumer, times(6)).poll()
         verify(producer, times(4)).beginTransaction()
@@ -147,7 +156,13 @@ class KafkaStateAndEventSubscriptionImplTest {
 
         val eventConsumer = stateAndEventConsumer.eventConsumer
 
-        verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())
+        verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(
+            any(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
+        )
         verify(builder, times(1)).createProducer(any())
         verify(eventConsumer, times(6)).poll()
         verify(producer, times(5)).beginTransaction()
@@ -160,11 +175,11 @@ class KafkaStateAndEventSubscriptionImplTest {
     @Test
     fun `state and event subscription processes multiples events by key, small batches`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(0)
-        val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
+        val records = mutableListOf<ConsumerRecord<String, String>>()
         var offset = 0
         for (i in 0 until 3) {
             for (j in 0 until 10) {
-                records.add(ConsumerRecordAndMeta("", ConsumerRecord(TOPIC, 1, offset.toLong(), "key$i", "value$j")))
+                records.add(ConsumerRecord(TOPIC, 1, offset.toLong(), "key$i", "value$j"))
                 offset++
             }
         }
@@ -192,7 +207,13 @@ class KafkaStateAndEventSubscriptionImplTest {
         }
         subscription.stop()
 
-        verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())
+        verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(
+            any(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
+        )
         verify(builder, times(1)).createProducer(any())
         verify(producer, times(28)).beginTransaction()
         verify(producer, times(28)).sendRecords(any())
@@ -203,11 +224,11 @@ class KafkaStateAndEventSubscriptionImplTest {
     @Test
     fun `state and event subscription processes multiples events by key, large batches`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(0)
-        val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
+        val records = mutableListOf<ConsumerRecord<String, String>>()
         var offset = 0
         for (j in 0 until 3) {
             for (i in 0 until 10) {
-                records.add(ConsumerRecordAndMeta("", ConsumerRecord(TOPIC, 1, offset.toLong(), "key$i", "value$j")))
+                records.add(ConsumerRecord(TOPIC, 1, offset.toLong(), "key$i", "value$j"))
                 offset++
             }
         }
@@ -236,7 +257,13 @@ class KafkaStateAndEventSubscriptionImplTest {
         }
         subscription.stop()
 
-        verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())
+        verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(
+            any(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
+        )
         verify(builder, times(1)).createProducer(any())
         verify(producer, times(3)).beginTransaction()
         verify(producer, times(3)).sendRecords(any())
@@ -247,8 +274,8 @@ class KafkaStateAndEventSubscriptionImplTest {
     @Test
     fun `state and event subscription verify dead letter`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(0)
-        val records = mutableListOf<ConsumerRecordAndMeta<String, String>>()
-        records.add(ConsumerRecordAndMeta("", ConsumerRecord(TOPIC, 1, 1, "key1", "value1")))
+        val records = mutableListOf<ConsumerRecord<String, String>>()
+        records.add(ConsumerRecord(TOPIC, 1, 1, "key1", "value1"))
 
         var eventsPaused = false
         val eventConsumer = stateAndEventConsumer.eventConsumer
@@ -266,15 +293,17 @@ class KafkaStateAndEventSubscriptionImplTest {
             CompletableFuture.completedFuture(null)
         }.whenever(stateAndEventConsumer).waitForFunctionToFinish(any(), any(), any())
 
-        val shortWaitProcessorConfig = getStateAndEventConfig(config
-            .withValue(
-                CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"),
-                ConfigValueFactory.fromAnyRef(10000)
-            )
-            .withValue(
-                CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"),
-                ConfigValueFactory.fromAnyRef(100)
-            ))
+        val shortWaitProcessorConfig = getStateAndEventConfig(
+            config
+                .withValue(
+                    CONSUMER_MAX_POLL_INTERVAL.replace("consumer", "eventConsumer"),
+                    ConfigValueFactory.fromAnyRef(10000)
+                )
+                .withValue(
+                    CONSUMER_PROCESSOR_TIMEOUT.replace("consumer", "eventConsumer"),
+                    ConfigValueFactory.fromAnyRef(100)
+                )
+        )
 
         val subscription = KafkaStateAndEventSubscriptionImpl(
             shortWaitProcessorConfig,

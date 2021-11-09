@@ -3,6 +3,8 @@ plugins {
     id 'corda.common-library'
 }
 
+description 'Corda CorDapp Installer'
+
 dependencies {
     implementation platform(group: "net.corda", name: "corda-api", version: cordaApiVersion)
     compileOnly group: "org.osgi", name: "osgi.annotation"

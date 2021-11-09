@@ -18,11 +18,11 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.ForwardingRebalanceListener
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import net.corda.messaging.kafka.subscription.consumer.wrapper.asEventLogRecord
 import net.corda.messaging.kafka.utils.render
+import net.corda.messaging.kafka.utils.toEventLogRecord
 import net.corda.v5.base.util.debug
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
@@ -49,7 +49,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
     private val producerBuilder: ProducerBuilder,
     private val processor: EventLogProcessor<K, V>,
     private val partitionAssignmentListener: PartitionAssignmentListener?
-): Subscription<K, V> {
+) : Subscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
         "${config.getString(CONSUMER_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
@@ -130,12 +130,17 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                 log.debug { "Attempt: $attempts" }
                 consumer = if (partitionAssignmentListener != null) {
                     val consumerGroup = config.getString(CONSUMER_GROUP_ID)
-                    val rebalanceListener = ForwardingRebalanceListener(topic, consumerGroup, partitionAssignmentListener)
-                    consumerBuilder.createDurableConsumer(config.getConfig(KAFKA_CONSUMER), processor.keyClass,
-                        processor.valueClass, consumerRebalanceListener = rebalanceListener)
+                    val rebalanceListener =
+                        ForwardingRebalanceListener(topic, consumerGroup, partitionAssignmentListener)
+                    consumerBuilder.createDurableConsumer(
+                        config.getConfig(KAFKA_CONSUMER), processor.keyClass,
+                        processor.valueClass, consumerRebalanceListener = rebalanceListener
+                    )
                 } else {
-                    consumerBuilder.createDurableConsumer(config.getConfig(KAFKA_CONSUMER),
-                        processor.keyClass, processor.valueClass)
+                    consumerBuilder.createDurableConsumer(
+                        config.getConfig(KAFKA_CONSUMER),
+                        processor.keyClass, processor.valueClass
+                    )
                 }
                 producer = producerBuilder.createProducer(config.getConfig(KAFKA_PRODUCER))
                 consumer.use { cordaConsumer ->
@@ -235,7 +240,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
      * @throws CordaMessageAPIFatalException Fatal unrecoverable error occurred. e.g misconfiguration
      */
     private fun processDurableRecords(
-        consumerRecords: List<ConsumerRecordAndMeta<K, V>>,
+        consumerRecords: List<ConsumerRecord<K, V>>,
         producer: CordaKafkaProducer,
         consumer: CordaKafkaConsumer<K, V>
     ) {
@@ -245,7 +250,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
 
         try {
             producer.beginTransaction()
-            producer.sendRecords(processor.onNext(consumerRecords.map { it.asEventLogRecord() }))
+            producer.sendRecords(processor.onNext(consumerRecords.map { it.toEventLogRecord() }))
             producer.sendAllOffsetsToTransaction(consumer)
             producer.commitTransaction()
         } catch (ex: Exception) {
