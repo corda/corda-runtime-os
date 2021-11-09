@@ -225,10 +225,10 @@ class ReplaySchedulerTest {
                 latch.countDown()
                 throw MyException()
             }
-            numberOfReplays.compute(message) { _, numberOfReplays ->
+            val replays = numberOfReplays.compute(message) { _, numberOfReplays ->
                 (numberOfReplays ?: 0) + 1
             }
-            latch.countDown()
+            if (replays == 1) latch.countDown()
         }
 
         class MyException: Exception("Ohh No")
