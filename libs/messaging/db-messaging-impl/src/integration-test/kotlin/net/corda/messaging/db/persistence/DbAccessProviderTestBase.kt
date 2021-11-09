@@ -45,7 +45,9 @@ abstract class DbAccessProviderTestBase {
 
     @BeforeAll
     fun setupBeforeAllTests() {
-        startDatabase()
+        if(getDbType() != DBType.POSTGRESQL) {
+            startDatabase()
+        }
         createTables()
         dbAccessProvider = DBAccessProviderImpl(getJdbcUrl(), getUsername(), getPassword(), getDbType(), 5)
         dbAccessProvider.start()
@@ -54,7 +56,10 @@ abstract class DbAccessProviderTestBase {
     @AfterAll
     fun cleanupAfterAllTests() {
         dbAccessProvider.stop()
-        stopDatabase()
+        if(getDbType() != DBType.POSTGRESQL) {
+            stopDatabase()
+        }
+
     }
 
     @BeforeEach
