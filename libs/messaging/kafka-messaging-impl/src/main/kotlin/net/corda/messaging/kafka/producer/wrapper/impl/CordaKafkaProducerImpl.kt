@@ -59,7 +59,9 @@ class CordaKafkaProducerImpl(
     }
 
     override fun send(record: ProducerRecord<Any, Any>, callback: Callback?): Future<RecordMetadata> {
-        return producer.send(record, callback)
+        val prefixedRecord =
+            ProducerRecord(topicPrefix + record.topic(), record.partition(), record.key(), record.value())
+        return producer.send(prefixedRecord, callback)
     }
 
     override fun sendRecords(records: List<Record<*, *>>) {
@@ -176,12 +178,18 @@ class CordaKafkaProducerImpl(
         trySendOffsetsToTransaction(consumer, null)
     }
 
-    override fun sendRecordOffsetsToTransaction(consumer: CordaKafkaConsumer<*, *>, records: List<ConsumerRecord<*, *>>) {
+    override fun sendRecordOffsetsToTransaction(
+        consumer: CordaKafkaConsumer<*, *>,
+        records: List<ConsumerRecord<*, *>>
+    ) {
         trySendOffsetsToTransaction(consumer, records)
     }
 
     @Suppress("ThrowsCount")
-    private fun trySendOffsetsToTransaction(consumer: CordaKafkaConsumer<*, *>, records: List<ConsumerRecord<*, *>>? = null) {
+    private fun trySendOffsetsToTransaction(
+        consumer: CordaKafkaConsumer<*, *>,
+        records: List<ConsumerRecord<*, *>>? = null
+    ) {
         try {
             producer.sendOffsetsToTransaction(consumerOffsets(consumer, records), consumer.groupMetadata())
         } catch (ex: Exception) {
@@ -249,7 +257,7 @@ class CordaKafkaProducerImpl(
         return if (records == null) {
             getConsumerOffsets(consumer)
         } else {
-            getRecordListOffsets(records)
+            getRecordListOffsets(records, topicPrefix)
         }
     }
 
@@ -257,9 +265,11 @@ class CordaKafkaProducerImpl(
      * Generate the consumer offsets for poll position in each consumer partition
      */
     private fun getConsumerOffsets(consumer: CordaKafkaConsumer<*, *>): Map<TopicPartition, OffsetAndMetadata> {
-        val offsets =  mutableMapOf<TopicPartition, OffsetAndMetadata>()
+        val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
         for (topicPartition in consumer.assignment()) {
-            offsets[topicPartition] = OffsetAndMetadata(consumer.position(topicPartition))
+            val prefixedTopicPartition =
+                TopicPartition(topicPrefix + topicPartition.topic(), topicPartition.partition())
+            offsets[prefixedTopicPartition] = OffsetAndMetadata(consumer.position(topicPartition))
         }
         return offsets
     }
