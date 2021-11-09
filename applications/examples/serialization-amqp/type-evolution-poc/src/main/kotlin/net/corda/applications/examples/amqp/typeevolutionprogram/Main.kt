@@ -65,7 +65,7 @@ class Main @Activate constructor(
         // Save output
 //        val output = SerializationOutput(factory)
 //        val example =
-//            sandboxGroup.loadClassFromMainBundles<Any>("net.corda.applications.examples.amqp.typeevolution.Example", Any::class.java)
+//            sandboxGroup.loadClassFromMainBundles<Any>("net.corda.applications.examples.amqp.typeevolution.RebuildResorceFiles", Any::class.java)
 //        val method = example.getMethod("saveResourceFiles")
 //        val result = method.invoke(example.getConstructor().newInstance()) as Map<*, *>
 //        for (i in result) {
