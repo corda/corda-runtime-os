@@ -136,8 +136,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     private val commonChildren = setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoService.dominoTile,
         linkManagerHostingMap.dominoTile)
-    private val inboundDominoTile = DominoTile("inbound", lifecycleCoordinatorFactory, ::createInboundResources, children = commonChildren)
-    private val outboundDominoTile = DominoTile("outbound", lifecycleCoordinatorFactory, ::createOutboundResources,
+    private val inboundDominoTile = DominoTile(
+        "InboundProcessor",
+        lifecycleCoordinatorFactory,
+        ::createInboundResources,
+        children = commonChildren
+    )
+    private val outboundDominoTile = DominoTile(
+        "OutboundProcessor",
+        lifecycleCoordinatorFactory,
+        ::createOutboundResources,
         children = setOf(inboundDominoTile, messagesPendingSession.dominoTile) + commonChildren)
 
     override val dominoTile = DominoTile(

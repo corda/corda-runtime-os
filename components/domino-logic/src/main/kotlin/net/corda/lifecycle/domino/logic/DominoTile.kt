@@ -273,9 +273,7 @@ class DominoTile(
 
     private fun gotError(cause: Throwable) {
         logger.warn("Got error in $name", cause)
-        if (state != State.StoppedDueToError) {
-            coordinator.postEvent(StopTile(true))
-        }
+        coordinator.postEvent(StopTile(true))
     }
 
     private fun readyOrStartTile() {
@@ -287,10 +285,10 @@ class DominoTile(
             }
             logger.info("Created $name with ${children.map { it.name }}")
         }
-        startKidsIfNeeded()
+        startDependenciesIfNeeded()
     }
 
-    private fun startKidsIfNeeded() {
+    private fun startDependenciesIfNeeded() {
         val childrenWithErrors = children.filter { it.state == State.StoppedDueToBadConfig || it.state == State.StoppedDueToError }
         if (childrenWithErrors.isNotEmpty()) {
             (children - childrenWithErrors).forEach {
