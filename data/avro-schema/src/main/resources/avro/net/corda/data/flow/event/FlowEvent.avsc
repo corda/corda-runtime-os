@@ -8,6 +8,10 @@
       "type": "net.corda.data.flow.FlowKey"
     },
     {
+      "name": "cpiId",
+      "type": "string"
+    },
+    {
       "name": "payload",
       "type": [
         "net.corda.data.flow.event.FlowSessionMessage",

@@ -12,10 +12,6 @@
       "type": "string"
     },
     {
-      "name": "cpiId",
-      "type": "string"
-    },
-    {
       "name": "rpcUsername",
       "type": "net.corda.data.identity.HoldingIdentity"
     },
@@ -27,11 +23,8 @@
       }
     },
     {
-      "name": "args",
-      "type": {
-        "type": "array",
-        "items": ["null", "bytes"]
-      }
+      "name": "jsonArgs",
+      "type": "string"
     }
   ]
 }
