@@ -153,7 +153,11 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `large payload`() {
-        val hugePayload = javaClass.classLoader.getResource("10mb.txt").readBytes()
+        val hugePayload = (1..0xA00_000)
+            .map {
+                (it % 0xFF).toByte()
+            }
+            .toByteArray()
         val listener = object : ListenerWithServer() {
             override fun onRequest(request: HttpRequest) {
                 assertTrue(Arrays.equals(hugePayload, request.payload))
