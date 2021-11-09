@@ -61,4 +61,8 @@ internal open class SandboxImpl(
             bundle
         }
     }
+
+    override fun toString(): String {
+        return "Sandbox[ID: $id, PUBLIC: ${publicBundles.joinToString()}, PRIVATE: ${privateBundles.joinToString()}]"
+    }
 }
