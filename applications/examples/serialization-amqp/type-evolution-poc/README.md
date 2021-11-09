@@ -1,3 +1,5 @@
+These commands are run from `corda-runtime-os/applications/examples/serialization-amqp/type-evolution-poc`.
+
 Build CPK:
 
 `../../../../gradlew build`
