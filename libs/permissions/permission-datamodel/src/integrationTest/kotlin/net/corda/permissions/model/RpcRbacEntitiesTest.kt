@@ -6,32 +6,24 @@ import net.corda.db.schema.Schema
 import net.corda.db.testkit.DbUtils.getEntityManagerConfiguration
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
-import net.corda.orm.impl.InMemoryEntityManagerConfiguration
 import net.corda.test.util.LoggingUtils.emphasise
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.junit5.service.ServiceExtension
 import java.io.StringWriter
-import java.time.LocalDate
-import java.util.*
 import javax.persistence.EntityManagerFactory
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Order
 import org.osgi.framework.FrameworkUtil
 import org.osgi.test.common.annotation.InjectService
+import java.time.Instant
 
 
 @ExtendWith(ServiceExtension::class)
 class RpcRbacEntitiesTest {
     companion object {
-
-
         private val logger = contextLogger()
 
         @InjectService
@@ -41,10 +33,7 @@ class RpcRbacEntitiesTest {
 
         lateinit var emf: EntityManagerFactory
 
-        private val dbConfig: EntityManagerConfiguration = getEntityManagerConfiguration() ?: run {
-            logger.info("Using in-memory (HSQL) DB".emphasise())
-            InMemoryEntityManagerConfiguration("rbac")
-        }
+        private val dbConfig: EntityManagerConfiguration = getEntityManagerConfiguration("rbac")
 
         @Suppress("unused")
         @JvmStatic
@@ -71,19 +60,12 @@ class RpcRbacEntitiesTest {
 
             emf = entityManagerFactoryFactory.create(
                 "RPC RBAC",
-                listOf(catClass, ownerClass, dogClass),
+                listOf(
+                    User::class.java, Group::class.java, Role::class.java,
+                    Permission::class.java, UserProperty::class.java, GroupProperty::class.java, ChangeAudit::class.java
+                ),
                 dbConfig
             )
-            val em = emf.createEntityManager()
-            try {
-                em.transaction.begin()
-                em.persist(dog)
-                em.persist(owner)
-                em.persist(cat)
-                em.transaction.commit()
-            } finally {
-                em.close()
-            }
         }
 
         @Suppress("unused")
@@ -95,70 +77,20 @@ class RpcRbacEntitiesTest {
     }
 
     @Test
-    @Order(1)
     fun `test user creation`() {
-
-    }
-
-    @Test
-    fun `confirm dog and cats are not available to this bundle`() {
-        assertThrows<ClassNotFoundException> {
-            Class.forName(DOG_CLASS_NAME, true, this::class.java.classLoader)
-        }
-
-        assertThrows<ClassNotFoundException> {
-            Class.forName(CAT_CLASS_NAME, true, this::class.java.classLoader)
-        }
-    }
-
-    @Test
-    fun `validate entities are persisted`() {
-        logger.info("Load persisted entities".emphasise())
-
         val em = emf.createEntityManager()
         try {
+            em.transaction.begin()
+            val user = User(
+                "userId", Instant.now(), "fullName", "loginName", true,
+                "saltValue", "hashedPassword", null, null
+            )
+            em.persist(user)
+            em.transaction.commit()
+
             assertThat(
-                em.createQuery("from Cat", catClass).resultList
-            ).contains(cat)
-            assertThat(
-                em.createQuery("from Dog", dogClass).resultList
-            ).contains(dog)
-        } finally {
-            em.close()
-        }
-    }
-
-    @Test
-    fun `check we can create lazy proxies`() {
-        val em = emf.createEntityManager()
-        try {
-            val lazyCat = em.getReference(catClass, catId)
-            Assertions.assertNotSame(catClass, lazyCat::class.java)
-            assertEquals(cat, lazyCat)
-        } finally {
-            em.close()
-        }
-    }
-
-    @Test
-    fun `confirm we can query cross-bundle`() {
-        /** NOTE:
-         * This shows that we can create a JPA query that crosses multiple bundles.
-         * This isn't a best practise example, and this example is a bit silly, but
-         * its only purpose is to prove we can do this.
-         */
-        logger.info("Query cross-bundle entities".emphasise())
-
-        val em = emf.createEntityManager()
-        try {
-            // finding an owner in the cats bundle based on a string value from the Dog class in the dogs bundle
-            //  note: not a realistic real world query!
-            val queryResults = em
-                .createQuery("select o.age from Owner as o where o.name in (select d.owner from Dog as d where d.name = :dog)")
-                .setParameter("dog", "Faraway")
-                .resultList
-            logger.info("Age(s) of owners with the same name as \"Faraway's\" (dog) owner: $queryResults".emphasise())
-            assertThat(queryResults).contains(26)
+                em.createQuery("from User", User::class.java).resultList
+            ).contains(user)
         } finally {
             em.close()
         }
