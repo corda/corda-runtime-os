@@ -34,25 +34,25 @@ internal class CliArguments {
         names = ["-k", "--kafka-servers"],
         description = ["The kafka servers (default: \${DEFAULT-VALUE})"]
     )
-    var kafkaServers = "localhost:9092"
+    var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
 
     @Option(
         names = ["--config-topic-name"],
         description = ["The config topic name (default: \${DEFAULT-VALUE})"]
     )
-    var configTopicName = "ConfigTopic"
+    var configTopicName = System.getenv("CONFIG_TOPIC") ?: "ConfigTopic"
 
     @Option(
         names = ["--topic-prefix"],
         description = ["The topic prefix (default: \${DEFAULT-VALUE})"]
     )
-    var topicPrefix = ""
+    var topicPrefix = System.getenv("TOPIC_PREFIX") ?: ""
 
     @Option(
         names = ["-i", "--instance-id"],
         description = ["The unique instance ID (default to random number)"]
     )
-    var instanceId = Random.nextInt()
+    var instanceId = System.getenv("INSTANCE_ID")?.toInt() ?: Random.nextInt()
 
     val kafkaNodeConfiguration: Config by lazy {
         ConfigFactory.empty()
