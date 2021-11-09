@@ -1,8 +1,9 @@
 package net.corda.libs.configuration.read.kafka
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.data.config.Configuration
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -14,11 +15,11 @@ import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-@Suppress("TooGenericExceptionCaught")
 class ConfigReaderImpl(
     private val configurationRepository: ConfigRepository,
     private val subscriptionFactory: SubscriptionFactory,
-    private val boostrapConfig: Config
+    private val boostrapConfig: SmartConfig,
+    private val smartConfigFactory: SmartConfigFactory,
 ) : ConfigReader, CompactedProcessor<String, Configuration> {
 
     companion object {
@@ -64,10 +65,16 @@ class ConfigReaderImpl(
             if (!stopped) {
                 subscription?.stop()
                 subscription = null
-                configUpdates.clear()
                 stopped = true
                 snapshotReceived = false
             }
+        }
+    }
+
+    override fun close() {
+        lock.withLock {
+            stop()
+            configUpdates.clear()
         }
     }
 
@@ -97,9 +104,9 @@ class ConfigReaderImpl(
         get() = Configuration::class.java
 
     override fun onSnapshot(currentData: Map<String, Configuration>) {
-        val configMap = mutableMapOf<String, Config>()
+        val configMap = mutableMapOf<String, SmartConfig>()
         for (config in currentData) {
-            configMap[config.key] = ConfigFactory.parseString(config.value.value)
+            configMap[config.key] = smartConfigFactory.create(ConfigFactory.parseString(config.value.value))
         }
         configurationRepository.storeConfiguration(configMap)
         snapshotReceived = true
@@ -112,7 +119,7 @@ class ConfigReaderImpl(
         oldValue: Configuration?,
         currentData: Map<String, Configuration>
     ) {
-        val config = ConfigFactory.parseString(newRecord.value?.value)
+        val config = smartConfigFactory.create(ConfigFactory.parseString(newRecord.value?.value))
         configurationRepository.updateConfiguration(newRecord.key, config)
         val tempConfigMap = configurationRepository.getConfigurations()
         configUpdates.forEach { it.value.onUpdate(setOf(newRecord.key), tempConfigMap) }

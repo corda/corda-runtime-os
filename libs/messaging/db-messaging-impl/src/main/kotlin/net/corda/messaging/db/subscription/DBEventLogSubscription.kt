@@ -112,7 +112,6 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun processNextBatchOfRecords(partitionsAndCommittedOffsets: Map<Int, Long>) {
         try {
             val offsetWindowPerPartition = batchSize / partitionsAndCommittedOffsets.keys.size

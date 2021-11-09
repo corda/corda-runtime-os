@@ -1,6 +1,6 @@
 package net.corda.components.examples.config.reader
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
@@ -13,8 +13,8 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
 
-class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
-class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, Config>) : LifecycleEvent
+class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, SmartConfig>) : LifecycleEvent
+class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, SmartConfig>) : LifecycleEvent
 
 class ConfigReader(
     private val lifeCycleCoordinator: LifecycleCoordinator,
@@ -31,12 +31,12 @@ private val readServiceFactory: ConfigReaderFactory
 
     private var configReader: ConfigReader? = null
     private var sub: AutoCloseable? = null
-    private var bootstrapConfig: Config? = null
+    private var bootstrapConfig: SmartConfig? = null
 
     override val isRunning: Boolean
     get() = receivedSnapshot
 
-    fun start(bootstrapConfig: Config) {
+    fun start(bootstrapConfig: SmartConfig) {
         this.bootstrapConfig = bootstrapConfig
         this.start()
     }
@@ -44,7 +44,7 @@ private val readServiceFactory: ConfigReaderFactory
     override fun start() {
         if(bootstrapConfig != null){
             configReader = readServiceFactory.createReader(bootstrapConfig!!)
-            val lister = ConfigListener { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config> ->
+            val lister = ConfigListener { changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, SmartConfig> ->
                 if (!receivedSnapshot) {
                     if (changedKeys.contains(MESSAGING_CONFIG)) {
                         log.info("Config read service config snapshot received")

@@ -168,7 +168,6 @@ fun X509Certificate.distributionPointsToString() : String {
     }
 }
 
-@Suppress("TooGenericExceptionCaught")
 fun certPathToString(certPath: Array<out X509Certificate>?): String {
     if (certPath == null) {
         return "<empty certpath>"

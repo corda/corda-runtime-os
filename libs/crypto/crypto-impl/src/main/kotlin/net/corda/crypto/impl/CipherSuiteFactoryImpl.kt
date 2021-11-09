@@ -101,7 +101,6 @@ open class CipherSuiteFactoryImpl @Activate constructor(
         private val verifiers = ConcurrentHashMap<String, SignatureVerificationService>()
         private val digestServices = ConcurrentHashMap<String, DigestService>()
 
-        @Suppress("TooGenericExceptionCaught")
         override fun getSchemeMap(): CipherSchemeMetadata  {
             logger.debug("Getting {}", CipherSchemeMetadata::class.java.name)
             val name = config.schemeMetadataProvider
@@ -124,7 +123,7 @@ open class CipherSuiteFactoryImpl @Activate constructor(
             }
         }
 
-        @Suppress("UNCHECKED_CAST", "TooGenericExceptionCaught", "MaxLineLength")
+        @Suppress("UNCHECKED_CAST", "MaxLineLength")
         override fun getSignatureVerificationService(): SignatureVerificationService  {
             logger.debug("Getting {}", SignatureVerificationService::class.java.name)
             val name = config.signatureVerificationProvider
@@ -147,7 +146,6 @@ open class CipherSuiteFactoryImpl @Activate constructor(
             }
         }
 
-        @Suppress("TooGenericExceptionCaught")
         override fun getDigestService(): DigestService {
             logger.debug("Getting {}", DigestService::class.java.name)
             val name = config.digestProvider

@@ -38,15 +38,14 @@ import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.X509ExtendedKeyManager
 
 class HttpServerTest {
-    private val listener = mock<HttpEventListener>()
+    private val listener = mock<HttpServerListener>()
     private val configuration = GatewayConfiguration(
         hostAddress = "www.r3.com",
         hostPort = 33,
         sslConfig = mock {
             on { keyStore } doReturn mock()
             on { keyStorePassword } doReturn "hi"
-        },
-        traceLogging = false
+        }
     )
     private val address = InetSocketAddress("www.r3.com", 30)
     private val channel = mock<Channel> {
@@ -147,10 +146,10 @@ class HttpServerTest {
 
     @Test
     fun `onMessage will propagate the event`() {
-        val message = mock<HttpMessage>()
-        server.onMessage(message)
+        val request = mock<HttpRequest>()
+        server.onRequest(request)
 
-        verify(listener).onMessage(message)
+        verify(listener).onRequest(request)
     }
 
     @Test
@@ -263,6 +262,6 @@ class HttpServerTest {
         verify(pipeline).addLast(eq("sslHandler"), any<SslHandler>())
         verify(pipeline).addLast(eq("idleStateHandler"), any<IdleStateHandler>())
         verify(pipeline).addLast(any<HttpServerCodec>())
-        verify(pipeline).addLast(any<HttpChannelHandler>())
+        verify(pipeline).addLast(any<HttpServerChannelHandler>())
     }
 }

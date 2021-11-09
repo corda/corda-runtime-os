@@ -12,6 +12,7 @@ import net.corda.lifecycle.impl.LifecycleProcessor.Companion.ERRORED_REASON
 import net.corda.lifecycle.impl.LifecycleProcessor.Companion.STARTED_REASON
 import net.corda.lifecycle.impl.LifecycleProcessor.Companion.STOPPED_REASON
 import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -300,7 +301,7 @@ class LifecycleProcessorTest {
         state.postEvent(NewRegistration(registration))
         process(processor, coordinator = coordinator)
         verify(registration).updateCoordinatorStatus(coordinator, LifecycleStatus.DOWN)
-        assertEquals(mapOf(registration to Unit), state.registrations)
+        assertThat(state.registrations).containsExactly(registration)
         assertEquals(0, processedEvents)
     }
 
@@ -316,10 +317,10 @@ class LifecycleProcessorTest {
         val registration = mock<Registration>()
         val coordinator = mock<LifecycleCoordinator>()
         state.status = LifecycleStatus.DOWN
-        state.registrations[registration] = Unit
+        state.registrations.add(registration)
         state.postEvent(CancelRegistration(registration))
         process(processor, coordinator = coordinator)
-        assertEquals(mapOf<Registration, Unit>(), state.registrations)
+        assertThat(state.registrations).isEmpty()
         assertEquals(0, processedEvents)
     }
 
@@ -336,8 +337,8 @@ class LifecycleProcessorTest {
         val registration2 = mock<Registration>()
         val coordinator = setupCoordinatorMock()
         state.status = LifecycleStatus.DOWN
-        state.registrations[registration1] = Unit
-        state.registrations[registration2] = Unit
+        state.registrations.add(registration1)
+        state.registrations.add(registration2)
         state.postEvent(StatusChange(LifecycleStatus.UP, REASON))
         process(processor, coordinator = coordinator)
         verify(registration1).updateCoordinatorStatus(coordinator, LifecycleStatus.UP)
@@ -356,7 +357,7 @@ class LifecycleProcessorTest {
         }
         val registration1 = mock<Registration>()
         val registration2 = mock<Registration>()
-        listOf(registration1, registration2).forEach { state.registrations[it] = Unit }
+        listOf(registration1, registration2).forEach { state.registrations.add(it) }
         state.postEvent(StatusChange(LifecycleStatus.UP, REASON))
         process(processor)
         verify(registration1, never()).updateCoordinatorStatus(any(), any())
@@ -386,7 +387,7 @@ class LifecycleProcessorTest {
         val registration2 = mock<Registration>()
         val coordinator = setupCoordinatorMock()
         state.status = LifecycleStatus.UP
-        listOf(registration1, registration2).forEach { state.registrations[it] = Unit }
+        listOf(registration1, registration2).forEach { state.registrations.add(it) }
         state.postEvent(StopEvent())
         process(processor, coordinator = coordinator)
         assertEquals(LifecycleStatus.DOWN, state.status)
@@ -418,8 +419,8 @@ class LifecycleProcessorTest {
         val registered1 = mock<Registration>()
         val registered2 = mock<Registration>()
         val coordinator = setupCoordinatorMock()
-        listOf(registration1, registration2).forEach { state.trackedRegistrations[it] = Unit }
-        listOf(registered1, registered2).forEach { state.registrations[it] = Unit }
+        listOf(registration1, registration2).forEach { state.trackedRegistrations.add(it) }
+        listOf(registered1, registered2).forEach { state.registrations.add(it) }
         state.postEvent(StartEvent())
         process(processor, coordinator = coordinator)
         verify(registration1).notifyCurrentStatus()
@@ -443,7 +444,7 @@ class LifecycleProcessorTest {
         state.isRunning = running
         state.postEvent(TrackRegistration(registration))
         process(processor)
-        assertEquals(mapOf(registration to Unit), state.trackedRegistrations)
+        assertThat(state.trackedRegistrations).containsExactly(registration)
         assertEquals(0, processedEvents)
     }
 
@@ -457,10 +458,10 @@ class LifecycleProcessorTest {
         }
         val registration = mock<Registration>()
         state.isRunning = running
-        state.trackedRegistrations[registration] = Unit
+        state.trackedRegistrations.add(registration)
         state.postEvent(StopTrackingRegistration(registration))
         process(processor)
-        assertEquals(mapOf<Registration, Unit>(), state.trackedRegistrations)
+        assertThat(state.registrations).isEmpty()
     }
 
     @Test
@@ -479,7 +480,7 @@ class LifecycleProcessorTest {
         state.postEvent(StopEvent(errored = true))
         val registration = mock<Registration>()
         val coordinator = setupCoordinatorMock()
-        state.registrations[registration] = Unit
+        state.registrations.add(registration)
         process(processor, coordinator = coordinator)
         assertEquals(LifecycleStatus.ERROR, state.status)
         verify(registration).updateCoordinatorStatus(coordinator, LifecycleStatus.ERROR)
@@ -501,7 +502,7 @@ class LifecycleProcessorTest {
         state.status = LifecycleStatus.ERROR
         val registration = mock<Registration>()
         val coordinator = setupCoordinatorMock()
-        state.registrations[registration] = Unit
+        state.registrations.add(registration)
         state.postEvent(StartEvent())
         process(processor, coordinator = coordinator)
         assertEquals(LifecycleStatus.DOWN, state.status)

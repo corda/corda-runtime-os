@@ -29,7 +29,6 @@ object SerializerFactoryBuilder {
         var getBundleContextMethod: Method?
         var getBundlesMethod: Method?
 
-        @Suppress("TooGenericExceptionCaught")
         try {
             val frameworkUtilClass = Class.forName(FRAMEWORK_UTIL_CLASS_NAME, false, this::class.java.classLoader)
             val bundleContextClass = Class.forName(BUNDLE_CONTEXT_CLASS_NAME, false, frameworkUtilClass.classLoader)
@@ -120,7 +119,7 @@ object SerializerFactoryBuilder {
                 mustPreserveDataWhenEvolving)
     }
 
-    @Suppress("TooGenericExceptionCaught", "LongParameterList")
+    @Suppress("LongParameterList")
     private fun makeFactory(whitelist: ClassWhitelist,
                             descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
                             allowEvolution: Boolean,

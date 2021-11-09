@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.session
 
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -21,7 +22,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.lang.IllegalStateException
 
 class SessionPartitionMapperImplTest {
 
@@ -40,6 +40,7 @@ class SessionPartitionMapperImplTest {
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on { createCompactedSubscription(any(), processor.capture(), any()) } doReturn subscription
     }
+    private val config = SmartConfigImpl.empty()
 
     @Test
     fun `session partition mapping is calculated successfully`() {
@@ -49,7 +50,7 @@ class SessionPartitionMapperImplTest {
             "2" to SessionPartitions(listOf(3, 4))
         )
 
-        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory)
+        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
         sessionPartitionMapper.start()
 
         processor.firstValue.onSnapshot(partitionsMapping)
@@ -66,7 +67,7 @@ class SessionPartitionMapperImplTest {
     @Test
     fun `getPartitions cannot be invoked, when component is not running`() {
         val sessionId = "test-session-id"
-        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory)
+        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
 
         assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
             .isInstanceOf(IllegalStateException::class.java)
@@ -83,7 +84,7 @@ class SessionPartitionMapperImplTest {
 
     @Test
     fun `createResources will start the subscription`() {
-        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory)
+        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
 
         sessionPartitionMapper.createResources()
 
@@ -92,7 +93,7 @@ class SessionPartitionMapperImplTest {
 
     @Test
     fun `stop will stop the subscription`() {
-        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory)
+        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
 
         sessionPartitionMapper.createResources()
         sessionPartitionMapper.stop()
@@ -102,7 +103,7 @@ class SessionPartitionMapperImplTest {
 
     @Test
     fun `empty record will remove the partition`() {
-        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory)
+        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
         processor.firstValue.onSnapshot(mapOf("session" to SessionPartitions(listOf(3))))
 
         processor.firstValue.onNext(Record(SESSION_OUT_PARTITIONS, "session", null), null, emptyMap())

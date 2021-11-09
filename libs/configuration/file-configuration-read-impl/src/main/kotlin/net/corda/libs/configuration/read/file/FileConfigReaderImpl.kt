@@ -4,19 +4,22 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import java.io.File
 import java.io.IOException
-import java.util.Collections
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class FileConfigReaderImpl(
     private val configurationRepository: ConfigRepository,
-    private val bootstrapConfig: Config
+    private val bootstrapConfig: Config,
+    private val smartConfigFactory: SmartConfigFactory,
 ) : ConfigReader {
 
     companion object {
@@ -55,6 +58,13 @@ class FileConfigReaderImpl(
         }
     }
 
+    override fun close() {
+        lock.withLock {
+            stop()
+            configUpdates.clear()
+        }
+    }
+
     override fun registerCallback(configListener: ConfigListener): AutoCloseable {
         val sub = ConfigListenerSubscription(configUpdates)
         configUpdates[sub] = configListener
@@ -75,8 +85,8 @@ class FileConfigReaderImpl(
         }
     }
 
-    private fun parseConfigFile(): Config {
-        return try {
+    private fun parseConfigFile(): SmartConfig {
+        val conf = try {
             val parseOptions = ConfigParseOptions.defaults().setAllowMissing(false)
             val configFilePath = bootstrapConfig.getString(CONFIG_FILE_NAME)
             ConfigFactory.parseURL(File(configFilePath).toURI().toURL(), parseOptions).resolve()
@@ -88,6 +98,7 @@ class FileConfigReaderImpl(
             log.error(e.message, e)
             ConfigFactory.empty()
         }
+        return smartConfigFactory.create(conf)
     }
 
     private class ConfigListenerSubscription(private val configUpdates: MutableMap<ConfigListenerSubscription, ConfigListener>) :

@@ -9,14 +9,13 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.messaging.kafka.utils.render
+import net.corda.messaging.kafka.utils.toRecord
 import net.corda.v5.base.util.debug
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.locks.ReentrantLock
@@ -35,7 +34,6 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     )
 
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
-    private val topicPrefix = config.getString(TOPIC_PREFIX)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
 
@@ -84,16 +82,19 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
 
     override fun getValue(key: K): V? = latestValues?.get(key)
 
-    @Suppress("TooGenericExceptionCaught")
     private fun runConsumeLoop() {
         var attempts = 0
         while (!stopped) {
             attempts++
             try {
                 log.debug { "Creating compacted consumer.  Attempt: $attempts" }
-                consumerBuilder.createCompactedConsumer(config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass).use {
+                consumerBuilder.createCompactedConsumer(
+                    config.getConfig(KAFKA_CONSUMER),
+                    processor.keyClass,
+                    processor.valueClass
+                ).use {
                     val partitions = it.getPartitions(
-                        topicPrefix + topic,
+                        topic,
                         Duration.ofSeconds(consumerThreadStopTimeout)
                     )
                     it.assign(partitions)
@@ -137,10 +138,10 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
             val consumerRecords = consumer.poll()
 
             consumerRecords.forEach {
-                if (it.record.value() != null) {
-                    currentData[it.record.key()] = it.record.value()
+                if (it.value() != null) {
+                    currentData[it.key()] = it.value()
                 } else {
-                    currentData.remove(it.record.key())
+                    currentData.remove(it.key())
                 }
             }
 
@@ -155,7 +156,6 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
         processor.onSnapshot(currentData)
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<K, V>) {
         while (!stopped) {
             val consumerRecords = consumer.poll()
@@ -178,20 +178,20 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     }
 
     private fun processCompactedRecords(
-        consumerRecords: List<ConsumerRecordAndMeta<K, V>>
+        consumerRecords: List<ConsumerRecord<K, V>>
     ) {
         val currentData = getLatestValues()
         consumerRecords.forEach {
-            val oldValue = currentData[it.record.key()]
-            val newValue = it.record.value()
+            val oldValue = currentData[it.key()]
+            val newValue = it.value()
 
             if (newValue == null) {
-                currentData.remove(it.record.key())
+                currentData.remove(it.key())
             } else {
-                currentData[it.record.key()] = newValue
+                currentData[it.key()] = newValue
             }
 
-            processor.onNext(it.asRecord(), oldValue, currentData)
+            processor.onNext(it.toRecord(), oldValue, currentData)
         }
     }
 }

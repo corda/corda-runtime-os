@@ -1,6 +1,6 @@
 package net.corda.libs.configuration.read.factory
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.read.ConfigReader
 
 interface ConfigReaderFactory {
@@ -9,5 +9,5 @@ interface ConfigReaderFactory {
      * Create an instance of the [ConfigReader]
      * @param bootstrapConfig configuration object used to bootstrap the read service
      */
-    fun createReader(bootstrapConfig: Config): ConfigReader
+    fun createReader(bootstrapConfig: SmartConfig): ConfigReader
 }

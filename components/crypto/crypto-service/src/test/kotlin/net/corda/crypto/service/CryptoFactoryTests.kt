@@ -1,6 +1,7 @@
 package net.corda.crypto.service
 
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.component.config.MemberConfigReaderImpl
 import net.corda.crypto.impl.DefaultCryptoServiceProvider
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactoryProvider
@@ -36,6 +37,7 @@ class CryptoFactoryTests {
             persistenceProviders
         )
         factory = CryptoFactoryImpl(
+            MemberConfigReaderImpl(mock()),
             persistenceProviders,
             cipherSuiteFactory = cryptoMocks.factories.cipherSuite,
             cryptoServiceProviders = listOf(

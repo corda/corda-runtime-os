@@ -1,5 +1,6 @@
 package net.corda.lifecycle.domino.logic.util
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -13,6 +14,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 
@@ -26,12 +28,13 @@ class PublisherWithDominoLogicTest {
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
+    private val nodeConfig = mock<SmartConfig>()
     private val publisher = mock<Publisher>()
     private val factory = mock<PublisherFactory> {
-        on { createPublisher(any(), any()) } doReturn publisher
+        on { createPublisher(any(), eq(nodeConfig)) } doReturn publisher
     }
 
-    private val wrapper = PublisherWithDominoLogic(factory, coordinatorFactory, "")
+    private val wrapper = PublisherWithDominoLogic(factory, coordinatorFactory, "", nodeConfig)
 
     @Test
     fun `createResources will start the publisher`() {

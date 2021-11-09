@@ -1,6 +1,6 @@
 package net.corda.sandbox
 
-import net.corda.v5.crypto.SecureHash
+import net.corda.packaging.CPK
 import org.osgi.framework.Bundle
 
 /**
@@ -10,30 +10,28 @@ import org.osgi.framework.Bundle
  * * CPK sandboxes are created from previously-installed CPKs
  */
 interface SandboxCreationService {
-    /**
-     * Creates a new public sandbox.
-     */
+    /** Creates a new public sandbox, containing the given [publicBundles] and [privateBundles]. */
     fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>)
 
     /**
-     * Creates a new [SandboxGroup] containing a sandbox for each of the CPKs identified by the [cpkFileHashes].
-     * Duplicate [cpkFileHashes] are discarded (i.e. if two hashes are identical, only one sandbox will be created).
+     * Creates a new [SandboxGroup] in the [securityDomain] containing a sandbox for each of the [cpks].
      *
-     * A [SandboxException] is thrown if the sandbox creation fails.
+     * Duplicate [cpks] are discarded (i.e. only one sandbox will be created per unique hash).
+     *
+     * A [SandboxException] is thrown if the [securityDomain] contains a '/' character, or if sandbox creation fails.
      */
-    fun createSandboxGroup(cpkFileHashes: Iterable<SecureHash>): SandboxGroup
+    fun createSandboxGroup(cpks: Iterable<CPK>, securityDomain: String = ""): SandboxGroup
 
     /**
-     * Creates a new [SandboxGroup] containing a sandbox for each of the CPKs identified by the [cpkFileHashes].
-     * Duplicate [cpkFileHashes] are discarded (i.e. if two hashes are identical, only one sandbox will be created).
+     * Creates a new [SandboxGroup] in the [securityDomain] containing a sandbox for each of the [cpks].
      *
-     * The bundles in each sandbox are not started, meaning that their bundle activators are not called. This is used
-     * when the CPKs' classes are required (e.g. to retrieve the CorDapp schemas), but we do not want to run any
-     * activation logic.
+     * Duplicate [cpks] are discarded (i.e. only one sandbox will be created per unique hash).
+     *
+     * The bundles in each sandbox are not started, meaning that their bundle activators are not called.
      *
      * A [SandboxException] is thrown if the sandbox creation fails.
      */
-    fun createSandboxGroupWithoutStarting(cpkFileHashes: Iterable<SecureHash>): SandboxGroup
+    fun createSandboxGroupWithoutStarting(cpks: Iterable<CPK>, securityDomain: String = ""): SandboxGroup
 
     /**
      * Attempts to uninstall each of the sandbox group's bundles in turn, and removes the sandbox group from the

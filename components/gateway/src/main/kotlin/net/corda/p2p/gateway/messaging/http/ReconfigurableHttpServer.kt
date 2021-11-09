@@ -16,7 +16,7 @@ import kotlin.concurrent.write
 class ReconfigurableHttpServer(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
-    private val listener: HttpEventListener,
+    private val listener: HttpServerListener,
 ) :
     ConfigurationAwareLeafTile<GatewayConfiguration>(
         lifecycleCoordinatorFactory,
@@ -33,10 +33,10 @@ class ReconfigurableHttpServer(
         private val logger = contextLogger()
     }
 
-    fun writeResponse(status: HttpResponseStatus, address: SocketAddress) {
+    fun writeResponse(status: HttpResponseStatus, address: SocketAddress, payload: ByteArray = ByteArray(0)) {
         serverLock.read {
             val server = httpServer ?: throw IllegalStateException("Server is not ready")
-            server.write(status, ByteArray(0), address)
+            server.write(status, payload, address)
         }
     }
 

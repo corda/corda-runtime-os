@@ -1,31 +1,9 @@
-import aQute.bnd.gradle.Bundle
-import aQute.bnd.gradle.Resolve
-import aQute.bnd.gradle.TestOSGi
-
 plugins {
     id 'corda.common-library'
     id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
 description 'Kafka Messaging API Impl'
-
-sourceSets {
-    kafkaIntegrationTest {
-        kotlin {
-            srcDirs = [ 'src/kafka-integration-test/kotlin' ]
-        }
-        resources {
-            srcDirs = [ 'src/kafka-integration-test/resources' ]
-        }
-    }
-}
-
-configurations {
-    kafkaIntegrationTestApi.extendsFrom integrationTestApi
-    kafkaIntegrationTestCompileOnly.extendsFrom integrationTestCompileOnly
-    kafkaIntegrationTestImplementation.extendsFrom integrationTestImplementation
-    kafkaIntegrationTestRuntimeOnly.extendsFrom integrationTestRuntimeOnly
-}
 
 dependencies {
     compileOnly 'org.osgi:osgi.core'
@@ -34,6 +12,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:schema-registry:schema-registry")
+    implementation project(":libs:configuration:configuration-core")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-avro-schema"
@@ -48,49 +27,5 @@ dependencies {
     testImplementation project(":testing:test-utilities")
 
     testRuntimeOnly 'org.osgi:osgi.core'
-
-    kafkaIntegrationTestImplementation project(":libs:messaging:kafka-messaging-impl")
-    kafkaIntegrationTestImplementation project(":components:kafka-topic-admin")
-    kafkaIntegrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
-
-    //runtime implementation dependencies
-    kafkaIntegrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
-    kafkaIntegrationTestRuntimeOnly project(":libs:kafka-utils:topic-admin-impl")
-    kafkaIntegrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
-    kafkaIntegrationTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
-    kafkaIntegrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    kafkaIntegrationTestRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
-    kafkaIntegrationTestRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-    kafkaIntegrationTestRuntimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
-    kafkaIntegrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
 
-def resolve = tasks.register('resolve', Resolve) {
-    dependsOn jar, kafkaTestingBundle
-    bundles = files(sourceSets.kafkaIntegrationTest.runtimeClasspath, configurations.archives.artifacts.files)
-    bndrun = file('test.bndrun')
-    //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
-    System.setProperty("bnd.home.dir", "$rootDir/bnd/")
-}
-
-tasks.register('kafkaIntegrationTest', TestOSGi) {
-    description = "Runs Kafka OSGi integration tests."
-    group = "verification"
-    bundles = files(sourceSets.kafkaIntegrationTest.runtimeClasspath, configurations.archives.artifacts.files)
-    bndrun = resolve.flatMap { it.outputBndrun }
-}
-
-def kafkaTestingBundle = tasks.register('kafkaTestingBundle', Bundle) {
-    archiveClassifier = 'tests'
-    from sourceSets.kafkaIntegrationTest.output
-    sourceSet = sourceSets.kafkaIntegrationTest
-
-    bnd """\
-Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
-Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
-"""
-}
-
-artifacts {
-    archives kafkaTestingBundle
-}

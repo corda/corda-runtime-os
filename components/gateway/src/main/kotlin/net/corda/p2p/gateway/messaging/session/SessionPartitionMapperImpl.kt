@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.session
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.LeafTile
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -13,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 class SessionPartitionMapperImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
+    nodeConfiguration: SmartConfig,
 ) : SessionPartitionMapper,
     LeafTile(
         lifecycleCoordinatorFactory
@@ -25,7 +27,8 @@ class SessionPartitionMapperImpl(
 
     private val sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS),
-        SessionPartitionProcessor()
+        SessionPartitionProcessor(),
+        nodeConfiguration
     )
 
     override fun getPartitions(sessionId: String): List<Int>? {

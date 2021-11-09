@@ -15,21 +15,23 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
     implementation project(":libs:p2p-crypto")
-    implementation project(":libs:messaging:messaging")
-    implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":components:configuration:configuration-read-service")
-    implementation project(':components:domino-logic')
+    api project(":libs:messaging:messaging")
+    api project(":libs:lifecycle:lifecycle")
+    api project(":components:configuration:configuration-read-service")
+    api project(':components:domino-logic')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "io.netty:netty-codec-http:$nettyVersion"
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
     implementation "commons-validator:commons-validator:$commonsVersion"
+    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
 
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion") {
         exclude group: 'mockito-core'
     }
+    testImplementation project(":testing:test-utilities")
 
     integrationTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     integrationTestImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
@@ -37,11 +39,10 @@ dependencies {
     // For async logging
     integrationTestRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
 
-    integrationTestImplementation project(":testing:test-utilities")
-
     integrationTestImplementation project(":libs:messaging:inmemory-messaging-impl")
     integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
+    integrationTestImplementation project(":libs:configuration:configuration-core")
     integrationTestImplementation project(":libs:configuration:configuration-read-impl")
     integrationTestImplementation project(":libs:configuration:configuration-read")
     integrationTestImplementation project(":libs:configuration:configuration-write")
@@ -61,4 +62,8 @@ tasks.register('integrationTest', Test) {
     jvmArgs "-Djdk.net.hosts.file=$hostsFilePath"
     testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
     classpath = project.sourceSets["integrationTest"].runtimeClasspath
+}
+
+tasks.named('check') {
+    dependsOn integrationTest
 }

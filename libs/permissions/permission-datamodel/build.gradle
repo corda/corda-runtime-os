@@ -1,0 +1,15 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Permission data model'
+
+dependencies {
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    api "javax.persistence:javax.persistence-api"
+
+    compileOnly "org.osgi:osgi.annotation"
+}

@@ -2,9 +2,9 @@ package net.corda.flow.statemachine.impl
 
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
 import net.corda.data.flow.Checkpoint
-import net.corda.data.flow.FlowError
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.RPCFlowResult
 import net.corda.data.flow.StateMachineState
@@ -30,7 +30,7 @@ import java.nio.ByteBuffer
 
 class TransientReference<out A>(@Transient val value: A)
 
-@Suppress("TooManyFunctions", "ComplexMethod", "TooGenericExceptionCaught")
+@Suppress("TooManyFunctions", "ComplexMethod")
 class FlowStateMachineImpl<R>(
     private val clientId: String?,
     private val id: FlowKey,
@@ -134,7 +134,7 @@ class FlowStateMachineImpl<R>(
                     logic.javaClass.name,
                     null,
                     SecureHash(),
-                    FlowError(
+                    ExceptionEnvelope(
                         resultOrError.exception.cause.toString(),
                         resultOrError.exception.message
                     )

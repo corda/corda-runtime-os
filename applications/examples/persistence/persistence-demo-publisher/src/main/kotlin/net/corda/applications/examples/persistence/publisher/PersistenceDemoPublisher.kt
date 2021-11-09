@@ -1,5 +1,6 @@
 package net.corda.applications.examples.persistence.publisher
 
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -18,12 +19,15 @@ class PersistenceDemoPublisher @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
+    @Reference(service = SmartConfigFactory::class)
+    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
         val parameters = CliParameters(shutDownService)
         val cli = CommandLine(parameters)
-        cli.addSubcommand(ClusterAdminCommand(publisherFactory, shutDownService))
+        cli.addSubcommand(ClusterAdminCommand(smartConfigFactory, publisherFactory, shutDownService))
+        cli.addSubcommand(ConfigAdminCommand(smartConfigFactory, publisherFactory, shutDownService))
         cli.execute(*args)
     }
 
