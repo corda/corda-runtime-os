@@ -1,22 +1,25 @@
-package net.corda.libs.permission
+package net.corda.libs.permission.impl
 
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.User
-
-import kotlin.test.assertTrue
-import org.junit.jupiter.api.Test
 import net.corda.messaging.api.records.Record
-import kotlin.test.assertNotNull
+import org.junit.jupiter.api.Test
 import java.time.Instant
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class UserTopicProcessorTest {
 
-    private val user = User("id1", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
-        "hashedPassword", "saltValue", false, null, null, null)
+    private val user = User(
+        "id1", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
+        "hashedPassword", "saltValue", false, null, null, null
+    )
 
-    private val userUpdated = User("id2", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", false,
-        "hashedPassword", "saltValue", false, null, null, null)
+    private val userUpdated = User(
+        "id2", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", false,
+        "hashedPassword", "saltValue", false, null, null, null
+    )
 
     @Test
     fun `New processor does not have user data`() {
