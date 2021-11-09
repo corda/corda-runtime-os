@@ -31,7 +31,7 @@ class DeliveryTracker(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configReadService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
-    private val nodeConfiguration: SmartConfig,
+    private val configuration: SmartConfig,
     private val subscriptionFactory: SubscriptionFactory,
     networkMap: LinkManagerNetworkMap,
     cryptoService: LinkManagerCryptoService,
@@ -42,7 +42,7 @@ class DeliveryTracker(
     private val appMessageReplayer = AppMessageReplayer(
         coordinatorFactory,
         publisherFactory,
-        nodeConfiguration,
+        configuration,
         processAuthenticatedMessage
     )
     private val replayScheduler = ReplayScheduler(
@@ -67,7 +67,7 @@ class DeliveryTracker(
         val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("message-tracker-group", Schema.P2P_OUT_MARKERS, 1),
             messageTracker.processor,
-            nodeConfiguration,
+            configuration,
             messageTracker.listener
         )
         resources.keep(messageTrackerSubscription)
@@ -77,7 +77,7 @@ class DeliveryTracker(
     private class AppMessageReplayer(
         coordinatorFactory: LifecycleCoordinatorFactory,
         publisherFactory: PublisherFactory,
-        nodeConfiguration: SmartConfig,
+        configuration: SmartConfig,
         private val processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
     ): LifecycleWithDominoTile {
 
@@ -89,7 +89,7 @@ class DeliveryTracker(
             publisherFactory,
             coordinatorFactory,
             MESSAGE_REPLAYER_CLIENT_ID,
-            nodeConfiguration
+            configuration
         )
 
         override val dominoTile = publisher.dominoTile

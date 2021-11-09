@@ -14,7 +14,7 @@ class PublisherWithDominoLogic(
     private val publisherFactory: PublisherFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val publisherId: String,
-    private val nodeConfiguration: SmartConfig,
+    private val configuration: SmartConfig,
 ) : LifecycleWithDominoTile {
 
     @Volatile
@@ -26,7 +26,7 @@ class PublisherWithDominoLogic(
         val publisherConfig = PublisherConfig(publisherId)
         publisher = publisherFactory.createPublisher(
             publisherConfig,
-            nodeConfiguration
+            configuration
         ).also {
             resources.keep {
                 it.close()

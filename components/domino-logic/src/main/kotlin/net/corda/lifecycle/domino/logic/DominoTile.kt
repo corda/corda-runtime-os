@@ -185,11 +185,8 @@ class DominoTile(
                 is ErrorEvent -> {
                     gotError(event.cause)
                 }
-                is StartEvent -> {
-                    // Do nothing
-                }
-                is StopEvent -> {
-                    // Do nothing
+                is StartEvent, is StopEvent -> {
+                    // We don't do anything when the starting/stopping the coordinator
                 }
                 is StopTile -> {
                     when (state) {

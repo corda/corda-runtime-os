@@ -63,7 +63,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                   val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                   @Reference(service = ConfigurationReadService::class)
                   val configurationReaderService: ConfigurationReadService,
-                  private val nodeConfiguration: SmartConfig,
+                  private val configuration: SmartConfig,
                   val linkManagerNetworkMap: LinkManagerNetworkMap,
                   private val linkManagerHostingMap: LinkManagerHostingMap,
                   private val linkManagerCryptoService: LinkManagerCryptoService,
@@ -81,7 +81,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     private val inboundAssignmentListener = InboundAssignmentListener { inboundDominoTile.resourcesStarted(false) }
 
-    private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory, lifecycleCoordinatorFactory, nodeConfiguration)
+    private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory, lifecycleCoordinatorFactory, configuration)
 
     private val sessionManager = SessionManagerImpl(
         linkManagerNetworkMap,
@@ -90,7 +90,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         publisherFactory,
         configurationReaderService,
         lifecycleCoordinatorFactory,
-        nodeConfiguration
+        configuration
     )
 
     @VisibleForTesting
@@ -122,7 +122,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             lifecycleCoordinatorFactory,
             configurationReaderService,
             publisherFactory,
-            nodeConfiguration,
+            configuration,
             subscriptionFactory,
             linkManagerNetworkMap,
             linkManagerCryptoService,
@@ -409,14 +409,14 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     class PendingSessionMessageQueuesImpl(
         publisherFactory: PublisherFactory,
         coordinatorFactory: LifecycleCoordinatorFactory,
-        nodeConfiguration: SmartConfig
+        configuration: SmartConfig
     ): PendingSessionMessageQueues, LifecycleWithDominoTile {
         private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<AuthenticatedMessageAndKey>>()
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
             LINK_MANAGER_PUBLISHER_CLIENT_ID,
-            nodeConfiguration
+            configuration
         )
         override val dominoTile = publisher.dominoTile
 

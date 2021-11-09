@@ -21,7 +21,7 @@ class InMemorySessionReplayer(
     publisherFactory: PublisherFactory,
     configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    nodeConfiguration: SmartConfig,
+    configuration: SmartConfig,
     private val networkMap: LinkManagerNetworkMap,
 ): LifecycleWithDominoTile {
 
@@ -31,7 +31,7 @@ class InMemorySessionReplayer(
 
     private var logger = LoggerFactory.getLogger(this::class.java.name)
 
-    private val publisher = PublisherWithDominoLogic(publisherFactory, coordinatorFactory, MESSAGE_REPLAYER_CLIENT_ID, nodeConfiguration)
+    private val publisher = PublisherWithDominoLogic(publisherFactory, coordinatorFactory, MESSAGE_REPLAYER_CLIENT_ID, configuration)
 
     private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService,
         LinkManagerConfiguration.MESSAGE_REPLAY_PERIOD_KEY, ::replayMessage)
