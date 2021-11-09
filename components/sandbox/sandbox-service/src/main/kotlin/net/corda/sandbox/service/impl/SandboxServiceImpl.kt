@@ -72,12 +72,6 @@ class SandboxServiceImpl @Activate constructor(
         }
     }
 
-    override fun getSerializerForSandbox(sandboxGroup: SandboxGroup): CheckpointSerializer {
-        return checkpointSerializers.computeIfAbsent(sandboxGroup) {
-            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(it).build()
-        }
-    }
-
     override val isRunning: Boolean
         get() = coordinator.isRunning
 

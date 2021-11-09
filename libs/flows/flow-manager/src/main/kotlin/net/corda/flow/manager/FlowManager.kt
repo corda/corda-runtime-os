@@ -4,14 +4,12 @@ import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.FlowSessionMessage
 import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.CheckpointSerializer
 
 interface FlowManager {
     fun startInitiatingFlow(
         flowMetaData: FlowMetaData,
         clientId: String,
-        sandboxGroup: SandboxGroup,
-        checkpointSerializer: CheckpointSerializer
+        sandboxGroup: SandboxGroup
     ): FlowResult
 
     fun startRemoteInitiatedFlow(
@@ -23,6 +21,6 @@ interface FlowManager {
         lastCheckpoint: Checkpoint,
         wakeupEvent: FlowEvent,
         flowEventTopic: String,
-        checkpointSerializer: CheckpointSerializer,
+        sandboxGroup: SandboxGroup,
     ): FlowResult
 }

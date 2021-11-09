@@ -27,7 +27,7 @@ import java.nio.ByteBuffer
 
 class FlowManagerImplTest {
 
-    class TestFlow(val jsonArg: String): Flow<Unit> {
+    class TestFlow(val jsonArg: String) : Flow<Unit> {
         override fun call() {
         }
     }
@@ -67,13 +67,14 @@ class FlowManagerImplTest {
         val topic = "Topic1"
 
         doReturn(TestFlow::class.java).`when`(sandboxGroup).loadClassFromMainBundles(any(), eq(Flow::class.java))
-        doReturn(stateMachine).`when`(flowStateMachineFactory).createStateMachine(any(), any(), any(), any(),  any(),  any())
+        doReturn(stateMachine).`when`(flowStateMachineFactory).createStateMachine(any(), any(), any(), any(), any(), any())
         doReturn(Pair(checkpoint, eventsOut)).`when`(stateMachine).waitForCheckpoint()
         doReturn(checkpointSerializerBuilder).`when`(checkpointSerializerBuilderFactory).createCheckpointSerializerBuilder(any())
         doReturn(checkpointSerializer).`when`(checkpointSerializerBuilder).build()
         doReturn(serialized).`when`(checkpointSerializer).serialize(any())
 
         val flowManager = FlowManagerImpl(
+            checkpointSerializerBuilderFactory,
             dependencyInjector,
             flowStateMachineFactory
         )
@@ -81,8 +82,7 @@ class FlowManagerImplTest {
         val result = flowManager.startInitiatingFlow(
             FlowMetaData(flowName, flowKey, "jsonArg", cpiId, topic),
             "clientId",
-            sandboxGroup,
-            checkpointSerializer
+            sandboxGroup
         )
 
         assertThat(result.checkpoint).isEqualTo(checkpoint)
