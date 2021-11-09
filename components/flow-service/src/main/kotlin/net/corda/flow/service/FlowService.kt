@@ -1,6 +1,5 @@
 package net.corda.flow.service
 
-import net.corda.sandbox.service.SandboxService
 import net.corda.configuration.read.ConfigKeys.Companion.BOOTSTRAP_KEY
 import net.corda.configuration.read.ConfigKeys.Companion.FLOW_KEY
 import net.corda.configuration.read.ConfigKeys.Companion.MESSAGING_KEY
@@ -19,6 +18,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.sandbox.service.SandboxService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
@@ -92,11 +92,18 @@ class FlowService @Activate constructor(
 
     @Suppress("TooGenericExceptionThrown", "UNUSED_PARAMETER")
     private fun onConfigChange(keys: Set<String>, config: Map<String, SmartConfig>) {
-        if (MESSAGING_KEY in config.keys && BOOTSTRAP_KEY in config.keys && FLOW_KEY in config.keys) {
+        if (isRelevantConfigKey(keys) && config.keys.containsAll(listOf(MESSAGING_KEY, BOOTSTRAP_KEY, FLOW_KEY))) {
             coordinator.postEvent(
                 NewConfigurationReceived(config[BOOTSTRAP_KEY]!!.withFallback(config[MESSAGING_KEY]).withFallback(config[FLOW_KEY]))
             )
         }
+    }
+
+    /**
+     * True if any of the config [keys] are relevant to this app.
+     */
+    private fun isRelevantConfigKey(keys: Set<String>) : Boolean {
+        return MESSAGING_KEY in keys || BOOTSTRAP_KEY in keys || FLOW_KEY in keys
     }
 
     override val isRunning: Boolean

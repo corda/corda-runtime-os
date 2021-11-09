@@ -12,6 +12,7 @@ import net.corda.flow.service.exception.FlowMessageSkipException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.sandbox.service.SandboxService
+import net.corda.sandbox.service.SandboxType
 
 class FlowMessageProcessor(
     private val flowManager: FlowManager,
@@ -23,7 +24,7 @@ class FlowMessageProcessor(
         state: Checkpoint?,
         event: Record<FlowKey, FlowEvent>
     ): StateAndEventProcessor.Response<Checkpoint> {
-        val flowEvent = event.value ?: throw FlowMessageSkipException("FlowEvent was null")
+        val flowEvent = event.value ?: throw FlowHospitalException("FlowEvent was null")
         val flowKey = event.key
         val cpiId = flowEvent.cpiId
         val identity = flowKey.identity.x500Name
@@ -33,7 +34,7 @@ class FlowMessageProcessor(
                 if (state != null) {
                     throw FlowMessageSkipException("State should be null for StartRPCFlow. Duplicate message.")
                 }
-                val sandboxGroup = sandboxService.getSandboxGroupFor(cpiId, identity)
+                val sandboxGroup = sandboxService.getSandboxGroupFor(cpiId, identity, SandboxType.FLOW)
                 val checkpointSerializer = sandboxService.getSerializerForSandbox(sandboxGroup)
                 flowManager.startInitiatingFlow(
                     FlowMetaData(flowName, flowKey, payload.jsonArgs, cpiId, flowEventTopic),
@@ -45,7 +46,7 @@ class FlowMessageProcessor(
             is Wakeup -> {
                 val checkpoint = state ?: throw FlowHospitalException("State for wakeup FlowEvent was null")
                 val checkpointSerializer =
-                    sandboxService.getSerializerForSandbox(sandboxService.getSandboxGroupFor(cpiId, identity))
+                    sandboxService.getSerializerForSandbox(sandboxService.getSandboxGroupFor(cpiId, identity, SandboxType.FLOW))
                 flowManager.wakeFlow(checkpoint, flowEvent, flowEventTopic, checkpointSerializer)
             }
             else -> {

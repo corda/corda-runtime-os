@@ -12,6 +12,7 @@ import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.service.SandboxService
+import net.corda.sandbox.service.SandboxType
 import net.corda.sandbox.service.helper.initPublicSandboxes
 import net.corda.serialization.CheckpointSerializer
 import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
@@ -60,7 +61,7 @@ class SandboxServiceImpl @Activate constructor(
     private var cpiIdentifierById = ConcurrentHashMap<String, CPI.Identifier>()
     private val coordinator = coordinatorFactory.createCoordinator<SandboxService>(::eventHandler)
 
-    override fun getSandboxGroupFor(cpiId: String, identity: String): SandboxGroup {
+    override fun getSandboxGroupFor(cpiId: String, identity: String, sandboxType: SandboxType): SandboxGroup {
         return cache.computeIfAbsent(SandboxCacheKey(identity, cpiId)) {
             //hacky stuff until cpi service component is available. e.g dummy load logic doesnt handle multiple groups
             val cpiIdentifier = cpiIdentifierById[cpiId]
