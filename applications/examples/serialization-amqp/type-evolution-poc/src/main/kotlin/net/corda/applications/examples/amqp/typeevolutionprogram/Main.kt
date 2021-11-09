@@ -64,11 +64,11 @@ class Main @Activate constructor(
 
         // Save output
 //        val output = SerializationOutput(factory)
-//        val rebuildResorceFiles =
-//            sandboxGroup.loadClassFromMainBundles<Any>("net.corda.applications.examples.amqp.typeevolution.RebuildResorceFiles",
+//        val rebuildResourceFiles =
+//            sandboxGroup.loadClassFromMainBundles("net.corda.applications.examples.amqp.typeevolution.RebuildResourceFiles",
 //            Any::class.java)
-//        val method = rebuildResorceFiles.getMethod("getResourceTypes")
-//        val result = method.invoke(rebuildResorceFiles.getConstructor().newInstance()) as Map<*, *>
+//        val method = rebuildResourceFiles.getMethod("getResourceTypes")
+//        val result = method.invoke(rebuildResourceFiles.getConstructor().newInstance()) as Map<*, *>
 //        for (i in result) {
 //            File(i.key as String).writeBytes(output.serialize(i.value!!, AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxGroup)).bytes)
 //        }
