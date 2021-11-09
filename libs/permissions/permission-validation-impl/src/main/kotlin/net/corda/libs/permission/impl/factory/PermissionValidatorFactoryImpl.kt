@@ -1,8 +1,9 @@
-package net.corda.libs.permission.factory
-import net.corda.libs.permission.GroupTopicProcessor
-import net.corda.libs.permission.PermissionValidatorImpl
-import net.corda.libs.permission.RoleTopicProcessor
-import net.corda.libs.permission.UserTopicProcessor
+package net.corda.libs.permission.impl.factory
+import net.corda.libs.permission.impl.GroupTopicProcessor
+import net.corda.libs.permission.impl.PermissionValidatorImpl
+import net.corda.libs.permission.impl.RoleTopicProcessor
+import net.corda.libs.permission.impl.UserTopicProcessor
+import net.corda.libs.permission.factory.PermissionValidatorFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -15,6 +16,7 @@ class PermissionValidatorFactoryImpl @Activate constructor(
 ): PermissionValidatorFactory {
     override fun createPermissionValidator(): PermissionValidatorImpl {
         return PermissionValidatorImpl(subscriptionFactory,
-            UserTopicProcessor(), GroupTopicProcessor(), RoleTopicProcessor())
+            UserTopicProcessor(), GroupTopicProcessor(), RoleTopicProcessor()
+        )
     }
 }
