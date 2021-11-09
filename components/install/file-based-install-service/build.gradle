@@ -4,6 +4,8 @@ plugins {
     id 'corda.osgi-test-conventions'
 }
 
+description 'File-Based CorDapp Installer'
+
 configurations {
     cpis {
         canBeConsumed = false

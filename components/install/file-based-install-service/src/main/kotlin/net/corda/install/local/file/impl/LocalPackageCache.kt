@@ -38,6 +38,7 @@ import kotlin.concurrent.write
 
 class UpdatedCPIList(val delta: NavigableSet<CPI.Identifier>) : LifecycleEvent
 
+@Suppress("unused")
 @Component(service = [InstallService::class], scope = ServiceScope.SINGLETON)
 class LocalPackageCache @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -127,15 +128,15 @@ class LocalPackageCache @Activate constructor(
         }
     }
 
-    override fun get(id: CPI.Identifier) = packageCacheLock.read {
+    override fun get(id: CPI.Identifier): CompletableFuture<CPI?> = packageCacheLock.read {
         CompletableFuture.completedFuture(packageCache.cpiByIdMap[id])
     }
 
-    override fun get(id: CPK.Identifier) = packageCacheLock.read {
+    override fun get(id: CPK.Identifier): CompletableFuture<CPK?> = packageCacheLock.read {
         CompletableFuture.completedFuture(packageCache.cpkByIdMap[id])
     }
 
-    override fun getCPKByHash(hash: SecureHash) = packageCacheLock.read {
+    override fun getCPKByHash(hash: SecureHash): CompletableFuture<CPK?> = packageCacheLock.read {
         CompletableFuture.completedFuture(packageCache.cpkByHashMap[hash])
     }
 
