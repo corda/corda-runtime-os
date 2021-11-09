@@ -20,5 +20,5 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
     // Corda does not actually provide this dependency, so an error will be thrown at sandbox creation time.
-    cordaProvided "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+    cordaProvided "org.osgi:org.osgi.service.cm:$osgiCmVersion"
 }

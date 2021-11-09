@@ -11,12 +11,12 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
 import net.corda.messaging.kafka.utils.render
+import net.corda.messaging.kafka.utils.toRecord
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.debug
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ExecutorService
@@ -186,14 +186,14 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
      * thread otherwise. Commit the offset for each record back to the topic after processing them synchronously.
      * If a record fails to deserialize skip this record and log the error.
      */
-    private fun processPubSubRecords(consumerRecords: List<ConsumerRecordAndMeta<K, V>>, consumer: CordaKafkaConsumer<K, V>) {
+    private fun processPubSubRecords(consumerRecords: List<ConsumerRecord<K, V>>, consumer: CordaKafkaConsumer<K, V>) {
         consumerRecords.forEach {
             if (executor != null) {
-                executor.submit { processor.onNext(it.asRecord()) }.get()
+                executor.submit { processor.onNext(it.toRecord()) }.get()
             } else {
-                processor.onNext(it.asRecord())
+                processor.onNext(it.toRecord())
             }
-            consumer.commitSyncOffsets(it.record)
+            consumer.commitSyncOffsets(it)
         }
     }
 

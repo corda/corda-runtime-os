@@ -2,12 +2,10 @@ package net.corda.db.test.osgi
 
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
-import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
-import net.corda.db.core.PostgresDataSourceFactory
-import net.corda.orm.DbEntityManagerConfiguration
-import net.corda.orm.DdlManage
+import net.corda.db.testkit.DbUtils.getEntityManagerConfiguration
+import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
-import net.corda.orm.impl.InMemoryEntityManagerConfiguration
+import net.corda.test.util.LoggingUtils.emphasise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -25,7 +23,6 @@ import java.io.StringWriter
 import java.time.LocalDate
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
-import kotlin.math.ceil
 
 /**
  * These tests are here to prove that we can persist JPA annotated entities from separate bundles.
@@ -38,9 +35,9 @@ import kotlin.math.ceil
 @ExtendWith(ServiceExtension::class)
 class EntitiesInBundlesTest {
     companion object {
-        const val DOG_CLASS_NAME = "net.corda.testing.bundles.dogs.Dog"
-        const val CAT_CLASS_NAME = "net.corda.testing.bundles.cats.Cat"
-        const val OWNER_CLASS_NAME = "net.corda.testing.bundles.cats.Owner"
+        private const val DOG_CLASS_NAME = "net.corda.testing.bundles.dogs.Dog"
+        private const val CAT_CLASS_NAME = "net.corda.testing.bundles.cats.Cat"
+        private const val OWNER_CLASS_NAME = "net.corda.testing.bundles.cats.Owner"
 
         private val logger: Logger = LoggerFactory.getLogger("TEST")
 
@@ -82,19 +79,7 @@ class EntitiesInBundlesTest {
         private val catId = UUID.randomUUID()
         private val cat = catCtor.newInstance(catId, "Stray", "Tabby", owner)
 
-        private val dbConfig = run {
-            if (!System.getProperty("postgresDb").isNullOrBlank()) {
-                logger.info("Using Postgres on port ${System.getProperty("postgresPort")}".emphasise())
-                val ds = PostgresDataSourceFactory().create(
-                    "jdbc:postgresql://${System.getProperty("postgresHost")}:${System.getProperty("postgresPort")}/${System.getProperty("postgresDb")}",
-                    System.getProperty("postgresUser"),
-                    System.getProperty("postgresPassword"))
-                DbEntityManagerConfiguration(ds, true, true, DdlManage.UPDATE)
-            } else {
-                logger.info("Using in-memory (HSQL) DB".emphasise())
-                InMemoryEntityManagerConfiguration("pets")
-            }
-        }
+        private val dbConfig: EntityManagerConfiguration = getEntityManagerConfiguration("pets")
 
         @Suppress("unused")
         @JvmStatic
@@ -204,12 +189,4 @@ class EntitiesInBundlesTest {
             em.close()
         }
     }
-}
-
-// trying to make it easy to find the print lines in the very verbose osgi test logging
-private fun String.emphasise(paddingChars: String = "#", width: Int = 80): String {
-    val padding = paddingChars.repeat(
-        kotlin.math.max(ceil((width - this.length - 2).toDouble() / 2).toInt(), 4)
-    )
-    return "$padding $this $padding"
 }

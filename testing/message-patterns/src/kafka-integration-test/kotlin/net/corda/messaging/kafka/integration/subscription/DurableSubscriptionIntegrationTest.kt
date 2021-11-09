@@ -1,7 +1,5 @@
 package net.corda.messaging.kafka.integration.subscription
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.libs.configuration.SmartConfig
