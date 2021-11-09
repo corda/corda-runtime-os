@@ -241,12 +241,13 @@ class DominoTile(
                                 // check if children are started, config has been applied etc. and signal UP, if so.
                                 State.StoppedDueToBadConfig, State.Created, State.StoppedByParent -> {
                                     logger.info("Config ready for $name.")
-                                    readyOrStartTile()
+                                    setStartedIfCan()
                                 }
                                 State.StoppedDueToError, State.Started -> {} // Do nothing
                             }
                         }
                         is ConfigUpdateResult.Error -> {
+                            logger.warn("Config error for $name. ${event.configUpdateResult.e}")
                             stopTile(false)
                             updateState(State.StoppedDueToBadConfig)
                         }
