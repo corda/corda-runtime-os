@@ -1,4 +1,8 @@
-Build:
+Build CPK:
+
+`../../../../gradlew build`
+
+Build application:
 
 `../../../../gradlew appJar`
 
