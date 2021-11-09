@@ -35,19 +35,19 @@ internal class CommonArguments(
         names = ["-k", "--kafka-servers"],
         description = ["The kafka servers"]
     )
-    var kafkaServers = "localhost:9092"
+    var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
 
     @Option(
         names = ["--config-topic-name"],
         description = ["The config topic name"]
     )
-    private var configTopicName = "ConfigTopic"
+    var configTopicName = System.getenv("CONFIG_TOPIC") ?: "ConfigTopic"
 
     @Option(
         names = ["--topic-prefix"],
         description = ["The topic prefix"]
     )
-    var topicPrefix = ""
+    var topicPrefix = System.getenv("TOPIC_PREFIX") ?: ""
 
     private val kafkaNodeConfiguration: Config by lazy {
         ConfigFactory.empty()

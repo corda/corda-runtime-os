@@ -1,8 +1,6 @@
 package net.corda.messaging.kafka.subscription.consumer.wrapper
 
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.api.records.EventLogRecord
-import net.corda.messaging.api.records.Record
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
@@ -12,20 +10,6 @@ import org.apache.kafka.common.TopicPartition
 import java.nio.ByteBuffer
 import java.time.Duration
 
-data class ConsumerRecordAndMeta<K : Any, V : Any>(
-    val topicPrefix: String,
-    val record: ConsumerRecord<K, V>,
-)
-
-fun <K : Any, V : Any> ConsumerRecordAndMeta<K, V>.asRecord(): Record<K, V> {
-    val topic = record.topic().substringAfter(topicPrefix)
-    return Record(topic, record.key(), record.value())
-}
-
-fun <K: Any, V: Any> ConsumerRecordAndMeta<K, V>.asEventLogRecord(): EventLogRecord<K, V> {
-    val topic = record.topic().substringAfter(topicPrefix)
-    return EventLogRecord(topic, record.key(), record.value(), record.partition(), record.offset())
-}
 
 /**
  * Wrapper for a Kafka Consumer.
@@ -104,12 +88,12 @@ interface CordaKafkaConsumer<K : Any, V : Any> : AutoCloseable {
     /**
      * Poll records from the consumer and sort them by timestamp
      */
-    fun poll(): List<ConsumerRecordAndMeta<K, V>>
+    fun poll(): List<ConsumerRecord<K, V>>
 
     /**
      * Poll records from the consumer and sort them by timestamp with a [timeout]
      */
-    fun poll(timeout: Duration): List<ConsumerRecordAndMeta<K, V>>
+    fun poll(timeout: Duration): List<ConsumerRecord<K, V>>
 
     /**
      * Reset the consumer position on a topic to the last committed position. Next poll from the topic will read from this position.

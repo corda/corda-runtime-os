@@ -367,11 +367,11 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).position(TopicPartition(null, 0))
+        doThrow(IllegalStateException()).whenever(consumer).position(TopicPartition("null", 0))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             cordaKafkaConsumer.position(TopicPartition(null, 0))
         }
-        verify(consumer, times(1)).position(TopicPartition(null, 0))
+        verify(consumer, times(1)).position(TopicPartition("null", 0))
     }
 
     @Test
@@ -382,11 +382,11 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).seek(TopicPartition(null, 0), 0)
+        doThrow(IllegalStateException()).whenever(consumer).seek(TopicPartition("null", 0), 0)
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             cordaKafkaConsumer.seek(TopicPartition(null, 0), 0)
         }
-        verify(consumer, times(1)).seek(TopicPartition(null, 0), 0)
+        verify(consumer, times(1)).seek(TopicPartition("null", 0), 0)
     }
 
     @Test
@@ -397,11 +397,11 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).seekToBeginning(mutableListOf(TopicPartition(null, 0)))
+        doThrow(IllegalStateException()).whenever(consumer).seekToBeginning(mutableListOf(TopicPartition("test", 0)))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.seekToBeginning(mutableListOf(TopicPartition(null, 0)))
+            cordaKafkaConsumer.seekToBeginning(mutableListOf(TopicPartition("test", 0)))
         }
-        verify(consumer, times(1)).seekToBeginning(mutableListOf(TopicPartition(null, 0)))
+        verify(consumer, times(1)).seekToBeginning(mutableListOf(TopicPartition("test", 0)))
     }
 
     @Test
@@ -412,11 +412,11 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).beginningOffsets(mutableListOf(TopicPartition(null, 0)))
+        doThrow(IllegalStateException()).whenever(consumer).beginningOffsets(mutableListOf(TopicPartition("test", 0)))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.beginningOffsets(mutableListOf(TopicPartition(null, 0)))
+            cordaKafkaConsumer.beginningOffsets(mutableListOf(TopicPartition("test", 0)))
         }
-        verify(consumer, times(1)).beginningOffsets(mutableListOf(TopicPartition(null, 0)))
+        verify(consumer, times(1)).beginningOffsets(mutableListOf(TopicPartition("test", 0)))
     }
 
     @Test
@@ -427,11 +427,11 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).endOffsets(mutableListOf(TopicPartition(null, 0)))
+        doThrow(IllegalStateException()).whenever(consumer).endOffsets(mutableListOf(TopicPartition("test", 0)))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.endOffsets(mutableListOf(TopicPartition(null, 0)))
+            cordaKafkaConsumer.endOffsets(mutableListOf(TopicPartition("test", 0)))
         }
-        verify(consumer, times(1)).endOffsets(mutableListOf(TopicPartition(null, 0)))
+        verify(consumer, times(1)).endOffsets(mutableListOf(TopicPartition("test", 0)))
     }
 
     @Test
@@ -442,11 +442,11 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).resume(mutableListOf(TopicPartition(null, 0)))
+        doThrow(IllegalStateException()).whenever(consumer).resume(mutableListOf(TopicPartition("test", 0)))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.resume(mutableListOf(TopicPartition(null, 0)))
+            cordaKafkaConsumer.resume(mutableListOf(TopicPartition("test", 0)))
         }
-        verify(consumer, times(1)).resume(mutableListOf(TopicPartition(null, 0)))
+        verify(consumer, times(1)).resume(mutableListOf(TopicPartition("test", 0)))
     }
 
     @Test
@@ -457,11 +457,11 @@ class CordaKafkaConsumerImplTest {
             consumer,
             listener
         )
-        doThrow(IllegalStateException()).whenever(consumer).pause(mutableListOf(TopicPartition(null, 0)))
+        doThrow(IllegalStateException()).whenever(consumer).pause(mutableListOf(TopicPartition("test", 0)))
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.pause(mutableListOf(TopicPartition(null, 0)))
+            cordaKafkaConsumer.pause(mutableListOf(TopicPartition("test", 0)))
         }
-        verify(consumer, times(1)).pause(mutableListOf(TopicPartition(null, 0)))
+        verify(consumer, times(1)).pause(mutableListOf(TopicPartition("test", 0)))
     }
 
     @Test
