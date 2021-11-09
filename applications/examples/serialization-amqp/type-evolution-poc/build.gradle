@@ -38,12 +38,10 @@ dependencies {
     implementation project(":osgi-framework-api")
 
     implementation project(':libs:serialization:serialization-amqp')
-    implementation project(':libs:sandbox')
     implementation project(':components:install:install-legacy')
 
     cpks project(path: ':applications:examples:serialization-amqp:type-evolution-poc:evolution-example-cpk', configuration: 'cordaCPK')
 
-    runtimeOnly project(':libs:sandbox')
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
 
