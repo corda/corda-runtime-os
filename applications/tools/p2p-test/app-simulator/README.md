@@ -17,12 +17,7 @@ It can be executed in three main modes:
 ## Executing the tool
 
 ```
-java -jar applications/tools/p2p-test/app-simulator/build/bin/corda-app-simulator-5.0.0.0-SNAPSHOT.jar --kafka ~/Desktop/kafka.properties --simulator-config ~/Desktop/simulator.conf
-```
-
-The file specified in the --kafka CLI parameter should have the following structure:
-```
-bootstrap.servers=localhost:9092
+java -jar applications/tools/p2p-test/app-simulator/build/bin/corda-app-simulator-5.0.0.0-SNAPSHOT.jar --kafka-servers localhost:9092 --simulator-config ~/Desktop/simulator.conf
 ```
 
 The simulator configuration file differs depending on the mode.
@@ -31,7 +26,7 @@ The simulator configuration file differs depending on the mode.
 
 In this mode, the tool will generate messages to the `p2p.out` topic, which is where the p2p layer processes them from by default. You can customise the topic messages will be sent to using the CLI argument `--send-topic`, e.g.:
 ```
-java -jar applications/tools/p2p-test/app-simulator/build/bin/corda-app-simulator-5.0.0.0-SNAPSHOT.jar --kafka ~/Desktop/kafka.properties --simulator-config ~/Desktop/simulator.conf --send-topic my.topic
+java -jar applications/tools/p2p-test/app-simulator/build/bin/corda-app-simulator-5.0.0.0-SNAPSHOT.jar --kafka-servers localhost:9092 --simulator-config ~/Desktop/simulator.conf --send-topic my.topic
 ```
 The tool will also (optionally) write some additional metadata (e.g. message ID, sender ID) to the specified database.
 
@@ -78,7 +73,7 @@ The following configuration options are optional:
 
 In this mode, the tool will consume messages from the default topic where the p2p layer delivers messages (`p2p.in`). You can customise the topic messages will be sent to using the CLI argument `--receive-topic`, e.g.:
 ```
-java -jar applications/tools/p2p-test/app-simulator/build/bin/corda-app-simulator-5.0.0.0-SNAPSHOT.jar --kafka ~/Desktop/kafka.properties --simulator-config ~/Desktop/simulator.conf --receive-topic my.topic
+java -jar applications/tools/p2p-test/app-simulator/build/bin/corda-app-simulator-5.0.0.0-SNAPSHOT.jar --kafka-servers localhost:9092 --simulator-config ~/Desktop/simulator.conf --receive-topic my.topic
 ```
 The consumed messages will be written to a secondary topic (`app.received_msg`) along with some additional metadata (e.g. timestamps, calculated latency).
 In this mode, the tool will run until explicitly stopped with Ctrl+C.
@@ -177,4 +172,63 @@ This project contains a Docker compose file that can be used to start a Docker c
 In order to deploy this locally, you can use the following command:
 ```
 docker-compose -f src/test/resources/postgres-docker/postgres-db.yml up -d
+```
+In order to deploy this in the same network as the kafka cluster([see](../../../../testing/message-patterns/README.md)):
+```
+docker-compose -f applications/tools/p2p-test/app-simulator/src/test/resources/postgres-docker/postgres-db-with-kafka-network.yml up -d
+```
+
+## Using the tool docker image
+### Building the image
+To build a docker image of the tool run:
+```bash
+./gradlew :applications:tools:p2p-test:app-simulator:publishOSGiImage
+```
+
+The created image will be `engineering-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT`
+
+### Example of using the image
+1. Start the kafka cluster([see](../../../../testing/message-patterns/README.md))
+2. Add a database container to the network:
+```bash
+docker-compose \
+  -f applications/tools/p2p-test/app-simulator/src/test/resources/postgres-docker/postgres-db-with-kafka-network.yml \
+  up -d
+```
+3. Run the tool:
+  * Sender with database:
+```bash
+docker run \
+  -v $(pwd)/applications/tools/p2p-test/app-simulator/SenderConfigurationExample.conf:/config.conf \
+  --rm \
+  -e KAFKA_SERVERS="broker1:9093" \
+ --network kafka-docker_default \
+  engineering-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
+```
+  * Sender without database:
+```bash
+docker run \
+  -v $(pwd)/applications/tools/p2p-test/app-simulator/SenderWithNoDbConfigurationExample.conf:/config.conf \
+  --rm \
+  -e KAFKA_SERVERS="broker1:9093" \
+ --network kafka-docker_default \
+  engineering-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
+```
+  * Receiver:
+```bash
+docker run \
+  -v $(pwd)/applications/tools/p2p-test/app-simulator/ReceiverConfigurationExample.conf:/config.conf \
+  --rm \
+  -e KAFKA_SERVERS="broker1:9093" \
+ --network kafka-docker_default \
+  engineering-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
+```
+  * Sink:
+```bash
+docker run \
+  -v $(pwd)/applications/tools/p2p-test/app-simulator/DbSinkConfigurationExample.conf:/config.conf \
+  --rm \
+  -e KAFKA_SERVERS="broker1:9093" \
+ --network kafka-docker_default \
+  engineering-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
 ```

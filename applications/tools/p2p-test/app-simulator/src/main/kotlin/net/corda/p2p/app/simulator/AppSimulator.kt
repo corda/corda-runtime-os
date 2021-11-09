@@ -38,7 +38,6 @@ class AppSimulator @Activate constructor(
     companion object {
         private val logger: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
-        const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
         const val KAFKA_BOOTSTRAP_SERVER_KEY = "messaging.kafka.common.bootstrap.servers"
         const val PRODUCER_CLIENT_ID = "messaging.kafka.producer.client.id"
         const val DELIVERED_MSG_TOPIC = "app.received_msg"
@@ -68,31 +67,21 @@ class AppSimulator @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutdownOSGiFramework()
         } else {
-            val kafkaProperties = Properties()
-            val kafkaPropertiesFile = parameters.kafkaConnection
-            if (kafkaPropertiesFile == null) {
-                logger.error("No file path passed for --kafka.")
-                shutdownOSGiFramework()
-                return
-            }
-            kafkaProperties.load(FileInputStream(kafkaPropertiesFile))
-            if (!kafkaProperties.containsKey(KAFKA_BOOTSTRAP_SERVER)) {
-                logger.error("No $KAFKA_BOOTSTRAP_SERVER property found in file specified via --kafka!")
+            if (!parameters.simulatorConfig.canRead()) {
+                consoleLogger.error("Can not read configuration file ${parameters.simulatorConfig}.")
                 shutdownOSGiFramework()
                 return
             }
 
-            if (parameters.simulatorConfig == null) {
-                logger.error("No value passed for --simulator-config.")
-                shutdownOSGiFramework()
-                return
+            try {
+                runSimulator(parameters, parameters.kafkaServers)
+            } catch (e: Throwable) {
+                consoleLogger.error("Could not run: ${e.message}")
             }
-
-            runSimulator(parameters, kafkaProperties)
         }
     }
 
-    private fun runSimulator(parameters: CliParameters, kafkaProperties: Properties) {
+    private fun runSimulator(parameters: CliParameters, kafkaServers: String) {
         val sendTopic = parameters.sendTopic ?: Schema.P2P_OUT_TOPIC
         val receiveTopic = parameters.receiveTopic ?: Schema.P2P_IN_TOPIC
         val simulatorConfig = ConfigFactory.parseFile(parameters.simulatorConfig).withFallback(DEFAULT_CONFIG)
@@ -102,13 +91,13 @@ class AppSimulator @Activate constructor(
         val simulatorMode = simulatorConfig.getEnum(SimulationMode::class.java, "simulatorMode")
         when(simulatorMode) {
             SimulationMode.SENDER -> {
-                runSender(simulatorConfig, publisherFactory, dbConnection, sendTopic, kafkaProperties, clients)
+                runSender(simulatorConfig, publisherFactory, dbConnection, sendTopic, kafkaServers, clients)
             }
             SimulationMode.RECEIVER -> {
-                runReceiver(subscriptionFactory, receiveTopic, kafkaProperties, clients)
+                runReceiver(subscriptionFactory, receiveTopic, kafkaServers, clients)
             }
             SimulationMode.DB_SINK -> {
-                runSink(subscriptionFactory, dbConnection, kafkaProperties, clients)
+                runSink(subscriptionFactory, dbConnection, kafkaServers, clients)
             }
             else -> throw IllegalStateException("Invalid value for simulator mode: $simulatorMode")
         }
@@ -116,9 +105,9 @@ class AppSimulator @Activate constructor(
 
     @Suppress("LongParameterList")
     private fun runSender(simulatorConfig: Config, publisherFactory: PublisherFactory, dbConnection: Connection?,
-                          sendTopic: String, kafkaProperties: Properties, clients: Int) {
+                          sendTopic: String, kafkaServers: String, clients: Int) {
         val loadGenerationParams = readLoadGenParams(simulatorConfig)
-        val sender = Sender(publisherFactory, dbConnection, loadGenerationParams, sendTopic, kafkaProperties, clients)
+        val sender = Sender(publisherFactory, dbConnection, loadGenerationParams, sendTopic, kafkaServers, clients)
         sender.start()
         resources.add(sender)
         // If it's one-off we wait until all messages have been sent.
@@ -129,19 +118,19 @@ class AppSimulator @Activate constructor(
         }
     }
 
-    private fun runReceiver(subscriptionFactory: SubscriptionFactory, receiveTopic: String, kafkaProperties: Properties, clients: Int) {
-        val receiver = Receiver(subscriptionFactory, receiveTopic, DELIVERED_MSG_TOPIC, kafkaProperties, clients)
+    private fun runReceiver(subscriptionFactory: SubscriptionFactory, receiveTopic: String, kafkaServers: String, clients: Int) {
+        val receiver = Receiver(subscriptionFactory, receiveTopic, DELIVERED_MSG_TOPIC, kafkaServers, clients)
         receiver.start()
         resources.add(receiver)
     }
 
-    private fun runSink(subscriptionFactory: SubscriptionFactory, dbConnection: Connection?, kafkaProperties: Properties, clients: Int) {
+    private fun runSink(subscriptionFactory: SubscriptionFactory, dbConnection: Connection?, kafkaServers: String, clients: Int) {
         if (dbConnection == null) {
-            logger.error("dbParams configuration option is mandatory for sink mode.")
+            consoleLogger.error("dbParams configuration option is mandatory for sink mode.")
             shutdownOSGiFramework()
             return
         }
-        val sink = Sink(subscriptionFactory, dbConnection, kafkaProperties, clients)
+        val sink = Sink(subscriptionFactory, dbConnection, kafkaServers, clients)
         sink.start()
         resources.add(sink)
     }
@@ -212,11 +201,14 @@ class AppSimulator @Activate constructor(
 }
 
 class CliParameters {
-    @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties."])
-    var kafkaConnection: File? = null
+    @CommandLine.Option(
+        names = ["-k", "--kafka-servers"],
+        description = ["The kafka servers. Default to \${DEFAULT-VALUE}"]
+    )
+    var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
 
-    @CommandLine.Option(names = ["--simulator-config"], description = ["File containing configuration parameters for simulator."])
-    var simulatorConfig: File? = null
+    @CommandLine.Option(names = ["--simulator-config"], description = ["File containing configuration parameters for simulator. Default to ${DEFAULT-VALUE}"])
+    var simulatorConfig: File = File("config.conf")
 
     @CommandLine.Option(names = ["--send-topic"], description = ["Topic to send the messages to. " +
             "Defaults to ${Schema.P2P_OUT_TOPIC}, if not specified."])

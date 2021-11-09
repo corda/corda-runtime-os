@@ -19,7 +19,6 @@ import java.io.Closeable
 import java.nio.ByteBuffer
 import java.sql.Connection
 import java.time.Instant
-import java.util.Properties
 import java.util.Random
 import java.util.UUID
 import kotlin.concurrent.thread
@@ -29,7 +28,7 @@ class Sender(private val publisherFactory: PublisherFactory,
              private val dbConnection: Connection?,
              private val loadGenParams: LoadGenerationParams,
              private val sendTopic: String,
-             private val kafkaProperties: Properties,
+             private val kafkaServers: String,
              private val clients: Int): Closeable {
 
     companion object {
@@ -47,14 +46,13 @@ class Sender(private val publisherFactory: PublisherFactory,
 
     fun start() {
         val senderId = UUID.randomUUID().toString()
-        val kafkaBoostrapServers = kafkaProperties[AppSimulator.KAFKA_BOOTSTRAP_SERVER].toString()
         logger.info("Using sender ID: $senderId")
 
         val threads = (1..clients).map { client ->
             thread(isDaemon = true) {
                 var messagesSent = 0
                 val kafkaConfig = SmartConfigImpl.empty()
-                    .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaBoostrapServers))
+                    .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaServers))
                     .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-sender-$client"))
                 val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator"), kafkaConfig)
                 publisher.use {
