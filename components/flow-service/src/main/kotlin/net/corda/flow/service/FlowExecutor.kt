@@ -1,6 +1,5 @@
 package net.corda.flow.service
 
-import net.corda.sandbox.service.SandboxService
 import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
@@ -15,6 +14,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.sandbox.service.SandboxService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
@@ -45,7 +45,7 @@ class FlowExecutor(
                 val topic = config.getString(TOPIC_KEY)
                 val groupName = config.getString(GROUP_NAME_KEY)
                 val instanceId = config.getInt(INSTANCE_ID_KEY)
-                val processor = FlowMessageProcessor(flowManager, sandboxService, topic)
+                val processor = FlowMessageProcessor(flowManager, sandboxService)
                 messagingSubscription = subscriptionFactory.createStateAndEventSubscription(
                     SubscriptionConfig(groupName, topic, instanceId),
                     processor,
