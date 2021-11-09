@@ -11,6 +11,7 @@ import net.corda.libs.configuration.write.CordaConfigurationVersion
 import net.corda.libs.configuration.write.kafka.ConfigWriterImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
@@ -84,14 +85,15 @@ open class TestBase {
 
     protected val smartConfifFactory = SmartConfigFactoryImpl()
 
-    protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl()
+    private val lifecycleRegistry = LifecycleRegistryImpl()
+    protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(lifecycleRegistry)
     protected inner class ConfigPublisher {
         private val configurationTopicService = TopicServiceImpl()
         private val topicName = "config.${UUID.randomUUID().toString().replace("-", "")}"
 
         val readerService by lazy {
             ConfigurationReadServiceImpl(
-                LifecycleCoordinatorFactoryImpl(),
+                LifecycleCoordinatorFactoryImpl(lifecycleRegistry),
                 ConfigReaderFactoryImpl(InMemSubscriptionFactory(configurationTopicService), smartConfifFactory),
             ).also {
                 it.start()
