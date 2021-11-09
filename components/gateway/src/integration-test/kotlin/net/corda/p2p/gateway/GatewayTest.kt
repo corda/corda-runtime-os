@@ -56,6 +56,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 class GatewayTest : TestBase() {
     companion object {
@@ -172,7 +173,7 @@ class GatewayTest : TestBase() {
 
         val configPublisher = ConfigPublisher()
 
-        var messageReceivedLatch = CountDownLatch(1)
+        val messageReceivedLatch = AtomicReference(CountDownLatch(1))
         val listenToOutboundMessages = object : ListenerWithServer() {
             override fun onOpen(event: HttpConnectionEvent) {
                 assertThat(event.channel.localAddress()).isInstanceOfSatisfying(InetSocketAddress::class.java) {
@@ -187,7 +188,7 @@ class GatewayTest : TestBase() {
                     assertThat(String(it.payload.array())).isEqualTo("link out")
                 }
                 server?.write(HttpResponseStatus.OK, ByteArray(0), request.source)
-                messageReceivedLatch.countDown()
+                messageReceivedLatch.get().countDown()
             }
         }
         HttpServer(
@@ -245,9 +246,9 @@ class GatewayTest : TestBase() {
                         assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
                     }
 
-                    messageReceivedLatch = CountDownLatch(1)
+                    messageReceivedLatch.set(CountDownLatch(1))
                     alice.publish(Record(LINK_OUT_TOPIC, "key", linkOutMessage))
-                    messageReceivedLatch.await()
+                    messageReceivedLatch.get().await()
                 }
             }
         }
