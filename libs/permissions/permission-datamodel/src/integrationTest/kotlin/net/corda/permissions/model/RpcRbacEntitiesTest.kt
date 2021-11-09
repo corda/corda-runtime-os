@@ -45,10 +45,12 @@ class RpcRbacEntitiesTest {
             logger.info("RBAC schema bundle $bundle".emphasise())
 
             logger.info("Create Schema for ${dbConfig.dataSource.connection.metaData.url}".emphasise())
+            val fullName = schemaClass.packageName + ".rbac"
+            val resourcePrefix = fullName.replace('.', '/')
             val cl = ClassloaderChangeLog(
                 linkedSetOf(
                     ClassloaderChangeLog.ChangeLogResourceFiles(
-                        schemaClass.packageName + ".rbac", listOf("migration/db.changelog-master.xml"), classLoader = schemaClass.classLoader)
+                        fullName, listOf("$resourcePrefix/migration/rpc-rbac-creation-v1.0.xml"), classLoader = schemaClass.classLoader)
             ))
             StringWriter().use {
                 lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it)
