@@ -4,7 +4,7 @@
 -resolve.effective: active
 #-runtrace: true
 
--runproperties: cpi.path=${project.cpiPath}
+-runproperties: cpi.path=${task.cpiPath}
 
 -runvm: \
     --add-opens, 'java.base/java.net=ALL-UNNAMED'
