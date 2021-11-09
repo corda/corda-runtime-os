@@ -41,9 +41,9 @@ interface MembershipGroupReader {
      * belonging to the member.
      * If the member is not found then the null value is returned.
      *
-     * @param publicKey Public key hash as a ByteArray for the member to lookup.
+     * @param publicKeyHash Public key hash as a ByteArray for the member to lookup.
      */
-    fun lookup(publicKey: ByteArray): MemberInfo?
+    fun lookup(publicKeyHash: ByteArray): MemberInfo?
 
     /**
      * Looks up a group member of the specified group by the MemberX500Name
