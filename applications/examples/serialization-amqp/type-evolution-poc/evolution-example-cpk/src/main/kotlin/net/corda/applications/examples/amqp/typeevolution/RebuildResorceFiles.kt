@@ -4,7 +4,7 @@ class RebuildResorceFiles {
 
     // Save resource files
     // Uncomment to rebuild resource files
-//    fun saveResourceFiles(): Map<String, Any> {
+//    fun getResourceTypes(): Map<String, Any> {
 //
         // Step 1
 //        val addNullableProperty = AddNullableProperty(10)
