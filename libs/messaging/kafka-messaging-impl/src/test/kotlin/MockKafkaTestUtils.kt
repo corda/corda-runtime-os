@@ -1,6 +1,5 @@
 package net.corda.messaging.kafka.subscription
 
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.MockConsumer
@@ -56,16 +55,3 @@ fun generateMockConsumerRecords(numberOfRecords: Long, topic: String, partition:
     return ConsumerRecords(mutableMapOf(Pair(topicPartition, recordList)))
 }
 
-/**
- * Generate a list of [ConsumerRecordAndMeta] of size [numberOfRecords].
- * Assigned to [partition] and [topic]
- * @return ConsumerRecordAndMeta
- */
-fun generateMockConsumerRecordAndMetaList(
-    numberOfRecords: Long,
-    topic: String,
-    partition: Int
-): List<ConsumerRecordAndMeta<String, String>> {
-    return generateMockConsumerRecordList(numberOfRecords, topic, partition)
-        .map { ConsumerRecordAndMeta("", it) }
-}
