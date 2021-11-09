@@ -30,4 +30,11 @@ dependencies {
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+
+    integrationTestRuntimeOnly("org.hibernate:hibernate-core:$hibernateVersion")
+    integrationTestImplementation("org.hibernate:hibernate-osgi:$hibernateVersion") {
+        // Need to exclude the org.osgi package as will use the BND ones at runtime
+        //  org.osgi ones are added above as compileOnly
+        exclude group: 'org.osgi'
+    }
 }

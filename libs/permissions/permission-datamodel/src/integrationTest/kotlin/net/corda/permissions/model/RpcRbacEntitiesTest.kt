@@ -101,10 +101,6 @@ class RpcRbacEntitiesTest {
     }
 
     @Test
-    fun test() {
-    }
-/*
-    @Test
     fun `test user creation`() {
         val em = emf.createEntityManager()
         try {
@@ -123,5 +119,4 @@ class RpcRbacEntitiesTest {
             em.close()
         }
     }
- */
 }
