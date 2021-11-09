@@ -1,4 +1,4 @@
-package net.corda.libs.permission
+package net.corda.libs.permission.impl
 
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals

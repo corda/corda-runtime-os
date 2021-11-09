@@ -1,4 +1,4 @@
-package net.corda.libs.permission
+package net.corda.libs.permission.impl
 
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.Permission
@@ -27,28 +27,38 @@ class PermissionValidatorImplTest {
 
         private const val permissionUrlRequest = "https://host:1234/node-rpc/5e0a07a6-c25d-413a-be34-647a792f4f58/${permissionString}"
 
-        private val permission = Permission("5e0a07a6-c25d-413a-be34-647a792f4f58", 1,
-                ChangeDetails(Instant.now(), "changeUser"),
-                virtualNode,
-                permissionString,
-                PermissionType.ALLOW)
+        private val permission = Permission(
+            "5e0a07a6-c25d-413a-be34-647a792f4f58", 1,
+            ChangeDetails(Instant.now(), "changeUser"),
+            virtualNode,
+            permissionString,
+            PermissionType.ALLOW
+        )
 
-        private val permissionDenied = Permission("5e0a07a6-c25d-413a-be34-647a792f4f58", 1,
-                ChangeDetails(Instant.now(), "changeUser"),
-                virtualNode,
-                permissionString,
-                PermissionType.DENY)
+        private val permissionDenied = Permission(
+            "5e0a07a6-c25d-413a-be34-647a792f4f58", 1,
+            ChangeDetails(Instant.now(), "changeUser"),
+            virtualNode,
+            permissionString,
+            PermissionType.DENY
+        )
 
-        private val role = Role("roleId1", 1,
-            ChangeDetails(Instant.now(), "changeUser"), "STARTFLOW-MYFLOW", listOf(permission))
-        private val roleWithPermDenied = Role("roleId2", 1,
-            ChangeDetails(Instant.now(), "changeUser"), "STARTFLOW-MYFLOW", listOf(permissionDenied))
+        private val role = Role(
+            "roleId1", 1,
+            ChangeDetails(Instant.now(), "changeUser"), "STARTFLOW-MYFLOW", listOf(permission)
+        )
+        private val roleWithPermDenied = Role(
+            "roleId2", 1,
+            ChangeDetails(Instant.now(), "changeUser"), "STARTFLOW-MYFLOW", listOf(permissionDenied)
+        )
         private val user = User("user1", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
             "hashedPassword", "saltValue", false, null, null, listOf(role).map { it.id })
-        private val userWithPermDenied = User("userWithPermDenied", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
-            "hashedPassword", "saltValue", false, null, null, listOf(roleWithPermDenied).map { it.id })
-        private val disabledUser = User("disabledUser", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", false,
-            "hashedPassword", "saltValue",false, null, null, listOf(role).map { it.id })
+        private val userWithPermDenied =
+            User("userWithPermDenied", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
+                "hashedPassword", "saltValue", false, null, null, listOf(roleWithPermDenied).map { it.id })
+        private val disabledUser =
+            User("disabledUser", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", false,
+                "hashedPassword", "saltValue", false, null, null, listOf(role).map { it.id })
 
         @BeforeAll
         @JvmStatic

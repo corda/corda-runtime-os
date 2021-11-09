@@ -1,4 +1,4 @@
-package net.corda.libs.permission
+package net.corda.libs.permission.impl
 
 import net.corda.data.permissions.Group
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -19,9 +19,9 @@ class GroupTopicProcessor : CompactedProcessor<String, Group> {
     }
 
     override fun onNext(
-            newRecord: Record<String, Group>,
-            oldValue: Group?,
-            currentData: Map<String, Group>
+        newRecord: Record<String, Group>,
+        oldValue: Group?,
+        currentData: Map<String, Group>
     ) {
         val group = newRecord.value
         val groupId = newRecord.key

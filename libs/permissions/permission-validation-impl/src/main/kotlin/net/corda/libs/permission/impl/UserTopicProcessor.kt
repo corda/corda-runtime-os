@@ -1,4 +1,4 @@
-package net.corda.libs.permission
+package net.corda.libs.permission.impl
 
 import net.corda.data.permissions.User
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -21,9 +21,9 @@ class UserTopicProcessor : CompactedProcessor<String, User> {
     }
 
     override fun onNext(
-            newRecord: Record<String, User>,
-            oldValue: User?,
-            currentData: Map<String, User>
+        newRecord: Record<String, User>,
+        oldValue: User?,
+        currentData: Map<String, User>
     ) {
         val user = newRecord.value
         val userLogin = newRecord.key

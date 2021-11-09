@@ -1,5 +1,4 @@
-package net.corda.libs.permission
-
+package net.corda.libs.permission.impl
 
 /**
  * Example format https://host:1234/node-rpc/<uuid>/flow/start/com.example.MyFlow
