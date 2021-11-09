@@ -122,9 +122,9 @@ class SessionManagerTest {
     @AfterEach
     fun cleanUp() {
         dominoTile.close()
-        //mockHeartbeatManager.close()
         sessionManager.stop()
         loggingInterceptor.reset()
+        resources.close()
     }
 
     private lateinit var configHandler: SessionManagerImpl.SessionManagerConfigChangeHandler
@@ -170,6 +170,7 @@ class SessionManagerTest {
     private val publisherFactory = mock<PublisherFactory> {
         on {createPublisher(any(), any())} doReturn publisher
     }
+    val resources = ResourcesHolder()
     private val sessionManager = SessionManagerImpl(
         networkMap,
         cryptoService,
@@ -186,7 +187,7 @@ class SessionManagerTest {
             SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)), null, mock()
         )
         heartbeatConfigHandler.applyNewConfiguration(configNoHeartbeat, null, mock())
-        createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
+        createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]!!(resources)
     }
 
     private fun MessageDigest.hash(data: ByteArray): ByteArray {
@@ -813,6 +814,7 @@ class SessionManagerTest {
 
     @Test
     fun `when responder handshake is received, the session is established, if no message is sent, the session times out`() {
+        val resourceHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
             networkMap,
             cryptoService,
@@ -831,7 +833,7 @@ class SessionManagerTest {
                 mock()
             )
             heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]!!(resourceHolder)
         }
         sessionManager.start()
 
@@ -852,6 +854,7 @@ class SessionManagerTest {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         sessionManager.stop()
+        resourceHolder.close()
     }
 
     @Test
@@ -866,6 +869,7 @@ class SessionManagerTest {
 
         val publisher = CallbackPublisher(::callback)
         whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(publisher)
+        val resourcesHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
             networkMap,
             cryptoService,
@@ -884,7 +888,8 @@ class SessionManagerTest {
                 mock()
             )
             heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]!!(resourcesHolder)
+
         }
         sessionManager.start()
 
@@ -907,6 +912,7 @@ class SessionManagerTest {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         sessionManager.stop()
+        resourcesHolder.close()
 
         for (message in messages) {
             val heartbeatMessage = DataMessagePayload.fromByteBuffer(message.payload)
@@ -918,6 +924,7 @@ class SessionManagerTest {
     fun `when a data message is sent, heartbeats are sent, if these are acknowledged the session does not time out`() {
         val heartbeatsBeforeTimeout = configWithHeartbeat.sessionTimeout.toMillis() / configWithHeartbeat.heartbeatPeriod.toMillis() - 1
         val publishLatch = CountDownLatch(2 * heartbeatsBeforeTimeout.toInt() - 1)
+        val resourcesHolder = ResourcesHolder()
 
         val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
         var sessionManager: SessionManager? = null
@@ -954,8 +961,8 @@ class SessionManagerTest {
                 mock()
             )
             heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
-            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock()) }
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]!!(resourcesHolder)
+            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]!!(resourcesHolder)
         }
         sessionManager.start()
 
@@ -982,6 +989,7 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
 
         sessionManager.stop()
+        resourcesHolder.close()
         synchronized(messages) {
             for (message in messages) {
               val heartbeatMessage = DataMessagePayload.fromByteBuffer(message.payload)
@@ -992,9 +1000,14 @@ class SessionManagerTest {
 
     @Test
     fun `when sending a heartbeat, if an exception is thrown, the heartbeat is resent`() {
+        val configLongTimeout = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+            Duration.ofMillis(100),
+            Duration.ofMillis(1000)
+        )
         val publishLatch = CountDownLatch(2)
         val throwingPublisher = CallbackPublisher({ publishLatch.countDown() }, true)
         whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(throwingPublisher)
+        val resourcesHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
             networkMap,
             cryptoService,
@@ -1012,9 +1025,9 @@ class SessionManagerTest {
                 null,
                 mock()
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
-            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock()) }
+            heartbeatConfigHandler.applyNewConfiguration(configLongTimeout, null, mock())
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourcesHolder) }
+            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(resourcesHolder) }
         }
         sessionManager.start()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
@@ -1024,10 +1037,11 @@ class SessionManagerTest {
         sessionManager.dataMessageSent(authenticatedSession)
 
         assertTrue(publishLatch.await(
-            configWithHeartbeat.sessionTimeout.multipliedBy(20).toMillis(),
+            configLongTimeout.sessionTimeout.multipliedBy(20).toMillis(),
             TimeUnit.MILLISECONDS)
         )
         loggingInterceptor.assertSingleWarningContains("An exception was thrown when sending a heartbeat message.")
         sessionManager.stop()
+        resourcesHolder.close()
     }
 }
