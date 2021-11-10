@@ -72,10 +72,10 @@ pipeline {
         stage('Forward ports and run the tests') {
             steps {
                 sh '''
-                    port=$(./corda-cli/bin/corda-cli cluster status -n "${NAME_SPACE}" -f json | jq '.services | .[] | .publicPorts | select(.BROKEREXTERNAL != null) | .[]' | sort | head -n 1)
                     nohup ./corda-cli/bin/corda-cli cluster forward -n "${NAME_SPACE}" > forward.txt 2>&1 &
                     procno=$! #remember process number started in background
                     trap "kill -9 ${procno}" EXIT
+                    port=$(./corda-cli/bin/corda-cli cluster status -n "${NAME_SPACE}" -f json | jq '.services | .[] | .publicPorts | select(.BROKEREXTERNAL != null) | .[]' | sort | head -n 1)
                     BROKERS_ADDRS="localhost:${port}" ./gradlew kafkaIntegrationTest
                 '''
             }
