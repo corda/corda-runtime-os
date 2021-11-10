@@ -4,7 +4,6 @@ import net.corda.install.InstallService
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.DuplicateCustomSerializerException
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
@@ -74,8 +73,6 @@ class Main @Activate constructor(
         differentSerializersPerSandboxGroup(sandboxA, sandboxB)
         consoleLogger.info("------------------------------------------------")
         platformTakesPriority(sandboxA)
-        consoleLogger.info("------------------------------------------------")
-        logMessageIfAttemptToReplacePlatform()
         consoleLogger.info("------------------------------------------------")
         registerInternalSerializers()
         consoleLogger.info("------------------------------------------------")
@@ -205,56 +202,45 @@ class Main @Activate constructor(
     }
 
     /**
-     * Prove that we can't replace the platform serialisers
+     * Prove that we can't replace the platform serializers
      */
     private fun platformTakesPriority(sandboxA: SandboxAndSerializers) {
         consoleLogger.info("REQUIREMENT - Check that platform serialisers take priority over CorDapp serialisers")
-        consoleLogger.info("Difference from my earlier expectation - Throws exception instead of priority/log message")
-        consoleLogger.info("Only when we attempt to work with serialiser target type")
-        consoleLogger.info("This is stricter than I expected and comes out of existing behaviour. I believe this is acceptable.")
+        consoleLogger.info("REQUIREMENT - Log message warning written if CorDapp attempts to replace platform serializer")
 
         consoleLogger.info("Attempt to override platform serialiser:")
 
         // Create SerializerFactory
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        // Build CorDapp serializers
-        val cordappCustomSerializers = buildCorDappSerializers(sandboxA.sandboxGroup, sandboxA.serializers)
-        // Register platform serializers
-        for (customSerializer in internalCustomSerializers) {
-            factory.register(customSerializer, true)
-        }
-        // Register SandBox A custom serializers as platform serializers and CorDapp serialisers
-        for (customSerializer in cordappCustomSerializers) {
-            factory.register(customSerializer, true)
-            factory.registerExternal(customSerializer)
-        }
-        val output = SerializationOutput(factory)
+
+        // Build serializers
+        val constructor = sandboxA
+            .sandboxGroup
+            .loadClassFromMainBundles(sandboxA.serializers.first(), SerializationCustomSerializer::class.java)
+            .getConstructor(String::class.java, Logger::class.java)
+        val internalCustomSerializer = constructor.newInstance("using INTERNAL serializer", consoleLogger)
+        val cordappCustomSerializer = constructor.newInstance("using CORDAPP serializer", consoleLogger)
+
+        // Register SandBox A custom serializers as platform serializers and CorDapp serializers
+        factory.register(internalCustomSerializer, true)
+        factory.registerExternal(cordappCustomSerializer)
 
         // Build test object
-        val obj = sandboxA.sandboxGroup.loadClassFromMainBundles("net.corda.applications.examples.amqp.customserializer.examplea.NeedsCustomSerializerExampleA", Any::class.java).getConstructor(Integer.TYPE).newInstance(5)
+        val obj = sandboxA.sandboxGroup.loadClassFromMainBundles(
+            "net.corda.applications.examples.amqp.customserializer.examplea.NeedsCustomSerializerExampleA",
+            Any::class.java
+        ).getConstructor(Integer.TYPE).newInstance(5)
 
         // Run object through serialization
-        var worked = false
-        try {
-            output.serialize(obj, AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxA.sandboxGroup))
-        } catch (e: DuplicateCustomSerializerException) {
-            consoleLogger.info("SUCCESS - Exception thrown attempting to replace platform serialiser:")
-            consoleLogger.info(e.message)
-            worked = true
-        }
-        finally {
-            if (!worked)
-                consoleLogger.info("FAIL - System didn't notice we replaced platform serialiser")
-        }
+        val context = AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxA.sandboxGroup)
 
-    }
+        val output = SerializationOutput(factory)
+        val serializedBytes = output.serialize(obj, context)
 
-    /**
-     * Prove that we notify the end user when they try to override platform serialiser
-     */
-    private fun logMessageIfAttemptToReplacePlatform() {
-        consoleLogger.info("REQUIREMENT - Log message warning written if CorDapp attempts to replace platform serializer")
-        consoleLogger.info("- Throws exception instead")
+        val input = DeserializationInput(factory)
+        val deserializedObject = input.deserialize(serializedBytes, context)
+
+        consoleLogger.info("Object after deserialize: $deserializedObject")
     }
 
     /**
