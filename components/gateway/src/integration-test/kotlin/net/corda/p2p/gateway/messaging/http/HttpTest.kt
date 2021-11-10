@@ -23,19 +23,15 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import java.io.FileInputStream
 import java.net.URI
 import java.security.SecureRandom
 import java.time.Instant
 import java.util.Arrays
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutionException
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
@@ -157,7 +153,11 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `large payload`() {
-        val hugePayload = FileInputStream(javaClass.classLoader.getResource("10mb.txt")!!.file).readAllBytes()
+        val hugePayload = (1..0xA00_000)
+            .map {
+                (it % 0xFF).toByte()
+            }
+            .toByteArray()
         val listener = object : ListenerWithServer() {
             override fun onRequest(request: HttpRequest) {
                 assertTrue(Arrays.equals(hugePayload, request.payload))
@@ -277,8 +277,8 @@ class HttpTest : TestBase() {
                 assertThatThrownBy {
                     future.get()
                 }.isInstanceOf(ExecutionException::class.java)
-                 .hasCauseInstanceOf(RuntimeException::class.java)
-                 .hasStackTraceContaining("Connection was closed.")
+                    .hasCauseInstanceOf(RuntimeException::class.java)
+                    .hasStackTraceContaining("Connection was closed.")
 
                 // Check HandshakeException is thrown and logged
                 val expectedMessage = "Bad certificate identity or path. " +
@@ -307,16 +307,15 @@ class HttpTest : TestBase() {
                 assertThatThrownBy {
                     future.get()
                 }.isInstanceOf(ExecutionException::class.java)
-                 .hasCauseInstanceOf(RuntimeException::class.java)
-                 .hasStackTraceContaining("Connection was closed.")
+                    .hasCauseInstanceOf(RuntimeException::class.java)
+                    .hasStackTraceContaining("Connection was closed.")
 
                 // Check HandshakeException is thrown and logged
                 val expectedMessage = "Bad certificate identity or path. " +
-                        "No subject alternative DNS name matching ${serverAddress.host} found"
+                    "No subject alternative DNS name matching ${serverAddress.host} found"
                 eventually {
                     loggingInterceptor.assertMessageExists(expectedMessage, Level.ERROR)
                 }
-
             }
         }
     }
@@ -350,8 +349,8 @@ class HttpTest : TestBase() {
                 assertThatThrownBy {
                     future.get()
                 }.isInstanceOf(ExecutionException::class.java)
-                 .hasCauseInstanceOf(RuntimeException::class.java)
-                 .hasStackTraceContaining("Connection was closed.")
+                    .hasCauseInstanceOf(RuntimeException::class.java)
+                    .hasStackTraceContaining("Connection was closed.")
             }
         }
 
@@ -392,15 +391,15 @@ class HttpTest : TestBase() {
                 assertThatThrownBy {
                     future.get()
                 }.isInstanceOf(ExecutionException::class.java)
-                 .hasCauseInstanceOf(RuntimeException::class.java)
-                 .hasStackTraceContaining("Connection was closed.")
+                    .hasCauseInstanceOf(RuntimeException::class.java)
+                    .hasStackTraceContaining("Connection was closed.")
             }
         }
 
         eventually {
             loggingInterceptor.assertMessageExists(
                 "Bad certificate identity or path. PKIX path validation failed: " +
-                        "java.security.cert.CertPathValidatorException: Certificate has been revoked",
+                    "java.security.cert.CertPathValidatorException: Certificate has been revoked",
                 Level.ERROR
             )
         }
