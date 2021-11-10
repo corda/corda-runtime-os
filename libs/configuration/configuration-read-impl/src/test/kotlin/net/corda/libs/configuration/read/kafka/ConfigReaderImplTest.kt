@@ -37,7 +37,7 @@ class ConfigReaderImplTest {
             })
 
         configUpdateUtil = ConfigListenerTestUtil()
-        configRepository = ConfigRepository()
+        configRepository = ConfigRepository(SmartConfigImpl(ConfigFactory.empty()))
         configReader = ConfigReaderImpl(configRepository, subscriptionFactory, config, smartConfigFactory)
         Mockito.`when`(
             subscriptionFactory.createCompactedSubscription(
@@ -49,8 +49,6 @@ class ConfigReaderImplTest {
 
         Mockito.doNothing().`when`(subscription).start()
         Mockito.doNothing().`when`(subscription).stop()
-
-
     }
 
     @Test
@@ -171,13 +169,15 @@ class ConfigReaderImplTest {
         val config = configMap["corda.database"]!!
         val avroConfig =
             Configuration(config.root().render(ConfigRenderOptions.concise()), config.getString("componentVersion"))
-        configReader.onSnapshot(mapOf("corda.database" to avroConfig))
+        configReader.onSnapshot(mapOf("corda.database" to avroConfig, "corda.boot" to avroConfig))
 
         assertThat(lambdaFlag).isTrue
         assertThat(changedKeys.size)
-            .isEqualTo(1)
+            .isEqualTo(2)
         assertThat(configSnapshot["corda.database"])
             .isEqualTo(configRepository.getConfigurations()["corda.database"])
+        assertThat(configSnapshot["corda.boot"])
+            .isEqualTo(configRepository.getConfigurations()["corda.boot"])
     }
 
     @Test

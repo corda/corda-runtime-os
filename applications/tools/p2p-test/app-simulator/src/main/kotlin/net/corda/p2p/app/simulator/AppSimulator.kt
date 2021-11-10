@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.Closeable
 import java.io.File
-import java.io.FileInputStream
 import java.sql.Connection
 import java.sql.DriverManager
 import java.time.Duration
@@ -33,12 +32,11 @@ class AppSimulator @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory
-): Application {
+) : Application {
 
     companion object {
         private val logger: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
-        const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
         const val KAFKA_BOOTSTRAP_SERVER_KEY = "messaging.kafka.common.bootstrap.servers"
         const val PRODUCER_CLIENT_ID = "messaging.kafka.producer.client.id"
         const val DELIVERED_MSG_TOPIC = "app.received_msg"
@@ -46,17 +44,18 @@ class AppSimulator @Activate constructor(
         const val DB_PARAMS_PREFIX = "dbParams"
         const val LOAD_GEN_PARAMS_PREFIX = "loadGenerationParams"
         const val PARALLEL_CLIENTS_KEY = "parallelClients"
-        val DEFAULT_CONFIG = ConfigFactory.parseMap(mapOf(
-            "$LOAD_GEN_PARAMS_PREFIX.batchSize" to 50,
-            "$LOAD_GEN_PARAMS_PREFIX.interBatchDelay" to Duration.ZERO,
-            "$LOAD_GEN_PARAMS_PREFIX.messageSizeBytes" to 10_000,
-            PARALLEL_CLIENTS_KEY to 1
-        ))
+        val DEFAULT_CONFIG = ConfigFactory.parseMap(
+            mapOf(
+                "$LOAD_GEN_PARAMS_PREFIX.batchSize" to 50,
+                "$LOAD_GEN_PARAMS_PREFIX.interBatchDelay" to Duration.ZERO,
+                "$LOAD_GEN_PARAMS_PREFIX.messageSizeBytes" to 10_000,
+                PARALLEL_CLIENTS_KEY to 1
+            )
+        )
     }
 
     private val resources = mutableListOf<Closeable>()
     private var dbConnection: Connection? = null
-
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
@@ -68,31 +67,21 @@ class AppSimulator @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutdownOSGiFramework()
         } else {
-            val kafkaProperties = Properties()
-            val kafkaPropertiesFile = parameters.kafkaConnection
-            if (kafkaPropertiesFile == null) {
-                logger.error("No file path passed for --kafka.")
-                shutdownOSGiFramework()
-                return
-            }
-            kafkaProperties.load(FileInputStream(kafkaPropertiesFile))
-            if (!kafkaProperties.containsKey(KAFKA_BOOTSTRAP_SERVER)) {
-                logger.error("No $KAFKA_BOOTSTRAP_SERVER property found in file specified via --kafka!")
+            if (!parameters.simulatorConfig.canRead()) {
+                consoleLogger.error("Can not read configuration file ${parameters.simulatorConfig}.")
                 shutdownOSGiFramework()
                 return
             }
 
-            if (parameters.simulatorConfig == null) {
-                logger.error("No value passed for --simulator-config.")
-                shutdownOSGiFramework()
-                return
+            try {
+                runSimulator(parameters, parameters.kafkaServers)
+            } catch (e: Throwable) {
+                consoleLogger.error("Could not run: ${e.message}")
             }
-
-            runSimulator(parameters, kafkaProperties)
         }
     }
 
-    private fun runSimulator(parameters: CliParameters, kafkaProperties: Properties) {
+    private fun runSimulator(parameters: CliParameters, kafkaServers: String) {
         val sendTopic = parameters.sendTopic ?: Schema.P2P_OUT_TOPIC
         val receiveTopic = parameters.receiveTopic ?: Schema.P2P_IN_TOPIC
         val simulatorConfig = ConfigFactory.parseFile(parameters.simulatorConfig).withFallback(DEFAULT_CONFIG)
@@ -100,25 +89,31 @@ class AppSimulator @Activate constructor(
         val dbConnection = readDbParams(simulatorConfig)?.let { connectToDb(it) }
 
         val simulatorMode = simulatorConfig.getEnum(SimulationMode::class.java, "simulatorMode")
-        when(simulatorMode) {
+        when (simulatorMode) {
             SimulationMode.SENDER -> {
-                runSender(simulatorConfig, publisherFactory, dbConnection, sendTopic, kafkaProperties, clients)
+                runSender(simulatorConfig, publisherFactory, dbConnection, sendTopic, kafkaServers, clients)
             }
             SimulationMode.RECEIVER -> {
-                runReceiver(subscriptionFactory, receiveTopic, kafkaProperties, clients)
+                runReceiver(subscriptionFactory, receiveTopic, kafkaServers, clients)
             }
             SimulationMode.DB_SINK -> {
-                runSink(subscriptionFactory, dbConnection, kafkaProperties, clients)
+                runSink(subscriptionFactory, dbConnection, kafkaServers, clients)
             }
             else -> throw IllegalStateException("Invalid value for simulator mode: $simulatorMode")
         }
     }
 
     @Suppress("LongParameterList")
-    private fun runSender(simulatorConfig: Config, publisherFactory: PublisherFactory, dbConnection: Connection?,
-                          sendTopic: String, kafkaProperties: Properties, clients: Int) {
+    private fun runSender(
+        simulatorConfig: Config,
+        publisherFactory: PublisherFactory,
+        dbConnection: Connection?,
+        sendTopic: String,
+        kafkaServers: String,
+        clients: Int
+    ) {
         val loadGenerationParams = readLoadGenParams(simulatorConfig)
-        val sender = Sender(publisherFactory, dbConnection, loadGenerationParams, sendTopic, kafkaProperties, clients)
+        val sender = Sender(publisherFactory, dbConnection, loadGenerationParams, sendTopic, kafkaServers, clients)
         sender.start()
         resources.add(sender)
         // If it's one-off we wait until all messages have been sent.
@@ -129,19 +124,19 @@ class AppSimulator @Activate constructor(
         }
     }
 
-    private fun runReceiver(subscriptionFactory: SubscriptionFactory, receiveTopic: String, kafkaProperties: Properties, clients: Int) {
-        val receiver = Receiver(subscriptionFactory, receiveTopic, DELIVERED_MSG_TOPIC, kafkaProperties, clients)
+    private fun runReceiver(subscriptionFactory: SubscriptionFactory, receiveTopic: String, kafkaServers: String, clients: Int) {
+        val receiver = Receiver(subscriptionFactory, receiveTopic, DELIVERED_MSG_TOPIC, kafkaServers, clients)
         receiver.start()
         resources.add(receiver)
     }
 
-    private fun runSink(subscriptionFactory: SubscriptionFactory, dbConnection: Connection?, kafkaProperties: Properties, clients: Int) {
+    private fun runSink(subscriptionFactory: SubscriptionFactory, dbConnection: Connection?, kafkaServers: String, clients: Int) {
         if (dbConnection == null) {
-            logger.error("dbParams configuration option is mandatory for sink mode.")
+            consoleLogger.error("dbParams configuration option is mandatory for sink mode.")
             shutdownOSGiFramework()
             return
         }
-        val sink = Sink(subscriptionFactory, dbConnection, kafkaProperties, clients)
+        val sink = Sink(subscriptionFactory, dbConnection, kafkaServers, clients)
         sink.start()
         resources.add(sink)
     }
@@ -180,7 +175,7 @@ class AppSimulator @Activate constructor(
         val ourGroupId = config.getString("$LOAD_GEN_PARAMS_PREFIX.ourGroupId")
         val loadGenerationType =
             config.getEnum(LoadGenerationType::class.java, "$LOAD_GEN_PARAMS_PREFIX.loadGenerationType")
-        val totalNumberOfMessages = when(loadGenerationType) {
+        val totalNumberOfMessages = when (loadGenerationType) {
             LoadGenerationType.ONE_OFF -> config.getInt("$LOAD_GEN_PARAMS_PREFIX.totalNumberOfMessages")
             LoadGenerationType.CONTINUOUS -> null
             else -> throw IllegalStateException("Invalid value for load generation type: $loadGenerationType")
@@ -208,22 +203,37 @@ class AppSimulator @Activate constructor(
     private fun shutdownOSGiFramework() {
         shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
-
 }
 
 class CliParameters {
-    @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties."])
-    var kafkaConnection: File? = null
+    @CommandLine.Option(
+        names = ["-k", "--kafka-servers"],
+        description = ["The kafka servers. Default to \${DEFAULT-VALUE}"]
+    )
+    var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
 
-    @CommandLine.Option(names = ["--simulator-config"], description = ["File containing configuration parameters for simulator."])
-    var simulatorConfig: File? = null
+    @CommandLine.Option(
+        names = ["--simulator-config"],
+        description = ["File containing configuration parameters for simulator. Default to \${DEFAULT-VALUE}"]
+    )
+    var simulatorConfig: File = File("config.conf")
 
-    @CommandLine.Option(names = ["--send-topic"], description = ["Topic to send the messages to. " +
-            "Defaults to ${Schema.P2P_OUT_TOPIC}, if not specified."])
+    @CommandLine.Option(
+        names = ["--send-topic"],
+        description = [
+            "Topic to send the messages to. " +
+                "Defaults to ${Schema.P2P_OUT_TOPIC}, if not specified."
+        ]
+    )
     var sendTopic: String? = null
 
-    @CommandLine.Option(names = ["--receive-topic"], description = ["Topic to receive messages from. " +
-            "Defaults to ${Schema.P2P_IN_TOPIC}, if not specified."])
+    @CommandLine.Option(
+        names = ["--receive-topic"],
+        description = [
+            "Topic to receive messages from. " +
+                "Defaults to ${Schema.P2P_IN_TOPIC}, if not specified."
+        ]
+    )
     var receiveTopic: String? = null
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
@@ -243,13 +253,15 @@ enum class SimulationMode {
 
 data class DBParams(val username: String, val password: String, val host: String, val db: String)
 
-data class LoadGenerationParams(val peer: HoldingIdentity,
-                                val ourIdentity: HoldingIdentity,
-                                val loadGenerationType: LoadGenerationType,
-                                val totalNumberOfMessages: Int?,
-                                val batchSize: Int,
-                                val interBatchDelay: Duration,
-                                val messageSizeBytes: Int) {
+data class LoadGenerationParams(
+    val peer: HoldingIdentity,
+    val ourIdentity: HoldingIdentity,
+    val loadGenerationType: LoadGenerationType,
+    val totalNumberOfMessages: Int?,
+    val batchSize: Int,
+    val interBatchDelay: Duration,
+    val messageSizeBytes: Int
+) {
     init {
         when (loadGenerationType) {
             LoadGenerationType.ONE_OFF -> require(totalNumberOfMessages != null)
@@ -260,5 +272,10 @@ data class LoadGenerationParams(val peer: HoldingIdentity,
 
 data class MessagePayload(val sender: String, val payload: ByteArray, val sendTimestamp: Instant)
 data class MessageSentEvent(val sender: String, val messageId: String)
-data class MessageReceivedEvent(val sender: String, val messageId: String, val sendTimestamp: Instant,
-                                val receiveTimestamp: Instant, val deliveryLatency: Duration)
+data class MessageReceivedEvent(
+    val sender: String,
+    val messageId: String,
+    val sendTimestamp: Instant,
+    val receiveTimestamp: Instant,
+    val deliveryLatency: Duration
+)

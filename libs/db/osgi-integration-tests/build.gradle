@@ -17,6 +17,8 @@ dependencies {
     integrationTestImplementation project(":libs:db:db-admin-impl")
     integrationTestImplementation project(":libs:db:db-orm")
     integrationTestImplementation project(":libs:db:db-orm-impl")
+    integrationTestImplementation project(":testing:test-utilities")
+    integrationTestImplementation project(":testing:db-testkit")
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
 

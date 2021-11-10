@@ -1,0 +1,4 @@
+# An example of an arguments file that can be used to configure the gateway from docker
+gateway
+--port 3123
+--host www.alice.net

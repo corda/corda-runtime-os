@@ -18,16 +18,15 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.RESPONSE_TOPIC
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.RPCConsumerRebalanceListener
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.utils.FutureTracker
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import java.nio.ByteBuffer
@@ -62,12 +61,11 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         get() = !stopped
 
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
-    private val topicPrefix = config.getString(TOPIC_PREFIX)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
     private val responseTopic = config.getString(RESPONSE_TOPIC)
     private var partitionListener = RPCConsumerRebalanceListener(
-        "$topicPrefix$responseTopic",
+        responseTopic,
         "RPC Response listener",
         futureTracker
     )
@@ -116,7 +114,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     RPCResponse::class.java
                 ).use {
                     it.subscribe(
-                        listOf("$topicPrefix$responseTopic"),
+                        listOf(responseTopic),
                         partitionListener
                     )
                     pollAndProcessRecords(it)
@@ -157,25 +155,26 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         }
     }
 
-    private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<String, RPCResponse>>) {
+    @Suppress("TooGenericExceptionCaught")
+    private fun processRecords(consumerRecords: List<ConsumerRecord<String, RPCResponse>>) {
         consumerRecords.forEach {
-            val correlationKey = it.record.key()
-            val partition = it.record.partition()
+            val correlationKey = it.key()
+            val partition = it.partition()
             val future = futureTracker.getFuture(correlationKey, partition)
-            val responseStatus = it.record.value().responseStatus
+            val responseStatus = it.value().responseStatus
                 ?: throw CordaMessageAPIFatalException("Response status came back NULL. This should never happen")
 
             if (future != null) {
                 when (responseStatus) {
                     ResponseStatus.OK -> {
-                        val responseBytes = it.record.value().payload
+                        val responseBytes = it.value().payload
                         val response = deserializer.deserialize(responseTopic, responseBytes.array())
-                        log.info("Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}")
+                        log.info("Response for request $correlationKey was received at ${Date(it.value().sendTime)}")
 
                         future.complete(response)
                     }
                     ResponseStatus.FAILED -> {
-                        val responseBytes = it.record.value().payload
+                        val responseBytes = it.value().payload
                         val response = ExceptionEnvelope.fromByteBuffer(responseBytes)
                         future.completeExceptionally(
                             CordaRPCAPIResponderException(
@@ -191,7 +190,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 futureTracker.removeFuture(correlationKey, partition)
             } else {
                 log.info(
-                    "Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}. " +
+                    "Response for request $correlationKey was received at ${Date(it.value().sendTime)}. " +
                     "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
                     "a repartition event or the client dropped their future. The response status for it was $responseStatus"
                 )
@@ -228,7 +227,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             val request = RPCRequest(
                 correlationId,
                 Instant.now().toEpochMilli(),
-                "$topicPrefix$responseTopic",
+                responseTopic,
                 partition,
                 ByteBuffer.wrap(reqBytes)
             )

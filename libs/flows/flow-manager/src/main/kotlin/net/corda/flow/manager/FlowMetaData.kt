@@ -1,0 +1,11 @@
+package net.corda.flow.manager
+
+import net.corda.data.flow.FlowKey
+
+data class FlowMetaData(
+    val flowName: String,
+    val flowKey: FlowKey,
+    val jsonArg: String,
+    val cpiId: String,
+    val flowEventTopic: String,
+)

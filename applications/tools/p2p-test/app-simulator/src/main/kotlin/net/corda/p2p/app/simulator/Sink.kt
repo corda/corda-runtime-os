@@ -12,18 +12,16 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.p2p.app.simulator.AppSimulator.Companion.KAFKA_BOOTSTRAP_SERVER
 import net.corda.p2p.app.simulator.AppSimulator.Companion.KAFKA_BOOTSTRAP_SERVER_KEY
 import net.corda.p2p.app.simulator.AppSimulator.Companion.PRODUCER_CLIENT_ID
 import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 import java.sql.Connection
 import java.sql.Timestamp
-import java.util.Properties
 
 class Sink(private val subscriptionFactory: SubscriptionFactory,
            private val dbConnection: Connection,
-           private val kafkaProperties: Properties,
+           private val kafkaServers: String,
            private val clients: Int): Closeable {
 
     companion object {
@@ -40,7 +38,7 @@ class Sink(private val subscriptionFactory: SubscriptionFactory,
         (1..clients).forEach { client ->
             val subscriptionConfig = SubscriptionConfig("app-simulator-sink", AppSimulator.DELIVERED_MSG_TOPIC, client)
             val kafkaConfig = SmartConfigImpl.empty()
-                .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
+                .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaServers))
                 .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-sink-$client"))
             val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig, DBSinkProcessor(), kafkaConfig, null)
             subscription.start()

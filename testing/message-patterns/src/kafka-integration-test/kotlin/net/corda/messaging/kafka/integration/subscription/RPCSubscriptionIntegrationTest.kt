@@ -72,9 +72,8 @@ class RPCSubscriptionIntegrationTest {
             .withValue(
                 IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(
                     IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE
-                )
-            )
-            .withValue(IntegrationTestProperties.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+                ))
+            .withValue(IntegrationTestProperties.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TopicTemplates.TEST_TOPIC_PREFIX))
     }
 
     @Test
