@@ -6,7 +6,16 @@ import net.corda.db.schema.Schema
 import net.corda.db.testkit.DbUtils
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
-import net.corda.permissions.model.RbacDboFactory
+import net.corda.permissions.model.ChangeAudit
+import net.corda.permissions.model.Group
+import net.corda.permissions.model.GroupProperty
+import net.corda.permissions.model.Permission
+import net.corda.permissions.model.Role
+import net.corda.permissions.model.RoleGroupAssociation
+import net.corda.permissions.model.RolePermissionAssociation
+import net.corda.permissions.model.RoleUserAssociation
+import net.corda.permissions.model.User
+import net.corda.permissions.model.UserProperty
 import net.corda.test.util.LoggingUtils.emphasise
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions
@@ -30,8 +39,6 @@ class RpcRbacEntitiesTest {
         lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
         @InjectService
         lateinit var lbm: LiquibaseSchemaMigrator
-        @InjectService
-        lateinit var rbacDboFactory: RbacDboFactory
 
         lateinit var emf: EntityManagerFactory
 
@@ -68,7 +75,18 @@ class RpcRbacEntitiesTest {
 
             emf = entityManagerFactoryFactory.create(
                 "RPC RBAC",
-                rbacDboFactory.allEntityClasses.toList(),
+                listOf(
+                    User::class.java,
+                    Group::class.java,
+                    Role::class.java,
+                    Permission::class.java,
+                    UserProperty::class.java,
+                    GroupProperty::class.java,
+                    ChangeAudit::class.java,
+                    RoleUserAssociation::class.java,
+                    RoleGroupAssociation::class.java,
+                    RolePermissionAssociation::class.java
+                ),
                 dbConfig
             )
         }
@@ -88,7 +106,7 @@ class RpcRbacEntitiesTest {
         val em = emf.createEntityManager()
         try {
             em.transaction.begin()
-            val user = rbacDboFactory.createUser("userId", Instant.now(), "fullName", "loginName", true,
+            val user = User("userId", Instant.now(), "fullName", "loginName", true,
                 "saltValue", "hashedPassword", null, null)
             em.persist(user)
             em.transaction.commit()
