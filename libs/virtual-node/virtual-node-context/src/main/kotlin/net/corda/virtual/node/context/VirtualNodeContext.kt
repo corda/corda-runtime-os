@@ -16,7 +16,30 @@ interface VirtualNodeContext {
     val id: String
     val cpi: CPI.Identifier
     val holdingIdentity: HoldingIdentity
-    // val tlsContext : TLSContext
-    // val p2pContext : P2PContext
-    // etc.  TBD
+
+    /**
+     * Get an object into the internal storage using the given key.
+     *
+     * Returns null if it doesn't exist
+     *
+     * Throws [TypeCastException] if the object cannot be cast to the expected type.
+     */
+    fun <T> getObject(key: String) : T?
+
+    /**
+     * Put an object into the internal storage using the given key.
+     *
+     * Overwrites existing value.
+     */
+    fun <T> putObject(key: String, value: T)
+
+    /**
+     * Delete an object from the internal storage for a given key.
+     */
+    fun deleteObject(key: String)
+
+    /**
+     * Returns true if there is an object in internal storage with the given key.
+     */
+    fun exists(key: String) : Boolean
 }
