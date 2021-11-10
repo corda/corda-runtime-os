@@ -1,7 +1,7 @@
 version: '3.4'
 
 services:
-  postgres-db:
+  postgres:
     image: postgres
     restart: "no"
     hostname: postgres-db
@@ -13,3 +13,8 @@ services:
     environment:
       POSTGRES_USER: corda
       POSTGRES_PASSWORD: corda-p2p-masters
+    networks:
+      - kafka-docker_default
+networks:
+  kafka-docker_default:
+    external: true
