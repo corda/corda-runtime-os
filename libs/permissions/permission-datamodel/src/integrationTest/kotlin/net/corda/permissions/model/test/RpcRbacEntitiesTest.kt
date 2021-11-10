@@ -1,25 +1,25 @@
-package net.corda.permissions.model
+package net.corda.permissions.model.test
 
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.schema.Schema
-import net.corda.db.testkit.DbUtils.getEntityManagerConfiguration
+import net.corda.db.testkit.DbUtils
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.permissions.model.RbacDboFactory
 import net.corda.test.util.LoggingUtils.emphasise
+import net.corda.v5.base.util.contextLogger
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.osgi.test.junit5.service.ServiceExtension
-import java.io.StringWriter
-import javax.persistence.EntityManagerFactory
-import net.corda.v5.base.util.contextLogger
-import org.assertj.core.api.Assertions.assertThat
 import org.osgi.framework.FrameworkUtil
 import org.osgi.test.common.annotation.InjectService
+import org.osgi.test.junit5.service.ServiceExtension
+import java.io.StringWriter
 import java.time.Instant
-
+import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class)
 class RpcRbacEntitiesTest {
@@ -35,7 +35,7 @@ class RpcRbacEntitiesTest {
 
         lateinit var emf: EntityManagerFactory
 
-        private val dbConfig: EntityManagerConfiguration = getEntityManagerConfiguration("rbac")
+        private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("rbac")
 
         @Suppress("unused")
         @JvmStatic
@@ -52,8 +52,12 @@ class RpcRbacEntitiesTest {
             val cl = ClassloaderChangeLog(
                 linkedSetOf(
                     ClassloaderChangeLog.ChangeLogResourceFiles(
-                        fullName, listOf("$resourcePrefix/migration/rpc-rbac-creation-v1.0.xml"), classLoader = schemaClass.classLoader)
-            ))
+                        fullName,
+                        listOf("$resourcePrefix/migration/rpc-rbac-creation-v1.0.xml"),
+                        classLoader = schemaClass.classLoader
+                    )
+                )
+            )
             StringWriter().use {
                 lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it)
                 logger.info("Schema creation SQL: $it")
@@ -90,7 +94,7 @@ class RpcRbacEntitiesTest {
             em.transaction.commit()
 
             val resultList = em.createQuery("from User", user.javaClass).resultList
-            assertThat(resultList).contains(user)
+            Assertions.assertThat(resultList).contains(user)
         } finally {
             em.close()
         }
