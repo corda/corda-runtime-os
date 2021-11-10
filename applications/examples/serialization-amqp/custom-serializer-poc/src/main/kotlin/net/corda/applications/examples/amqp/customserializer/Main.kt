@@ -121,8 +121,11 @@ class Main @Activate constructor(
             factory.register(customSerializer, true)
         }
         // Build CorDapp serializers
-        val cordappCustomSerializers = sandboxAndSerializers.serializers.map {
-            val classFromMainBundles = sandboxAndSerializers.sandboxGroup.loadClassFromMainBundles(it, SerializationCustomSerializer::class.java)
+        val cordappCustomSerializers = sandboxAndSerializers.serializers.map { serializerClassName ->
+            val classFromMainBundles = sandboxAndSerializers.sandboxGroup.loadClassFromMainBundles(
+                serializerClassName,
+                SerializationCustomSerializer::class.java
+            )
             classFromMainBundles.getConstructor().newInstance()
         }
         // Register CorDapp serializers
