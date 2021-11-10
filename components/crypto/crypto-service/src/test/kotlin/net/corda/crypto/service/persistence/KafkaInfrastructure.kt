@@ -29,14 +29,14 @@ class KafkaInfrastructure {
         const val CLIENT_ID = "clientId"
         val config: CryptoLibraryConfig = CryptoLibraryConfigImpl(
             mapOf(
-                "keyCache" to mapOf(
+                "defaultCryptoService" to mapOf(
                     "persistenceConfig" to mapOf(
                         "groupName" to GROUP_NAME,
                         "topicName" to KEY_CACHE_TOPIC_NAME,
                         "clientId" to CLIENT_ID
                     )
                 ),
-                "mngCache" to mapOf(
+                "publicKeys" to mapOf(
                     "persistenceConfig" to mapOf(
                         "groupName" to GROUP_NAME,
                         "topicName" to MNG_CACHE_TOPIC_NAME,
