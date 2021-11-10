@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.Closeable
 import java.io.File
-import java.io.FileInputStream
 import java.sql.Connection
 import java.sql.DriverManager
 import java.time.Duration
@@ -33,7 +32,7 @@ class AppSimulator @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory
-): Application {
+) : Application {
 
     companion object {
         private val logger: Logger = contextLogger()
@@ -45,17 +44,18 @@ class AppSimulator @Activate constructor(
         const val DB_PARAMS_PREFIX = "dbParams"
         const val LOAD_GEN_PARAMS_PREFIX = "loadGenerationParams"
         const val PARALLEL_CLIENTS_KEY = "parallelClients"
-        val DEFAULT_CONFIG = ConfigFactory.parseMap(mapOf(
-            "$LOAD_GEN_PARAMS_PREFIX.batchSize" to 50,
-            "$LOAD_GEN_PARAMS_PREFIX.interBatchDelay" to Duration.ZERO,
-            "$LOAD_GEN_PARAMS_PREFIX.messageSizeBytes" to 10_000,
-            PARALLEL_CLIENTS_KEY to 1
-        ))
+        val DEFAULT_CONFIG = ConfigFactory.parseMap(
+            mapOf(
+                "$LOAD_GEN_PARAMS_PREFIX.batchSize" to 50,
+                "$LOAD_GEN_PARAMS_PREFIX.interBatchDelay" to Duration.ZERO,
+                "$LOAD_GEN_PARAMS_PREFIX.messageSizeBytes" to 10_000,
+                PARALLEL_CLIENTS_KEY to 1
+            )
+        )
     }
 
     private val resources = mutableListOf<Closeable>()
     private var dbConnection: Connection? = null
-
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
@@ -89,7 +89,7 @@ class AppSimulator @Activate constructor(
         val dbConnection = readDbParams(simulatorConfig)?.let { connectToDb(it) }
 
         val simulatorMode = simulatorConfig.getEnum(SimulationMode::class.java, "simulatorMode")
-        when(simulatorMode) {
+        when (simulatorMode) {
             SimulationMode.SENDER -> {
                 runSender(simulatorConfig, publisherFactory, dbConnection, sendTopic, kafkaServers, clients)
             }
@@ -104,8 +104,14 @@ class AppSimulator @Activate constructor(
     }
 
     @Suppress("LongParameterList")
-    private fun runSender(simulatorConfig: Config, publisherFactory: PublisherFactory, dbConnection: Connection?,
-                          sendTopic: String, kafkaServers: String, clients: Int) {
+    private fun runSender(
+        simulatorConfig: Config,
+        publisherFactory: PublisherFactory,
+        dbConnection: Connection?,
+        sendTopic: String,
+        kafkaServers: String,
+        clients: Int
+    ) {
         val loadGenerationParams = readLoadGenParams(simulatorConfig)
         val sender = Sender(publisherFactory, dbConnection, loadGenerationParams, sendTopic, kafkaServers, clients)
         sender.start()
@@ -169,7 +175,7 @@ class AppSimulator @Activate constructor(
         val ourGroupId = config.getString("$LOAD_GEN_PARAMS_PREFIX.ourGroupId")
         val loadGenerationType =
             config.getEnum(LoadGenerationType::class.java, "$LOAD_GEN_PARAMS_PREFIX.loadGenerationType")
-        val totalNumberOfMessages = when(loadGenerationType) {
+        val totalNumberOfMessages = when (loadGenerationType) {
             LoadGenerationType.ONE_OFF -> config.getInt("$LOAD_GEN_PARAMS_PREFIX.totalNumberOfMessages")
             LoadGenerationType.CONTINUOUS -> null
             else -> throw IllegalStateException("Invalid value for load generation type: $loadGenerationType")
@@ -197,7 +203,6 @@ class AppSimulator @Activate constructor(
     private fun shutdownOSGiFramework() {
         shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
-
 }
 
 class CliParameters {
@@ -207,15 +212,28 @@ class CliParameters {
     )
     var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
 
-    @CommandLine.Option(names = ["--simulator-config"], description = ["File containing configuration parameters for simulator. Default to ${DEFAULT-VALUE}"])
+    @CommandLine.Option(
+        names = ["--simulator-config"],
+        description = ["File containing configuration parameters for simulator. Default to \${DEFAULT-VALUE}"]
+    )
     var simulatorConfig: File = File("config.conf")
 
-    @CommandLine.Option(names = ["--send-topic"], description = ["Topic to send the messages to. " +
-            "Defaults to ${Schema.P2P_OUT_TOPIC}, if not specified."])
+    @CommandLine.Option(
+        names = ["--send-topic"],
+        description = [
+            "Topic to send the messages to. " +
+                "Defaults to ${Schema.P2P_OUT_TOPIC}, if not specified."
+        ]
+    )
     var sendTopic: String? = null
 
-    @CommandLine.Option(names = ["--receive-topic"], description = ["Topic to receive messages from. " +
-            "Defaults to ${Schema.P2P_IN_TOPIC}, if not specified."])
+    @CommandLine.Option(
+        names = ["--receive-topic"],
+        description = [
+            "Topic to receive messages from. " +
+                "Defaults to ${Schema.P2P_IN_TOPIC}, if not specified."
+        ]
+    )
     var receiveTopic: String? = null
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
@@ -235,13 +253,15 @@ enum class SimulationMode {
 
 data class DBParams(val username: String, val password: String, val host: String, val db: String)
 
-data class LoadGenerationParams(val peer: HoldingIdentity,
-                                val ourIdentity: HoldingIdentity,
-                                val loadGenerationType: LoadGenerationType,
-                                val totalNumberOfMessages: Int?,
-                                val batchSize: Int,
-                                val interBatchDelay: Duration,
-                                val messageSizeBytes: Int) {
+data class LoadGenerationParams(
+    val peer: HoldingIdentity,
+    val ourIdentity: HoldingIdentity,
+    val loadGenerationType: LoadGenerationType,
+    val totalNumberOfMessages: Int?,
+    val batchSize: Int,
+    val interBatchDelay: Duration,
+    val messageSizeBytes: Int
+) {
     init {
         when (loadGenerationType) {
             LoadGenerationType.ONE_OFF -> require(totalNumberOfMessages != null)
@@ -252,5 +272,10 @@ data class LoadGenerationParams(val peer: HoldingIdentity,
 
 data class MessagePayload(val sender: String, val payload: ByteArray, val sendTimestamp: Instant)
 data class MessageSentEvent(val sender: String, val messageId: String)
-data class MessageReceivedEvent(val sender: String, val messageId: String, val sendTimestamp: Instant,
-                                val receiveTimestamp: Instant, val deliveryLatency: Duration)
+data class MessageReceivedEvent(
+    val sender: String,
+    val messageId: String,
+    val sendTimestamp: Instant,
+    val receiveTimestamp: Instant,
+    val deliveryLatency: Duration
+)
