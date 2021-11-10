@@ -19,12 +19,12 @@ dependencies {
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")
     integrationTestImplementation project(":libs:db:db-orm")
-    integrationTestImplementation project(":libs:db:db-orm-impl")
     integrationTestImplementation project(":testing:test-utilities")
     integrationTestImplementation project(":testing:db-testkit")
     integrationTestImplementation 'net.corda:corda-base'
     integrationTestImplementation 'net.corda:corda-db-schema'
 
+    integrationTestRuntimeOnly project(":libs:db:db-orm-impl")
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
 
