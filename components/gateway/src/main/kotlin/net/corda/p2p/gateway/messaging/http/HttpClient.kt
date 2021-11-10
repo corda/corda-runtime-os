@@ -81,7 +81,7 @@ class HttpClient(
 
     private val connectListener = ChannelFutureListener { future ->
         if (!future.isSuccess) {
-            logger.warn("Failed to connect to ${destinationInfo.uri}: ${future.cause().message}")
+            logger.warn("Failed to connect to ${destinationInfo.uri}: ${future.cause().message}", future.cause())
             onClose(HttpConnectionEvent(future.channel()))
         } else {
             logger.info("Connected to ${destinationInfo.uri}")
