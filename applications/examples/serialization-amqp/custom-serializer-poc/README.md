@@ -1,6 +1,6 @@
 These commands are run from `corda-runtime-os/applications/examples/serialization-amqp/custom-serializer-poc`.
 
-Build CPK:
+Build CPKs:
 
 `../../../../gradlew build`
 
