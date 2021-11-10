@@ -48,7 +48,7 @@ class Gateway(
     )
 
     @VisibleForTesting
-    val children: Collection<DominoTile> = listOf(inboundMessageHandler.dominoTile, outboundMessageProcessor.dominoTile)
+    internal val children: Collection<DominoTile> = listOf(inboundMessageHandler.dominoTile, outboundMessageProcessor.dominoTile)
     override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, children = children)
 
     companion object {

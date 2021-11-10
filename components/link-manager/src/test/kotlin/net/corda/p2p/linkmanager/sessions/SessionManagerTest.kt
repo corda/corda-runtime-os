@@ -1037,7 +1037,7 @@ class SessionManagerTest {
         sessionManager.dataMessageSent(authenticatedSession)
 
         assertTrue(publishLatch.await(
-            configLongTimeout.sessionTimeout.multipliedBy(20).toMillis(),
+            configLongTimeout.heartbeatPeriod.multipliedBy(20).toMillis(),
             TimeUnit.MILLISECONDS)
         )
         loggingInterceptor.assertSingleWarningContains("An exception was thrown when sending a heartbeat message.")

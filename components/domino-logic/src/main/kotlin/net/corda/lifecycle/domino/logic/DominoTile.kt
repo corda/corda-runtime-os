@@ -40,7 +40,7 @@ class DominoTile(
     }
     private object StartTile : LifecycleEvent
     private data class StopTile(val dueToError: Boolean) : LifecycleEvent
-    private class ConfigApplied(val configUpdateResult: ConfigUpdateResult) : LifecycleEvent
+    private data class ConfigApplied(val configUpdateResult: ConfigUpdateResult) : LifecycleEvent
     private object ResourcesCreated : LifecycleEvent
     enum class State {
         Created,
@@ -129,7 +129,6 @@ class DominoTile(
         private var lastConfiguration: C? = null
 
         private fun applyNewConfiguration(newConfiguration: Config) {
-            @Suppress("TooGenericExceptionCaught")
             val configuration = try {
                 configurationChangeHandler.configFactory(newConfiguration)
             } catch (e: Exception) {
@@ -212,7 +211,7 @@ class DominoTile(
                 is RegistrationStatusChangeEvent -> {
                     if (event.status == LifecycleStatus.UP) {
                         logger.info("RegistrationStatusChangeEvent $name going up.")
-                        readyOrStartTile()
+                        handleLifecycleUp()
                     } else {
                         val errorKids = children.filter { it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig }
                         if (errorKids.isEmpty()) {
@@ -237,7 +236,11 @@ class DominoTile(
                         ConfigUpdateResult.Success -> {
                             configReady = true
                             when (state) {
-                                State.StoppedDueToBadConfig, State.Created, State.StoppedByParent -> {
+                                State.StoppedDueToBadConfig -> {
+                                    logger.info("Config ready for $name.")
+                                    startDependenciesIfNeeded()
+                                }
+                                State.Created, State.StoppedByParent -> {
                                     logger.info("Config ready for $name.")
                                     setStartedIfCan()
                                 }
@@ -274,6 +277,22 @@ class DominoTile(
         coordinator.postEvent(StopTile(true))
     }
 
+    private fun handleLifecycleUp() {
+        if (!isRunning) {
+            when {
+                children.all { it.isRunning } -> {
+                    createResourcesAndStart()
+                }
+                children.any { it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig } -> {
+                    children.filter { it.isRunning || it.state == State.Created }.forEach { it.stop() }
+                }
+                else -> { // any children that are not running have been stopped by the parent
+                    startDependenciesIfNeeded()
+                }
+            }
+        }
+    }
+
     private fun readyOrStartTile() {
         if (registrations == null) {
             registrations = children.map {
@@ -287,30 +306,22 @@ class DominoTile(
     }
 
     private fun startDependenciesIfNeeded() {
-        val childrenWithErrors = children.filter { it.state == State.StoppedDueToBadConfig || it.state == State.StoppedDueToError }
-        if (childrenWithErrors.isNotEmpty()) {
-            (children - childrenWithErrors).forEach {
-                it.stop()
-            }
-        } else {
-            children.forEach {
-                it.start()
-            }
-
-            if (children.all { it.isRunning }) {
+        children.forEach {
+            it.start()
+        }
+        if (children.all { it.isRunning }) {
                 @Suppress("TooGenericExceptionCaught")
-                try {
-                    createResourcesAndStart()
-                } catch (e: Throwable) {
-                    gotError(e)
-                }
-            } else {
-                logger.debug(
-                    "Not all child tiles started yet.\n " +
-                        "Started Children = ${children.filter{ it.isRunning }}.\n " +
-                        "Not Started Children = ${children.filter { !it.isRunning }}."
-                )
-            }
+           try {
+                createResourcesAndStart()
+           } catch (e: Throwable) {
+                gotError(e)
+           }
+        } else {
+            logger.info(
+                "Not all child tiles started yet.\n " +
+                "Started Children = ${children.filter{ it.isRunning }}.\n " +
+                "Not Started Children = ${children.filter { !it.isRunning }}."
+            )
         }
     }
 

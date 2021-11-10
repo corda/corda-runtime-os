@@ -822,9 +822,9 @@ class DominoTileTest {
         }
 
         @Nested
-        inner class StartKidsIfNeededTests {
+        inner class StartDependenciesIfNeededTests {
             @Test
-            fun `startKidsIfNeeded will start all if there is no error child`() {
+            fun `startDependenciesIfNeeded will start all if there is no error child`() {
                 val children = listOf<DominoTile>(
                     mock {
                         on { state } doReturn DominoTile.State.StoppedByParent
@@ -852,7 +852,7 @@ class DominoTileTest {
             }
 
             @Test
-            fun `startKidsIfNeeded will set status to up if all are running`() {
+            fun `startDependenciesIfNeeded will set status to up if all are running`() {
                 val children = listOf<DominoTile>(
                     mock {
                         on { state } doReturn DominoTile.State.Started
@@ -881,7 +881,7 @@ class DominoTileTest {
             }
 
             @Test
-            fun `startKidsIfNeeded will not start any if there is error child`() {
+            fun `startDependenciesIfNeeded will not start any if there is error child`() {
                 val children = listOf<DominoTile>(
                     mock {
                         on { state } doReturn DominoTile.State.StoppedByParent
@@ -915,16 +915,20 @@ class DominoTileTest {
             }
 
             @Test
-            fun `startKidsIfNeeded will stop all non error children`() {
+            fun `startDependenciesIfNeeded will stop all children which are Created or Started`() {
                 val children = listOf<DominoTile>(
                     mock {
                         on { state } doReturn DominoTile.State.StoppedByParent
                     },
                     mock {
                         on { state } doReturn DominoTile.State.Started
+                        on { isRunning } doReturn true
                     },
                     mock {
                         on { state } doReturn DominoTile.State.StoppedDueToError
+                    },
+                    mock {
+                        on { state } doReturn DominoTile.State.StoppedDueToBadConfig
                     },
                     mock {
                         on { state } doReturn DominoTile.State.Created
@@ -940,9 +944,11 @@ class DominoTileTest {
                     coordinator
                 )
 
-                verify(children[0]).stop()
+                verify(children[0], never()).stop()
                 verify(children[1]).stop()
-                verify(children[3]).stop()
+                verify(children[2], never()).stop()
+                verify(children[3], never()).stop()
+                verify(children[4]).stop()
             }
 
             @Test
@@ -1038,7 +1044,7 @@ class DominoTileTest {
                         on { isRunning } doReturn true
                     },
                 )
-                tile(children)
+                val tileWithStartedChildren = tile(children)
 
                 handler.lastValue.processEvent(
                     RegistrationStatusChangeEvent(
@@ -1048,7 +1054,7 @@ class DominoTileTest {
                     coordinator
                 )
 
-                verify(children.first()).start()
+                assertThat(tileWithStartedChildren.isRunning).isEqualTo(true)
             }
 
             @Test
