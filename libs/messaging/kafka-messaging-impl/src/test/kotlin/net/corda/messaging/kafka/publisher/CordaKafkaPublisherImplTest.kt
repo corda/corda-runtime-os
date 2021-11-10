@@ -76,18 +76,6 @@ class CordaKafkaPublisherImplTest {
     }
 
     @Test
-    fun testPublishWrongKeyType() {
-        val futures = publish(false, listOf(Record("topic", 2, "value")))
-        assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
-    }
-
-    @Test
-    fun testPublishToPartitionWrongKeyType() {
-        val futures = publishToPartition(false, listOf(1 to Record("topic", 2, "value")))
-        assertThrows(CordaMessageAPIFatalException::class.java, getCauseOrThrow(futures[0]))
-    }
-
-    @Test
     fun testPublishFatalError() {
         mockProducer = MockProducer(false, StringSerializer(), ByteBufferSerializer())
         producer = CordaKafkaProducerImpl(kafkaConfig.getConfig(KAFKA_PRODUCER), uncheckedCast(mockProducer))
