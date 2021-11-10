@@ -28,6 +28,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.io.StringWriter
 import java.time.Instant
+import java.util.*
 import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class)
@@ -106,13 +107,15 @@ class RpcRbacEntitiesTest {
         val em = emf.createEntityManager()
         try {
             em.transaction.begin()
-            val user = User("userId", Instant.now(), "fullName", "loginName", true,
+            val id = UUID.randomUUID().toString()
+            val user = User(
+                id, Instant.now(), "fullName", "loginName-$id", true,
                 "saltValue", "hashedPassword", null, null)
             em.persist(user)
             em.transaction.commit()
 
-            val resultList = em.createQuery("from User", user.javaClass).resultList
-            Assertions.assertThat(resultList).contains(user)
+            val retrievedUser = em.createQuery("from User where id = '$id'", user.javaClass).singleResult
+            Assertions.assertThat(retrievedUser).isEqualTo(user)
         } finally {
             em.close()
         }
