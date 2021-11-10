@@ -85,15 +85,14 @@ open class TestBase {
 
     protected val smartConfifFactory = SmartConfigFactoryImpl()
 
-    private val lifecycleRegistry = LifecycleRegistryImpl()
-    protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(lifecycleRegistry)
+    protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
     protected inner class ConfigPublisher {
         private val configurationTopicService = TopicServiceImpl()
         private val topicName = "config.${UUID.randomUUID().toString().replace("-", "")}"
 
         val readerService by lazy {
             ConfigurationReadServiceImpl(
-                LifecycleCoordinatorFactoryImpl(lifecycleRegistry),
+                LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl()),
                 ConfigReaderFactoryImpl(InMemSubscriptionFactory(configurationTopicService), smartConfifFactory),
             ).also {
                 it.start()
