@@ -9,6 +9,8 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
+import net.corda.messaging.emulation.rpc.RPCTopicService
+import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
@@ -28,6 +30,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.Executors
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.fail
@@ -104,7 +107,7 @@ class MemberConfigReaderTests {
             retryDelay: Duration = Duration.ofMillis(50),
         ): CryptoMemberConfig = wait(key, timeout, retryDelay) {
             val value = this.get(it)
-            if(value.isEmpty()) {
+            if (value.isEmpty()) {
                 null
             } else {
                 value
@@ -129,6 +132,7 @@ class MemberConfigReaderTests {
     }
 
     private lateinit var topicService: TopicService
+    private lateinit var rpcTopicService: RPCTopicService
     private lateinit var subscriptionFactory: SubscriptionFactory
     private lateinit var publisherFactory: PublisherFactory
     private lateinit var reader: MemberConfigReaderImpl
@@ -136,8 +140,9 @@ class MemberConfigReaderTests {
     @BeforeEach
     fun setup() {
         topicService = TopicServiceImpl()
-        subscriptionFactory = InMemSubscriptionFactory(topicService)
-        publisherFactory = CordaPublisherFactory(topicService)
+        rpcTopicService = RPCTopicServiceImpl(Executors.newCachedThreadPool())
+        subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService)
+        publisherFactory = CordaPublisherFactory(topicService, rpcTopicService)
         reader = MemberConfigReaderImpl(
             subscriptionFactory
         )

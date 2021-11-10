@@ -11,6 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
+import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
@@ -18,6 +19,7 @@ import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.test.fail
 
@@ -55,21 +57,22 @@ class KafkaInfrastructure {
             val end = Instant.now().plus(timeout)
             do {
                 val value = this.get(key)
-                if(value != null) {
+                if (value != null) {
                     return value
                 }
                 Thread.sleep(retryDelay.toMillis())
-            } while(Instant.now() < end)
+            } while (Instant.now() < end)
             fail("Failed to wait for '$key'")
         }
     }
 
     private val topicService: TopicService = TopicServiceImpl()
-    val subscriptionFactory: SubscriptionFactory = InMemSubscriptionFactory(topicService)
-    val publisherFactory: PublisherFactory = CordaPublisherFactory(topicService)
+    private val rpcTopicService = RPCTopicServiceImpl(Executors.newCachedThreadPool())
+    val subscriptionFactory: SubscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService)
+    val publisherFactory: PublisherFactory = CordaPublisherFactory(topicService, rpcTopicService)
 
     fun createFactory(snapshot: (() -> Unit)? = null): KafkaKeyValuePersistenceFactory {
-        if(snapshot != null) {
+        if (snapshot != null) {
             snapshot()
         }
         return KafkaKeyValuePersistenceFactory(

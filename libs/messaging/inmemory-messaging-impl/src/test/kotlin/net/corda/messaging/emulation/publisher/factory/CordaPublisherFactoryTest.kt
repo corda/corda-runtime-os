@@ -2,23 +2,21 @@ package net.corda.messaging.emulation.publisher.factory
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.emulation.publisher.CordaPublisher
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory.Companion.PUBLISHER_INSTANCE_ID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
+import org.mockito.kotlin.*
 
 class CordaPublisherFactoryTest {
     private val nodeConfig = mock<SmartConfig> {
         on { withFallback(any()) } doReturn this.mock
         on { withValue(any(), any()) } doReturn this.mock
     }
-    private val factory = CordaPublisherFactory(mock())
+    private val factory = CordaPublisherFactory(mock(), mock())
 
     @Test
     fun `createPublisher returns CordaPublisher`() {
@@ -39,5 +37,11 @@ class CordaPublisherFactoryTest {
         factory.createPublisher(PublisherConfig("client"), nodeConfig)
 
         verify(nodeConfig, never()).withValue(PUBLISHER_INSTANCE_ID, ConfigValueFactory.fromAnyRef(12))
+    }
+
+    @Test
+    fun `createRPCSender returns an instance of the RPCSender`() {
+        val sender = factory.createRPCSender(RPCConfig("g1", "c1", "t1", String::class.java, String::class.java))
+        assertThat(sender).isInstanceOf(RPCSender::class.java)
     }
 }
