@@ -58,6 +58,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.concurrent.thread
 
 class GatewayTest : TestBase() {
     companion object {
@@ -488,8 +489,12 @@ class GatewayTest : TestBase() {
             val endTime = Instant.now().toEpochMilli()
             logger.info("Done processing ${messageCount * 2} in ${endTime - startTime} milliseconds.")
             receivedLatch.await()
-            gateways.forEach {
-                it.close()
+            gateways.map {
+                thread {
+                    it.close()
+                }
+            }.forEach {
+                it.join()
             }
         }
     }
