@@ -30,32 +30,12 @@ class RpcRbacEntitiesTest {
         lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
         @InjectService
         lateinit var lbm: LiquibaseSchemaMigrator
+        @InjectService
+        lateinit var rbacDboFactory: RbacDboFactory
 
         lateinit var emf: EntityManagerFactory
 
         private val dbConfig: EntityManagerConfiguration = getEntityManagerConfiguration("rbac")
-
-        private val permDataModelBundle = run {
-            val bundle = FrameworkUtil.getBundle(this::class.java).bundleContext.bundles.single { bundle ->
-                bundle.symbolicName == "net.corda.permission-datamodel"
-            }
-            logger.info("PermDataModelBundle bundle $bundle".emphasise())
-            bundle
-        }
-
-        private val userClass = permDataModelBundle.loadClass("net.corda.permissions.model.User")
-        private val groupClass = permDataModelBundle.loadClass("net.corda.permissions.model.Group")
-        private val roleClass = permDataModelBundle.loadClass("net.corda.permissions.model.Role")
-        private val permissionClass = permDataModelBundle.loadClass("net.corda.permissions.model.Permission")
-        private val userPropertyClass = permDataModelBundle.loadClass("net.corda.permissions.model.UserProperty")
-        private val groupPropertyClass = permDataModelBundle.loadClass("net.corda.permissions.model.GroupProperty")
-        private val changeAuditClass = permDataModelBundle.loadClass("net.corda.permissions.model.ChangeAudit")
-        private val roleUserAssociationClass =
-            permDataModelBundle.loadClass("net.corda.permissions.model.RoleUserAssociation")
-        private val roleGroupAssociationClass =
-            permDataModelBundle.loadClass("net.corda.permissions.model.RoleGroupAssociation")
-        private val rolePermissionAssociationClass =
-            permDataModelBundle.loadClass("net.corda.permissions.model.RolePermissionAssociation")
 
         @Suppress("unused")
         @JvmStatic
@@ -84,10 +64,7 @@ class RpcRbacEntitiesTest {
 
             emf = entityManagerFactoryFactory.create(
                 "RPC RBAC",
-                listOf(
-                    userClass, groupClass, roleClass, permissionClass, userPropertyClass, groupPropertyClass,
-                    changeAuditClass, roleUserAssociationClass, roleGroupAssociationClass, rolePermissionAssociationClass
-                ),
+                rbacDboFactory.allEntityClasses.toList(),
                 dbConfig
             )
         }
@@ -102,29 +79,17 @@ class RpcRbacEntitiesTest {
         }
     }
 
-    // Have to do it via reflection to ensure the correct classloader will be used
-    private fun createUser(): Any {
-        val userCtor = userClass.getDeclaredConstructor(
-            String::class.java, Instant::class.java, String::class.java,
-            String::class.java, Boolean::class.java, String::class.java, String::class.java, Instant::class.java,
-            groupClass
-        )
-        return userCtor.newInstance(
-            "userId", Instant.now(), "fullName", "loginName", true,
-            "saltValue", "hashedPassword", null, null
-        )
-    }
-
     @Test
     fun `test user creation`() {
         val em = emf.createEntityManager()
         try {
             em.transaction.begin()
-            val user = createUser()
+            val user = rbacDboFactory.createUser("userId", Instant.now(), "fullName", "loginName", true,
+                "saltValue", "hashedPassword", null, null)
             em.persist(user)
             em.transaction.commit()
 
-            val resultList = em.createQuery("from User", userClass).resultList
+            val resultList = em.createQuery("from User", user.javaClass).resultList
             assertThat(resultList).contains(user)
         } finally {
             em.close()
