@@ -167,7 +167,7 @@ class GatewayTest : TestBase() {
         fun `gateway reconfiguration`() {
             val configurationCount = 3
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
-            val recipientServerUrl = URI.create("http://www.alice.net:10000")
+            val recipientServerUrl = URI.create("http://www.alice.net:10001")
 
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val linkOutMessage = LinkOutMessage.newBuilder().apply {
@@ -268,7 +268,7 @@ class GatewayTest : TestBase() {
             val msgNumber = AtomicInteger(1)
             val clientNumber = 4
             val threadPool = NioEventLoopGroup(clientNumber)
-            val serverAddress = URI.create("http://www.alice.net:10000")
+            val serverAddress = URI.create("http://www.alice.net:10002")
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             Gateway(
                 createConfigurationServiceFor(GatewayConfiguration(serverAddress.host, serverAddress.port, aliceSslConfig)),
@@ -324,7 +324,7 @@ class GatewayTest : TestBase() {
             // We first produce some messages which will be consumed by the Gateway.
             val deliveryLatch = CountDownLatch(serversCount * messageCount)
             val servers = (1..serversCount).map {
-                it + 10000
+                it + 20000
             }.map {
                 "http://www.chip.net:$it"
             }.onEach { serverUrl ->
@@ -363,7 +363,7 @@ class GatewayTest : TestBase() {
 
             var startTime: Long
             var endTime: Long
-            val gatewayAddress = Pair("localhost", 10000)
+            val gatewayAddress = Pair("localhost", 20000)
             Gateway(
                 createConfigurationServiceFor(GatewayConfiguration(gatewayAddress.first, gatewayAddress.second, aliceSslConfig)),
                 alice.subscriptionFactory,
@@ -523,7 +523,7 @@ class GatewayTest : TestBase() {
                 configPublisher.publishConfig(
                     GatewayConfiguration(
                         host,
-                        10001,
+                        10005,
                         aliceSslConfig
                     )
                 )
@@ -542,13 +542,13 @@ class GatewayTest : TestBase() {
                     assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToError)
                 }
                 assertThrows<ConnectException> {
-                    Socket(host, 10001).close()
+                    Socket(host, 10005).close()
                 }
 
                 configPublisher.publishConfig(
                     GatewayConfiguration(
                         host,
-                        10002,
+                        10006,
                         aliceSslConfig
                     )
                 )
@@ -556,7 +556,7 @@ class GatewayTest : TestBase() {
                     assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.Started)
                 }
                 assertDoesNotThrow {
-                    Socket(host, 10002).close()
+                    Socket(host, 10006).close()
                 }
 
                 configPublisher.publishBadConfig()
@@ -564,7 +564,7 @@ class GatewayTest : TestBase() {
                     assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToError)
                 }
                 assertThrows<ConnectException> {
-                    Socket(host, 10002).close()
+                    Socket(host, 10006).close()
                 }
             }
         }
