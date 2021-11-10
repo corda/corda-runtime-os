@@ -125,8 +125,10 @@ class CachingCustomSerializerRegistry(
         require(customSerializer is SerializerFor) { "customSerializer must implement SerializerFor" }
         checkActiveCache(customSerializer.type)
 
-        customSerializers += customSerializer
-        descriptorBasedSerializerRegistry.getOrBuild(customSerializer.typeDescriptor.toString()) { customSerializer }
+        descriptorBasedSerializerRegistry.getOrBuild(customSerializer.typeDescriptor.toString()) {
+            customSerializers += customSerializer
+            customSerializer
+        }
     }
 
     private fun checkActiveCache(type: Type) {
