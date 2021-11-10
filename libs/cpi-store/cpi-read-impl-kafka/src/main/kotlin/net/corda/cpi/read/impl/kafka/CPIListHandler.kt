@@ -35,8 +35,8 @@ class CPIListHandler(private val subscriptionFactory: SubscriptionFactory,
     override fun onSnapshot(currentData: Map<String, CPIMetadata>) {
         synchronized(listeners) {
             val convertedData = fromAvroTypedMap(currentData)
-            listeners.forEach { it.onUpdate(convertedData.keys, convertedData) }
             cpiMetadata.putAll(convertedData)
+            listeners.forEach { it.onUpdate(convertedData.keys, convertedData) }
             snapshotReceived = true
         }
     }
@@ -59,21 +59,30 @@ class CPIListHandler(private val subscriptionFactory: SubscriptionFactory,
         val changedValue: CPI.Metadata? = newRecord.value?.let {it.toCorda()}
 
         synchronized(listeners) {
+            if (changedValue != null) {
+                cpiMetadata[changedKey] = changedValue
+            }
+            else {
+                cpiMetadata.remove(changedKey)
+            }
             listeners.forEach { it.onUpdate(setOf(changedKey), convertedData) }
-            changedValue?.let { cpiMetadata.put(changedKey, it) } ?: cpiMetadata.remove(changedKey)
         }
     }
 
     fun registerCPIListCallback(cpiListener: CPIListener): AutoCloseable {
-        listeners.add(cpiListener)
-        if (snapshotReceived) {
-            cpiListener.onUpdate(cpiMetadata.keys, cpiMetadata)
+        synchronized(listeners) {
+            listeners.add(cpiListener)
+            if (snapshotReceived) {
+                cpiListener.onUpdate(cpiMetadata.keys, cpiMetadata)
+            }
+            return CPIListenerRegistration(this, cpiListener)
         }
-        return CPIListenerRegistration(this, cpiListener)
     }
 
     private fun unregisterCPIListCallback(cpiListener: CPIListener) {
-        listeners.remove(cpiListener)
+        synchronized(listeners) {
+            listeners.remove(cpiListener)
+        }
     }
 
     fun start()

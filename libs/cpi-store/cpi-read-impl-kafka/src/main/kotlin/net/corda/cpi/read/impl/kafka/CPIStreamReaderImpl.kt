@@ -95,16 +95,17 @@ class CPISegmentReaderExecutor(private val cpiIdentifier: CPI.Identifier,
                     atEnd = segmentResp.atEnd
                 }
                 catch(ex: ExecutionException) {
-                    checkNoPartitionsException(ex)
+                    checkPartitionException(ex)
                 }
             } while (!atEnd)
         }
         Files.move(tempPath, toPath, StandardCopyOption.REPLACE_EXISTING)
     }
-    private fun checkNoPartitionsException(ex: ExecutionException) {
+    private fun checkPartitionException(ex: ExecutionException) {
         ex.cause?.message?.let { msg ->
-            if (msg.startsWith("No partitions")) {
-                logger.debug("CordaRPCAPISenderException : No partitions received")
+            if (msg.startsWith("No partitions") ||
+                msg.startsWith("Repartition event")) {
+                logger.debug("CPIStreamReaderImpl::sendSegment - ${ex.toString()}")
                 Thread.sleep(1000)
             }
             else throw ex

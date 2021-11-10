@@ -124,7 +124,7 @@ class CPIRPCIntegrationTest {
 
         val initlatch = CountDownLatch(1)
         val endlatch = CountDownLatch(2)
-        var cpis: Map<CPI.Identifier, CPI.Metadata> = emptyMap()
+        var cpis: MutableMap<CPI.Identifier, CPI.Metadata> = mutableMapOf()
 
         val cpiPath = System.getProperty("cpi.path")
         val rootPath = Paths.get(cpiPath).parent
@@ -140,7 +140,7 @@ class CPIRPCIntegrationTest {
             initlatch.countDown()
             endlatch.countDown()
             if (currentSnapshot.size == 1) {
-                cpis = currentSnapshot.toMutableMap()
+                cpis.putAll(currentSnapshot)
                 endlatch.countDown()
             }
         }
