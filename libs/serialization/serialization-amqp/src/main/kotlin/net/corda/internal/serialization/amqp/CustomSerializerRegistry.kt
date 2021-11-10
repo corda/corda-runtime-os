@@ -125,7 +125,13 @@ class CachingCustomSerializerRegistry(
         require(customSerializer is SerializerFor) { "customSerializer must implement SerializerFor" }
         checkActiveCache(customSerializer.type)
 
-        descriptorBasedSerializerRegistry.getOrBuild(customSerializer.typeDescriptor.toString()) {
+        val descriptor = customSerializer.typeDescriptor.toString()
+
+        if (descriptorBasedSerializerRegistry.get(descriptor) != null) {
+            logger.warn("Attempt to replace serializer for $descriptor")
+        }
+
+        descriptorBasedSerializerRegistry.getOrBuild(descriptor) {
             customSerializers += customSerializer
             customSerializer
         }
