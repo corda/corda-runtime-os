@@ -42,6 +42,8 @@ pipeline {
         timestamps()
     }
 
+    triggers { cron('*/30 * * * *') }
+
     stages {
         stage('Prepare') {
             steps {
