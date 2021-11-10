@@ -4,11 +4,20 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.virtual.node.context.VirtualNodeContext
 
 /**
- *  The [AutoCloseable] object should be called to clean up and remove
- *  the virtual node from the current process.
+ * A context object that is essentially a decorated [SandboxGroup]
+ *
+ * This should contain references to all appropriate information for a given CPI, either here,
+ * or more likely in [VirtualNodeContext].
  */
-data class SandboxGroupContext (
-    val context: VirtualNodeContext,
-    val sandboxGroup: SandboxGroup,
-    val closeable: AutoCloseable
-)
+interface SandboxGroupContext : AutoCloseable {
+    val context: VirtualNodeContext
+    val sandboxGroup: SandboxGroup
+
+    /**
+     * Add an AutoCloseable object to an internal collection.
+     *
+     * When [close()] is called, [close()] is also called on all objects in the internal collection in reverse
+     * order of addition.
+     */
+    fun addAutoCloseable(autoCloseable: AutoCloseable)
+}
