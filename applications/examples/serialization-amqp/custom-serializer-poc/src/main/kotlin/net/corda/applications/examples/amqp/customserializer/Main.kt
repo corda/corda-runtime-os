@@ -112,6 +112,14 @@ class Main @Activate constructor(
         consoleLogger.info("Shutting down")
     }
 
+    private fun buildCorDappSerializers(
+        sandboxGroup: SandboxGroup,
+        serializerClassNames: List<String>
+    ): List<SerializationCustomSerializer<*, *>> = serializerClassNames.map { serializerClassName ->
+        sandboxGroup.loadClassFromMainBundles(serializerClassName, SerializationCustomSerializer::class.java)
+            .getConstructor().newInstance()
+    }
+
     private fun configureSerialization(sandboxAndSerializers: SandboxAndSerializers): SerializerFactory {
         // Create SerializerFactory
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
@@ -121,13 +129,10 @@ class Main @Activate constructor(
             factory.register(customSerializer, true)
         }
         // Build CorDapp serializers
-        val cordappCustomSerializers = sandboxAndSerializers.serializers.map { serializerClassName ->
-            val classFromMainBundles = sandboxAndSerializers.sandboxGroup.loadClassFromMainBundles(
-                serializerClassName,
-                SerializationCustomSerializer::class.java
-            )
-            classFromMainBundles.getConstructor().newInstance()
-        }
+        val cordappCustomSerializers = buildCorDappSerializers(
+            sandboxAndSerializers.sandboxGroup,
+            sandboxAndSerializers.serializers
+        )
         // Register CorDapp serializers
         for (customSerializer in cordappCustomSerializers) {
             consoleLogger.info("Registering CorDapp serializer " + customSerializer.javaClass.name)
@@ -213,10 +218,7 @@ class Main @Activate constructor(
         // Create SerializerFactory
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
         // Build CorDapp serializers
-        val cordappCustomSerializers = sandboxA.serializers.map {
-            val classFromMainBundles = sandboxA.sandboxGroup.loadClassFromMainBundles(it, SerializationCustomSerializer::class.java)
-            classFromMainBundles.getConstructor().newInstance()
-        }
+        val cordappCustomSerializers = buildCorDappSerializers(sandboxA.sandboxGroup, sandboxA.serializers)
         // Register platform serializers
         for (customSerializer in internalCustomSerializers) {
             factory.register(customSerializer, true)
