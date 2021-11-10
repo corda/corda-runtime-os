@@ -75,6 +75,7 @@ pipeline {
                     nohup ./corda-cli/bin/corda-cli cluster forward -n "${NAME_SPACE}" > forward.txt 2>&1 &
                     procno=$! #remember process number started in background
                     trap "kill -9 ${procno}" EXIT
+                    ./corda-cli/bin/corda-cli cluster wait -n ${NAME_SPACE}
                     port=$(./corda-cli/bin/corda-cli cluster status -n "${NAME_SPACE}" -f json | jq '.services | .[] | .publicPorts | select(.BROKEREXTERNAL != null) | .[]' | sort | head -n 1)
                     BROKERS_ADDRS="localhost:${port}" ./gradlew kafkaIntegrationTest
                 '''
@@ -101,6 +102,7 @@ pipeline {
             junit allowEmptyResults: true, testResults: '**/build/test-results/**/TEST-*.xml'
             archiveArtifacts artifacts: '**/build/test-results/**/TEST-*.xml', fingerprint: true, allowEmptyArchive: true
             archiveArtifacts artifacts: 'build/*-logs.txt', fingerprint: true, allowEmptyArchive: true
+            archiveArtifacts artifacts: 'forward.txt', fingerprint: true, allowEmptyArchive: true
         }
     }
 }
