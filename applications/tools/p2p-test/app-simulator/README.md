@@ -178,7 +178,7 @@ In order to deploy this in the same network as the kafka cluster([see](../../../
 docker-compose -f applications/tools/p2p-test/app-simulator/src/test/resources/postgres-docker/postgres-db-with-kafka-network.yml up -d
 ```
 
-## Using the tool docker image
+## Using the tool's Docker image
 ### Building the image
 To build a docker image of the tool run:
 ```bash
