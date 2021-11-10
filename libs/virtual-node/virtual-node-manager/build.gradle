@@ -28,7 +28,6 @@ dependencies {
     implementation "net.corda:corda-cipher-suite"
 
     implementation project(":libs:crypto:crypto-internal")
-    implementation project(":components:install:install-legacy")
     implementation project(":libs:sandbox")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
