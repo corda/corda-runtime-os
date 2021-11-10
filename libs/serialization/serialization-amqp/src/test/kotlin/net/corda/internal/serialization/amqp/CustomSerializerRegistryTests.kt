@@ -1,6 +1,6 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.serialization.InternalCustomSerializer
+import net.corda.serialization.BaseProxySerializer
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializationCustomSerializer
@@ -19,7 +19,7 @@ class CustomSerializerRegistryTests {
         @CordaSerializable
         class AnnotatedWithCordaSerializable
         class NotAnnotatedWithCordaSerializable
-        class EverythingCustomSerializer : InternalCustomSerializer<Any, String> {
+        class EverythingCustomSerializer : BaseProxySerializer<Any, String>() {
             override val type: Class<Any> get() = Any::class.java
             override val proxyType: Class<String> get() = String::class.java
             override val withInheritance: Boolean get() = true
@@ -44,7 +44,7 @@ class CustomSerializerRegistryTests {
 
     @Test
     fun `exception types can have custom serializers`() {
-        class ExceptionCustomSerializer : InternalCustomSerializer<MyCustomException, String> {
+        class ExceptionCustomSerializer : BaseProxySerializer<MyCustomException, String>() {
             override val type: Class<MyCustomException> get() = MyCustomException::class.java
             override val proxyType: Class<String> get() = String::class.java
             override val withInheritance: Boolean get() = true
@@ -66,7 +66,7 @@ class CustomSerializerRegistryTests {
 
     @Test
     fun `two custom serializers cannot register to serialize the same type`() {
-        class CordaCashCustomSerializer : InternalCustomSerializer<Cash, String> {
+        class CordaCashCustomSerializer : BaseProxySerializer<Cash, String>() {
             override val type: Class<Cash> get() = Cash::class.java
             override val proxyType: Class<String> get() = String::class.java
             override val withInheritance: Boolean get() = true
@@ -99,7 +99,7 @@ class CustomSerializerRegistryTests {
 
     @Test
     fun `primitive types cannot have custom serializers`() {
-        class TestCustomSerializer: InternalCustomSerializer<Float, String> {
+        class TestCustomSerializer: BaseProxySerializer<Float, String>() {
             override val type: Class<Float> get() = Float::class.java
             override val proxyType: Class<String> get() = String::class.java
             override val withInheritance: Boolean get() = true

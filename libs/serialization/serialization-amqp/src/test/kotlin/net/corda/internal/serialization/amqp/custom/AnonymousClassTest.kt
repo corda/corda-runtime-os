@@ -9,7 +9,7 @@ import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializationSchemas
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.registerCustomSerializers
-import net.corda.serialization.InternalCustomSerializer
+import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.SerializationContext
 import net.corda.v5.serialization.MissingSerializerException
 import org.apache.qpid.proton.codec.Data
@@ -106,7 +106,7 @@ class AnonymousClassTest {
         }
     }
 
-    class SerializerForAbstractClass : InternalCustomSerializer<TestAbstractClass, ProxyClass> {
+    class SerializerForAbstractClass : BaseProxySerializer<TestAbstractClass, ProxyClass>() {
         override val type: Class<TestAbstractClass> get() = TestAbstractClass::class.java
         override val proxyType: Class<ProxyClass> get() = ProxyClass::class.java
         override val withInheritance: Boolean get() = true

@@ -1,9 +1,9 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.serialization.InternalCustomSerializer
+import net.corda.serialization.BaseProxySerializer
 import javax.security.auth.x500.X500Principal
 
-class X500PrincipalSerializer : InternalCustomSerializer<X500Principal, X500PrincipalSerializer.X500PrincipalProxy> {
+class X500PrincipalSerializer : BaseProxySerializer<X500Principal, X500PrincipalSerializer.X500PrincipalProxy>() {
     override val type: Class<X500Principal> get() = X500Principal::class.java
     override val proxyType: Class<X500PrincipalProxy> get() = X500PrincipalProxy::class.java
     override val withInheritance: Boolean get() = false

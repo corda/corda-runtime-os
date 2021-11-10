@@ -1,6 +1,6 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.serialization.InternalCustomSerializer
+import net.corda.serialization.BaseProxySerializer
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -8,7 +8,7 @@ import java.time.LocalTime
 /**
  * A serializer for [LocalDateTime] that uses a proxy object to write out the date and time.
  */
-class LocalDateTimeSerializer : InternalCustomSerializer<LocalDateTime, LocalDateTimeSerializer.LocalDateTimeProxy> {
+class LocalDateTimeSerializer : BaseProxySerializer<LocalDateTime, LocalDateTimeSerializer.LocalDateTimeProxy>() {
     override val type: Class<LocalDateTime> get() = LocalDateTime::class.java
     override val proxyType: Class<LocalDateTimeProxy> get() = LocalDateTimeProxy::class.java
     override val withInheritance: Boolean get() = false

@@ -1,13 +1,13 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.serialization.InternalCustomSerializer
+import net.corda.serialization.BaseProxySerializer
 import java.util.BitSet
 
 /**
  * A serializer that writes out a [BitSet] as an integer number of bits, plus the necessary number of bytes to encode that
  * many bits.
  */
-class BitSetSerializer : InternalCustomSerializer<BitSet, BitSetSerializer.BitSetProxy> {
+class BitSetSerializer : BaseProxySerializer<BitSet, BitSetSerializer.BitSetProxy>() {
     override val type: Class<BitSet> get() = BitSet::class.java
     override val proxyType: Class<BitSetProxy> get() = BitSetProxy::class.java
     override val withInheritance: Boolean get() = true

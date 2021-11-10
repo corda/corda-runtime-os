@@ -61,16 +61,13 @@ class ThrowableSerializer(
         return ThrowableProxy(obj.javaClass.name, message, stackTraceToInclude, obj.cause, obj.suppressed, extraProperties)
     }
 
-    override fun toProxy(obj: Throwable): ThrowableProxy {
-        throw UnsupportedOperationException("Creating ThrowableProxy requires SerializationContext")
-    }
-
     private fun shouldIncludeInternalInfo(context: SerializationContext): Boolean {
         val includeInternalInfo = context.properties[CommonPropertyNames.IncludeInternalInfo]
         return true == includeInternalInfo
     }
 
-    override fun fromProxy(proxy: ThrowableProxy): Throwable {
+    @Suppress("NestedBlockDepth")
+    override fun fromProxy(proxy: ThrowableProxy, context: SerializationContext): Throwable {
         try {
             val clazz = TypeResolver.resolve(proxy.exceptionClass, proxy::class.java.classLoader)
 

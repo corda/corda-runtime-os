@@ -1,6 +1,7 @@
 package net.corda.crypto.impl.serializer
 
 import net.corda.crypto.CryptoLibraryFactory
+import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -14,7 +15,7 @@ import java.security.PublicKey
 class PublicKeySerializer @Activate constructor(
     @Reference(service = CryptoLibraryFactory::class)
     private val cryptoLibraryFactory: CryptoLibraryFactory
-) : InternalCustomSerializer<PublicKey, ByteArray> {
+) : BaseProxySerializer<PublicKey, ByteArray>() {
     override val type: Class<PublicKey> get() = PublicKey::class.java
     override val proxyType: Class<ByteArray> get() = ByteArray::class.java
     override val withInheritance: Boolean get() = true

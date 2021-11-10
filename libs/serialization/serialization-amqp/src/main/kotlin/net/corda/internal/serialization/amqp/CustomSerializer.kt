@@ -41,7 +41,6 @@ abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
      * class custom serializer is responsible for the "on the wire" format but we want to create a reference to the
      * subclass in the schema, so that we can distinguish between subclasses.
      */
-    // TODO should this be a custom serializer at all, or should it just be a plain AMQPSerializer?
     class SubClass<T : Any>(
         clazz: Class<*>,
         private val superClassSerializer: CustomSerializer<T>

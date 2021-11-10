@@ -5,11 +5,7 @@ interface InternalCustomSerializer<OBJ, PROXY>  {
     val proxyType: Class<PROXY>
     val withInheritance: Boolean
 
-    fun fromProxy(proxy: PROXY, context: SerializationContext): OBJ = fromProxy(proxy)
+    fun fromProxy(proxy: PROXY, context: SerializationContext): OBJ
 
-    fun fromProxy(proxy: PROXY): OBJ
-
-    fun toProxy(obj: OBJ, context: SerializationContext): PROXY = toProxy(obj)
-
-    fun toProxy(obj: OBJ): PROXY
+    fun toProxy(obj: OBJ, context: SerializationContext): PROXY
 }

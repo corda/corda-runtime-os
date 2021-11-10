@@ -1,6 +1,6 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.serialization.InternalCustomSerializer
+import net.corda.serialization.BaseProxySerializer
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -9,7 +9,7 @@ import java.time.ZonedDateTime
 /**
  * A serializer for [ZonedDateTime] that uses a proxy object to write out the date, time, offset and zone.
  */
-class ZonedDateTimeSerializer : InternalCustomSerializer<ZonedDateTime, ZonedDateTimeSerializer.ZonedDateTimeProxy> {
+class ZonedDateTimeSerializer : BaseProxySerializer<ZonedDateTime, ZonedDateTimeSerializer.ZonedDateTimeProxy>() {
     override val type: Class<ZonedDateTime> get() = ZonedDateTime::class.java
     override val proxyType: Class<ZonedDateTimeProxy> get() = ZonedDateTimeProxy::class.java
     override val withInheritance: Boolean get() = false

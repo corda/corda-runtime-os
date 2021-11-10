@@ -12,14 +12,14 @@ class PrivateKeySerializationTests {
     @Timeout(5)
     fun `Should throw NotSerializableException when serializing a private key`() {
         val privateKey = mock<PrivateKey>()
-        assertThatThrownBy { PrivateKeySerializer().toProxy(privateKey) }
+        assertThatThrownBy { PrivateKeySerializer().toProxy(privateKey, mock()) }
             .isInstanceOf(NotSerializableException::class.java)
     }
 
     @Test
     @Timeout(5)
     fun `Should throw NotSerializableException when deserializing a private key`() {
-        assertThatThrownBy { PrivateKeySerializer().fromProxy("mock") }
+        assertThatThrownBy { PrivateKeySerializer().fromProxy("mock", mock()) }
             .isInstanceOf(NotSerializableException::class.java)
     }
 }

@@ -1,14 +1,14 @@
 package net.corda.internal.serialization.amqp.custom
 
 import net.corda.internal.serialization.amqp.MapSerializer
-import net.corda.serialization.InternalCustomSerializer
+import net.corda.serialization.BaseProxySerializer
 import net.corda.v5.base.util.uncheckedCast
 import java.util.EnumSet
 
 /**
  * A serializer that writes out an [EnumSet] as a type, plus list of instances in the set.
  */
-class EnumSetSerializer : InternalCustomSerializer<EnumSet<*>, EnumSetSerializer.EnumSetProxy> {
+class EnumSetSerializer : BaseProxySerializer<EnumSet<*>, EnumSetSerializer.EnumSetProxy>() {
     override val type: Class<EnumSet<*>> get() = EnumSet::class.java
     override val proxyType: Class<EnumSetProxy> get() = EnumSetProxy::class.java
     override val withInheritance: Boolean get() = true

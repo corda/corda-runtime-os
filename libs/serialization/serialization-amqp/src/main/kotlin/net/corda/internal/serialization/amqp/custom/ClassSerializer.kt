@@ -3,14 +3,14 @@ package net.corda.internal.serialization.amqp.custom
 import net.corda.internal.serialization.amqp.AMQPNotSerializableException
 import net.corda.internal.serialization.amqp.custom.ClassSerializer.ClassProxy
 import net.corda.internal.serialization.osgi.TypeResolver
-import net.corda.serialization.InternalCustomSerializer
+import net.corda.serialization.BaseProxySerializer
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 
 /**
  * A serializer for [Class] that uses [ClassProxy] proxy object to write out
  */
-class ClassSerializer : InternalCustomSerializer<Class<*>, ClassProxy> {
+class ClassSerializer : BaseProxySerializer<Class<*>, ClassProxy>() {
     override val type: Class<Class<*>> get() = Class::class.java
     override val proxyType: Class<ClassProxy> get() = ClassProxy::class.java
     override val withInheritance: Boolean get() = false

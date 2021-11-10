@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.serialization.InternalCustomSerializer
+import net.corda.serialization.BaseProxySerializer
 
-class StackTraceElementSerializer : InternalCustomSerializer<StackTraceElement, StackTraceElementSerializer.StackTraceElementProxy> {
+class StackTraceElementSerializer : BaseProxySerializer<StackTraceElement, StackTraceElementSerializer.StackTraceElementProxy>() {
     override val type: Class<StackTraceElement> get() = StackTraceElement::class.java
     override val proxyType: Class<StackTraceElementProxy> get() = StackTraceElementProxy::class.java
     override val withInheritance: Boolean get() = false

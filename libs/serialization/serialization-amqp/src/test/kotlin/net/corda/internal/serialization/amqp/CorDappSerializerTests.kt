@@ -7,6 +7,7 @@ import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvel
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
+import net.corda.serialization.BaseProxySerializer
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
@@ -14,7 +15,6 @@ import org.junit.jupiter.api.Timeout
 import java.io.NotSerializableException
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
-import net.corda.serialization.InternalCustomSerializer
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 class CorDappSerializerTests {
@@ -37,7 +37,7 @@ class CorDappSerializerTests {
 
     // Standard proxy serializer used internally, here for comparison purposes
     class InternalProxySerializer
-        : InternalCustomSerializer<NeedsProxy, InternalProxySerializer.Proxy> {
+        : BaseProxySerializer<NeedsProxy, InternalProxySerializer.Proxy>() {
         data class Proxy(val proxy_a_: String)
 
         override val type: Class<NeedsProxy> get() = NeedsProxy::class.java

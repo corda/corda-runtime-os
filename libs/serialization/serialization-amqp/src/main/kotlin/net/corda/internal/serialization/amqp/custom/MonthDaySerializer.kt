@@ -1,12 +1,12 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.serialization.InternalCustomSerializer
+import net.corda.serialization.BaseProxySerializer
 import java.time.MonthDay
 
 /**
  * A serializer for [MonthDay] that uses a proxy object to write out the integer form.
  */
-class MonthDaySerializer : InternalCustomSerializer<MonthDay, MonthDaySerializer.MonthDayProxy> {
+class MonthDaySerializer : BaseProxySerializer<MonthDay, MonthDaySerializer.MonthDayProxy>() {
     override val type: Class<MonthDay> get() = MonthDay::class.java
     override val proxyType: Class<MonthDayProxy> get() = MonthDayProxy::class.java
     override val withInheritance: Boolean get() = false
