@@ -37,7 +37,7 @@ class PermissionCacheComponent(
     private val permissionCacheFactory: PermissionCacheFactory,
     ) : Lifecycle {
 
-    private val coordinator = coordinatorFactory.createCoordinator<PermissionCacheComponent>(::eventHandler)
+    private val coordinator = coordinatorFactory.createCoordinator<PermissionCacheComponent> { event, _ -> eventHandler(event) }
 
     private companion object {
         const val CONSUMER_GROUP = "PERMISSION_SERVICE"
@@ -57,7 +57,7 @@ class PermissionCacheComponent(
 
     private var allSnapshotsReceived = userSnapshotReceived && groupSnapshotReceived && roleSnapshotReceived
 
-    private fun eventHandler(event: LifecycleEvent, lifecycleCoordinator: LifecycleCoordinator) {
+    private fun eventHandler(event: LifecycleEvent) {
         when (event) {
             is StartEvent -> {
                 val userData = ConcurrentHashMap<String, User>()

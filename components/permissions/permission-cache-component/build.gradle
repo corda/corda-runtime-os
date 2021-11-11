@@ -18,6 +18,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(':libs:permissions:permission-cache')
     implementation project(':libs:permissions:permission-cache-impl')
+    implementation project(':libs:configuration:configuration-core')
 
     implementation project(":osgi-framework-api")
 }
