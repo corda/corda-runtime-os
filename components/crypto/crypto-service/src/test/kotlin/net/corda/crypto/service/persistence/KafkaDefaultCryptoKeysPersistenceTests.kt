@@ -79,8 +79,8 @@ class KafkaDefaultCryptoKeysPersistenceTests {
         )
         defaultPersistence.put(original.alias, original)
         val records = kafka.getRecords<DefaultCryptoKeyRecord>(
-            KafkaInfrastructure.CRYPTO_SVC_GROUP_NAME(KafkaInfrastructure.customConfig),
-            KafkaInfrastructure.CRYPTO_SVC_TOPIC_NAME(KafkaInfrastructure.customConfig))
+            KafkaInfrastructure.cryptoSvcGroupName(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.cryptoSvcTopicName(KafkaInfrastructure.customConfig))
         assertEquals(1, records.size)
         val publishedRecord = records[0]
         assertPublishedRecord(publishedRecord, original)
@@ -112,8 +112,8 @@ class KafkaDefaultCryptoKeysPersistenceTests {
         defaultPersistence.put(original.alias, original)
         defaultPersistence2.put(original2.alias, original2)
         val records = kafka.getRecords<DefaultCryptoKeyRecord>(
-            KafkaInfrastructure.CRYPTO_SVC_GROUP_NAME(KafkaInfrastructure.customConfig),
-            KafkaInfrastructure.CRYPTO_SVC_TOPIC_NAME(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.cryptoSvcGroupName(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.cryptoSvcTopicName(KafkaInfrastructure.customConfig),
             2
         )
         assertEquals(2, records.size)
@@ -144,9 +144,9 @@ class KafkaDefaultCryptoKeysPersistenceTests {
             version = 2
         )
         kafka.publish(
-            KafkaInfrastructure.CRYPTO_SVC_CLIENT_ID(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.cryptoSvcClientId(KafkaInfrastructure.customConfig),
             defaultPersistence,
-            KafkaInfrastructure.CRYPTO_SVC_TOPIC_NAME(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.cryptoSvcTopicName(KafkaInfrastructure.customConfig),
             original.alias,
             KafkaDefaultCryptoKeyProxy.toRecord(original)
         )

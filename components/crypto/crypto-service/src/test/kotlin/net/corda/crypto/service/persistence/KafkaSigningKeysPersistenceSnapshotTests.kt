@@ -55,16 +55,16 @@ class KafkaSigningKeysPersistenceSnapshotTests {
 
         factory = kafka.createFactory(KafkaInfrastructure.customConfig) {
             kafka.publish<SigningPersistentKeyInfo, SigningPersistentKeyInfo>(
-                KafkaInfrastructure.SIGNING_SVC_CLIENT_ID(KafkaInfrastructure.customConfig),
+                KafkaInfrastructure.signingClientId(KafkaInfrastructure.customConfig),
                 null,
-                KafkaInfrastructure.SIGNING_TOPIC_NAME(KafkaInfrastructure.customConfig),
+                KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig),
                 original1.publicKeyHash,
                 KafkaSigningKeyProxy.toRecord(original1)
             )
             kafka.publish<SigningPersistentKeyInfo, SigningPersistentKeyInfo>(
-                KafkaInfrastructure.SIGNING_SVC_CLIENT_ID(KafkaInfrastructure.customConfig),
+                KafkaInfrastructure.signingClientId(KafkaInfrastructure.customConfig),
                 null,
-                KafkaInfrastructure.SIGNING_TOPIC_NAME(KafkaInfrastructure.customConfig),
+                KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig),
                 original2.publicKeyHash,
                 KafkaSigningKeyProxy.toRecord(original2)
             )

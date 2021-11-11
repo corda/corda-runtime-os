@@ -26,32 +26,32 @@ import kotlin.test.fail
 
 class KafkaInfrastructure {
     companion object {
-        fun CRYPTO_SVC_TOPIC_NAME(config: CryptoLibraryConfig) =
+        fun cryptoSvcTopicName(config: CryptoLibraryConfig) =
             config.defaultCryptoService.persistenceConfig.getString(
                 DefaultConfigConsts.Kafka.TOPIC_NAME_KEY,
                 DefaultConfigConsts.Kafka.DefaultCryptoService.TOPIC_NAME
             )
-        fun CRYPTO_SVC_GROUP_NAME(config: CryptoLibraryConfig) =
+        fun cryptoSvcGroupName(config: CryptoLibraryConfig) =
             config.defaultCryptoService.persistenceConfig.getString(
                 DefaultConfigConsts.Kafka.GROUP_NAME_KEY,
                 DefaultConfigConsts.Kafka.DefaultCryptoService.GROUP_NAME
             )
-        fun CRYPTO_SVC_CLIENT_ID(config: CryptoLibraryConfig) =
+        fun cryptoSvcClientId(config: CryptoLibraryConfig) =
             config.defaultCryptoService.persistenceConfig.getString(
                 DefaultConfigConsts.Kafka.CLIENT_ID_KEY,
                 DefaultConfigConsts.Kafka.DefaultCryptoService.CLIENT_ID
             )
-        fun SIGNING_TOPIC_NAME(config: CryptoLibraryConfig) =
+        fun signingTopicName(config: CryptoLibraryConfig) =
             config.publicKeys.persistenceConfig.getString(
                 DefaultConfigConsts.Kafka.TOPIC_NAME_KEY,
                 DefaultConfigConsts.Kafka.Signing.TOPIC_NAME
             )
-        fun SIGNING_SVC_GROUP_NAME(config: CryptoLibraryConfig) =
+        fun signingGroupName(config: CryptoLibraryConfig) =
             config.publicKeys.persistenceConfig.getString(
                 DefaultConfigConsts.Kafka.GROUP_NAME_KEY,
                 DefaultConfigConsts.Kafka.DefaultCryptoService.GROUP_NAME
             )
-        fun SIGNING_SVC_CLIENT_ID(config: CryptoLibraryConfig) =
+        fun signingClientId(config: CryptoLibraryConfig) =
             config.publicKeys.persistenceConfig.getString(
                 DefaultConfigConsts.Kafka.CLIENT_ID_KEY,
                 DefaultConfigConsts.Kafka.DefaultCryptoService.CLIENT_ID

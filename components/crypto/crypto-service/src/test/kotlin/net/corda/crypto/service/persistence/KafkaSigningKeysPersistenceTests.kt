@@ -84,8 +84,8 @@ class KafkaSigningKeysPersistenceTests {
         )
         signingPersistence.put("hash1", original)
         val records = kafka.getRecords<SigningKeyRecord>(
-            KafkaInfrastructure.SIGNING_TOPIC_NAME(KafkaInfrastructure.customConfig),
-            KafkaInfrastructure.SIGNING_TOPIC_NAME(KafkaInfrastructure.customConfig)
+            KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig)
         )
         assertEquals(1, records.size)
         val publishedRecord = records[0]
@@ -128,8 +128,8 @@ class KafkaSigningKeysPersistenceTests {
         signingPersistence.put(original.publicKeyHash, original)
         signingPersistence2.put(original2.publicKeyHash, original2)
         val records = kafka.getRecords<SigningKeyRecord>(
-            KafkaInfrastructure.CRYPTO_SVC_GROUP_NAME(KafkaInfrastructure.customConfig),
-            KafkaInfrastructure.SIGNING_TOPIC_NAME(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.cryptoSvcGroupName(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig),
             2
         )
         assertEquals(2, records.size)
@@ -176,9 +176,9 @@ class KafkaSigningKeysPersistenceTests {
             schemeCodeName = "CODE"
         )
         kafka.publish(
-            KafkaInfrastructure.SIGNING_SVC_CLIENT_ID(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.signingClientId(KafkaInfrastructure.customConfig),
             signingPersistence,
-            KafkaInfrastructure.SIGNING_TOPIC_NAME(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig),
             "hash1",
             KafkaSigningKeyProxy.toRecord(original)
         )

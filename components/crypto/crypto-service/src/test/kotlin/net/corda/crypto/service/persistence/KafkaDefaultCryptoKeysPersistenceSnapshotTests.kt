@@ -45,16 +45,16 @@ class KafkaDefaultCryptoKeysPersistenceSnapshotTests {
         )
         factory = kafka.createFactory(KafkaInfrastructure.customConfig) {
             kafka.publish<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>(
-                KafkaInfrastructure.CRYPTO_SVC_CLIENT_ID(KafkaInfrastructure.customConfig),
+                KafkaInfrastructure.cryptoSvcClientId(KafkaInfrastructure.customConfig),
                 null,
-                KafkaInfrastructure.CRYPTO_SVC_TOPIC_NAME(KafkaInfrastructure.customConfig),
+                KafkaInfrastructure.cryptoSvcTopicName(KafkaInfrastructure.customConfig),
                 original1.alias,
                 KafkaDefaultCryptoKeyProxy.toRecord(original1)
             )
             kafka.publish<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>(
-                KafkaInfrastructure.CRYPTO_SVC_CLIENT_ID(KafkaInfrastructure.customConfig),
+                KafkaInfrastructure.cryptoSvcClientId(KafkaInfrastructure.customConfig),
                 null,
-                KafkaInfrastructure.CRYPTO_SVC_TOPIC_NAME(KafkaInfrastructure.customConfig),
+                KafkaInfrastructure.cryptoSvcTopicName(KafkaInfrastructure.customConfig),
                 original2.alias,
                 KafkaDefaultCryptoKeyProxy.toRecord(original2)
             )

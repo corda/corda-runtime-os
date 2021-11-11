@@ -79,8 +79,8 @@ class KafkaDefaultCryptoKeysPersistenceWithDefaultConfigTests {
         )
         defaultPersistence.put(original.alias, original)
         val records = kafka.getRecords<DefaultCryptoKeyRecord>(
-            KafkaInfrastructure.CRYPTO_SVC_GROUP_NAME(KafkaInfrastructure.defaultConfig),
-            KafkaInfrastructure.CRYPTO_SVC_TOPIC_NAME(KafkaInfrastructure.defaultConfig)
+            KafkaInfrastructure.cryptoSvcGroupName(KafkaInfrastructure.defaultConfig),
+            KafkaInfrastructure.cryptoSvcTopicName(KafkaInfrastructure.defaultConfig)
         )
         assertEquals(1, records.size)
         val publishedRecord = records[0]
@@ -113,8 +113,8 @@ class KafkaDefaultCryptoKeysPersistenceWithDefaultConfigTests {
         defaultPersistence.put(original.alias, original)
         defaultPersistence2.put(original2.alias, original2)
         val records = kafka.getRecords<DefaultCryptoKeyRecord>(
-            KafkaInfrastructure.CRYPTO_SVC_GROUP_NAME(KafkaInfrastructure.defaultConfig),
-            KafkaInfrastructure.CRYPTO_SVC_TOPIC_NAME(KafkaInfrastructure.defaultConfig),
+            KafkaInfrastructure.cryptoSvcGroupName(KafkaInfrastructure.defaultConfig),
+            KafkaInfrastructure.cryptoSvcTopicName(KafkaInfrastructure.defaultConfig),
             2)
         assertEquals(2, records.size)
         val publishedRecord = records.first { it.second.alias == original.alias }
@@ -144,9 +144,9 @@ class KafkaDefaultCryptoKeysPersistenceWithDefaultConfigTests {
             version = 2
         )
         kafka.publish(
-            KafkaInfrastructure.CRYPTO_SVC_CLIENT_ID(KafkaInfrastructure.defaultConfig),
+            KafkaInfrastructure.cryptoSvcClientId(KafkaInfrastructure.defaultConfig),
             defaultPersistence,
-            KafkaInfrastructure.CRYPTO_SVC_TOPIC_NAME(KafkaInfrastructure.defaultConfig),
+            KafkaInfrastructure.cryptoSvcTopicName(KafkaInfrastructure.defaultConfig),
             original.alias,
             KafkaDefaultCryptoKeyProxy.toRecord(original)
         )
