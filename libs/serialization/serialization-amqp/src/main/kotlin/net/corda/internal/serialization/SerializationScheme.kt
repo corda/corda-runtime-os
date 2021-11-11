@@ -106,18 +106,17 @@ open class SerializationFactoryImpl(
         // ConcurrentHashMap.get() is lock free, but computeIfAbsent is not, even if the key is in the map already.
         return (
             schemes[lookupKey] ?: schemes.computeIfAbsent(lookupKey) {
-                registeredSchemes.filter {
+                registeredSchemes.firstOrNull {
                     it.canDeserializeVersion(magic, target)
-                }.forEach {
-                    return@computeIfAbsent it
-                } // XXX: Not single?
-                logger.warn(
-                    "Cannot find serialization scheme for: [$lookupKey, " +
-                        "${if (magic == amqpMagic) "AMQP" else "UNKNOWN MAGIC"}] registeredSchemes are: $registeredSchemes"
-                )
-                throw UnsupportedOperationException("Serialization scheme $lookupKey not supported.")
+                } ?: run {
+                    logger.warn(
+                        "Cannot find serialization scheme for: [$lookupKey, " +
+                                "${if (magic == amqpMagic) "AMQP" else "UNKNOWN MAGIC"}] registeredSchemes are: $registeredSchemes"
+                    )
+                    throw UnsupportedOperationException("Serialization scheme $lookupKey not supported.")
+                }
             }
-            ) to magic
+        ) to magic
     }
 
     @Throws(NotSerializableException::class)
