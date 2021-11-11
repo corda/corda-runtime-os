@@ -127,7 +127,7 @@ class CachingCustomSerializerRegistry(
 
         val descriptor = customSerializer.typeDescriptor.toString()
 
-        if (descriptorBasedSerializerRegistry.get(descriptor) != null) {
+        if (descriptorBasedSerializerRegistry[descriptor] != null) {
             logger.warn("Attempt to replace serializer for $descriptor")
         }
 
