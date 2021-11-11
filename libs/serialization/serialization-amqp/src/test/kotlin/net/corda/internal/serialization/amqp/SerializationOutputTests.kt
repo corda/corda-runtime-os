@@ -52,7 +52,16 @@ import java.io.NotSerializableException
 import java.math.BigDecimal
 import java.time.DayOfWeek
 import java.time.Month
-import java.util.*
+import java.util.Currency
+import java.util.Date
+import java.util.EnumMap
+import java.util.NavigableMap
+import java.util.Objects
+import java.util.Random
+import java.util.SortedSet
+import java.util.TreeMap
+import java.util.TreeSet
+import java.util.UUID
 
 object AckWrapper {
     object Ack
@@ -425,14 +434,14 @@ class SerializationOutputTests {
 
     @Test
     fun `test NavigableMap property`() {
-        val obj = NavigableMapWrapper(TreeMap<Int, Foo>())
+        val obj = NavigableMapWrapper(TreeMap())
         obj.tree[456] = Foo("Fred", 123)
         serdes(obj)
     }
 
     @Test
     fun `test SortedSet property`() {
-        val obj = SortedSetWrapper(TreeSet<Int>())
+        val obj = SortedSetWrapper(TreeSet())
         obj.set += 456
         serdes(obj)
     }
@@ -488,7 +497,7 @@ class SerializationOutputTests {
 
     @Test
     fun `generics from java are supported`() {
-        val obj = DummyOptional<String>("YES")
+        val obj = DummyOptional("YES")
         serdes(obj, SerializerFactoryBuilder.build(AlwaysEmptyWhitelist))
     }
 
@@ -504,15 +513,8 @@ class SerializationOutputTests {
 
         val t = IllegalAccessException("message").fillInStackTrace()
 
-        val desThrowable = serdesThrowableWithInternalInfo(t, factory, factory2, false)
+        val desThrowable = serdes(t, factory, factory2, false)
         assertSerializedThrowableEquivalent(t, desThrowable)
-    }
-
-    private fun serdesThrowableWithInternalInfo(
-        t: Throwable, factory: SerializerFactory, factory2: SerializerFactory, expectedEqual: Boolean = true
-    ): Throwable {
-        val newContext = testSerializationContext.withProperty(CommonPropertyNames.IncludeInternalInfo, true)
-        return serdes(t, factory, factory2, expectedEqual, withSerializationContext = newContext)
     }
 
     @Test
@@ -532,7 +534,7 @@ class SerializationOutputTests {
                 throw IllegalStateException("Layer 2", t)
             }
         } catch (t: Throwable) {
-            val desThrowable = serdesThrowableWithInternalInfo(t, factory, factory2, false)
+            val desThrowable = serdes(t, factory, factory2, false)
             assertSerializedThrowableEquivalent(t, desThrowable)
         }
     }
@@ -564,7 +566,7 @@ class SerializationOutputTests {
                 throw e
             }
         } catch (t: Throwable) {
-            val desThrowable = serdesThrowableWithInternalInfo(t, factory, factory2, false)
+            val desThrowable = serdes(t, factory, factory2, false)
             assertSerializedThrowableEquivalent(t, desThrowable)
         }
     }
@@ -580,7 +582,7 @@ class SerializationOutputTests {
         factory2.register(StackTraceElementSerializer(), factory2)
 
         val obj = FlowException("message").fillInStackTrace()
-        serdesThrowableWithInternalInfo(obj, factory, factory2)
+        serdes(obj, factory, factory2)
     }
 
     @Test
@@ -672,7 +674,7 @@ class SerializationOutputTests {
 
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        val obj2 = serdes(obj, factory, factory2, false, false)
+        val obj2 = serdes(obj, factory, factory2, expectedEqual = false, expectDeserializedEqual = false)
 
         assertNotSame(obj2.byteArrays[0], obj2.byteArrays[2])
     }
@@ -733,7 +735,7 @@ class SerializationOutputTests {
 
         val bytes = ByteArray(1)
         val obj = ByteArrays(bytes, bytes)
-        val objCopy = serdes(obj, factory, factory2, false, false)
+        val objCopy = serdes(obj, factory, factory2, expectedEqual = false, expectDeserializedEqual = false)
         assertNotSame(objCopy.a, objCopy.b)
     }
 

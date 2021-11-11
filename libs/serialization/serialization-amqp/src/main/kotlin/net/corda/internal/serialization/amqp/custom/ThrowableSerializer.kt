@@ -1,14 +1,12 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.CommonPropertyNames
 import net.corda.internal.serialization.amqp.CustomSerializer.RevealSubclasses
 import net.corda.internal.serialization.amqp.LocalSerializerFactory
 import net.corda.internal.serialization.amqp.PropertyReader
 import net.corda.internal.serialization.model.LocalConstructorInformation
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.osgi.TypeResolver
-import net.corda.serialization.InternalCustomSerializer
-import net.corda.serialization.SerializationContext
+import net.corda.serialization.BaseProxySerializer
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.exceptions.CordaThrowable
 import net.corda.v5.base.util.contextLogger
@@ -17,7 +15,7 @@ import java.io.NotSerializableException
 @Suppress("LongParameterList")
 class ThrowableSerializer(
     private val factory: LocalSerializerFactory
-) : InternalCustomSerializer<Throwable, ThrowableSerializer.ThrowableProxy>, RevealSubclasses {
+) : BaseProxySerializer<Throwable, ThrowableSerializer.ThrowableProxy>(), RevealSubclasses {
     override val type: Class<Throwable> get() = Throwable::class.java
     override val proxyType: Class<ThrowableProxy> get() = ThrowableProxy::class.java
     override val withInheritance: Boolean get() = true
@@ -35,7 +33,7 @@ class ThrowableSerializer(
             else -> throw NotSerializableException("$this has no deserialization constructor")
         }
 
-    override fun toProxy(obj: Throwable, context: SerializationContext): ThrowableProxy {
+    override fun toProxy(obj: Throwable): ThrowableProxy {
         val extraProperties: MutableMap<String, Any?> = LinkedHashMap()
         val message = if (obj is CordaThrowable) {
             // Try and find a constructor
@@ -53,21 +51,11 @@ class ThrowableSerializer(
         } else {
             obj.message
         }
-        val stackTraceToInclude = if (shouldIncludeInternalInfo(context)) {
-            obj.stackTrace
-        } else {
-            emptyArray()
-        }
-        return ThrowableProxy(obj.javaClass.name, message, stackTraceToInclude, obj.cause, obj.suppressed, extraProperties)
-    }
-
-    private fun shouldIncludeInternalInfo(context: SerializationContext): Boolean {
-        val includeInternalInfo = context.properties[CommonPropertyNames.IncludeInternalInfo]
-        return true == includeInternalInfo
+        return ThrowableProxy(obj.javaClass.name, message, obj.stackTrace, obj.cause, obj.suppressed, extraProperties)
     }
 
     @Suppress("NestedBlockDepth")
-    override fun fromProxy(proxy: ThrowableProxy, context: SerializationContext): Throwable {
+    override fun fromProxy(proxy: ThrowableProxy): Throwable {
         try {
             val clazz = TypeResolver.resolve(proxy.exceptionClass, proxy::class.java.classLoader)
 
