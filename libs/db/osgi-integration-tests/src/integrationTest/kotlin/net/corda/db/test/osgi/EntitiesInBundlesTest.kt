@@ -94,10 +94,10 @@ class EntitiesInBundlesTest {
                         dogClass.packageName, listOf("migration/db.changelog-master.xml"), classLoader = dogClass.classLoader)
             ))
             StringWriter().use {
-                lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it)
+                lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it, null)
                 logger.info("Schema creation SQL: $it")
             }
-            lbm.updateDb(dbConfig.dataSource.connection, cl)
+            lbm.updateDb(dbConfig.dataSource.connection, cl, null)
 
             logger.info("Create Entities".emphasise())
 

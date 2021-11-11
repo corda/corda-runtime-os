@@ -32,8 +32,8 @@ class LiquibaseSchemaMigratorImpl(
         private val log = contextLogger()
     }
 
-    override fun updateDb(datasource: Connection, dbChange: DbChange) {
-        process(datasource, dbChange)
+    override fun updateDb(datasource: Connection, dbChange: DbChange, liquibaseSchemaName: String?) {
+        process(datasource, dbChange, sql = null, liquibaseSchemaName)
     }
 
     /**
@@ -44,12 +44,20 @@ class LiquibaseSchemaMigratorImpl(
      * @param dbChange
      * @param sql output
      */
-    override fun createUpdateSql(datasource: Connection, dbChange: DbChange, sql: Writer) {
-        process(datasource, dbChange, sql)
+    override fun createUpdateSql(datasource: Connection, dbChange: DbChange, sql: Writer, liquibaseSchemaName: String?) {
+        process(datasource, dbChange, sql, liquibaseSchemaName)
     }
 
-    private fun process(datasource: Connection, dbChange: DbChange, sql: Writer? = null) {
+    private fun process(
+        datasource: Connection,
+        dbChange: DbChange,
+        sql: Writer? = null,
+        liquibaseSchemaName: String? = null
+    ) {
         val database = databaseFactory(datasource)
+        if (liquibaseSchemaName != null) {
+            database.liquibaseSchemaName = liquibaseSchemaName
+        }
         // use UUID as we want to ensure this is unique and doesn't clash with a user defined changelog file.
         val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
         val lb = liquibaseFactory(

@@ -1,5 +1,6 @@
 package net.corda.permissions.model
 
+import net.corda.db.schema.DbSchema
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -15,7 +16,7 @@ import javax.persistence.Version
  * A user can be associated with many roles and one role can be associated in many different users and groups.
  */
 @Entity
-@Table(name = "rpc_role_user_rel")
+@Table(name = "rpc_role_user_rel", schema = DbSchema.RPC_RBAC)
 class RoleUserAssociation(
     @Id
     @Column(name = "id", nullable = false, updatable = false)

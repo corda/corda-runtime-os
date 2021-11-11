@@ -39,7 +39,7 @@ class LiquibaseSchemaMigratorTest {
 
     @Test
     fun `when updateDb create LB object`() {
-        migrator.updateDb(connection, dbChange)
+        migrator.updateDb(connection, dbChange, null)
         verify(lbFactory).invoke(
             check {
                 assertThat(it).startsWith("master-changelog")
@@ -53,13 +53,13 @@ class LiquibaseSchemaMigratorTest {
 
     @Test
     fun `when updateDb call Liquibase API`() {
-        migrator.updateDb(connection, dbChange)
+        migrator.updateDb(connection, dbChange, null)
         verify(lb).update(any<Contexts>())
     }
 
     @Test
     fun `when createUpdateSql create LB object`() {
-        migrator.createUpdateSql(connection, dbChange, writer)
+        migrator.createUpdateSql(connection, dbChange, writer, null)
         verify(lbFactory).invoke(
             check {
                 assertThat(it).startsWith("master-changelog")
@@ -73,7 +73,7 @@ class LiquibaseSchemaMigratorTest {
 
     @Test
     fun `when createUpdateSql call Liquibase API`() {
-        migrator.createUpdateSql(connection, dbChange, writer)
+        migrator.createUpdateSql(connection, dbChange, writer, null)
         verify(lb).update(any<Contexts>(), eq(writer))
     }
 }

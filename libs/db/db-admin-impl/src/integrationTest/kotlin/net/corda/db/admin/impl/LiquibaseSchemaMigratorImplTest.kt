@@ -28,9 +28,9 @@ class LiquibaseSchemaMigratorImplTest {
     fun `when updateDb create DB schema`() {
         val lbm = LiquibaseSchemaMigratorImpl()
 
-        lbm.updateDb(ds.connection, cl)
+        lbm.updateDb(ds.connection, cl, null)
 
-        var tables = mutableListOf<String>()
+        val tables = mutableListOf<String>()
         ds.connection.use {
             it.metaData.getTables(null, null, null, arrayOf("TABLE")).use { rs ->
                 while (rs.next()) {
@@ -52,7 +52,7 @@ class LiquibaseSchemaMigratorImplTest {
     fun `when createUpdateSql generate DB schema`() {
         val writer = StringWriter()
         val lbm = LiquibaseSchemaMigratorImpl()
-        lbm.createUpdateSql(ds.connection, cl, writer)
+        lbm.createUpdateSql(ds.connection, cl, writer, null)
 
         val sql = writer.toString().toLowerCase()
         assertThat(sql)
