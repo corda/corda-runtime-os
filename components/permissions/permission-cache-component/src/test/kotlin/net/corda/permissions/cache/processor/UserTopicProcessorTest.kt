@@ -13,12 +13,12 @@ import org.mockito.kotlin.mock
 class UserTopicProcessorTest {
 
     private val user = User(
-        "id1", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
+        "id1", 1, ChangeDetails(Instant.now(), "changeUser"), "user-login-1", "full name", true,
         "hashedPassword", "saltValue", false, null, null, null
     )
 
     private val userUpdated = User(
-        "id2", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", false,
+        "id2", 1, ChangeDetails(Instant.now(), "changeUser"), "user-login-2", "full name", false,
         "hashedPassword", "saltValue", false, null, null, null
     )
 
