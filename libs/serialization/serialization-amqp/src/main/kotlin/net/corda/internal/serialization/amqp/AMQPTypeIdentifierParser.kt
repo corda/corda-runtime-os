@@ -62,7 +62,7 @@ object AMQPTypeIdentifierParser {
                     c == '.' || c == ',' || c == '?' || c == '*') continue
 
             when(c) {
-                '<' -> maxTypeParamDepth = (++typeParamdepth).coerceAtLeast(typeParamdepth)
+                '<' -> maxTypeParamDepth = (++typeParamdepth).coerceAtLeast(maxTypeParamDepth)
                 '>' -> typeParamdepth--
                 '[' -> {
                     arrayDepth = if (wasArray) arrayDepth + 2 else 1
