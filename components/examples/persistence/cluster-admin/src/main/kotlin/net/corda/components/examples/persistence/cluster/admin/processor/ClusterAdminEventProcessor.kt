@@ -33,7 +33,7 @@ class ClusterAdminEventProcessor(
                 listOf("migration/db.changelog-master.xml"),
                 classLoader = ConfigState::class.java.classLoader)
         ))
-        schemaMigrator.updateDb(dbConnection, dbChange)
+        schemaMigrator.updateDb(dbConnection, dbChange, null)
         logger.info("${events.map { it.key }} Schema migration completed")
         return emptyList()
     }
