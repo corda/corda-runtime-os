@@ -41,6 +41,7 @@ class DominoTile(
     private object StartTile : LifecycleEvent
     private data class StopTile(val dueToError: Boolean) : LifecycleEvent
     private data class ConfigApplied(val configUpdateResult: ConfigUpdateResult) : LifecycleEvent
+    private data class ApplyConfigFromCoordinatorThread(val callback: () -> Unit): LifecycleEvent
     private object ResourcesCreated : LifecycleEvent
     enum class State {
         Created,
@@ -135,14 +136,17 @@ class DominoTile(
                 configApplied(ConfigUpdateResult.Error(e))
                 return
             }
-            logger.info("Got configuration $name")
-            if (configuration == lastConfiguration) {
-                logger.info("Configuration had not changed $name")
-                configApplied(ConfigUpdateResult.NoUpdate)
-            } else {
-                configurationChangeHandler.applyNewConfiguration(configuration, lastConfiguration, configResources)
-                lastConfiguration = configuration
-                logger.info("Reconfigured $name")
+
+            applyConfigFromCoordinatorThread {
+                logger.info("Got configuration $name")
+                if (configuration == lastConfiguration) {
+                    logger.info("Configuration had not changed $name")
+                    configApplied(ConfigUpdateResult.NoUpdate)
+                } else {
+                    configurationChangeHandler.applyNewConfiguration(configuration, lastConfiguration, configResources)
+                    lastConfiguration = configuration
+                    logger.info("Reconfigured $name")
+                }
             }
         }
 
@@ -161,6 +165,10 @@ class DominoTile(
 
     override val isRunning: Boolean
         get() = state == State.Started
+
+    private fun applyConfigFromCoordinatorThread(callback: () -> Unit) {
+        coordinator.postEvent(ApplyConfigFromCoordinatorThread(callback))
+    }
 
     private fun updateState(newState: State) {
         val oldState = currentState.getAndSet(newState)
@@ -256,6 +264,9 @@ class DominoTile(
                             logger.info("No Config update for $name.")
                         }
                     }
+                }
+                is ApplyConfigFromCoordinatorThread -> {
+                    event.callback()
                 }
                 else -> logger.warn("Unexpected event $event")
             }
