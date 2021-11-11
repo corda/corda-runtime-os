@@ -1,5 +1,6 @@
 package net.corda.virtual.node.manager.test
 
+import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
@@ -57,6 +58,7 @@ class CustomCryptoDigestTests {
     }
 
     private val sandboxGroupsPerTest = mutableListOf<SandboxGroup>()
+    private val cpis = mutableListOf<CPI>()
 
     /**
      * After each test is run unload their sandboxes from the system.
@@ -74,12 +76,17 @@ class CustomCryptoDigestTests {
             sandboxCreationService.unloadSandboxGroup(it)
         }
         sandboxGroupsPerTest.clear()
+        for (cpi in cpis) {
+            cpi.close()
+        }
+        cpis.clear()
     }
 
     private fun loadAndInstantiate(resourceDigestCpi: String): SandboxGroup {
         //  "Install" -  the CPKs 'into the system', i.e. copy cpk to disk somewhere and scan the manifests.
         val cpi = service.loadCPIFromResource(resourceDigestCpi)
         val cpks = cpi.cpks
+        cpis.add(cpi)
 
         //  Instantiate -  load the cpi (its cpks) into the process, and allow OSGi to wire up things.
         val sandboxGroup = service.createSandboxGroupFor(cpks)
@@ -195,7 +202,6 @@ class CustomCryptoDigestTests {
             service.runFlow<SecureHash>(DIGEST_TWO_CLASSNAME, sandboxGroupTwo)
         }
     }
-
 
     /**
      * This test uses the SAME cpi, twice.  This tests some of the sandbox code.
