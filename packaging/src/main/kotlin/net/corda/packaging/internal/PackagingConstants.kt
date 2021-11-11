@@ -10,6 +10,8 @@ internal object PackagingConstants {
 
     // The filename of the file specifying a CPK's dependencies.
     internal const val CPK_DEPENDENCIES_FILE_NAME = "CPKDependencies"
+    internal const val CPK_DEPENDENCY_CONSTRAINTS_FILE_NAME = "DependencyConstraints"
     internal const val CPK_DEPENDENCIES_FILE_ENTRY = "$META_INF_FOLDER/$CPK_DEPENDENCIES_FILE_NAME"
+    internal const val CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY = "$META_INF_FOLDER/$CPK_DEPENDENCY_CONSTRAINTS_FILE_NAME"
 }
 

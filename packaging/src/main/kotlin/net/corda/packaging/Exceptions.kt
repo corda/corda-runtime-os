@@ -6,6 +6,12 @@ open class PackagingException(message: String, cause: Throwable? = null) : Excep
 /** Thrown if an exception occurs while parsing CPK dependencies. */
 class DependencyMetadataException(message: String, cause: Throwable? = null) : PackagingException(message, cause)
 
+/** Thrown if an exception occurs while parsing DependencyConstraints. */
+class LibraryMetadataException(message: String, cause: Throwable? = null) : PackagingException(message, cause)
+
+/** Thrown if an exception occurs while validating integrity of library files contained in a CPK's lib folder. */
+class LibraryIntegrityException(message: String, cause: Throwable? = null) : PackagingException(message, cause)
+
 /** Thrown if an exception occurs while parsing main cordapp Manifest . */
 class CordappManifestException(message: String, cause: Throwable? = null) : PackagingException(message, cause)
 

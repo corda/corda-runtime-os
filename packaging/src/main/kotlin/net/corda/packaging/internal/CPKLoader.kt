@@ -5,8 +5,11 @@ import net.corda.packaging.CordappManifest
 import net.corda.packaging.CordappManifestException
 import net.corda.packaging.DependencyMetadataException
 import net.corda.packaging.InvalidSignatureException
+import net.corda.packaging.LibraryIntegrityException
+import net.corda.packaging.LibraryMetadataException
 import net.corda.packaging.PackagingException
 import net.corda.packaging.internal.PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY
+import net.corda.packaging.internal.PackagingConstants.CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY
 import net.corda.packaging.internal.PackagingConstants.CPK_LIB_FOLDER
 import net.corda.packaging.internal.PackagingConstants.JAR_FILE_EXTENSION
 import net.corda.packaging.util.TeeInputStream
@@ -57,6 +60,13 @@ internal object CPKLoader {
     private const val DEPENDENCY_SIGNER_TAG = "signer"
     private const val CORDA_CPK_V1 = "corda-cpk-1.0.xsd"
 
+    // The tags used in the XML of the file specifying library constraints.
+    private const val LIBRARY_CONSTRAINT_TAG = "dependencyConstraint"
+    private const val LIBRARY_FILENAME_TAG = "fileName"
+    private const val LIBRARY_HASH_TAG = "hash"
+    private const val LIBRARY_HASH_ALGORITHM_ATTRIBUTE = "algorithm"
+
+
     private fun DocumentBuilderFactory.disableProperty(propertyName: String) {
         try {
             setAttribute(propertyName, "")
@@ -81,24 +91,24 @@ internal object CPKLoader {
         dbf.isIgnoringComments = true
         dbf.isNamespaceAware = true
 
-        val cpkSchema = SchemaFactory.newInstance(W3C_XML_SCHEMA_NS_URI).also { sf ->
+        dbf.schema = SchemaFactory.newInstance(W3C_XML_SCHEMA_NS_URI).also { sf ->
             sf.setFeature(FEATURE_SECURE_PROCESSING, true)
             sf.disableProperty(ACCESS_EXTERNAL_SCHEMA)
             sf.disableProperty(ACCESS_EXTERNAL_DTD)
         }.newSchema(
-            this::class.java.classLoader.getResource(CORDA_CPK_V1) ?: throw IllegalStateException("Corda CPK v1 schema missing")
+            this::class.java.classLoader.getResource(CORDA_CPK_V1)
+                ?: throw IllegalStateException("Corda CPK v1 schema missing")
         )
-        dbf.schema = cpkSchema
     }
 
     @Suppress("LongParameterList")
     private class CPKContext(
-        val buffer : ByteArray,
-        val verifySignature : Boolean,
-        var topLevelJars : Int,
+        val buffer: ByteArray,
+        val verifySignature: Boolean,
+        var topLevelJars: Int,
         val fileLocationAppender: (String) -> String,
-        var temporaryCPKFile : Path?,
-        var cpkType : CPK.Type,
+        var temporaryCPKFile: Path?,
+        var cpkType: CPK.Type,
         val cpkDigest: MessageDigest,
         var cordappFileName: String?,
         val cordappDigest: MessageDigest,
@@ -106,12 +116,27 @@ internal object CPKLoader {
         var cordappManifest: CordappManifest?,
         var cpkManifest: CPK.Manifest?,
         val libraryMap: NavigableMap<String, SecureHash>,
+        var libraryConstraints: NavigableMap<String, SecureHash>,
         var cpkDependencies: NavigableSet<CPK.Identifier>
     ) {
+        @Suppress("ThrowsCount")
         fun validate() {
             when {
                 topLevelJars == 0 -> throw PackagingException(fileLocationAppender("No CorDapp JAR found"))
                 topLevelJars > 1 -> throw PackagingException(fileLocationAppender("$topLevelJars CorDapp JARs found"))
+            }
+            libraryMap.forEach { (entryName, hash) ->
+                val requiredHash = libraryConstraints[entryName] ?: throw PackagingException(
+                    fileLocationAppender("$entryName not found in $CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY")
+                )
+                if (hash != requiredHash) {
+                    throw LibraryIntegrityException(
+                        fileLocationAppender(
+                            "Hash of '$entryName' " +
+                                    "differs from the content of $CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY"
+                        )
+                    )
+                }
             }
         }
 
@@ -131,14 +156,14 @@ internal object CPKLoader {
 
         fun buildMetadata(): CPK.Metadata {
             return CPKMetadataImpl(
-                    type = cpkType,
-                    manifest = cpkManifest!!,
-                    mainBundle = cordappFileName!!,
-                    hash = SecureHash(DigestAlgorithmName.SHA2_256.name, cpkDigest.digest()),
-                    cordappManifest = cordappManifest!!,
-                    cordappCertificates = cordappCertificates!!,
-                    libraries = Collections.unmodifiableList(ArrayList(libraryMap.keys)),
-                    dependencies = Collections.unmodifiableNavigableSet(cpkDependencies),
+                type = cpkType,
+                manifest = cpkManifest!!,
+                mainBundle = cordappFileName!!,
+                hash = SecureHash(DigestAlgorithmName.SHA2_256.name, cpkDigest.digest()),
+                cordappManifest = cordappManifest!!,
+                cordappCertificates = cordappCertificates!!,
+                libraries = Collections.unmodifiableList(ArrayList(libraryMap.keys)),
+                dependencies = Collections.unmodifiableNavigableSet(cpkDependencies),
             )
         }
     }
@@ -167,7 +192,12 @@ internal object CPKLoader {
     }
 
     @Suppress("NestedBlockDepth", "ThrowsCount", "ComplexMethod")
-    private fun processMainJar(mainJarStream: InputStream, cpkEntry: ZipEntry, verifySignature: Boolean, ctx: CPKContext) {
+    private fun processMainJar(
+        mainJarStream: InputStream,
+        cpkEntry: ZipEntry,
+        verifySignature: Boolean,
+        ctx: CPKContext
+    ) {
         ctx.cordappFileName = cpkEntry.name
         val cordappDigestInputStream = DigestInputStream(mainJarStream, ctx.cordappDigest)
         val (manifest, certificates) = JarInputStream(cordappDigestInputStream, verifySignature).let { jar ->
@@ -178,22 +208,34 @@ internal object CPKLoader {
                     if (jarEntry.name == CPK_DEPENDENCIES_FILE_ENTRY) {
                         /** We need to do this as [readDependencies] closes the stream, while we still need it afterward **/
                         val uncloseableInputStream = UncloseableInputStream(jar)
-                        ctx.cpkDependencies = readDependencies(cpkEntry.name, uncloseableInputStream, ctx.fileLocationAppender)
+                        ctx.cpkDependencies =
+                            readDependencies(cpkEntry.name, uncloseableInputStream, ctx.fileLocationAppender)
+                    } else if (jarEntry.name == CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY) {
+                        val uncloseableInputStream = UncloseableInputStream(jar)
+                        ctx.libraryConstraints =
+                            parseLibraryConstraints(cpkEntry.name, uncloseableInputStream, ctx.fileLocationAppender)
                     } else {
                         consumeStream(jar, ctx.buffer)
                     }
                     try {
                         signatureCollector.addEntry(jarEntry)
                     } catch (e: IOException) {
-                        throw PackagingException(ctx.fileLocationAppender("Could not retrieve certificates of CorDapp JAR"), e)
+                        throw PackagingException(
+                            ctx.fileLocationAppender("Could not retrieve certificates of CorDapp JAR"),
+                            e
+                        )
                     }
                     jar.closeEntry()
                 }
             } catch (se: SecurityException) {
-                throw InvalidSignatureException(ctx.fileLocationAppender("Detected invalid signature on '${ctx.cordappFileName}'"), se)
+                throw InvalidSignatureException(
+                    ctx.fileLocationAppender("Detected invalid signature on '${ctx.cordappFileName}'"),
+                    se
+                )
             }
             val manifest = jar.manifest ?: throw CordappManifestException(
-                    ctx.fileLocationAppender("Missing manifest from cordapp jar '${ctx.cordappFileName}'"))
+                ctx.fileLocationAppender("Missing manifest from cordapp jar '${ctx.cordappFileName}'")
+            )
             manifest.mainAttributes.getValue(CPKManifestImpl.CPK_TYPE)?.let(CPK.Type::parse)?.also { ctx.cpkType = it }
             CordappManifest.fromManifest(manifest) to signatureCollector.certificates
         }
@@ -209,7 +251,10 @@ internal object CPKLoader {
             consumeStream(DigestInputStream(inputStream, libraryMessageDigest), ctx.buffer)
             libraryMessageDigest.digest()
         } catch (e: IOException) {
-            throw PackagingException(ctx.fileLocationAppender("Could not calculate hash of library jar '${cpkEntry.name}"), e)
+            throw PackagingException(
+                ctx.fileLocationAppender("Could not calculate hash of library jar '${cpkEntry.name}"),
+                e
+            )
         }
         ctx.libraryMap[cpkEntry.name] = SecureHash(DigestAlgorithmName.SHA2_256.name, digestBytes)
     }
@@ -220,30 +265,36 @@ internal object CPKLoader {
      * exception messages in case of errors
      */
     @Suppress("ComplexMethod")
-    private fun createContext(source: InputStream, cacheDir: Path?, cpkLocation: String?, verifySignature: Boolean): CPKContext {
+    private fun createContext(
+        source: InputStream,
+        cacheDir: Path?,
+        cpkLocation: String?,
+        verifySignature: Boolean
+    ): CPKContext {
         val ctx = CPKContext(
-                buffer = ByteArray(DEFAULT_BUFFER_SIZE),
-                verifySignature = verifySignature,
-                topLevelJars = 0,
-                temporaryCPKFile = cacheDir
-                    ?.let((Files::createDirectories))
-                    ?.let { Files.createTempFile(it, null, ".cpk") },
-                cpkType = CPK.Type.UNKNOWN,
-                cpkDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name),
-                cordappFileName = null,
-                cordappDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name),
-                cordappCertificates = null,
-                cordappManifest = null,
-                cpkManifest = null,
-                libraryMap = TreeMap(),
-                cpkDependencies = TreeSet(),
-                fileLocationAppender = if (cpkLocation == null) {
-                    { msg: String -> msg }
-                } else {
-                    { msg: String -> "$msg in CPK at $cpkLocation" }
-                }
+            buffer = ByteArray(DEFAULT_BUFFER_SIZE),
+            verifySignature = verifySignature,
+            topLevelJars = 0,
+            temporaryCPKFile = cacheDir
+                ?.let((Files::createDirectories))
+                ?.let { Files.createTempFile(it, null, ".cpk") },
+            cpkType = CPK.Type.UNKNOWN,
+            cpkDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name),
+            cordappFileName = null,
+            cordappDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name),
+            cordappCertificates = null,
+            cordappManifest = null,
+            cpkManifest = null,
+            libraryMap = TreeMap(),
+            libraryConstraints = Collections.emptyNavigableMap(),
+            cpkDependencies = Collections.emptyNavigableSet(),
+            fileLocationAppender = if (cpkLocation == null) {
+                { msg: String -> msg }
+            } else {
+                { msg: String -> "$msg in CPK at $cpkLocation" }
+            }
         )
-        var stream2BeFullyConsumed : InputStream = DigestInputStream(source, ctx.cpkDigest)
+        var stream2BeFullyConsumed: InputStream = DigestInputStream(source, ctx.cpkDigest)
         val temporaryCPKFile = ctx.temporaryCPKFile
         if (temporaryCPKFile == null) {
             JarInputStream(stream2BeFullyConsumed, verifySignature)
@@ -252,7 +303,8 @@ internal object CPKLoader {
             stream2BeFullyConsumed = TeeInputStream(stream2BeFullyConsumed, Files.newOutputStream(temporaryCPKFile))
             JarInputStream(stream2BeFullyConsumed, verifySignature)
         }.use { jarInputStream ->
-            val jarManifest = jarInputStream.manifest ?: throw PackagingException(ctx.fileLocationAppender("Invalid file format"))
+            val jarManifest =
+                jarInputStream.manifest ?: throw PackagingException(ctx.fileLocationAppender("Invalid file format"))
             ctx.cpkManifest = CPK.Manifest.fromJarManifest(Manifest(jarManifest))
             while (true) {
                 val cpkEntry = jarInputStream.nextEntry ?: break
@@ -279,11 +331,82 @@ internal object CPKLoader {
     fun loadMetadata(source: InputStream, cpkLocation: String?, verifySignature: Boolean) =
         createContext(source, null, cpkLocation, verifySignature).buildMetadata()
 
+    /**
+     * [Iterator] for traversing every [Element] within a [NodeList].
+     * Skips any [org.w3c.dom.Node] that is not also an [Element].
+     */
+    private class ElementIterator(private val nodes: NodeList) : Iterator<Element> {
+        private var index = 0
+        override fun hasNext() = index < nodes.length
+        override fun next() = if (hasNext()) nodes.item(index++) as Element else throw NoSuchElementException()
+    }
+
+    @Suppress("ThrowsCount", "TooGenericExceptionCaught", "ComplexMethod")
+    private fun parseLibraryConstraints(
+        jarName: String,
+        inputStream: InputStream,
+        fileLocationAppender: (String) -> String
+    ): NavigableMap<String, SecureHash> {
+        val doc: Document = try {
+            // The CPK library constraints are specified as an XML file.
+            val documentBuilder = cpkV1DocumentBuilderFactory.newDocumentBuilder()
+            documentBuilder.setErrorHandler(XmlErrorHandler(jarName))
+            documentBuilder.parse(inputStream)
+        } catch (e: DependencyMetadataException) {
+            throw e
+        } catch (e: SecurityException) {
+            throw e
+        } catch (e: Exception) {
+            throw LibraryMetadataException(
+                fileLocationAppender("Error parsing $CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY file"),
+                e
+            )
+        }
+
+        val result = TreeMap<String, SecureHash>()
+        ElementIterator(doc.getElementsByTagName(LIBRARY_CONSTRAINT_TAG)).asSequence().withIndex().map { el ->
+            val libraryFilenameElements = el.value.getElementsByTagName(LIBRARY_FILENAME_TAG)
+            val libraryHashElements = el.value.getElementsByTagName(LIBRARY_HASH_TAG)
+
+            if (libraryFilenameElements.length != 1) {
+                val msg =
+                    fileLocationAppender("The entry at index ${el.index} of the $CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY requires a single $LIBRARY_FILENAME_TAG")
+                throw LibraryMetadataException(msg)
+            }
+            if (libraryHashElements.length != 1) {
+                val msg =
+                    fileLocationAppender("The entry at index ${el.index} of the $CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY requires a single $LIBRARY_HASH_TAG")
+                throw LibraryMetadataException(msg)
+            }
+            libraryFilenameElements.item(0).textContent to libraryHashElements.item(0).let {
+                val algorithmName = it.attributes.getNamedItem(LIBRARY_HASH_ALGORITHM_ATTRIBUTE).textContent
+                if (algorithmName != DigestAlgorithmName.SHA2_256.name) {
+                    throw LibraryMetadataException(
+                        fileLocationAppender(
+                            "Expected ${DigestAlgorithmName.SHA2_256.name} in $CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY," +
+                                    " got '$algorithmName' instead"
+                        )
+                    )
+                }
+                SecureHash(algorithmName, Base64.getDecoder().decode(it.textContent))
+            }
+        }.forEach { pair ->
+            result.put("$CPK_LIB_FOLDER/${pair.first}", pair.second)?.let {
+                throw LibraryMetadataException(
+                    fileLocationAppender("Found duplicate entry for library ${pair.first} of the $CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY")
+                )
+            }
+        }
+        return Collections.unmodifiableNavigableMap(result)
+    }
+
     /** Returns the [CPK.Identifier]s for the provided [dependenciesFileContent]. */
     @Suppress("ThrowsCount", "TooGenericExceptionCaught", "ComplexMethod")
-    private fun readDependencies(jarName: String,
-                                 dependenciesFileContent: InputStream,
-                                 fileLocationAppender : (String) -> String): NavigableSet<CPK.Identifier> {
+    private fun readDependencies(
+        jarName: String,
+        dependenciesFileContent: InputStream,
+        fileLocationAppender: (String) -> String
+    ): NavigableSet<CPK.Identifier> {
         val cpkDependencyDocument: Document = try {
             // The CPK dependencies are specified as an XML file.
             val documentBuilder = cpkV1DocumentBuilderFactory.newDocumentBuilder()
@@ -298,15 +421,6 @@ internal object CPKLoader {
         }
         val cpkDependencyNodes = cpkDependencyDocument.getElementsByTagName(DEPENDENCY_TAG)
 
-        /**
-         * [Iterator] for traversing every [Element] within a [NodeList].
-         * Skips any [org.w3c.dom.Node] that is not also an [Element].
-         */
-        class ElementIterator(private val nodes: NodeList) : Iterator<Element> {
-            private var index = 0
-            override fun hasNext() = index < nodes.length
-            override fun next() = if (hasNext()) nodes.item(index++) as Element else throw NoSuchElementException()
-        }
         return ElementIterator(cpkDependencyNodes).asSequence().withIndex().mapNotNull { el ->
             val dependencyNameElements = el.value.getElementsByTagName(DEPENDENCY_NAME_TAG)
             val dependencyVersionElements = el.value.getElementsByTagName(DEPENDENCY_VERSION_TAG)
@@ -315,17 +429,20 @@ internal object CPKLoader {
 
             if (dependencyNameElements.length != 1) {
                 // Should already have been validated by schema.
-                val msg = fileLocationAppender("The entry at index ${el.index} of the CPK dependencies did not specify its name correctly.")
+                val msg =
+                    fileLocationAppender("The entry at index ${el.index} of the CPK dependencies did not specify its name correctly.")
                 throw DependencyMetadataException(msg)
             }
             if (dependencyVersionElements.length != 1) {
                 // Should already have been validated by schema.
-                val msg = fileLocationAppender("The entry at index ${el.index} of the CPK dependencies file did not specify its version correctly.")
+                val msg =
+                    fileLocationAppender("The entry at index ${el.index} of the CPK dependencies file did not specify its version correctly.")
                 throw DependencyMetadataException(msg)
             }
             if (dependencySignersElements.length != 1) {
                 // Should already have been validated by schema.
-                val msg = fileLocationAppender("The entry at index ${el.index} of the CPK dependencies file did not specify its signers correctly.")
+                val msg =
+                    fileLocationAppender("The entry at index ${el.index} of the CPK dependencies file did not specify its signers correctly.")
                 throw DependencyMetadataException(msg)
             }
 
@@ -336,22 +453,26 @@ internal object CPKLoader {
                     val algorithm = signer.getAttribute("algorithm")?.trim()
                     if (algorithm.isNullOrEmpty()) {
                         // Should already have been validated by schema.
-                        val msg = fileLocationAppender("The entry at index ${el.index} of the CPK dependencies file" +
-                                " did not specify an algorithm for its signer's public key hash.")
+                        val msg = fileLocationAppender(
+                            "The entry at index ${el.index} of the CPK dependencies file" +
+                                    " did not specify an algorithm for its signer's public key hash."
+                        )
                         throw DependencyMetadataException(msg)
                     }
                     val hashData = Base64.getDecoder().decode(signer.textContent)
                     SecureHash(algorithm, hashData)
                 }.summaryHash()
             CPKIdentifierImpl(
-                    dependencyNameElements.item(0).textContent,
-                    dependencyVersionElements.item(0).textContent,
-                    publicKeySummaryHash).takeIf {
-                when(dependencyTypeElements.length) {
+                dependencyNameElements.item(0).textContent,
+                dependencyVersionElements.item(0).textContent,
+                publicKeySummaryHash
+            ).takeIf {
+                when (dependencyTypeElements.length) {
                     0 -> true
                     1 -> CPK.Type.parse(dependencyTypeElements.item(0).textContent) != CPK.Type.CORDA_API
                     else -> {
-                        val msg = fileLocationAppender("The entry at index ${el.index} of the CPK dependencies file has multiple types")
+                        val msg =
+                            fileLocationAppender("The entry at index ${el.index} of the CPK dependencies file has multiple types")
                         throw DependencyMetadataException(msg)
                     }
                 }
@@ -361,19 +482,25 @@ internal object CPKLoader {
 
     private class XmlErrorHandler(private val jarName: String) : ErrorHandler {
         override fun warning(ex: SAXParseException) {
-            logger.warn("Problem at (line {}, column {}) parsing CPK dependencies for {}: {}",
-                    ex.lineNumber, ex.columnNumber, jarName, ex.message)
+            logger.warn(
+                "Problem at (line {}, column {}) parsing CPK dependencies for {}: {}",
+                ex.lineNumber, ex.columnNumber, jarName, ex.message
+            )
         }
 
         override fun error(ex: SAXParseException) {
-            logger.error("Error at (line {}, column {}) parsing CPK dependencies for {}: {}",
-                    ex.lineNumber, ex.columnNumber, jarName, ex.message)
+            logger.error(
+                "Error at (line {}, column {}) parsing CPK dependencies for {}: {}",
+                ex.lineNumber, ex.columnNumber, jarName, ex.message
+            )
             throw DependencyMetadataException(ex.message ?: "", ex)
         }
 
         override fun fatalError(ex: SAXParseException) {
-            logger.error("Fatal error at (line {}, column {}) parsing CPK dependencies for {}: {}",
-                    ex.lineNumber, ex.columnNumber, jarName, ex.message)
+            logger.error(
+                "Fatal error at (line {}, column {}) parsing CPK dependencies for {}: {}",
+                ex.lineNumber, ex.columnNumber, jarName, ex.message
+            )
             throw ex
         }
     }

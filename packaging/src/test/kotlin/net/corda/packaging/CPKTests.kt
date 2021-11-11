@@ -149,6 +149,22 @@ class CPKTests {
         tweakCordappJar(destination, tweaker)
     }
 
+    private fun tamperWithLibraries(destination : Path) {
+        object : ZipTweaker() {
+            override fun tweakEntry(inputStream: ZipInputStream,
+                                    outputStream: ZipOutputStream,
+                                    currentEntry: ZipEntry,
+                                    buffer: ByteArray) =
+                if (currentEntry.name.startsWith("lib/")) {
+                    val source = {
+                        ByteArrayInputStream(ByteArray(0x100))
+                    }
+                    writeZipEntry(outputStream, source, currentEntry.name, buffer, currentEntry.method)
+                    AfterTweakAction.DO_NOTHING
+                } else AfterTweakAction.WRITE_ORIGINAL_ENTRY
+        }.run(Files.newInputStream(workflowCPKPath), Files.newOutputStream(destination))
+    }
+
     @Test
     fun `Verify hashes of jars in the lib folder of workflow cpk`() {
         for(libraryFileName in workflowCPK.metadata.libraries) {
@@ -330,6 +346,15 @@ class CPKTests {
         val dependency = cpk.dependencies.find { it.name == dummyName && it.version == dummyVersion }
         Assertions.assertNotNull(dependency, "Test dependency not found")
         Assertions.assertEquals(expectedSignersSummaryHash, dependency!!.signerSummaryHash)
+    }
+
+    @Test
+    fun `library verification fails if jar file in the lib folder do not match the content of DependencyConstraints`() {
+        val tamperedCPK = testDir.resolve("tampered.cpk")
+        tamperWithLibraries(tamperedCPK)
+        Assertions.assertThrows(LibraryIntegrityException::class.java) {
+            CPK.Metadata.from(Files.newInputStream(tamperedCPK), verifySignature = false)
+        }
     }
 
     @Test
