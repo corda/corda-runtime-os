@@ -13,6 +13,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
+import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.NetworkType
@@ -85,14 +86,19 @@ open class TestBase {
     protected val smartConfifFactory = SmartConfigFactoryImpl()
 
     protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl()
+
     protected inner class ConfigPublisher {
         private val configurationTopicService = TopicServiceImpl()
+        private val rpcTopicService = RPCTopicServiceImpl()
         private val topicName = "config.${UUID.randomUUID().toString().replace("-", "")}"
 
         val readerService by lazy {
             ConfigurationReadServiceImpl(
                 LifecycleCoordinatorFactoryImpl(),
-                ConfigReaderFactoryImpl(InMemSubscriptionFactory(configurationTopicService), smartConfifFactory),
+                ConfigReaderFactoryImpl(
+                    InMemSubscriptionFactory(configurationTopicService, rpcTopicService),
+                    smartConfifFactory
+                ),
             ).also {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()
@@ -108,42 +114,77 @@ open class TestBase {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hostAddress", ConfigValueFactory.fromAnyRef(configuration.hostAddress))
                 .withValue("hostPort", ConfigValueFactory.fromAnyRef(configuration.hostPort))
-                .withValue("sslConfig.keyStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.keyStorePassword))
-                .withValue("sslConfig.keyStore", ConfigValueFactory.fromAnyRef(configuration.sslConfig.rawKeyStore.toBase64()))
-                .withValue("sslConfig.trustStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.trustStorePassword))
-                .withValue("sslConfig.trustStore", ConfigValueFactory.fromAnyRef(configuration.sslConfig.rawTrustStore.toBase64()))
-                .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
-                .withValue("connectionConfig.connectionIdleTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout))
-                .withValue("connectionConfig.maxClientConnections", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections))
-                .withValue("connectionConfig.acquireTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
-                .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
-                .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
-            CordaPublisherFactory(configurationTopicService).createPublisher(PublisherConfig((topicName))).use { publisher ->
-                val configurationPublisher = ConfigWriterImpl(topicName, publisher)
-                configurationPublisher.updateConfiguration(
-                    CordaConfigurationKey(
-                        "myKey",
-                        CordaConfigurationVersion("p2p", 0, 1),
-                        CordaConfigurationVersion("gateway", 0, 1)
-                    ),
-                    publishConfig
+                .withValue(
+                    "sslConfig.keyStorePassword",
+                    ConfigValueFactory.fromAnyRef(configuration.sslConfig.keyStorePassword)
                 )
-            }
+                .withValue(
+                    "sslConfig.keyStore",
+                    ConfigValueFactory.fromAnyRef(configuration.sslConfig.rawKeyStore.toBase64())
+                )
+                .withValue(
+                    "sslConfig.trustStorePassword",
+                    ConfigValueFactory.fromAnyRef(configuration.sslConfig.trustStorePassword)
+                )
+                .withValue(
+                    "sslConfig.trustStore",
+                    ConfigValueFactory.fromAnyRef(configuration.sslConfig.rawTrustStore.toBase64())
+                )
+                .withValue(
+                    "sslConfig.revocationCheck.mode",
+                    ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString())
+                )
+                .withValue(
+                    "connectionConfig.connectionIdleTimeout",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout)
+                )
+                .withValue(
+                    "connectionConfig.maxClientConnections",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections)
+                )
+                .withValue(
+                    "connectionConfig.acquireTimeout",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout)
+                )
+                .withValue(
+                    "connectionConfig.responseTimeout",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout)
+                )
+                .withValue(
+                    "connectionConfig.retryDelay",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay)
+                )
+            CordaPublisherFactory(configurationTopicService, rpcTopicService)
+                .createPublisher(PublisherConfig((topicName)))
+                .use { publisher ->
+                    val configurationPublisher = ConfigWriterImpl(topicName, publisher)
+                    configurationPublisher.updateConfiguration(
+                        CordaConfigurationKey(
+                            "myKey",
+                            CordaConfigurationVersion("p2p", 0, 1),
+                            CordaConfigurationVersion("gateway", 0, 1)
+                        ),
+                        publishConfig
+                    )
+                }
         }
+
         fun publishBadConfig() {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hello", ConfigValueFactory.fromAnyRef("world"))
-            CordaPublisherFactory(configurationTopicService).createPublisher(PublisherConfig((topicName))).use { publisher ->
-                val configurationPublisher = ConfigWriterImpl(topicName, publisher)
-                configurationPublisher.updateConfiguration(
-                    CordaConfigurationKey(
-                        "myKey",
-                        CordaConfigurationVersion("p2p", 0, 1),
-                        CordaConfigurationVersion("gateway", 0, 1)
-                    ),
-                    publishConfig
-                )
-            }
+            CordaPublisherFactory(configurationTopicService, rpcTopicService)
+                .createPublisher(PublisherConfig((topicName)))
+                .use { publisher ->
+                    val configurationPublisher = ConfigWriterImpl(topicName, publisher)
+                    configurationPublisher.updateConfiguration(
+                        CordaConfigurationKey(
+                            "myKey",
+                            CordaConfigurationVersion("p2p", 0, 1),
+                            CordaConfigurationVersion("gateway", 0, 1)
+                        ),
+                        publishConfig
+                    )
+                }
         }
     }
 

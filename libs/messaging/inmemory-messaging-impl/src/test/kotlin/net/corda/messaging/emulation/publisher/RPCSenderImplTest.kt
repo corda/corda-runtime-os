@@ -1,9 +1,6 @@
 package net.corda.messaging.emulation.publisher
 
-import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.emulation.rpc.RPCTopicService
-import net.corda.messaging.emulation.subscription.rpc.RPCSubscriptionImpl
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock

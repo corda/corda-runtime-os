@@ -9,7 +9,11 @@ import net.corda.messaging.emulation.publisher.CordaPublisher
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory.Companion.PUBLISHER_INSTANCE_ID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.*
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 
 class CordaPublisherFactoryTest {
     private val nodeConfig = mock<SmartConfig> {

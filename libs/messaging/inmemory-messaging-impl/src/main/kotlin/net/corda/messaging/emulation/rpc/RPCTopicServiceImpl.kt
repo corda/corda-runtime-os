@@ -71,7 +71,8 @@ class RPCTopicServiceImpl(
                 it.whenComplete { response, error ->
                     when {
                         it.isCancelled -> {
-                            requestCompletion.completeExceptionally(CordaRPCAPIResponderException("The request was cancelled by the responder."))
+                            requestCompletion.completeExceptionally(
+                                CordaRPCAPIResponderException("The request was cancelled by the responder."))
                         }
 
                         it.isCompletedExceptionally -> {
