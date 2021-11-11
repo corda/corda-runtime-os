@@ -9,9 +9,6 @@ import net.corda.libs.permissions.cache.events.GroupTopicSnapshotReceived
 import net.corda.libs.permissions.cache.events.RoleTopicSnapshotReceived
 import net.corda.libs.permissions.cache.events.UserTopicSnapshotReceived
 import net.corda.libs.permissions.cache.factory.PermissionCacheFactory
-import net.corda.libs.permissions.cache.impl.GroupTopicProcessor
-import net.corda.libs.permissions.cache.impl.RoleTopicProcessor
-import net.corda.libs.permissions.cache.impl.UserTopicProcessor
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -22,6 +19,9 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.permissions.cache.processor.GroupTopicProcessor
+import net.corda.permissions.cache.processor.RoleTopicProcessor
+import net.corda.permissions.cache.processor.UserTopicProcessor
 import net.corda.rpc.schema.Schema
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -35,7 +35,7 @@ class PermissionCacheComponent @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PermissionCacheFactory::class)
     private val permissionCacheFactory: PermissionCacheFactory,
-    ) : Lifecycle {
+) : Lifecycle {
 
     private val coordinator = coordinatorFactory.createCoordinator<PermissionCacheComponent> { event, _ -> eventHandler(event) }
 
@@ -84,15 +84,15 @@ class PermissionCacheComponent @Activate constructor(
             // Let's set the component as UP when it has received all the snapshots it needs
             is UserTopicSnapshotReceived -> {
                 userSnapshotReceived = true
-                if(allSnapshotsReceived) coordinator.updateStatus(LifecycleStatus.UP)
+                if (allSnapshotsReceived) coordinator.updateStatus(LifecycleStatus.UP)
             }
             is GroupTopicSnapshotReceived -> {
                 groupSnapshotReceived = true
-                if(allSnapshotsReceived) coordinator.updateStatus(LifecycleStatus.UP)
+                if (allSnapshotsReceived) coordinator.updateStatus(LifecycleStatus.UP)
             }
             is RoleTopicSnapshotReceived -> {
                 roleSnapshotReceived = true
-                if(allSnapshotsReceived) coordinator.updateStatus(LifecycleStatus.UP)
+                if (allSnapshotsReceived) coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
                 userSubscription?.stop()

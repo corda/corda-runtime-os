@@ -1,8 +1,7 @@
 package net.corda.libs.permissions.cache.impl
 
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import java.util.concurrent.atomic.AtomicBoolean
 import net.corda.data.permissions.Group
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
@@ -12,71 +11,57 @@ import net.corda.libs.permissions.cache.exception.PermissionCacheException
 /**
  * The Permission cache holds the data used in the RBAC permission system.
  */
-class PermissionCacheImpl(
+internal class PermissionCacheImpl(
     private val userData: ConcurrentHashMap<String, User>,
     private val groupData: ConcurrentHashMap<String, Group>,
     private val roleData: ConcurrentHashMap<String, Role>
 ) : PermissionCache {
 
-    @Volatile
-    private var running = false
-    private val lock = ReentrantLock()
+    private var running = AtomicBoolean(false)
 
     override val isRunning: Boolean
-        get() = running
+        get() = running.get()
 
     override fun getUser(loginName: String): User? {
-        lock.withLock {
-            if (!isRunning) {
-                throw PermissionCacheException("Permission cache is not running.")
-            }
-            return userData[loginName]
+        if (!isRunning) {
+            throw PermissionCacheException("Permission cache is not running.")
         }
+        return userData[loginName]
     }
 
     override fun getGroup(groupId: String): Group? {
-        lock.withLock {
-            if (!isRunning) {
-                throw PermissionCacheException("Permission cache is not running.")
-            }
-            return groupData[groupId]
+        if (!isRunning) {
+            throw PermissionCacheException("Permission cache is not running.")
         }
+        return groupData[groupId]
     }
 
     override fun getRole(roleId: String): Role? {
-        lock.withLock {
-            if (!isRunning) {
-                throw PermissionCacheException("Permission cache is not running.")
-            }
-            return roleData[roleId]
+        if (!isRunning) {
+            throw PermissionCacheException("Permission cache is not running.")
         }
+        return roleData[roleId]
     }
 
-    override fun getUsers(): ConcurrentHashMap<String, User> {
-        lock.withLock {
-            if (!isRunning) {
-                throw PermissionCacheException("Permission cache is not running.")
-            }
-            return userData
+    override fun getUsers(): Map<String, User> {
+        if (!isRunning) {
+            throw PermissionCacheException("Permission cache is not running.")
         }
+        return userData
     }
 
-    override fun getGroups(): ConcurrentHashMap<String, Group> {
-        lock.withLock {
-            if (!isRunning) {
-                throw PermissionCacheException("Permission cache is not running.")
-            }
-            return groupData
+    override fun getGroups(): Map<String, Group> {
+        if (!isRunning) {
+            throw PermissionCacheException("Permission cache is not running.")
         }
+        return groupData
     }
 
-    override fun getRoles(): ConcurrentHashMap<String, Role> {
-        lock.withLock {
-            if (!isRunning) {
-                throw PermissionCacheException("Permission cache is not running.")
-            }
-            return roleData
+    override fun getRoles(): Map<String, Role> {
+        if (!isRunning) {
+            throw PermissionCacheException("Permission cache is not running.")
         }
+        return roleData
     }
 
     /**
@@ -85,9 +70,7 @@ class PermissionCacheImpl(
      * The data itself must be passed into this instance via constructor.
      */
     override fun start() {
-        lock.withLock {
-            running = true
-        }
+        running.compareAndSet(false, true)
     }
 
     /**
@@ -96,8 +79,6 @@ class PermissionCacheImpl(
      * We don't want to completely remove the cached maps.
      */
     override fun stop() {
-        lock.withLock {
-            running = false
-        }
+        running.set(false)
     }
 }

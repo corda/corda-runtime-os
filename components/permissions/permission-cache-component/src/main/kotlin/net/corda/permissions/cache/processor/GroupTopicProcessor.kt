@@ -1,4 +1,4 @@
-package net.corda.libs.permissions.cache.impl
+package net.corda.permissions.cache.processor
 
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.permissions.Group
@@ -10,7 +10,7 @@ import net.corda.messaging.api.records.Record
 /**
  * Responsible for updating the group cache.
  */
-class GroupTopicProcessor(
+internal class GroupTopicProcessor(
     private val coordinator: LifecycleCoordinator,
     private val groupData: ConcurrentHashMap<String, Group>
 ) : CompactedProcessor<String, Group> {
@@ -24,9 +24,9 @@ class GroupTopicProcessor(
     }
 
     override fun onNext(
-            newRecord: Record<String, Group>,
-            oldValue: Group?,
-            currentData: Map<String, Group>
+        newRecord: Record<String, Group>,
+        oldValue: Group?,
+        currentData: Map<String, Group>
     ) {
         val group = newRecord.value
         val groupId = newRecord.key

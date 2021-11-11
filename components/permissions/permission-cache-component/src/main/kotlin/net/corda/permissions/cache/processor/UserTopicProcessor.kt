@@ -1,4 +1,4 @@
-package net.corda.libs.permissions.cache.impl
+package net.corda.permissions.cache.processor
 
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.permissions.User
@@ -10,7 +10,7 @@ import net.corda.messaging.api.records.Record
 /**
  * Responsible for updating the User cache.
  */
-class UserTopicProcessor(
+internal class UserTopicProcessor(
     private val coordinator: LifecycleCoordinator,
     private val userData: ConcurrentHashMap<String, User>
 ) : CompactedProcessor<String, User> {
@@ -24,9 +24,9 @@ class UserTopicProcessor(
     }
 
     override fun onNext(
-            newRecord: Record<String, User>,
-            oldValue: User?,
-            currentData: Map<String, User>
+        newRecord: Record<String, User>,
+        oldValue: User?,
+        currentData: Map<String, User>
     ) {
         val user = newRecord.value
         val userLogin = newRecord.key
