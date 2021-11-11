@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "PermissionManagementResponse",
+  "namespace": "net.corda.data.permissions.management",
+  "fields": [
+    {
+      "name": "response",
+      "type": [
+        "boolean",
+        "net.corda.data.ExceptionEnvelope",
+        "net.corda.data.permissions.User"
+      ]
+    }
+  ]
+}
