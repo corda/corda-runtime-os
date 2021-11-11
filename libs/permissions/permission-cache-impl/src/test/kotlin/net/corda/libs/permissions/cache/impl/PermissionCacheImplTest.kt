@@ -29,7 +29,7 @@ internal class PermissionCacheImplTest {
 
     private val group1 = Group("grpId1", 0, ChangeDetails(Instant.now(), "changeUser"), "group1", null,
         emptyList(), emptyList())
-    private val group2 = Group("grpId1", 0, ChangeDetails(Instant.now(), "changeUser"), "group1", null,
+    private val group2 = Group("grpId2", 0, ChangeDetails(Instant.now(), "changeUser"), "group1", null,
         emptyList(), listOf("role1", "role2"))
 
     private val permission1 = Permission("perm1", 0, ChangeDetails(Instant.now(), "changeUser"), "virtNode1",
