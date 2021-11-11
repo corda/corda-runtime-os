@@ -140,13 +140,6 @@ abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
     }
 
     /**
-     * Marker interface for applying to internal custom serializer proxies.
-     * We will not expose this feature to external Corda modules until
-     * someone asks for it.
-     */
-    interface RevealSubclasses
-
-    /**
      * Additional base features over and above [Implements] or [Is] custom serializer for when the serialized form should be
      * the serialized form of a proxy class, and the object can be re-created from that proxy on deserialization.
      *
@@ -158,7 +151,7 @@ abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
         factory: SerializerFactory
     ) : CustomSerializer<T>() {
         override val revealSubclassesInSchema: Boolean
-            get() = serializer is RevealSubclasses
+            get() = serializer.revealSubclasses
 
         private val proxySerializer: ObjectSerializer by lazy {
             ObjectSerializer.make(factory.getTypeInformation(serializer.proxyType), factory)
