@@ -3,6 +3,7 @@ package net.corda.messaging.db.persistence
 import net.corda.messaging.db.util.DbUtils.Companion.createOffsetsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicRecordsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicsTableStmt
+import org.mockito.kotlin.isNotNull
 import java.sql.DriverManager
 
 /*
@@ -17,6 +18,10 @@ To run locally:
  */
 
 class DbAccessProviderPostgresTest: DbAccessProviderTestBase() {
+    override fun getCallingClass(): String {
+        return "postgres"
+    }
+
     override fun createTables() {
         val connection = DriverManager.getConnection(getJdbcUrl(), getUsername(), getPassword())
         connection.prepareStatement(createTopicRecordsTableStmt).execute()

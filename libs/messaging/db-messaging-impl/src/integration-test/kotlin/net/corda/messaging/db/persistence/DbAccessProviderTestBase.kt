@@ -37,10 +37,13 @@ abstract class DbAccessProviderTestBase {
 
     abstract fun getPassword(): String
 
+    abstract fun getCallingClass(): String
+
     @BeforeClass
     fun checkIfTestsShouldBeSkipped() {
-        //TODO - put in each test or will it work in BeforeClass?
-        //org.junit.Assume.assumeThat(System.getProperty("postgresDb"), isNotNull())
+        if(getCallingClass() == "postgres" && System.getProperty("postgresDb") == null) {
+            org.junit.Assume.assumeThat(System.getProperty("postgresDb"), isNotNull())
+        }
     }
 
     @BeforeAll
@@ -78,10 +81,6 @@ abstract class DbAccessProviderTestBase {
 
     @Test
     fun `getTopics returns topics with their number of partitions successfully`() {
-        //TODO - put in each test or will it work in BeforeClass?
-        if(getDbType() == DBType.POSTGRESQL) {
-            org.junit.Assume.assumeThat(System.getProperty("postgresDb"), isNotNull())
-        }
         val topicsWithPartitions = dbAccessProvider.getTopics()
 
         assertThat(topicsWithPartitions).containsExactlyEntriesOf(mapOf(
