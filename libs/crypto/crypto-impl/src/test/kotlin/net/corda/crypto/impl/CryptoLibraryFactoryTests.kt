@@ -47,7 +47,7 @@ class CryptoLibraryFactoryTests {
                 SignatureVerificationServiceProviderImpl()
             ),
             listOf(
-                DigestServiceProviderImpl()
+                DigestServiceProviderImpl(null)
             )
         )
         val factory = CryptoLibraryFactoryImpl(cipherSuiteFactory)

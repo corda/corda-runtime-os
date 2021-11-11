@@ -26,12 +26,11 @@ import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
-import java.io.File
 import java.util.UUID
 
 open class TestBase {
     private fun readKeyStore(fileName: String): ByteArray {
-        return File(javaClass.classLoader.getResource("$fileName.jks")!!.file).readBytes()
+        return javaClass.classLoader.getResource("$fileName.jks").readBytes()
     }
 
     protected val clientMessageContent = "PING"
