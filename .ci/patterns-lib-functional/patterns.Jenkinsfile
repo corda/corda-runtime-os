@@ -90,6 +90,7 @@ pipeline {
                           echo "${POD}"
                           kubectl --namespace="${NAME_SPACE}" logs "${POD}" | tee build/${POD}-logs.txt
                         done
+                        kubectl get events -n "${NAME_SPACE}" | tee build/${NAME_SPACE}-events-log.txt
                         kubectl delete ns "${NAME_SPACE}"
                     '''
                 }
@@ -103,7 +104,8 @@ pipeline {
         cleanup {
             junit allowEmptyResults: true, testResults: '**/build/test-results/**/TEST-*.xml'
             archiveArtifacts artifacts: '**/build/test-results/**/TEST-*.xml', fingerprint: true, allowEmptyArchive: true
-            archiveArtifacts artifacts: 'build/*-logs.txt', fingerprint: true, allowEmptyArchive: true
+            archiveArtifacts artifacts: "build/${NAME_SPACE}-*-logs.txt", fingerprint: true, allowEmptyArchive: true
+            archiveArtifacts artifacts: "build/${NAME_SPACE}-events-log.txt", fingerprint: true, allowEmptyArchive: true
             archiveArtifacts artifacts: 'forward.txt', fingerprint: true, allowEmptyArchive: true
         }
     }
