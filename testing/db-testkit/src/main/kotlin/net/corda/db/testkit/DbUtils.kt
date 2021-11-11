@@ -17,20 +17,30 @@ object DbUtils {
      * in-memory implementation.
      */
     fun getEntityManagerConfiguration(inMemoryDbName: String): EntityManagerConfiguration {
-        val postgresDb = System.getProperty("postgresDb")
-        return if (!postgresDb.isNullOrBlank()) {
-            logger.info("Using Postgres on port ${System.getProperty("postgresPort")}".emphasise())
-            val jdbcUrl =
-                "jdbc:postgresql://${System.getProperty("postgresHost")}:${System.getProperty("postgresPort")}/$postgresDb"
+        val port = System.getProperty("postgresPort")
+        return if (!port.isNullOrBlank()) {
+            val postgresDb = getPropertyNonBlank("postgresDb", "postgres")
+            val host = getPropertyNonBlank("postgresHost", "localhost")
+            val jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
+            logger.info("Using Postgres URL $jdbcUrl".emphasise())
             val ds = PostgresDataSourceFactory().create(
                 jdbcUrl,
-                System.getProperty("postgresUser"),
-                System.getProperty("postgresPassword")
+                getPropertyNonBlank("postgresUser", "postgres"),
+                getPropertyNonBlank("postgresPassword", "password")
             )
-            DbEntityManagerConfiguration(ds, true, true, DdlManage.UPDATE)
+            DbEntityManagerConfiguration(ds, true, true, DdlManage.NONE)
         } else {
             logger.info("Using in-memory (HSQL) DB".emphasise())
             InMemoryEntityManagerConfiguration(inMemoryDbName)
+        }
+    }
+
+    private fun getPropertyNonBlank(key: String, defaultValue: String): String {
+        val value = System.getProperty(key)
+        return if (value.isNullOrBlank()) {
+            defaultValue
+        } else {
+            value
         }
     }
 }
