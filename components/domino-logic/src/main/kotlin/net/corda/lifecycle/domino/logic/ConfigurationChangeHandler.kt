@@ -11,4 +11,7 @@ abstract class ConfigurationChangeHandler<C>(
 ) {
 
     abstract fun applyNewConfiguration(newConfiguration: C, oldConfiguration: C?, resources: ResourcesHolder)
+
+    @Volatile
+    internal var lastConfiguration: C? = null
 }

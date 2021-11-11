@@ -41,7 +41,7 @@ class DominoTile(
     private object StartTile : LifecycleEvent
     private data class StopTile(val dueToError: Boolean) : LifecycleEvent
     private data class ConfigApplied(val configUpdateResult: ConfigUpdateResult) : LifecycleEvent
-    private data class ApplyConfigFromCoordinatorThread(val callback: () -> Unit): LifecycleEvent
+    private data class NewConfig(val config: Config): LifecycleEvent
     private object ResourcesCreated : LifecycleEvent
     enum class State {
         Created,
@@ -122,39 +122,13 @@ class DominoTile(
         }
     }
 
-    private inner class Handler<C>(
-        private val configurationChangeHandler: ConfigurationChangeHandler<C>
-    ) : ConfigurationHandler {
-
-        @Volatile
-        private var lastConfiguration: C? = null
-
-        private fun applyNewConfiguration(newConfiguration: Config) {
-            val configuration = try {
-                configurationChangeHandler.configFactory(newConfiguration)
-            } catch (e: Exception) {
-                configApplied(ConfigUpdateResult.Error(e))
-                return
-            }
-
-            applyConfigFromCoordinatorThread {
-                logger.info("Got configuration $name")
-                if (configuration == lastConfiguration) {
-                    logger.info("Configuration had not changed $name")
-                    configApplied(ConfigUpdateResult.NoUpdate)
-                } else {
-                    configurationChangeHandler.applyNewConfiguration(configuration, lastConfiguration, configResources)
-                    lastConfiguration = configuration
-                    logger.info("Reconfigured $name")
-                }
-            }
-        }
+    private inner class Handler(private val configurationChangeHandler: ConfigurationChangeHandler<*>) : ConfigurationHandler {
 
         override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
             if (changedKeys.contains(configurationChangeHandler.key)) {
                 val newConfiguration = config[configurationChangeHandler.key]
                 if (newConfiguration != null) {
-                    applyNewConfiguration(newConfiguration)
+                    newConfig(newConfiguration)
                 }
             }
         }
@@ -166,8 +140,8 @@ class DominoTile(
     override val isRunning: Boolean
         get() = state == State.Started
 
-    private fun applyConfigFromCoordinatorThread(callback: () -> Unit) {
-        coordinator.postEvent(ApplyConfigFromCoordinatorThread(callback))
+    private fun newConfig(config: Config) {
+        coordinator.postEvent(NewConfig(config))
     }
 
     private fun updateState(newState: State) {
@@ -265,8 +239,8 @@ class DominoTile(
                         }
                     }
                 }
-                is ApplyConfigFromCoordinatorThread -> {
-                    event.callback()
+                is NewConfig -> {
+                    configurationChangeHandler?.let { handleConfigChange(it, event.config) }
                 }
                 else -> logger.warn("Unexpected event $event")
             }
@@ -280,6 +254,28 @@ class DominoTile(
             withLifecycleWriteLock {
                 handleControlEvent(event)
             }
+        }
+    }
+
+    private fun<C> handleConfigChange(configurationChangeHandler: ConfigurationChangeHandler<C>, config: Config) {
+        val newConfiguration = try {
+            configurationChangeHandler.configFactory(config)
+        } catch (e: Exception) {
+            configApplied(ConfigUpdateResult.Error(e))
+            return
+        }
+        logger.info("Got configuration $name")
+        if (newConfiguration == configurationChangeHandler.lastConfiguration) {
+            logger.info("Configuration had not changed $name")
+            configApplied(ConfigUpdateResult.NoUpdate)
+        } else {
+            configurationChangeHandler.applyNewConfiguration(
+                newConfiguration,
+                configurationChangeHandler.lastConfiguration,
+                configResources
+            )
+            configurationChangeHandler.lastConfiguration = newConfiguration
+            logger.info("Reconfigured $name")
         }
     }
 
