@@ -32,14 +32,4 @@ interface VirtualNodeContext {
      * Overwrites existing value.
      */
     fun <T> putObject(key: String, value: T)
-
-    /**
-     * Delete an object from the internal storage for a given key.
-     */
-    fun deleteObject(key: String)
-
-    /**
-     * Returns true if there is an object in internal storage with the given key.
-     */
-    fun exists(key: String) : Boolean
 }
