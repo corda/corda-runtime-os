@@ -3,7 +3,6 @@ package net.corda.crypto.service.persistence
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
-import net.corda.crypto.service.persistence.KafkaInfrastructure.Companion.MNG_CACHE_TOPIC_NAME
 import net.corda.crypto.service.persistence.KafkaInfrastructure.Companion.wait
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.crypto.sha256Bytes
@@ -54,16 +53,18 @@ class KafkaSigningKeysPersistenceSnapshotTests {
             schemeCodeName = "CODE"
         )
 
-        factory = kafka.createFactory {
+        factory = kafka.createFactory(KafkaInfrastructure.customConfig) {
             kafka.publish<SigningPersistentKeyInfo, SigningPersistentKeyInfo>(
+                KafkaInfrastructure.SIGNING_SVC_CLIENT_ID(KafkaInfrastructure.customConfig),
                 null,
-                MNG_CACHE_TOPIC_NAME,
+                KafkaInfrastructure.SIGNING_TOPIC_NAME(KafkaInfrastructure.customConfig),
                 original1.publicKeyHash,
                 KafkaSigningKeyProxy.toRecord(original1)
             )
             kafka.publish<SigningPersistentKeyInfo, SigningPersistentKeyInfo>(
+                KafkaInfrastructure.SIGNING_SVC_CLIENT_ID(KafkaInfrastructure.customConfig),
                 null,
-                MNG_CACHE_TOPIC_NAME,
+                KafkaInfrastructure.SIGNING_TOPIC_NAME(KafkaInfrastructure.customConfig),
                 original2.publicKeyHash,
                 KafkaSigningKeyProxy.toRecord(original2)
             )

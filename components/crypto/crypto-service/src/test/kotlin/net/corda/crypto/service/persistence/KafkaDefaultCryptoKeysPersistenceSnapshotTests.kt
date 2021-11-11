@@ -4,7 +4,6 @@ import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
 import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
-import net.corda.crypto.service.persistence.KafkaInfrastructure.Companion.KEY_CACHE_TOPIC_NAME
 import net.corda.crypto.service.persistence.KafkaInfrastructure.Companion.wait
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -44,16 +43,18 @@ class KafkaDefaultCryptoKeysPersistenceSnapshotTests {
             algorithmName = "algo",
             version = 2
         )
-        factory = kafka.createFactory {
+        factory = kafka.createFactory(KafkaInfrastructure.customConfig) {
             kafka.publish<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>(
+                KafkaInfrastructure.CRYPTO_SVC_CLIENT_ID(KafkaInfrastructure.customConfig),
                 null,
-                KEY_CACHE_TOPIC_NAME,
+                KafkaInfrastructure.CRYPTO_SVC_TOPIC_NAME(KafkaInfrastructure.customConfig),
                 original1.alias,
                 KafkaDefaultCryptoKeyProxy.toRecord(original1)
             )
             kafka.publish<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>(
+                KafkaInfrastructure.CRYPTO_SVC_CLIENT_ID(KafkaInfrastructure.customConfig),
                 null,
-                KEY_CACHE_TOPIC_NAME,
+                KafkaInfrastructure.CRYPTO_SVC_TOPIC_NAME(KafkaInfrastructure.customConfig),
                 original2.alias,
                 KafkaDefaultCryptoKeyProxy.toRecord(original2)
             )
