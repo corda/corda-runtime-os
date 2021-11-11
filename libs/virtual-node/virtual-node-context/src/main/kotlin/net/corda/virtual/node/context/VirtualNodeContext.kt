@@ -25,11 +25,4 @@ interface VirtualNodeContext {
      * Throws [TypeCastException] if the object cannot be cast to the expected type.
      */
     fun <T> getObject(key: String) : T?
-
-    /**
-     * Put an object into the internal storage using the given key.
-     *
-     * Overwrites existing value.
-     */
-    fun <T> putObject(key: String, value: T)
 }
