@@ -13,7 +13,6 @@ import net.corda.libs.permissions.cache.impl.GroupTopicProcessor
 import net.corda.libs.permissions.cache.impl.RoleTopicProcessor
 import net.corda.libs.permissions.cache.impl.UserTopicProcessor
 import net.corda.lifecycle.Lifecycle
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus

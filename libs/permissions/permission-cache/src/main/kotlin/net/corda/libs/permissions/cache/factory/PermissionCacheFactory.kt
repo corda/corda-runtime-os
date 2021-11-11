@@ -5,7 +5,6 @@ import net.corda.data.permissions.Group
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
 import net.corda.libs.permissions.cache.PermissionCache
-import net.corda.lifecycle.LifecycleCoordinator
 
 interface PermissionCacheFactory {
     fun createPermissionCache(
