@@ -61,7 +61,7 @@ class RpcRbacEntitiesTest {
                 linkedSetOf(
                     ClassloaderChangeLog.ChangeLogResourceFiles(
                         fullName,
-                        listOf("$resourcePrefix/migration/rpc-rbac-creation-v1.0.xml"),
+                        listOf("$resourcePrefix/db.changelog-master.xml"),
                         classLoader = schemaClass.classLoader
                     )
                 )
