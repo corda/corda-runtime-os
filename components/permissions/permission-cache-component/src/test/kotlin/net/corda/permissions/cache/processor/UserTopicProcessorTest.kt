@@ -2,11 +2,11 @@ package net.corda.permissions.cache.processor
 
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.test.assertTrue
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.User
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.messaging.api.records.Record
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 
