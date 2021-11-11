@@ -91,7 +91,11 @@ class PermissionValidatorImpl(
             return false
         }
 
-        return performCheckRec(user.roleIds, user.parentGroupId, PermissionUrl.fromUrl(permission))
+        return performCheckRec(
+            user.roleAssociations.map { it.id },
+            user.parentGroupId?.id,
+            PermissionUrl.fromUrl(permission)
+        )
     }
 
     private tailrec fun performCheckRec(
@@ -114,13 +118,13 @@ class PermissionValidatorImpl(
         val allPermissions = roles.flatMap { it.permissions }
 
         // Perform checks, with deny taking priority over allow
-        val (denies, allows) = allPermissions.partition { it.type == PermissionType.DENY }
-        if (denies.any { wildcardMatch(it, permissionRequested) }) {
-            logger.debug { "Explicitly denied by: '${denies.first { wildcardMatch(it, permissionRequested) }}'" }
+        val (denies, allows) = allPermissions.partition { it.permission.type == PermissionType.DENY }
+        if (denies.any { wildcardMatch(it.permission, permissionRequested) }) {
+            logger.debug { "Explicitly denied by: '${denies.first { wildcardMatch(it.permission, permissionRequested) }}'" }
             return false
         }
-        if (allows.any { wildcardMatch(it, permissionRequested) }) {
-            logger.debug { "Explicitly allowed by: '${allows.first { wildcardMatch(it, permissionRequested) }}'" }
+        if (allows.any { wildcardMatch(it.permission, permissionRequested) }) {
+            logger.debug { "Explicitly allowed by: '${allows.first { wildcardMatch(it.permission, permissionRequested) }}'" }
             return true
         }
 
@@ -134,8 +138,8 @@ class PermissionValidatorImpl(
             logger.warn("Group with id: '$parentGroupId' cannot be found")
             return false
         }
-        val rolesIdsForGroup = parentGroup.roleIds
-        return performCheckRec(rolesIdsForGroup, parentGroup.parentGroupId, permissionUrl)
+        val rolesIdsForGroup = parentGroup.roleAssociations.map { it.id }
+        return performCheckRec(rolesIdsForGroup, parentGroup.parentGroupId.id, permissionUrl)
     }
 
     private fun wildcardMatch(existingPermission: Permission, permissionRequested: String): Boolean {
