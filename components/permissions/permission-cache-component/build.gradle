@@ -20,4 +20,8 @@ dependencies {
     implementation project(':libs:permissions:permission-cache')
     implementation project(':libs:permissions:permission-cache-impl')
     implementation project(':libs:configuration:configuration-core')
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 }
