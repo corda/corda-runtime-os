@@ -53,6 +53,7 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
@@ -136,13 +137,14 @@ open class SessionManagerImpl(
         override fun applyNewConfiguration(
             newConfiguration: SessionManagerConfig,
             oldConfiguration: SessionManagerConfig?,
-            resources: ResourcesHolder
+            resources: ResourcesHolder,
+            configUpdateResult: CompletableFuture<Unit>
         ) {
             dominoTile.withLifecycleWriteLock {
                 config.set(newConfiguration)
                 destroyAllSessions()
             }
-            dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
+            configUpdateResult.complete(null)
         }
     }
 
@@ -530,10 +532,11 @@ open class SessionManagerImpl(
             override fun applyNewConfiguration(
                 newConfiguration: HeartbeatManagerConfig,
                 oldConfiguration: HeartbeatManagerConfig?,
-                resources: ResourcesHolder
+                resources: ResourcesHolder,
+                configUpdateResult: CompletableFuture<Unit>
             ) {
                 config.set(newConfiguration)
-                dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
+                configUpdateResult.complete(null)
             }
         }
 
@@ -542,10 +545,10 @@ open class SessionManagerImpl(
             Duration.ofMillis(config.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY)))
         }
 
-        private fun createResources(resources: ResourcesHolder) {
+        private fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
             executorService = Executors.newSingleThreadScheduledExecutor()
             resources.keep(AutoClosableScheduledExecutorService(executorService))
-            dominoTile.resourcesStarted(false)
+            future.complete(null)
         }
 
         @Volatile

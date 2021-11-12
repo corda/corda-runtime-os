@@ -32,6 +32,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.*
+import java.util.concurrent.CompletableFuture
 
 class DeliveryTrackerTest {
 
@@ -59,12 +60,12 @@ class DeliveryTrackerTest {
     }
 
     private val resourcesHolder = mock<ResourcesHolder>()
-    private lateinit var createResources: ((resources: ResourcesHolder) -> Unit)
-    private val lifecycleLockLambdaCaptor = argumentCaptor<() -> Any>()
+    private lateinit var createResources: ((resources: ResourcesHolder, CompletableFuture<Unit>) -> Unit)
     private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
-        whenever(mock.withLifecycleLock(lifecycleLockLambdaCaptor.capture())).doAnswer { lifecycleLockLambdaCaptor.lastValue.invoke() }
         @Suppress("UNCHECKED_CAST")
-        createResources = context.arguments()[2] as ((ResourcesHolder) -> Unit)
+        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
+        @Suppress("UNCHECKED_CAST")
+        createResources = context.arguments()[2] as ((ResourcesHolder, CompletableFuture<Unit>) -> Unit)
     }
 
     private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java)
@@ -109,7 +110,7 @@ class DeliveryTrackerTest {
             mock(),
             ::processAuthenticatedMessage
         )
-        createResources(resourcesHolder)
+        createResources(resourcesHolder, mock())
 
         val processorCaptor = argumentCaptor<StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker>>()
         val listenerCaptor = argumentCaptor<StateAndEventListener<String, AuthenticatedMessageDeliveryState>>()

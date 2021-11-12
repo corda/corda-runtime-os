@@ -66,7 +66,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -180,15 +179,15 @@ class LinkManagerTest {
         }
     }
 
-    private var createResources: ((resources: ResourcesHolder) -> Unit)? = null
-    private val lifecycleLockLambdaCaptor = argumentCaptor<() -> Any>()
+    private var createResources: ((resources: ResourcesHolder, CompletableFuture<Unit>) -> Unit)? = null
     private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
-        whenever(mock.withLifecycleLock(lifecycleLockLambdaCaptor.capture())).doAnswer { lifecycleLockLambdaCaptor.lastValue.invoke() }
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         whenever(mock.isRunning).doReturn(true)
         @Suppress("UNCHECKED_CAST")
         whenever(mock.name).doReturn(LifecycleCoordinatorName(context.arguments()[0] as String, ""))
         @Suppress("UNCHECKED_CAST")
-        createResources = context.arguments()[2] as ((ResourcesHolder) -> Unit)?
+        createResources = context.arguments()[2] as ((resources: ResourcesHolder, future: CompletableFuture<Unit>) -> Unit)?
     }
 
     @AfterEach
@@ -256,7 +255,7 @@ class LinkManagerTest {
     }
 
     private fun assignedListener(partitions: List<Int>): InboundAssignmentListener {
-        val listener = InboundAssignmentListener {}
+        val listener = InboundAssignmentListener(mock())
         for (partition in partitions) {
             listener.onPartitionsAssigned(listOf(Schema.LINK_IN_TOPIC to partition))
         }
@@ -296,7 +295,7 @@ class LinkManagerTest {
 
         val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, mock(), mock())
         queue.start()
-        createResources!!(mock())
+        createResources!!(mock(), mock())
 
         queue.queueMessage(message1, key1)
         queue.queueMessage(message2, key1)
@@ -331,7 +330,7 @@ class LinkManagerTest {
 
         val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), mock(), mock(), mock())
         val resourcesHolder = mock<ResourcesHolder>()
-        linkManager.createInboundResources(resourcesHolder)
+        linkManager.createInboundResources(resourcesHolder, mock())
         verify(subscription).start()
         verify(resourcesHolder).keep(subscription)
     }
@@ -341,12 +340,16 @@ class LinkManagerTest {
         val deliveryTracker = Mockito.mockConstruction(DeliveryTracker::class.java) { _, _ -> }
         val subscription = mock<EventLogSubscription<String, AppMessage>>()
         val subscriptionFactory = mock<SubscriptionFactory> {
+            //Used in createOutboundResources
             on {createEventLogSubscription<String, AppMessage>(any(), any(), any(), eq(null)) } doReturn subscription
+            //Used in createInboundResources
+            on {createEventLogSubscription<String, AppMessage>(any(), any(), any(), any()) } doReturn mock()
         }
 
         val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), mock(), mock(), mock())
         val resourcesHolder = mock<ResourcesHolder>()
-        linkManager.createOutboundResources(resourcesHolder)
+        linkManager.createInboundResources(mock(), mock())
+        linkManager.createOutboundResources(resourcesHolder, mock())
         verify(subscription).start()
         verify(resourcesHolder).keep(subscription)
         val constructedDeliveryTracker = deliveryTracker.constructed().last()

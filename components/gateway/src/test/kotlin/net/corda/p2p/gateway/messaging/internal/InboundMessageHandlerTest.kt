@@ -66,9 +66,9 @@ class InboundMessageHandlerTest {
     private val sessionPartitionMapper = mockConstruction(SessionPartitionMapperImpl::class.java)
     private val p2pInPublisher = mockConstruction(PublisherWithDominoLogic::class.java)
 
-    private val lifecycleLockLambdaCaptor = argumentCaptor<() -> Any>()
     private val dominoTile = mockConstruction(DominoTile::class.java) { mock, _ ->
-        whenever(mock.withLifecycleLock(lifecycleLockLambdaCaptor.capture())).doAnswer {lifecycleLockLambdaCaptor.lastValue.invoke()}
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
     }
 
     private val handler = InboundMessageHandler(

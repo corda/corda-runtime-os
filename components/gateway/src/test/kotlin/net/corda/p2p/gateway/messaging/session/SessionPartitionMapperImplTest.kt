@@ -1,11 +1,8 @@
 package net.corda.p2p.gateway.messaging.session
 
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -15,45 +12,47 @@ import net.corda.p2p.SessionPartitions
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.CompletableFuture
 
 class SessionPartitionMapperImplTest {
 
     private var processor = argumentCaptor<CompactedProcessor<String, SessionPartitions>>()
-    private val handler = argumentCaptor<LifecycleEventHandler>()
-    private val coordinator = mock<LifecycleCoordinator> {
-        on { postEvent(any()) } doAnswer {
-            handler.lastValue.processEvent(it.getArgument(0) as LifecycleEvent, mock)
-        }
-    }
-    private val factory = mock<LifecycleCoordinatorFactory> {
-        on { createCoordinator(any(), handler.capture()) } doReturn coordinator
-    }
+    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java)
+
+    private val factory = mock<LifecycleCoordinatorFactory>()
     private val subscription = mock<CompactedSubscription<String, SessionPartitions>>()
 
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on { createCompactedSubscription(any(), processor.capture(), any()) } doReturn subscription
     }
+    private val future = mock<CompletableFuture<Unit>>()
     private val resourcesHolder = mock<ResourcesHolder>()
     private val config = SmartConfigImpl.empty()
 
+    @AfterEach
+    fun cleanUp() {
+        dominoTile.close()
+    }
+
     @Test
     fun `session partition mapping is calculated successfully`() {
-        doReturn(LifecycleStatus.UP).whenever(coordinator).status
         val partitionsMapping = mapOf(
             "1" to SessionPartitions(listOf(1, 2)),
             "2" to SessionPartitions(listOf(3, 4))
         )
 
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
-        sessionPartitionMapper.start()
+        doReturn(true).whenever(dominoTile.constructed().last()).isRunning
+        sessionPartitionMapper.createResources(mock(), mock())
 
         processor.firstValue.onSnapshot(partitionsMapping)
 
@@ -70,40 +69,45 @@ class SessionPartitionMapperImplTest {
     fun `getPartitions cannot be invoked, when component is not running`() {
         val sessionId = "test-session-id"
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
+        sessionPartitionMapper.createResources(mock(), mock())
 
         assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
             .isInstanceOf(IllegalStateException::class.java)
 
-        processor.firstValue.onSnapshot(emptyMap())
+        doReturn(true).whenever(dominoTile.constructed().last()).isRunning
 
         assertThat(sessionPartitionMapper.getPartitions(sessionId)).isNull()
 
-        sessionPartitionMapper.stop()
+        doReturn(false).whenever(dominoTile.constructed().last()).isRunning
 
         assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
             .isInstanceOf(IllegalStateException::class.java)
     }
 
     @Test
-    fun `createResources will start the subscription`() {
+    fun `createResources will start the subscription and add it to the resource holder`() {
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
 
-        sessionPartitionMapper.createResources(resourcesHolder)
+        sessionPartitionMapper.createResources(resourcesHolder, future)
 
         verify(subscription).start()
+        verify(resourcesHolder).keep(subscription)
     }
 
     @Test
-    fun `stop will stop the subscription`() {
+    fun `onSnapshot will complete the resource created future`() {
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
-        sessionPartitionMapper.start()
-        sessionPartitionMapper.stop()
-        verify(subscription).stop()
+        sessionPartitionMapper.createResources(resourcesHolder, future)
+
+        processor.firstValue.onSnapshot(emptyMap())
+        verify(future).complete(null)
     }
 
     @Test
     fun `empty record will remove the partition`() {
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
+        doReturn(true).whenever(dominoTile.constructed().last()).isRunning
+        sessionPartitionMapper.createResources(mock(), mock())
         processor.firstValue.onSnapshot(mapOf("session" to SessionPartitions(listOf(3))))
 
         processor.firstValue.onNext(Record(SESSION_OUT_PARTITIONS, "session", null), null, emptyMap())

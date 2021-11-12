@@ -17,25 +17,26 @@ import java.lang.IllegalStateException
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
+import java.util.concurrent.CompletableFuture
 
 class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-                        subscriptionFactory: SubscriptionFactory): LinkManagerCryptoService {
+                        private val subscriptionFactory: SubscriptionFactory): LinkManagerCryptoService {
 
     companion object {
         val logger = contextLogger()
     }
 
-    private val keyPairEntryProcessor = KeyPairEntryProcessor()
-    private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC)
-    private val subscription =
-        subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor)
+    private val keys = mutableMapOf<String, KeyPair>()
 
     private val rsaSignature = Signature.getInstance(RSA_SIGNATURE_ALGO)
     private val ecdsaSignature = Signature.getInstance(ECDSA_SIGNATURE_ALGO)
 
     override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
 
-    private fun createResources(resources: ResourcesHolder) {
+    private fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
+        val keyPairEntryProcessor = KeyPairEntryProcessor(future)
+        val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC)
+        val subscription = subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor)
         subscription.start()
         resources.keep {
             subscription.stop()
@@ -48,7 +49,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
                 throw IllegalStateException("signData operation invoked while component was stopped.")
             }
 
-            val (privateKey, keyAlgo) = keyPairEntryProcessor.getPrivateKey(publicKey)
+            val (privateKey, keyAlgo) = getPrivateKey(publicKey)
                 ?: throw LinkManagerCryptoService.NoPrivateKeyForGroupException(publicKey)
 
             return@withLifecycleLock when (keyAlgo) {
@@ -70,9 +71,24 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
         }
     }
 
-    private inner class KeyPairEntryProcessor: CompactedProcessor<String, KeyPairEntry> {
+    private fun getPrivateKey(publicKey: PublicKey): Pair<PrivateKey, KeyAlgorithm>? {
+        val matchedKeys = keys.filterValues { it.publicKey == publicKey }
 
-        private val keys = mutableMapOf<String, KeyPair>()
+        if (matchedKeys.isEmpty()) {
+            logger.warn("No private key found for public key: ${publicKey.encoded}")
+            return null
+        }
+
+        if (matchedKeys.size > 1) {
+            logger.warn("Multiple keys found for public key: ${publicKey.encoded}. Using first ...")
+        }
+
+        val entry = matchedKeys.entries.first().value
+        return entry.privateKey to entry.keyAlgo
+    }
+
+    private inner class KeyPairEntryProcessor(private val readyFuture: CompletableFuture<Unit>): CompactedProcessor<String, KeyPairEntry> {
+
         private val keyDeserialiser = KeyDeserialiser()
 
         override val keyClass: Class<String>
@@ -80,21 +96,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
         override val valueClass: Class<KeyPairEntry>
             get() = KeyPairEntry::class.java
 
-        fun getPrivateKey(publicKey: PublicKey): Pair<PrivateKey, KeyAlgorithm>? {
-            val matchedKeys = keys.filterValues { it.publicKey == publicKey }
 
-            if (matchedKeys.isEmpty()) {
-                logger.warn("No private key found for public key: ${publicKey.encoded}")
-                return null
-            }
-
-            if (matchedKeys.size > 1) {
-                logger.warn("Multiple keys found for public key: ${publicKey.encoded}. Using first ...")
-            }
-
-            val entry = matchedKeys.entries.first().value
-            return entry.privateKey to entry.keyAlgo
-        }
 
         override fun onSnapshot(currentData: Map<String, KeyPairEntry>) {
             currentData.forEach { (alias, keyPairEntry) ->
@@ -102,7 +104,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
                 val publicKey = keyDeserialiser.toPublicKey(keyPairEntry.publicKey.array(), keyPairEntry.keyAlgo)
                 keys[alias] = KeyPair(keyPairEntry.keyAlgo, privateKey, publicKey)
             }
-            dominoTile.resourcesStarted(false)
+            readyFuture.complete(null)
         }
 
         override fun onNext(newRecord: Record<String, KeyPairEntry>,

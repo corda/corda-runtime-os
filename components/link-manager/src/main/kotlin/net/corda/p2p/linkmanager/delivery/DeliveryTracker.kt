@@ -25,6 +25,7 @@ import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema
 import org.slf4j.LoggerFactory
+import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
 class DeliveryTracker(
@@ -62,7 +63,7 @@ class DeliveryTracker(
         )
     )
 
-    private fun createResources(resources: ResourcesHolder) {
+    private fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
         val messageTracker = MessageTracker(replayScheduler)
         val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("message-tracker-group", Schema.P2P_OUT_MARKERS, 1),
@@ -71,7 +72,7 @@ class DeliveryTracker(
             messageTracker.listener
         )
         resources.keep(messageTrackerSubscription)
-        dominoTile.resourcesStarted(false)
+        future.complete(null)
     }
 
     private class AppMessageReplayer(

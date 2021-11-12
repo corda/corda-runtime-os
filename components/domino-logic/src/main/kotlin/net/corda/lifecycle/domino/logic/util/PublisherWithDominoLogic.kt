@@ -22,7 +22,7 @@ class PublisherWithDominoLogic(
 
     override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources)
 
-    private fun createResources(resources: ResourcesHolder) {
+    private fun createResources(resources: ResourcesHolder, resourceReady: CompletableFuture<Unit>) {
         val publisherConfig = PublisherConfig(publisherId)
         publisher = publisherFactory.createPublisher(
             publisherConfig,
@@ -34,7 +34,7 @@ class PublisherWithDominoLogic(
             }
             it.start()
         }
-        dominoTile.resourcesStarted(false)
+        resourceReady.complete(null)
     }
 
     fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {

@@ -3,6 +3,9 @@ package net.corda.p2p.linkmanager
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import java.util.concurrent.CompletableFuture
 
 class InboundAssignmentListenerTest {
 
@@ -13,7 +16,7 @@ class InboundAssignmentListenerTest {
 
     @Test
     fun `Partitions can be assigned and reassigned`() {
-        val listener = InboundAssignmentListener {}
+        val listener = InboundAssignmentListener(mock())
         assertEquals(0, listener.getCurrentlyAssignedPartitions(TOPIC_1).size)
         val assign1 = listOf(1, 3, 5)
         val assign2 = listOf(2, 3, 4)
@@ -27,9 +30,9 @@ class InboundAssignmentListenerTest {
     }
 
     @Test
-    fun `Callback is called once when partitions are assigned`() {
-        var callbackCalls = 0
-        val listener = InboundAssignmentListener {callbackCalls++}
+    fun `the future completes when partitions are assigned`() {
+        val future = mock<CompletableFuture<Unit>>()
+        val listener = InboundAssignmentListener(future)
         assertEquals(0, listener.getCurrentlyAssignedPartitions(TOPIC_1).size)
         val assign1 = listOf(1, 3, 5)
         val assign2 = listOf(2, 3, 4)
@@ -37,6 +40,6 @@ class InboundAssignmentListenerTest {
         listener.onPartitionsAssigned(firstAssignment)
         val secondAssignment = assign2.map { TOPIC_1 to it } + assign1.map { TOPIC_2 to it }
         listener.onPartitionsAssigned(secondAssignment)
-        assertEquals(1, callbackCalls)
+        verify(future).complete(null)
     }
 }

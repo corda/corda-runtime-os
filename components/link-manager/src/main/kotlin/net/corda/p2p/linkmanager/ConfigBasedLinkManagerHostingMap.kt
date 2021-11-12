@@ -10,6 +10,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -40,29 +41,23 @@ class ConfigBasedLinkManagerHostingMap(
         override fun applyNewConfiguration(
             newConfiguration: Set<LinkManagerNetworkMap.HoldingIdentity>,
             oldConfiguration: Set<LinkManagerNetworkMap.HoldingIdentity>?,
-            resources: ResourcesHolder
+            resources: ResourcesHolder,
+            configUpdateResult: CompletableFuture<Unit>
         ) {
             val oldIdentities = (oldConfiguration ?: emptySet())
             val identitiesToAdd = newConfiguration - oldIdentities
             val identitiesToRemove = oldIdentities - newConfiguration
             locallyHostedIdentities.removeAll(identitiesToRemove)
             locallyHostedIdentities.addAll(identitiesToAdd)
-            dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
+            configUpdateResult.complete(null)
         }
     }
 
     private fun fromConfig(config: Config): Set<LinkManagerNetworkMap.HoldingIdentity> {
         val holdingIdentitiesConfig = config.getConfigList(LOCALLY_HOSTED_IDENTITIES_KEY)
-        if (holdingIdentitiesConfig == null) {
-            dominoTile.configApplied(
-                DominoTile.ConfigUpdateResult.Error(
-                    InvalidLinkManagerConfigException(
-                        "Invalid LinkManager config. getConfigList with key = $LOCALLY_HOSTED_IDENTITIES_KEY returned null."
-                    )
-                )
+            ?: throw InvalidLinkManagerConfigException(
+                "Invalid LinkManager config. getConfigList with key = $LOCALLY_HOSTED_IDENTITIES_KEY returned null."
             )
-            return emptySet()
-        }
         val holdingIdentities = holdingIdentitiesConfig.map { identityConfig ->
             val x500name = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_X500_NAME)
             val groupId = identityConfig.getString(LOCALLY_HOSTED_IDENTITY_GPOUP_ID)

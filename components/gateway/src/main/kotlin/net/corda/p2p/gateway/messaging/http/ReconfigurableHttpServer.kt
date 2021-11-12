@@ -12,6 +12,7 @@ import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.v5.base.util.contextLogger
 import java.net.SocketAddress
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
@@ -51,7 +52,8 @@ class ReconfigurableHttpServer(
         override fun applyNewConfiguration(
             newConfiguration: GatewayConfiguration,
             oldConfiguration: GatewayConfiguration?,
-            resources: ResourcesHolder
+            resources: ResourcesHolder,
+            configUpdateResult: CompletableFuture<Unit>
         ) {
             @Suppress("TooGenericExceptionCaught")
             try {
@@ -79,9 +81,9 @@ class ReconfigurableHttpServer(
                         httpServer = newServer
                     }
                 }
-                this@ReconfigurableHttpServer.dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
+                configUpdateResult.complete(null)
             } catch (e: Throwable) {
-                this@ReconfigurableHttpServer.dominoTile.configApplied(DominoTile.ConfigUpdateResult.Error(e))
+                configUpdateResult.completeExceptionally(e)
             }
         }
     }

@@ -11,6 +11,7 @@ import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.v5.base.util.contextLogger
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -50,15 +51,20 @@ class ReplayScheduler<M>(
     inner class ReplaySchedulerConfigurationChangeHandler: ConfigurationChangeHandler<Duration>(configReadService,
         replayPeriodKey,
         ::fromConfig) {
-        override fun applyNewConfiguration(newConfiguration: Duration, oldConfiguration: Duration?, resources: ResourcesHolder) {
+        override fun applyNewConfiguration(
+            newConfiguration: Duration,
+            oldConfiguration: Duration?,
+            resources: ResourcesHolder,
+            configUpdateResult: CompletableFuture<Unit>
+        ) {
             if (newConfiguration.isNegative) {
-                dominoTile.configApplied(DominoTile.ConfigUpdateResult.Error(
+                configUpdateResult.completeExceptionally(
                     IllegalArgumentException("The duration configuration (with key $replayPeriod) must be positive.")
-                ))
+                )
                 return
             }
             replayPeriod.set(newConfiguration)
-            dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
+            configUpdateResult.complete(null)
         }
     }
 
@@ -66,10 +72,10 @@ class ReplayScheduler<M>(
         return config.getDuration(replayPeriodKey)
     }
 
-    private fun createResources(resources: ResourcesHolder) {
+    private fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
         executorService = Executors.newSingleThreadScheduledExecutor()
         resources.keep(AutoClosableScheduledExecutorService(executorService))
-        dominoTile.resourcesStarted(false)
+        future.complete(null)
     }
 
     fun addForReplay(originalAttemptTimestamp: Long, uniqueId: String, message: M) {

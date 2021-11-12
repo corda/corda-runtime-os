@@ -11,12 +11,13 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.SessionPartitions
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
 class SessionPartitionMapperImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    subscriptionFactory: SubscriptionFactory,
-    nodeConfiguration: SmartConfig,
+    private val subscriptionFactory: SubscriptionFactory,
+    private val nodeConfiguration: SmartConfig,
 ) : SessionPartitionMapper, LifecycleWithDominoTile {
 
     companion object {
@@ -24,14 +25,7 @@ class SessionPartitionMapperImpl(
     }
 
     private val sessionPartitionsMapping = ConcurrentHashMap<String, List<Int>>()
-    private val processor = SessionPartitionProcessor()
     override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
-
-    private val sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(
-        SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS),
-        processor,
-        nodeConfiguration
-    )
 
     override fun getPartitions(sessionId: String): List<Int>? {
         return if (!isRunning) {
@@ -41,7 +35,7 @@ class SessionPartitionMapperImpl(
         }
     }
 
-    private inner class SessionPartitionProcessor :
+    private inner class SessionPartitionProcessor(private val readyFuture: CompletableFuture<Unit>) :
         CompactedProcessor<String, SessionPartitions> {
         override val keyClass: Class<String>
             get() = String::class.java
@@ -50,7 +44,7 @@ class SessionPartitionMapperImpl(
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
-            dominoTile.resourcesStarted(false)
+            readyFuture.complete(null)
         }
 
         override fun onNext(
@@ -66,10 +60,13 @@ class SessionPartitionMapperImpl(
         }
     }
 
-    fun createResources(resources: ResourcesHolder) {
+    fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
+        val sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(
+            SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS),
+            SessionPartitionProcessor(future),
+            nodeConfiguration
+        )
         sessionPartitionSubscription.start()
-        resources.keep {
-            sessionPartitionSubscription.stop()
-        }
+        resources.keep(sessionPartitionSubscription)
     }
 }

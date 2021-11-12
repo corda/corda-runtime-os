@@ -1,11 +1,12 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-class InboundAssignmentListener(private val resourceStartedCallback: () -> Any): PartitionAssignmentListener {
+class InboundAssignmentListener(private val future: CompletableFuture<Unit>): PartitionAssignmentListener {
 
     private val lock = ReentrantReadWriteLock()
     private val topicToPartition = mutableMapOf<String, MutableSet<Int>>()
@@ -23,7 +24,7 @@ class InboundAssignmentListener(private val resourceStartedCallback: () -> Any):
         lock.write {
             if (firstAssignment) {
                 firstAssignment = false
-                resourceStartedCallback()
+                future.complete(null)
             }
             for ((topic, partition) in topicPartitions) {
                 val partitionSet = topicToPartition.computeIfAbsent(topic) { mutableSetOf() }

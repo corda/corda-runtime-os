@@ -21,6 +21,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.net.InetSocketAddress
+import java.util.concurrent.CompletableFuture
 
 class ReconfigurableHttpServerTest {
     private val coordinatorHandler = argumentCaptor<LifecycleEventHandler>()
@@ -34,6 +35,7 @@ class ReconfigurableHttpServerTest {
     }
     private val configurationReaderService = mock<ConfigurationReadService>()
     private val listener = mock<HttpServerListener>()
+    private val future = mock<CompletableFuture<Unit>>()
     private val resourcesHolder = mock<ResourcesHolder>()
     private val address = InetSocketAddress("www.r3.com", 30)
     private val serverMock = mockConstruction(HttpServer::class.java)
@@ -77,7 +79,7 @@ class ReconfigurableHttpServerTest {
 
     @Test
     fun `writeResponse will write to server if ready`() {
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder, future)
 
         server.writeResponse(HttpResponseStatus.CREATED, address)
 
@@ -86,29 +88,29 @@ class ReconfigurableHttpServerTest {
 
     @Test
     fun `applyNewConfiguration will start a new server`() {
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder, future)
 
         verify(serverMock.constructed().first()).start()
     }
 
     @Test
     fun `applyNewConfiguration sets configApplied`() {
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder, future)
 
-        verify(dominoTile.constructed().last()).configApplied(DominoTile.ConfigUpdateResult.Success)
+        verify(future).complete(null)
     }
 
     @Test
     fun `applyNewConfiguration sets configApplied if bad config`() {
-        configHandler.applyNewConfiguration(badConfiguration, null, resourcesHolder)
+        configHandler.applyNewConfiguration(badConfiguration, null, resourcesHolder, future)
 
-        verify(dominoTile.constructed().last()).configApplied(DominoTile.ConfigUpdateResult.Error(badConfigurationException))
+        verify(future).completeExceptionally(badConfigurationException)
     }
 
     @Test
     fun `applyNewConfiguration will stop the previous server`() {
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
-        configHandler.applyNewConfiguration(configuration.copy(hostAddress = "aaa"), configuration, resourcesHolder)
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder, future)
+        configHandler.applyNewConfiguration(configuration.copy(hostAddress = "aaa"), configuration, resourcesHolder, future)
 
         verify(serverMock.constructed().first()).stop()
         verify(serverMock.constructed()[1]).start()
@@ -116,8 +118,8 @@ class ReconfigurableHttpServerTest {
 
     @Test
     fun `applyNewConfiguration will stop the previous server in different port`() {
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
-        configHandler.applyNewConfiguration(configuration.copy(hostPort = 13), configuration, resourcesHolder)
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder, future)
+        configHandler.applyNewConfiguration(configuration.copy(hostPort = 13), configuration, resourcesHolder, future)
 
         verify(serverMock.constructed().first()).stop()
         verify(serverMock.constructed()[1]).start()
@@ -125,7 +127,7 @@ class ReconfigurableHttpServerTest {
 
     @Test
     fun `applyNewConfiguration keeps the sever in the resource holder`() {
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder, future)
 
         verify(resourcesHolder).keep(serverMock.constructed().last())
     }

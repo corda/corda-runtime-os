@@ -16,19 +16,22 @@ import net.corda.p2p.test.NetworkMapEntry
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.nio.ByteBuffer
 import java.security.MessageDigest
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
 class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-                     subscriptionFactory: SubscriptionFactory): LinkManagerNetworkMap {
+                     private val subscriptionFactory: SubscriptionFactory): LinkManagerNetworkMap {
 
-    private val processor = NetworkMapEntryProcessor()
-    private val subscriptionConfig = SubscriptionConfig("network-map", TestSchema.NETWORK_MAP_TOPIC)
-    private val subscription = subscriptionFactory.createCompactedSubscription(subscriptionConfig, processor)
     private val keyDeserialiser = KeyDeserialiser()
+    private val netMapEntriesByGroupIdPublicKeyHash = ConcurrentHashMap<String, ConcurrentHashMap<ByteBuffer, NetworkMapEntry>>()
+    private val netmapEntriesByHoldingIdentity = ConcurrentHashMap<LinkManagerNetworkMap.HoldingIdentity, NetworkMapEntry>()
 
     override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
 
-    private fun createResources(resources: ResourcesHolder) {
+    private fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
+        val processor = NetworkMapEntryProcessor(future)
+        val subscriptionConfig = SubscriptionConfig("network-map", TestSchema.NETWORK_MAP_TOPIC)
+        val subscription = subscriptionFactory.createCompactedSubscription(subscriptionConfig, processor)
         subscription.start()
         resources.keep (subscription)
     }
@@ -40,7 +43,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                 throw IllegalStateException("getMemberInfo operation invoked while component was stopped.")
             }
 
-            processor.netmapEntriesByHoldingIdentity[holdingIdentity]?.toMemberInfo()
+            netmapEntriesByHoldingIdentity[holdingIdentity]?.toMemberInfo()
         }
     }
 
@@ -50,7 +53,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                 throw IllegalStateException("getMemberInfo operation invoked while component was stopped.")
             }
 
-            processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.get(ByteBuffer.wrap(hash))?.toMemberInfo()
+            netMapEntriesByGroupIdPublicKeyHash[groupId]?.get(ByteBuffer.wrap(hash))?.toMemberInfo()
         }
     }
 
@@ -60,7 +63,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                 throw IllegalStateException("getNetworkType operation invoked while component was stopped.")
             }
 
-            processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.first()?.networkType?.toLMNetworkType()
+            netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.first()?.networkType?.toLMNetworkType()
         }
     }
 
@@ -87,12 +90,11 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
         }
     }
 
-    private inner class NetworkMapEntryProcessor: CompactedProcessor<String, NetworkMapEntry> {
+    private inner class NetworkMapEntryProcessor(
+        private val readyFuture: CompletableFuture<Unit>
+        ): CompactedProcessor<String, NetworkMapEntry> {
 
         private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
-
-        val netMapEntriesByGroupIdPublicKeyHash = ConcurrentHashMap<String, ConcurrentHashMap<ByteBuffer, NetworkMapEntry>>()
-        val netmapEntriesByHoldingIdentity = ConcurrentHashMap<LinkManagerNetworkMap.HoldingIdentity, NetworkMapEntry>()
 
         override val keyClass: Class<String>
             get() = String::class.java
@@ -101,7 +103,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 
         override fun onSnapshot(currentData: Map<String, NetworkMapEntry>) {
             currentData.forEach { (_, networkMapEntry) -> addEntry(networkMapEntry) }
-            dominoTile.resourcesStarted(false)
+            readyFuture.complete(null)
         }
 
         override fun onNext(
@@ -139,8 +141,5 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
             messageDigest.update(publicKey)
             return messageDigest.digest()
         }
-
     }
-
-
 }

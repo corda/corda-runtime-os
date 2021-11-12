@@ -10,6 +10,7 @@ import net.corda.p2p.gateway.Gateway.Companion.CONFIG_KEY
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.v5.base.util.contextLogger
+import java.util.concurrent.CompletableFuture
 
 class ReconfigurableConnectionManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -54,7 +55,8 @@ class ReconfigurableConnectionManager(
         override fun applyNewConfiguration(
             newConfiguration: GatewayConfiguration,
             oldConfiguration: GatewayConfiguration?,
-            resources: ResourcesHolder
+            resources: ResourcesHolder,
+            configUpdateResult: CompletableFuture<Unit>
         ) {
             @Suppress("TooGenericExceptionCaught")
             try {
@@ -68,10 +70,10 @@ class ReconfigurableConnectionManager(
                     manager = null
                     oldManager?.close()
                     manager = newManager
-                    this@ReconfigurableConnectionManager.dominoTile.configApplied(DominoTile.ConfigUpdateResult.Success)
+                    configUpdateResult.complete(null)
                 }
             } catch (e: Throwable) {
-                this@ReconfigurableConnectionManager.dominoTile.configApplied(DominoTile.ConfigUpdateResult.Error(e))
+                configUpdateResult.completeExceptionally(e)
             }
         }
     }

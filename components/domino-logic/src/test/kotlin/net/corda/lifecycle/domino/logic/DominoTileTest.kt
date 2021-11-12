@@ -31,6 +31,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.IOException
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 
 class DominoTileTest {
@@ -196,25 +197,6 @@ class DominoTileTest {
 
             assertThat(tile.state).isNotEqualTo(DominoTile.State.Started)
         }
-
-        @Test
-        fun `gotError will set the state to error`() {
-            val tile = tile()
-            tile.start()
-
-            tile.resourcesStarted(true)
-
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
-        }
-
-        @Test
-        fun `gotError for the second time will not throw an exception`() {
-            val tile = tile()
-            tile.start()
-            tile.resourcesStarted(true)
-
-            tile.resourcesStarted(true)
-        }
     }
 
     @Nested
@@ -224,8 +206,8 @@ class DominoTileTest {
         fun `startTile called createResource`() {
             var createResourceCalled = 0
             @Suppress("UNUSED_PARAMETER")
-            fun createResources(resources: ResourcesHolder) {
-                createResourceCalled ++
+            fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
+                createResourceCalled++
             }
 
             val tile = DominoTile(TILE_NAME, factory, ::createResources)
@@ -237,8 +219,8 @@ class DominoTileTest {
         @Test
         fun `startTile will set error if created resource failed`() {
             @Suppress("UNUSED_PARAMETER")
-            fun createResources(resources: ResourcesHolder) {
-                throw IOException("")
+            fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
+                future.completeExceptionally(IOException(""))
             }
             val tile = DominoTile(TILE_NAME, factory, ::createResources)
             tile.start()
@@ -248,32 +230,41 @@ class DominoTileTest {
 
         @Test
         fun `startTile will not set started until resources are created`() {
+            var outerFuture: CompletableFuture<Unit>? = null
             @Suppress("UNUSED_PARAMETER")
-            fun createResources(resources: ResourcesHolder) { }
+            fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
+                outerFuture = future
+            }
             val tile = DominoTile(TILE_NAME, factory, ::createResources)
             tile.start()
 
             assertThat(tile.state).isEqualTo(DominoTile.State.Created)
-            tile.resourcesStarted(false)
+            outerFuture!!.complete(null)
             assertThat(tile.state).isEqualTo(DominoTile.State.Started)
         }
 
         @Test
         fun `if an error occurs when resources are created the the the tile will error`() {
+            var outerFuture: CompletableFuture<Unit>? = null
             @Suppress("UNUSED_PARAMETER")
-            fun createResources(resources: ResourcesHolder) { }
+            fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
+                outerFuture = future
+            }
             val tile = DominoTile(TILE_NAME, factory, ::createResources)
             tile.start()
 
             assertThat(tile.state).isEqualTo(DominoTile.State.Created)
-            tile.resourcesStarted(true)
+            outerFuture!!.completeExceptionally(RuntimeException("Ohh no"))
             assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
         }
 
         @Test
         fun `startTile, stopTile, startTile will not restart the tile until resources are created`() {
+            var outerFuture: CompletableFuture<Unit>? = null
             @Suppress("UNUSED_PARAMETER")
-            fun createResources(resources: ResourcesHolder) { }
+            fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
+                outerFuture = future
+            }
             val tile = DominoTile(TILE_NAME, factory, ::createResources)
             tile.start()
             tile.stop()
@@ -281,7 +272,7 @@ class DominoTileTest {
             assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
             tile.start()
             assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
-            tile.resourcesStarted(false)
+            outerFuture!!.complete(null)
             assertThat(tile.state).isEqualTo(DominoTile.State.Started)
         }
 
@@ -289,7 +280,7 @@ class DominoTileTest {
         fun `stopTile will close all the resources`() {
             val actions = mutableListOf<Int>()
             @Suppress("UNUSED_PARAMETER")
-            fun createResources(resources: ResourcesHolder) {
+            fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
                 resources.keep {
                     actions.add(1)
                 }
@@ -310,8 +301,8 @@ class DominoTileTest {
         @Test
         fun `stopTile will ignore error during stop`() {
             val actions = mutableListOf<Int>()
-
-            fun createResources(resources: ResourcesHolder) {
+            @Suppress("UNUSED_PARAMETER")
+            fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
                 resources.keep {
                     actions.add(1)
                 }
@@ -332,7 +323,8 @@ class DominoTileTest {
         @Test
         fun `stopTile will not run the same actions again`() {
             val actions = mutableListOf<Int>()
-            fun createResources(resources: ResourcesHolder) {
+            @Suppress("UNUSED_PARAMETER")
+            fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
                 resources.keep {
                     actions.add(1)
                 }
@@ -350,11 +342,11 @@ class DominoTileTest {
         @Test
         fun `second start will not restart anything`() {
             val called = AtomicInteger(0)
-            val tile = DominoTile(TILE_NAME, factory, createResources = {
+            val tile = DominoTile(TILE_NAME, factory, createResources = { _, future ->
                 called.incrementAndGet()
+                future.complete(null)
             })
             tile.start()
-            tile.resourcesStarted(false)
 
             tile.start()
 
@@ -364,11 +356,11 @@ class DominoTileTest {
         @Test
         fun `second start will not recreate the resources if it had errors`() {
             val called = AtomicInteger(0)
-            val tile = DominoTile(TILE_NAME, factory, createResources = {
+            val tile = DominoTile(TILE_NAME, factory, createResources = { _, future ->
                 called.incrementAndGet()
+                future.completeExceptionally(RuntimeException("Ohh no"))
             })
             tile.start()
-            tile.resourcesStarted(true)
 
             tile.start()
 
@@ -378,13 +370,12 @@ class DominoTileTest {
         @Test
         fun `second start will recreate the resources if it was stopped`() {
             val called = AtomicInteger(0)
-            val tile = DominoTile(TILE_NAME, factory, createResources = {
+            val tile = DominoTile(TILE_NAME, factory, createResources = { _, _ ->
                 called.incrementAndGet()
             })
-            tile.start()
-            tile.resourcesStarted(false)
-            tile.stop()
 
+            tile.start()
+            tile.stop()
             tile.start()
 
             assertThat(called).hasValue(2)
@@ -392,57 +383,22 @@ class DominoTileTest {
 
         @Test
         fun `resourcesStarted will start tile if possible`() {
-            val tile = DominoTile(TILE_NAME, factory)
-            tile.resourcesStarted(false)
+            val tile = DominoTile(TILE_NAME, factory, createResources = {_, future -> future.complete(null)})
+            tile.start()
 
             assertThat(tile.state).isEqualTo(DominoTile.State.Started)
         }
 
         @Test
         fun `resourcesStarted will start tile stopped`() {
-            val tile = DominoTile(TILE_NAME, factory)
+            var outerFuture: CompletableFuture<Unit>? = null
+            val tile = DominoTile(TILE_NAME, factory, createResources = {_, future -> outerFuture = future})
             tile.start()
             tile.stop()
 
-            tile.resourcesStarted(false)
+            outerFuture!!.complete(null)
 
             assertThat(tile.state).isEqualTo(DominoTile.State.Started)
-        }
-
-        @Test
-        fun `resourcesStarted will start is configuration was bad`() {
-            val tile = DominoTile(TILE_NAME, factory)
-            tile.start()
-            tile.configApplied(DominoTile.ConfigUpdateResult.Error(IOException()))
-
-            tile.resourcesStarted(false)
-
-            assertThat(tile.state).isEqualTo(DominoTile.State.Started)
-        }
-
-        @Test
-        fun `resourcesStarted will not start if it had issues`() {
-            val tile = DominoTile(TILE_NAME, factory)
-            tile.start()
-            tile.resourcesStarted(true)
-
-            tile.resourcesStarted(false)
-
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
-        }
-
-        @Test
-        fun `resourcesStarted will not recreate the resources`() {
-            val created = AtomicInteger(0)
-            val tile = DominoTile(TILE_NAME, factory, createResources = {
-                created.incrementAndGet()
-            })
-            tile.start()
-            tile.resourcesStarted(false)
-
-            tile.resourcesStarted(false)
-
-            assertThat(created).hasValue(1)
         }
     }
 
@@ -464,6 +420,8 @@ class DominoTileTest {
         }
         private val key = "key"
 
+        private lateinit var outerConfigUpdateResult: CompletableFuture<Unit>
+
         private inner class TileConfigurationChangeHandler : ConfigurationChangeHandler<Configuration>(
             service,
             key,
@@ -472,9 +430,11 @@ class DominoTileTest {
             override fun applyNewConfiguration(
                 newConfiguration: Configuration,
                 oldConfiguration: Configuration?,
-                resources: ResourcesHolder
+                resources: ResourcesHolder,
+                configUpdateResult: CompletableFuture<Unit>
             ) {
                 calledNewConfigurations.add(newConfiguration to oldConfiguration)
+                outerConfigUpdateResult = configUpdateResult
             }
         }
 
@@ -534,7 +494,8 @@ class DominoTileTest {
             tile.start()
 
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
-            tile.configApplied(DominoTile.ConfigUpdateResult.Error(java.lang.RuntimeException("Bad config")))
+            outerConfigUpdateResult.completeExceptionally(RuntimeException("Bad config"))
+
             assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
@@ -568,7 +529,9 @@ class DominoTileTest {
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to config))
 
             assertThat(tile.state).isEqualTo(DominoTile.State.Created)
-            tile.configApplied(DominoTile.ConfigUpdateResult.Success)
+
+            outerConfigUpdateResult.complete(null)
+
             assertThat(tile.state).isEqualTo(DominoTile.State.Started)
             assertThat(tile.isRunning).isTrue
         }
@@ -640,34 +603,14 @@ class DominoTileTest {
             val tile = tile()
             tile.start()
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to badConfig))
-            tile.configApplied(DominoTile.ConfigUpdateResult.Error(java.lang.RuntimeException("Bad config")))
+            outerConfigUpdateResult.completeExceptionally(RuntimeException("Bad config"))
             assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
 
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to goodConfig))
-            tile.configApplied(DominoTile.ConfigUpdateResult.Success)
+            outerConfigUpdateResult.complete(null)
             assertThat(tile.state).isEqualTo(DominoTile.State.Started)
 
             assertThat(calledNewConfigurations).contains(Configuration(17) to Configuration(5))
-        }
-
-        @Test
-        fun `if config is the same after error then the tile stays stopped`() {
-            val badConfig = mock<SmartConfig> {
-                on { getInt(any()) } doReturn 5
-            }
-
-            val tile = tile()
-            tile.start()
-            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to badConfig))
-            tile.configApplied(DominoTile.ConfigUpdateResult.Error(java.lang.RuntimeException("Bad config")))
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
-
-            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to badConfig))
-            tile.configApplied(DominoTile.ConfigUpdateResult.NoUpdate)
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
-
-            assertThat(calledNewConfigurations).hasSize(1)
-            assertThat(tile.isRunning).isFalse
         }
 
         @Test
@@ -750,8 +693,7 @@ class DominoTileTest {
                 TILE_NAME,
                 factory,
                 configurationChangeHandler = TileConfigurationChangeHandler(),
-                createResources =
-                {
+                createResources = { _, _ ->
                     resourceCreated.incrementAndGet()
                 }
             )
@@ -1223,5 +1165,157 @@ class DominoTileTest {
                 tile.close()
             }
         }
+    }
+
+    @Nested
+    inner class LeafTileWithConfigAndResourcesTests {
+
+        private lateinit var outerConfigUpdateResult: CompletableFuture<Unit>
+        private val calledNewConfigurations = mutableListOf<Pair<Configuration, Configuration?>>()
+        private val registration = mock<AutoCloseable>()
+        private val configurationHandler = argumentCaptor<ConfigurationHandler>()
+        private val service = mock<ConfigurationReadService> {
+            on { registerForUpdates(configurationHandler.capture()) } doReturn registration
+        }
+        private val configFactory = mock<(Config)-> Configuration> {
+            on { invoke(any()) } doAnswer {
+                Configuration((it.arguments[0] as Config).getInt(""))
+            }
+        }
+        private val key = "key"
+
+        private inner class TileConfigurationChangeHandler : ConfigurationChangeHandler<Configuration>(
+            service,
+            key,
+            configFactory,
+        ) {
+            override fun applyNewConfiguration(
+                newConfiguration: Configuration,
+                oldConfiguration: Configuration?,
+                resources: ResourcesHolder,
+                configUpdateResult: CompletableFuture<Unit>
+            ) {
+                calledNewConfigurations.add(newConfiguration to oldConfiguration)
+                outerConfigUpdateResult = configUpdateResult
+            }
+        }
+
+        @Test
+        fun `onNewConfiguration will start the tile if resources started`() {
+            val tile = DominoTile(
+                TILE_NAME,
+                factory,
+                createResources = {_, future -> future.complete(null)},
+                configurationChangeHandler = TileConfigurationChangeHandler()
+            )
+            tile.start()
+            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
+            outerConfigUpdateResult.complete(null)
+
+            assertThat(tile.state).isEqualTo(DominoTile.State.Started)
+        }
+
+        @Test
+        fun `createResources then onNewConfiguration will not start the tile if configuration was bad`() {
+            var outerResourceFuture: CompletableFuture<Unit>? = null
+            val tile = DominoTile(
+                TILE_NAME,
+                factory,
+                createResources = {_, future -> outerResourceFuture = future},
+                configurationChangeHandler = TileConfigurationChangeHandler()
+            )
+            tile.start()
+            outerResourceFuture!!.complete(null)
+            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
+            outerConfigUpdateResult.completeExceptionally(IOException())
+
+            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
+        }
+
+        @Test
+        fun `onNewConfiguration then createResources will not start the tile if configuration was bad`() {
+            var outerResourceFuture: CompletableFuture<Unit>? = null
+            val tile = DominoTile(
+                TILE_NAME,
+                factory,
+                createResources = {_, future -> outerResourceFuture = future},
+                configurationChangeHandler = TileConfigurationChangeHandler()
+            )
+            tile.start()
+            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
+            outerConfigUpdateResult.completeExceptionally(IOException())
+            outerResourceFuture!!.complete(null)
+
+            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
+        }
+
+        @Test
+        fun `createResources then onNewConfiguration will not start the tile if resources fail`() {
+            var outerResourceFuture: CompletableFuture<Unit>? = null
+            val tile = DominoTile(
+                TILE_NAME,
+                factory,
+                createResources = {_, future -> outerResourceFuture = future},
+                configurationChangeHandler = TileConfigurationChangeHandler()
+            )
+            tile.start()
+            outerResourceFuture!!.completeExceptionally(IOException())
+            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
+            outerConfigUpdateResult.complete(null)
+
+            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+        }
+
+        @Test
+        fun `onNewConfiguration then createResources will not start the tile if resources fail`() {
+            var outerResourceFuture: CompletableFuture<Unit>? = null
+            val tile = DominoTile(
+                TILE_NAME,
+                factory,
+                createResources = {_, future -> outerResourceFuture = future},
+                configurationChangeHandler = TileConfigurationChangeHandler()
+            )
+            tile.start()
+            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
+            outerConfigUpdateResult.complete(null)
+            outerResourceFuture!!.completeExceptionally(IOException())
+
+            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+        }
+
+        @Test
+        fun `createResources then onNewConfiguration will not start the tile if resources and config fail`() {
+            var outerResourceFuture: CompletableFuture<Unit>? = null
+            val tile = DominoTile(
+                TILE_NAME,
+                factory,
+                createResources = {_, future -> outerResourceFuture = future},
+                configurationChangeHandler = TileConfigurationChangeHandler()
+            )
+            tile.start()
+            outerResourceFuture!!.completeExceptionally(IOException())
+            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
+            outerConfigUpdateResult.completeExceptionally(IOException())
+
+            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
+        }
+
+        @Test
+        fun `onNewConfiguration then createResources will not start the tile if resources and config fail`() {
+            var outerResourceFuture: CompletableFuture<Unit>? = null
+            val tile = DominoTile(
+                TILE_NAME,
+                factory,
+                createResources = {_, future -> outerResourceFuture = future},
+                configurationChangeHandler = TileConfigurationChangeHandler()
+            )
+            tile.start()
+            configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
+            outerConfigUpdateResult.completeExceptionally(IOException())
+            outerResourceFuture!!.completeExceptionally(IOException())
+
+            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
+        }
+
     }
 }

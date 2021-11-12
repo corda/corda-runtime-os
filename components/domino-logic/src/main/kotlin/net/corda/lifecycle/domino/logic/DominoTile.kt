@@ -18,6 +18,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.v5.base.util.contextLogger
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -29,7 +30,7 @@ import kotlin.concurrent.write
 class DominoTile(
     componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val createResources: ((resources: ResourcesHolder) -> Unit)? = null,
+    private val createResources: ((resources: ResourcesHolder, resourceReady: CompletableFuture<Unit>) -> Unit)? = null,
     private val children: Collection<DominoTile> = emptySet(),
     private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
 ) : Lifecycle {
@@ -104,26 +105,25 @@ class DominoTile(
     @Volatile
     private var configRegistration: AutoCloseable? = null
 
-    sealed class ConfigUpdateResult {
+    private sealed class ConfigUpdateResult {
         object Success : ConfigUpdateResult()
         object NoUpdate : ConfigUpdateResult()
         data class Error(val e: Throwable) : ConfigUpdateResult()
     }
 
-    fun configApplied(configUpdateResult: ConfigUpdateResult) {
+    private fun configApplied(configUpdateResult: ConfigUpdateResult) {
         coordinator.postEvent(ConfigApplied(configUpdateResult))
     }
 
-    fun resourcesStarted(withErrors: Boolean) {
-        if (withErrors) {
-            gotError(RuntimeException())
+    private fun resourcesStarted(error: Throwable? = null) {
+        if (error != null) {
+            gotError(error)
         } else {
             coordinator.postEvent(ResourcesCreated)
         }
     }
 
     private inner class Handler(private val configurationChangeHandler: ConfigurationChangeHandler<*>) : ConfigurationHandler {
-
         override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
             if (changedKeys.contains(configurationChangeHandler.key)) {
                 val newConfiguration = config[configurationChangeHandler.key]
@@ -269,10 +269,20 @@ class DominoTile(
             logger.info("Configuration had not changed $name")
             configApplied(ConfigUpdateResult.NoUpdate)
         } else {
+            val future = CompletableFuture<Unit>()
+            future.whenComplete { _, exception ->
+                if (exception != null) {
+                    configApplied(ConfigUpdateResult.Error(exception))
+                } else {
+                    configApplied(ConfigUpdateResult.Success)
+                }
+            }
+
             configurationChangeHandler.applyNewConfiguration(
                 newConfiguration,
                 configurationChangeHandler.lastConfiguration,
-                configResources
+                configResources,
+                future
             )
             configurationChangeHandler.lastConfiguration = newConfiguration
             logger.info("Reconfigured $name")
@@ -342,7 +352,15 @@ class DominoTile(
 
     private fun createResourcesAndStart() {
         resources.close()
-        createResources?.invoke(resources)
+        val future = CompletableFuture<Unit>()
+        future.whenComplete { _, exception ->
+            if (exception != null) {
+                resourcesStarted(exception)
+            } else {
+                resourcesStarted()
+            }
+        }
+        createResources?.invoke(resources, future)
         if (configRegistration == null && configurationChangeHandler != null) {
             logger.info("Registering for Config Updates $name.")
             configRegistration =

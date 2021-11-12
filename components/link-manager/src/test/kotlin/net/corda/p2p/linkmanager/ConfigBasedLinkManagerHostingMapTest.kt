@@ -14,6 +14,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.CompletableFuture
 
 class ConfigBasedLinkManagerHostingMapTest {
 
@@ -32,6 +33,7 @@ class ConfigBasedLinkManagerHostingMapTest {
     private val bob = LinkManagerNetworkMap.HoldingIdentity("O=Bob, L=London, C=GB", "group1")
     private val charlie = LinkManagerNetworkMap.HoldingIdentity("O=Charlie, L=London, C=GB", "group1")
     private val configResourcesHolder = mock<ResourcesHolder>()
+    private val future = mock<CompletableFuture<Unit>>()
 
     private val config = SmartConfigImpl(ConfigFactory.parseString(
         """
@@ -54,12 +56,12 @@ class ConfigBasedLinkManagerHostingMapTest {
     fun `locally hosted identities received via configuration are parsed properly and advised on lookups`() {
         setRunning()
         val typedConfig = configHandler.configFactory(config)
-        configHandler.applyNewConfiguration(typedConfig, null, configResourcesHolder)
+        configHandler.applyNewConfiguration(typedConfig, null, configResourcesHolder, future)
 
         assertThat(hostingMap.isHostedLocally(alice)).isTrue
         assertThat(hostingMap.isHostedLocally(bob)).isTrue
         assertThat(hostingMap.isHostedLocally(charlie)).isFalse
-        verify(dominoTile.constructed().last()).configApplied(DominoTile.ConfigUpdateResult.Success)
+        verify(future).complete(null)
     }
 
     @Test

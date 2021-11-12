@@ -180,10 +180,10 @@ internal class OutboundMessageHandler(
         get() = LinkOutMessage::class.java
 
 
-    private fun createResources(resources: ResourcesHolder) {
+    private fun createResources(resources: ResourcesHolder, resourceFuture: CompletableFuture<Unit>) {
         resources.keep(p2pMessageSubscription)
         p2pMessageSubscription.start()
-        dominoTile.resourcesStarted(false)
+        resourceFuture.complete(null)
     }
 
     private data class PendingRequest(val gatewayMessage: GatewayMessage,

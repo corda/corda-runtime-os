@@ -91,12 +91,13 @@ class OutboundMessageHandlerTest {
         }
     }
 
-    private lateinit var createResources: ((resources: ResourcesHolder) -> Unit)
-    private val lifecycleLockLambdaCaptor = argumentCaptor<() -> Any>()
+    private val future = mock<CompletableFuture<Unit>>()
+    private lateinit var createResources: ((resources: ResourcesHolder, resourceCreatedFuture: CompletableFuture<Unit>) -> Unit)
     private val dominoTile = mockConstruction(DominoTile::class.java) { mock, context ->
-        whenever(mock.withLifecycleLock(lifecycleLockLambdaCaptor.capture())).doAnswer {lifecycleLockLambdaCaptor.lastValue.invoke()}
         @Suppress("UNCHECKED_CAST")
-        createResources = context.arguments()[2] as ((ResourcesHolder) -> Unit)
+        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
+        @Suppress("UNCHECKED_CAST")
+        createResources = context.arguments()[2] as ((resources: ResourcesHolder, resourceCreatedFuture: CompletableFuture<Unit>) -> Unit)
     }
 
     private val handler = OutboundMessageHandler(
@@ -118,7 +119,7 @@ class OutboundMessageHandlerTest {
         startHandler()
 
         val resourcesHolder = mock<ResourcesHolder>()
-        createResources(resourcesHolder)
+        createResources(resourcesHolder, future)
 
         verify(subscription).start()
     }
@@ -128,17 +129,17 @@ class OutboundMessageHandlerTest {
         startHandler()
 
         val resourcesHolder = mock<ResourcesHolder>()
-        createResources(resourcesHolder)
+        createResources(resourcesHolder, future)
         verify(resourcesHolder).keep(subscription)
     }
 
     @Test
-    fun `createResources sets resourceStarted`() {
+    fun `createResources completes the future`() {
         startHandler()
 
         val resourcesHolder = mock<ResourcesHolder>()
-        createResources(resourcesHolder)
-        verify(dominoTile.constructed().last()).resourcesStarted(false)
+        createResources(resourcesHolder, future)
+        verify(future).complete(null)
     }
 
     @Test

@@ -53,6 +53,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
 class LinkManager(@Reference(service = SubscriptionFactory::class)
@@ -79,7 +80,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
     }
 
-    private val inboundAssignmentListener = InboundAssignmentListener { inboundDominoTile.resourcesStarted(false) }
+    private lateinit var inboundAssignmentListener: InboundAssignmentListener
 
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory, lifecycleCoordinatorFactory, configuration)
 
@@ -94,7 +95,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     )
 
     @VisibleForTesting
-    internal fun createInboundResources(resources: ResourcesHolder) {
+    internal fun createInboundResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
+        inboundAssignmentListener = InboundAssignmentListener(future)
         val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, 1),
             InboundMessageProcessor(sessionManager, linkManagerNetworkMap),
@@ -106,7 +108,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     }
 
     @VisibleForTesting
-    internal fun createOutboundResources(resources: ResourcesHolder) {
+    internal fun createOutboundResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
         val outboundMessageProcessor = OutboundMessageProcessor(
             sessionManager,
             linkManagerHostingMap,
@@ -132,6 +134,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         resources.keep(deliveryTracker)
         outboundMessageSubscription.start()
         resources.keep(outboundMessageSubscription)
+        future.complete(null)
     }
 
     private val commonChildren = setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoService.dominoTile,

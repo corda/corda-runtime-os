@@ -22,6 +22,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.net.URI
+import java.util.concurrent.CompletableFuture
 
 class ReconfigurableConnectionManagerTest {
     private val manager = mock<ConnectionManager>()
@@ -46,11 +47,12 @@ class ReconfigurableConnectionManagerTest {
         on { sslConfig } doThrow(badConfigurationException)
     }
 
+    private val future = mock<CompletableFuture<Unit>>()
     private val resourcesHolder = mock<ResourcesHolder>()
     private lateinit var configHandler: ReconfigurableConnectionManager.ConnectionManagerConfigChangeHandler
-    private val lifecycleLockLambdaCaptor = argumentCaptor<() -> Any>()
     private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
-        whenever(mock.withLifecycleLock(lifecycleLockLambdaCaptor.capture())).doAnswer {lifecycleLockLambdaCaptor.lastValue.invoke()}
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")
         configHandler = (context.arguments()[4] as ReconfigurableConnectionManager.ConnectionManagerConfigChangeHandler)
     }
@@ -73,7 +75,7 @@ class ReconfigurableConnectionManagerTest {
     fun `acquire will call the manager`() {
         val resources = ResourcesHolder()
         connectionManager.start()
-        configHandler.applyNewConfiguration(configuration, null, resources)
+        configHandler.applyNewConfiguration(configuration, null, resources, future)
         val info = DestinationInfo(
             URI("http://www.r3.com:3000"),
             "",
@@ -91,29 +93,29 @@ class ReconfigurableConnectionManagerTest {
     @Test
     fun `applyNewConfiguration will close manager`() {
         connectionManager.start()
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder, future)
 
         val secondConfiguration = mock<GatewayConfiguration> {
             on { sslConfig } doReturn mock()
             on { connectionConfig } doReturn mock()
         }
-        configHandler.applyNewConfiguration(secondConfiguration, configuration, resourcesHolder)
+        configHandler.applyNewConfiguration(secondConfiguration, configuration, resourcesHolder, future)
 
         verify(manager).close()
     }
 
     @Test
-    fun `applyNewConfiguration sets configApplied`() {
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+    fun `applyNewConfiguration completes configUpdateResult`() {
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder, future)
 
-        verify(dominoTile.constructed().last()).configApplied(DominoTile.ConfigUpdateResult.Success)
+        verify(future).complete(null)
     }
 
     @Test
-    fun `applyNewConfiguration sets configApplied if bad config`() {
-        configHandler.applyNewConfiguration(badConfiguration, null, resourcesHolder)
+    fun `applyNewConfiguration applyNewConfiguration completes configUpdateResult exceptionally if bad config`() {
+        configHandler.applyNewConfiguration(badConfiguration, null, resourcesHolder, future)
 
-        verify(dominoTile.constructed().last()).configApplied(DominoTile.ConfigUpdateResult.Error(badConfigurationException))
+        verify(future).completeExceptionally(badConfigurationException)
     }
 
     @Test
@@ -129,16 +131,16 @@ class ReconfigurableConnectionManagerTest {
             on { connectionConfig } doReturn connectionConfiguration
         }
         connectionManager.start()
-        configHandler.applyNewConfiguration(firstConfiguration, null, resourcesHolder)
+        configHandler.applyNewConfiguration(firstConfiguration, null, resourcesHolder, future)
 
-        configHandler.applyNewConfiguration(secondConfiguration, secondConfiguration, resourcesHolder)
+        configHandler.applyNewConfiguration(secondConfiguration, secondConfiguration, resourcesHolder, future)
 
         verify(manager, never()).close()
     }
 
     @Test
     fun `applyNewConfiguration keeps the manager in the resource holder`() {
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder, future)
 
         verify(resourcesHolder).keep(manager)
     }

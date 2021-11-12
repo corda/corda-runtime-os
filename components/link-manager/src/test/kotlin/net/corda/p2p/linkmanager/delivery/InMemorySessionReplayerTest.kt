@@ -56,9 +56,9 @@ class InMemorySessionReplayerTest {
         loggingInterceptor.reset()
     }
 
-    private val lifecycleLockLambdaCaptor = argumentCaptor<() -> Any>()
     private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, _ ->
-        whenever(mock.withLifecycleLock(lifecycleLockLambdaCaptor.capture())).doAnswer { lifecycleLockLambdaCaptor.lastValue.invoke() }
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
     }
     private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java)
 
