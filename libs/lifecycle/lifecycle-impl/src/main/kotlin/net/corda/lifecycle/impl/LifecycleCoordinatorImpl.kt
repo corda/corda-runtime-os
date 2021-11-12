@@ -1,5 +1,6 @@
 package net.corda.lifecycle.impl
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -57,17 +58,19 @@ class LifecycleCoordinatorImpl(
          * By sharing a thread pool among coordinators, it should be possible to reduce resource usage when in a stable
          * state.
          */
-        private val executor = Executors.newCachedThreadPool { runnable ->
-            val thread = Thread(runnable)
-            thread.isDaemon = true
-            thread
-        }
+        private val executor = Executors.newCachedThreadPool(
+            ThreadFactoryBuilder()
+                .setNameFormat("lifecycle-coordinator-%d")
+                .setDaemon(true)
+                .build()
+        )
 
-        private val timerExecutor = Executors.newSingleThreadScheduledExecutor() { runnable ->
-            val thread = Thread(runnable)
-            thread.isDaemon = true
-            thread
-        }
+        private val timerExecutor = Executors.newSingleThreadScheduledExecutor(
+            ThreadFactoryBuilder()
+                .setNameFormat("lifecycle-coordinator-timer-%d")
+                .setDaemon(true)
+                .build()
+        )
     }
 
     /**

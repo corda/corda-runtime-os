@@ -5,14 +5,18 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleException
-import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
+import net.corda.lifecycle.impl.registry.LifecycleRegistryCoordinatorAccess
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 
 @Component(service = [LifecycleCoordinatorFactory::class], scope = ServiceScope.SINGLETON)
-class LifecycleCoordinatorFactoryImpl : LifecycleCoordinatorFactory {
+class LifecycleCoordinatorFactoryImpl @Activate constructor(
+    @Reference
+    private val registry: LifecycleRegistryCoordinatorAccess
+) : LifecycleCoordinatorFactory {
 
-    private val registry = LifecycleRegistryImpl()
 
     override fun createCoordinator(
         name: LifecycleCoordinatorName,
