@@ -23,9 +23,9 @@
       "name": "permissions",
       "type": {
         "type": "array",
-        "items": "net.corda.data.permissions.PermissionAssociation"
+        "items": "net.corda.data.permissions.Permission"
       },
-      "doc": "List of a role's permissions and when they were last updated."
+      "doc": "List of a role's permissions."
     }
   ]
 }

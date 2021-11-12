@@ -16,10 +16,6 @@
       "type": "net.corda.data.permissions.ChangeDetails"
     },
     {
-      "name": "loginName",
-      "type": "string"
-    },
-    {
       "name": "fullName",
       "type": "string"
     },
@@ -41,8 +37,8 @@
     },
     {
       "name": "parentGroupId",
-      "type": [ "null", "net.corda.data.permissions.GroupAssociation" ],
-      "doc": "Optional parent group associated with this User."
+      "type": [ "null", "string" ],
+      "doc": "Optional parent group ID of this User."
     },
     {
       "name": "properties",
@@ -53,12 +49,12 @@
       "doc": "List of user properties."
     },
     {
-      "name": "roleAssociations",
+      "name": "roleIds",
       "type": {
         "type": "array",
-        "items": "net.corda.data.permissions.RoleAssociation"
+        "items": "string"
       },
-      "doc": "List of roles associated with this User."
+      "doc": "List of role IDs associated with this User."
     }
   ]
 }
