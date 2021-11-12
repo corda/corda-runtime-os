@@ -119,7 +119,7 @@ class RPCTopicServiceImplTest {
         var request = 1
         var topic = "topic1"
 
-        service.subscribe(topic, errorListener)
+        service.subscribe(topic, faultListener)
         service.publish(topic, request, requestCompletion)
 
         val exception = assertThrows<ExecutionException> { requestCompletion.get()}
@@ -163,7 +163,7 @@ class RPCTopicServiceImplTest {
 
     @Test
     @Timeout(1)
-    fun `when listeners are removed from a topic`() {
+    fun `when listener removed from a topic work distributed to remaining`() {
         val executorService = Executors.newSingleThreadExecutor()
         val service = RPCTopicServiceImpl(executorService)
 

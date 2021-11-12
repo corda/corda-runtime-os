@@ -1,8 +1,10 @@
 package net.corda.messaging.emulation.publisher
 
+import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.emulation.rpc.RPCTopicService
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -33,11 +35,21 @@ class RPCSenderImplTest {
     }
 
     @Test
-    fun `Stop unsubscribes the processor from the topic`() {
+    fun `Send while sender is not running should throw`() {
         val topic = "t1"
         val request = "r1"
         val rpcSender = RPCSenderImpl<String, String>(topic, rpcTopicService)
 
+        assertThrows<CordaRPCAPISenderException> { rpcSender.sendRequest(request)}
+    }
+
+    @Test
+    fun `Send should publish the request on the configured topic`() {
+        val topic = "t1"
+        val request = "r1"
+        val rpcSender = RPCSenderImpl<String, String>(topic, rpcTopicService)
+
+        rpcSender.start()
         val requestCompletion = rpcSender.sendRequest(request)
 
         Assertions.assertThat(requestCompletion).isInstanceOf(CompletableFuture::class.java)

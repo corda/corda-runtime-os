@@ -2,6 +2,7 @@ package net.corda.messaging.emulation.rpc
 
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Component
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
@@ -11,31 +12,28 @@ import java.util.concurrent.Executors
 class RPCTopicServiceImpl(
     private var executorService: ExecutorService = Executors.newCachedThreadPool()
 ) : RPCTopicService {
-    private val topics = mutableMapOf<String, RPCProducerConsumerLink<Any, Any>>()
+    private val topics = mutableMapOf<String, RPCProducerConsumerLink<*, *>>()
 
-    @Suppress("UNCHECKED_CAST")
     override fun <REQUEST, RESPONSE> subscribe(topic: String, consumer: RPCResponderProcessor<REQUEST, RESPONSE>) {
-        if (!topics.containsKey(topic)) {
-            topics[topic] = RPCProducerConsumerLink(consumer) as RPCProducerConsumerLink<Any, Any>
-        } else {
-            (topics[topic] as RPCProducerConsumerLink<REQUEST, RESPONSE>).addConsumer(consumer)
-        }
+        val link: RPCProducerConsumerLink<REQUEST, RESPONSE> = uncheckedCast(topics.computeIfAbsent(topic) {
+            RPCProducerConsumerLink(consumer)
+        })
+        link.addConsumer(consumer)
     }
 
-    @Suppress("UNCHECKED_CAST")
     override fun <REQUEST, RESPONSE> unsubscribe(topic: String, consumer: RPCResponderProcessor<REQUEST, RESPONSE>) {
         if (!topics.containsKey(topic)) {
             return
         } else {
-            val consumerLink = topics[topic] as RPCProducerConsumerLink<REQUEST, RESPONSE>
-            consumerLink.removeConsumer(consumer)
-            if (consumerLink.consumerList.isEmpty()) {
+            val link :RPCProducerConsumerLink<REQUEST, RESPONSE> = uncheckedCast(topics[topic])
+            link.removeConsumer(consumer)
+
+            if (link.consumerList.isEmpty()) {
                 topics.remove(topic)
             }
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
     override fun <REQUEST, RESPONSE> publish(
         topic: String,
         request: REQUEST,
@@ -45,10 +43,10 @@ class RPCTopicServiceImpl(
             return
         }
 
-        val producerConsumerLink = topics[topic]!! as RPCProducerConsumerLink<REQUEST, RESPONSE>
+        val link :RPCProducerConsumerLink<REQUEST, RESPONSE> = uncheckedCast(topics[topic])
 
         executorService.submit {
-            producerConsumerLink.handleRequest(request, requestCompletion)
+            link.handleRequest(request, requestCompletion)
         }
     }
 

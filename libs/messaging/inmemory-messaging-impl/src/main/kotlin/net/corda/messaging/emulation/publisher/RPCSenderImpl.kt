@@ -1,5 +1,6 @@
 package net.corda.messaging.emulation.publisher
 
+import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.emulation.rpc.RPCTopicService
 import java.util.concurrent.CompletableFuture
@@ -21,6 +22,9 @@ class RPCSenderImpl<REQUEST, RESPONSE>(
     }
 
     override fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE> {
+        if(!running){
+            throw CordaRPCAPISenderException("The sender has not been started")
+        }
         return CompletableFuture<RESPONSE>().also {
             rpcTopicService.publish(topicName, req, it)
         }
