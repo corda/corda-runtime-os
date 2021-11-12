@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.storage.writer.impl
 
 import net.corda.data.permissions.management.PermissionManagementRequest
+import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriter
 import net.corda.messaging.api.subscription.RPCSubscription
@@ -23,7 +24,7 @@ class PermissionStorageWriterImpl(
 
     private var stopped = false
 
-    private var subscription: RPCSubscription<PermissionManagementRequest, Unit>? = null
+    private var subscription: RPCSubscription<PermissionManagementRequest, PermissionManagementResponse>? = null
 
     override fun start() {
         stopped = false
@@ -42,7 +43,7 @@ class PermissionStorageWriterImpl(
                 clientName = CLIENT_NAME,
                 requestTopic = RPC_PERM_MGMT_REQ_TOPIC,
                 requestType = PermissionManagementRequest::class.java,
-                responseType = Unit::class.java
+                responseType = PermissionManagementResponse::class.java
             ),
             nodeConfig = SmartConfigImpl.empty(),
             responderProcessor = PermissionStorageWriterProcessor(entityManagerFactory)

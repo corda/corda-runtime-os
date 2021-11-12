@@ -1,11 +1,13 @@
 package net.corda.libs.permissions.storage.writer.impl
 
 import net.corda.data.permissions.management.PermissionManagementRequest
+import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.User
 import net.corda.v5.base.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -43,7 +45,7 @@ class PermissionStorageWriterProcessorTest {
 
     @Test
     fun `receiving invalid request completes exceptionally`() {
-        val future = CompletableFuture<Unit>()
+        val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
             request = PermissionManagementRequest().apply {
                 request = Unit
@@ -59,14 +61,18 @@ class PermissionStorageWriterProcessorTest {
         whenever(query.setParameter(any<String>(), any())).thenReturn(query)
         whenever(query.singleResult).thenReturn(0)
         whenever(entityManager.createQuery(any<String>())).thenReturn(query)
-        val future = CompletableFuture<Unit>()
+        val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
             request = PermissionManagementRequest().apply {
                 request = createUserRequest
             },
             respFuture = future
         )
-        assertEquals(Unit, future.getOrThrow())
+        assertTrue(future.getOrThrow().response is net.corda.data.permissions.User)
+        (future.getOrThrow().response as? net.corda.data.permissions.User)?.let { response ->
+            assertEquals(response.fullName, createUserRequest.fullName)
+            assertEquals(response.enabled, createUserRequest.enabled)
+        }
         verify(entityManager, times(1)).persist(any<User>())
     }
 
@@ -75,7 +81,7 @@ class PermissionStorageWriterProcessorTest {
         whenever(query.setParameter(any<String>(), any())).thenReturn(query)
         whenever(query.singleResult).thenReturn(1)
         whenever(entityManager.createQuery(any<String>())).thenReturn(query)
-        val future = CompletableFuture<Unit>()
+        val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
             request = PermissionManagementRequest().apply {
                 request = createUserRequest
@@ -87,13 +93,13 @@ class PermissionStorageWriterProcessorTest {
     }
 
     @Test
-    fun `receiving CreateUserRequest specifying a parent group that exist persists a new users to the database`() {
+    fun `receiving CreateUserRequest specifying a parent group that exists persists a new user to the database`() {
         val group = mock<Group>()
         whenever(query.setParameter(any<String>(), any())).thenReturn(query)
         whenever(query.singleResult).thenReturn(0)
         whenever(entityManager.createQuery(any<String>())).thenReturn(query)
         whenever(entityManager.find(eq(Group::class.java), any())).thenReturn(group)
-        val future = CompletableFuture<Unit>()
+        val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
             request = PermissionManagementRequest().apply {
                 request = createUserRequest.apply {
@@ -102,7 +108,7 @@ class PermissionStorageWriterProcessorTest {
             },
             respFuture = future
         )
-        assertEquals(Unit, future.getOrThrow())
+        assertTrue(future.getOrThrow().response is net.corda.data.permissions.User)
         verify(entityManager, times(1)).persist(any<User>())
     }
 
@@ -112,7 +118,7 @@ class PermissionStorageWriterProcessorTest {
         whenever(query.singleResult).thenReturn(0)
         whenever(entityManager.createQuery(any<String>())).thenReturn(query)
         whenever(entityManager.find(eq(Group::class.java), any())).thenReturn(null)
-        val future = CompletableFuture<Unit>()
+        val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
             request = PermissionManagementRequest().apply {
                 request = createUserRequest.apply {
