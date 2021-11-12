@@ -35,17 +35,13 @@ class IntegrationTestService constructor(
     private fun getInputStream(resourceName: String): InputStream =
         loadResource(resourceName).toURL().openStream().buffered()
 
-    fun loadCPIFromResource(resourceName: String): CPI {
-        return CPI.from(
-            getInputStream(resourceName),
+    fun loadCPIFromResource(resourceName: String): CPI = getInputStream(resourceName).use {
+        CPI.from(
+            it,
             expansionLocation = Files.createTempDirectory(baseDir, "cpb"),
             verifySignature = true
         )
-//        installService.loadCpb(getInputStream(resourceName))
-        //}
     }
-
-//    fun getCPI(cpi : CPI): CPI? = installService.getCpb(cpi.metadata.id)
 
     fun createSandboxGroupFor(cpks: Collection<CPK>): SandboxGroup =
         sandboxCreationService.createSandboxGroup(cpks.toSet())
