@@ -1,28 +1,30 @@
 package net.corda.messaging.emulation.subscription.rpc
+
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
-import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
-import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
-import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
-import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.extension.ExtendWith
+import org.osgi.test.common.annotation.InjectService
+import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.CompletableFuture
 
-
+@ExtendWith(ServiceExtension::class)
 class RPCSendReceiveIntegrationTest {
     private val requestMsg = "request"
     private val responseMsg = "response"
     private var receivedRequest: String? = null
-    private val topicService = TopicServiceImpl()
-    private val rpcTopicService = RPCTopicServiceImpl()
-    private val subscriptionFactory: SubscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService)
-    private val publisherFactory: PublisherFactory= CordaPublisherFactory(topicService, rpcTopicService)
 
-    private val responseProcessor = object : RPCResponderProcessor<String,String>{
+    @InjectService(timeout = 4000)
+    lateinit var subscriptionFactory: SubscriptionFactory
+
+    @InjectService(timeout = 4000)
+    lateinit var publisherFactory: PublisherFactory
+
+    private val responseProcessor = object : RPCResponderProcessor<String, String> {
         override fun onNext(request: String, respFuture: CompletableFuture<String>) {
             receivedRequest = request
             respFuture.complete(responseMsg)
@@ -31,9 +33,9 @@ class RPCSendReceiveIntegrationTest {
 
     @Test
     @Timeout(5)
-    fun `Test simple request response exchange`(){
-        val config = RPCConfig<String,String>(
-            groupName ="g1",
+    fun `Test simple request response exchange`() {
+        val config = RPCConfig<String, String>(
+            groupName = "g1",
             clientName = "c1",
             requestTopic = "t1",
             String::class.java,
@@ -43,7 +45,8 @@ class RPCSendReceiveIntegrationTest {
         // Create subscriber for processing requests and start it
         subscriptionFactory.createRPCSubscription(
             rpcConfig = config,
-            responderProcessor = responseProcessor).start()
+            responderProcessor = responseProcessor
+        ).start()
 
         // Create a sender and send a request
         val sender = publisherFactory.createRPCSender(rpcConfig = config)
