@@ -5,10 +5,8 @@ import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.Group
 import net.corda.data.permissions.Permission
-import net.corda.data.permissions.PermissionAssociation
 import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.Role
-import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.User
 import net.corda.libs.permissions.cache.exception.PermissionCacheException
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -24,15 +22,15 @@ internal class PermissionCacheImplTest {
     private val roleData = ConcurrentHashMap<String, Role>()
     private val permissionCache = PermissionCacheImpl(userData, groupData, roleData)
 
-    private val user1 = User("id1", 1, ChangeDetails(Instant.now(), "changeUser"), "user-login-1", "full name1", true,
+    private val user1 = User("id1", 1, ChangeDetails(Instant.now(), "changeUser"), "full name1", true,
         "hashedPassword", "saltValue", false, null, null, null)
-    private val user2 = User("id2", 1, ChangeDetails(Instant.now(), "changeUser"), "user-login-2", "full name2", false,
+    private val user2 = User("id2", 1, ChangeDetails(Instant.now(), "changeUser"), "full name2", false,
         "hashedPassword", "saltValue", false, null, null, null)
 
     private val group1 = Group("grpId1", 0, ChangeDetails(Instant.now(), "changeUser"), "group1", null,
         emptyList(), emptyList())
     private val group2 = Group("grpId2", 0, ChangeDetails(Instant.now(), "changeUser"), "group1", null,
-        emptyList(), listOf(RoleAssociation(Instant.now(), "role1"), RoleAssociation(Instant.now(), "role2")))
+        emptyList(), listOf("role1", "role2"))
 
     private val permission1 = Permission("perm1", 0, ChangeDetails(Instant.now(), "changeUser"), "virtNode1",
         "*", PermissionType.ALLOW)
@@ -40,9 +38,9 @@ internal class PermissionCacheImplTest {
         "*", PermissionType.DENY)
 
     private val role1 = Role("role1", 0, ChangeDetails(Instant.now(), "changeUser"), "admin",
-        listOf(PermissionAssociation(Instant.now(), permission1)))
+        listOf(permission1))
     private val role2 = Role("role2", 0, ChangeDetails(Instant.now(), "changeUser"), "admin",
-        listOf(PermissionAssociation(Instant.now(), permission2)))
+        listOf(permission2))
 
     @BeforeEach
     fun setUp() {
@@ -80,7 +78,7 @@ internal class PermissionCacheImplTest {
 
     @Test
     fun getUser() {
-        assertEquals(user1, permissionCache.getUser(user1.loginName), "GetUser did not return the expected user.")
+        assertEquals(user1, permissionCache.getUser("user-login-1"), "GetUser did not return the expected user.")
     }
 
     @Test
@@ -99,7 +97,7 @@ internal class PermissionCacheImplTest {
         val userIds = userMap.keys
         val users = userMap.values
         assertEquals(2, userMap.size, "GetUsers should return all users in the map.")
-        assertTrue(userIds.containsAll(listOf(user1.loginName, user2.loginName)), "GetUsers result should contain user loginNames as keys.")
+        assertTrue(userIds.containsAll(listOf("user-login-1", "user-login-2")), "GetUsers result should contain user loginNames as keys.")
         assertTrue(users.containsAll(listOf(user1, user2)), "GetUsers result should contain expected users in the map.")
     }
 

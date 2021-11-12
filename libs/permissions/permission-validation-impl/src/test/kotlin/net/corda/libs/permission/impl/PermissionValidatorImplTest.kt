@@ -12,8 +12,6 @@ import org.mockito.kotlin.mock
 import java.time.Instant
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import net.corda.data.permissions.PermissionAssociation
-import net.corda.data.permissions.RoleAssociation
 
 class PermissionValidatorImplTest {
 
@@ -47,20 +45,20 @@ class PermissionValidatorImplTest {
 
         private val role = Role(
             "roleId1", 1,
-            ChangeDetails(Instant.now(), "changeUser"), "STARTFLOW-MYFLOW", listOf(PermissionAssociation(Instant.now(), permission))
+            ChangeDetails(Instant.now(), "changeUser"), "STARTFLOW-MYFLOW", listOf(permission)
         )
         private val roleWithPermDenied = Role(
             "roleId2", 1,
-            ChangeDetails(Instant.now(), "changeUser"), "STARTFLOW-MYFLOW", listOf(PermissionAssociation(Instant.now(), permissionDenied))
+            ChangeDetails(Instant.now(), "changeUser"), "STARTFLOW-MYFLOW", listOf(permissionDenied)
         )
-        private val user = User("user1", 1, ChangeDetails(Instant.now(), "changeUser"), "user-login-1", "full name", true,
-            "hashedPassword", "saltValue", false, null, null, listOf(RoleAssociation(Instant.now(), role.id)))
+        private val user = User("user1", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
+            "hashedPassword", "saltValue", false, null, null, listOf(role).map { it.id })
         private val userWithPermDenied =
-            User("userWithPermDenied", 1, ChangeDetails(Instant.now(), "changeUser"), "user-login-2", "full name", true,
-                "hashedPassword", "saltValue", false, null, null, listOf(RoleAssociation(Instant.now(), roleWithPermDenied.id)))
+            User("userWithPermDenied", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
+                "hashedPassword", "saltValue", false, null, null, listOf(roleWithPermDenied).map { it.id })
         private val disabledUser =
-            User("disabledUser", 1, ChangeDetails(Instant.now(), "changeUser"), "user-login-3", "full name", false,
-                "hashedPassword", "saltValue", false, null, null, listOf(RoleAssociation(Instant.now(), role.id)))
+            User("disabledUser", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", false,
+                "hashedPassword", "saltValue", false, null, null, listOf(role).map { it.id })
 
         @BeforeAll
         @JvmStatic
