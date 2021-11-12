@@ -79,8 +79,10 @@ class CPIReadImplFile(private val nodeConfig: Config = ConfigFactory.empty()): C
     }
 
     private fun updateListeners(changedKeys: Set<CPI.Identifier>) {
-        cpiListeners.forEach {
-            it.onUpdate(changedKeys, cpis.map { el -> el.value.metadata.id to el.value.metadata }.toMap())
+        synchronized(cpiListeners) {
+            cpiListeners.forEach {
+                it.onUpdate(changedKeys, cpis.map { el -> el.value.metadata.id to el.value.metadata }.toMap())
+            }
         }
     }
 
@@ -103,14 +105,15 @@ class CPIReadImplFile(private val nodeConfig: Config = ConfigFactory.empty()): C
     }
 
     override fun registerCallback(cpiListener: CPIListener): AutoCloseable {
-        cpiListeners.add(cpiListener)
-        if (snapshotSent) {
-            val keys = cpis.map {it.value.metadata.id}.toSet()
-            val identities = cpis.map { it.value.metadata.id to it.value.metadata }.toMap()
-            cpiListener.onUpdate(keys, identities)
+        synchronized(cpiListeners) {
+            cpiListeners.add(cpiListener)
+            if (snapshotSent) {
+                val keys = cpis.map { it.value.metadata.id }.toSet()
+                val identities = cpis.map { it.value.metadata.id to it.value.metadata }.toMap()
+                cpiListener.onUpdate(keys, identities)
+            }
+            return CPIListenerRegistration(this, cpiListener)
         }
-        return CPIListenerRegistration(this, cpiListener)
-
     }
 
     override val isRunning: Boolean
@@ -144,7 +147,9 @@ class CPIReadImplFile(private val nodeConfig: Config = ConfigFactory.empty()): C
     }
 
     private fun unregisterCPIListCallback(cpiListener: CPIListener) {
-        cpiListeners.remove(cpiListener)
+        synchronized(cpiListeners) {
+            cpiListeners.remove(cpiListener)
+        }
     }
 
     class CPIListenerRegistration(private val readImplFile: CPIReadImplFile, private val cpiListener: CPIListener): AutoCloseable {

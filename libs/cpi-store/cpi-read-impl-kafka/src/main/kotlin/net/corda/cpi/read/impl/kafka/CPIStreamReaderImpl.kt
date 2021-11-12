@@ -70,13 +70,13 @@ class CPISegmentReaderExecutor(private val cpiIdentifier: CPI.Identifier,
         val filename = fileHash.toString()
         val path = parentPath.resolve(filename)
         if (!Files.exists(path)) {
-            sendSegment(path)
+            sendSegmentRequest(path)
         }
         val inStream = Files.newInputStream(path)
         cpiSegmentResponseFuture.complete(inStream)
     }
 
-    private fun sendSegment(toPath: Path) {
+    private fun sendSegmentRequest(toPath: Path) {
         val tempFilename = UUID.randomUUID().toString()
         val tempPath = parentPath.resolve(tempFilename)
         Files.createDirectories(tempPath.parent)
