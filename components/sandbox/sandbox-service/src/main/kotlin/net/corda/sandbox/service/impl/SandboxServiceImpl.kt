@@ -14,8 +14,6 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.service.SandboxService
 import net.corda.sandbox.service.SandboxType
 import net.corda.sandbox.service.helper.initPublicSandboxes
-import net.corda.serialization.CheckpointSerializer
-import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -37,9 +35,7 @@ class SandboxServiceImpl @Activate constructor(
     @Reference(service = SandboxCreationService::class)
     private val sandboxCreationService: SandboxCreationService,
     @Reference(service = ConfigurationAdmin::class)
-    private val configurationAdmin: ConfigurationAdmin,
-    @Reference(service = CheckpointSerializerBuilderFactory::class)
-    private val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory,
+    private val configurationAdmin: ConfigurationAdmin
 ) : SandboxService {
 
     companion object {
@@ -55,7 +51,6 @@ class SandboxServiceImpl @Activate constructor(
         }.toAbsolutePath().toString()
     }
 
-    private val checkpointSerializers = mutableMapOf<SandboxGroup, CheckpointSerializer>()
     private var cache = ConcurrentHashMap<SandboxCacheKey, SandboxGroup>()
     //tmp stuff until cpi service is available
     private var cpiIdentifierById = ConcurrentHashMap<String, CPI.Identifier>()
