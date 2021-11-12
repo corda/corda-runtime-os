@@ -248,8 +248,3 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
         }
     }
 }
-include 'libs:serialization:serialization-amqp:serialization-cpk-library'
-findProject(':libs:serialization:serialization-amqp:serialization-cpk-library')?.name = 'serialization-cpk-library'
-include 'libs:serialization:serialization-amqp:serializable-cpk-using-lib'
-findProject(':libs:serialization:serialization-amqp:serializable-cpk-using-lib')?.name = 'serializable-cpk-using-lib'
-
