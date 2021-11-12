@@ -22,12 +22,6 @@ You can deploy the 2-cluster environment using the following command:
 docker-compose -f two-kafka-clusters.yml up -d
 ```
 
-On Linux, you will have to give the full read/write permission to all the users to the `data` directory, or run
-```
-docker-compose -f single-kafka-cluster.yml up -d
-```
-which will not persist the data under the `data` directory.
-
 ### Running the Kafka Integration Tests
 
 To run the tests
@@ -41,5 +35,3 @@ You can stop the environment using Ctrl+C and clean up the containers using:
 ```
 docker-compose -f single-kafka-cluster.yml down
 ```
-
-The persistent data of all the servers are stored under the `data` folder, so it's good to delete this folder too when tearing down an environment.
