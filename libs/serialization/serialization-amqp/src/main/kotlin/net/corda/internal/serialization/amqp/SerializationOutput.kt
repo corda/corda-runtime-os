@@ -135,17 +135,10 @@ open class SerializationOutput constructor(
      * Attaches information about the CPKs associated with the serialised objects to the metadata
      */
     private fun putTypeToMetadata(type: Type, context: SerializationContext) {
-        try {
-            val classTag = (context.sandboxGroup as? SandboxGroup)?.getEvolvableTag(type.asClass())
-            if (classTag != null && !metadata.containsKey(type.typeName)) {
-                val key = type.asClass().name
-                metadata.putValue(key, classTag)
-            }
-        } catch (ex: SandboxException) {
-            logger.trace {
-                "Class ${type.typeName} not found in any sandbox. " +
-                "The type is either a PlatformClass or is not installed. "
-            }
+        val classTag = (context.sandboxGroup as? SandboxGroup)?.getEvolvableTag(type.asClass())
+        if (classTag != null && !metadata.containsKey(type.typeName)) {
+            val key = type.asClass().name
+            metadata.putValue(key, classTag)
         }
     }
 

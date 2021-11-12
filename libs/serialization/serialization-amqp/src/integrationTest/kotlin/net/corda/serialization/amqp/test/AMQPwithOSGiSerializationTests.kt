@@ -15,6 +15,7 @@ import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.serialization.SerializationContext
+import net.corda.sandbox.SandboxException
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -231,7 +232,7 @@ class AMQPwithOSGiSerializationTests {
         val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle.MainBundleItem", Any::class.java)
         val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
 
-        assertFailsWith<Exception> {
+        assertFailsWith<SandboxException> {
             SerializationOutput(factory).serialize(mainBundleItemInstance, context)
         }
     }
@@ -243,7 +244,7 @@ inline fun <reified T: Exception> assertFailsWith(block: () -> Unit) {
         block()
     } catch (e: Exception) {
         if (!T::class.java.isAssignableFrom(e::class.java)) {
-            throw e
+            throw IllegalStateException("Expected to throw ${T::class.java.name} but threw $e instead")
         } else {
             return
         }

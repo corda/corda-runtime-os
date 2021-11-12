@@ -14,7 +14,7 @@ internal interface Sandbox {
     val publicBundles: Set<Bundle>
 
     /** Indicates whether any public or private bundle in the sandbox contains the given [bundle]. */
-    fun containsBundle(bundle: Bundle): Boolean
+    fun containsBundle(bundle: Bundle, lookInPublicBundlesOnly: Boolean = false): Boolean
 
     /** Indicates whether this sandbox has visibility of [otherSandbox]. */
     fun hasVisibility(otherSandbox: Sandbox): Boolean
