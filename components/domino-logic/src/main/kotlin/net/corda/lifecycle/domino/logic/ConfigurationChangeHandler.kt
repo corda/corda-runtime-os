@@ -15,8 +15,8 @@ abstract class ConfigurationChangeHandler<C>(
         newConfiguration: C,
         oldConfiguration: C?,
         resources: ResourcesHolder,
-        configUpdateResult: CompletableFuture<Unit>
-    )
+    ) : CompletableFuture<Unit>
+
 
     @Volatile
     internal var lastConfiguration: C? = null

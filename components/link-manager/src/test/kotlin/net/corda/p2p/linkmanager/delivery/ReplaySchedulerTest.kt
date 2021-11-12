@@ -48,15 +48,14 @@ class ReplaySchedulerTest {
     private val service = mock<ConfigurationReadService>()
     private val resourcesHolder = mock<ResourcesHolder>()
     private val configResourcesHolder = mock<ResourcesHolder>()
-    private val future = mock<CompletableFuture<Unit>>()
 
     private lateinit var configHandler: ReplayScheduler<*>.ReplaySchedulerConfigurationChangeHandler
-    private lateinit var createResources: ((resources: ResourcesHolder, CompletableFuture<Unit>) -> Unit)
+    private lateinit var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
     private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")
-        createResources = context.arguments()[2] as ((ResourcesHolder, CompletableFuture<Unit>) -> Unit)
+        createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
         configHandler = context.arguments()[4] as ReplayScheduler<*>.ReplaySchedulerConfigurationChangeHandler
     }
 
@@ -79,25 +78,28 @@ class ReplaySchedulerTest {
     @Test
     fun `on applyNewConfiguration completes the future exceptionally if config is invalid`() {
         ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
-        configHandler.applyNewConfiguration(Duration.ofMillis(-10), null, configResourcesHolder, future)
+        val future = configHandler.applyNewConfiguration(Duration.ofMillis(-10), null, configResourcesHolder)
 
-        verify(future).completeExceptionally(any())
+        assertThat(future.isDone).isTrue
+        assertThat(future.isCompletedExceptionally).isTrue
     }
 
     @Test
     fun `on applyNewConfiguration completes the future if config is valid`() {
         ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
-        configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder, future)
+        val future = configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder)
 
-        verify(future).complete(null)
+        assertThat(future.isDone).isTrue
+        assertThat(future.isCompletedExceptionally).isFalse
     }
 
     @Test
     fun `on createResource the ReplayScheduler adds a executor service to the resource holder`() {
         ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, { _: Any -> }) { 0 }
-        createResources(resourcesHolder, future)
+        val future = createResources(resourcesHolder)
         verify(resourcesHolder).keep(isA<AutoClosableScheduledExecutorService>())
-        verify(future).complete(null)
+        assertThat(future.isDone).isTrue
+        assertThat(future.isCompletedExceptionally).isFalse
     }
 
     @Test
@@ -107,8 +109,8 @@ class ReplaySchedulerTest {
         val tracker = TrackReplayedMessages(messages)
         val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage) { 0 }
         setRunning()
-        createResources(resourcesHolder, future)
-        configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder, future)
+        createResources(resourcesHolder)
+        configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder)
 
         for (i in 0 until messages) {
             val messageId = UUID.randomUUID().toString()
@@ -130,8 +132,8 @@ class ReplaySchedulerTest {
         val tracker = TrackReplayedMessages(messages)
         val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage) { 0 }
         setRunning()
-        createResources(resourcesHolder, future)
-        configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder, future)
+        createResources(resourcesHolder)
+        configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder)
 
         val messageIdsToRemove = mutableListOf<String>()
         val messageIdsToNotRemove = mutableListOf<String>()
@@ -173,8 +175,8 @@ class ReplaySchedulerTest {
         val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage) { 0 }
         replayManager.start()
         setRunning()
-        createResources(resourcesHolder, future)
-        configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder, future)
+        createResources(resourcesHolder)
+        configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder)
 
         replayManager.addForReplay(0, "", message)
         tracker.await()
@@ -190,8 +192,8 @@ class ReplaySchedulerTest {
         val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage) { 0 }
         replayManager.start()
         setRunning()
-        createResources(resourcesHolder, future)
-        configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder, future)
+        createResources(resourcesHolder)
+        configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder)
 
         val messageId = UUID.randomUUID().toString()
         replayManager.addForReplay(
@@ -200,7 +202,7 @@ class ReplaySchedulerTest {
             messageId
         )
 
-        configHandler.applyNewConfiguration(replayPeriod.multipliedBy(2), null, configResourcesHolder, future)
+        configHandler.applyNewConfiguration(replayPeriod.multipliedBy(2), null, configResourcesHolder)
 
         val messageIdAfterUpdate = UUID.randomUUID().toString()
         replayManager.addForReplay(

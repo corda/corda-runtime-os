@@ -9,6 +9,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -21,7 +22,6 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.net.InetSocketAddress
-import java.util.concurrent.CompletableFuture
 
 class ReconfigurableHttpServerTest {
     private val coordinatorHandler = argumentCaptor<LifecycleEventHandler>()
@@ -35,7 +35,6 @@ class ReconfigurableHttpServerTest {
     }
     private val configurationReaderService = mock<ConfigurationReadService>()
     private val listener = mock<HttpServerListener>()
-    private val future = mock<CompletableFuture<Unit>>()
     private val resourcesHolder = mock<ResourcesHolder>()
     private val address = InetSocketAddress("www.r3.com", 30)
     private val serverMock = mockConstruction(HttpServer::class.java)
@@ -79,7 +78,7 @@ class ReconfigurableHttpServerTest {
 
     @Test
     fun `writeResponse will write to server if ready`() {
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder, future)
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
 
         server.writeResponse(HttpResponseStatus.CREATED, address)
 
@@ -88,29 +87,31 @@ class ReconfigurableHttpServerTest {
 
     @Test
     fun `applyNewConfiguration will start a new server`() {
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder, future)
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
 
         verify(serverMock.constructed().first()).start()
     }
 
     @Test
     fun `applyNewConfiguration sets configApplied`() {
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder, future)
+        val future = configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
 
-        verify(future).complete(null)
+        Assertions.assertThat(future.isDone).isTrue
+        Assertions.assertThat(future.isCompletedExceptionally).isFalse
     }
 
     @Test
     fun `applyNewConfiguration sets configApplied if bad config`() {
-        configHandler.applyNewConfiguration(badConfiguration, null, resourcesHolder, future)
+        val future = configHandler.applyNewConfiguration(badConfiguration, null, resourcesHolder)
 
-        verify(future).completeExceptionally(badConfigurationException)
+        Assertions.assertThat(future.isDone).isTrue
+        Assertions.assertThat(future.isCompletedExceptionally).isTrue()
     }
 
     @Test
     fun `applyNewConfiguration will stop the previous server`() {
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder, future)
-        configHandler.applyNewConfiguration(configuration.copy(hostAddress = "aaa"), configuration, resourcesHolder, future)
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+        configHandler.applyNewConfiguration(configuration.copy(hostAddress = "aaa"), configuration, resourcesHolder)
 
         verify(serverMock.constructed().first()).stop()
         verify(serverMock.constructed()[1]).start()
@@ -118,8 +119,8 @@ class ReconfigurableHttpServerTest {
 
     @Test
     fun `applyNewConfiguration will stop the previous server in different port`() {
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder, future)
-        configHandler.applyNewConfiguration(configuration.copy(hostPort = 13), configuration, resourcesHolder, future)
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+        configHandler.applyNewConfiguration(configuration.copy(hostPort = 13), configuration, resourcesHolder)
 
         verify(serverMock.constructed().first()).stop()
         verify(serverMock.constructed()[1]).start()
@@ -127,7 +128,7 @@ class ReconfigurableHttpServerTest {
 
     @Test
     fun `applyNewConfiguration keeps the sever in the resource holder`() {
-        configHandler.applyNewConfiguration(configuration, null, resourcesHolder, future)
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
 
         verify(resourcesHolder).keep(serverMock.constructed().last())
     }

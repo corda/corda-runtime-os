@@ -138,13 +138,14 @@ open class SessionManagerImpl(
             newConfiguration: SessionManagerConfig,
             oldConfiguration: SessionManagerConfig?,
             resources: ResourcesHolder,
-            configUpdateResult: CompletableFuture<Unit>
-        ) {
+        ): CompletableFuture<Unit> {
+            val configUpdateResult = CompletableFuture<Unit>()
             dominoTile.withLifecycleWriteLock {
                 config.set(newConfiguration)
                 destroyAllSessions()
             }
             configUpdateResult.complete(null)
+            return configUpdateResult
         }
     }
 
@@ -533,10 +534,11 @@ open class SessionManagerImpl(
                 newConfiguration: HeartbeatManagerConfig,
                 oldConfiguration: HeartbeatManagerConfig?,
                 resources: ResourcesHolder,
-                configUpdateResult: CompletableFuture<Unit>
-            ) {
+            ): CompletableFuture<Unit> {
+                val configUpdateResult = CompletableFuture<Unit>()
                 config.set(newConfiguration)
                 configUpdateResult.complete(null)
+                return configUpdateResult
             }
         }
 
@@ -545,10 +547,12 @@ open class SessionManagerImpl(
             Duration.ofMillis(config.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY)))
         }
 
-        private fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
+        private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+            val future = CompletableFuture<Unit>()
             executorService = Executors.newSingleThreadScheduledExecutor()
             resources.keep(AutoClosableScheduledExecutorService(executorService))
             future.complete(null)
+            return future
         }
 
         @Volatile

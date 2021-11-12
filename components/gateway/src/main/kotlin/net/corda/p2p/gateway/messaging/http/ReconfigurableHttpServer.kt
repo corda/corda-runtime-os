@@ -53,8 +53,8 @@ class ReconfigurableHttpServer(
             newConfiguration: GatewayConfiguration,
             oldConfiguration: GatewayConfiguration?,
             resources: ResourcesHolder,
-            configUpdateResult: CompletableFuture<Unit>
-        ) {
+        ): CompletableFuture<Unit> {
+            val configUpdateResult = CompletableFuture<Unit>()
             @Suppress("TooGenericExceptionCaught")
             try {
                 if (newConfiguration.hostPort == oldConfiguration?.hostPort) {
@@ -85,6 +85,7 @@ class ReconfigurableHttpServer(
             } catch (e: Throwable) {
                 configUpdateResult.completeExceptionally(e)
             }
+            return configUpdateResult
         }
     }
 }

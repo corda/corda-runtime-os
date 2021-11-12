@@ -42,14 +42,15 @@ class ConfigBasedLinkManagerHostingMap(
             newConfiguration: Set<LinkManagerNetworkMap.HoldingIdentity>,
             oldConfiguration: Set<LinkManagerNetworkMap.HoldingIdentity>?,
             resources: ResourcesHolder,
-            configUpdateResult: CompletableFuture<Unit>
-        ) {
+        ): CompletableFuture<Unit> {
             val oldIdentities = (oldConfiguration ?: emptySet())
             val identitiesToAdd = newConfiguration - oldIdentities
             val identitiesToRemove = oldIdentities - newConfiguration
             locallyHostedIdentities.removeAll(identitiesToRemove)
             locallyHostedIdentities.addAll(identitiesToAdd)
+            val configUpdateResult = CompletableFuture<Unit>()
             configUpdateResult.complete(null)
+            return configUpdateResult
         }
     }
 

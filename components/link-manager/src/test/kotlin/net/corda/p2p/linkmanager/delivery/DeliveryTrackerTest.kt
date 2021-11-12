@@ -60,12 +60,12 @@ class DeliveryTrackerTest {
     }
 
     private val resourcesHolder = mock<ResourcesHolder>()
-    private lateinit var createResources: ((resources: ResourcesHolder, CompletableFuture<Unit>) -> Unit)
+    private lateinit var createResources: ((ResourcesHolder) -> CompletableFuture<Unit>)
     private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")
-        createResources = context.arguments()[2] as ((ResourcesHolder, CompletableFuture<Unit>) -> Unit)
+        createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
     }
 
     private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java)
@@ -110,7 +110,7 @@ class DeliveryTrackerTest {
             mock(),
             ::processAuthenticatedMessage
         )
-        createResources(resourcesHolder, mock())
+        createResources(resourcesHolder)
 
         val processorCaptor = argumentCaptor<StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker>>()
         val listenerCaptor = argumentCaptor<StateAndEventListener<String, AuthenticatedMessageDeliveryState>>()

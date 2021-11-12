@@ -21,6 +21,7 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -42,13 +43,13 @@ class StubNetworkMapTest {
     }
 
     private val resourcesHolder = mock<ResourcesHolder>()
-    private lateinit var createResources: ((resources: ResourcesHolder, CompletableFuture<Unit>) -> Unit)
+    private lateinit var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
     private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
-        whenever(mock.isRunning).thenReturn(true)
         @Suppress("UNCHECKED_CAST")
-        createResources = context.arguments()[2] as ((ResourcesHolder, CompletableFuture<Unit>) -> Unit)
+        createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
+        whenever(mock.isRunning).doReturn(true)
     }
 
     private val networkMap = StubNetworkMap(mock(), subscriptionFactory)
@@ -99,7 +100,6 @@ class StubNetworkMapTest {
             KeyAlgorithm.ECDSA, charlieAddress,
             NetworkType.CORDA_5
         )
-        createResources(resourcesHolder, mock())
         clientProcessor!!.onSnapshot(snapshot)
         clientProcessor!!.onNext(Record(NETWORK_MAP_TOPIC, charlieEntry.first, charlieEntry.second), null, snapshot + charlieEntry)
 
@@ -124,7 +124,7 @@ class StubNetworkMapTest {
 
     @Test
     fun `create resource starts the subscription and adds it to the resource tracker`() {
-        createResources(resourcesHolder, mock())
+        createResources(resourcesHolder)
         val capture = argumentCaptor<AutoCloseable>()
         verify(resourcesHolder).keep(capture.capture())
         verify(capture.lastValue as CompactedSubscription<*, *>).start()
@@ -132,10 +132,10 @@ class StubNetworkMapTest {
 
     @Test
     fun `onSnapshot completes the resource future`() {
-        val future = mock<CompletableFuture<Unit>>()
-        createResources(resourcesHolder, future)
+        val future = createResources(resourcesHolder)
         clientProcessor!!.onSnapshot(emptyMap())
-        verify(future).complete(null)
+        assertThat(future.isDone).isTrue
+        assertThat(future.isCompletedExceptionally).isFalse
     }
 
     private fun calculateHash(publicKey: ByteArray): ByteArray {

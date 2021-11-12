@@ -16,8 +16,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 class SessionPartitionMapperImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    private val subscriptionFactory: SubscriptionFactory,
-    private val nodeConfiguration: SmartConfig,
+    subscriptionFactory: SubscriptionFactory,
+    nodeConfiguration: SmartConfig,
 ) : SessionPartitionMapper, LifecycleWithDominoTile {
 
     companion object {
@@ -25,7 +25,15 @@ class SessionPartitionMapperImpl(
     }
 
     private val sessionPartitionsMapping = ConcurrentHashMap<String, List<Int>>()
+    private val processor = SessionPartitionProcessor()
     override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
+    private val future = CompletableFuture<Unit>()
+
+    private val sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(
+        SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS),
+        processor,
+        nodeConfiguration
+    )
 
     override fun getPartitions(sessionId: String): List<Int>? {
         return if (!isRunning) {
@@ -35,7 +43,7 @@ class SessionPartitionMapperImpl(
         }
     }
 
-    private inner class SessionPartitionProcessor(private val readyFuture: CompletableFuture<Unit>) :
+    private inner class SessionPartitionProcessor :
         CompactedProcessor<String, SessionPartitions> {
         override val keyClass: Class<String>
             get() = String::class.java
@@ -44,7 +52,7 @@ class SessionPartitionMapperImpl(
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
-            readyFuture.complete(null)
+            future.complete(null)
         }
 
         override fun onNext(
@@ -60,13 +68,9 @@ class SessionPartitionMapperImpl(
         }
     }
 
-    fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
-        val sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS),
-            SessionPartitionProcessor(future),
-            nodeConfiguration
-        )
+    fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         sessionPartitionSubscription.start()
         resources.keep(sessionPartitionSubscription)
+        return future
     }
 }

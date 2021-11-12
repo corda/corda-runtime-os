@@ -179,7 +179,7 @@ class LinkManagerTest {
         }
     }
 
-    private var createResources: ((resources: ResourcesHolder, CompletableFuture<Unit>) -> Unit)? = null
+    private var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)? = null
     private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
@@ -187,7 +187,7 @@ class LinkManagerTest {
         @Suppress("UNCHECKED_CAST")
         whenever(mock.name).doReturn(LifecycleCoordinatorName(context.arguments()[0] as String, ""))
         @Suppress("UNCHECKED_CAST")
-        createResources = context.arguments()[2] as ((resources: ResourcesHolder, future: CompletableFuture<Unit>) -> Unit)?
+        createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)?
     }
 
     @AfterEach
@@ -295,7 +295,7 @@ class LinkManagerTest {
 
         val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, mock(), mock())
         queue.start()
-        createResources!!(mock(), mock())
+        createResources!!(mock())
 
         queue.queueMessage(message1, key1)
         queue.queueMessage(message2, key1)
@@ -330,7 +330,7 @@ class LinkManagerTest {
 
         val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), mock(), mock(), mock())
         val resourcesHolder = mock<ResourcesHolder>()
-        linkManager.createInboundResources(resourcesHolder, mock())
+        linkManager.createInboundResources(resourcesHolder)
         verify(subscription).start()
         verify(resourcesHolder).keep(subscription)
     }
@@ -348,8 +348,8 @@ class LinkManagerTest {
 
         val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), mock(), mock(), mock())
         val resourcesHolder = mock<ResourcesHolder>()
-        linkManager.createInboundResources(mock(), mock())
-        linkManager.createOutboundResources(resourcesHolder, mock())
+        linkManager.createInboundResources(mock())
+        linkManager.createOutboundResources(resourcesHolder)
         verify(subscription).start()
         verify(resourcesHolder).keep(subscription)
         val constructedDeliveryTracker = deliveryTracker.constructed().last()

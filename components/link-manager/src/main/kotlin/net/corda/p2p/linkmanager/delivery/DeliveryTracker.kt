@@ -63,7 +63,7 @@ class DeliveryTracker(
         )
     )
 
-    private fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
+    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val messageTracker = MessageTracker(replayScheduler)
         val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("message-tracker-group", Schema.P2P_OUT_MARKERS, 1),
@@ -72,7 +72,9 @@ class DeliveryTracker(
             messageTracker.listener
         )
         resources.keep(messageTrackerSubscription)
+        val future = CompletableFuture<Unit>()
         future.complete(null)
+        return future
     }
 
     private class AppMessageReplayer(

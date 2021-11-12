@@ -30,7 +30,7 @@ import kotlin.concurrent.write
 class DominoTile(
     componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val createResources: ((resources: ResourcesHolder, resourceReady: CompletableFuture<Unit>) -> Unit)? = null,
+    private val createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)? = null,
     private val children: Collection<DominoTile> = emptySet(),
     private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
 ) : Lifecycle {
@@ -269,7 +269,11 @@ class DominoTile(
             logger.info("Configuration had not changed $name")
             configApplied(ConfigUpdateResult.NoUpdate)
         } else {
-            val future = CompletableFuture<Unit>()
+            val future = configurationChangeHandler.applyNewConfiguration(
+                newConfiguration,
+                configurationChangeHandler.lastConfiguration,
+                configResources
+            )
             future.whenComplete { _, exception ->
                 if (exception != null) {
                     configApplied(ConfigUpdateResult.Error(exception))
@@ -277,13 +281,6 @@ class DominoTile(
                     configApplied(ConfigUpdateResult.Success)
                 }
             }
-
-            configurationChangeHandler.applyNewConfiguration(
-                newConfiguration,
-                configurationChangeHandler.lastConfiguration,
-                configResources,
-                future
-            )
             configurationChangeHandler.lastConfiguration = newConfiguration
             logger.info("Reconfigured $name")
         }
@@ -352,15 +349,15 @@ class DominoTile(
 
     private fun createResourcesAndStart() {
         resources.close()
-        val future = CompletableFuture<Unit>()
-        future.whenComplete { _, exception ->
+
+        val future = createResources?.invoke(resources)
+        future?.whenComplete { _, exception ->
             if (exception != null) {
                 resourcesStarted(exception)
             } else {
                 resourcesStarted()
             }
         }
-        createResources?.invoke(resources, future)
         if (configRegistration == null && configurationChangeHandler != null) {
             logger.info("Registering for Config Updates $name.")
             configRegistration =

@@ -180,10 +180,12 @@ internal class OutboundMessageHandler(
         get() = LinkOutMessage::class.java
 
 
-    private fun createResources(resources: ResourcesHolder, resourceFuture: CompletableFuture<Unit>) {
+    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+        val future = CompletableFuture<Unit>()
         resources.keep(p2pMessageSubscription)
         p2pMessageSubscription.start()
-        resourceFuture.complete(null)
+        future.complete(null)
+        return future
     }
 
     private data class PendingRequest(val gatewayMessage: GatewayMessage,

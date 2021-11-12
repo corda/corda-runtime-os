@@ -129,7 +129,7 @@ class SessionManagerTest {
 
     private lateinit var configHandler: SessionManagerImpl.SessionManagerConfigChangeHandler
     private lateinit var heartbeatConfigHandler: SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
-    private var createResourcesCallbacks = mutableMapOf<String, ((resources: ResourcesHolder, CompletableFuture<Unit>) -> Unit)>()
+    private var createResourcesCallbacks = mutableMapOf<String, ((resources: ResourcesHolder) -> CompletableFuture<Unit>)>()
     private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
@@ -144,7 +144,7 @@ class SessionManagerTest {
         if (context.arguments()[2] != null) {
             @Suppress("UNCHECKED_CAST")
             createResourcesCallbacks[context.arguments()[0] as String] =
-                context.arguments()[2] as ((resources: ResourcesHolder, CompletableFuture<Unit>) -> Unit)
+                context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
         }
     }
 
@@ -187,10 +187,9 @@ class SessionManagerTest {
             SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
             null,
             mock(),
-            mock()
         )
-        heartbeatConfigHandler.applyNewConfiguration(configNoHeartbeat, null, mock(), mock())
-        createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]!!(resources, mock())
+        heartbeatConfigHandler.applyNewConfiguration(configNoHeartbeat, null, mock())
+        createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]!!(resources)
     }
 
     private fun MessageDigest.hash(data: ByteArray): ByteArray {
@@ -794,11 +793,10 @@ class SessionManagerTest {
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
                 null,
                 mock(),
-                mock()
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock(), mock())
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock(), mock()) }
-            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock(), mock()) }
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
+            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock()) }
         }
         sessionManager.start()
 
@@ -836,11 +834,10 @@ class SessionManagerTest {
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
                 null,
                 mock(),
-                mock()
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock(), mock())
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock(), mock()) }
-            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock(), mock()) }
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
+            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock()) }
         }
         sessionManager.start()
 
@@ -893,11 +890,10 @@ class SessionManagerTest {
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
                 null,
                 mock(),
-                mock()
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock(), mock())
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock(), mock()) }
-            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock(), mock()) }
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
+            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock()) }
         }
         sessionManager.start()
 
@@ -967,11 +963,10 @@ class SessionManagerTest {
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
                 null,
                 mock(),
-                mock()
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock(), mock())
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock(), mock()) }
-            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock(), mock()) }
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
+            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock()) }
         }
         sessionManager.start()
 
@@ -1033,11 +1028,10 @@ class SessionManagerTest {
                 SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
                 null,
                 mock(),
-                mock()
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock(), mock())
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock(), mock()) }
-            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock(), mock()) }
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
+            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock()) }
         }
         sessionManager.start()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())

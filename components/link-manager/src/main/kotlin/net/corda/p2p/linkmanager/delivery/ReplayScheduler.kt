@@ -55,16 +55,17 @@ class ReplayScheduler<M>(
             newConfiguration: Duration,
             oldConfiguration: Duration?,
             resources: ResourcesHolder,
-            configUpdateResult: CompletableFuture<Unit>
-        ) {
+        ): CompletableFuture<Unit> {
+            val configUpdateResult = CompletableFuture<Unit>()
             if (newConfiguration.isNegative) {
                 configUpdateResult.completeExceptionally(
                     IllegalArgumentException("The duration configuration (with key $replayPeriod) must be positive.")
                 )
-                return
+                return configUpdateResult
             }
             replayPeriod.set(newConfiguration)
             configUpdateResult.complete(null)
+            return configUpdateResult
         }
     }
 
@@ -72,10 +73,12 @@ class ReplayScheduler<M>(
         return config.getDuration(replayPeriodKey)
     }
 
-    private fun createResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
+    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         executorService = Executors.newSingleThreadScheduledExecutor()
         resources.keep(AutoClosableScheduledExecutorService(executorService))
+        val future = CompletableFuture<Unit>()
         future.complete(null)
+        return future
     }
 
     fun addForReplay(originalAttemptTimestamp: Long, uniqueId: String, message: M) {

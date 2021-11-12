@@ -56,8 +56,8 @@ class ReconfigurableConnectionManager(
             newConfiguration: GatewayConfiguration,
             oldConfiguration: GatewayConfiguration?,
             resources: ResourcesHolder,
-            configUpdateResult: CompletableFuture<Unit>
-        ) {
+        ): CompletableFuture<Unit> {
+            val configUpdateResult = CompletableFuture<Unit>()
             @Suppress("TooGenericExceptionCaught")
             try {
                 if (newConfiguration.sslConfig != oldConfiguration?.sslConfig ||
@@ -75,6 +75,7 @@ class ReconfigurableConnectionManager(
             } catch (e: Throwable) {
                 configUpdateResult.completeExceptionally(e)
             }
+            return configUpdateResult
         }
     }
 }

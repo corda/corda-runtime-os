@@ -21,7 +21,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.concurrent.CompletableFuture
 
 class SessionPartitionMapperImplTest {
 
@@ -34,7 +33,6 @@ class SessionPartitionMapperImplTest {
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on { createCompactedSubscription(any(), processor.capture(), any()) } doReturn subscription
     }
-    private val future = mock<CompletableFuture<Unit>>()
     private val resourcesHolder = mock<ResourcesHolder>()
     private val config = SmartConfigImpl.empty()
 
@@ -52,7 +50,7 @@ class SessionPartitionMapperImplTest {
 
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
         doReturn(true).whenever(dominoTile.constructed().last()).isRunning
-        sessionPartitionMapper.createResources(mock(), mock())
+        sessionPartitionMapper.createResources(mock())
 
         processor.firstValue.onSnapshot(partitionsMapping)
 
@@ -69,7 +67,7 @@ class SessionPartitionMapperImplTest {
     fun `getPartitions cannot be invoked, when component is not running`() {
         val sessionId = "test-session-id"
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
-        sessionPartitionMapper.createResources(mock(), mock())
+        sessionPartitionMapper.createResources(mock())
 
         assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
             .isInstanceOf(IllegalStateException::class.java)
@@ -88,7 +86,7 @@ class SessionPartitionMapperImplTest {
     fun `createResources will start the subscription and add it to the resource holder`() {
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
 
-        sessionPartitionMapper.createResources(resourcesHolder, future)
+        sessionPartitionMapper.createResources(resourcesHolder)
 
         verify(subscription).start()
         verify(resourcesHolder).keep(subscription)
@@ -97,17 +95,18 @@ class SessionPartitionMapperImplTest {
     @Test
     fun `onSnapshot will complete the resource created future`() {
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
-        sessionPartitionMapper.createResources(resourcesHolder, future)
+        val future = sessionPartitionMapper.createResources(resourcesHolder)
 
         processor.firstValue.onSnapshot(emptyMap())
-        verify(future).complete(null)
+        assertThat(future.isDone).isTrue
+        assertThat(future.isCompletedExceptionally).isFalse
     }
 
     @Test
     fun `empty record will remove the partition`() {
         val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
         doReturn(true).whenever(dominoTile.constructed().last()).isRunning
-        sessionPartitionMapper.createResources(mock(), mock())
+        sessionPartitionMapper.createResources(mock())
         processor.firstValue.onSnapshot(mapOf("session" to SessionPartitions(listOf(3))))
 
         processor.firstValue.onNext(Record(SESSION_OUT_PARTITIONS, "session", null), null, emptyMap())

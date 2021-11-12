@@ -91,13 +91,12 @@ class OutboundMessageHandlerTest {
         }
     }
 
-    private val future = mock<CompletableFuture<Unit>>()
-    private lateinit var createResources: ((resources: ResourcesHolder, resourceCreatedFuture: CompletableFuture<Unit>) -> Unit)
+    private lateinit var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
     private val dominoTile = mockConstruction(DominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")
-        createResources = context.arguments()[2] as ((resources: ResourcesHolder, resourceCreatedFuture: CompletableFuture<Unit>) -> Unit)
+        createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
     }
 
     private val handler = OutboundMessageHandler(
@@ -119,7 +118,7 @@ class OutboundMessageHandlerTest {
         startHandler()
 
         val resourcesHolder = mock<ResourcesHolder>()
-        createResources(resourcesHolder, future)
+        createResources(resourcesHolder)
 
         verify(subscription).start()
     }
@@ -129,7 +128,7 @@ class OutboundMessageHandlerTest {
         startHandler()
 
         val resourcesHolder = mock<ResourcesHolder>()
-        createResources(resourcesHolder, future)
+        createResources(resourcesHolder)
         verify(resourcesHolder).keep(subscription)
     }
 
@@ -138,8 +137,9 @@ class OutboundMessageHandlerTest {
         startHandler()
 
         val resourcesHolder = mock<ResourcesHolder>()
-        createResources(resourcesHolder, future)
-        verify(future).complete(null)
+        val future = createResources(resourcesHolder)
+        assertThat(future.isDone).isTrue
+        assertThat(future.isCompletedExceptionally).isFalse
     }
 
     @Test

@@ -80,7 +80,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
     }
 
-    private lateinit var inboundAssignmentListener: InboundAssignmentListener
+    private val inboundAssigned = CompletableFuture<Unit>()
+    private var inboundAssignmentListener = InboundAssignmentListener(inboundAssigned)
 
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory, lifecycleCoordinatorFactory, configuration)
 
@@ -95,8 +96,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     )
 
     @VisibleForTesting
-    internal fun createInboundResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
-        inboundAssignmentListener = InboundAssignmentListener(future)
+    internal fun createInboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, 1),
             InboundMessageProcessor(sessionManager, linkManagerNetworkMap),
@@ -105,10 +105,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         inboundMessageSubscription.start()
         resources.keep(inboundMessageSubscription)
         //We set resource started inside inboundAssignmentListener.
+        return inboundAssigned
     }
 
     @VisibleForTesting
-    internal fun createOutboundResources(resources: ResourcesHolder, future: CompletableFuture<Unit>) {
+    internal fun createOutboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val outboundMessageProcessor = OutboundMessageProcessor(
             sessionManager,
             linkManagerHostingMap,
@@ -134,7 +135,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         resources.keep(deliveryTracker)
         outboundMessageSubscription.start()
         resources.keep(outboundMessageSubscription)
-        future.complete(null)
+        val outboundReady = CompletableFuture<Unit>()
+        outboundReady.complete(null)
+        return outboundReady
     }
 
     private val commonChildren = setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoService.dominoTile,

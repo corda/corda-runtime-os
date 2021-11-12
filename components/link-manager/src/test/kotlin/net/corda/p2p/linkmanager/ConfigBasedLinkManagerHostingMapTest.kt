@@ -56,12 +56,13 @@ class ConfigBasedLinkManagerHostingMapTest {
     fun `locally hosted identities received via configuration are parsed properly and advised on lookups`() {
         setRunning()
         val typedConfig = configHandler.configFactory(config)
-        configHandler.applyNewConfiguration(typedConfig, null, configResourcesHolder, future)
+        val future = configHandler.applyNewConfiguration(typedConfig, null, configResourcesHolder)
 
         assertThat(hostingMap.isHostedLocally(alice)).isTrue
         assertThat(hostingMap.isHostedLocally(bob)).isTrue
         assertThat(hostingMap.isHostedLocally(charlie)).isFalse
-        verify(future).complete(null)
+        assertThat(future.isDone).isTrue
+        assertThat(future.isCompletedExceptionally).isFalse
     }
 
     @Test
