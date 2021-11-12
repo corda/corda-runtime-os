@@ -4,7 +4,7 @@ import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.CreateUserRequest
-import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.User
 import net.corda.v5.base.util.contextLogger
@@ -15,8 +15,7 @@ import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-class PermissionStorageWriterProcessor(private val entityManagerFactory: EntityManagerFactory) :
-    RPCResponderProcessor<PermissionManagementRequest, PermissionManagementResponse> {
+class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: EntityManagerFactory) : PermissionStorageWriterProcessor {
 
     private companion object {
         val log = contextLogger()
