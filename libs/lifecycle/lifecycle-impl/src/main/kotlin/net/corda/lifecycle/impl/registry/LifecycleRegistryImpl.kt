@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap
  * The lifecycle registry provides two pieces of functionality. The first is a lookup mechanism for finding coordinators
  * based on a name. The second is a record of the current statuses of all coordinators in the system.
  */
-@Component(service = [LifecycleRegistryCoordinatorAccess::class])
+@Component(service = [LifecycleRegistry::class, LifecycleRegistryCoordinatorAccess::class])
 class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAccess {
 
     private companion object {
