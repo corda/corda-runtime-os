@@ -311,7 +311,7 @@ class DominoTile(
     }
 
     private fun readyOrStartTile() {
-        if (registrations == null) {
+        if (registrations == null && children.isNotEmpty()) {
             registrations = children.map {
                 it.name
             }.map {
