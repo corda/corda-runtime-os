@@ -95,7 +95,7 @@ class MemberInfoTest {
                     PARTY_NAME to "O=Alice,L=London,C=GB",
                     PARTY_OWNING_KEY to KEY,
                     GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
-                    *convertPublicKeys(keyEncodingService).toTypedArray(),
+                    *convertPublicKeys().toTypedArray(),
                     *convertEndpoints().toTypedArray(),
                     *convertTestObjects().toTypedArray(),
                     *createInvalidListFormat().toTypedArray(),
@@ -126,7 +126,7 @@ class MemberInfoTest {
             return result
         }
 
-        private fun convertPublicKeys(keyEncodingService: KeyEncodingService): List<Pair<String, String>> =
+        private fun convertPublicKeys(): List<Pair<String, String>> =
             identityKeys.mapIndexed { i, identityKey -> String.format(IDENTITY_KEYS_KEY, i) to keyEncodingService.encodeAsString(identityKey) }
 
         private fun convertTestObjects(): List<Pair<String, String>> {
