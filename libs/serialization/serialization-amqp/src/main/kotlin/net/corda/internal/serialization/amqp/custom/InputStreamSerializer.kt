@@ -1,41 +1,25 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.CustomSerializer
-import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.Metadata
-import net.corda.internal.serialization.amqp.SerializationOutput
-import net.corda.internal.serialization.amqp.SerializationSchemas
-import net.corda.serialization.SerializationContext
-import org.apache.qpid.proton.codec.Data
+import net.corda.serialization.BaseDirectSerializer
+import net.corda.serialization.InternalDirectSerializer.ReadObject
+import net.corda.serialization.InternalDirectSerializer.WriteObject
 import java.io.ByteArrayInputStream
 import java.io.InputStream
-import java.lang.reflect.Type
 
 /**
  * A serializer that writes out the content of an input stream as bytes
  * and deserializes into a [ByteArrayInputStream].
  */
-object InputStreamSerializer
-    : CustomSerializer.Implements<InputStream>(InputStream::class.java, revealSubClassesInSchema = true) {
+class InputStreamSerializer : BaseDirectSerializer<InputStream>() {
+    override val type: Class<InputStream> get() = InputStream::class.java
+    override val withInheritance: Boolean get() = true
+    override val revealSubclasses: Boolean get() = true
 
-    override fun writeDescribedObject(
-        obj: InputStream,
-        data: Data,
-        type: Type,
-        output: SerializationOutput,
-        context: SerializationContext
-    ) {
-        data.putBinary(obj.readAllBytes())
+    override fun writeObject(obj: InputStream, writer: WriteObject) {
+        writer.putAsBytes(obj.readAllBytes())
     }
 
-    override fun readObject(
-        obj: Any,
-        serializationSchemas: SerializationSchemas,
-        metadata: Metadata,
-        input: DeserializationInput,
-        context: SerializationContext
-    ) : InputStream {
-        val bits = input.readObject(obj, serializationSchemas, metadata, ByteArray::class.java, context) as ByteArray
-        return bits.inputStream()
+    override fun readObject(reader: ReadObject): InputStream {
+        return reader.getAsBytes().inputStream()
     }
 }

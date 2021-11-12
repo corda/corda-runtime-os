@@ -51,7 +51,7 @@ class Main @Activate constructor(
     @Reference
     private val installService: InstallService,
     @Reference(cardinality = MULTIPLE, policyOption = GREEDY)
-    private val internalCustomSerializers: List<InternalCustomSerializer<out Any, out Any>>
+    private val internalCustomSerializers: List<InternalCustomSerializer<out Any>>
 ) : Application {
     private companion object {
         private val consoleLogger: Logger = LoggerFactory.getLogger("Console")

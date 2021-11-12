@@ -2,7 +2,10 @@ package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.FingerprintWriter
 import net.corda.serialization.InternalCustomSerializer
+import net.corda.serialization.InternalDirectSerializer
+import net.corda.serialization.InternalProxySerializer
 import net.corda.serialization.SerializationContext
+import org.apache.qpid.proton.amqp.Binary
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
 import java.lang.reflect.Type
@@ -101,67 +104,20 @@ abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
     }
 
     /**
-     * Additional base features for a custom serializer for a particular class [withInheritance] is false
-     * or super class / interfaces [withInheritance] is true
+     * Additional base features for internal custom serializers.
      */
     abstract class CustomSerializerImpl<T : Any>(
-        clazz: Class<T>,
-        final override val revealSubclassesInSchema: Boolean,
         @JvmField
-        protected val withInheritance: Boolean
+        protected val serializer: InternalCustomSerializer<T>
     ) : CustomSerializer<T>() {
-        final override val type: Class<*> = clazz
-        final override val typeDescriptor: Symbol = typeDescriptorFor(clazz)
+        final override val revealSubclassesInSchema: Boolean
+            get() = serializer.revealSubclasses
+
+        final override val type: Class<*> = serializer.type
+        final override val typeDescriptor: Symbol = typeDescriptorFor(type)
         final override val descriptor: Descriptor = Descriptor(typeDescriptor)
 
         final override fun isSerializerFor(clazz: Class<*>): Boolean {
-            return if (withInheritance) {
-                type.isAssignableFrom(clazz)
-            } else {
-                type === clazz
-            }
-        }
-
-        override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {}
-    }
-
-    /**
-     * Additional base features for a custom serializer for a particular class, that excludes subclasses.
-     */
-    abstract class Is<T : Any>(clazz: Class<T>)
-        : CustomSerializerImpl<T>(clazz, revealSubclassesInSchema = false, withInheritance = false)
-
-    /**
-     * Additional base features for a custom serializer for all implementations of a particular interface or super class.
-     */
-    abstract class Implements<T : Any>(clazz: Class<T>, revealSubClassesInSchema: Boolean)
-        : CustomSerializerImpl<T>(clazz, revealSubClassesInSchema, withInheritance = true) {
-        constructor(clazz: Class<T>) : this(clazz, revealSubClassesInSchema = false)
-    }
-
-    /**
-     * Additional base features over and above [Implements] or [Is] custom serializer for when the serialized form should be
-     * the serialized form of a proxy class, and the object can be re-created from that proxy on deserialization.
-     *
-     * The proxy class must use only types which are either native AMQP or other types for which there are pre-registered
-     * custom serializers.
-     */
-    class Proxy<T : Any, P : Any>(
-        private val serializer: InternalCustomSerializer<T, P>,
-        factory: SerializerFactory
-    ) : CustomSerializer<T>() {
-        override val revealSubclassesInSchema: Boolean
-            get() = serializer.revealSubclasses
-
-        private val proxySerializer: ObjectSerializer by lazy {
-            ObjectSerializer.make(factory.getTypeInformation(serializer.proxyType), factory)
-        }
-
-        override val type: Class<T> = serializer.type
-        override val typeDescriptor: Symbol = typeDescriptorFor(type)
-        override val descriptor: Descriptor = Descriptor(typeDescriptor)
-
-        override fun isSerializerFor(clazz: Class<*>): Boolean {
             return if (serializer.withInheritance) {
                 type.isAssignableFrom(clazz)
             } else {
@@ -171,6 +127,12 @@ abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
 
         override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {}
 
+        override fun toString(): String = "${this::class.java.simpleName}(${serializer::class.java.name})"
+    }
+
+    class Direct<T : Any>(
+        serializer: InternalDirectSerializer<T>
+    ) : CustomSerializerImpl<T>(serializer) {
         override fun writeDescribedObject(
             obj: T,
             data: Data,
@@ -178,7 +140,55 @@ abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
             output: SerializationOutput,
             context: SerializationContext
         ) {
-            val proxy = serializer.toProxy(obj, context)
+            (serializer as InternalDirectSerializer<T>).writeObject(obj, WriteDataObject(data), context)
+        }
+
+        override fun readObject(
+            obj: Any,
+            serializationSchemas: SerializationSchemas,
+            metadata: Metadata,
+            input: DeserializationInput,
+            context: SerializationContext
+        ): T {
+            return (serializer as InternalDirectSerializer<T>).readObject(ReadDataObject(obj), context)
+        }
+    }
+
+    private class WriteDataObject(private val data: Data) : InternalDirectSerializer.WriteObject {
+        override fun putAsBytes(value: ByteArray) = data.putBinary(value)
+        override fun putAsString(value: String) = data.putString(value)
+        override fun putAsObject(value: Any) = data.putObject(value)
+    }
+
+    private class ReadDataObject(private val obj: Any) : InternalDirectSerializer.ReadObject {
+        override fun getAsBytes(): ByteArray = (obj as Binary).array
+        override fun <T: Any> getAs(type: Class<T>): T = type.cast(obj)
+    }
+
+    /**
+     * Additional base features over and above [Direct] custom serializers for when the serialized form should be
+     * the serialized form of a proxy class, and the object can be re-created from that proxy on deserialization.
+     *
+     * The proxy class must use only types which are either native AMQP or other types for which there are pre-registered
+     * custom serializers.
+     */
+    @Suppress("unchecked_cast")
+    class Proxy<T : Any, P : Any>(
+        serializer: InternalProxySerializer<T, P>,
+        factory: SerializerFactory
+    ) : CustomSerializerImpl<T>(serializer) {
+        private val proxySerializer: ObjectSerializer by lazy {
+            ObjectSerializer.make(factory.getTypeInformation(serializer.proxyType), factory)
+        }
+
+        override fun writeDescribedObject(
+            obj: T,
+            data: Data,
+            type: Type,
+            output: SerializationOutput,
+            context: SerializationContext
+        ) {
+            val proxy = (serializer as InternalProxySerializer<T, P>).toProxy(obj, context)
             data.withList {
                 proxySerializer.propertySerializers.forEach { (_, serializer) ->
                     serializer.writeProperty(proxy, this, output, context, 0)
@@ -193,47 +203,8 @@ abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
             input: DeserializationInput,
             context: SerializationContext
         ): T {
-            @Suppress("unchecked_cast")
             val proxy = proxySerializer.readObject(obj, serializationSchemas, metadata, input, context) as P
-            return serializer.fromProxy(proxy, context)
-        }
-
-        override fun toString(): String = "${this::class.java.simpleName}(${serializer::class.java.name})"
-    }
-
-    /**
-     * A custom serializer where the on-wire representation is a string. For example, a [Currency][java.util.Currency]
-     * might be represented as a 3 character currency code, and converted to and from that string. By default, it is
-     * assumed that the [toString] method will generate the string representation and that there is a constructor that
-     * takes such a string as an argument to reconstruct.
-     *
-     * @param clazz The type to be marshalled
-     * @param withInheritance Whether subclasses of the class can also be marshalled.
-     * @param maker A lambda for constructing an instance, that defaults to calling a constructor that expects a string.
-     * @param unmaker A lambda that extracts the string value for an instance, that defaults to the [toString] method.
-     */
-    abstract class ToString<T : Any>(clazz: Class<T>,
-                                     withInheritance: Boolean = false,
-                                     private val maker: (String) -> T = clazz.getConstructor(String::class.java).let { ctor ->
-                                         { string -> ctor.newInstance(string) }
-                                     },
-                                     private val unmaker: (T) -> String = Any::toString)
-        : CustomSerializerImpl<T>(clazz, revealSubclassesInSchema = false, withInheritance) {
-
-        override fun writeDescribedObject(obj: T, data: Data, type: Type, output: SerializationOutput,
-                                          context: SerializationContext) {
-            data.putString(unmaker(obj))
-        }
-
-        override fun readObject(
-            obj: Any,
-            serializationSchemas: SerializationSchemas,
-            metadata: Metadata,
-            input: DeserializationInput,
-            context: SerializationContext
-        ): T {
-            val proxy = obj as String
-            return maker(proxy)
+            return (serializer as InternalProxySerializer<T, P>).fromProxy(proxy, context)
         }
     }
 }

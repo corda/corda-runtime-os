@@ -36,8 +36,8 @@ class CorDappSerializerTests {
     }
 
     // Standard proxy serializer used internally, here for comparison purposes
-    class InternalProxySerializer
-        : BaseProxySerializer<NeedsProxy, InternalProxySerializer.Proxy>() {
+    class ExampleInternalProxySerializer
+        : BaseProxySerializer<NeedsProxy, ExampleInternalProxySerializer.Proxy>() {
         data class Proxy(val proxy_a_: String)
 
         override val type: Class<NeedsProxy> get() = NeedsProxy::class.java
@@ -62,7 +62,7 @@ class CorDappSerializerTests {
         val msg = "help"
 
         proxyFactory.registerExternal(NeedsProxyProxySerializer(), proxyFactory)
-        internalProxyFactory.register(InternalProxySerializer(), internalProxyFactory)
+        internalProxyFactory.register(ExampleInternalProxySerializer(), internalProxyFactory)
 
         val needsProxy = NeedsProxy(msg)
 

@@ -1,10 +1,10 @@
 package net.corda.serialization
 
 /**
- * Optional base class for internal custom serializers that
+ * Optional base class for internal proxy serializers that
  * do not need to access the [SerializationContext].
  */
-abstract class BaseProxySerializer<T: Any, P: Any> : InternalCustomSerializer<T, P> {
+abstract class BaseProxySerializer<T: Any, P: Any> : InternalProxySerializer<T, P> {
     protected abstract fun toProxy(obj: T): P
     protected abstract fun fromProxy(proxy: P): T
 

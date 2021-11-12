@@ -713,10 +713,10 @@ class SerializationOutputTests {
     @Test
     fun `test toString custom serializer`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(BigDecimalSerializer)
+        factory.register(BigDecimalSerializer(), factory)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(BigDecimalSerializer)
+        factory2.register(BigDecimalSerializer(), factory2)
 
         val obj = BigDecimals(BigDecimal.TEN, BigDecimal.TEN)
         val objCopy = serdes(obj, factory, factory2)
@@ -728,10 +728,10 @@ class SerializationOutputTests {
     @Test
     fun `test byte arrays not reference counted`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(BigDecimalSerializer)
+        factory.register(BigDecimalSerializer(), factory)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(BigDecimalSerializer)
+        factory2.register(BigDecimalSerializer(), factory2)
 
         val bytes = ByteArray(1)
         val obj = ByteArrays(bytes, bytes)
@@ -754,10 +754,10 @@ class SerializationOutputTests {
     @Test
     fun `test InputStream serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        factory.register(InputStreamSerializer)
+        factory.register(InputStreamSerializer(), factory)
 
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
-        factory2.register(InputStreamSerializer)
+        factory2.register(InputStreamSerializer(), factory2)
         val bytes = ByteArray(10) { it.toByte() }
         val obj = bytes.inputStream()
         val obj2 = serdes<InputStream>(obj, factory, factory2, expectedEqual = false, expectDeserializedEqual = false)
@@ -798,8 +798,8 @@ class SerializationOutputTests {
         data class C(val a: Amount<Currency>)
 
         val factory = testDefaultFactoryNoEvolution()
-        factory.register(BigDecimalSerializer)
-        factory.register(CurrencySerializer)
+        factory.register(BigDecimalSerializer(), factory)
+        factory.register(CurrencySerializer(), factory)
 
         val c = C(Amount(100, BigDecimal("1.5"), Currency.getInstance("USD")))
 

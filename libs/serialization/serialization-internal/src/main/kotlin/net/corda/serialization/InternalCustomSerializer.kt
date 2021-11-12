@@ -1,8 +1,7 @@
 package net.corda.serialization
 
-interface InternalCustomSerializer<OBJ, PROXY>  {
-    val type: Class<OBJ>
-    val proxyType: Class<PROXY>
+interface InternalCustomSerializer<T>  {
+    val type: Class<T>
 
     /**
      * @property withInheritance Controls whether we serialize only instances
@@ -16,8 +15,4 @@ interface InternalCustomSerializer<OBJ, PROXY>  {
      * meaningful when [withInheritance] is `true`.
      */
     val revealSubclasses: Boolean get() = false
-
-    fun fromProxy(proxy: PROXY, context: SerializationContext): OBJ
-
-    fun toProxy(obj: OBJ, context: SerializationContext): PROXY
 }

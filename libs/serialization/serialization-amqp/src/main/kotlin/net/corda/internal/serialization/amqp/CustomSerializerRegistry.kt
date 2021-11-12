@@ -3,6 +3,8 @@ package net.corda.internal.serialization.amqp
 import net.corda.internal.serialization.model.DefaultCacheProvider
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.serialization.InternalCustomSerializer
+import net.corda.serialization.InternalDirectSerializer
+import net.corda.serialization.InternalProxySerializer
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaThrowable
 import net.corda.v5.base.util.contextLogger
@@ -53,7 +55,7 @@ interface CustomSerializerRegistry {
      *
      * @param serializer an [InternalCustomSerializer] that converts the target type to/from a proxy object
      */
-    fun register(serializer: InternalCustomSerializer<out Any, out Any>, factory: SerializerFactory)
+    fun register(serializer: InternalCustomSerializer<out Any>, factory: SerializerFactory)
 
     /**
      * Register a user defined custom serializer for any type that cannot be serialized or deserialized by the default
@@ -118,8 +120,12 @@ class CachingCustomSerializerRegistry(
         registerCustomSerializer(customSerializer)
     }
 
-    override fun register(serializer: InternalCustomSerializer<out Any, out Any>, factory: SerializerFactory) {
-        register(CustomSerializer.Proxy(serializer, factory))
+    override fun register(serializer: InternalCustomSerializer<out Any>, factory: SerializerFactory) {
+        register(when(serializer) {
+            is InternalProxySerializer<out Any, out Any> -> CustomSerializer.Proxy(serializer, factory)
+            is InternalDirectSerializer<out Any> -> CustomSerializer.Direct(serializer)
+            else -> throw UnsupportedOperationException("Unknown custom serializer $serializer")
+        })
     }
 
     override fun registerExternal(serializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {
