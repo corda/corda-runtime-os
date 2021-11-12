@@ -38,8 +38,10 @@ import org.apache.avro.io.DatumReader
 import org.apache.avro.io.DatumWriter
 import org.apache.avro.specific.SpecificDatumReader
 import org.apache.avro.specific.SpecificDatumWriter
+import org.assertj.core.util.Files
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.whenever
@@ -142,18 +144,27 @@ class MemberInfoTest {
             get() = this.memberProvidedContext.parseList("custom.testObjects")
 
         private var memberInfo: MemberInfo? = null
-    }
 
-    @BeforeEach
-    fun setUp() {
-        whenever(
-            keyEncodingService.decodePublicKey(KEY)
-        ).thenReturn(key)
-        whenever(
-            keyEncodingService.encodeAsString(key)
-        ).thenReturn(KEY)
+        private val avroMemberInfo = File("avro-member-info.avro")
 
-        memberInfo = createDummyMemberInfo()
+        @BeforeAll
+        @JvmStatic
+        fun setUp() {
+            whenever(
+                keyEncodingService.decodePublicKey(KEY)
+            ).thenReturn(key)
+            whenever(
+                keyEncodingService.encodeAsString(key)
+            ).thenReturn(KEY)
+
+            memberInfo = createDummyMemberInfo()
+        }
+
+        @AfterAll
+        @JvmStatic
+        fun tearDown() {
+            Files.delete(avroMemberInfo)
+        }
     }
 
     @Test
@@ -176,7 +187,7 @@ class MemberInfoTest {
             WireMemberInfo::class.java
         )
         val dataFileReader: DataFileReader<WireMemberInfo> =
-            DataFileReader(File("avro-member-info.avro"), userDatumReader)
+            DataFileReader(avroMemberInfo, userDatumReader)
 
         var recreatedMemberInfo: MemberInfo? = null
         while (dataFileReader.hasNext()) {
