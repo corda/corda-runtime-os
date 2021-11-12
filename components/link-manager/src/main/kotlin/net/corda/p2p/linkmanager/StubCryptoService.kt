@@ -39,9 +39,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         subscription.start()
-        resources.keep {
-            subscription.stop()
-        }
+        resources.keep (subscription)
         return readyFuture
     }
 

@@ -322,6 +322,24 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `when messages already queued for a peer, if we applyNewConfiguration then NewSessionNeeded`() {
+        val initiatorHello = mock<InitiatorHelloMessage>()
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        sessionManager.processOutboundMessage(message)
+        val sessionState = sessionManager.processOutboundMessage(message)
+        assertThat(sessionState).isInstanceOf(SessionManager.SessionState.SessionAlreadyPending::class.java)
+        configHandler.applyNewConfiguration(
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+            null,
+            mock(),
+        )
+        val sessionStateAfterUpdate = sessionManager.processOutboundMessage(message)
+        assertThat(sessionStateAfterUpdate).isInstanceOf(NewSessionNeeded::class.java)
+        //Once when we first get a config, once when config is updated
+        verify(pendingSessionMessageQueues, times(2)).destroyAllQueues()
+    }
+
+    @Test
     fun `when session is established with a peer, it is returned when processing a new message for the same peer`() {
         val initiatorHello = mock<InitiatorHelloMessage>()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)

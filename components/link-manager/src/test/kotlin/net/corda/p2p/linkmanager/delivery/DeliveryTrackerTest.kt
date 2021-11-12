@@ -14,6 +14,7 @@ import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -110,7 +111,9 @@ class DeliveryTrackerTest {
             mock(),
             ::processAuthenticatedMessage
         )
-        createResources(resourcesHolder)
+        val future = createResources(resourcesHolder)
+        assertThat(future.isDone).isTrue
+        assertThat(future.isCompletedExceptionally).isFalse()
 
         val processorCaptor = argumentCaptor<StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker>>()
         val listenerCaptor = argumentCaptor<StateAndEventListener<String, AuthenticatedMessageDeliveryState>>()
