@@ -1,5 +1,6 @@
 package net.corda.db.admin.impl
 
+import net.corda.db.admin.LiquibaseSchemaMigrator.Companion.PUBLIC_SCHEMA
 import net.corda.db.core.InMemoryDataSourceFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -28,7 +29,7 @@ class LiquibaseSchemaMigratorImplTest {
     fun `when updateDb create DB schema`() {
         val lbm = LiquibaseSchemaMigratorImpl()
 
-        lbm.updateDb(ds.connection, cl, null)
+        lbm.updateDb(ds.connection, cl, PUBLIC_SCHEMA)
 
         val tables = mutableListOf<String>()
         ds.connection.use {
@@ -52,7 +53,7 @@ class LiquibaseSchemaMigratorImplTest {
     fun `when createUpdateSql generate DB schema`() {
         val writer = StringWriter()
         val lbm = LiquibaseSchemaMigratorImpl()
-        lbm.createUpdateSql(ds.connection, cl, writer, null)
+        lbm.createUpdateSql(ds.connection, cl, writer, PUBLIC_SCHEMA)
 
         val sql = writer.toString().toLowerCase()
         assertThat(sql)
