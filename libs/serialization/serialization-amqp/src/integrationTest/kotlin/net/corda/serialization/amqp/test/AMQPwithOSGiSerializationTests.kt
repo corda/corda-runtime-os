@@ -21,7 +21,6 @@ import org.assertj.core.api.Assertions.fail
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.FrameworkUtil
@@ -30,13 +29,13 @@ import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.io.NotSerializableException
+import java.lang.IllegalStateException
 import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Hashtable
-import java.util.concurrent.TimeUnit
 
-@Timeout(value = 30, unit = TimeUnit.SECONDS)
+//@Timeout(value = 30, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class)
 class AMQPwithOSGiSerializationTests {
 
@@ -208,4 +207,46 @@ class AMQPwithOSGiSerializationTests {
             assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle4.Transfer")
         }
     }
+
+    @Test
+    fun `amqp to be serialized objects can only live in cpk's main bundle`() {
+        val cpk = testingBundle.getResource("TestSerializableCpk-using-lib-$cordappVersion-cordapp.cpk")
+            ?: fail("TestSerializableCpk-using-lib-$cordappVersion-cordapp.cpk is missing")
+
+        val cpi = assembleCPI(listOf(cpk))
+        val cpks = installService.getCpb(cpi.metadata.id)!!.cpks
+        val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks)
+        val factory = testDefaultFactoryNoEvolution()
+        val context = SerializationContextImpl(
+            preferredSerializationVersion = amqpMagic,
+            whitelist = AllWhitelist,
+            properties = mutableMapOf(),
+            objectReferencesEnabled = false,
+            useCase = SerializationContext.UseCase.Testing,
+            encoding = null,
+            classInfoService = sandboxContextService,
+            sandboxGroup = sandboxGroup
+        )
+
+        val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle.MainBundleItem", Any::class.java)
+        val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
+
+        assertFailsWith<Exception> {
+            SerializationOutput(factory).serialize(mainBundleItemInstance, context)
+        }
+    }
+}
+
+// TODO below method needs to be removed .I kept getting ? osgi.wiring.package: (osgi.wiring.package=kotlin.test). Could not fix it and just wrote it.
+inline fun <reified T: Exception> assertFailsWith(block: () -> Unit) {
+    try {
+        block()
+    } catch (e: Exception) {
+        if (!T::class.java.isAssignableFrom(e::class.java)) {
+            throw e
+        } else {
+            return
+        }
+    }
+    throw IllegalStateException("Expected to fail with ${T::class.java.name} but succeeded")
 }

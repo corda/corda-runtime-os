@@ -198,6 +198,8 @@ include 'libs:serialization:serialization-amqp:serializable-cpk-one'
 include 'libs:serialization:serialization-amqp:serializable-cpk-two'
 include 'libs:serialization:serialization-amqp:serializable-cpk-three'
 include 'libs:serialization:serialization-amqp:serializable-cpk-four'
+include 'libs:serialization:serialization-amqp:serialization-cpk-library'
+include 'libs:serialization:serialization-amqp:serializable-cpk-using-lib'
 include 'libs:serialization:serialization-encoding'
 include 'libs:serialization:serialization-internal'
 include 'libs:serialization:serialization-kryo'
@@ -246,3 +248,8 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
         }
     }
 }
+include 'libs:serialization:serialization-amqp:serialization-cpk-library'
+findProject(':libs:serialization:serialization-amqp:serialization-cpk-library')?.name = 'serialization-cpk-library'
+include 'libs:serialization:serialization-amqp:serializable-cpk-using-lib'
+findProject(':libs:serialization:serialization-amqp:serializable-cpk-using-lib')?.name = 'serializable-cpk-using-lib'
+
