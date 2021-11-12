@@ -24,7 +24,7 @@ docker-compose -f two-kafka-clusters.yml up -d
 
 On Linux, you will have to give the full read/write permission to all the users to the `data` directory, or run
 ```
-docker-compose -f linux-friendly-kafka-cluster.yml up -d
+docker-compose -f single-kafka-cluster.yml up -d
 ```
 which will not persist the data under the `data` directory.
 
