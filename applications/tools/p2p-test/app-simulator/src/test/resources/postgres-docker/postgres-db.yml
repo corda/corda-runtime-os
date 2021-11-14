@@ -1,7 +1,7 @@
 version: '3.4'
 
 services:
-  zoo1:
+  postgres-db:
     image: postgres
     restart: "no"
     hostname: postgres-db
