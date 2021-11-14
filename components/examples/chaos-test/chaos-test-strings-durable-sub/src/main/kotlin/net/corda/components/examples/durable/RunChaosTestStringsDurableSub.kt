@@ -1,7 +1,7 @@
 package net.corda.components.examples.durable
 
-import com.typesafe.config.Config
 import net.corda.components.examples.durable.processor.ChaosTestStringsDurableProcessor
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -13,11 +13,11 @@ import org.slf4j.Logger
 @Component
 class RunChaosTestStringsDurableSub(
     private val subscriptionFactory: SubscriptionFactory,
-    private var config: Config,
+    private var config: SmartConfig,
     private val instanceId: Int,
     private val killProcessOnRecord: Int = 0,
     private val delayOnNext: Long = 0,
-    ) : Lifecycle {
+) : Lifecycle {
 
     private companion object {
         val log: Logger = contextLogger()
@@ -32,7 +32,7 @@ class RunChaosTestStringsDurableSub(
     override val isRunning: Boolean
         get() = subscription?.isRunning ?: false
 
-    fun reStart(newConfig: Config) {
+    fun reStart(newConfig: SmartConfig) {
         log.info("Restarting chaos test strings durable subscription")
         stop()
         config = newConfig

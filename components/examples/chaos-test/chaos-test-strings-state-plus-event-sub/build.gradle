@@ -14,7 +14,8 @@ dependencies {
     implementation 'net.corda:corda-avro-schema'
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:configuration:configuration-core")
 }
 
-description 'Demo State+Event Subscription'
+description 'Chaos Test Strings State+Event Subscription'
 

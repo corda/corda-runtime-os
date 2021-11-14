@@ -1,9 +1,10 @@
 package net.corda.applications.examples.testclients
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.components.examples.publisher.RunChaosTestStringsPub
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -32,7 +33,9 @@ class ChaosTestStringsPubApp @Activate constructor(
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = SmartConfigFactory::class)
+    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
 
     private companion object {
@@ -103,9 +106,9 @@ class ChaosTestStringsPubApp @Activate constructor(
         shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
 
-    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): Config {
+    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, KAFKA_BOOTSTRAP_SERVER)
-        return ConfigFactory.empty()
+        return smartConfigFactory.create(ConfigFactory.empty())
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
     }

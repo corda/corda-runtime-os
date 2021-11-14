@@ -7,9 +7,6 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    // compileOnly "org.osgi:osgi.annotation:$osgiVersion"
-    // compileOnly "org.osgi:osgi.cmpn:$osgiVersion"
-    // compileOnly "org.osgi:osgi.core:$osgiVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
@@ -19,11 +16,6 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation project(":osgi-framework-api")
 
-    // implementation "com.typesafe:config:$typeSafeConfigVersion"
-    // implementation "info.picocli:picocli:$picocliVersion"
-    // implementation "net.corda:corda-base:$cordaVersion"
-    // implementation project(":osgi-framework-api")
-
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
 
@@ -32,6 +24,7 @@ dependencies {
     implementation project(":components:examples:chaos-test:chaos-test-strings-durable-sub")
     implementation project(":components:examples:chaos-test:chaos-test-strings-pubsub-sub")
     implementation project(":components:examples:chaos-test:chaos-test-strings-state-plus-event-sub")
+    implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-read')
 
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")

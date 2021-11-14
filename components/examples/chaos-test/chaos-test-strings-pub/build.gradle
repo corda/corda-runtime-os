@@ -14,7 +14,8 @@ dependencies {
     implementation 'net.corda:corda-avro-schema'
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:configuration:configuration-core")
 }
 
-description 'Chaos Test String Publisher'
+description 'Chaos Test Strings Publisher'
 

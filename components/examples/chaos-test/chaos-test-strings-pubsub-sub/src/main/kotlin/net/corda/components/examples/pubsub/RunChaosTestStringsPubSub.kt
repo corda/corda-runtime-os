@@ -1,7 +1,7 @@
 package net.corda.components.examples.pubsub
 
-import com.typesafe.config.Config
 import net.corda.components.examples.pubsub.processor.ChaosTestStringsPubSubProcessor
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -13,7 +13,7 @@ import org.slf4j.Logger
 @Component
 class RunChaosTestStringsPubSub(
     private val subscriptionFactory: SubscriptionFactory,
-    private var config: Config
+    private var config: SmartConfig
 ) : Lifecycle {
 
     companion object {
@@ -26,7 +26,7 @@ class RunChaosTestStringsPubSub(
 
     override var isRunning: Boolean = false
 
-    fun reStart(newConfig: Config) {
+    fun reStart(newConfig: SmartConfig) {
         log.info("Restarting pubsub subscription")
         stop()
         config = newConfig

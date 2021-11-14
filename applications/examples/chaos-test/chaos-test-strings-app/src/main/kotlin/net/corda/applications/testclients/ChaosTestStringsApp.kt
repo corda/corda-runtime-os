@@ -1,6 +1,5 @@
 package net.corda.applications.testclients
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.components.examples.config.reader.ConfigReader
@@ -10,6 +9,8 @@ import net.corda.components.examples.config.reader.MessagingConfigUpdateEvent
 import net.corda.components.examples.durable.RunChaosTestStringsDurableSub
 import net.corda.components.examples.pubsub.RunChaosTestStringsPubSub
 import net.corda.components.examples.stateevent.RunChaosTestStringsStateEventSub
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -45,7 +46,9 @@ class ChaosTestApp @Activate constructor(
     @Reference(service = ConfigReaderFactory::class)
     private var configReaderFactory: ConfigReaderFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = SmartConfigFactory::class)
+    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
 
     private companion object {
@@ -130,13 +133,11 @@ class ChaosTestApp @Activate constructor(
                             val config = bootstrapConfig.withFallback(event.currentConfigurationSnapshot[MESSAGING_CONFIG]!!)
                             chaosTestStringsStateEventSub?.reStart(config)
                             chaosTestStringsPubsubSub?.reStart(config)
-                            // negatingDurableSub?.reStart(config)
                             chaosTestStringsDurableSub?.reStart(config)
                             consoleLogger.info("Received config update from kafka, restarted subscriptions")
                         }
                         is StopEvent -> {
                             configReader?.stop()
-                            // negatingDurableSub?.stop()
                             chaosTestStringsDurableSub?.stop()
                             chaosTestStringsStateEventSub?.stop()
                             chaosTestStringsPubsubSub?.stop()
@@ -165,9 +166,9 @@ class ChaosTestApp @Activate constructor(
         return kafkaConnectionProperties
     }
 
-    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): Config {
+    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
-        return ConfigFactory.empty()
+        return smartConfigFactory.create(ConfigFactory.empty())
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
             .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
@@ -232,9 +233,8 @@ class CliParameters {
 
     @CommandLine.Option(
         names = ["--clientType"],
-        description = ["Specify list of clients we want to run, currently the choice is  {NegatingDurable,Sub}"]
+        description = ["Specify list of clients we want to run, currently the choice is one {Durable, StateEvent, Sub}"]
     )
-    // var clientType = HashSet<String>()
     var clientType = "0"
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])

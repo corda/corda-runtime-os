@@ -1,6 +1,6 @@
 package net.corda.components.examples.publisher
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.messaging.api.publisher.Publisher
@@ -20,7 +20,7 @@ class RunChaosTestStringsPub(
     private val instanceId: Int?,
     private val numberOfRecords: Int,
     private val numberOfKeys: Int,
-    private val config: Config,
+    private val config: SmartConfig,
     private val msgPrefix: String,
     private val msgDelayMs: Long,
     private val logPubMsgs: Boolean

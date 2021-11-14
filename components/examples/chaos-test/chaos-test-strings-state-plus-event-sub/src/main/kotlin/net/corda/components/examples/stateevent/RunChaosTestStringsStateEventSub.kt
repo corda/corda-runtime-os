@@ -1,7 +1,7 @@
 package net.corda.components.examples.stateevent
 
-import com.typesafe.config.Config
 import net.corda.components.examples.stateevent.processor.ChaosTestStringsStateAndEventProcessor
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -13,7 +13,7 @@ import org.slf4j.Logger
 @Component
 class RunChaosTestStringsStateEventSub(
     private val instanceId: Int,
-    private var config: Config,
+    private var config: SmartConfig,
     private val subscriptionFactory: SubscriptionFactory,
     private val killProcessOnRecord: Int = 0,
     private val delayOnNext: Long = 0
@@ -30,7 +30,7 @@ class RunChaosTestStringsStateEventSub(
     override val isRunning: Boolean
         get() = subscription?.isRunning ?: false
 
-    fun reStart(newConfig: Config) {
+    fun reStart(newConfig: SmartConfig) {
         log.info("Restarting state and event subscription")
         stop()
         config = newConfig
