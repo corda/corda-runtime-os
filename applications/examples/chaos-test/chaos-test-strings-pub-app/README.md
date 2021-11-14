@@ -1,12 +1,18 @@
-build 
+#Chaos Test Strings Publisher
+This is a test publisher 'application' or Patterns/messaging library driver for use in chaos testing, similar to the 'demo-publisher'. It 'publishes' string data and includes --msgPrefix option to include a given string in messages sent.  
+It is anticipated that it will be run by automated testing tools but it is also intended to be runnable 'by-hand' to allow ad-hoc testing and test development.  
+
+##To build 
 `gradlew clean appJar`
 
-run from resources dir
-`java -jar corda-demo-app-5.0.0-SNAPSHOT.jar --kafka kafka.properties --instanceId 1 --numberOfRecords 10 --numberOfKeys 4`
+##An example execution 
 
-or run using command line args/system properties instead kafka.properties file
-
-`java -jar -Dbootstrap.servers=localhost:9092 -Dmessaging.topic.prefix=demo corda-demo-publisher-5.0.0-SNAPSHOT.jar --instanceId 1 --numberOfRecords 10 --numberOfKeys 4`
-
-for async publisher remove instanceId
-`java -jar -Dbootstrap.servers=localhost:9092 -Dmessaging.topic.prefix=demo corda-demo-publisher-5.0.0-SNAPSHOT.jar --numberOfRecords 10 --numberOfKeys 4`
+    java -Dlog4j2.configurationFile=demo-pub-log4j2.xml \
+        -Dbootstrap.servers=localhost:9092 \
+        -Dmessaging.topic.prefix=demo \
+        -jar corda-chaos-test-strings-pub-app-5.0.0.0-SNAPSHOT.jar \
+        --instanceId 1 \
+        --numberOfRecords 20 \
+        --numberOfKeys 1 \
+        --msgPrefix "my_unique_prefix:" 
+                

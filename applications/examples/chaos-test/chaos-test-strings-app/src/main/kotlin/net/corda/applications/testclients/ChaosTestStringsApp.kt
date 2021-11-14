@@ -94,20 +94,6 @@ class ChaosTestApp @Activate constructor(
                                 state = LifeCycleState.STARTINGMESSAGING
                                 val config = bootstrapConfig.withFallback(event.currentConfigurationSnapshot[MESSAGING_CONFIG]!!)
 
-                                /*
-                                //if( parameters.clientType == "NegatingDurable" ) {
-                                    println("Running NegatingDurable")
-                                    negatingDurableSub =
-                                        RunNegatingDurableSub(
-                                            subscriptionFactory,
-                                            config,
-                                            instanceId,
-                                            parameters.durableKillProcessOnRecord.toInt(),
-                                            parameters.durableProcessorDelay.toLong()
-                                        )
-                                negatingDurableSub?.start()
-                                //}
-                                 */
                                 if (parameters.clientType == "Durable") {
                                     chaosTestStringsDurableSub =
                                         RunChaosTestStringsDurableSub(
