@@ -943,6 +943,90 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `when a data message is sent, heartbeats are sent, this continues even if the heartbeat manager gets a new config`() {
+        val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
+
+        fun callback(records: List<Record<*, *>>) {
+            val record = records.single()
+            assertEquals(Schema.LINK_OUT_TOPIC, record.topic)
+            val message = (record.value as LinkOutMessage).payload as AuthenticatedDataMessage
+            messages.add(message)
+        }
+        val publisher = CallbackPublisher(::callback)
+        whenever(publisherFactory.createPublisher(anyOrNull(), anyOrNull())).thenReturn(publisher)
+
+        val configVeryLongTimeout = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+            Duration.ofMillis(100),
+            Duration.ofMillis(longPeriodMilliSec)
+        )
+        val resourcesHolder = ResourcesHolder()
+        var sessionManager = SessionManagerImpl(
+            networkMap,
+            cryptoService,
+            pendingSessionMessageQueues,
+            publisherFactory,
+            mock(),
+            mock(),
+            mock(),
+            protocolFactory,
+            sessionReplayer
+        ).apply {
+            setRunning()
+            configHandler.applyNewConfiguration(
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
+                null,
+                mock(),
+            )
+            heartbeatConfigHandler.applyNewConfiguration(configVeryLongTimeout, null, mock())
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourcesHolder) }
+            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock()) }
+        }
+        sessionManager.start()
+
+        val initiatorHello = mock<InitiatorHelloMessage>()
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+
+        val sessionState = sessionManager.processOutboundMessage(message) as NewSessionNeeded
+        whenever(authenticatedSession.sessionId).thenReturn(sessionState.sessionId)
+        whenever(authenticatedSession.createMac(any())).thenReturn(AuthenticationResult(
+            CommonHeader(MessageType.DATA, 1, sessionState.sessionId, 5, Instant.now().toEpochMilli()),
+            RANDOM_BYTES.array()
+        ))
+
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionState.sessionId, 4, Instant.now().toEpochMilli())
+        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
+        val session = mock<Session>()
+        whenever(protocolInitiator.getSession()).thenReturn(session)
+        sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
+
+        assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
+        sessionManager.dataMessageSent(authenticatedSession)
+
+        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(5), 5.millis) {
+            assertThat(messages.size).isGreaterThanOrEqualTo(2)
+        }
+
+        val configFasterHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+            Duration.ofMillis(50),
+            Duration.ofMillis(longPeriodMilliSec)
+        )
+        heartbeatConfigHandler.applyNewConfiguration(configFasterHeartbeat, null, mock())
+        var messagesSentSoFar: Int? = null
+
+        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(5), 5.millis) {
+            assertThat(messages.size).isGreaterThanOrEqualTo(3)
+            messagesSentSoFar = messages.size
+        }
+
+        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(5), 5.millis) {
+            assertThat(messages.size).isGreaterThan(messagesSentSoFar!!)
+        }
+
+        sessionManager.stop()
+        resourcesHolder.close()
+    }
+
+    @Test
     fun `when a data message is sent, heartbeats are sent, if these are acknowledged the session does not time out`() {
         val heartbeatsBeforeTimeout = configWithHeartbeat.sessionTimeout.toMillis() / configWithHeartbeat.heartbeatPeriod.toMillis() - 1
         val publishLatch = CountDownLatch(2 * heartbeatsBeforeTimeout.toInt() - 1)
