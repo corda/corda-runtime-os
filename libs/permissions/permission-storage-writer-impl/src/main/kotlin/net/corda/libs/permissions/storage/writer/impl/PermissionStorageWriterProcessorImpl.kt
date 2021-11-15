@@ -65,6 +65,7 @@ class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: Ent
                 parentGroup = parentGroup,
                 updateTimestamp = Instant.now()
             )
+            user.version = 0
 
             entityManager.persist(user)
             entityManager.transaction.commit()
