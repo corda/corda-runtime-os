@@ -9,7 +9,7 @@ import net.corda.libs.permissions.cache.events.GroupTopicSnapshotReceived
 import net.corda.libs.permissions.cache.events.RoleTopicSnapshotReceived
 import net.corda.libs.permissions.cache.events.UserTopicSnapshotReceived
 import net.corda.libs.permissions.cache.factory.PermissionCacheFactory
-import net.corda.libs.permissions.cache.factory.PermissionCacheProcessorFactory
+import net.corda.libs.permissions.cache.factory.PermissionCacheTopicProcessorFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -33,8 +33,8 @@ class PermissionCacheService @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PermissionCacheFactory::class)
     private val permissionCacheFactory: PermissionCacheFactory,
-    @Reference(service = PermissionCacheProcessorFactory::class)
-    private val permissionCacheProcessorFactory: PermissionCacheProcessorFactory,
+    @Reference(service = PermissionCacheTopicProcessorFactory::class)
+    private val permissionCacheTopicProcessorFactory: PermissionCacheTopicProcessorFactory,
 ) : Lifecycle {
 
     private val coordinator = coordinatorFactory.createCoordinator<PermissionCacheService> { event, _ -> eventHandler(event) }
@@ -64,18 +64,12 @@ class PermissionCacheService @Activate constructor(
                 val userData = ConcurrentHashMap<String, User>()
                 val groupData = ConcurrentHashMap<String, Group>()
                 val roleData = ConcurrentHashMap<String, Role>()
-                userSubscription = subscriptionFactory.createCompactedSubscription(
-                    SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_USER_TOPIC),
-                    permissionCacheProcessorFactory.createUserProcessor(coordinator, userData)
-                ).also { it.start() }
-                groupSubscription = subscriptionFactory.createCompactedSubscription(
-                    SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_GROUP_TOPIC),
-                    permissionCacheProcessorFactory.createGroupProcessor(coordinator, groupData)
-                ).also { it.start() }
-                roleSubscription = subscriptionFactory.createCompactedSubscription(
-                    SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_ROLE_TOPIC),
-                    permissionCacheProcessorFactory.createRoleProcessor(coordinator, roleData)
-                ).also { it.start() }
+                userSubscription = createUserSubscription(userData)
+                    .also { it.start() }
+                groupSubscription = createGroupSubscription(groupData)
+                    .also { it.start() }
+                roleSubscription = createRoleSubscription(roleData)
+                    .also { it.start() }
                 _permissionCache = permissionCacheFactory.createPermissionCache(userData, groupData, roleData)
                     .also { it.start() }
             }
@@ -96,10 +90,11 @@ class PermissionCacheService @Activate constructor(
                 userSubscription?.stop()
                 groupSubscription?.stop()
                 roleSubscription?.stop()
+                _permissionCache?.stop()
                 userSubscription = null
                 groupSubscription = null
                 roleSubscription = null
-                _permissionCache?.stop()
+                _permissionCache = null
                 userSnapshotReceived = false
                 groupSnapshotReceived = false
                 roleSnapshotReceived = false
@@ -107,6 +102,30 @@ class PermissionCacheService @Activate constructor(
             }
         }
     }
+
+    private fun createUserSubscription(userData: ConcurrentHashMap<String, User>) =
+        subscriptionFactory.createCompactedSubscription(
+            SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_USER_TOPIC),
+            permissionCacheTopicProcessorFactory.createUserTopicProcessor(userData) {
+                coordinator.postEvent(UserTopicSnapshotReceived())
+            }
+        )
+
+    private fun createGroupSubscription(groupData: ConcurrentHashMap<String, Group>) =
+        subscriptionFactory.createCompactedSubscription(
+            SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_GROUP_TOPIC),
+            permissionCacheTopicProcessorFactory.createGroupTopicProcessor(groupData) {
+                coordinator.postEvent(GroupTopicSnapshotReceived())
+            }
+        )
+
+    private fun createRoleSubscription(roleData: ConcurrentHashMap<String, Role>) =
+        subscriptionFactory.createCompactedSubscription(
+            SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_ROLE_TOPIC),
+            permissionCacheTopicProcessorFactory.createRoleTopicProcessor(roleData) {
+                coordinator.postEvent(RoleTopicSnapshotReceived())
+            }
+        )
 
     override val isRunning: Boolean
         get() = coordinator.isRunning

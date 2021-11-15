@@ -4,13 +4,12 @@ import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.User
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.messaging.api.records.Record
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 
-class UserTopicProcessorTest {
+class PermissionTopicProcessorTest {
 
     private val user = User(
         "id1", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
@@ -22,18 +21,20 @@ class UserTopicProcessorTest {
         "hashedPassword", "saltValue", false, null, null, null
     )
 
-    private val coordinator: LifecycleCoordinator = mock()
     private val userData: ConcurrentHashMap<String, User> = ConcurrentHashMap()
 
     @Test
     fun `New processor does not have user data`() {
-        UserTopicProcessor(coordinator, userData)
+        var callbackExecuted = false
+        PermissionTopicProcessor(String::class.java, User::class.java, userData) { callbackExecuted = true }
         assertTrue(userData.isEmpty())
+        assertFalse(callbackExecuted)
     }
 
     @Test
     fun `onSnapshot will add to or update the user data`() {
-        val userTopicProcessor = UserTopicProcessor(coordinator, userData)
+        var callbackExecuted = false
+        val userTopicProcessor = PermissionTopicProcessor(String::class.java, User::class.java, userData) { callbackExecuted = true }
         with(userTopicProcessor) {
             onSnapshot(mapOf("user1" to User()))
             assertTrue(userData.size == 1)
@@ -42,12 +43,13 @@ class UserTopicProcessorTest {
             assertTrue(userData.size == 2)
             onSnapshot(mapOf("user2" to userUpdated))
             assertTrue(userData.size == 2)
+            assertTrue(callbackExecuted)
         }
     }
 
     @Test
     fun `onNext will add to or update the user data`() {
-        val userTopicProcessor = UserTopicProcessor(coordinator, userData)
+        val userTopicProcessor = PermissionTopicProcessor(String::class.java, User::class.java, userData) {  }
         with(userTopicProcessor) {
             onNext(Record("topic", "user1", User()), null, emptyMap())
             assertTrue(userData.size == 1)
@@ -61,7 +63,7 @@ class UserTopicProcessorTest {
 
     @Test
     fun `onNext null Record value will delete user`() {
-        val userTopicProcessor = UserTopicProcessor(coordinator, userData)
+        val userTopicProcessor = PermissionTopicProcessor(String::class.java, User::class.java, userData) {  }
         with(userTopicProcessor) {
             onNext(Record("topic", "user1", User()), null, emptyMap())
             assertTrue(userData.size == 1)
