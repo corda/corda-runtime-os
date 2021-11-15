@@ -28,11 +28,7 @@ class SigningServiceRpcSubTests {
         subscriptionFactory = mock()
         cryptoFactory = mock()
         whenever(
-            subscriptionFactory.createRPCSubscription<WireSigningRequest, WireSigningResponse>(
-                any(),
-                any(),
-                any()
-            )
+            subscriptionFactory.createRPCSubscription<WireSigningRequest, WireSigningResponse>(any(), any(), any())
         ).thenReturn(sub)
     }
 

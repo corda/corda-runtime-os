@@ -28,11 +28,7 @@ class FreshKeysServiceRpcSubTests {
         subscriptionFactory = mock()
         cryptoFactory = mock()
         whenever(
-            subscriptionFactory.createRPCSubscription<WireFreshKeysRequest, WireFreshKeysResponse>(
-                any(),
-                any(),
-                any()
-            )
+            subscriptionFactory.createRPCSubscription<WireFreshKeysRequest, WireFreshKeysResponse>(any(), any(), any())
         ).thenReturn(sub)
     }
 
