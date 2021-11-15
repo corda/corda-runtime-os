@@ -1,4 +1,4 @@
-package net.corda.permissions.cache.processor
+package net.corda.libs.permissions.cache.impl.processor
 
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap

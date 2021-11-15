@@ -1,10 +1,10 @@
-package net.corda.permissions.cache.processor
+package net.corda.libs.permissions.cache.impl.processor
 
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.permissions.User
 import net.corda.libs.permissions.cache.events.UserTopicSnapshotReceived
+import net.corda.libs.permissions.cache.processor.PermissionCacheUserProcessor
 import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 
 /**
@@ -13,7 +13,7 @@ import net.corda.messaging.api.records.Record
 internal class UserTopicProcessor(
     private val coordinator: LifecycleCoordinator,
     private val userData: ConcurrentHashMap<String, User>
-) : CompactedProcessor<String, User> {
+) : PermissionCacheUserProcessor {
 
     override val keyClass = String::class.java
     override val valueClass = User::class.java

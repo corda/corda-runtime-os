@@ -9,6 +9,7 @@ import net.corda.libs.permissions.cache.events.GroupTopicSnapshotReceived
 import net.corda.libs.permissions.cache.events.RoleTopicSnapshotReceived
 import net.corda.libs.permissions.cache.events.UserTopicSnapshotReceived
 import net.corda.libs.permissions.cache.factory.PermissionCacheFactory
+import net.corda.libs.permissions.cache.factory.PermissionCacheProcessorFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -19,43 +20,43 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.permissions.cache.processor.GroupTopicProcessor
-import net.corda.permissions.cache.processor.RoleTopicProcessor
-import net.corda.permissions.cache.processor.UserTopicProcessor
 import net.corda.rpc.schema.Schema
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Component(service = [PermissionCacheComponent::class])
-class PermissionCacheComponent @Activate constructor(
+@Component(service = [PermissionCacheService::class])
+class PermissionCacheService @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PermissionCacheFactory::class)
     private val permissionCacheFactory: PermissionCacheFactory,
+    @Reference(service = PermissionCacheProcessorFactory::class)
+    private val permissionCacheProcessorFactory: PermissionCacheProcessorFactory,
 ) : Lifecycle {
 
-    private val coordinator = coordinatorFactory.createCoordinator<PermissionCacheComponent> { event, _ -> eventHandler(event) }
+    private val coordinator = coordinatorFactory.createCoordinator<PermissionCacheService> { event, _ -> eventHandler(event) }
 
     private companion object {
         const val CONSUMER_GROUP = "PERMISSION_SERVICE"
     }
 
-    private var permissionCache: PermissionCache? = null
+    val permissionCache: PermissionCache?
+        get() {
+            return _permissionCache
+        }
+    private var _permissionCache: PermissionCache? = null
     private var userSubscription: CompactedSubscription<String, User>? = null
     private var groupSubscription: CompactedSubscription<String, Group>? = null
     private var roleSubscription: CompactedSubscription<String, Role>? = null
-    private var userTopicProcessor: UserTopicProcessor? = null
-    private var groupTopicProcessor: GroupTopicProcessor? = null
-    private var roleTopicProcessor: RoleTopicProcessor? = null
 
     private var userSnapshotReceived: Boolean = false
     private var groupSnapshotReceived: Boolean = false
     private var roleSnapshotReceived: Boolean = false
 
-    private var allSnapshotsReceived = userSnapshotReceived && groupSnapshotReceived && roleSnapshotReceived
+    private fun allSnapshotsReceived(): Boolean = userSnapshotReceived && groupSnapshotReceived && roleSnapshotReceived
 
     private fun eventHandler(event: LifecycleEvent) {
         when (event) {
@@ -63,55 +64,48 @@ class PermissionCacheComponent @Activate constructor(
                 val userData = ConcurrentHashMap<String, User>()
                 val groupData = ConcurrentHashMap<String, Group>()
                 val roleData = ConcurrentHashMap<String, Role>()
-                userTopicProcessor = UserTopicProcessor(coordinator, userData)
-                groupTopicProcessor = GroupTopicProcessor(coordinator, groupData)
-                roleTopicProcessor = RoleTopicProcessor(coordinator, roleData)
                 userSubscription = subscriptionFactory.createCompactedSubscription(
                     SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_USER_TOPIC),
-                    userTopicProcessor!!
+                    permissionCacheProcessorFactory.createUserProcessor(coordinator, userData)
                 ).also { it.start() }
                 groupSubscription = subscriptionFactory.createCompactedSubscription(
                     SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_GROUP_TOPIC),
-                    groupTopicProcessor!!
+                    permissionCacheProcessorFactory.createGroupProcessor(coordinator, groupData)
                 ).also { it.start() }
                 roleSubscription = subscriptionFactory.createCompactedSubscription(
                     SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_ROLE_TOPIC),
-                    roleTopicProcessor!!
+                    permissionCacheProcessorFactory.createRoleProcessor(coordinator, roleData)
                 ).also { it.start() }
-                permissionCache = permissionCacheFactory.createPermissionCache(userData, groupData, roleData)
+                _permissionCache = permissionCacheFactory.createPermissionCache(userData, groupData, roleData)
                     .also { it.start() }
             }
             // Let's set the component as UP when it has received all the snapshots it needs
             is UserTopicSnapshotReceived -> {
                 userSnapshotReceived = true
-                if (allSnapshotsReceived) coordinator.updateStatus(LifecycleStatus.UP)
+                if (allSnapshotsReceived()) coordinator.updateStatus(LifecycleStatus.UP)
             }
             is GroupTopicSnapshotReceived -> {
                 groupSnapshotReceived = true
-                if (allSnapshotsReceived) coordinator.updateStatus(LifecycleStatus.UP)
+                if (allSnapshotsReceived()) coordinator.updateStatus(LifecycleStatus.UP)
             }
             is RoleTopicSnapshotReceived -> {
                 roleSnapshotReceived = true
-                if (allSnapshotsReceived) coordinator.updateStatus(LifecycleStatus.UP)
+                if (allSnapshotsReceived()) coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
                 userSubscription?.stop()
                 groupSubscription?.stop()
                 roleSubscription?.stop()
-                permissionCache?.stop()
+                userSubscription = null
+                groupSubscription = null
+                roleSubscription = null
+                _permissionCache?.stop()
                 userSnapshotReceived = false
                 groupSnapshotReceived = false
                 roleSnapshotReceived = false
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }
-    }
-
-    /**
-     * Expose the permission cache.
-     */
-    fun getPermissionCache(): PermissionCache? {
-        return permissionCache
     }
 
     override val isRunning: Boolean

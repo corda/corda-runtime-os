@@ -23,45 +23,39 @@ internal class PermissionCacheImpl(
         get() = running.get()
 
     override fun getUser(loginName: String): User? {
-        if (!isRunning) {
-            throw PermissionCacheException("Permission cache is not running.")
-        }
+        validateCacheIsRunning()
         return userData[loginName]
     }
 
     override fun getGroup(groupId: String): Group? {
-        if (!isRunning) {
-            throw PermissionCacheException("Permission cache is not running.")
-        }
+        validateCacheIsRunning()
         return groupData[groupId]
     }
 
     override fun getRole(roleId: String): Role? {
-        if (!isRunning) {
-            throw PermissionCacheException("Permission cache is not running.")
-        }
+        validateCacheIsRunning()
         return roleData[roleId]
     }
 
     override fun getUsers(): Map<String, User> {
-        if (!isRunning) {
-            throw PermissionCacheException("Permission cache is not running.")
-        }
+        validateCacheIsRunning()
         return userData
     }
 
     override fun getGroups(): Map<String, Group> {
-        if (!isRunning) {
-            throw PermissionCacheException("Permission cache is not running.")
-        }
+        validateCacheIsRunning()
         return groupData
     }
 
     override fun getRoles(): Map<String, Role> {
+        validateCacheIsRunning()
+        return roleData
+    }
+
+    private fun validateCacheIsRunning() {
         if (!isRunning) {
             throw PermissionCacheException("Permission cache is not running.")
         }
-        return roleData
     }
 
     /**
