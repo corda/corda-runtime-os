@@ -24,7 +24,7 @@ class InboundAssignmentListener(private val future: CompletableFuture<Unit>): Pa
         lock.write {
             if (firstAssignment) {
                 firstAssignment = false
-                future.complete(null)
+                future.complete(Unit)
             }
             for ((topic, partition) in topicPartitions) {
                 val partitionSet = topicToPartition.computeIfAbsent(topic) { mutableSetOf() }

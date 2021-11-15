@@ -103,7 +103,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
                 val publicKey = keyDeserialiser.toPublicKey(keyPairEntry.publicKey.array(), keyPairEntry.keyAlgo)
                 keys[alias] = KeyPair(keyPairEntry.keyAlgo, privateKey, publicKey)
             }
-            readyFuture.complete(null)
+            readyFuture.complete(Unit)
         }
 
         override fun onNext(newRecord: Record<String, KeyPairEntry>,

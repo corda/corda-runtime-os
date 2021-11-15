@@ -144,7 +144,7 @@ open class SessionManagerImpl(
                 config.set(newConfiguration)
                 destroyAllSessions()
             }
-            configUpdateResult.complete(null)
+            configUpdateResult.complete(Unit)
             return configUpdateResult
         }
     }
@@ -537,7 +537,7 @@ open class SessionManagerImpl(
             ): CompletableFuture<Unit> {
                 val configUpdateResult = CompletableFuture<Unit>()
                 config.set(newConfiguration)
-                configUpdateResult.complete(null)
+                configUpdateResult.complete(Unit)
                 return configUpdateResult
             }
         }
@@ -551,7 +551,7 @@ open class SessionManagerImpl(
             val future = CompletableFuture<Unit>()
             executorService = Executors.newSingleThreadScheduledExecutor()
             resources.keep(AutoClosableScheduledExecutorService(executorService))
-            future.complete(null)
+            future.complete(Unit)
             return future
         }
 

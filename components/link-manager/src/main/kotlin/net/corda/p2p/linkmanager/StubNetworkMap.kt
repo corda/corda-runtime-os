@@ -104,7 +104,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 
         override fun onSnapshot(currentData: Map<String, NetworkMapEntry>) {
             currentData.forEach { (_, networkMapEntry) -> addEntry(networkMapEntry) }
-            readyFuture.complete(null)
+            readyFuture.complete(Unit)
         }
 
         override fun onNext(

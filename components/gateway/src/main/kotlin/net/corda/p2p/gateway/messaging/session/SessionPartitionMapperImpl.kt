@@ -52,7 +52,7 @@ class SessionPartitionMapperImpl(
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
-            future.complete(null)
+            future.complete(Unit)
         }
 
         override fun onNext(

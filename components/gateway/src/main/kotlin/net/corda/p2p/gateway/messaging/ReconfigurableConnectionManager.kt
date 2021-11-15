@@ -70,7 +70,7 @@ class ReconfigurableConnectionManager(
                     manager = null
                     oldManager?.close()
                     manager = newManager
-                    configUpdateResult.complete(null)
+                    configUpdateResult.complete(Unit)
                 }
             } catch (e: Throwable) {
                 configUpdateResult.completeExceptionally(e)

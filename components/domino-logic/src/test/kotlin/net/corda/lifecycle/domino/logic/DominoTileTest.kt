@@ -242,7 +242,7 @@ class DominoTileTest {
             tile.start()
 
             assertThat(tile.state).isEqualTo(DominoTile.State.Created)
-            future.complete(null)
+            future.complete(Unit)
             assertThat(tile.state).isEqualTo(DominoTile.State.Started)
         }
 
@@ -275,7 +275,7 @@ class DominoTileTest {
             assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
             tile.start()
             assertThat(tile.state).isEqualTo(DominoTile.State.StoppedByParent)
-            future.complete(null)
+            future.complete(Unit)
             assertThat(tile.state).isEqualTo(DominoTile.State.Started)
         }
 
@@ -351,7 +351,7 @@ class DominoTileTest {
             val tile = DominoTile(TILE_NAME, factory, createResources = { _ ->
                 called.incrementAndGet()
                 val future = CompletableFuture<Unit>()
-                future.complete(null)
+                future.complete(Unit)
                 future
             })
             tile.start()
@@ -396,7 +396,7 @@ class DominoTileTest {
         fun `resourcesStarted will start tile if possible`() {
             val tile = DominoTile(TILE_NAME, factory, createResources = {
                 val future = CompletableFuture<Unit>()
-                future.complete(null)
+                future.complete(Unit)
                 future
             })
             tile.start()
@@ -411,7 +411,7 @@ class DominoTileTest {
             tile.start()
             tile.stop()
 
-            outerFuture.complete(null)
+            outerFuture.complete(Unit)
 
             assertThat(tile.state).isEqualTo(DominoTile.State.Started)
         }
@@ -546,7 +546,7 @@ class DominoTileTest {
 
             assertThat(tile.state).isEqualTo(DominoTile.State.Created)
 
-            outerConfigUpdateResult!!.complete(null)
+            outerConfigUpdateResult!!.complete(Unit)
 
             assertThat(tile.state).isEqualTo(DominoTile.State.Started)
             assertThat(tile.isRunning).isTrue
@@ -623,7 +623,7 @@ class DominoTileTest {
             assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
 
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to goodConfig))
-            outerConfigUpdateResult!!.complete(null)
+            outerConfigUpdateResult!!.complete(Unit)
             assertThat(tile.state).isEqualTo(DominoTile.State.Started)
 
             assertThat(calledNewConfigurations).contains(Configuration(17) to Configuration(5))
@@ -1225,14 +1225,14 @@ class DominoTileTest {
                 factory,
                 createResources = {
                     val future = CompletableFuture<Unit>()
-                    future.complete(null)
+                    future.complete(Unit)
                     future
                 },
                 configurationChangeHandler = TileConfigurationChangeHandler()
             )
             tile.start()
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
-            outerConfigUpdateResult.complete(null)
+            outerConfigUpdateResult.complete(Unit)
 
             assertThat(tile.state).isEqualTo(DominoTile.State.Started)
         }
@@ -1247,7 +1247,7 @@ class DominoTileTest {
                 configurationChangeHandler = TileConfigurationChangeHandler()
             )
             tile.start()
-            resourceFuture.complete(null)
+            resourceFuture.complete(Unit)
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
             outerConfigUpdateResult.completeExceptionally(IOException())
 
@@ -1266,7 +1266,7 @@ class DominoTileTest {
             tile.start()
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
             outerConfigUpdateResult.completeExceptionally(IOException())
-            resourceFuture.complete(null)
+            resourceFuture.complete(Unit)
 
             assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
         }
@@ -1283,7 +1283,7 @@ class DominoTileTest {
             tile.start()
             resourceFuture.completeExceptionally(IOException())
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
-            outerConfigUpdateResult.complete(null)
+            outerConfigUpdateResult.complete(Unit)
 
             assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
         }
@@ -1299,7 +1299,7 @@ class DominoTileTest {
             )
             tile.start()
             configurationHandler.firstValue.onNewConfiguration(setOf(key), mapOf(key to mock()))
-            outerConfigUpdateResult.complete(null)
+            outerConfigUpdateResult.complete(Unit)
             resourceFuture.completeExceptionally(IOException())
 
             assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)

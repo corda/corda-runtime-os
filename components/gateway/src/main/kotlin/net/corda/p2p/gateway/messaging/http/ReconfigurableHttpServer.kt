@@ -81,7 +81,7 @@ class ReconfigurableHttpServer(
                         httpServer = newServer
                     }
                 }
-                configUpdateResult.complete(null)
+                configUpdateResult.complete(Unit)
             } catch (e: Throwable) {
                 configUpdateResult.completeExceptionally(e)
             }

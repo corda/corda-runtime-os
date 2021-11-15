@@ -49,7 +49,7 @@ class ConfigBasedLinkManagerHostingMap(
             locallyHostedIdentities.removeAll(identitiesToRemove)
             locallyHostedIdentities.addAll(identitiesToAdd)
             val configUpdateResult = CompletableFuture<Unit>()
-            configUpdateResult.complete(null)
+            configUpdateResult.complete(Unit)
             return configUpdateResult
         }
     }

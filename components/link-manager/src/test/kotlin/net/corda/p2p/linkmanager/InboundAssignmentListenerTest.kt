@@ -40,6 +40,6 @@ class InboundAssignmentListenerTest {
         listener.onPartitionsAssigned(firstAssignment)
         val secondAssignment = assign2.map { TOPIC_1 to it } + assign1.map { TOPIC_2 to it }
         listener.onPartitionsAssigned(secondAssignment)
-        verify(future).complete(null)
+        verify(future).complete(Unit)
     }
 }

@@ -35,7 +35,7 @@ class PublisherWithDominoLogic(
             }
             it.start()
         }
-        resourceReady.complete(null)
+        resourceReady.complete(Unit)
         return resourceReady
     }
 

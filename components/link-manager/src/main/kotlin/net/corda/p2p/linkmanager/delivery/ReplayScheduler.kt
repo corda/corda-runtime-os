@@ -64,7 +64,7 @@ class ReplayScheduler<M>(
                 return configUpdateResult
             }
             replayPeriod.set(newConfiguration)
-            configUpdateResult.complete(null)
+            configUpdateResult.complete(Unit)
             return configUpdateResult
         }
     }
@@ -77,7 +77,7 @@ class ReplayScheduler<M>(
         executorService = Executors.newSingleThreadScheduledExecutor()
         resources.keep(AutoClosableScheduledExecutorService(executorService))
         val future = CompletableFuture<Unit>()
-        future.complete(null)
+        future.complete(Unit)
         return future
     }
 

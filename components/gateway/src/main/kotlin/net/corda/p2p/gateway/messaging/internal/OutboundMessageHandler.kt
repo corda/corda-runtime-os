@@ -184,7 +184,7 @@ internal class OutboundMessageHandler(
         val future = CompletableFuture<Unit>()
         resources.keep(p2pMessageSubscription)
         p2pMessageSubscription.start()
-        future.complete(null)
+        future.complete(Unit)
         return future
     }
 

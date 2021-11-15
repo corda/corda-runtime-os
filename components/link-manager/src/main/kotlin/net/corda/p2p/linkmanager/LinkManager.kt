@@ -136,7 +136,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         outboundMessageSubscription.start()
         resources.keep(outboundMessageSubscription)
         val outboundReady = CompletableFuture<Unit>()
-        outboundReady.complete(null)
+        outboundReady.complete(Unit)
         return outboundReady
     }
 
