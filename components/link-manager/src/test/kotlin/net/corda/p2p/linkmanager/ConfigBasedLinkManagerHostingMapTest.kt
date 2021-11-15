@@ -13,7 +13,6 @@ import org.mockito.Mockito
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.util.concurrent.CompletableFuture
 
 class ConfigBasedLinkManagerHostingMapTest {
 
