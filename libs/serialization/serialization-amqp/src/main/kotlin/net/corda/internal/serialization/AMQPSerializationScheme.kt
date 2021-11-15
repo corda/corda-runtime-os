@@ -1,5 +1,4 @@
 @file:JvmName("AMQPSerializationScheme")
-
 package net.corda.internal.serialization
 
 import net.corda.internal.serialization.amqp.AccessOrderLinkedHashMap
@@ -37,12 +36,12 @@ import net.corda.internal.serialization.amqp.custom.YearSerializer
 import net.corda.internal.serialization.amqp.custom.ZoneIdSerializer
 import net.corda.internal.serialization.amqp.custom.ZonedDateTimeSerializer
 import net.corda.sandbox.SandboxGroup
+import net.corda.serialization.ClassWhitelist
+import net.corda.serialization.SerializationContext
 import net.corda.utilities.toSynchronised
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.ByteSequence
-import net.corda.v5.serialization.ClassWhitelist
-import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SerializationWhitelist
 import net.corda.v5.serialization.SerializedBytes
@@ -99,7 +98,7 @@ abstract class AbstractAMQPSerializationScheme private constructor(
 
         val serializersToRegister = context.customSerializers ?: cordappCustomSerializers
         serializersToRegister.forEach { customSerializer ->
-            factory.registerExternal(customSerializer)
+            factory.registerExternal(customSerializer, factory)
         }
     }
 
@@ -139,35 +138,34 @@ abstract class AbstractAMQPSerializationScheme private constructor(
 
 fun registerCustomSerializers(factory: SerializerFactory) {
     with(factory) {
-        register(ThrowableSerializer(this), true)
-        register(StackTraceElementSerializer(), true)
-        register(BigDecimalSerializer, false)
-        register(BigIntegerSerializer, false)
-        register(CurrencySerializer, false)
-        register(OpaqueBytesSubSequenceSerializer(), true)
-        register(InstantSerializer(), true)
-        register(DurationSerializer(), true)
-        register(LocalDateSerializer(), true)
-        register(LocalDateTimeSerializer(), true)
-        register(LocalTimeSerializer(), true)
-        register(ZonedDateTimeSerializer(), true)
-        register(ZoneIdSerializer(), true)
-        register(OffsetTimeSerializer(), true)
-        register(OffsetDateTimeSerializer(), true)
-        register(OptionalSerializer(), true)
-        register(YearSerializer(), true)
-        register(YearMonthSerializer(), true)
-        register(MonthDaySerializer(), true)
-        register(PeriodSerializer(), true)
-        register(ClassSerializer(), true)
-        register(X509CertificateSerializer, true)
-        register(X509CRLSerializer, true)
-        register(CertPathSerializer(), true)
-        register(StringBufferSerializer, false)
-        register(InputStreamSerializer, true)
-        register(BitSetSerializer(), true)
-        register(EnumSetSerializer(), true)
-        register(X500PrincipalSerializer(), true)
+        register(ThrowableSerializer(this), this)
+        register(StackTraceElementSerializer(), this)
+        register(BigDecimalSerializer(), this)
+        register(BigIntegerSerializer(), this)
+        register(CurrencySerializer(), this)
+        register(OpaqueBytesSubSequenceSerializer(), this)
+        register(InstantSerializer(), this)
+        register(DurationSerializer(), this)
+        register(LocalDateSerializer(), this)
+        register(LocalDateTimeSerializer(), this)
+        register(LocalTimeSerializer(), this)
+        register(ZonedDateTimeSerializer(), this)
+        register(ZoneIdSerializer(), this)
+        register(OffsetTimeSerializer(), this)
+        register(OffsetDateTimeSerializer(), this)
+        register(OptionalSerializer(), this)
+        register(YearSerializer(), this)
+        register(YearMonthSerializer(), this)
+        register(MonthDaySerializer(), this)
+        register(PeriodSerializer(), this)
+        register(ClassSerializer(), this)
+        register(X509CertificateSerializer(), this)
+        register(X509CRLSerializer(), this)
+        register(CertPathSerializer(), this)
+        register(StringBufferSerializer(), this)
+        register(InputStreamSerializer(), this)
+        register(BitSetSerializer(), this)
+        register(EnumSetSerializer(), this)
+        register(X500PrincipalSerializer(), this)
     }
 }
-

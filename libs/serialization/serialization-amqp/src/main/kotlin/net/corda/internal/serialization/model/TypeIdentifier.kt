@@ -6,7 +6,7 @@ import net.corda.internal.serialization.amqp.asClass
 import net.corda.internal.serialization.osgi.TypeResolver
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.serialization.SerializationContext
+import net.corda.serialization.SerializationContext
 import java.io.NotSerializableException
 import java.lang.reflect.GenericArrayType
 import java.lang.reflect.ParameterizedType
