@@ -50,9 +50,9 @@ class RPCTopicServiceImplTest {
         val executorService = Executors.newCachedThreadPool()
         val service = RPCTopicServiceImpl(executorService)
 
-        var requestCompletion = CompletableFuture<String>()
-        var request = 1
-        var topic = "topic1"
+        val requestCompletion = CompletableFuture<String>()
+        val request = 1
+        val topic = "topic1"
 
         service.publish(topic, request, requestCompletion)
 
@@ -65,9 +65,9 @@ class RPCTopicServiceImplTest {
         val executorService = Executors.newSingleThreadExecutor()
         val service = RPCTopicServiceImpl(executorService)
 
-        var requestCompletion = CompletableFuture<String>()
-        var request = 1
-        var topic = "topic1"
+        val requestCompletion = CompletableFuture<String>()
+        val request = 1
+        val topic = "topic1"
 
         service.subscribe(topic, successListener0)
         service.publish(topic, request, requestCompletion)
@@ -81,9 +81,9 @@ class RPCTopicServiceImplTest {
         val executorService = Executors.newSingleThreadExecutor()
         val service = RPCTopicServiceImpl(executorService)
 
-        var requestCompletion = CompletableFuture<String>()
-        var request = 1
-        var topic = "topic1"
+        val requestCompletion = CompletableFuture<String>()
+        val request = 1
+        val topic = "topic1"
 
         service.subscribe(topic, cancelListener)
         service.publish(topic, request, requestCompletion)
@@ -98,9 +98,9 @@ class RPCTopicServiceImplTest {
         val executorService = Executors.newSingleThreadExecutor()
         val service = RPCTopicServiceImpl(executorService)
 
-        var requestCompletion = CompletableFuture<String>()
-        var request = 1
-        var topic = "topic1"
+        val requestCompletion = CompletableFuture<String>()
+        val request = 1
+        val topic = "topic1"
 
         service.subscribe(topic, errorListener)
         service.publish(topic, request, requestCompletion)
@@ -115,9 +115,9 @@ class RPCTopicServiceImplTest {
         val executorService = Executors.newSingleThreadExecutor()
         val service = RPCTopicServiceImpl(executorService)
 
-        var requestCompletion = CompletableFuture<String>()
-        var request = 1
-        var topic = "topic1"
+        val requestCompletion = CompletableFuture<String>()
+        val request = 1
+        val topic = "topic1"
 
         service.subscribe(topic, faultListener)
         service.publish(topic, request, requestCompletion)
@@ -132,15 +132,15 @@ class RPCTopicServiceImplTest {
         val executorService = Executors.newSingleThreadExecutor()
         val service = RPCTopicServiceImpl(executorService)
 
-        var requestCompletion1 = CompletableFuture<String>()
-        var requestCompletion2 = CompletableFuture<String>()
-        var requestCompletion3 = CompletableFuture<String>()
-        var requestCompletion4 = CompletableFuture<String>()
-        var request1 = 1
-        var request2 = 2
-        var request3 = 3
-        var request4 = 4
-        var topic = "topic1"
+        val requestCompletion1 = CompletableFuture<String>()
+        val requestCompletion2 = CompletableFuture<String>()
+        val requestCompletion3 = CompletableFuture<String>()
+        val requestCompletion4 = CompletableFuture<String>()
+        val request1 = 1
+        val request2 = 2
+        val request3 = 3
+        val request4 = 4
+        val topic = "topic1"
 
         service.subscribe(topic, successListener0)
         service.subscribe(topic, successListener1)
@@ -167,11 +167,11 @@ class RPCTopicServiceImplTest {
         val executorService = Executors.newSingleThreadExecutor()
         val service = RPCTopicServiceImpl(executorService)
 
-        var requestCompletion1 = CompletableFuture<String>()
-        var requestCompletion2 = CompletableFuture<String>()
-        var request1 = 1
-        var request2 = 2
-        var topic = "topic1"
+        val requestCompletion1 = CompletableFuture<String>()
+        val requestCompletion2 = CompletableFuture<String>()
+        val request1 = 1
+        val request2 = 2
+        val topic = "topic1"
 
         service.subscribe(topic, successListener0)
         service.subscribe(topic, successListener1)
@@ -187,19 +187,31 @@ class RPCTopicServiceImplTest {
 
         service.unsubscribe(topic, successListener0)
 
-        var requestCompletion3 = CompletableFuture<String>()
-        var request3 = 3
+        val requestCompletion3 = CompletableFuture<String>()
+        val request3 = 3
         service.publish(topic, request3, requestCompletion3)
         val result3 = requestCompletion3.get()
         assertThat(result3).isEqualTo("13")
 
         service.unsubscribe(topic, successListener1)
 
-        var requestCompletion4 = CompletableFuture<String>()
-        var request4 = 4
+        val requestCompletion4 = CompletableFuture<String>()
+        val request4 = 4
         service.publish(topic, request4, requestCompletion4)
 
         // We expect a timeout now as no listeners are left to consume the request
         assertThrows<TimeoutException> { requestCompletion4.get(250, TimeUnit.MILLISECONDS)}
+    }
+
+    @Test
+    @Timeout(1)
+    fun `Listeners can only be added once`() {
+        val executorService = Executors.newSingleThreadExecutor()
+        val service = RPCTopicServiceImpl(executorService)
+
+        val topic = "topic1"
+
+        service.subscribe(topic, successListener0)
+        assertThrows<CordaRPCAPIResponderException> { service.subscribe(topic, successListener0) }
     }
 }

@@ -16,7 +16,7 @@ class RPCTopicServiceImpl(
 
     override fun <REQUEST, RESPONSE> subscribe(topic: String, consumer: RPCResponderProcessor<REQUEST, RESPONSE>) {
         val link: RPCProducerConsumerLink<REQUEST, RESPONSE> = uncheckedCast(topics.computeIfAbsent(topic) {
-            RPCProducerConsumerLink(consumer)
+            RPCProducerConsumerLink<REQUEST, RESPONSE>()
         })
         link.addConsumer(consumer)
     }
@@ -25,7 +25,7 @@ class RPCTopicServiceImpl(
         if (!topics.containsKey(topic)) {
             return
         } else {
-            val link :RPCProducerConsumerLink<REQUEST, RESPONSE> = uncheckedCast(topics[topic])
+            val link: RPCProducerConsumerLink<REQUEST, RESPONSE> = uncheckedCast(topics[topic])
             link.removeConsumer(consumer)
 
             if (link.consumerList.isEmpty()) {
@@ -43,25 +43,30 @@ class RPCTopicServiceImpl(
             return
         }
 
-        val link :RPCProducerConsumerLink<REQUEST, RESPONSE> = uncheckedCast(topics[topic])
+        val link: RPCProducerConsumerLink<REQUEST, RESPONSE> = uncheckedCast(topics[topic])
 
         executorService.submit {
             link.handleRequest(request, requestCompletion)
         }
     }
 
-    class RPCProducerConsumerLink<REQUEST, RESPONSE>(
-        consumer: RPCResponderProcessor<REQUEST, RESPONSE>
-    ) {
-        var consumerList: List<RPCResponderProcessor<REQUEST, RESPONSE>> = listOf(consumer)
+    class RPCProducerConsumerLink<REQUEST, RESPONSE> {
+        var consumerList  = mutableListOf<RPCResponderProcessor<REQUEST, RESPONSE>>()
         private var currentConsumer: Int = 0
 
         fun addConsumer(consumer: RPCResponderProcessor<REQUEST, RESPONSE>) {
-            consumerList += consumer
+            synchronized(consumerList) {
+                if(consumerList.contains(consumer)){
+                    throw CordaRPCAPIResponderException("The instance of the consumer is already added.")
+                }
+                consumerList.add(consumer)
+            }
         }
 
         fun removeConsumer(consumer: RPCResponderProcessor<REQUEST, RESPONSE>) {
-            consumerList -= consumer
+            synchronized(consumerList) {
+                consumerList.remove(consumer)
+            }
         }
 
         fun handleRequest(request: REQUEST, requestCompletion: CompletableFuture<RESPONSE>) {
@@ -70,7 +75,8 @@ class RPCTopicServiceImpl(
                     when {
                         it.isCancelled -> {
                             requestCompletion.completeExceptionally(
-                                CordaRPCAPIResponderException("The request was cancelled by the responder."))
+                                CordaRPCAPIResponderException("The request was cancelled by the responder.")
+                            )
                         }
 
                         it.isCompletedExceptionally -> {
@@ -92,7 +98,9 @@ class RPCTopicServiceImpl(
              * consumers are used for a given topic
              */
             try {
-                consumerList[currentConsumer++].onNext(request, responseCompletion)
+                synchronized(consumerList) {
+                    consumerList[currentConsumer++]
+                }.onNext(request, responseCompletion)
             } catch (e: Throwable) {
                 responseCompletion.completeExceptionally(
                     CordaRPCAPIResponderException(

@@ -125,7 +125,7 @@ open class TestBase {
                 .withValue("connectionConfig.acquireTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
                 .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
                 .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
-            CordaPublisherFactory(configurationTopicService).createPublisher(PublisherConfig((topicName))).use { publisher ->
+            CordaPublisherFactory(configurationTopicService, rpcTopicService).createPublisher(PublisherConfig((topicName))).use { publisher ->
                 val configurationPublisher = ConfigWriterImpl(topicName, publisher)
                 configurationPublisher.updateConfiguration(
                     CordaConfigurationKey(
