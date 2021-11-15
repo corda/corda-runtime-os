@@ -1,6 +1,9 @@
 package net.corda.crypto.service.persistence
 
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
+import net.corda.crypto.impl.config.DefaultConfigConsts
+import net.corda.crypto.impl.config.defaultCryptoService
+import net.corda.crypto.impl.config.publicKeys
 import net.corda.crypto.impl.persistence.IHaveMemberId
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.libs.configuration.SmartConfigImpl
@@ -11,7 +14,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
-import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
@@ -19,30 +21,56 @@ import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.test.fail
 
 class KafkaInfrastructure {
     companion object {
-        const val KEY_CACHE_TOPIC_NAME = "keyCacheTopic"
-        const val MNG_CACHE_TOPIC_NAME = "mngCacheTopic"
-        const val GROUP_NAME = "groupName"
-        const val CLIENT_ID = "clientId"
-        val config: CryptoLibraryConfig = CryptoLibraryConfigImpl(
+        fun cryptoSvcTopicName(config: CryptoLibraryConfig) =
+            config.defaultCryptoService.persistenceConfig.getString(
+                DefaultConfigConsts.Kafka.TOPIC_NAME_KEY,
+                DefaultConfigConsts.Kafka.DefaultCryptoService.TOPIC_NAME
+            )
+        fun cryptoSvcGroupName(config: CryptoLibraryConfig) =
+            config.defaultCryptoService.persistenceConfig.getString(
+                DefaultConfigConsts.Kafka.GROUP_NAME_KEY,
+                DefaultConfigConsts.Kafka.DefaultCryptoService.GROUP_NAME
+            )
+        fun cryptoSvcClientId(config: CryptoLibraryConfig) =
+            config.defaultCryptoService.persistenceConfig.getString(
+                DefaultConfigConsts.Kafka.CLIENT_ID_KEY,
+                DefaultConfigConsts.Kafka.DefaultCryptoService.CLIENT_ID
+            )
+        fun signingTopicName(config: CryptoLibraryConfig) =
+            config.publicKeys.persistenceConfig.getString(
+                DefaultConfigConsts.Kafka.TOPIC_NAME_KEY,
+                DefaultConfigConsts.Kafka.Signing.TOPIC_NAME
+            )
+        fun signingGroupName(config: CryptoLibraryConfig) =
+            config.publicKeys.persistenceConfig.getString(
+                DefaultConfigConsts.Kafka.GROUP_NAME_KEY,
+                DefaultConfigConsts.Kafka.DefaultCryptoService.GROUP_NAME
+            )
+        fun signingClientId(config: CryptoLibraryConfig) =
+            config.publicKeys.persistenceConfig.getString(
+                DefaultConfigConsts.Kafka.CLIENT_ID_KEY,
+                DefaultConfigConsts.Kafka.DefaultCryptoService.CLIENT_ID
+            )
+        val defaultConfig: CryptoLibraryConfig = CryptoLibraryConfigImpl(emptyMap())
+        val customConfig: CryptoLibraryConfig = CryptoLibraryConfigImpl(
             mapOf(
-                "keyCache" to mapOf(
+                "defaultCryptoService" to mapOf(
                     "persistenceConfig" to mapOf(
-                        "groupName" to GROUP_NAME,
-                        "topicName" to KEY_CACHE_TOPIC_NAME,
-                        "clientId" to CLIENT_ID
+                        DefaultConfigConsts.Kafka.GROUP_NAME_KEY to "groupName",
+                        DefaultConfigConsts.Kafka.TOPIC_NAME_KEY to "keyCacheTopic",
+                        DefaultConfigConsts.Kafka.CLIENT_ID_KEY to "clientId"
                     )
                 ),
-                "mngCache" to mapOf(
+                "publicKeys" to mapOf(
                     "persistenceConfig" to mapOf(
-                        "groupName" to GROUP_NAME,
-                        "topicName" to MNG_CACHE_TOPIC_NAME,
-                        "clientId" to CLIENT_ID
+                        DefaultConfigConsts.Kafka.GROUP_NAME_KEY to "groupName",
+                        DefaultConfigConsts.Kafka.TOPIC_NAME_KEY to "mngCacheTopic",
+                        DefaultConfigConsts.Kafka.CLIENT_ID_KEY to "clientId"
                     )
 
                 )
@@ -57,22 +85,21 @@ class KafkaInfrastructure {
             val end = Instant.now().plus(timeout)
             do {
                 val value = this.get(key)
-                if (value != null) {
+                if(value != null) {
                     return value
                 }
                 Thread.sleep(retryDelay.toMillis())
-            } while (Instant.now() < end)
+            } while(Instant.now() < end)
             fail("Failed to wait for '$key'")
         }
     }
 
     private val topicService: TopicService = TopicServiceImpl()
-    private val rpcTopicService = RPCTopicServiceImpl(Executors.newCachedThreadPool())
-    val subscriptionFactory: SubscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService)
-    val publisherFactory: PublisherFactory = CordaPublisherFactory(topicService, rpcTopicService)
+    val subscriptionFactory: SubscriptionFactory = InMemSubscriptionFactory(topicService)
+    val publisherFactory: PublisherFactory = CordaPublisherFactory(topicService)
 
-    fun createFactory(snapshot: (() -> Unit)? = null): KafkaKeyValuePersistenceFactory {
-        if (snapshot != null) {
+    fun createFactory(config: CryptoLibraryConfig, snapshot: (() -> Unit)? = null): KafkaKeyValuePersistenceFactory {
+        if(snapshot != null) {
             snapshot()
         }
         return KafkaKeyValuePersistenceFactory(
@@ -82,11 +109,14 @@ class KafkaInfrastructure {
         )
     }
 
-    inline fun <reified E : Any> getRecords(topic: String, expectedCount: Int = 1): List<Pair<String, E>> {
+    inline fun <reified E : Any> getRecords(
+        groupName: String,
+        topic: String, expectedCount: Int = 1
+    ): List<Pair<String, E>> {
         val stop = CountDownLatch(expectedCount)
         val records = mutableListOf<Pair<String, E>>()
         subscriptionFactory.createCompactedSubscription(
-            subscriptionConfig = SubscriptionConfig(GROUP_NAME, topic),
+            subscriptionConfig = SubscriptionConfig(groupName, topic),
             processor = object : CompactedProcessor<String, E> {
                 override val keyClass: Class<String> = String::class.java
                 override val valueClass: Class<E> = E::class.java
@@ -111,12 +141,13 @@ class KafkaInfrastructure {
     }
 
     inline fun <reified V : IHaveMemberId, E : IHaveMemberId> publish(
+        clientId: String,
         persistence: KeyValuePersistence<V, E>?,
         topic: String,
         key: String,
         record: Any
     ) {
-        val pub = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
+        val pub = publisherFactory.createPublisher(PublisherConfig(clientId))
         pub.publish(
             listOf(Record(topic, key, record))
         )[0].get()

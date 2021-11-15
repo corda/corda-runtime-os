@@ -1,8 +1,9 @@
 package net.corda.permissions.model.test
 
 import net.corda.db.admin.LiquibaseSchemaMigrator
+import net.corda.db.admin.LiquibaseSchemaMigrator.Companion.PUBLIC_SCHEMA
 import net.corda.db.admin.impl.ClassloaderChangeLog
-import net.corda.db.schema.Schema
+import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
@@ -50,7 +51,7 @@ class RpcRbacEntitiesTest {
         @BeforeAll
         fun setupEntities() {
 
-            val schemaClass = Schema::class.java
+            val schemaClass = DbSchema::class.java
             val bundle = FrameworkUtil.getBundle(schemaClass)
             logger.info("RBAC schema bundle $bundle".emphasise())
 
@@ -61,16 +62,18 @@ class RpcRbacEntitiesTest {
                 linkedSetOf(
                     ClassloaderChangeLog.ChangeLogResourceFiles(
                         fullName,
-                        listOf("$resourcePrefix/migration/rpc-rbac-creation-v1.0.xml"),
+                        listOf("$resourcePrefix/db.changelog-master.xml"),
                         classLoader = schemaClass.classLoader
                     )
                 )
             )
             StringWriter().use {
-                lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it)
+                // Cannot use DbSchema.RPC_RBAC schema for LB here as this schema needs to be created ahead of change
+                // set being applied
+                lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it, PUBLIC_SCHEMA)
                 logger.info("Schema creation SQL: $it")
             }
-            lbm.updateDb(dbConfig.dataSource.connection, cl)
+            lbm.updateDb(dbConfig.dataSource.connection, cl, PUBLIC_SCHEMA)
 
             logger.info("Create Entities".emphasise())
 

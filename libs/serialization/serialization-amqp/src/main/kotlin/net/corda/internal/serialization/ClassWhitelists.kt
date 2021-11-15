@@ -1,6 +1,6 @@
 package net.corda.internal.serialization
 
-import net.corda.v5.serialization.ClassWhitelist
+import net.corda.serialization.ClassWhitelist
 import java.util.Collections
 
 interface MutableClassWhitelist : ClassWhitelist {

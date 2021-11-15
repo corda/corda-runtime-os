@@ -12,7 +12,7 @@ import java.util.UUID
  */
 object DefaultWhitelist : SerializationWhitelist {
     override val whitelist =
-            listOf(Array<Any>(0, {}).javaClass,
+            listOf(Array<Any>(0) {}.javaClass,
                     ArrayList::class.java,
                     Pair::class.java,
                     Triple::class.java,

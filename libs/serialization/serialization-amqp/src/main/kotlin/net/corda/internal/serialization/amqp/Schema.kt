@@ -16,6 +16,7 @@ import java.io.NotSerializableException
 import java.lang.reflect.Type
 
 const val DESCRIPTOR_DOMAIN: String = "net.corda"
+@JvmField
 val amqpMagic = CordaSerializationMagic("corda".toByteArray() + byteArrayOf(3, 0))
 
 fun typeDescriptorFor(typeId: TypeIdentifier): Symbol = Symbol.valueOf("$DESCRIPTOR_DOMAIN:${AMQPTypeIdentifiers.nameForType(typeId)}")
@@ -23,7 +24,7 @@ fun typeDescriptorFor(type: Type): Symbol = typeDescriptorFor(forGenericType(typ
 
 /**
  * Repackages a naked, non-primitive [obj] as a [DescribedType]. If [obj] is primitive, [Binary] or already
- * an instance of [DescribedType]] then it is returned unchanged. This allows Corda to search for a serializer
+ * an instance of [DescribedType] then it is returned unchanged. This allows Corda to search for a serializer
  * capable of handling instances of [type].
  */
 fun redescribe(obj: Any?, type: Type): Any? {

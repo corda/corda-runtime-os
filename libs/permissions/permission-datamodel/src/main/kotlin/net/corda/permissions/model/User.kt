@@ -1,5 +1,6 @@
 package net.corda.permissions.model
 
+import net.corda.db.schema.DbSchema
 import java.time.Instant
 import javax.persistence.CascadeType
 import javax.persistence.Column
@@ -14,7 +15,7 @@ import javax.persistence.Version
 
 @Suppress("LongParameterList")
 @Entity
-@Table(name = "rpc_user")
+@Table(name = "rpc_user", schema = DbSchema.RPC_RBAC)
 class User(
     @Id
     @Column(name = "id", nullable = false, updatable = false)

@@ -1,6 +1,8 @@
 package net.corda.crypto.component.config
 
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
+import net.corda.crypto.impl.config.DefaultConfigConsts
+import net.corda.crypto.impl.config.memberConfig
 import net.corda.data.crypto.config.CryptoConfigurationRecord
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -40,12 +42,13 @@ class MemberConfigReaderTests {
         private const val TOPIC_NAME = "topic"
         private const val GROUP_NAME = "groupName"
         private const val CLIENT_ID = "clientId"
-        private val config: CryptoLibraryConfig = CryptoLibraryConfigImpl(
+        private val defaultConfig: CryptoLibraryConfig = CryptoLibraryConfigImpl(emptyMap())
+        private val customConfig: CryptoLibraryConfig = CryptoLibraryConfigImpl(
             mapOf(
                 "memberConfig" to mapOf(
-                    "groupName" to GROUP_NAME,
-                    "topicName" to TOPIC_NAME,
-                    "clientId" to CLIENT_ID
+                    DefaultConfigConsts.Kafka.GROUP_NAME_KEY to GROUP_NAME,
+                    DefaultConfigConsts.Kafka.TOPIC_NAME_KEY to TOPIC_NAME,
+                    DefaultConfigConsts.Kafka.CLIENT_ID_KEY to CLIENT_ID
                 )
             )
         )
@@ -153,7 +156,7 @@ class MemberConfigReaderTests {
         reader.close()
     }
 
-    private fun publish(vararg records: Pair<String, CryptoMemberConfig>) {
+    private fun publish(config: CryptoLibraryConfig, vararg records: Pair<String, CryptoMemberConfig>) {
         val writer = MemberConfigWriterImpl(publisherFactory)
         writer.start()
         writer.handleConfigEvent(config)
@@ -161,7 +164,16 @@ class MemberConfigReaderTests {
             writer.put(it.first, it.second).get()
         }
         val subscription = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(GROUP_NAME, TOPIC_NAME),
+            SubscriptionConfig(
+                config.memberConfig.getString(
+                    DefaultConfigConsts.Kafka.GROUP_NAME_KEY,
+                    DefaultConfigConsts.Kafka.MemberConfig.GROUP_NAME
+                ),
+                config.memberConfig.getString(
+                    DefaultConfigConsts.Kafka.TOPIC_NAME_KEY,
+                    DefaultConfigConsts.Kafka.MemberConfig.TOPIC_NAME
+                )
+            ),
             NoOpProcessor()
         ).also { it.start() }
         records.forEach {
@@ -173,7 +185,7 @@ class MemberConfigReaderTests {
     @Test
     @Timeout(5)
     fun `Should return default value when reader is not configured`() {
-        publish("123" to cryptoMemberConfig, "789" to cryptoMemberConfig3)
+        publish(customConfig, "123" to cryptoMemberConfig, "789" to cryptoMemberConfig3)
         reader.start()
         val result = reader.get("123")
         assertNotNull(result)
@@ -183,9 +195,21 @@ class MemberConfigReaderTests {
     @Test
     @Timeout(5)
     fun `Should load snapshot and get configuration value`() {
-        publish("123" to cryptoMemberConfig, "789" to cryptoMemberConfig3)
+        publish(customConfig, "123" to cryptoMemberConfig, "789" to cryptoMemberConfig3)
         reader.start()
-        reader.handleConfigEvent(config)
+        reader.handleConfigEvent(customConfig)
+        val result = reader.wait("123")
+        assertNotNull(result)
+        assertEquals(2, result.size)
+        assertThat(result.keys, contains("default", "LEDGER"))
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should load snapshot using default configuration and get configuration value`() {
+        publish(defaultConfig, "123" to cryptoMemberConfig, "789" to cryptoMemberConfig3)
+        reader.start()
+        reader.handleConfigEvent(defaultConfig)
         val result = reader.wait("123")
         assertNotNull(result)
         assertEquals(2, result.size)
@@ -195,14 +219,14 @@ class MemberConfigReaderTests {
     @Test
     @Timeout(5)
     fun `Should load snapshot then update and get new configuration value`() {
-        publish("123" to cryptoMemberConfig, "789" to cryptoMemberConfig3)
+        publish(customConfig, "123" to cryptoMemberConfig, "789" to cryptoMemberConfig3)
         reader.start()
-        reader.handleConfigEvent(config)
+        reader.handleConfigEvent(customConfig)
         val result = reader.wait("123")
         assertNotNull(result)
         assertEquals(2, result.size)
         assertThat(result.keys, contains("default", "LEDGER"))
-        publish("123" to cryptoMemberConfig2)
+        publish(customConfig, "123" to cryptoMemberConfig2)
         val result2 = reader.wait("123")
         assertNotNull(result2)
         assertEquals(1, result2.size)
@@ -213,20 +237,33 @@ class MemberConfigReaderTests {
     @Timeout(5)
     fun `Should add and get new configuration value`() {
         reader.start()
-        reader.handleConfigEvent(config)
-        publish("123" to cryptoMemberConfig, "789" to cryptoMemberConfig3)
+        reader.handleConfigEvent(customConfig)
+        publish(customConfig, "123" to cryptoMemberConfig, "789" to cryptoMemberConfig3)
         val result = reader.wait("123")
         assertNotNull(result)
         assertEquals(2, result.size)
         assertThat(result.keys, contains("default", "LEDGER"))
-        publish("123" to cryptoMemberConfig2)
+        publish(customConfig, "123" to cryptoMemberConfig2)
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should add and get new configuration value using default configuration`() {
+        reader.start()
+        reader.handleConfigEvent(defaultConfig)
+        publish(defaultConfig, "123" to cryptoMemberConfig, "789" to cryptoMemberConfig3)
+        val result = reader.wait("123")
+        assertNotNull(result)
+        assertEquals(2, result.size)
+        assertThat(result.keys, contains("default", "LEDGER"))
+        publish(defaultConfig, "123" to cryptoMemberConfig2)
     }
 
     @Test
     @Timeout(5)
     fun `Should return default value if the cache is empty`() {
         reader.start()
-        reader.handleConfigEvent(config)
+        reader.handleConfigEvent(customConfig)
         val result = reader.get("123")
         assertNotNull(result)
         assertThat(result.keys, empty())
@@ -235,9 +272,9 @@ class MemberConfigReaderTests {
     @Test
     @Timeout(5)
     fun `Should return default value if the config for member is not found`() {
-        publish("123" to cryptoMemberConfig)
+        publish(customConfig, "123" to cryptoMemberConfig)
         reader.start()
-        reader.handleConfigEvent(config)
+        reader.handleConfigEvent(customConfig)
         reader.wait("123")
         val result = reader.get("789")
         assertNotNull(result)
@@ -253,7 +290,7 @@ class MemberConfigReaderTests {
         }
         val reader = MemberConfigReaderImpl(factory)
         reader.start()
-        reader.handleConfigEvent(config)
+        reader.handleConfigEvent(customConfig)
         Mockito.verify(sub, never()).close()
         reader.close()
         Mockito.verify(sub, times(1)).close()
@@ -268,9 +305,9 @@ class MemberConfigReaderTests {
         }
         val reader = MemberConfigReaderImpl(factory)
         reader.start()
-        reader.handleConfigEvent(config)
+        reader.handleConfigEvent(customConfig)
         Mockito.verify(sub, never()).close()
-        reader.handleConfigEvent(config)
+        reader.handleConfigEvent(customConfig)
         Mockito.verify(sub, times(1)).close()
         reader.close()
         Mockito.verify(sub, times(2)).close()

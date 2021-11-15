@@ -1,11 +1,11 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.resolveAgainst
+import net.corda.serialization.SerializationContext
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
-import net.corda.v5.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
 import java.lang.reflect.Type

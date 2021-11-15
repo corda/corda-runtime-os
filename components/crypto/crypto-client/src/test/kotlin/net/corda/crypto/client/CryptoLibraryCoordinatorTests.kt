@@ -6,8 +6,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.config.rpc
 import net.corda.crypto.component.lifecycle.AbstractCryptoCoordinator
 import net.corda.crypto.impl.config.isDev
-import net.corda.crypto.impl.config.keyCache
-import net.corda.crypto.impl.config.mngCache
+import net.corda.crypto.impl.config.defaultCryptoService
+import net.corda.crypto.impl.config.publicKeys
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -104,12 +104,12 @@ class CryptoLibraryCoordinatorTests {
         Mockito.verify(cryptoFactoryProvider as CryptoLifecycleComponent, times(1))
             .handleConfigEvent(cryptoFactoryProviderCaptor.capture())
         assertTrue(cipherSuiteFactoryCaptor.firstValue.isDev)
-        assertTrue(cipherSuiteFactoryCaptor.firstValue.keyCache.isEmpty())
-        assertTrue(cipherSuiteFactoryCaptor.firstValue.mngCache.isEmpty())
+        assertTrue(cipherSuiteFactoryCaptor.firstValue.defaultCryptoService.isEmpty())
+        assertTrue(cipherSuiteFactoryCaptor.firstValue.publicKeys.isEmpty())
         assertTrue(cipherSuiteFactoryCaptor.firstValue.rpc.isEmpty())
         assertTrue(cryptoFactoryProviderCaptor.firstValue.isDev)
-        assertTrue(cryptoFactoryProviderCaptor.firstValue.keyCache.isEmpty())
-        assertTrue(cryptoFactoryProviderCaptor.firstValue.mngCache.isEmpty())
+        assertTrue(cryptoFactoryProviderCaptor.firstValue.defaultCryptoService.isEmpty())
+        assertTrue(cryptoFactoryProviderCaptor.firstValue.publicKeys.isEmpty())
         assertTrue(cryptoFactoryProviderCaptor.firstValue.rpc.isEmpty())
     }
 

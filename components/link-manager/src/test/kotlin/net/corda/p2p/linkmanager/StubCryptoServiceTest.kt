@@ -1,19 +1,31 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
+import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RSA_SIGNATURE_ALGO
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
+import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
+import java.util.concurrent.CompletableFuture
 
 class StubCryptoServiceTest {
 
@@ -27,7 +39,18 @@ class StubCryptoServiceTest {
         }
     }
 
-    private val cryptoService = StubCryptoService(subscriptionFactory).apply {
+    private val coordinatorFactory = mock<LifecycleCoordinatorFactory>()
+    private val resourcesHolder = mock<ResourcesHolder>()
+    private lateinit var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
+    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
+        @Suppress("UNCHECKED_CAST")
+        createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
+        whenever(mock.isRunning).doReturn(true)
+    }
+
+    private val cryptoService = StubCryptoService(coordinatorFactory, subscriptionFactory).apply {
         start()
     }
 
@@ -39,6 +62,12 @@ class StubCryptoServiceTest {
 
     private val firstKeyPair = rsaKeyPairGenerator.genKeyPair()
     private val secondKeyPair = ecdsaKeyPairGenerator.genKeyPair()
+
+    @AfterEach
+    fun cleanUp() {
+        dominoTile.close()
+        resourcesHolder.close()
+    }
 
     @Test
     fun `crypto service can sign payloads successfully`() {
@@ -54,6 +83,7 @@ class StubCryptoServiceTest {
                 ByteBuffer.wrap(secondKeyPair.private.encoded)
             )
         )
+        createResources(resourcesHolder)
         clientProcessor!!.onSnapshot(snapshot)
         val payload = "some-payload".toByteArray()
 
@@ -66,5 +96,21 @@ class StubCryptoServiceTest {
         ecdsaSignature.initVerify(secondKeyPair.public)
         ecdsaSignature.update(payload)
         assertTrue(ecdsaSignature.verify(signedData))
+    }
+
+    @Test
+    fun `create resource starts the subscription and adds it to the resource tracker`() {
+        createResources(resourcesHolder)
+        val capture = argumentCaptor<AutoCloseable>()
+        verify(resourcesHolder).keep(capture.capture())
+        verify(capture.lastValue as CompactedSubscription<*, *>).start()
+    }
+
+    @Test
+    fun `onSnapshot completes the resource future`() {
+        val future = createResources(resourcesHolder)
+        clientProcessor!!.onSnapshot(emptyMap())
+        Assertions.assertThat(future.isDone).isTrue
+        Assertions.assertThat(future.isCompletedExceptionally).isFalse
     }
 }

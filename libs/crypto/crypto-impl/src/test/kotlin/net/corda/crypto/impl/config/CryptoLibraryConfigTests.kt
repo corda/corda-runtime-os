@@ -12,14 +12,14 @@ class CryptoLibraryConfigTests {
     @Timeout(5)
     fun `Should be able to use all helper properties`() {
         val raw = mapOf<String, Any?>(
-            "keyCache" to mapOf(
+            "defaultCryptoService" to mapOf(
                 "expireAfterAccessMins" to "90",
                 "maximumSize" to "25",
                 "persistenceConfig" to mapOf(
                     "url" to "keyPersistenceUrl"
                 )
             ),
-            "mngCache" to mapOf(
+            "publicKeys" to mapOf(
                 "factoryName" to InMemoryKeyValuePersistenceFactoryProvider.NAME,
                 "expireAfterAccessMins" to "120",
                 "maximumSize" to "50",
@@ -35,16 +35,16 @@ class CryptoLibraryConfigTests {
         )
         val config = CryptoLibraryConfigImpl(raw)
         assertFalse(config.isDev)
-        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.keyCache.factoryName)
-        assertEquals(90, config.keyCache.expireAfterAccessMins)
-        assertEquals(25, config.keyCache.maximumSize)
-        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.keyCache.factoryName)
-        assertEquals("keyPersistenceUrl", config.keyCache.persistenceConfig.getString("url"))
-        assertEquals(InMemoryKeyValuePersistenceFactoryProvider.NAME, config.mngCache.factoryName)
-        assertEquals(120, config.mngCache.expireAfterAccessMins)
-        assertEquals(50, config.mngCache.maximumSize)
-        assertEquals(InMemoryKeyValuePersistenceFactoryProvider.NAME, config.mngCache.factoryName)
-        assertEquals("mngPersistenceUrl", config.mngCache.persistenceConfig.getString("url"))
+        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.defaultCryptoService.factoryName)
+        assertEquals(90, config.defaultCryptoService.expireAfterAccessMins)
+        assertEquals(25, config.defaultCryptoService.maximumSize)
+        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.defaultCryptoService.factoryName)
+        assertEquals("keyPersistenceUrl", config.defaultCryptoService.persistenceConfig.getString("url"))
+        assertEquals(InMemoryKeyValuePersistenceFactoryProvider.NAME, config.publicKeys.factoryName)
+        assertEquals(120, config.publicKeys.expireAfterAccessMins)
+        assertEquals(50, config.publicKeys.maximumSize)
+        assertEquals(InMemoryKeyValuePersistenceFactoryProvider.NAME, config.publicKeys.factoryName)
+        assertEquals("mngPersistenceUrl", config.publicKeys.persistenceConfig.getString("url"))
         assertEquals("customSchemeMetadataProvider", config.cipherSuite.schemeMetadataProvider)
         assertEquals("customSignatureVerificationProvider", config.cipherSuite.signatureVerificationProvider)
         assertEquals("customDigestProvider", config.cipherSuite.digestProvider)
@@ -92,23 +92,23 @@ class CryptoLibraryConfigTests {
 
     @Test
     @Timeout(5)
-    fun `Should use default values if the 'keyCache' path is not supplied`() {
+    fun `Should use default values if the 'defaultCryptoService' path is not supplied`() {
         val config = CryptoLibraryConfigImpl(emptyMap())
-        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.keyCache.factoryName)
-        assertEquals(60, config.keyCache.expireAfterAccessMins)
-        assertEquals(100, config.keyCache.maximumSize)
-        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.keyCache.factoryName)
-        assertTrue(config.keyCache.persistenceConfig.isEmpty())    }
+        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.defaultCryptoService.factoryName)
+        assertEquals(60, config.defaultCryptoService.expireAfterAccessMins)
+        assertEquals(100, config.defaultCryptoService.maximumSize)
+        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.defaultCryptoService.factoryName)
+        assertTrue(config.defaultCryptoService.persistenceConfig.isEmpty())    }
 
     @Test
     @Timeout(5)
-    fun `Should use default values if the 'mngCache' path is not supplied`() {
+    fun `Should use default values if the 'publicKeys' path is not supplied`() {
         val config = CryptoLibraryConfigImpl(emptyMap())
-        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.mngCache.factoryName)
-        assertEquals(60, config.mngCache.expireAfterAccessMins)
-        assertEquals(100, config.mngCache.maximumSize)
-        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.mngCache.factoryName)
-        assertTrue(config.mngCache.persistenceConfig.isEmpty())
+        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.publicKeys.factoryName)
+        assertEquals(60, config.publicKeys.expireAfterAccessMins)
+        assertEquals(100, config.publicKeys.maximumSize)
+        assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.publicKeys.factoryName)
+        assertTrue(config.publicKeys.persistenceConfig.isEmpty())
     }
 
     @Test

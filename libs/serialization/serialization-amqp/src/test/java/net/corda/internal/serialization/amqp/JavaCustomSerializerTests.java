@@ -25,11 +25,11 @@ public class JavaCustomSerializerTests {
          * contrived, this choice is obvious. In your own classes / 3rd party libraries, however, this
          * may require more thought.
          */
-        private Integer proxiedA;
-        private Integer proxiedB;
+        private final Integer proxiedA;
+        private final Integer proxiedB;
 
         /**
-         * The proxu class itself must be serializable by the framework, it must thus have a constructor that
+         * The proxy class itself must be serializable by the framework, it must thus have a constructor that
          * can be mapped to the properties of the class via getter methods.
          */
         public Integer getProxiedA() { return proxiedA; }
@@ -65,7 +65,7 @@ public class JavaCustomSerializerTests {
          *
          */
         public ClassThatNeedsCustomSerializer fromProxy(ExampleProxy proxy) {
-            List<Integer> l = new ArrayList<Integer>(2);
+            List<Integer> l = new ArrayList<>(2);
             l.add(proxy.getProxiedA());
             l.add(proxy.getProxiedB());
             return new ClassThatNeedsCustomSerializer(l);
@@ -78,12 +78,12 @@ public class JavaCustomSerializerTests {
         SerializerFactory factory = testDefaultFactory();
         SerializationOutput ser = new SerializationOutput(factory);
 
-        List<Integer> l = new ArrayList<Integer>(2);
+        List<Integer> l = new ArrayList<>(2);
         l.add(10);
         l.add(20);
         ClassThatNeedsCustomSerializer e = new ClassThatNeedsCustomSerializer(l);
 
-        factory.registerExternal(new ExampleSerializer());
+        factory.registerExternal(new ExampleSerializer(), factory);
 
         var serializedBytes = ser.serialize(e, TestSerializationContext.testSerializationContext);
         var deserialize = new DeserializationInput(factory).deserialize(serializedBytes, ClassThatNeedsCustomSerializer.class, TestSerializationContext.testSerializationContext);

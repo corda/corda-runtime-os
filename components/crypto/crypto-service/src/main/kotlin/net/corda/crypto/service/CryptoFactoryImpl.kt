@@ -17,7 +17,7 @@ import net.corda.crypto.impl.SigningServiceImpl
 import net.corda.crypto.impl.clearCache
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
-import net.corda.crypto.impl.config.mngCache
+import net.corda.crypto.impl.config.publicKeys
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactoryProvider
 import net.corda.crypto.component.config.MemberConfigReader
 import net.corda.lifecycle.Lifecycle
@@ -140,7 +140,7 @@ class CryptoFactoryImpl @Activate constructor(
                     val ledgerCryptoService = getCryptoService(memberId, CryptoCategories.LEDGER, ledgerConfig)
                     val freshKeysCryptoService = getCryptoService(memberId, CryptoCategories.FRESH_KEYS, freshKeysConfig)
                     FreshKeySigningServiceImpl(
-                        cache = getSigningKeyCache(memberId, libraryConfig.mngCache),
+                        cache = getSigningKeyCache(memberId, libraryConfig.publicKeys),
                         cryptoService = ledgerCryptoService,
                         freshKeysCryptoService = freshKeysCryptoService,
                         defaultFreshKeySignatureSchemeCodeName = freshKeysConfig.defaultSignatureScheme,
@@ -159,7 +159,7 @@ class CryptoFactoryImpl @Activate constructor(
                     val config = getServiceConfig(memberId, category)
                     val cryptoService = getCryptoService(memberId, category, config)
                     SigningServiceImpl(
-                        cache = getSigningKeyCache(memberId, libraryConfig.mngCache),
+                        cache = getSigningKeyCache(memberId, libraryConfig.publicKeys),
                         cryptoService = cryptoService,
                         defaultSignatureSchemeCodeName = config.defaultSignatureScheme,
                         schemeMetadata = cipherSchemeMetadata
