@@ -13,6 +13,7 @@ import net.corda.p2p.SessionPartitions
 import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 class SessionPartitionMapperImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -27,7 +28,7 @@ class SessionPartitionMapperImpl(
     private val sessionPartitionsMapping = ConcurrentHashMap<String, List<Int>>()
     private val processor = SessionPartitionProcessor()
     override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
-    private val future = CompletableFuture<Unit>()
+    private val future = AtomicReference<CompletableFuture<Unit>>()
 
     private val sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(
         SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS),
@@ -52,7 +53,7 @@ class SessionPartitionMapperImpl(
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
-            future.complete(Unit)
+            future.get().complete(Unit)
         }
 
         override fun onNext(
@@ -69,8 +70,10 @@ class SessionPartitionMapperImpl(
     }
 
     fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+        val resourceFuture = CompletableFuture<Unit>()
+        future.set(resourceFuture)
         sessionPartitionSubscription.start()
         resources.keep(sessionPartitionSubscription)
-        return future
+        return resourceFuture
     }
 }

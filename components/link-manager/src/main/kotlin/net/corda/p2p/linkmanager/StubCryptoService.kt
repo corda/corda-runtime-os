@@ -18,6 +18,7 @@ import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicReference
 
 class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                         subscriptionFactory: SubscriptionFactory): LinkManagerCryptoService {
@@ -34,13 +35,15 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     private val rsaSignature = Signature.getInstance(RSA_SIGNATURE_ALGO)
     private val ecdsaSignature = Signature.getInstance(ECDSA_SIGNATURE_ALGO)
 
-    private val readyFuture = CompletableFuture<Unit>()
+    private var readyFuture = AtomicReference<CompletableFuture<Unit>>()
     override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         subscription.start()
         resources.keep (subscription)
-        return readyFuture
+        val future = CompletableFuture<Unit>()
+        readyFuture.set(future)
+        return future
     }
 
     override fun signData(publicKey: PublicKey, data: ByteArray): ByteArray {
@@ -103,7 +106,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
                 val publicKey = keyDeserialiser.toPublicKey(keyPairEntry.publicKey.array(), keyPairEntry.keyAlgo)
                 keys[alias] = KeyPair(keyPairEntry.keyAlgo, privateKey, publicKey)
             }
-            readyFuture.complete(Unit)
+            readyFuture.get().complete(Unit)
         }
 
         override fun onNext(newRecord: Record<String, KeyPairEntry>,

@@ -78,6 +78,7 @@ import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicReference
 
 class LinkManagerTest {
 
@@ -255,7 +256,9 @@ class LinkManagerTest {
     }
 
     private fun assignedListener(partitions: List<Int>): InboundAssignmentListener {
-        val listener = InboundAssignmentListener(mock())
+        val reference = AtomicReference<CompletableFuture<Unit>>()
+        reference.set(mock())
+        val listener = InboundAssignmentListener(reference)
         for (partition in partitions) {
             listener.onPartitionsAssigned(listOf(Schema.LINK_IN_TOPIC to partition))
         }

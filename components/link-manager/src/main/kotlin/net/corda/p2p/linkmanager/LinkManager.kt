@@ -54,6 +54,7 @@ import org.slf4j.LoggerFactory
 import java.util.*
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicReference
 
 @Suppress("LongParameterList")
 class LinkManager(@Reference(service = SubscriptionFactory::class)
@@ -80,7 +81,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
     }
 
-    private val inboundAssigned = CompletableFuture<Unit>()
+    private val inboundAssigned = AtomicReference<CompletableFuture<Unit>>()
     private var inboundAssignmentListener = InboundAssignmentListener(inboundAssigned)
 
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory, lifecycleCoordinatorFactory, configuration)
@@ -97,6 +98,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     @VisibleForTesting
     internal fun createInboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+        val future = CompletableFuture<Unit>()
+        inboundAssigned.set(future)
         val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, 1),
             InboundMessageProcessor(sessionManager, linkManagerNetworkMap),
@@ -104,8 +107,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         )
         inboundMessageSubscription.start()
         resources.keep(inboundMessageSubscription)
-        //We set resource started inside inboundAssignmentListener.
-        return inboundAssigned
+        //We complete the future inside inboundAssignmentListener.
+        return future
     }
 
     @VisibleForTesting

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicReference
 
 class InboundAssignmentListenerTest {
 
@@ -16,7 +17,9 @@ class InboundAssignmentListenerTest {
 
     @Test
     fun `Partitions can be assigned and reassigned`() {
-        val listener = InboundAssignmentListener(mock())
+        val reference = AtomicReference<CompletableFuture<Unit>>()
+        reference.set(mock())
+        val listener = InboundAssignmentListener(reference)
         assertEquals(0, listener.getCurrentlyAssignedPartitions(TOPIC_1).size)
         val assign1 = listOf(1, 3, 5)
         val assign2 = listOf(2, 3, 4)
@@ -32,7 +35,9 @@ class InboundAssignmentListenerTest {
     @Test
     fun `the future completes when partitions are assigned`() {
         val future = mock<CompletableFuture<Unit>>()
-        val listener = InboundAssignmentListener(future)
+        val reference = AtomicReference<CompletableFuture<Unit>>()
+        reference.set(future)
+        val listener = InboundAssignmentListener(reference)
         assertEquals(0, listener.getCurrentlyAssignedPartitions(TOPIC_1).size)
         val assign1 = listOf(1, 3, 5)
         val assign2 = listOf(2, 3, 4)

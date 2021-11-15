@@ -83,6 +83,7 @@ class StubCryptoServiceTest {
                 ByteBuffer.wrap(secondKeyPair.private.encoded)
             )
         )
+        createResources(resourcesHolder)
         clientProcessor!!.onSnapshot(snapshot)
         val payload = "some-payload".toByteArray()
 

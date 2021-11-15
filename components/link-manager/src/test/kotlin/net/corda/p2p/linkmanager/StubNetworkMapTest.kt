@@ -101,6 +101,7 @@ class StubNetworkMapTest {
             KeyAlgorithm.ECDSA, charlieAddress,
             NetworkType.CORDA_5
         )
+        createResources(resourcesHolder)
         clientProcessor!!.onSnapshot(snapshot)
         clientProcessor!!.onNext(Record(NETWORK_MAP_TOPIC, charlieEntry.first, charlieEntry.second), null, snapshot + charlieEntry)
 

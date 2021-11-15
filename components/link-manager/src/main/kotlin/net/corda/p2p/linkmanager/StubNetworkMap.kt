@@ -18,6 +18,7 @@ import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                      subscriptionFactory: SubscriptionFactory): LinkManagerNetworkMap {
@@ -27,13 +28,15 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val subscription = subscriptionFactory.createCompactedSubscription(subscriptionConfig, processor)
     private val keyDeserialiser = KeyDeserialiser()
 
-    private val readyFuture = CompletableFuture<Unit>()
+    private val readyFuture = AtomicReference<CompletableFuture<Unit>>()
     override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         subscription.start()
         resources.keep (subscription)
-        return readyFuture
+        val future = CompletableFuture<Unit>()
+        readyFuture.set(future)
+        return future
     }
 
     @Suppress("TYPE_INFERENCE_ONLY_INPUT_TYPES_WARNING")
@@ -104,7 +107,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 
         override fun onSnapshot(currentData: Map<String, NetworkMapEntry>) {
             currentData.forEach { (_, networkMapEntry) -> addEntry(networkMapEntry) }
-            readyFuture.complete(Unit)
+            readyFuture.get().complete(Unit)
         }
 
         override fun onNext(
