@@ -9,11 +9,11 @@ import net.corda.lifecycle.Lifecycle
  * This interface defines a permission cache capable of maintaining a lifecycle and returning User, Group and Role data.
  */
 interface PermissionCache : Lifecycle {
+    val users: Map<String, User>
+    val groups: Map<String, Group>
+    val roles: Map<String, Role>
+
     fun getUser(loginName: String): User?
     fun getGroup(groupId: String): Group?
     fun getRole(roleId: String): Role?
-
-    fun getUsers(): Map<String, User>
-    fun getGroups(): Map<String, Group>
-    fun getRoles(): Map<String, Role>
 }

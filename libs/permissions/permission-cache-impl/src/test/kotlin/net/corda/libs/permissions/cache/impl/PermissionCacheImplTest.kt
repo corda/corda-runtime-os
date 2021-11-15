@@ -8,6 +8,7 @@ import net.corda.data.permissions.Permission
 import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
+import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.cache.exception.PermissionCacheException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -20,7 +21,7 @@ internal class PermissionCacheImplTest {
     private val userData = ConcurrentHashMap<String, User>()
     private val groupData = ConcurrentHashMap<String, Group>()
     private val roleData = ConcurrentHashMap<String, Role>()
-    private val permissionCache = PermissionCacheImpl(userData, groupData, roleData)
+    private val permissionCache: PermissionCache = PermissionCacheImpl(userData, groupData, roleData)
 
     private val user1 = User("id1", 1, ChangeDetails(Instant.now(), "changeUser"), "full name1", true,
         "hashedPassword", "saltValue", false, null, null, null)
@@ -66,13 +67,13 @@ internal class PermissionCacheImplTest {
             permissionCache.getGroup("id")
         }
         assertThrows(PermissionCacheException::class.java) {
-            permissionCache.getUsers()
+            permissionCache.users
         }
         assertThrows(PermissionCacheException::class.java) {
-            permissionCache.getGroups()
+            permissionCache.groups
         }
         assertThrows(PermissionCacheException::class.java) {
-            permissionCache.getRoles()
+            permissionCache.roles
         }
     }
 
@@ -93,7 +94,7 @@ internal class PermissionCacheImplTest {
 
     @Test
     fun getUsers() {
-        val userMap = permissionCache.getUsers()
+        val userMap = permissionCache.users
         val userIds = userMap.keys
         val users = userMap.values
         assertEquals(2, userMap.size, "GetUsers should return all users in the map.")
@@ -103,7 +104,7 @@ internal class PermissionCacheImplTest {
 
     @Test
     fun getGroups() {
-        val groupMap = permissionCache.getGroups()
+        val groupMap = permissionCache.groups
         val groupIds = groupMap.keys
         val groups = groupMap.values
         assertEquals(2, groupMap.size, "GetGroups should return all groups in the map.")
@@ -113,7 +114,7 @@ internal class PermissionCacheImplTest {
 
     @Test
     fun getRoles() {
-        val rolesMap = permissionCache.getRoles()
+        val rolesMap = permissionCache.roles
         val roleIds = rolesMap.keys
         val roles = rolesMap.values
         assertEquals(2, rolesMap.size, "GetRoles should return all roles in the map.")

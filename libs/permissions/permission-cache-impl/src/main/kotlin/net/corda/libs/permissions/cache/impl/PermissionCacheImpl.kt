@@ -12,10 +12,26 @@ import net.corda.libs.permissions.cache.exception.PermissionCacheException
  * The Permission cache holds the data used in the RBAC permission system.
  */
 internal class PermissionCacheImpl(
-    private val userData: ConcurrentHashMap<String, User>,
-    private val groupData: ConcurrentHashMap<String, Group>,
-    private val roleData: ConcurrentHashMap<String, Role>
+    _userData: ConcurrentHashMap<String, User>,
+    _groupData: ConcurrentHashMap<String, Group>,
+    _roleData: ConcurrentHashMap<String, Role>
 ) : PermissionCache {
+
+    override val users: ConcurrentHashMap<String, User> = _userData
+        get() {
+            validateCacheIsRunning()
+            return field
+        }
+    override val groups: ConcurrentHashMap<String, Group> = _groupData
+        get() {
+            validateCacheIsRunning()
+            return field
+        }
+    override val roles: ConcurrentHashMap<String, Role> = _roleData
+        get() {
+            validateCacheIsRunning()
+            return field
+        }
 
     private var running = AtomicBoolean(false)
 
@@ -24,32 +40,17 @@ internal class PermissionCacheImpl(
 
     override fun getUser(loginName: String): User? {
         validateCacheIsRunning()
-        return userData[loginName]
+        return users[loginName]
     }
 
     override fun getGroup(groupId: String): Group? {
         validateCacheIsRunning()
-        return groupData[groupId]
+        return groups[groupId]
     }
 
     override fun getRole(roleId: String): Role? {
         validateCacheIsRunning()
-        return roleData[roleId]
-    }
-
-    override fun getUsers(): Map<String, User> {
-        validateCacheIsRunning()
-        return userData
-    }
-
-    override fun getGroups(): Map<String, Group> {
-        validateCacheIsRunning()
-        return groupData
-    }
-
-    override fun getRoles(): Map<String, Role> {
-        validateCacheIsRunning()
-        return roleData
+        return roles[roleId]
     }
 
     private fun validateCacheIsRunning() {
