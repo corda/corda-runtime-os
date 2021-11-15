@@ -4,7 +4,6 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import kotlin.system.exitProcess
 
 class ChaosTestStringsStateAndEventProcessor(
@@ -14,12 +13,10 @@ class ChaosTestStringsStateAndEventProcessor(
 
     private companion object {
         val log: Logger = contextLogger()
-        val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val outputTopic = "StateEventOutputTopic"
     }
 
     private var counter = 1
-    private var expectedNextValues = mutableMapOf<String, Int>()
 
     override val keyClass: Class<String>
         get() = String::class.java
@@ -39,21 +36,29 @@ class ChaosTestStringsStateAndEventProcessor(
             Thread.sleep(delayOnNext)
         }
 
+        //
         val key = event.key
         val oldState = "$state"
         val eventRecord = event
         val eventRecordValue = eventRecord
 
-        val updatedState = if (state != null) {
-            "$state::$eventRecordValue"
-        } else {
-            "s::$eventRecordValue"
-        }
+        val updatedState = updateState(state, eventRecordValue.toString())
 
         val responseEvent = Record(outputTopic, key, updatedState)
-
         log.info("Key: $key, Old State: $oldState, new event value: $eventRecordValue, new state value: $updatedState")
         counter++
         return StateAndEventProcessor.Response(updatedState, listOf(responseEvent))
     }
+
+    fun updateState(state: String?, eventRecordValue: String): String{
+        val reStr = """state-event-state\(([0-9]+)\)"""
+        val re = reStr.toRegex()
+
+        return if (state != null) {
+            "state-event-state(${re.find(state)!!.groups[1]!!.value.toInt()+1})::$eventRecordValue"
+        } else {
+            "state-event-state(0)::$eventRecordValue"
+        }
+    }
+
 }
