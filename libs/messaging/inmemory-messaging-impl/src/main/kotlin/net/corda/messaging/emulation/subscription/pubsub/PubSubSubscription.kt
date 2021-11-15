@@ -1,9 +1,9 @@
 package net.corda.messaging.emulation.subscription.pubsub
 
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
@@ -26,8 +26,7 @@ class PubSubSubscription<K : Any, V : Any>(
     internal val subscriptionConfig: SubscriptionConfig,
     private val processor: PubSubProcessor<K, V>,
     private val executor: ExecutorService?,
-    private val topicService: TopicService,
-    private val lifecycleListener: LifecycleListener?
+    private val topicService: TopicService
 ) : Subscription<K, V> {
 
     companion object {
@@ -86,4 +85,7 @@ class PubSubSubscription<K : Any, V : Any>(
             }
         }
     }
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = TODO("Not yet implemented")
 }

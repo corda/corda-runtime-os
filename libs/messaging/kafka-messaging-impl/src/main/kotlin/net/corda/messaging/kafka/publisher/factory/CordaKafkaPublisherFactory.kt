@@ -3,9 +3,9 @@ package net.corda.messaging.kafka.publisher.factory
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.messaging.RPCResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -90,11 +90,11 @@ class CordaKafkaPublisherFactory @Activate constructor(
         val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
             LifecycleCoordinatorName(
                 rpcConfig.groupName + "-KafkaRPCSender-" + responseTopic,
-                nodeConfig.getString("instanceId")
+                kafkaConfig.getString("instanceId")
             )
         ) { _, _ -> }
 
-        val partitionListener = RPCConsumerRebalanceListener<TRESP>(
+        val partitionListener = RPCConsumerRebalanceListener<RESPONSE>(
             "$topicPrefix$responseTopic",
             "RPC Response listener",
             lifecycleCoordinator

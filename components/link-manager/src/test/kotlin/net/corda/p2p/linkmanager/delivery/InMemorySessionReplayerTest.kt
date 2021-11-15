@@ -1,14 +1,12 @@
 package net.corda.p2p.linkmanager.delivery
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
-import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
@@ -32,7 +30,7 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import java.security.KeyPairGenerator
 import java.time.Duration
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 
@@ -98,8 +96,7 @@ class InMemorySessionReplayerTest {
 
             override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
                 rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-                kafkaConfig: SmartConfig,
-                lifecycleCoordinator: LifecycleCoordinator
+                kafkaConfig: SmartConfig
             ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
@@ -186,8 +183,7 @@ class InMemorySessionReplayerTest {
 
             override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
                 rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-                kafkaConfig: SmartConfig,
-                lifecycleCoordinator: LifecycleCoordinator
+                kafkaConfig: SmartConfig
             ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
@@ -256,8 +252,7 @@ class InMemorySessionReplayerTest {
 
             override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
                 rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-                kafkaConfig: SmartConfig,
-                lifecycleCoordinator: LifecycleCoordinator
+                kafkaConfig: SmartConfig
             ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
@@ -304,8 +299,7 @@ class InMemorySessionReplayerTest {
 
             override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
                 rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-                kafkaConfig: SmartConfig,
-                lifecycleCoordinator: LifecycleCoordinator
+                kafkaConfig: SmartConfig
             ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
@@ -351,8 +345,7 @@ class InMemorySessionReplayerTest {
 
             override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
                 rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-                kafkaConfig: SmartConfig,
-                lifecycleCoordinator: LifecycleCoordinator
+                kafkaConfig: SmartConfig
             ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }

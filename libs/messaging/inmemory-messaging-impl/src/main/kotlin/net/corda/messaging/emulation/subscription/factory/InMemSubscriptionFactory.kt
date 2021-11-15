@@ -1,7 +1,6 @@
 package net.corda.messaging.emulation.subscription.factory
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -42,39 +41,34 @@ class InMemSubscriptionFactory @Activate constructor(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService?,
-        nodeConfig: SmartConfig,
-        lifecycleCoordinator: LifecycleCoordinator
+        nodeConfig: SmartConfig
     ): Subscription<K, V> {
-        return PubSubSubscription(subscriptionConfig, processor, executor, topicService, lifecycleListener)
+        return PubSubSubscription(subscriptionConfig, processor, executor, topicService)
     }
 
     override fun <K : Any, V : Any> createDurableSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
         nodeConfig: SmartConfig,
-        partitionAssignmentListener: PartitionAssignmentListener?,
-        lifecycleCoordinator: LifecycleCoordinator
+        partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         return DurableSubscription(
             subscriptionConfig,
             processor,
             partitionAssignmentListener,
-            topicService,
-            lifecycleCoordinator
+            topicService
         )
     }
 
     override fun <K : Any, V : Any> createCompactedSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: CompactedProcessor<K, V>,
-        nodeConfig: SmartConfig,
-        lifecycleCoordinator: LifecycleCoordinator
+        nodeConfig: SmartConfig
     ): CompactedSubscription<K, V> {
         return InMemoryCompactedSubscription(
             subscriptionConfig,
             processor,
-            topicService,
-            lifecycleCoordinator
+            topicService
         )
     }
 
@@ -82,15 +76,13 @@ class InMemSubscriptionFactory @Activate constructor(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
         nodeConfig: SmartConfig,
-        stateAndEventListener: StateAndEventListener<K, S>?,
-        lifecycleCoordinator: LifecycleCoordinator,
+        stateAndEventListener: StateAndEventListener<K, S>?
     ): StateAndEventSubscription<K, S, E> {
         return InMemoryStateAndEventSubscription(
             subscriptionConfig,
             processor,
             stateAndEventListener,
-            topicService,
-            lifecycleListener
+            topicService
         )
     }
 
@@ -98,15 +90,13 @@ class InMemSubscriptionFactory @Activate constructor(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
         nodeConfig: SmartConfig,
-        partitionAssignmentListener: PartitionAssignmentListener?,
-        lifecycleCoordinator: LifecycleCoordinator
+        partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         return EventLogSubscription(
             subscriptionConfig,
             processor,
             partitionAssignmentListener,
-            topicService,
-            lifecycleCoordinator
+            topicService
         )
     }
 
@@ -114,8 +104,7 @@ class InMemSubscriptionFactory @Activate constructor(
         subscriptionConfig: SubscriptionConfig,
         nodeConfig: SmartConfig,
         keyClass: Class<K>,
-        valueClass: Class<V>,
-        lifecycleCoordinator: LifecycleCoordinator
+        valueClass: Class<V>
     ): RandomAccessSubscription<K, V> {
         TODO("Not yet implemented")
     }
@@ -123,8 +112,7 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <REQUEST : Any, RESPONSE : Any> createRPCSubscription(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
         nodeConfig: SmartConfig,
-        responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>,
-        lifecycleCoordinator: LifecycleCoordinator
+        responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE> {
         TODO("Not yet implemented")
     }

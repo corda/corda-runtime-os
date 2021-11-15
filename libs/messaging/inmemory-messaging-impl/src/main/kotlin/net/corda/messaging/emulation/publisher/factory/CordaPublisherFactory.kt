@@ -3,13 +3,11 @@ package net.corda.messaging.emulation.publisher.factory
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
-import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.emulation.publisher.CordaPublisher
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Activate
@@ -48,8 +46,7 @@ class CordaPublisherFactory @Activate constructor(
 
     override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-        kafkaConfig: SmartConfig,
-        lifecycleCoordinator: LifecycleCoordinator
+        kafkaConfig: SmartConfig
     ): RPCSender<REQUEST, RESPONSE> {
         TODO("Not yet implemented")
     }

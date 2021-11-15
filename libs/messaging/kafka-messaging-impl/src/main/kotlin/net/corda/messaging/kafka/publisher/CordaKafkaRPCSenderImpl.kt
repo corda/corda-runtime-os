@@ -48,6 +48,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val consumerBuilder: ConsumerBuilder<String, RPCResponse>,
     private val serializer: CordaAvroSerializer<REQUEST>,
     private val deserializer: CordaAvroDeserializer<RESPONSE>,
+    private val responseListener: RPCConsumerRebalanceListener<RESPONSE>,
     private val lifecycleCoordinator: LifecycleCoordinator
 ) : RPCSender<REQUEST, RESPONSE>, RPCSubscription<REQUEST, RESPONSE> {
 
@@ -71,16 +72,11 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
     private val responseTopic = config.getString(RESPONSE_TOPIC)
-    private var partitionListener = RPCConsumerRebalanceListener(
-        responseTopic,
-        "RPC Response listener",
-        futureTracker
-    )
 
     private val errorMsg = "Failed to read records from group $groupName, topic $topic"
 
     override fun start() {
-        partitionListener.setTracker(futureTracker)
+        responseListener.setTracker(futureTracker)
         log.debug { "Starting subscription with config:\n${config.render()}" }
         lock.withLock {
             if (consumeLoopThread == null) {
@@ -124,7 +120,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 ).use {
                     it.subscribe(
                         listOf(responseTopic),
-                        partitionListener
+                        responseListener
                     )
                     pollAndProcessRecords(it)
                 }
@@ -211,7 +207,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     override fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE> {
         val correlationId = UUID.randomUUID().toString()
         val future = CompletableFuture<RESPONSE>()
-        val partitions = partitionListener.getPartitions()
+        val partitions = responseListener.getPartitions()
         var reqBytes: ByteArray? = null
         try {
             reqBytes = serializer.serialize(topic, req)

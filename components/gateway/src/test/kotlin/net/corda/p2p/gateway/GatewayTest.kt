@@ -20,7 +20,6 @@ class GatewayTest {
                         any(),
                         any<OutboundMessageHandler>(),
                         any(),
-                        anyOrNull(),
                         anyOrNull()
                     )
                 } doReturn mock()

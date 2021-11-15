@@ -17,8 +17,8 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.app.HoldingIdentity
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
-import net.corda.data.p2p.gateway.GatewayMessage
-import net.corda.data.p2p.gateway.GatewayResponse
+import net.corda.p2p.gateway.GatewayMessage
+import net.corda.p2p.gateway.GatewayResponse
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
@@ -41,7 +41,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.lang.RuntimeException
 import java.net.URI
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
@@ -67,7 +66,6 @@ class OutboundMessageHandlerTest {
                 any(),
                 any<EventLogProcessor<String, LinkOutMessage>>(),
                 any(),
-                anyOrNull(),
                 anyOrNull()
             )
         } doReturn subscription
