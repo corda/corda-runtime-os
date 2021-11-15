@@ -4,12 +4,13 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.messaging.RPCResponse
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
-import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
 import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.GROUP
@@ -38,7 +39,9 @@ import java.util.concurrent.atomic.AtomicInteger
 @Component
 class CordaKafkaPublisherFactory @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
-    private val avroSchemaRegistry: AvroSchemaRegistry
+    private val avroSchemaRegistry: AvroSchemaRegistry,
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : PublisherFactory {
 
     // Used to ensure that each subscription has a unique client.id
@@ -60,8 +63,7 @@ class CordaKafkaPublisherFactory @Activate constructor(
 
     override fun <TREQ : Any, TRESP : Any> createRPCSender(
         rpcConfig: RPCConfig<TREQ, TRESP>,
-        nodeConfig: Config,
-        lifecycleListener: LifecycleListener?
+        nodeConfig: Config
     ): RPCSender<TREQ, TRESP> {
 
         val publisherConfiguration = ConfigFactory.empty()
@@ -84,10 +86,18 @@ class CordaKafkaPublisherFactory @Activate constructor(
 
         val topicPrefix = publisherConfig.getString(ConfigProperties.TOPIC_PREFIX)
         val responseTopic = publisherConfig.getString(ConfigProperties.RESPONSE_TOPIC)
+
+        val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+            LifecycleCoordinatorName(
+                rpcConfig.groupName + "-KafkaRPCSender-" + responseTopic,
+                nodeConfig.getString("instanceId")
+            )
+        ) { _, _ -> }
+
         val partitionListener = RPCConsumerRebalanceListener<TRESP>(
             "$topicPrefix$responseTopic",
             "RPC Response listener",
-            lifecycleListener
+            lifecycleCoordinator
         )
 
         return CordaKafkaRPCSenderImpl(
@@ -97,7 +107,7 @@ class CordaKafkaPublisherFactory @Activate constructor(
             serializer,
             deserializer,
             partitionListener,
-            lifecycleListener
+            lifecycleCoordinator
         )
     }
 }

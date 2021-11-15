@@ -2,11 +2,12 @@ package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigValueFactory
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RandomAccessSubscription
-import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
@@ -27,7 +28,7 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val keyClass: Class<K>,
     private val valueClass: Class<V>,
-    private val lifecycleListener: LifecycleListener?
+    private val lifecycleCoordinator: LifecycleCoordinator
 ): RandomAccessSubscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
@@ -45,6 +46,9 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
     override val isRunning: Boolean
         get() = running
 
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
+
     override fun start() {
         startStopLock.write {
             if (!running) {
@@ -55,7 +59,7 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
                 consumer!!.assignPartitionsManually(allPartitions)
                 assignedPartitions = allPartitions
                 running = true
-                lifecycleListener?.onUpdate(LifecycleStatus.UP)
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             }
         }
     }
@@ -67,7 +71,7 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
                 running = false
             }
         }
-        lifecycleListener?.onUpdate(LifecycleStatus.DOWN)
+        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     @Synchronized

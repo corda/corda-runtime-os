@@ -5,6 +5,8 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -12,7 +14,6 @@ import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
@@ -40,7 +41,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
     private val responderProcessor: RPCResponderProcessor<TREQ, TRESP>,
     private val serializer: CordaAvroSerializer<TRESP>,
     private val deserializer: CordaAvroDeserializer<TREQ>,
-    private val lifecycleListener: LifecycleListener?
+    private val lifecycleCoordinator: LifecycleCoordinator
 ) : RPCSubscription<TREQ, TRESP> {
 
     private val log = LoggerFactory.getLogger(
@@ -61,6 +62,9 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
 
     override val isRunning: Boolean
         get() = !stopped
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
 
     override fun start() {
         log.debug { "Starting subscription with config:\n${config.render()}" }
@@ -88,7 +92,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
-            lifecycleListener?.onUpdate(LifecycleStatus.DOWN)
+            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         }
     }
 
@@ -110,7 +114,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
-                lifecycleListener?.onUpdate(LifecycleStatus.UP)
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
@@ -118,7 +122,7 @@ class KafkaRPCSubscriptionImpl<TREQ : Any, TRESP : Any>(
                     }
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
-                        lifecycleListener?.onUpdate(LifecycleStatus.ERROR)
+                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR)
                         stop()
                     }
                 }

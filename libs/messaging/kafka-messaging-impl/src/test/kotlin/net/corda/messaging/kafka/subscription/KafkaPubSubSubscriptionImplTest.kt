@@ -1,15 +1,5 @@
 package net.corda.messaging.kafka.subscription
 
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.isNull
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import com.typesafe.config.Config
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.PubSubProcessor
@@ -23,6 +13,16 @@ import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createSt
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
@@ -77,7 +77,7 @@ class KafkaPubSubSubscriptionImplTest {
     @Test
     fun testPubSubConsumer() {
         kafkaPubSubSubscription =
-            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, null)
+            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, mock())
         kafkaPubSubSubscription.start()
 
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -94,7 +94,7 @@ class KafkaPubSubSubscriptionImplTest {
     fun testPubSubConsumerWithExecutor() {
         executorService = Executors.newFixedThreadPool(1)
         kafkaPubSubSubscription =
-            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, null)
+            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, mock())
 
         kafkaPubSubSubscription.start()
 
@@ -122,7 +122,7 @@ class KafkaPubSubSubscriptionImplTest {
 
         doThrow(CordaMessageAPIFatalException::class).whenever(mockCordaConsumer).commitSyncOffsets(any(), anyOrNull())
         kafkaPubSubSubscription =
-            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, null)
+            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, mock())
 
         kafkaPubSubSubscription.start()
         @Suppress("EmptyWhileBlock")
@@ -147,7 +147,7 @@ class KafkaPubSubSubscriptionImplTest {
         )
 
         kafkaPubSubSubscription =
-            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, null)
+            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, mock())
 
         kafkaPubSubSubscription.start()
         @Suppress("EmptyWhileBlock")
@@ -174,7 +174,7 @@ class KafkaPubSubSubscriptionImplTest {
         whenever(mockCordaConsumer.poll()).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
 
         kafkaPubSubSubscription =
-            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, null)
+            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, mock())
 
         kafkaPubSubSubscription.start()
         @Suppress("EmptyWhileBlock")
@@ -208,7 +208,7 @@ class KafkaPubSubSubscriptionImplTest {
 
         kafkaPubSubSubscription = KafkaPubSubSubscriptionImpl(
             config, consumerBuilder,
-            processor, executorService, null
+            processor, executorService, mock()
         )
 
         kafkaPubSubSubscription.start()
@@ -237,7 +237,7 @@ class KafkaPubSubSubscriptionImplTest {
 
         kafkaPubSubSubscription = KafkaPubSubSubscriptionImpl(
             config, consumerBuilder,
-            processor, executorService, null
+            processor, executorService, mock()
         )
 
         kafkaPubSubSubscription.start()

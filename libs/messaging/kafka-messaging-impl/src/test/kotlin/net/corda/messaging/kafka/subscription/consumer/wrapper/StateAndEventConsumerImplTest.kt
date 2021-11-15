@@ -45,8 +45,7 @@ class StateAndEventConsumerImplTest {
                 eventConsumer,
                 stateConsumer,
                 partitionState,
-                stateAndEventListener,
-                null
+                stateAndEventListener
             )
         consumer.close()
 
@@ -74,8 +73,7 @@ class StateAndEventConsumerImplTest {
                 eventConsumer,
                 stateConsumer,
                 partitionState,
-                stateAndEventListener,
-                null
+                stateAndEventListener
             )
         val valueKey1 = consumer.getInMemoryStateValue("key1")
         assertThat(valueKey1).isEqualTo("value1")
@@ -97,8 +95,7 @@ class StateAndEventConsumerImplTest {
                 eventConsumer,
                 stateConsumer,
                 partitionState,
-                stateAndEventListener,
-                null
+                stateAndEventListener
             )
 
         consumer.updateInMemoryStatePostCommit(
@@ -127,8 +124,7 @@ class StateAndEventConsumerImplTest {
                 eventConsumer,
                 stateConsumer,
                 partitionState,
-                stateAndEventListener,
-                null
+                stateAndEventListener
             )
 
         consumer.pollAndUpdateStates(true)
@@ -152,8 +148,7 @@ class StateAndEventConsumerImplTest {
             eventConsumer,
             stateConsumer,
             partitionState,
-            stateAndEventListener,
-            null
+            stateAndEventListener
         )
 
         consumer.pollAndUpdateStates(false)
@@ -177,8 +172,7 @@ class StateAndEventConsumerImplTest {
             eventConsumer,
             stateConsumer,
             partitionState,
-            stateAndEventListener,
-            null
+            stateAndEventListener
         )
         val latch = CountDownLatch(1)
         consumer.waitForFunctionToFinish({
@@ -202,7 +196,7 @@ class StateAndEventConsumerImplTest {
         val (stateAndEventListener, eventConsumer, stateConsumer, _) = setupMocks()
         val consumer = StateAndEventConsumerImpl(
             stateAndEventConfig, eventConsumer, stateConsumer, StateAndEventPartitionState
-                (mutableMapOf(), mutableMapOf()), stateAndEventListener,null
+                (mutableMapOf(), mutableMapOf()), stateAndEventListener
         )
 
         consumer.resetPollInterval()

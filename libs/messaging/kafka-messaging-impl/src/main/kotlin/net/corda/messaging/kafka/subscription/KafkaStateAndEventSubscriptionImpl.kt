@@ -1,13 +1,14 @@
 package net.corda.messaging.kafka.subscription
 
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
-import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
@@ -40,7 +41,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val processor: StateAndEventProcessor<K, S, E>,
     private val avroSchemaRegistry: AvroSchemaRegistry,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
-    private val lifecycleListener: LifecycleListener?,
+    private val lifecycleCoordinator: LifecycleCoordinator,
     private val clock: Clock = Clock.systemUTC()
 ) : StateAndEventSubscription<K, S, E> {
 
@@ -76,6 +77,9 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             return !stopped
         }
 
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
+
     override fun start() {
         log.debug { "Starting subscription with config:\n${config}" }
         lock.withLock {
@@ -102,7 +106,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
-            lifecycleListener?.onUpdate(LifecycleStatus.DOWN)
+            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         }
     }
 
@@ -124,7 +128,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 eventConsumer = stateAndEventConsumer.eventConsumer
                 eventConsumer.subscribeToTopic(rebalanceListener)
 
-                lifecycleListener?.onUpdate(LifecycleStatus.UP)
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
 
                 while (!stopped) {
                     stateAndEventConsumer.pollAndUpdateStates(true)
@@ -145,7 +149,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                                     "producerClientId $producerClientId. Attempts: $attempts. Closing " +
                                     "subscription.", ex
                         )
-                        lifecycleListener?.onUpdate(LifecycleStatus.ERROR)
+                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR)
                         stop()
                     }
                 }

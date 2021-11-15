@@ -1,7 +1,7 @@
 package net.corda.messaging.kafka.subscription.consumer.listener
 
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.kafka.utils.FutureTracker
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
@@ -12,7 +12,7 @@ import java.util.*
 class RPCConsumerRebalanceListener<TRESP>(
     private val topic: String,
     private val groupName: String,
-    private val lifecycleListener: LifecycleListener?
+    private val lifecycleCoordinator: LifecycleCoordinator
 ) : ConsumerRebalanceListener {
 
     private val partitions = mutableListOf<TopicPartition>()
@@ -25,8 +25,8 @@ class RPCConsumerRebalanceListener<TRESP>(
     override fun onPartitionsRevoked(partitions: MutableCollection<TopicPartition>) {
         tracker?.removePartitions(partitions.toList())
         this.partitions.removeAll(partitions)
-        if (partitions.isEmpty()){
-            lifecycleListener?.onUpdate(LifecycleStatus.DOWN)
+        if (this.partitions.isEmpty()){
+            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         }
         val partitionIds = partitions.map { it.partition() }.joinToString(",")
         log.info("Consumer group name $groupName for topic $topic partition revoked: $partitionIds.")
@@ -34,7 +34,7 @@ class RPCConsumerRebalanceListener<TRESP>(
 
     override fun onPartitionsAssigned(partitions: MutableCollection<TopicPartition>) {
         if (this.partitions.isEmpty()){
-            lifecycleListener?.onUpdate(LifecycleStatus.UP)
+            lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         }
         tracker?.addPartitions(partitions.toList())
         this.partitions.addAll(partitions)

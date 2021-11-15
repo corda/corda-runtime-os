@@ -1,12 +1,12 @@
 package net.corda.messaging.kafka.publisher.factory
 
-import org.mockito.kotlin.mock
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 
 class CordaKafkaPublisherImplFactoryTest {
     private lateinit var cordaKafkaPublisherFactory: CordaKafkaPublisherFactory
@@ -14,7 +14,7 @@ class CordaKafkaPublisherImplFactoryTest {
 
     @BeforeEach
     fun beforeEach() {
-        cordaKafkaPublisherFactory = CordaKafkaPublisherFactory(mock())
+        cordaKafkaPublisherFactory = CordaKafkaPublisherFactory(mock(), mock())
     }
 
     @Test

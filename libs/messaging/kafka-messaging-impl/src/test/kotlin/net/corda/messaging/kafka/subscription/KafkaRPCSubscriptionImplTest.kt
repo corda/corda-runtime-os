@@ -106,7 +106,7 @@ class KafkaRPCSubscriptionImplTest {
             processor,
             serializer,
             deserializer,
-            null
+            mock()
         )
 
         subscription.start()
@@ -131,7 +131,7 @@ class KafkaRPCSubscriptionImplTest {
             processor,
             serializer,
             deserializer,
-            null
+            mock()
         )
 
         subscription.start()
@@ -160,7 +160,7 @@ class KafkaRPCSubscriptionImplTest {
             processor,
             serializer,
             deserializer,
-            null
+            mock()
         )
 
         subscription.start()

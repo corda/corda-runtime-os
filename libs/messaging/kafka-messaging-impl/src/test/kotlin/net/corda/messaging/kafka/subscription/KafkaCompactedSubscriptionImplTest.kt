@@ -121,7 +121,7 @@ class KafkaCompactedSubscriptionImplTest {
             mapFactory,
             consumerBuilder,
             processor,
-            null
+            mock()
         )
         subscription.start()
         while (subscription.isRunning) { Thread.sleep(10) }
@@ -175,7 +175,7 @@ class KafkaCompactedSubscriptionImplTest {
             mapFactory,
             consumerBuilder,
             processor,
-            null
+            mock()
         )
         subscription.start()
         while (subscription.isRunning) { Thread.sleep(10) }
@@ -205,7 +205,7 @@ class KafkaCompactedSubscriptionImplTest {
             mapFactory,
             consumerBuilder,
             processor,
-            null
+            mock()
         )
         subscription.start()
 
@@ -233,7 +233,7 @@ class KafkaCompactedSubscriptionImplTest {
             mapFactory,
             consumerBuilder,
             processor,
-            null
+            mock()
         )
         subscription.start()
         while (subscription.isRunning) {
@@ -283,7 +283,7 @@ class KafkaCompactedSubscriptionImplTest {
             mapFactory,
             consumerBuilder,
             processor,
-            null
+            mock()
         )
         subscription.start()
         while (subscription.isRunning) { Thread.sleep(10) }

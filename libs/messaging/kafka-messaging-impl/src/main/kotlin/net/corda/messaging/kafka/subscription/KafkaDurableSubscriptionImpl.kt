@@ -1,13 +1,14 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
-import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
@@ -40,7 +41,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     private val producerBuilder: ProducerBuilder,
     private val processor: DurableProcessor<K, V>,
     private val partitionAssignmentListener: PartitionAssignmentListener?,
-    private val lifecycleListener: LifecycleListener?
+    private val lifecycleCoordinator: LifecycleCoordinator
 ) : Subscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
@@ -48,7 +49,10 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     )
 
     private val subscription = KafkaEventLogSubscriptionImpl(config, consumerBuilder, producerBuilder,
-        ForwardingEventLogProcessor(processor), partitionAssignmentListener, lifecycleListener)
+        ForwardingEventLogProcessor(processor), partitionAssignmentListener, lifecycleCoordinator)
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = subscription.subscriptionName
 
     override fun start() {
         subscription.start()

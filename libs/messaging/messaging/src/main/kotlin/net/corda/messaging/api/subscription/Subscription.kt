@@ -1,6 +1,7 @@
 package net.corda.messaging.api.subscription
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.records.Record
@@ -28,6 +29,11 @@ interface Subscription<K, V> : Lifecycle {
      * Check the state of a subscription. true if subscription is still active. false otherwise.
      */
     override val isRunning: Boolean
+
+    /**
+     * The name of the lifecycle coordinator inside the subscription
+     */
+    val subscriptionName: LifecycleCoordinatorName
 }
 
 /**
@@ -49,7 +55,13 @@ interface Subscription<K, V> : Lifecycle {
  *
  * A subscription will stop consuming events and close the connection upon close()/stop()
  */
-interface RPCSubscription<TREQ, TRESP> : Lifecycle
+interface RPCSubscription<TREQ, TRESP> : Lifecycle {
+
+    /**
+     * The name of the lifecycle coordinator inside the subscription
+     */
+    val subscriptionName: LifecycleCoordinatorName
+}
 
 /**
  * A subscription that can be used to manage the life cycle of consumption of both state and event records from a
@@ -68,7 +80,12 @@ interface RPCSubscription<TREQ, TRESP> : Lifecycle
  * (that is, within a single _transaction_).  However, records for different keys may be batched up to
  * improve performance.
  */
-interface StateAndEventSubscription<K, S, E> : Lifecycle
+interface StateAndEventSubscription<K, S, E> : Lifecycle {
+    /**
+     * The name of the lifecycle coordinator inside the subscription
+     */
+    val subscriptionName: LifecycleCoordinatorName
+}
 
 /**
  * This subscription should be used when consuming records from a compacted topic

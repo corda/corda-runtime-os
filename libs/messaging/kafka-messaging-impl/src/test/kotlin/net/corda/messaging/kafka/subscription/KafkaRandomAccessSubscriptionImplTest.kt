@@ -43,7 +43,7 @@ class KafkaRandomAccessSubscriptionImplTest {
         doReturn(topicPartitions).whenever(consumer).getPartitions(topic, 5.seconds)
         doReturn(consumer).whenever(consumerBuilder).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
 
-        randomAccessSubscription = KafkaRandomAccessSubscriptionImpl(config, consumerBuilder, String::class.java, String::class.java, null)
+        randomAccessSubscription = KafkaRandomAccessSubscriptionImpl(config, consumerBuilder, String::class.java, String::class.java, mock())
         randomAccessSubscription.start()
     }
 

@@ -1,13 +1,14 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
-import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
@@ -53,7 +54,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
     private val producerBuilder: ProducerBuilder,
     private val processor: EventLogProcessor<K, V>,
     private val partitionAssignmentListener: PartitionAssignmentListener?,
-    private val lifecycleListener: LifecycleListener?
+    private val lifecycleCoordinator: LifecycleCoordinator
 ): Subscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
@@ -78,6 +79,9 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
         get() {
             return !stopped
         }
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
 
     /**
      * Begin consuming events from the configured topic, process them
@@ -113,7 +117,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
-            lifecycleListener?.onUpdate(LifecycleStatus.DOWN)
+            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         }
     }
 
@@ -151,7 +155,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                     }
                 }
                 attempts = 0
-                lifecycleListener?.onUpdate(LifecycleStatus.UP)
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
@@ -165,7 +169,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                             "Failed to read and process records from topic $topic, group $groupName, producerClientId $producerClientId. " +
                                     "Attempts: $attempts. Closing subscription.", ex
                         )
-                        lifecycleListener?.onUpdate(LifecycleStatus.ERROR)
+                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR)
                         stop()
                     }
                 }

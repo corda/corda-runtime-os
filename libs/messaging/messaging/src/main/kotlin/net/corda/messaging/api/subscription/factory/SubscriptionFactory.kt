@@ -16,7 +16,6 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import java.util.concurrent.ExecutorService
 
@@ -51,8 +50,7 @@ interface SubscriptionFactory {
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService?,
-        nodeConfig: Config = ConfigFactory.empty(),
-        lifecycleListener: LifecycleListener? = null
+        nodeConfig: Config = ConfigFactory.empty()
     ): Subscription<K, V>
 
     /**
@@ -76,8 +74,7 @@ interface SubscriptionFactory {
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
         nodeConfig: Config = ConfigFactory.empty(),
-        partitionAssignmentListener: PartitionAssignmentListener?,
-        lifecycleListener: LifecycleListener? = null
+        partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V>
 
     /**
@@ -96,8 +93,7 @@ interface SubscriptionFactory {
     fun <K : Any, V : Any> createCompactedSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: CompactedProcessor<K, V>,
-        nodeConfig: Config = ConfigFactory.empty(),
-        lifecycleListener: LifecycleListener? = null
+        nodeConfig: Config = ConfigFactory.empty()
     ): CompactedSubscription<K, V>
 
     /**
@@ -125,8 +121,7 @@ interface SubscriptionFactory {
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
         nodeConfig: Config = ConfigFactory.empty(),
-        stateAndEventListener: StateAndEventListener<K, S>? = null,
-        lifecycleListener: LifecycleListener? = null
+        stateAndEventListener: StateAndEventListener<K, S>? = null
     ): StateAndEventSubscription<K, S, E>
 
     /**
@@ -141,8 +136,7 @@ interface SubscriptionFactory {
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
         nodeConfig: Config = ConfigFactory.empty(),
-        partitionAssignmentListener: PartitionAssignmentListener?,
-        lifecycleListener: LifecycleListener? = null
+        partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V>
 
     /**
@@ -155,8 +149,7 @@ interface SubscriptionFactory {
         subscriptionConfig: SubscriptionConfig,
         nodeConfig: Config = ConfigFactory.empty(),
         keyClass: Class<K>,
-        valueClass: Class<V>,
-        lifecycleListener: LifecycleListener? = null
+        valueClass: Class<V>
     ): RandomAccessSubscription<K, V>
 
     /**
@@ -175,12 +168,10 @@ interface SubscriptionFactory {
      * @param rpcConfig Define the mandatory params for creating a subscription.
      * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
      * @param responderProcessor processor in charge of handling incoming requests
-     * @param lifecycleListener optional listener to be notified of any lifecycle events as they happen
      */
     fun <TREQ : Any, TRESP : Any> createRPCSubscription(
         rpcConfig: RPCConfig<TREQ, TRESP>,
         nodeConfig: Config = ConfigFactory.empty(),
-        responderProcessor: RPCResponderProcessor<TREQ, TRESP>,
-        lifecycleListener: LifecycleListener? = null
+        responderProcessor: RPCResponderProcessor<TREQ, TRESP>
     ): RPCSubscription<TREQ, TRESP>
 }

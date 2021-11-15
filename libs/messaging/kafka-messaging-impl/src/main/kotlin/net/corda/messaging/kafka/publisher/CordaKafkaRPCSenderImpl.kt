@@ -5,6 +5,8 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -14,7 +16,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
@@ -49,7 +50,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private val serializer: CordaAvroSerializer<TREQ>,
     private val deserializer: CordaAvroDeserializer<TRESP>,
     private val partitionListener: RPCConsumerRebalanceListener<TRESP>,
-    private val lifecycleListener: LifecycleListener?
+    private val lifecycleCoordinator: LifecycleCoordinator
 ) : RPCSender<TREQ, TRESP>, RPCSubscription<TREQ, TRESP> {
 
     private companion object {
@@ -64,6 +65,9 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
 
     override val isRunning: Boolean
         get() = !stopped
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
 
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
     private val topicPrefix = config.getString(TOPIC_PREFIX)
@@ -101,7 +105,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
-            lifecycleListener?.onUpdate(LifecycleStatus.DOWN)
+            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         }
     }
 
@@ -131,7 +135,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                     }
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
-                        lifecycleListener?.onUpdate(LifecycleStatus.DOWN)
+                        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
                         stop()
                     }
                 }

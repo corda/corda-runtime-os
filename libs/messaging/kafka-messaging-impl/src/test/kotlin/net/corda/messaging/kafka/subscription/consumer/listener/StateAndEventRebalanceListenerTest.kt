@@ -40,8 +40,7 @@ class StateAndEventRebalanceListenerTest {
                 mapFactory,
                 stateAndEventConsumer,
                 partitionState,
-                stateAndEventListener,
-                null
+                stateAndEventListener
             )
         rebalanceListener.onPartitionsRevoked(partitions)
 
@@ -66,8 +65,7 @@ class StateAndEventRebalanceListenerTest {
                 mapFactory,
                 stateAndEventConsumer,
                 partitionState,
-                stateAndEventListener,
-                null
+                stateAndEventListener
             )
         rebalanceListener.onPartitionsAssigned(partitions)
 

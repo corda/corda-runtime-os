@@ -113,7 +113,7 @@ class KafkaStateAndEventSubscriptionImplTest {
             mock(),
             avroSchemaRegistry,
             null,
-            null
+            mock()
         )
 
         subscription.start()
@@ -141,7 +141,7 @@ class KafkaStateAndEventSubscriptionImplTest {
             mock(),
             avroSchemaRegistry,
             null,
-            null
+            mock()
         )
 
         subscription.start()
@@ -189,7 +189,7 @@ class KafkaStateAndEventSubscriptionImplTest {
             mock(),
             avroSchemaRegistry,
             null,
-            null
+            mock()
         )
 
         subscription.start()
@@ -235,7 +235,7 @@ class KafkaStateAndEventSubscriptionImplTest {
             mock(),
             avroSchemaRegistry,
             null,
-            null
+            mock()
         )
 
         subscription.start()
@@ -290,7 +290,7 @@ class KafkaStateAndEventSubscriptionImplTest {
             mock(),
             avroSchemaRegistry,
             null,
-            null
+            mock()
         )
 
         subscription.start()

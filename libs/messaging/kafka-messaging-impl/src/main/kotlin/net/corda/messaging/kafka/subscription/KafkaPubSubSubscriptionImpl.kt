@@ -1,12 +1,13 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
-import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
@@ -45,7 +46,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val processor: PubSubProcessor<K, V>,
     private val executor: ExecutorService?,
-    private val lifecycleListener: LifecycleListener?
+    private val lifecycleCoordinator: LifecycleCoordinator
 ) : Subscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
@@ -69,6 +70,9 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
         get() {
             return !stopped
         }
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
 
     /**
      * Begin consuming events from the configured topic and process them
@@ -105,7 +109,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
             }
             executor?.shutdown()
             thread?.join(consumerThreadStopTimeout)
-            lifecycleListener?.onUpdate(LifecycleStatus.DOWN)
+            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         }
     }
 
@@ -131,7 +135,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
-                lifecycleListener?.onUpdate(LifecycleStatus.UP)
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             } catch (ex: CordaMessageAPIIntermittentException) {
                 log.warn(
                     "PubSubConsumer from group $groupName failed to read and process records from topic $topic, " +
@@ -142,7 +146,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
                     "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic. " +
                             "Fatal error occurred. Closing subscription.", ex
                 )
-                lifecycleListener?.onUpdate(LifecycleStatus.ERROR)
+                lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR)
                 stop()
             } catch (ex: Exception) {
                 log.error(
@@ -150,7 +154,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
                             "attempts: $attempts. " +
                             "Unexpected error occurred. Closing subscription.", ex
                 )
-                lifecycleListener?.onUpdate(LifecycleStatus.ERROR)
+                lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR)
                 stop()
             }
         }

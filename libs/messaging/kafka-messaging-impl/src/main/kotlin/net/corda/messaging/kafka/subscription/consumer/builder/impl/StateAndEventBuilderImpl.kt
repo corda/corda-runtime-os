@@ -1,6 +1,5 @@
 package net.corda.messaging.kafka.subscription.consumer.builder.impl
 
-import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
@@ -24,8 +23,7 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
     private val stateConsumerBuilder: ConsumerBuilder<K, S>,
     private val eventConsumerBuilder: ConsumerBuilder<K, E>,
     private val producerBuilder: ProducerBuilder,
-    private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,
-    private val lifecycleListener: LifecycleListener?
+    private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>
 ) : StateAndEventBuilder<K, S, E> {
 
     private val log = LoggerFactory.getLogger(this::class.java)
@@ -53,16 +51,14 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
                 eventConsumer,
                 stateConsumer,
                 partitionState,
-                stateAndEventListener,
-                lifecycleListener
+                stateAndEventListener
             )
         val rebalanceListener = StateAndEventRebalanceListener(
             config,
             mapFactory,
             stateAndEventConsumer,
             partitionState,
-            stateAndEventListener,
-            lifecycleListener
+            stateAndEventListener
         )
         return Pair(stateAndEventConsumer, rebalanceListener)
     }
