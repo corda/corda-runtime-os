@@ -14,9 +14,6 @@ services:
     container_name: zoo1
     ports:
       - 2181:2181
-    volumes:
-      - ./data/zookeeper1/data:/data
-      - ./data/zookeeper1/datalog:/datalog
     environment:
       ZOO_MY_ID: 1
       ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
@@ -28,9 +25,6 @@ services:
     container_name: zoo2
     ports:
       - 2182:2181
-    volumes:
-      - ./data/zookeeper2/data:/data
-      - ./data/zookeeper2/datalog:/datalog
     environment:
       ZOO_MY_ID: 2
       ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=0.0.0.0:2888:3888;2181 server.3=zoo3:2888:3888;2181
@@ -42,9 +36,6 @@ services:
     container_name: zoo3
     ports:
       - 2183:2181
-    volumes:
-      - ./data/zookeeper3/data:/data
-      - ./data/zookeeper3/datalog:/datalog
     environment:
       ZOO_MY_ID: 3
       ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=0.0.0.0:2888:3888;2181
@@ -60,8 +51,6 @@ services:
       - zoo3
     ports:
       - "9092:9092"
-    volumes:
-      - ./data/kafka1/data:/var/lib/kafka/data
     environment:
       <<: *kafka-common-variables
       KAFKA_CLUSTER_ID: test-kafka-cluster
@@ -82,8 +71,6 @@ services:
       - zoo3
     ports:
       - "9094:9094"
-    volumes:
-      - ./data/kafka2/data:/var/lib/kafka/data
     environment:
       <<: *kafka-common-variables
       KAFKA_CLUSTER_ID: test-kafka-cluster
@@ -104,8 +91,6 @@ services:
       - zoo3
     ports:
       - "9096:9096"
-    volumes:
-      - ./data/kafka3/data:/var/lib/kafka/data
     environment:
       <<: *kafka-common-variables
       KAFKA_CLUSTER_ID: test-kafka-cluster

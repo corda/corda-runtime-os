@@ -1068,7 +1068,7 @@ internal class LifecycleCoordinatorImplTest {
 
     @Test
     fun `can still close coordinator even if there are registrations`() {
-        var latch = CountDownLatch(2)
+        val latch = CountDownLatch(2)
         val flushingEvent = object : LifecycleEvent {}
         val coordinator1 = createCoordinator { event, _ ->
             when (event) {
@@ -1099,7 +1099,7 @@ internal class LifecycleCoordinatorImplTest {
     @Test
     fun `not closing a coordinator registration eventually leads to a down state`() {
         val trackedLatch = CountDownLatch(1)
-        val factory = LifecycleCoordinatorFactoryImpl()
+        val factory = LifecycleCoordinatorFactoryImpl(mock())
         val coordinator = factory.createCoordinator(LifecycleCoordinatorName("a", "b")) { _, _ -> }
         coordinator.start()
 
