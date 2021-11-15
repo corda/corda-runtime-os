@@ -50,6 +50,7 @@ class RPCSendReceiveIntegrationTest {
 
         // Create a sender and send a request
         val sender = publisherFactory.createRPCSender(rpcConfig = config)
+        sender.start()
         var requestCompletion = sender.sendRequest(requestMsg)
 
         // wait for the response and validate it
