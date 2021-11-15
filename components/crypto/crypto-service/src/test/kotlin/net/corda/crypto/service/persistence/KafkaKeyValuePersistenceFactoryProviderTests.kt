@@ -13,7 +13,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import kotlin.test.assertFalse
@@ -45,8 +44,7 @@ class KafkaKeyValuePersistenceFactoryProviderTests {
             subscriptionFactory.createCompactedSubscription(
                 any(),
                 any<CompactedProcessor<*, *>>(),
-                any(),
-                anyOrNull()
+                any()
             )
         ).thenReturn(sub)
         whenever(
