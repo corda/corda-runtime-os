@@ -66,6 +66,7 @@ class StubCryptoServiceTest {
     @AfterEach
     fun cleanUp() {
         dominoTile.close()
+        resourcesHolder.close()
     }
 
     @Test

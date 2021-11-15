@@ -76,6 +76,7 @@ class StubNetworkMapTest {
     @AfterEach
     fun cleanUp() {
         dominoTile.close()
+        resourcesHolder.close()
     }
 
     @Test
