@@ -10,11 +10,11 @@ import net.corda.httprpc.server.config.models.HttpRpcContext
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.config.models.SsoSettings
 import net.corda.httprpc.server.impl.HttpRpcServerTestBase.Companion.findFreePort
-import net.corda.httprpc.server.impl.rpcops.impl.TestHealthCheckAPIImpl
-import net.corda.httprpc.server.impl.utils.AzureAdMock
 import net.corda.httprpc.server.impl.utils.TestHttpClient
 import net.corda.httprpc.server.impl.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.server.impl.utils.WebRequest
+import net.corda.httprpc.test.TestHealthCheckAPIImpl
+import net.corda.httprpc.test.utls.AzureAdMock
 import net.corda.httprpc.tools.HttpVerb
 import org.junit.jupiter.api.AfterEach
 import kotlin.test.assertEquals
@@ -30,9 +30,6 @@ class HttpRpcServerAzureAdTest {
 
     @BeforeEach
     fun setUp() {
-//        val users = listOf(
-//                User(AzureAdMock.username, "", setOf("InvokeRpc:net.corda.httprpc.test.TestHealthCheckAPI#void")),
-//                User(AzureAdMock.clientId, "", setOf()))
         securityManager = RPCSecurityManagerFactoryStubImpl().createRPCSecurityManager()
         httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()),
                 HttpRpcContext("1", "api", "HttpRpcContext test title ", "HttpRpcContext test description"),
@@ -66,6 +63,4 @@ class HttpRpcServerAzureAdTest {
             assertEquals(HttpStatus.OK, getPathResponse.responseStatus)
         }
     }
-
-    private data class User(val username: String, val password: String, val permissions: Set<String>)
 }

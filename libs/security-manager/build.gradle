@@ -1,15 +1,48 @@
+import aQute.bnd.gradle.Bundle
+
 plugins {
     id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
     id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 description 'Corda Security Manager'
+
+configurations {
+    cpks {
+        canBeConsumed = false
+        attributes { attr ->
+            attr.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+        }
+    }
+}
 
 dependencies {
     api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
 
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:osgi.core"
-    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-base"
+
+    testRuntimeOnly "org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion"
+
+    integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    integrationTestImplementation project(":libs:security-manager")
+    integrationTestImplementation "net.corda:corda-application"
+    integrationTestImplementation 'org.slf4j:slf4j-api'
+    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion"
+    integrationTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+
+    // This is just the CPK's "main" jar.
+    cpks project(':libs:sandbox:sandbox-scr-cpk')
+}
+
+def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
+    from configurations.cpks
+}
+
+tasks.named('testingBundle', Bundle) {
+    dependsOn integrationTestResources
 }

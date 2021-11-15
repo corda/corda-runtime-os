@@ -9,23 +9,28 @@ import net.corda.v5.crypto.sha256Bytes
 import java.security.PublicKey
 import java.util.UUID
 
-open class SigningKeyCacheImpl(
+class SigningKeyCacheImpl(
     private val memberId: String,
     private val keyEncoder: KeyEncodingService,
-    private val persistence: PersistentCache<SigningPersistentKeyInfo, SigningPersistentKeyInfo>
+    persistenceFactory: KeyValuePersistenceFactory
 ) : SigningKeyCache, AutoCloseable {
 
     init {
-        require(memberId.isNotBlank()) { "The member id must not be blank."}
+        require(memberId.isNotBlank()) { "The member id must not be blank." }
     }
 
-    override fun find(publicKey: PublicKey): SigningPersistentKeyInfo? = persistence.get(toEntityKey(publicKey)) { it }?.clone()?.also {
-        it.alias = fromEffectiveAlias(it.alias)
-    }
+    val persistence: KeyValuePersistence<SigningPersistentKeyInfo, SigningPersistentKeyInfo> =
+        persistenceFactory.createSigningPersistence(memberId, ::mutate)
 
-    override fun find(alias: String): SigningPersistentKeyInfo? = persistence.get(effectiveAlias(alias)) { it }?.clone()?.also {
-        it.alias = fromEffectiveAlias(it.alias)
-    }
+    override fun find(publicKey: PublicKey): SigningPersistentKeyInfo? =
+        persistence.get(toEntityKey(publicKey))?.clone()?.also {
+            it.alias = fromEffectiveAlias(it.alias)
+        }
+
+    override fun find(alias: String): SigningPersistentKeyInfo? =
+        persistence.get(effectiveAlias(alias))?.clone()?.also {
+            it.alias = fromEffectiveAlias(it.alias)
+        }
 
     override fun save(
         publicKey: PublicKey,
@@ -45,8 +50,8 @@ open class SigningKeyCacheImpl(
             schemeCodeName = scheme.codeName,
             version = 1
         )
-        persistence.put(key, entity) { it }
-        persistence.put(computedAlias, entity) { it }
+        persistence.put(key, entity)
+        persistence.put(computedAlias, entity)
     }
 
     override fun save(
@@ -68,8 +73,10 @@ open class SigningKeyCacheImpl(
             schemeCodeName = scheme.codeName,
             version = 1
         )
-        persistence.put(keyHash, entity) { it }
+        persistence.put(keyHash, entity)
     }
+
+    private fun mutate(entity: SigningPersistentKeyInfo): SigningPersistentKeyInfo = entity
 
     private fun toEntityKey(publicKey: PublicKey): String =
         "$memberId:${publicKey.sha256Bytes().toHexString()}"

@@ -1,15 +1,12 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.CustomSerializer
+import net.corda.v5.serialization.SerializationCustomSerializer
 import java.util.Currency
 
 /**
  * A custom serializer for the [Currency] class, utilizing the currency code string representation.
  */
-object CurrencySerializer
-    : CustomSerializer.ToString<Currency>(
-        Currency::class.java,
-        withInheritance = false,
-        maker = { Currency.getInstance(it) },
-        unmaker = { it.currencyCode }
-)
+object CurrencySerializer : SerializationCustomSerializer<Currency, String>{
+    override fun toProxy(obj: Currency): String = obj.currencyCode
+    override fun fromProxy(proxy: String): Currency = Currency.getInstance(proxy)
+}

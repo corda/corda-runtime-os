@@ -1,0 +1,15 @@
+version: '3.4'
+
+services:
+  postgres-db:
+    image: postgres
+    restart: "no"
+    hostname: postgres-db
+    container_name: postgres-db
+    ports:
+      - 5432:5432
+    volumes:
+      - ./docker-postgresql-init-scripts:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_USER: corda
+      POSTGRES_PASSWORD: corda-p2p-masters

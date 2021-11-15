@@ -34,7 +34,7 @@ import kotlin.reflect.jvm.kotlinFunction
  * [APIStructureRetriever] scans through the class, method and parameter annotations of the passed [PluggableRPCOps] list,
  * generating a list of [Resource].
  */
-@Suppress("UNCHECKED_CAST", "TooManyFunctions", "TooGenericExceptionThrown", "TooGenericExceptionCaught")
+@Suppress("UNCHECKED_CAST", "TooManyFunctions", "TooGenericExceptionThrown")
 class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
     private companion object {
         private val log = contextLogger()

@@ -1,5 +1,6 @@
 package net.corda.lifecycle.impl
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -35,25 +36,17 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @param name The name of the component for this lifecycle coordinator.
  * @param batchSize max number of events processed in a single [processEvents] call.
  * @param registry The registry this coordinator has been registered with. Used to update status for monitoring purposes
- * @param lifeCycleProcessor The user event handler for lifecycle events.
+ * @param lifecycleEventHandler The user event handler for lifecycle events.
  */
 class LifecycleCoordinatorImpl(
     override val name: LifecycleCoordinatorName,
     batchSize: Int,
     private val registry: LifecycleRegistryCoordinatorAccess,
-    lifeCycleProcessor: LifecycleEventHandler,
+    lifecycleEventHandler: LifecycleEventHandler,
 ) : LifecycleCoordinator {
 
     companion object {
         private val logger: Logger = contextLogger()
-
-        /**
-         * The minimum number of threads to keep active in the threadpool.
-         *
-         * Under load, the number of threads may increase. By keeping a minimum of one, the lifecycle library should
-         * remain responsive to change while not consuming excessive resources.
-         */
-        private const val MIN_THREADS = 1
 
         /**
          * The executor on which events are processed. Note that all events should be processed on an executor thread,
@@ -62,14 +55,22 @@ class LifecycleCoordinatorImpl(
          * The coordinator guarantees that the event processing task is only scheduled once. This means that event
          * processing is effectively single threaded in the sense that no event processing will happen concurrently.
          *
-         * By sharing a threadpool among coordinators, it should be possible to reduce resource usage when in a stable
+         * By sharing a thread pool among coordinators, it should be possible to reduce resource usage when in a stable
          * state.
          */
-        private val executor = Executors.newScheduledThreadPool(MIN_THREADS) { runnable ->
-            val thread = Thread(runnable)
-            thread.isDaemon = true
-            thread
-        }
+        private val executor = Executors.newCachedThreadPool(
+            ThreadFactoryBuilder()
+                .setNameFormat("lifecycle-coordinator-%d")
+                .setDaemon(true)
+                .build()
+        )
+
+        private val timerExecutor = Executors.newSingleThreadScheduledExecutor(
+            ThreadFactoryBuilder()
+                .setNameFormat("lifecycle-coordinator-timer-%d")
+                .setDaemon(true)
+                .build()
+        )
     }
 
     /**
@@ -80,7 +81,7 @@ class LifecycleCoordinatorImpl(
     /**
      * The processor for this coordinator.
      */
-    private val processor = LifecycleProcessor(name, lifecycleState, registry, lifeCycleProcessor)
+    private val processor = LifecycleProcessor(name, lifecycleState, registry, lifecycleEventHandler)
 
     /**
      * `true` if [processEvents] is executing. This is used to ensure only one attempt at processing the event queue is
@@ -137,7 +138,7 @@ class LifecycleCoordinatorImpl(
      * This is invoked from the processor when processing a new timer set up event.
      */
     private fun createTimer(timerEvent: TimerEvent, delay: Long): ScheduledFuture<*> {
-        return executor.schedule({ postEvent(timerEvent) }, delay, TimeUnit.MILLISECONDS)
+        return timerExecutor.schedule({ postEvent(timerEvent) }, delay, TimeUnit.MILLISECONDS)
     }
 
     /**
@@ -252,16 +253,6 @@ class LifecycleCoordinatorImpl(
 
     override fun close() {
         logger.trace { "$name: Closing coordinator" }
-        if (!lifecycleState.registrationsEmpty()) {
-            logger.error(
-                "Attempt made to close coordinator $name with outstanding registrations. " +
-                        "Registrations must be closed before closing the coordinator."
-            )
-            throw LifecycleException(
-                "Attempt made to close coordinator $name with outstanding registrations. " +
-                        "Close all registrations involving this coordinator first."
-            )
-        }
         stop()
         postEvent(CloseCoordinator())
         _isClosed.set(true)

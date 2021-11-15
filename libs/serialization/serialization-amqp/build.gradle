@@ -24,13 +24,10 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
-    implementation "net.corda:corda-crypto"
-    implementation "net.corda:corda-cipher-suite"
 
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-serialization"
-    implementation project(":libs:class-info")
-    implementation project(":libs:install")
+    implementation project(":components:install:install-legacy")
     implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
     implementation project(":libs:sandbox")
     implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
@@ -56,9 +53,11 @@ dependencies {
 
     integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    integrationTestImplementation "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     integrationTestImplementation "net.corda:corda-application"
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+    integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

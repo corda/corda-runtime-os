@@ -25,7 +25,7 @@ class SingletonSerializeAsTokenTest {
     fun `adding custom serializer for a SingletonSerializeAsToken serializes that SingletonSerializeAsToken`() {
         val factoryWithSerializersRegistered = testDefaultFactory().also {
             registerCustomSerializers(it)
-            it.registerExternal(CorDappCustomSerializer(ServiceSerializer()))
+            it.registerExternal(ServiceSerializer())
         }
 
         val service = Service(5)
@@ -36,7 +36,7 @@ class SingletonSerializeAsTokenTest {
     fun `SingletonSerializeAsToken fails to serialize if custom serializer is provided for other SingletonSerializeAsToken`() {
         val factoryWithSerializersRegistered = testDefaultFactory().also {
             registerCustomSerializers(it)
-            it.registerExternal(CorDappCustomSerializer(ServiceSerializer()))
+            it.registerExternal(ServiceSerializer())
         }
 
         val otherSingletonSerializeAsToken = mock(SingletonSerializeAsToken::class.java)

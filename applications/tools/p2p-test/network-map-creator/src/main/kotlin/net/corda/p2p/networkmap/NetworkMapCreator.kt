@@ -3,6 +3,7 @@ package net.corda.p2p.networkmap
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.identity.HoldingIdentity
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -33,7 +34,9 @@ class NetworkMapCreator @Activate constructor(
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = SmartConfigFactory::class)
+    private val smartConfigFactory: SmartConfigFactory,
 ): Application {
 
     private companion object {
@@ -104,9 +107,9 @@ class NetworkMapCreator @Activate constructor(
             }
             val totalRecords = recordsWithAdditions + recordsWithRemovals
 
-            val publisherConfig = ConfigFactory.empty()
+            val publisherConfig = smartConfigFactory.create(ConfigFactory.empty()
                 .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
-                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("network-map-creator"))
+                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("network-map-creator")))
             val publisher = publisherFactory.createPublisher(PublisherConfig("network-map-creator"), publisherConfig)
 
             publisher.start()

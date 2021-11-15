@@ -2,9 +2,6 @@ package net.corda.internal.serialization.amqp;
 
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.serialization.SerializedBytes;
-import net.corda.internal.serialization.amqp.DeserializationInput;
-import net.corda.internal.serialization.amqp.SerializationOutput;
-import net.corda.internal.serialization.amqp.SerializerFactory;
 import net.corda.internal.serialization.amqp.custom.BigIntegerSerializer;
 import net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt;
 import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
@@ -177,7 +174,7 @@ public class JavaGenericsTest {
         ConcreteClass concreteClass = new ConcreteClass("How to make concrete, $99/class");
         GenericClassWithMap<ConcreteClass, BigInteger> genericMap = new GenericClassWithMap<>(Collections.singletonMap(concreteClass, BigInteger.ONE));
         SerializerFactory factory = AMQPTestUtilsKt.testDefaultFactoryWithWhitelist();
-        factory.register(BigIntegerSerializer.INSTANCE);
+        factory.register(BigIntegerSerializer.INSTANCE, false);
         SerializationOutput ser = new SerializationOutput(factory);
         SerializedBytes<?> bytes = ser.serialize(genericMap, TestSerializationContext.testSerializationContext);
         DeserializationInput des = new DeserializationInput(factory);

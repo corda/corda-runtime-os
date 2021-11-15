@@ -10,6 +10,8 @@ import net.corda.v5.cipher.suite.CipherSuiteFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality
+import org.osgi.service.component.annotations.ReferencePolicyOption
 
 @Suppress("LongParameterList")
 @Component(immediate = true)
@@ -24,7 +26,11 @@ open class CryptoCoordinator @Activate constructor(
     private val cryptoFactory: CryptoFactory,
     @Reference(service = DefaultCryptoServiceProvider::class)
     private val defaultCryptoServiceProvider: DefaultCryptoServiceProvider,
-    @Reference(service = CryptoRpcSub::class)
+    @Reference(
+        service = CryptoRpcSub::class,
+        cardinality = ReferenceCardinality.AT_LEAST_ONE,
+        policyOption = ReferencePolicyOption.GREEDY
+    )
     private val rpcSubs: List<CryptoRpcSub>
 ) : AbstractCryptoCoordinator(
     LifecycleCoordinatorName.forComponent<CryptoCoordinator>(),

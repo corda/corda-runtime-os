@@ -87,7 +87,6 @@ class OSGiFrameworkMain {
          * @param args passed by the OS when invoking JVM to run this bootable JAR.
          */
         @JvmStatic
-        @Suppress("TooGenericExceptionCaught")
         fun main(args: Array<String>) {
             /**
              * `java.util.logging` logs directly to the console for Apache Aries and Liquibase (at least),

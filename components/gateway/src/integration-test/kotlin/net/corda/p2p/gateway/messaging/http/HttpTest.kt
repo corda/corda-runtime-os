@@ -4,38 +4,40 @@ import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.EventLoopGroup
-import io.netty.handler.codec.http.HttpResponseStatus
-import net.corda.p2p.gateway.LoggingInterceptor
-import net.corda.p2p.gateway.TestBase
-import org.apache.logging.log4j.Level
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
-import java.io.FileInputStream
-import java.net.URI
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
+import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.ssl.SslHandler
+import net.corda.lifecycle.Lifecycle
+import net.corda.p2p.NetworkType
+import net.corda.p2p.gateway.LoggingInterceptor
+import net.corda.p2p.gateway.TestBase
+import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.SslConfiguration
+import net.corda.test.util.eventually
+import net.corda.v5.base.util.seconds
+import org.apache.logging.log4j.Level
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.bouncycastle.asn1.x500.X500Name
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
+import java.net.URI
 import java.security.SecureRandom
 import java.time.Instant
 import java.util.Arrays
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
 import javax.net.ssl.X509ExtendedKeyManager
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
-import net.corda.lifecycle.Lifecycle
-import net.corda.p2p.NetworkType
-import net.corda.p2p.gateway.messaging.SslConfiguration
-import org.bouncycastle.asn1.x500.X500Name
-import org.junit.jupiter.api.Timeout
 
 class HttpTest : TestBase() {
 
@@ -59,29 +61,32 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `simple client POST request`() {
-        HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
-            server.addListener(object : HttpEventListener {
-                override fun onMessage(message: HttpMessage) {
-                    assertEquals(clientMessageContent, String(message.payload))
-                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
-                }
-            })
-            server.start()
-            HttpClient(DestinationInfo(serverAddress, aliceSNI[0], null), chipSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                val clientReceivedResponses = CountDownLatch(1)
-                var responseReceived = false
-                val clientListener = object : HttpEventListener {
-                    override fun onMessage(message: HttpMessage) {
-                        assertEquals(serverResponseContent, String(message.payload))
-                        responseReceived = true
-                        clientReceivedResponses.countDown()
-                    }
-                }
-                client.addListener(clientListener)
+        val listener = object : ListenerWithServer() {
+            override fun onRequest(request: HttpRequest) {
+                assertEquals(clientMessageContent, String(request.payload))
+                server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), request.source)
+            }
+        }
+        HttpServer(
+            listener,
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                aliceSslConfig
+            ),
+        ).use { server ->
+            listener.server = server
+            server.startAndWaitForStarted()
+            HttpClient(
+                DestinationInfo(serverAddress, aliceSNI[0], null),
+                chipSslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                2.seconds
+            ).use { client ->
                 client.start()
-                client.write(clientMessageContent.toByteArray(Charsets.UTF_8))
-                clientReceivedResponses.await()
-                assertTrue(responseReceived)
+                val response = client.write(clientMessageContent.toByteArray(Charsets.UTF_8)).get()
+                assertThat(response.statusCode).isEqualTo(HttpResponseStatus.OK)
             }
         }
     }
@@ -93,45 +98,46 @@ class HttpTest : TestBase() {
         val threadNo = 2
         val threads = mutableListOf<Thread>()
         val times = mutableListOf<Long>()
-        val httpServer = HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig)
+        val listener = object : ListenerWithServer() {
+            override fun onRequest(request: HttpRequest) {
+                assertEquals(clientMessageContent, String(request.payload))
+                server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), request.source)
+            }
+        }
+        val httpServer = HttpServer(
+            listener,
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                aliceSslConfig
+            )
+        )
         val threadPool = NioEventLoopGroup(threadNo)
         httpServer.use { server ->
-            server.addListener(object : HttpEventListener {
-                override fun onMessage(message: HttpMessage) {
-                    assertEquals(clientMessageContent, String(message.payload))
-                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
-                }
-            })
-            server.start()
+            listener.server = server
+            server.startAndWaitForStarted()
             repeat(threadNo) {
                 val t = thread {
-                    var startTime: Long = 0
-                    val httpClient = HttpClient(DestinationInfo(serverAddress, aliceSNI[1], null), chipSslConfig, threadPool, threadPool)
-                    val clientReceivedResponses = CountDownLatch(requestNo)
+                    val httpClient = HttpClient(
+                        DestinationInfo(serverAddress, aliceSNI[1], null),
+                        chipSslConfig,
+                        threadPool,
+                        threadPool,
+                        2.seconds
+                    )
                     httpClient.use {
-                        val clientListener = object : HttpEventListener {
-                            override fun onMessage(message: HttpMessage) {
-                                assertEquals(serverResponseContent, String(message.payload))
-                                clientReceivedResponses.countDown()
-                            }
-
-                            override fun onOpen(event: HttpConnectionEvent) {
-                                startTime = Instant.now().toEpochMilli()
-                            }
-
-                            override fun onClose(event: HttpConnectionEvent) {
-                                val endTime = Instant.now().toEpochMilli()
-                                times.add(endTime - startTime)
-                            }
-                        }
-                        httpClient.addListener(clientListener)
                         httpClient.start()
 
-                        repeat(requestNo) {
+                        val start = Instant.now().toEpochMilli()
+                        val futures = (1..requestNo).map {
                             httpClient.write(clientMessageContent.toByteArray(Charsets.UTF_8))
                         }
+                        val responses = futures.map { it.get() }
+                        times.add(Instant.now().toEpochMilli() - start)
 
-                        clientReceivedResponses.await()
+                        responses.forEach {
+                            assertThat(it.statusCode).isEqualTo(HttpResponseStatus.OK)
+                        }
                     }
                 }
                 threads.add(t)
@@ -147,31 +153,39 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `large payload`() {
-        val hugePayload = FileInputStream(javaClass.classLoader.getResource("10mb.txt")!!.file).readAllBytes()
+        val hugePayload = (1..0xA00_000)
+            .map {
+                (it % 0xFF).toByte()
+            }
+            .toByteArray()
+        val listener = object : ListenerWithServer() {
+            override fun onRequest(request: HttpRequest) {
+                assertTrue(Arrays.equals(hugePayload, request.payload))
+                server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), request.source)
+            }
+        }
 
-        HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
-            server.addListener(object : HttpEventListener {
-                override fun onMessage(message: HttpMessage) {
-                    assertTrue(Arrays.equals(hugePayload, message.payload))
-                    server.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), message.source)
-                }
-            })
-            server.start()
-            HttpClient(DestinationInfo(serverAddress, aliceSNI[0], null), bobSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                val clientReceivedResponses = CountDownLatch(1)
-                var responseReceived = false
-                val clientListener = object : HttpEventListener {
-                    override fun onMessage(message: HttpMessage) {
-                        assertEquals(serverResponseContent, String(message.payload))
-                        responseReceived = true
-                        clientReceivedResponses.countDown()
-                    }
-                }
-                client.addListener(clientListener)
+        HttpServer(
+            listener,
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                aliceSslConfig
+            )
+        ).use { server ->
+            listener.server = server
+            server.startAndWaitForStarted()
+            HttpClient(
+                DestinationInfo(serverAddress, aliceSNI[0], null),
+                bobSslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                2.seconds
+            ).use { client ->
                 client.start()
-                client.write(hugePayload)
-                clientReceivedResponses.await()
-                assertTrue(responseReceived)
+                val response = client.write(hugePayload).get()
+                assertThat(response.statusCode).isEqualTo(HttpResponseStatus.OK)
+                assertThat(String(response.payload)).isEqualTo(serverResponseContent)
             }
         }
     }
@@ -179,22 +193,32 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `tls handshake succeeds - revocation checking disabled C5`() {
-        HttpServer(serverAddress.host, serverAddress.port, bobSslConfig).use { server ->
-            server.start()
-            HttpClient(DestinationInfo(serverAddress, bobSNI[0], null), aliceSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                var connected = false
-                val connectedLatch = CountDownLatch(1)
-                client.addListener(object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        connected = true
-                        connectedLatch.countDown()
-                    }
-                })
+        val listener = object : ListenerWithServer() {
+            override fun onRequest(request: HttpRequest) {
+                server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), request.source)
+            }
+        }
 
+        HttpServer(
+            listener,
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                bobSslConfig
+            )
+        ).use { server ->
+            listener.server = server
+            server.startAndWaitForStarted()
+            HttpClient(
+                DestinationInfo(serverAddress, bobSNI[0], null),
+                aliceSslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                2.seconds
+            ).use { client ->
                 client.start()
-                client.write(ByteArray(0))
-                connectedLatch.await()
-                assertTrue(connected)
+                val response = client.write(ByteArray(0)).get()
+                assertThat(response.statusCode).isEqualTo(HttpResponseStatus.OK)
             }
         }
     }
@@ -202,22 +226,32 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `tls handshake succeeds - revocation checking disabled C4`() {
-        HttpServer(serverAddress.host, serverAddress.port, c4sslConfig).use { server ->
-            server.start()
-            HttpClient(DestinationInfo(serverAddress, partyASNI, partyAx500Name), c4sslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                var connected = false
-                val connectedLatch = CountDownLatch(1)
-                client.addListener(object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        connected = true
-                        connectedLatch.countDown()
-                    }
-                })
+        val listener = object : ListenerWithServer() {
+            override fun onRequest(request: HttpRequest) {
+                server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), request.source)
+            }
+        }
 
+        HttpServer(
+            listener,
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                c4sslConfig
+            )
+        ).use { server ->
+            listener.server = server
+            server.startAndWaitForStarted()
+            HttpClient(
+                DestinationInfo(serverAddress, partyASNI, partyAx500Name),
+                c4sslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                2.seconds
+            ).use { client ->
                 client.start()
-                client.write(ByteArray(0))
-                connectedLatch.await()
-                assertTrue(connected)
+                val response = client.write(ByteArray(0)).get()
+                assertThat(response.statusCode).isEqualTo(HttpResponseStatus.OK)
             }
         }
     }
@@ -229,23 +263,29 @@ class HttpTest : TestBase() {
             server.start()
             val expectedX500Name = "O=Test,L=London,C=GB"
             val sni = SniCalculator.calculateSni("O=Test,L=London,C=GB", NetworkType.CORDA_4, serverAddress.host)
-            HttpClient(DestinationInfo(serverAddress,  sni, X500Name(expectedX500Name)), c4sslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                val connectedLatch = CountDownLatch(1)
-                client.addListener(object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        connectedLatch.countDown()
-                    }
-                })
+            HttpClient(
+                DestinationInfo(serverAddress, sni, X500Name(expectedX500Name)),
+                c4sslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                2.seconds
+            ).use { client ->
 
                 client.start()
-                client.write(ByteArray(0))
-                // Check the connection didn't actually succeed; latch times out
-                assertFalse(connectedLatch.await(1, TimeUnit.SECONDS))
+                val future = client.write(ByteArray(0))
+
+                assertThatThrownBy {
+                    future.get()
+                }.isInstanceOf(ExecutionException::class.java)
+                    .hasCauseInstanceOf(RuntimeException::class.java)
+                    .hasStackTraceContaining("Connection was closed.")
 
                 // Check HandshakeException is thrown and logged
                 val expectedMessage = "Bad certificate identity or path. " +
-                        "Certificate name doesn't match. Expected $expectedX500Name but received C=GB,L=London,O=PartyA"
-                loggingInterceptor.assertMessageExists(expectedMessage, Level.ERROR)
+                    "Certificate name doesn't match. Expected $expectedX500Name but received C=GB,L=London,O=PartyA"
+                eventually {
+                    loggingInterceptor.assertMessageExists(expectedMessage, Level.ERROR)
+                }
             }
         }
     }
@@ -255,23 +295,27 @@ class HttpTest : TestBase() {
     fun `tls handshake fails - server identity check fails C5`() {
         MitmServer(serverAddress.host, serverAddress.port, chipSslConfig).use { server ->
             server.start()
-            HttpClient(DestinationInfo(serverAddress, aliceSNI[0], null), daleSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                val connectedLatch = CountDownLatch(1)
-                client.addListener(object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        connectedLatch.countDown()
-                    }
-                })
-
+            HttpClient(
+                DestinationInfo(serverAddress, aliceSNI[0], null),
+                daleSslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                2.seconds
+            ).use { client ->
                 client.start()
-                client.write(ByteArray(0))
-                // Check the connection didn't actually succeed; latch times out
-                assertFalse(connectedLatch.await(1, TimeUnit.SECONDS))
+                val future = client.write(ByteArray(0))
+                assertThatThrownBy {
+                    future.get()
+                }.isInstanceOf(ExecutionException::class.java)
+                    .hasCauseInstanceOf(RuntimeException::class.java)
+                    .hasStackTraceContaining("Connection was closed.")
 
                 // Check HandshakeException is thrown and logged
                 val expectedMessage = "Bad certificate identity or path. " +
-                        "No subject alternative DNS name matching ${serverAddress.host} found"
-                loggingInterceptor.assertMessageExists(expectedMessage, Level.ERROR)
+                    "No subject alternative DNS name matching ${serverAddress.host} found"
+                eventually {
+                    loggingInterceptor.assertMessageExists(expectedMessage, Level.ERROR)
+                }
             }
         }
     }
@@ -279,59 +323,95 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `tls handshake fails - requested SNI is not recognized`() {
-        HttpServer(serverAddress.host, serverAddress.port, aliceSslConfig).use { server ->
-            server.start()
-            HttpClient(DestinationInfo(serverAddress, bobSNI[0], null), chipSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                val connectedLatch = CountDownLatch(1)
-                client.addListener(object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        connectedLatch.countDown()
-                    }
-                })
 
+        HttpServer(
+            object : ListenerWithServer() {
+                override fun onRequest(request: HttpRequest) {
+                    server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), request.source)
+                }
+            },
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                aliceSslConfig
+            )
+        ).use { server ->
+            server.startAndWaitForStarted()
+            HttpClient(
+                DestinationInfo(serverAddress, bobSNI[0], null),
+                chipSslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                2.seconds
+            ).use { client ->
                 client.start()
-                client.write(ByteArray(0))
-                connectedLatch.await(1, TimeUnit.SECONDS)
+                val future = client.write(ByteArray(0))
+                assertThatThrownBy {
+                    future.get()
+                }.isInstanceOf(ExecutionException::class.java)
+                    .hasCauseInstanceOf(RuntimeException::class.java)
+                    .hasStackTraceContaining("Connection was closed.")
             }
         }
 
-        loggingInterceptor.assertMessageExists(
-            "Could not find a certificate matching the requested SNI value [hostname = ${bobSNI[0]}",
-            Level.WARN
-        )
+        eventually {
+            loggingInterceptor.assertMessageExists(
+                "Could not find a certificate matching the requested SNI value [hostname = ${bobSNI[0]}",
+                Level.WARN
+            )
+        }
     }
 
     @Test
     @Timeout(30)
     fun `tls handshake fails - server presents revoked certificate`() {
-        HttpServer(serverAddress.host, serverAddress.port, bobSslConfig).use { server ->
-            server.start()
-            HttpClient(DestinationInfo(serverAddress, bobSNI[0], null), chipSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1)).use { client ->
-                val connectedLatch = CountDownLatch(1)
-                client.addListener(object : HttpEventListener {
-                    override fun onOpen(event: HttpConnectionEvent) {
-                        connectedLatch.countDown()
-                    }
-                })
 
+        HttpServer(
+            object : ListenerWithServer() {
+                override fun onRequest(request: HttpRequest) {
+                    server?.write(HttpResponseStatus.OK, serverResponseContent.toByteArray(Charsets.UTF_8), request.source)
+                }
+            },
+            GatewayConfiguration(
+                serverAddress.host,
+                serverAddress.port,
+                bobSslConfig
+            )
+        ).use { server ->
+            server.startAndWaitForStarted()
+            HttpClient(
+                DestinationInfo(serverAddress, bobSNI[0], null),
+                chipSslConfig,
+                NioEventLoopGroup(1),
+                NioEventLoopGroup(1),
+                2.seconds
+            ).use { client ->
                 client.start()
-                client.write(ByteArray(0))
-                connectedLatch.await(1, TimeUnit.SECONDS)
+                val future = client.write(ByteArray(0))
+                assertThatThrownBy {
+                    future.get()
+                }.isInstanceOf(ExecutionException::class.java)
+                    .hasCauseInstanceOf(RuntimeException::class.java)
+                    .hasStackTraceContaining("Connection was closed.")
             }
         }
 
-        loggingInterceptor.assertMessageExists(
-            "Bad certificate identity or path. PKIX path validation failed: " +
+        eventually {
+            loggingInterceptor.assertMessageExists(
+                "Bad certificate identity or path. PKIX path validation failed: " +
                     "java.security.cert.CertPathValidatorException: Certificate has been revoked",
-            Level.ERROR
-        )
+                Level.ERROR
+            )
+        }
     }
 
     // Lightweight testing server which ignores SNI checks and presents invalid certificates
     // This server is not meant to receive requests.
-    private class MitmServer(private val host: String,
-                             private val port: Int,
-                             private val sslConfig: SslConfiguration) : Lifecycle {
+    private class MitmServer(
+        private val host: String,
+        private val port: Int,
+        private val sslConfig: SslConfiguration
+    ) : Lifecycle {
 
         private val lock = ReentrantLock()
         private var bossGroup: EventLoopGroup? = null
@@ -376,7 +456,7 @@ class HttpTest : TestBase() {
             }
         }
 
-        private class ServerChannelInitializer(private val parent: MitmServer) : ChannelInitializer<SocketChannel>() {
+        private class ServerChannelInitializer(parent: MitmServer) : ChannelInitializer<SocketChannel>() {
 
             private val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
 

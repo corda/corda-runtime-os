@@ -95,9 +95,9 @@ virtualenv/
 *.swo
 
 # Files you may find useful to have in your working directory.
-PLAN
-NOTES
-TODO
+PLAN*
+NOTES*
+TODO*
 
 # gradle-dependx plugin
 .dependx/

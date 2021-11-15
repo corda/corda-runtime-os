@@ -26,7 +26,7 @@ import kotlin.experimental.xor
  * This class is thread-safe, which means multiple threads can try to encrypt & decrypt data concurrently using the same session.
  */
 @Suppress("LongParameterList")
-class AuthenticatedEncryptionSession(private val sessionId: String,
+class AuthenticatedEncryptionSession(override val sessionId: String,
                                      nextSequenceNo: Long,
                                      private val outboundSecretKey: SecretKey,
                                      private val outboundNonce: ByteArray,
@@ -56,7 +56,7 @@ class AuthenticatedEncryptionSession(private val sessionId: String,
     /**
      * @throws DecryptionFailedError if decryption of the provided data failed, e.g because of invalid or modified data.
      */
-    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
+    @Suppress("ThrowsCount")
     fun decryptData(header: CommonHeader, encryptedPayload: ByteArray, authTag: ByteArray): ByteArray {
         val nonce = xor(inboundNonce, header.sequenceNo.toByteArray())
         val plaintext = try {

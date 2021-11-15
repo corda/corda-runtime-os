@@ -32,14 +32,9 @@ dependencies {
     testImplementation project(':testing:crypto-testkit')
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":testing:test-utilities")
+    testImplementation project(":libs:messaging:inmemory-messaging-impl")
+    testImplementation project(":libs:configuration:configuration-core")
 }
 
 description 'Crypto Service Components'
 
-tasks.named('jar', Jar) {
-    bnd """\
-Import-Package:\
-    net.i2p.crypto.eddsa.math;resolution:=optional,\
-    *
-"""
-}

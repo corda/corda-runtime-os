@@ -6,7 +6,6 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsume
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventConsumer
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPartitionState
 import net.corda.messaging.kafka.types.StateAndEventConfig
-import net.corda.messaging.kafka.types.Topic
 import net.corda.messaging.kafka.utils.tryGetResult
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -41,12 +40,11 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val log = LoggerFactory.getLogger(config.loggerName)
 
     private val consumerCloseTimeout = config.consumerCloseTimeout
-    private val topicPrefix = config.topicPrefix
     private val maxPollInterval = config.maxPollInterval
     private val initialProcessorTimeout = maxPollInterval / 4
 
-    private val eventTopic = Topic(topicPrefix, config.eventTopic)
-    private val stateTopic = Topic(topicPrefix, config.stateTopic)
+    private val eventTopic = config.eventTopic
+    private val stateTopic = config.stateTopic
     private val groupName = config.eventGroupName
 
     private val currentStates = partitionState.currentStates
@@ -67,15 +65,15 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     override fun pollAndUpdateStates(syncPartitions: Boolean) {
         if (stateConsumer.assignment().isEmpty()) {
-            log.trace { "State consumer has no partitions assigned." }
+            log.debug { "State consumer has no partitions assigned." }
             return
         }
 
         val partitionsSynced = mutableSetOf<TopicPartition>()
         val states = stateConsumer.poll()
         for (state in states) {
-            log.trace { "Updating state: $state" }
-            updateInMemoryState(state.record)
+            log.debug { "Updating state: $state" }
+            updateInMemoryState(state)
             partitionsSynced.addAll(getSyncedEventPartitions())
         }
 
@@ -95,7 +93,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         val statePartitionsToSync = partitionsToSync.toMap()
         for (partition in statePartitionsToSync) {
             val partitionId = partition.key
-            val stateTopicPartition = TopicPartition(stateTopic.topic, partitionId)
+            val stateTopicPartition = TopicPartition(stateTopic, partitionId)
             val stateConsumerPollPosition = stateConsumer.position(stateTopicPartition)
             val endOffset = partition.value
             if (stateConsumerPollPosition >= endOffset) {
@@ -104,7 +102,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                             "end offset $endOffset"
                 }
                 partitionsToSync.remove(partitionId)
-                partitionsSynced.add(TopicPartition(eventTopic.topic, partitionId))
+                partitionsSynced.add(TopicPartition(eventTopic, partitionId))
             }
         }
 
@@ -140,6 +138,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     private fun pauseEventConsumerAndWaitForFutureToFinish(future: CompletableFuture<*>, timeout: Long) {
         val assignment = eventConsumer.assignment() - eventConsumer.paused()
+        log.debug { "Pause partitions and wait for future to finish. Assignment: $assignment"}
         eventConsumer.pause(assignment)
         val maxWaitTime = System.currentTimeMillis() + timeout
         var done = future.isDone
@@ -151,6 +150,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             done = future.isDone
         }
 
+        log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}]. Assignment: $assignment"}
         eventConsumer.resume(assignment)
     }
 
@@ -196,10 +196,12 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override fun resetPollInterval() {
         if (System.currentTimeMillis() > pollIntervalCutoff) {
             val assignment = eventConsumer.assignment() - eventConsumer.paused()
+            log.debug { "Resetting poll interval. Pausing assignment: $assignment"}
             eventConsumer.pause(assignment)
             eventConsumer.poll(PAUSED_POLL_TIMEOUT)
             stateConsumer.poll(PAUSED_POLL_TIMEOUT)
             pollIntervalCutoff = getNextPollIntervalCutoff()
+            log.debug { "Reset of poll interval complete. Resuming assignment: $assignment"}
             eventConsumer.resume(assignment)
         }
     }

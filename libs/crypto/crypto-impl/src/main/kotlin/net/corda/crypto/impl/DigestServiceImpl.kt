@@ -1,5 +1,6 @@
 package net.corda.crypto.impl
 
+import net.corda.crypto.DigestAlgorithmFactoryProvider
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestAlgorithm
 import net.corda.v5.cipher.suite.DigestAlgorithmFactory
@@ -11,7 +12,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 class DigestServiceImpl(
     private val schemeMetadata: CipherSchemeMetadata,
-    private val customDigestAlgorithmFactories: List<DigestAlgorithmFactory>
+    private val customDigestAlgorithmFactories: List<DigestAlgorithmFactory>,
+    private val customFactoriesProvider: DigestAlgorithmFactoryProvider?
 ) : DigestService {
     private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>().also { factories ->
         customDigestAlgorithmFactories.forEach { factory ->
@@ -35,8 +37,19 @@ class DigestServiceImpl(
             return digestFor(digestAlgorithmName).digestLength
         }
 
-    private fun digestFor(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm =
-        factories.getOrPut(digestAlgorithmName.name) {
-            SpiDigestAlgorithmFactory(schemeMetadata, digestAlgorithmName.name)
-        }.getInstance()
+    private fun digestFor(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm {
+        try {
+            return factories.getOrPut(digestAlgorithmName.name) {
+                SpiDigestAlgorithmFactory(schemeMetadata, digestAlgorithmName.name)
+            }.getInstance()
+        } catch (e: IllegalArgumentException) {
+            // Check any custom registered versions.
+            val digestAlgorithmFactory = customFactoriesProvider?.get(digestAlgorithmName.name)
+            if (digestAlgorithmFactory != null) {
+                return digestAlgorithmFactory.getInstance()
+            }
+
+            throw e
+        }
+    }
 }

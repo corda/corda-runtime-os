@@ -15,14 +15,16 @@ class FlowStateMachineFactoryImpl : FlowStateMachineFactory {
         clientId: String?,
         id: FlowKey,
         logic: Flow<*>,
-//        ourIdentity: Party,
+        cpiId: String,
+        flowName: String,
         scheduler: FiberScheduler
     ): FlowStateMachine<Any?> {
         return FlowStateMachineImpl(
             clientId,
             id,
             logic,
-//            ourIdentity,
+            cpiId,
+            flowName,
             scheduler
         )
     }

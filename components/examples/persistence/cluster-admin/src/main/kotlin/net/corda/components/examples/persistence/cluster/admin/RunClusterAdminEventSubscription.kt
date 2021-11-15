@@ -1,9 +1,9 @@
 package net.corda.components.examples.persistence.cluster.admin
 
-import com.typesafe.config.Config
 import net.corda.components.examples.persistence.cluster.admin.processor.ClusterAdminEventProcessor
 import net.corda.data.poc.persistence.ClusterAdminEvent
 import net.corda.db.admin.LiquibaseSchemaMigrator
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -16,7 +16,7 @@ import java.sql.Connection
 @Suppress("LongParameterList")
 class RunClusterAdminEventSubscription(
     private val subscriptionFactory: SubscriptionFactory,
-    private var config: Config,
+    private var config: SmartConfig,
     private val instanceId: Int,
     private val dbConnection: Connection,
     private val schemaMigrator: LiquibaseSchemaMigrator,
@@ -34,7 +34,7 @@ class RunClusterAdminEventSubscription(
 
     override fun start() {
         if (!isRunning) {
-            logger.info("Creating durable subscription")
+            logger.info("Creating durable subscription for $inputTopic")
             val processor = ClusterAdminEventProcessor(dbConnection, schemaMigrator, logger)
             subscription = subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(groupName, inputTopic, instanceId),
@@ -43,13 +43,13 @@ class RunClusterAdminEventSubscription(
                 null
             )
 
-            logger.info("Starting durable subscription")
+            logger.info("Starting durable subscription for $inputTopic")
             subscription?.start()
         }
     }
 
     override fun stop() {
-        logger.info("Stopping durable sub")
+        logger.info("Stopping durable sub for $inputTopic")
         subscription?.stop()
     }
 }

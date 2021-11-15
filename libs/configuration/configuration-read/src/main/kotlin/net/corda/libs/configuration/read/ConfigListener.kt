@@ -1,6 +1,6 @@
 package net.corda.libs.configuration.read
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 
 fun interface ConfigListener {
     /**
@@ -9,5 +9,5 @@ fun interface ConfigListener {
      * @param changedKeys a set of keys that have changed since last update
      * @param currentConfigurationSnapshot the snapshot of all currently available configuration objects
      */
-    fun onUpdate(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, Config>)
+    fun onUpdate(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, SmartConfig>)
 }

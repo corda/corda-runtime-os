@@ -50,7 +50,6 @@ class SigningServiceRpcProcessor(
         )
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun onNext(request: WireSigningRequest, respFuture: CompletableFuture<WireSigningResponse>) {
         try {
             logger.info("Handling {} for member {}", request.request::class.java.name, request.context.memberId)

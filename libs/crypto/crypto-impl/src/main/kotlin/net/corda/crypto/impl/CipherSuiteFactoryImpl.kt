@@ -17,16 +17,30 @@ import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality
+import org.osgi.service.component.annotations.ReferencePolicyOption
 import org.slf4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CipherSuiteFactory::class])
 open class CipherSuiteFactoryImpl @Activate constructor(
-    @Reference(service = CipherSchemeMetadataProvider::class)
+    @Reference(
+        service = CipherSchemeMetadataProvider::class,
+        cardinality = ReferenceCardinality.AT_LEAST_ONE,
+        policyOption = ReferencePolicyOption.GREEDY
+    )
     private val schemeMetadataProviders: List<CipherSchemeMetadataProvider>,
-    @Reference(service = SignatureVerificationServiceProvider::class)
+    @Reference(
+        service = SignatureVerificationServiceProvider::class,
+        cardinality = ReferenceCardinality.AT_LEAST_ONE,
+        policyOption = ReferencePolicyOption.GREEDY
+    )
     private val verifierProviders: List<SignatureVerificationServiceProvider>,
-    @Reference(service = DigestServiceProvider::class)
+    @Reference(
+        service = DigestServiceProvider::class,
+        cardinality = ReferenceCardinality.AT_LEAST_ONE,
+        policyOption = ReferencePolicyOption.GREEDY
+    )
     private val digestServiceProviders: List<DigestServiceProvider>
 ) : Lifecycle, CryptoLifecycleComponent, CipherSuiteFactory {
     companion object {
@@ -87,7 +101,6 @@ open class CipherSuiteFactoryImpl @Activate constructor(
         private val verifiers = ConcurrentHashMap<String, SignatureVerificationService>()
         private val digestServices = ConcurrentHashMap<String, DigestService>()
 
-        @Suppress("TooGenericExceptionCaught")
         override fun getSchemeMap(): CipherSchemeMetadata  {
             logger.debug("Getting {}", CipherSchemeMetadata::class.java.name)
             val name = config.schemeMetadataProvider
@@ -110,7 +123,7 @@ open class CipherSuiteFactoryImpl @Activate constructor(
             }
         }
 
-        @Suppress("UNCHECKED_CAST", "TooGenericExceptionCaught", "MaxLineLength")
+        @Suppress("UNCHECKED_CAST", "MaxLineLength")
         override fun getSignatureVerificationService(): SignatureVerificationService  {
             logger.debug("Getting {}", SignatureVerificationService::class.java.name)
             val name = config.signatureVerificationProvider
@@ -133,7 +146,6 @@ open class CipherSuiteFactoryImpl @Activate constructor(
             }
         }
 
-        @Suppress("TooGenericExceptionCaught")
         override fun getDigestService(): DigestService {
             logger.debug("Getting {}", DigestService::class.java.name)
             val name = config.digestProvider

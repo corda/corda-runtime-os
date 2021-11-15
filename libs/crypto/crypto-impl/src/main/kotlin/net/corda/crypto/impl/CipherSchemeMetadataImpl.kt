@@ -66,7 +66,6 @@ open class CipherSchemeMetadataImpl(
 
     override fun findKeyFactory(scheme: SignatureScheme): KeyFactory = keyFactories[scheme]
 
-    @Suppress("TooGenericExceptionCaught")
     override fun decodePublicKey(encodedKey: ByteArray): PublicKey = try {
         val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
         val scheme = findSignatureScheme(subjectPublicKeyInfo.algorithm)
@@ -78,7 +77,7 @@ open class CipherSchemeMetadataImpl(
         throw CryptoServiceLibraryException("Failed to decode public key", e)
     }
 
-    @Suppress("TooGenericExceptionCaught", "ComplexMethod")
+    @Suppress("ComplexMethod")
     override fun decodePublicKey(encodedKey: String): PublicKey = try {
         val pemContent = parsePemContent(encodedKey)
         val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
@@ -91,7 +90,6 @@ open class CipherSchemeMetadataImpl(
         throw CryptoServiceLibraryException("Failed to decode public key", e)
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun encodeAsString(publicKey: PublicKey): String = try {
         objectToPem(publicKey)
     } catch (e: CryptoServiceLibraryException) {

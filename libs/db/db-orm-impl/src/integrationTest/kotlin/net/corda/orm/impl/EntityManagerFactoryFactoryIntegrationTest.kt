@@ -1,5 +1,6 @@
 package net.corda.orm.impl
 
+import net.corda.db.testkit.InMemoryEntityManagerConfiguration
 import net.corda.orm.impl.test.entities.Cat
 import net.corda.orm.impl.test.entities.Owner
 import org.assertj.core.api.Assertions.assertThat

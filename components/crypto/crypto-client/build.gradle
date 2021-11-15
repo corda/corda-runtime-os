@@ -27,14 +27,8 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:crypto-testkit")
     testImplementation project(":testing:test-utilities")
+    testImplementation project(":libs:configuration:configuration-core")
 }
 
 description 'Crypto Client'
 
-tasks.named('jar', Jar) {
-    bnd """\
-Import-Package:\
-    net.i2p.crypto.eddsa.math;resolution:=optional,\
-    *
-"""
-}

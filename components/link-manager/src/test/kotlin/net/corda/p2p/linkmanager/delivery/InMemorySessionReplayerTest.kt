@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.delivery
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -12,6 +12,7 @@ import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
 import net.corda.p2p.schema.Schema
@@ -29,7 +30,7 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import java.security.KeyPairGenerator
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 
@@ -89,14 +90,14 @@ class InMemorySessionReplayerTest {
         val totalReplays = 5
         val publisher = SinglePhaseTestListBasedPublisher(totalReplays)
         val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
+            override fun createPublisher(publisherConfig: PublisherConfig, kafkaConfig: SmartConfig): Publisher {
                 return publisher
             }
 
-            override fun <TREQ : Any, TRESP : Any> createRPCSender(
-                rpcConfig: RPCConfig<TREQ, TRESP>,
-                nodeConfig: Config
-            ): RPCSender<TREQ, TRESP> {
+            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
+                kafkaConfig: SmartConfig
+            ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
         }
@@ -110,10 +111,19 @@ class InMemorySessionReplayerTest {
             GROUP_ID
         ).generateInitiatorHello()
 
+        var invocations = 0
+        fun callback(key: SessionManager.SessionKey, sessionId: String)  {
+            assertEquals(US, key.ourId)
+            assertEquals(COUNTER_PARTY, key.responderId)
+            assertEquals(id, sessionId)
+            invocations++
+        }
+
         replayer.start()
-        replayer.addMessageForReplay(id, SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY))
+        replayer.addMessageForReplay(id, InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY, ::callback))
 
         publisher.testWaitLatch.await()
+        assertEquals(totalReplays, invocations)
         assertEquals(totalReplays, publisher.list.size)
         for (record in publisher.list) {
             assertEquals(Schema.LINK_OUT_TOPIC, record.topic)
@@ -167,14 +177,14 @@ class InMemorySessionReplayerTest {
         val furtherReplays = 4
         val publisher = TwoPhaseTestListBasedPublisher(initialReplays, furtherReplays)
         val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
+            override fun createPublisher(publisherConfig: PublisherConfig, kafkaConfig: SmartConfig): Publisher {
                 return publisher
             }
 
-            override fun <TREQ : Any, TRESP : Any> createRPCSender(
-                rpcConfig: RPCConfig<TREQ, TRESP>,
-                nodeConfig: Config
-            ): RPCSender<TREQ, TRESP> {
+            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
+                kafkaConfig: SmartConfig
+            ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
         }
@@ -201,11 +211,11 @@ class InMemorySessionReplayerTest {
 
         replayer.addMessageForReplay(
             firstId,
-            SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY)
+            InMemorySessionReplayer.SessionMessageReplay(helloMessage, firstId, US, COUNTER_PARTY) {_, _ ->}
         )
         replayer.addMessageForReplay(
             secondId,
-            SessionReplayer.SessionMessageReplay(secondHelloMessage, COUNTER_PARTY)
+            InMemorySessionReplayer.SessionMessageReplay(secondHelloMessage, secondId, US, COUNTER_PARTY) {_, _ ->}
         )
 
         publisher.testWaitLatch.await()
@@ -236,14 +246,14 @@ class InMemorySessionReplayerTest {
         val totalReplays = 1
         val publisher = SinglePhaseTestListBasedPublisher(totalReplays)
         val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
+            override fun createPublisher(publisherConfig: PublisherConfig, kafkaConfig: SmartConfig): Publisher {
                 return publisher
             }
 
-            override fun <TREQ : Any, TRESP : Any> createRPCSender(
-                rpcConfig: RPCConfig<TREQ, TRESP>,
-                nodeConfig: Config
-            ): RPCSender<TREQ, TRESP> {
+            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
+                kafkaConfig: SmartConfig
+            ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
         }
@@ -263,7 +273,7 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         replayer.start()
-        replayer.addMessageForReplay(id, SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY))
+        replayer.addMessageForReplay(id, InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) {_, _ ->})
         publisher.testWaitLatch.await()
         assertEquals(1, publisher.list.size)
         val record = publisher.list.single()
@@ -283,14 +293,14 @@ class InMemorySessionReplayerTest {
         val totalReplays = 1
         val publisher = SinglePhaseTestListBasedPublisher(totalReplays)
         val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
+            override fun createPublisher(publisherConfig: PublisherConfig, kafkaConfig: SmartConfig): Publisher {
                 return publisher
             }
 
-            override fun <TREQ : Any, TRESP : Any> createRPCSender(
-                rpcConfig: RPCConfig<TREQ, TRESP>,
-                nodeConfig: Config
-            ): RPCSender<TREQ, TRESP> {
+            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
+                kafkaConfig: SmartConfig
+            ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
         }
@@ -310,7 +320,7 @@ class InMemorySessionReplayerTest {
             ).generateInitiatorHello()
 
         replayer.start()
-        replayer.addMessageForReplay(id, SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY))
+        replayer.addMessageForReplay(id, InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) {_,_ ->})
         publisher.testWaitLatch.await()
         assertEquals(1, publisher.list.size)
         val record = publisher.list.single()
@@ -329,14 +339,14 @@ class InMemorySessionReplayerTest {
     fun `The InMemorySessionReplayer will not replay before start`() {
         val publisher = Mockito.mock(Publisher::class.java)
         val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
+            override fun createPublisher(publisherConfig: PublisherConfig, kafkaConfig: SmartConfig): Publisher {
                 return publisher
             }
 
-            override fun <TREQ : Any, TRESP : Any> createRPCSender(
-                rpcConfig: RPCConfig<TREQ, TRESP>,
-                nodeConfig: Config
-            ): RPCSender<TREQ, TRESP> {
+            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
+                kafkaConfig: SmartConfig
+            ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
         }
@@ -350,7 +360,10 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
         val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, mockNetworkMap)
         assertThrows<IllegalStateException> {
-            replayer.addMessageForReplay("", SessionReplayer.SessionMessageReplay(helloMessage, COUNTER_PARTY))
+            replayer.addMessageForReplay(
+                "",
+                InMemorySessionReplayer.SessionMessageReplay(helloMessage, "", US, COUNTER_PARTY) {_, _->}
+            )
         }
     }
 }

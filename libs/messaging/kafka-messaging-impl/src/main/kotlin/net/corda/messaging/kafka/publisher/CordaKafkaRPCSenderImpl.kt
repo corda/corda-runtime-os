@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.publisher
 
 import com.typesafe.config.Config
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
@@ -17,16 +18,15 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.RESPONSE_TOPIC
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
-import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
+import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.RPCConsumerRebalanceListener
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import net.corda.messaging.kafka.utils.WeakValueHashMap
+import net.corda.messaging.kafka.utils.FutureTracker
 import net.corda.messaging.kafka.utils.render
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import java.nio.ByteBuffer
@@ -39,14 +39,13 @@ import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
 @Component
-class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
+class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: Config,
     private val publisher: Publisher,
-    private val consumerBuilder: CordaKafkaConsumerBuilderImpl<String, RPCResponse>,
-    private val serializer: CordaAvroSerializer<TREQ>,
-    private val deserializer: CordaAvroDeserializer<TRESP>,
-    private val errorDeserializer: CordaAvroDeserializer<String>
-) : RPCSender<TREQ, TRESP>, RPCSubscription<TREQ, TRESP> {
+    private val consumerBuilder: ConsumerBuilder<String, RPCResponse>,
+    private val serializer: CordaAvroSerializer<REQUEST>,
+    private val deserializer: CordaAvroDeserializer<RESPONSE>
+) : RPCSender<REQUEST, RESPONSE>, RPCSubscription<REQUEST, RESPONSE> {
 
     private companion object {
         private val log: Logger = contextLogger()
@@ -56,17 +55,20 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private val futureMap: WeakValueHashMap<String, CompletableFuture<TRESP>> = WeakValueHashMap()
+    private val futureTracker = FutureTracker<RESPONSE>()
 
     override val isRunning: Boolean
         get() = !stopped
 
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
-    private val topicPrefix = config.getString(TOPIC_PREFIX)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
     private val responseTopic = config.getString(RESPONSE_TOPIC)
-    private var partitionListener = RPCConsumerRebalanceListener("$topicPrefix$responseTopic", "RPC Response listener")
+    private var partitionListener = RPCConsumerRebalanceListener(
+        responseTopic,
+        "RPC Response listener",
+        futureTracker
+    )
 
     private val errorMsg = "Failed to read records from group $groupName, topic $topic"
 
@@ -100,7 +102,6 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun runConsumeLoop() {
         var attempts = 0
         while (!stopped) {
@@ -113,7 +114,7 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
                     RPCResponse::class.java
                 ).use {
                     it.subscribe(
-                        listOf("$topicPrefix$responseTopic"),
+                        listOf(responseTopic),
                         partitionListener
                     )
                     pollAndProcessRecords(it)
@@ -133,7 +134,6 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<String, RPCResponse>) {
         while (!stopped) {
             val consumerRecords = consumer.poll()
@@ -156,35 +156,41 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun processRecords(consumerRecords: List<ConsumerRecordAndMeta<String, RPCResponse>>) {
+    private fun processRecords(consumerRecords: List<ConsumerRecord<String, RPCResponse>>) {
         consumerRecords.forEach {
-            val correlationKey = it.record.key()
-            val future = futureMap[correlationKey]
-            val responseStatus = it.record.value().responseStatus
+            val correlationKey = it.key()
+            val partition = it.partition()
+            val future = futureTracker.getFuture(correlationKey, partition)
+            val responseStatus = it.value().responseStatus
                 ?: throw CordaMessageAPIFatalException("Response status came back NULL. This should never happen")
 
             if (future != null) {
                 when (responseStatus) {
                     ResponseStatus.OK -> {
-                        val responseBytes = it.record.value().payload
+                        val responseBytes = it.value().payload
                         val response = deserializer.deserialize(responseTopic, responseBytes.array())
-                        log.info("Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}")
+                        log.info("Response for request $correlationKey was received at ${Date(it.value().sendTime)}")
 
                         future.complete(response)
                     }
                     ResponseStatus.FAILED -> {
-                        val responseBytes = it.record.value().payload
-                        val response = errorDeserializer.deserialize(responseTopic, responseBytes.array())
-                        future.completeExceptionally(CordaRPCAPIResponderException(response))
+                        val responseBytes = it.value().payload
+                        val response = ExceptionEnvelope.fromByteBuffer(responseBytes)
+                        future.completeExceptionally(
+                            CordaRPCAPIResponderException(
+                                "Cause:${response.errorType}. Message: ${response.errorMessage}"
+                            )
+                        )
+                        log.warn("Cause:${response.errorType}. Message: ${response.errorMessage}")
                     }
                     ResponseStatus.CANCELLED -> {
                         future.cancel(true)
                     }
                 }
-                futureMap.remove(correlationKey)
+                futureTracker.removeFuture(correlationKey, partition)
             } else {
                 log.info(
-                    "Response for request $correlationKey was received at ${Date(it.record.value().sendTime)}. " +
+                    "Response for request $correlationKey was received at ${Date(it.value().sendTime)}. " +
                     "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
                     "a repartition event or the client dropped their future. The response status for it was $responseStatus"
                 )
@@ -192,29 +198,47 @@ class CordaKafkaRPCSenderImpl<TREQ : Any, TRESP : Any>(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
-    override fun sendRequest(req: TREQ): CompletableFuture<TRESP> {
-        val uuid = UUID.randomUUID().toString()
-        val reqBytes = serializer.serialize(topic, req)
-        val future = CompletableFuture<TRESP>()
+    override fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE> {
+        val correlationId = UUID.randomUUID().toString()
+        val future = CompletableFuture<RESPONSE>()
+        val partitions = partitionListener.getPartitions()
+        var reqBytes: ByteArray? = null
+        try {
+            reqBytes = serializer.serialize(topic, req)
+        } catch (ex: Exception) {
+            future.completeExceptionally(
+                CordaRPCAPISenderException(
+                    "Serializing your request resulted in an exception. " +
+                    "Verify that the fields of the request are populated correctly", ex
+                )
+            )
+            log.error(
+                "Serializing your request resulted in an exception. " +
+                "Verify that the fields of the request are populated correctly. " +
+                "Request was: $req", ex
+            )
+        }
 
-        if (partitionListener.partitions.size == 0) {
+        if (partitions.isEmpty()) {
             future.completeExceptionally(CordaRPCAPISenderException("No partitions. Couldn't send"))
+            log.error("No partitions. Couldn't send")
         } else {
+            val partition = partitions[0].partition()
             val request = RPCRequest(
-                uuid,
+                correlationId,
                 Instant.now().toEpochMilli(),
-                "$topicPrefix$responseTopic",
-                partitionListener.partitions[0].partition(),
+                responseTopic,
+                partition,
                 ByteBuffer.wrap(reqBytes)
             )
 
-            val record = Record(topic, uuid, request)
-            futureMap[uuid] = future
+            val record = Record(topic, correlationId, request)
+            futureTracker.addFuture(correlationId, future, partition)
             try {
                 publisher.publish(listOf(record))
             } catch (ex: Exception) {
                 future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
+                log.error("Failed to publish. Exception: ${ex.message}", ex)
             }
         }
 

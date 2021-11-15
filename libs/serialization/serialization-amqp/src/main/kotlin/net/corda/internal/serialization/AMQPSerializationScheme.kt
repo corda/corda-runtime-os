@@ -3,30 +3,50 @@
 package net.corda.internal.serialization
 
 import net.corda.internal.serialization.amqp.AccessOrderLinkedHashMap
-import net.corda.internal.serialization.amqp.CorDappCustomSerializer
-import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.amqpMagic
-import net.corda.internal.serialization.custom.PrivateKeySerializer
-import net.corda.internal.serialization.custom.PublicKeySerializer
+import net.corda.internal.serialization.amqp.custom.BigDecimalSerializer
+import net.corda.internal.serialization.amqp.custom.BigIntegerSerializer
+import net.corda.internal.serialization.amqp.custom.BitSetSerializer
+import net.corda.internal.serialization.amqp.custom.CertPathSerializer
+import net.corda.internal.serialization.amqp.custom.ClassSerializer
+import net.corda.internal.serialization.amqp.custom.CurrencySerializer
+import net.corda.internal.serialization.amqp.custom.DurationSerializer
+import net.corda.internal.serialization.amqp.custom.EnumSetSerializer
+import net.corda.internal.serialization.amqp.custom.InputStreamSerializer
+import net.corda.internal.serialization.amqp.custom.InstantSerializer
+import net.corda.internal.serialization.amqp.custom.LocalDateSerializer
+import net.corda.internal.serialization.amqp.custom.LocalDateTimeSerializer
+import net.corda.internal.serialization.amqp.custom.LocalTimeSerializer
+import net.corda.internal.serialization.amqp.custom.MonthDaySerializer
+import net.corda.internal.serialization.amqp.custom.OffsetDateTimeSerializer
+import net.corda.internal.serialization.amqp.custom.OffsetTimeSerializer
+import net.corda.internal.serialization.amqp.custom.OpaqueBytesSubSequenceSerializer
+import net.corda.internal.serialization.amqp.custom.OptionalSerializer
+import net.corda.internal.serialization.amqp.custom.PeriodSerializer
+import net.corda.internal.serialization.amqp.custom.StackTraceElementSerializer
+import net.corda.internal.serialization.amqp.custom.StringBufferSerializer
+import net.corda.internal.serialization.amqp.custom.ThrowableSerializer
+import net.corda.internal.serialization.amqp.custom.X500PrincipalSerializer
+import net.corda.internal.serialization.amqp.custom.X509CRLSerializer
+import net.corda.internal.serialization.amqp.custom.X509CertificateSerializer
+import net.corda.internal.serialization.amqp.custom.YearMonthSerializer
+import net.corda.internal.serialization.amqp.custom.YearSerializer
+import net.corda.internal.serialization.amqp.custom.ZoneIdSerializer
+import net.corda.internal.serialization.amqp.custom.ZonedDateTimeSerializer
 import net.corda.sandbox.SandboxGroup
 import net.corda.utilities.toSynchronised
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.ByteSequence
-import net.corda.v5.base.util.uncheckedCast
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.serialization.ClassWhitelist
-import net.corda.v5.serialization.ContextPropertyKeys
 import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SerializationWhitelist
 import net.corda.v5.serialization.SerializedBytes
 import java.util.Collections
-
-val AMQP_ENABLED get() = effectiveSerializationEnv.p2pContext.preferredSerializationVersion == amqpMagic
 
 data class SerializationFactoryCacheKey(val classWhitelist: ClassWhitelist,
                                         val sandboxGroup: SandboxGroup?,
@@ -50,29 +70,13 @@ abstract class AbstractAMQPSerializationScheme private constructor(
         private val cordappCustomSerializers: Set<SerializationCustomSerializer<*, *>>,
         private val cordappSerializationWhitelists: Set<SerializationWhitelist>,
         maybeNotConcurrentSerializerFactoriesForContexts: MutableMap<SerializationFactoryCacheKey, SerializerFactory>,
-        cipherSchemeMetadata: CipherSchemeMetadata,
-        val sff: SerializerFactoryFactory = createSerializerFactoryFactory(),
-        internalCustomSerializerFactories: Set<(factory: SerializerFactory) -> CustomSerializer<out Any>> = emptySet()
+        val sff: SerializerFactoryFactory = createSerializerFactoryFactory()
 ) : SerializationScheme {
-    constructor(cipherSchemeMetadata: CipherSchemeMetadata) : this(
+    constructor() : this(
         emptySet<SerializationCustomSerializer<*, *>>(),
         emptySet<SerializationWhitelist>(),
-        AccessOrderLinkedHashMap<SerializationFactoryCacheKey, SerializerFactory>(128).toSynchronised(),
-        cipherSchemeMetadata
+        AccessOrderLinkedHashMap<SerializationFactoryCacheKey, SerializerFactory>(128).toSynchronised()
     )
-
-    private val _internalCustomSerializerFactories: MutableSet<(factory: SerializerFactory) -> CustomSerializer<out Any>> = mutableSetOf()
-    val internalCustomSerializerFactories: Set<(factory: SerializerFactory) -> CustomSerializer<out Any>> = _internalCustomSerializerFactories
-
-    init {
-        internalCustomSerializerFactories.forEach {
-            registerInternalCustomSerializerFactory(it)
-        }
-    }
-
-    fun registerInternalCustomSerializerFactory(factory: (factory: SerializerFactory) -> CustomSerializer<out Any>) {
-        _internalCustomSerializerFactories += factory
-    }
 
     @VisibleForTesting
     fun getRegisteredCustomSerializers() = cordappCustomSerializers
@@ -91,24 +95,12 @@ abstract class AbstractAMQPSerializationScheme private constructor(
     }
 
     private fun registerCustomSerializers(context: SerializationContext, factory: SerializerFactory) {
-        factory.register(publicKeySerializer)
         registerCustomSerializers(factory)
-
-        internalCustomSerializerFactories.forEach{
-            factory.register(it(factory))
-        }
 
         val serializersToRegister = context.customSerializers ?: cordappCustomSerializers
         serializersToRegister.forEach { customSerializer ->
-            factory.registerExternal(CorDappCustomSerializer(customSerializer))
+            factory.registerExternal(customSerializer)
         }
-
-        context.properties[ContextPropertyKeys.SERIALIZERS]?.apply {
-            uncheckedCast<Any, List<CustomSerializer<out Any>>>(this).forEach {
-                factory.register(it)
-            }
-        }
-
     }
 
     private fun registerCustomWhitelists(factory: SerializerFactory) {
@@ -119,9 +111,6 @@ abstract class AbstractAMQPSerializationScheme private constructor(
             factory.addToWhitelist(it.whitelist)
         }
     }
-
-    // Not used as a simple direct import to facilitate testing
-    open val publicKeySerializer: CustomSerializer<*> = PublicKeySerializer(cipherSchemeMetadata)
 
     fun getSerializerFactory(context: SerializationContext): SerializerFactory {
         val sandboxGroup = context.sandboxGroup as? SandboxGroup
@@ -150,35 +139,35 @@ abstract class AbstractAMQPSerializationScheme private constructor(
 
 fun registerCustomSerializers(factory: SerializerFactory) {
     with(factory) {
-        register(net.corda.internal.serialization.amqp.custom.ThrowableSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.BigDecimalSerializer)
-        register(net.corda.internal.serialization.amqp.custom.BigIntegerSerializer)
-        register(net.corda.internal.serialization.amqp.custom.CurrencySerializer)
-        register(net.corda.internal.serialization.amqp.custom.OpaqueBytesSubSequenceSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.InstantSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.DurationSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.LocalDateSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.LocalDateTimeSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.LocalTimeSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.ZonedDateTimeSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.ZoneIdSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.OffsetTimeSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.OffsetDateTimeSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.OptionalSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.YearSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.YearMonthSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.MonthDaySerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.PeriodSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.ClassSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.X509CertificateSerializer)
-        register(net.corda.internal.serialization.amqp.custom.X509CRLSerializer)
-        register(net.corda.internal.serialization.amqp.custom.CertPathSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.StringBufferSerializer)
-        register(net.corda.internal.serialization.amqp.custom.InputStreamSerializer)
-        register(net.corda.internal.serialization.amqp.custom.BitSetSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.EnumSetSerializer(this))
-        register(net.corda.internal.serialization.amqp.custom.X500PrincipalSerializer(this))
-        register(PrivateKeySerializer)
+        register(ThrowableSerializer(this), true)
+        register(StackTraceElementSerializer(), true)
+        register(BigDecimalSerializer, false)
+        register(BigIntegerSerializer, false)
+        register(CurrencySerializer, false)
+        register(OpaqueBytesSubSequenceSerializer(), true)
+        register(InstantSerializer(), true)
+        register(DurationSerializer(), true)
+        register(LocalDateSerializer(), true)
+        register(LocalDateTimeSerializer(), true)
+        register(LocalTimeSerializer(), true)
+        register(ZonedDateTimeSerializer(), true)
+        register(ZoneIdSerializer(), true)
+        register(OffsetTimeSerializer(), true)
+        register(OffsetDateTimeSerializer(), true)
+        register(OptionalSerializer(), true)
+        register(YearSerializer(), true)
+        register(YearMonthSerializer(), true)
+        register(MonthDaySerializer(), true)
+        register(PeriodSerializer(), true)
+        register(ClassSerializer(), true)
+        register(X509CertificateSerializer, true)
+        register(X509CRLSerializer, true)
+        register(CertPathSerializer(), true)
+        register(StringBufferSerializer, false)
+        register(InputStreamSerializer, true)
+        register(BitSetSerializer(), true)
+        register(EnumSetSerializer(), true)
+        register(X500PrincipalSerializer(), true)
     }
 }
 

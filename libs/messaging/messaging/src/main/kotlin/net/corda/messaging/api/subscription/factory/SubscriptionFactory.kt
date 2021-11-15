@@ -1,7 +1,7 @@
 package net.corda.messaging.api.subscription.factory
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -49,7 +49,7 @@ interface SubscriptionFactory {
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService?,
-        nodeConfig: Config = ConfigFactory.empty()
+        nodeConfig: SmartConfig = SmartConfigImpl.empty()
     ): Subscription<K, V>
 
     /**
@@ -71,7 +71,7 @@ interface SubscriptionFactory {
     fun <K : Any, V : Any> createDurableSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
-        nodeConfig: Config = ConfigFactory.empty(),
+        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V>
 
@@ -90,7 +90,7 @@ interface SubscriptionFactory {
     fun <K : Any, V : Any> createCompactedSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: CompactedProcessor<K, V>,
-        nodeConfig: Config = ConfigFactory.empty(),
+        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
     ): CompactedSubscription<K, V>
 
     /**
@@ -116,7 +116,7 @@ interface SubscriptionFactory {
     fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
-        nodeConfig: Config = ConfigFactory.empty(),
+        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
         stateAndEventListener: StateAndEventListener<K, S>? = null
     ): StateAndEventSubscription<K, S, E>
 
@@ -130,7 +130,7 @@ interface SubscriptionFactory {
     fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
-        nodeConfig: Config = ConfigFactory.empty(),
+        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V>
 
@@ -141,15 +141,15 @@ interface SubscriptionFactory {
      */
     fun <K : Any, V : Any> createRandomAccessSubscription(
         subscriptionConfig: SubscriptionConfig,
-        nodeConfig: Config = ConfigFactory.empty(),
+        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
         keyClass: Class<K>,
         valueClass: Class<V>
     ): RandomAccessSubscription<K, V>
 
     /**
      * Create an instance of the [RPCSubscription]
-     * This subscription is used to pick up requests of type [TREQ] posted by [RPCSender]
-     * The request is then processed and a response of type [TRESP] is posted back to the sender
+     * This subscription is used to pick up requests of type [REQUEST] posted by [RPCSender]
+     * The request is then processed and a response of type [RESPONSE] is posted back to the sender
      *
      * RPC requests are handled asynchronously. Input messages are consumes as soon as they are posted to the user
      * event handler. RPC responses are unreliable so do not use this pattern if you require reliable responses for
@@ -163,9 +163,9 @@ interface SubscriptionFactory {
      * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
      * @param responderProcessor processor in charge of handling incoming requests
      */
-    fun <TREQ : Any, TRESP : Any> createRPCSubscription(
-        rpcConfig: RPCConfig<TREQ, TRESP>,
-        nodeConfig: Config = ConfigFactory.empty(),
-        responderProcessor: RPCResponderProcessor<TREQ, TRESP>
-    ): RPCSubscription<TREQ, TRESP>
+    fun <REQUEST : Any, RESPONSE : Any> createRPCSubscription(
+        rpcConfig: RPCConfig<REQUEST, RESPONSE>,
+        nodeConfig: SmartConfig = SmartConfigImpl.empty(),
+        responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
+    ): RPCSubscription<REQUEST, RESPONSE>
 }

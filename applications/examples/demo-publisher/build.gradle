@@ -17,6 +17,7 @@ dependencies {
     implementation project(":osgi-framework-api")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:configuration:configuration-core")
     implementation project(":components:examples:publisher")
 
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")

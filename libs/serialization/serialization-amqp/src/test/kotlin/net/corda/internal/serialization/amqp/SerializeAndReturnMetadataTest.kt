@@ -13,7 +13,7 @@ class SerializeAndReturnMetadataTest {
     val factory = testDefaultFactoryNoEvolution()
 
     @Test
-    fun `returns an empty CPK registry when the ClassInfoService is not installed`() {
+    fun `returns an empty CPK registry when a sandbox group is not provided in serialization context`() {
         data class A(val a: Int, val b: String)
 
         val a = A(10, "20")

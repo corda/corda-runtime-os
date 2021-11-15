@@ -5,12 +5,12 @@ import com.esotericsoftware.kryo.KryoSerializable
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import net.corda.data.flow.event.FlowEvent
-import net.corda.v5.application.services.serialization.SerializationService
+import net.corda.serialization.CheckpointSerializer
 import java.time.Clock
 import java.util.concurrent.CompletableFuture
 
 data class NonSerializableState(
-    val checkpointSerializationService: SerializationService,
+    val checkpointSerializer: CheckpointSerializer,
     val clock: Clock
 ) : KryoSerializable {
     val suspended: CompletableFuture<ByteArray?> = CompletableFuture()
