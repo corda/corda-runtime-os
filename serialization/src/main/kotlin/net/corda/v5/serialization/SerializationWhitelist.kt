@@ -2,9 +2,8 @@ package net.corda.v5.serialization
 
 
 /**
- * Provide a subclass of this via the [java.util.ServiceLoader] mechanism to be able to whitelist types for
- * serialisation that you cannot otherwise annotate. The name of the class must appear in a text file on the
- * classpath under the path META-INF/services/net.corda.core.serialization.SerializationWhitelist
+ * Provide a subclass of this to whitelist types for
+ * serialisation that you cannot otherwise annotate.
  */
 interface SerializationWhitelist {
     /**

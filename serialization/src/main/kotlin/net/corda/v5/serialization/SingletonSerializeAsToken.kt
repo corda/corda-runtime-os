@@ -7,7 +7,8 @@ package net.corda.v5.serialization
  * This interface should only be used on singleton classes, meaning that only one should exist during runtime.
  *
  * In addition, this interface is strictly for checkpoint serialization.  It is not compatible with AMQP
- * serialization (or [@CordaSerializable]) and will cause serialization errors in AMQP.
+ * serialization (or [@CordaSerializable][net.corda.v5.base.annotations.CordaSerializable]) and will cause
+ * serialization errors in AMQP.
  *
  */
 interface SingletonSerializeAsToken {
