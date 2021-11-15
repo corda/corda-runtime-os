@@ -14,10 +14,12 @@ interface SandboxGroupContext : AutoCloseable {
     val sandboxGroup: SandboxGroup
 
     /**
-     * Add an AutoCloseable object to an internal collection.
+     * Get an object into the `SandboxGroupContext` instance's cache using the given key.
      *
-     * When [close()] is called, [close()] is also called on all objects in the internal collection in reverse
-     * order of addition.
+     * Returns null if it doesn't exist
+     *
+     * Throws [TypeCastException] if the object cannot be cast to the expected type.
      */
-    fun addAutoCloseable(autoCloseable: AutoCloseable)
+    fun <T> get(key: String) : T?
+
 }

@@ -5,7 +5,8 @@ import net.corda.packaging.CPI
 /**
  * A "virtual node context" that contains information relevant to a particular virtual node (a CPI and a holding identity).
  *
- * NOTE:  this object should contain information that does NOT require the full construction and instantiation of a CPI.
+ * NOTE:  this object should contain information that does NOT require the full construction and instantiation of a CPI,
+ * and is not specific to a particular CPI (e.g. a custom serializer, or custom crypto)
  *
  * This is intended to be returned (initially, and primarily) by the VirtualNodeInfoService which is a 'fast lookup' and
  * does NOT instantiate CPIs.
@@ -17,12 +18,5 @@ interface VirtualNodeContext {
     val cpi: CPI.Identifier
     val holdingIdentity: HoldingIdentity
 
-    /**
-     * Get an object into the internal storage using the given key.
-     *
-     * Returns null if it doesn't exist
-     *
-     * Throws [TypeCastException] if the object cannot be cast to the expected type.
-     */
-    fun <T> getObject(key: String) : T?
+    // other 'static' info to be added.
 }
