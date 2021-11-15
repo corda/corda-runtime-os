@@ -8,7 +8,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_COMPACTED
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
@@ -44,10 +43,7 @@ class KafkaCompactedSubscriptionImplTest {
     private val config: Config = createStandardTestConfig().getConfig(PATTERN_COMPACTED)
 
     private val initialSnapshotResult = List(10) {
-        ConsumerRecordAndMeta<String, String>(
-            TOPIC_PREFIX,
-            ConsumerRecord(TOPIC, 0, it.toLong(), it.toString(), "0")
-        )
+        ConsumerRecord(TOPIC_PREFIX + TOPIC, 0, it.toLong(), it.toString(), "0")
     }
 
     private class TestProcessor : CompactedProcessor<String, String> {
@@ -101,10 +97,7 @@ class KafkaCompactedSubscriptionImplTest {
                 0L -> throw CordaMessageAPIFatalException("Stop here")
                 else -> {
                     listOf(
-                        ConsumerRecordAndMeta<String, String>(
-                            TOPIC_PREFIX,
-                            ConsumerRecord(TOPIC, 0, iteration, iteration.toString(), iteration.toString())
-                        )
+                        ConsumerRecord(TOPIC_PREFIX + TOPIC, 0, iteration, iteration.toString(), iteration.toString())
                     )
                 }
             }.also {
@@ -124,16 +117,18 @@ class KafkaCompactedSubscriptionImplTest {
             mock()
         )
         subscription.start()
-        while (subscription.isRunning) { Thread.sleep(10) }
+        while (subscription.isRunning) {
+            Thread.sleep(10)
+        }
 
         verify(kafkaConsumer, times(1)).assign(listOf(TopicPartition(TOPIC, 0)))
         assertThat(processor.snapshotMap.size).isEqualTo(10)
-        assertThat(processor.snapshotMap).isEqualTo(initialSnapshotResult.associate { it.record.key() to it.record.value() })
+        assertThat(processor.snapshotMap).isEqualTo(initialSnapshotResult.associate { it.key() to it.value() })
 
         assertThat(processor.incomingRecords.size).isEqualTo(3)
-        assertThat(processor.incomingRecords[0]).isEqualTo(Record(TOPIC, "3", "3"))
-        assertThat(processor.incomingRecords[1]).isEqualTo(Record(TOPIC, "2", "2"))
-        assertThat(processor.incomingRecords[2]).isEqualTo(Record(TOPIC, "1", "1"))
+        assertThat(processor.incomingRecords[0]).isEqualTo(Record(TOPIC_PREFIX + TOPIC, "3", "3"))
+        assertThat(processor.incomingRecords[1]).isEqualTo(Record(TOPIC_PREFIX + TOPIC, "2", "2"))
+        assertThat(processor.incomingRecords[2]).isEqualTo(Record(TOPIC_PREFIX + TOPIC, "1", "1"))
     }
 
     @Test
@@ -150,19 +145,13 @@ class KafkaCompactedSubscriptionImplTest {
                 }
                 2L -> {
                     listOf(
-                        ConsumerRecordAndMeta(
-                            TOPIC_PREFIX,
-                            ConsumerRecord<String, String>(TOPIC, 0, 2, "2", null)
-                        )
+                        ConsumerRecord<String, String>(TOPIC_PREFIX + TOPIC, 0, 2, "2", null)
                     )
                 }
                 0L -> throw CordaMessageAPIFatalException("Stop here")
                 else -> {
                     listOf(
-                        ConsumerRecordAndMeta(
-                            TOPIC_PREFIX,
-                            ConsumerRecord(TOPIC, 0, iteration, iteration.toString(), iteration.toString())
-                        )
+                        ConsumerRecord(TOPIC_PREFIX + TOPIC, 0, iteration, iteration.toString(), iteration.toString())
                     )
                 }
             }.also {
@@ -178,13 +167,15 @@ class KafkaCompactedSubscriptionImplTest {
             mock()
         )
         subscription.start()
-        while (subscription.isRunning) { Thread.sleep(10) }
+        while (subscription.isRunning) {
+            Thread.sleep(10)
+        }
 
         assertThat(processor.incomingRecords.size).isEqualTo(4)
-        assertThat(processor.incomingRecords[0]).isEqualTo(Record(TOPIC, "4", "4"))
-        assertThat(processor.incomingRecords[1]).isEqualTo(Record(TOPIC, "3", "3"))
-        assertThat(processor.incomingRecords[2]).isEqualTo(Record(TOPIC, "2", null))
-        assertThat(processor.incomingRecords[3]).isEqualTo(Record(TOPIC, "1", "1"))
+        assertThat(processor.incomingRecords[0]).isEqualTo(Record(TOPIC_PREFIX + TOPIC, "4", "4"))
+        assertThat(processor.incomingRecords[1]).isEqualTo(Record(TOPIC_PREFIX + TOPIC, "3", "3"))
+        assertThat(processor.incomingRecords[2]).isEqualTo(Record(TOPIC_PREFIX + TOPIC, "2", null))
+        assertThat(processor.incomingRecords[3]).isEqualTo(Record(TOPIC_PREFIX + TOPIC, "1", "1"))
         assertThat(processor.latestCurrentData?.containsKey("2")).isFalse
         val expectedMap = mapOf(
             "0" to "0", "1" to "1", "3" to "3", "4" to "4", "5" to "0", "6" to "0", "7" to "0", "8" to "0", "9" to "0"
@@ -209,7 +200,9 @@ class KafkaCompactedSubscriptionImplTest {
         )
         subscription.start()
 
-        while (subscription.isRunning) { Thread.sleep(10) }
+        while (subscription.isRunning) {
+            Thread.sleep(10)
+        }
     }
 
     @Test
@@ -225,7 +218,7 @@ class KafkaCompactedSubscriptionImplTest {
                 4L, 2L -> throw CordaMessageAPIIntermittentException("Kaboom!")
                 0L -> throw CordaMessageAPIFatalException("Stop here.")
             }
-            emptyList<ConsumerRecordAndMeta<String, String>>()
+            emptyList<ConsumerRecord<String, String>>()
         }.whenever(kafkaConsumer).poll()
 
         val subscription = KafkaCompactedSubscriptionImpl(
@@ -266,10 +259,7 @@ class KafkaCompactedSubscriptionImplTest {
                 0L -> throw CordaMessageAPIFatalException("Stop here.")
                 else -> {
                     listOf(
-                        ConsumerRecordAndMeta<String, String>(
-                            TOPIC_PREFIX,
-                            ConsumerRecord(TOPIC, 0, iteration, iteration.toString(), iteration.toString())
-                        )
+                        ConsumerRecord(TOPIC_PREFIX + TOPIC, 0, iteration, iteration.toString(), iteration.toString())
                     )
                 }
             }.also {
@@ -286,7 +276,9 @@ class KafkaCompactedSubscriptionImplTest {
             mock()
         )
         subscription.start()
-        while (subscription.isRunning) { Thread.sleep(10) }
+        while (subscription.isRunning) {
+            Thread.sleep(10)
+        }
 
         // Four calls: First time and after each exception thrown
         verify(consumerBuilder, times(4)).createCompactedConsumer(any(), any(), any(), any())
@@ -300,11 +292,11 @@ class KafkaCompactedSubscriptionImplTest {
             .beginningOffsets(any())
         doReturn(
             mutableMapOf(
-                TopicPartition(TOPIC, 0) to  numberOfRecords+1,
+                TopicPartition(TOPIC, 0) to numberOfRecords + 1,
                 TopicPartition(TOPIC, 1) to 0,
             )
         ).whenever(kafkaConsumer).endOffsets(any())
-        doReturn(numberOfRecords+1).whenever(kafkaConsumer).position(any())
+        doReturn(numberOfRecords + 1).whenever(kafkaConsumer).position(any())
         doReturn(setOf(TopicPartition(TOPIC, 0), TopicPartition(TOPIC, 1))).whenever(kafkaConsumer).assignment()
 
         return Pair(kafkaConsumer, consumerBuilder)

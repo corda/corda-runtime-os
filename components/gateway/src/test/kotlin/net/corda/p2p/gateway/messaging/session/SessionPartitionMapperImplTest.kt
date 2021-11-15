@@ -1,6 +1,6 @@
 package net.corda.p2p.gateway.messaging.session
 
-import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -23,7 +23,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.lang.IllegalStateException
 
 class SessionPartitionMapperImplTest {
 
@@ -42,7 +41,7 @@ class SessionPartitionMapperImplTest {
     private val subscriptionFactory = mock<SubscriptionFactory> {
         on { createCompactedSubscription(any(), processor.capture(), any(), anyOrNull()) } doReturn subscription
     }
-    private val config = ConfigFactory.empty()
+    private val config = SmartConfigImpl.empty()
 
     @Test
     fun `session partition mapping is calculated successfully`() {

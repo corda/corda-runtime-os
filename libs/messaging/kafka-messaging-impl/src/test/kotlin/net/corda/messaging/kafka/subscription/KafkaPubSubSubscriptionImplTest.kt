@@ -7,7 +7,6 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_PUBSUB
 import net.corda.messaging.kafka.stubs.StubPubSubProcessor
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import org.assertj.core.api.Assertions.assertThat
@@ -40,10 +39,7 @@ class KafkaPubSubSubscriptionImplTest {
     private val consumerPollAndProcessRetriesCount = config.getInt(CONSUMER_POLL_AND_PROCESS_RETRIES)
     private val consumerBuilder: ConsumerBuilder<String, ByteBuffer> = mock()
     private val mockCordaConsumer: CordaKafkaConsumer<String, ByteBuffer> = mock()
-    private val mockConsumerRecords =
-        generateMockConsumerRecordList(mockRecordCount, "topic", 1)
-            .map { ConsumerRecordAndMeta("", it) }
-            .toList()
+    private val mockConsumerRecords = generateMockConsumerRecordList(mockRecordCount, "topic", 1)
 
     private var executorService: ExecutorService? = null
     private var pollInvocationCount: Int = 0

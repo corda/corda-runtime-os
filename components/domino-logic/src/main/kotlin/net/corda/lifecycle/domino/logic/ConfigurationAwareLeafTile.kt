@@ -3,6 +3,7 @@ package net.corda.lifecycle.domino.logic
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.v5.base.util.contextLogger
@@ -25,7 +26,7 @@ abstract class ConfigurationAwareLeafTile<C>(
     protected val resources = ResourcesHolder()
 
     private inner class Handler : ConfigurationHandler {
-        override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, Config>) {
+        override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
             if (changedKeys.contains(key)) {
                 val newConfiguration = config[key]
                 if (newConfiguration != null) {
@@ -41,7 +42,6 @@ abstract class ConfigurationAwareLeafTile<C>(
     private var registration: AutoCloseable? = null
 
     private fun applyNewConfiguration(newConfiguration: Config) {
-        @Suppress("TooGenericExceptionCaught")
         try {
             val configuration = configFactory(newConfiguration)
             logger.info("Got configuration $name")

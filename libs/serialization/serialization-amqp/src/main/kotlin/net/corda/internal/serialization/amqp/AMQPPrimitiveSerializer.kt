@@ -16,7 +16,7 @@ class AMQPPrimitiveSerializer(clazz: Class<*>) : AMQPSerializer<Any> {
     override val type: Type = clazz
 
     // NOOP since this is a primitive type.
-    override fun writeClassInfo(output: SerializationOutput) {
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {
     }
 
     override fun writeObject(

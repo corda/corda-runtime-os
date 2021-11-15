@@ -1,6 +1,7 @@
 package net.corda.messaging.emulation.subscription.factory
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -16,7 +17,6 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.messaging.api.subscription.listener.LifecycleListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.emulation.subscription.compacted.InMemoryCompactedSubscription
 import net.corda.messaging.emulation.subscription.durable.DurableSubscription
@@ -42,8 +42,8 @@ class InMemSubscriptionFactory @Activate constructor(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
         executor: ExecutorService?,
-        nodeConfig: Config,
-        lifecycleListener: LifecycleListener?
+        nodeConfig: SmartConfig,
+        lifecycleCoordinator: LifecycleCoordinator
     ): Subscription<K, V> {
         return PubSubSubscription(subscriptionConfig, processor, executor, topicService, lifecycleListener)
     }
@@ -51,39 +51,39 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createDurableSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: DurableProcessor<K, V>,
-        nodeConfig: Config,
+        nodeConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?,
-        lifecycleListener: LifecycleListener?
+        lifecycleCoordinator: LifecycleCoordinator
     ): Subscription<K, V> {
         return DurableSubscription(
             subscriptionConfig,
             processor,
             partitionAssignmentListener,
             topicService,
-            lifecycleListener
+            lifecycleCoordinator
         )
     }
 
     override fun <K : Any, V : Any> createCompactedSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: CompactedProcessor<K, V>,
-        nodeConfig: Config,
-        lifecycleListener: LifecycleListener?
+        nodeConfig: SmartConfig,
+        lifecycleCoordinator: LifecycleCoordinator
     ): CompactedSubscription<K, V> {
         return InMemoryCompactedSubscription(
             subscriptionConfig,
             processor,
             topicService,
-            lifecycleListener
+            lifecycleCoordinator
         )
     }
 
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
-        nodeConfig: Config,
+        nodeConfig: SmartConfig,
         stateAndEventListener: StateAndEventListener<K, S>?,
-        lifecycleListener: LifecycleListener?,
+        lifecycleCoordinator: LifecycleCoordinator,
     ): StateAndEventSubscription<K, S, E> {
         return InMemoryStateAndEventSubscription(
             subscriptionConfig,
@@ -97,35 +97,35 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
-        nodeConfig: Config,
+        nodeConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?,
-        lifecycleListener: LifecycleListener?
+        lifecycleCoordinator: LifecycleCoordinator
     ): Subscription<K, V> {
         return EventLogSubscription(
             subscriptionConfig,
             processor,
             partitionAssignmentListener,
             topicService,
-            lifecycleListener
+            lifecycleCoordinator
         )
     }
 
     override fun <K : Any, V : Any> createRandomAccessSubscription(
         subscriptionConfig: SubscriptionConfig,
-        nodeConfig: Config,
+        nodeConfig: SmartConfig,
         keyClass: Class<K>,
         valueClass: Class<V>,
-        lifecycleListener: LifecycleListener?
+        lifecycleCoordinator: LifecycleCoordinator
     ): RandomAccessSubscription<K, V> {
         TODO("Not yet implemented")
     }
 
-    override fun <TREQ : Any, TRESP : Any> createRPCSubscription(
-        rpcConfig: RPCConfig<TREQ, TRESP>,
-        nodeConfig: Config,
-        responderProcessor: RPCResponderProcessor<TREQ, TRESP>,
-        lifecycleListener: LifecycleListener?
-    ): RPCSubscription<TREQ, TRESP> {
+    override fun <REQUEST : Any, RESPONSE : Any> createRPCSubscription(
+        rpcConfig: RPCConfig<REQUEST, RESPONSE>,
+        nodeConfig: SmartConfig,
+        responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>,
+        lifecycleCoordinator: LifecycleCoordinator
+    ): RPCSubscription<REQUEST, RESPONSE> {
         TODO("Not yet implemented")
     }
 }

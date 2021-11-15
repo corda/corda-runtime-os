@@ -1,7 +1,7 @@
 package net.corda.messaging.kafka.publisher.factory
 
-import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -19,7 +19,7 @@ class CordaKafkaPublisherImplFactoryTest {
 
     @Test
     fun testCreatePublisher() {
-        val nodeConfig = ConfigFactory.empty()
+        val nodeConfig = SmartConfigImpl.empty()
             .withValue("messaging.topic.prefix", ConfigValueFactory.fromAnyRef("demo"))
         val publisher = cordaKafkaPublisherFactory.createPublisher(publisherConfig, nodeConfig)
         assertNotNull(publisher)

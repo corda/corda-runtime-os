@@ -81,6 +81,7 @@ class KafkaDefaultCryptoKeyProxy(
     override val valueClass: Class<DefaultCryptoKeyRecord> = DefaultCryptoKeyRecord::class.java
 
     override fun onSnapshot(currentData: Map<String, DefaultCryptoKeyRecord>) {
+        logger.debug("Processing snapshot of {} items", currentData.size)
         val map = ConcurrentHashMap<String, DefaultCryptoPersistentKeyInfo>()
         for (record in currentData) {
             map[record.key] = toKeyInfo(record.value)
@@ -93,6 +94,7 @@ class KafkaDefaultCryptoKeyProxy(
         oldValue: DefaultCryptoKeyRecord?,
         currentData: Map<String, DefaultCryptoKeyRecord>
     ) {
+        logger.debug("Processing new update")
         if (newRecord.value == null) {
             keyMap.remove(newRecord.key)
         } else {

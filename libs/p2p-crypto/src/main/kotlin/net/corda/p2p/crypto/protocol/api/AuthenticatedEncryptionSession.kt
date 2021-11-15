@@ -56,7 +56,7 @@ class AuthenticatedEncryptionSession(override val sessionId: String,
     /**
      * @throws DecryptionFailedError if decryption of the provided data failed, e.g because of invalid or modified data.
      */
-    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
+    @Suppress("ThrowsCount")
     fun decryptData(header: CommonHeader, encryptedPayload: ByteArray, authTag: ByteArray): ByteArray {
         val nonce = xor(inboundNonce, header.sequenceNo.toByteArray())
         val plaintext = try {

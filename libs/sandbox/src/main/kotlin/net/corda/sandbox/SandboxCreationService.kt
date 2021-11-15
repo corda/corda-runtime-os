@@ -1,6 +1,6 @@
 package net.corda.sandbox
 
-import net.corda.v5.crypto.SecureHash
+import net.corda.packaging.CPK
 import org.osgi.framework.Bundle
 
 /**
@@ -14,32 +14,24 @@ interface SandboxCreationService {
     fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>)
 
     /**
-     * Creates a new [SandboxGroup] in the [securityDomain] containing a sandbox for each of the CPKs identified by the
-     * [cpkFileHashes].
+     * Creates a new [SandboxGroup] in the [securityDomain] containing a sandbox for each of the [cpks].
      *
-     * Duplicate [cpkFileHashes] are discarded (i.e. only one sandbox will be created per unique hash).
+     * Duplicate [cpks] are discarded (i.e. only one sandbox will be created per unique hash).
      *
-     * A [SandboxException] is thrown if the sandbox creation fails.
+     * A [SandboxException] is thrown if the [securityDomain] contains a '/' character, or if sandbox creation fails.
      */
-    fun createSandboxGroup(
-        cpkFileHashes: Iterable<SecureHash>,
-        securityDomain: String = DEFAULT_SECURITY_DOMAIN
-    ): SandboxGroup
+    fun createSandboxGroup(cpks: Iterable<CPK>, securityDomain: String = ""): SandboxGroup
 
     /**
-     * Creates a new [SandboxGroup] in the [securityDomain] containing a sandbox for each of the CPKs identified by the
-     * [cpkFileHashes].
+     * Creates a new [SandboxGroup] in the [securityDomain] containing a sandbox for each of the [cpks].
      *
-     * Duplicate [cpkFileHashes] are discarded (i.e. only one sandbox will be created per unique hash).
+     * Duplicate [cpks] are discarded (i.e. only one sandbox will be created per unique hash).
      *
      * The bundles in each sandbox are not started, meaning that their bundle activators are not called.
      *
      * A [SandboxException] is thrown if the sandbox creation fails.
      */
-    fun createSandboxGroupWithoutStarting(
-        cpkFileHashes: Iterable<SecureHash>,
-        securityDomain: String = DEFAULT_SECURITY_DOMAIN
-    ): SandboxGroup
+    fun createSandboxGroupWithoutStarting(cpks: Iterable<CPK>, securityDomain: String = ""): SandboxGroup
 
     /**
      * Attempts to uninstall each of the sandbox group's bundles in turn, and removes the sandbox group from the

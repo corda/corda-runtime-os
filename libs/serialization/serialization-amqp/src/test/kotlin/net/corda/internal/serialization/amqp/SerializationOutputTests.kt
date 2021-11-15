@@ -52,16 +52,7 @@ import java.io.NotSerializableException
 import java.math.BigDecimal
 import java.time.DayOfWeek
 import java.time.Month
-import java.util.Currency
-import java.util.Date
-import java.util.EnumMap
-import java.util.NavigableMap
-import java.util.Objects
-import java.util.Random
-import java.util.SortedSet
-import java.util.TreeMap
-import java.util.TreeSet
-import java.util.UUID
+import java.util.*
 
 object AckWrapper {
     object Ack
@@ -525,7 +516,6 @@ class SerializationOutputTests {
     }
 
     @Test
-    @SuppressWarnings("TooGenericExceptionCaught")
     fun `test complex throwables serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
         factory.register(ThrowableSerializer(factory), true)
@@ -556,7 +546,6 @@ class SerializationOutputTests {
     }
 
     @Test
-    @SuppressWarnings("TooGenericExceptionCaught")
     fun `test suppressed throwables serialize`() {
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
         factory.register(ThrowableSerializer(factory), true)

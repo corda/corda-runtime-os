@@ -37,7 +37,7 @@ interface Subscription<K, V> : Lifecycle {
 }
 
 /**
- * A subscription that handles requests of type [TREQ], processes the request and publishes the response in type [TRESP]
+ * A subscription that handles requests of type [REQUEST], processes the request and publishes the response in type [RESPONSE]
  *
  * RPC requests are processed asynchronously. Input messages are consume as soon as they have been posted to the
  * user event handler. RPC responses are unreliable so do not use this pattern if reliable response are required.
@@ -55,12 +55,13 @@ interface Subscription<K, V> : Lifecycle {
  *
  * A subscription will stop consuming events and close the connection upon close()/stop()
  */
-interface RPCSubscription<TREQ, TRESP> : Lifecycle {
+interface RPCSubscription<REQUEST, RESPONSE> : Lifecycle{
 
     /**
      * The name of the lifecycle coordinator inside the subscription
      */
     val subscriptionName: LifecycleCoordinatorName
+
 }
 
 /**

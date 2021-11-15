@@ -11,7 +11,6 @@ abstract class LeafTile(
     protected val resources = ResourcesHolder()
 
     override fun startTile() {
-        @Suppress("TooGenericExceptionCaught")
         try {
             resources.close()
             createResources()

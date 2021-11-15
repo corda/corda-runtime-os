@@ -6,7 +6,6 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventCons
 import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPartitionState
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.messaging.kafka.types.StateAndEventConfig
-import net.corda.messaging.kafka.types.Topic
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.common.TopicPartition
@@ -23,9 +22,8 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
 
     private val log = LoggerFactory.getLogger(config.loggerName)
 
-    private val topicPrefix = config.topicPrefix
-    private val eventTopic = Topic(topicPrefix, config.eventTopic)
-    private val stateTopic = Topic(topicPrefix, config.stateTopic)
+    private val eventTopic = config.eventTopic
+    private val stateTopic = config.stateTopic
 
     private val currentStates = partitionState.currentStates
     private val partitionsToSync = partitionState.partitionsToSync
@@ -49,7 +47,7 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
         val syncablePartitions = filterSyncablePartitions(newStatePartitions)
         log.debug { "Syncing the following new state partitions: $syncablePartitions" }
         partitionsToSync.putAll(syncablePartitions)
-        eventConsumer.pause(syncablePartitions.map { TopicPartition(eventTopic.topic, it.first) })
+        eventConsumer.pause(syncablePartitions.map { TopicPartition(eventTopic, it.first) })
 
         statePartitions.forEach {
             currentStates.computeIfAbsent(it.partition()) {
@@ -99,6 +97,6 @@ class StateAndEventRebalanceListener<K : Any, S : Any, E : Any>(
         return currentStates[partitionId]?.map { state -> Pair(state.key, state.value.second) }?.toMap() ?: mapOf()
     }
 
-    private fun TopicPartition.toStateTopic() = TopicPartition(stateTopic.topic, partition())
+    private fun TopicPartition.toStateTopic() = TopicPartition(stateTopic, partition())
     private fun Collection<TopicPartition>.toStateTopics(): List<TopicPartition> = map { it.toStateTopic() }
 }

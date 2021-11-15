@@ -7,13 +7,13 @@ import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-abstract class AbstractCryptoRpcSub<TREQ: Any, TRESP: Any> : Lifecycle, CryptoLifecycleComponent {
+abstract class AbstractCryptoRpcSub<REQUEST: Any, RESPONSE: Any> : Lifecycle, CryptoLifecycleComponent {
 
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
-    private var subscription: RPCSubscription<TREQ, TRESP>? = null
+    private var subscription: RPCSubscription<REQUEST, RESPONSE>? = null
 
-    abstract fun createSubscription(libraryConfig: CryptoLibraryConfig): RPCSubscription<TREQ, TRESP>
+    abstract fun createSubscription(libraryConfig: CryptoLibraryConfig): RPCSubscription<REQUEST, RESPONSE>
 
     override var isRunning: Boolean = false
 

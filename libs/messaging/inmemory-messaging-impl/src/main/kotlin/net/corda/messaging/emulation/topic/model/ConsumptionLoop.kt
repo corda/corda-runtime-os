@@ -39,7 +39,6 @@ internal class ConsumptionLoop(
     }
 
     private fun processRecords(records: Map<Partition, Collection<RecordMetadata>>) {
-        @Suppress("TooGenericExceptionCaught")
         try {
             consumer.handleRecords(
                 records

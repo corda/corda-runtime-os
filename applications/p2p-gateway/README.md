@@ -13,50 +13,57 @@ To run the application use:
 ### Command arguments:
 ```
       --config-topic-name=<configTopicName>
-                          The config topic name (default: ConfigTopic)
-  -h, --help              Display help and exit
-      --host=<hostname>   The name of the HTTP host (default: localhost)
+               The config topic name (default: ConfigTopic)
+  -h, --help   Display help and exit
   -i, --instance-id=<instanceId>
-                          The unique instance ID (default to random number)
+               The unique instance ID (default to random number)
   -k, --kafka-servers=<kafkaServers>
-                          The kafka servers (default: localhost:9092)
-      --keyStore=<keyStoreFile>
-                          The key store file (default: keystore.jks)
-      --keyStorePassword=<keyStorePassword>
-                          The key store password (default: password)
-      --port=<port>       The HTTP port (default: 80)
-      --revocationCheck=<revocationCheck>
-                          Revocation Check mode (one of: SOFT_FAIL, HARD_FAIL,
-                            OFF)
+               The kafka servers (default: localhost:9092)
       --topic-prefix=<topicPrefix>
-                          The topic prefix (default: gateway)
-      --trustStore=<trustStoreFile>
-                          The trust store file (default: truststore.jks)
-      --trustStorePassword=<trustStorePassword>
-                          The trust store password (default: password)
+               The topic prefix (default: )
 ```
-## TODO:
-When https://r3-cev.atlassian.net/browse/CORE-2820 is ready we need to remove the configuration writer and the configuration arguments:
-* `keyStore`
-* `keyStorePassword`
-* `port`
-* `host`
-* `revocationCheck`
-* `trustStore`
-* `trustStorePassword`
 
 ## Example
-1. Before starting the application, run a kafka cluster. See examples in [here](../../libs/messaging/kafka-messaging-impl/src/kafka-integration-test/README.md).
+1. Before starting the application, run a kafka cluster. See examples in [here](../../testing/message-patterns/README.md).
 2. Start the app:
 ```bash
 java \
   -Djdk.net.hosts.file=./components/gateway/src/integration-test/resources/hosts \
-  -jar ./applications/p2p-gateway/build/bin/corda-p2p-gateway-5.0.0.0-SNAPSHOT.jar \
-  --keyStore ./components/gateway/src/integration-test/resources/sslkeystore_alice.jks \
-  --trustStore ./components/gateway/src/integration-test/resources/truststore.jks \
-  --port 3123 \
-  --host www.alice.net
+  -jar ./applications/p2p-gateway/build/bin/corda-p2p-gateway-5.0.0.0-SNAPSHOT.jar
 ```
 
 The `-Djdk.net.hosts.file` will overwrite the hosts file, allow the JVM to open localhost as if it was `www.alice.net`
-The `keyStore` and `trustStore` are valid stores used in the integration tests.
+
+See [here](../tools/p2p-test/configuration-publisher/README.md) on how to publish the gateway configuration
+
+
+## Docker image
+### Building the docker image
+To build a docker image, run:
+```bash
+./gradlew :applications:p2p-gateway:publishOSGiImage
+```
+
+### Running a container
+You can configure the image using those environment variables:
+* `KAFKA_SERVERS` - The list of Kafka server (default to `localhost:9092`)
+* `CONFIG_TOPIC` - The  name of the configuration topic (default to `ConfigTopic`)
+* `TOPIC_PREFIX` - The topic prefix (default to empty string)
+* `INSTANCE_ID` - The Gateway instance ID (default to random number)
+
+### Example
+1. Before starting the application, run a kafka cluster. See examples in [here](../../../../testing/message-patterns/README.md).
+2. Build the docker image (see above)
+3. Run the docker image:
+```bash
+docker run \
+--rm \
+--network kafka-docker_default \
+-e KAFKA_SERVERS="broker1:9093" \
+-p 3123:5603 \
+--hostname www.alice.net \
+engineering-docker-dev.software.r3.com/corda-os-p2p-gateway:5.0.0.0-SNAPSHOT
+```
+Please note:
+* The image need to be able to talk with the kafka broker, hence the network and `KAFKA_SERVERS` environment variable.
+* The configuration host name must be the same as the docker host name.

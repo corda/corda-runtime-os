@@ -12,7 +12,6 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventPart
 import net.corda.messaging.kafka.subscription.consumer.wrapper.impl.StateAndEventConsumerImpl
 import net.corda.messaging.kafka.subscription.factory.SubscriptionMapFactory
 import net.corda.messaging.kafka.types.StateAndEventConfig
-import net.corda.messaging.kafka.types.Topic
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
@@ -68,14 +67,9 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
         stateConsumer: CordaKafkaConsumer<K, S>,
         eventConsumer: CordaKafkaConsumer<K, E>
     ) {
-        val topicPrefix = config.topicPrefix
-        val eventTopic = Topic(topicPrefix, config.eventTopic)
-        val stateTopic = Topic(topicPrefix, config.stateTopic)
         val consumerThreadStopTimeout = config.consumerThreadStopTimeout
-        val statePartitions =
-            stateConsumer.getPartitions(stateTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
-        val eventPartitions =
-            eventConsumer.getPartitions(eventTopic.topic, Duration.ofSeconds(consumerThreadStopTimeout))
+        val statePartitions = stateConsumer.getPartitions(config.stateTopic, Duration.ofSeconds(consumerThreadStopTimeout))
+        val eventPartitions = eventConsumer.getPartitions(config.eventTopic, Duration.ofSeconds(consumerThreadStopTimeout))
         if (statePartitions.size != eventPartitions.size) {
             val errorMsg = "Mismatch between state and event partitions."
             log.debug {

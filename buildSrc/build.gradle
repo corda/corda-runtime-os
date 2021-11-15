@@ -9,6 +9,7 @@ file("$rootDir/../gradle.properties").withInputStream { InputStream input -> con
 def bndVersion = constants.getProperty('bndVersion')
 def cordaGradlePluginsVersion = constants.getProperty('cordaGradlePluginsVersion')
 def artifactoryContextUrl = constants.getProperty('artifactoryContextUrl')
+def jibCoreVersion = constants.getProperty('jibCoreVersion')
 
 dependencies {
     implementation "biz.aQute.bnd:biz.aQute.bnd.gradle:$bndVersion"
@@ -16,6 +17,7 @@ dependencies {
 
     implementation "net.corda.plugins:quasar-utils:$cordaGradlePluginsVersion"
     implementation "net.corda.plugins:flask:$cordaGradlePluginsVersion"
+    implementation "com.google.cloud.tools:jib-core:$jibCoreVersion"
 }
 
 repositories {

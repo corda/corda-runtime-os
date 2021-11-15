@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -14,19 +14,17 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.app.simulator.AppSimulator.Companion.KAFKA_BOOTSTRAP_SERVER
 import net.corda.p2p.app.simulator.AppSimulator.Companion.KAFKA_BOOTSTRAP_SERVER_KEY
 import net.corda.p2p.app.simulator.AppSimulator.Companion.PRODUCER_CLIENT_ID
 import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 import java.time.Duration
 import java.time.Instant
-import java.util.Properties
 
 class Receiver(private val subscriptionFactory: SubscriptionFactory,
                private val receiveTopic: String,
                private val metadataTopic: String,
-               private val kafkaProperties: Properties,
+               private val kafkaServers: String,
                private val clients: Int): Closeable {
 
     companion object {
@@ -39,8 +37,8 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
     fun start() {
         (1..clients).forEach { client ->
             val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", receiveTopic, client)
-            val kafkaConfig = ConfigFactory.empty()
-                .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
+            val kafkaConfig = SmartConfigImpl.empty()
+                .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaServers))
                 .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-receiver-$client"))
             val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
                 InboundMessageProcessor(metadataTopic), kafkaConfig, null)

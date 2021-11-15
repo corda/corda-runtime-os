@@ -2,6 +2,7 @@ package net.corda.configuration.read.impl
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReader
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -27,7 +28,7 @@ class ConfigReaderStub : ConfigReader {
         isRunning = false
     }
 
-    fun postEvent(keys: Set<String>, config: Map<String, Config>) {
+    fun postEvent(keys: Set<String>, config: Map<String, SmartConfig>) {
         listeners.forEach {
             it.onUpdate(keys, config)
         }

@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -30,7 +31,7 @@ class ConfigBasedLinkManagerHostingMaptest {
     private val bob = LinkManagerNetworkMap.HoldingIdentity("O=Bob, L=London, C=GB", "group1")
     private val charlie = LinkManagerNetworkMap.HoldingIdentity("O=Charlie, L=London, C=GB", "group1")
 
-    private val config = ConfigFactory.parseString(
+    private val config = SmartConfigImpl(ConfigFactory.parseString(
         """
             ${LinkManagerConfiguration.LOCALLY_HOSTED_IDENTITIES_KEY}: [
                 {
@@ -43,7 +44,7 @@ class ConfigBasedLinkManagerHostingMaptest {
                 }
             ]
         """
-    )
+    ))
 
     private val hostingMap = ConfigBasedLinkManagerHostingMap(configReadService)
 

@@ -4,12 +4,14 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
+import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.configuration.read.kafka.factory.ConfigReaderFactoryImpl
 import net.corda.libs.configuration.write.CordaConfigurationKey
 import net.corda.libs.configuration.write.CordaConfigurationVersion
 import net.corda.libs.configuration.write.kafka.ConfigWriterImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
@@ -25,12 +27,11 @@ import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
-import java.io.File
 import java.util.UUID
 
 open class TestBase {
     private fun readKeyStore(fileName: String): ByteArray {
-        return File(javaClass.classLoader.getResource("$fileName.jks")!!.file).readBytes()
+        return javaClass.classLoader.getResource("$fileName.jks").readBytes()
     }
 
     protected val clientMessageContent = "PING"
@@ -82,15 +83,17 @@ open class TestBase {
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
 
-    protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl()
+    protected val smartConfifFactory = SmartConfigFactoryImpl()
+
+    protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
     protected inner class ConfigPublisher {
         private val configurationTopicService = TopicServiceImpl()
         private val topicName = "config.${UUID.randomUUID().toString().replace("-", "")}"
 
         val readerService by lazy {
             ConfigurationReadServiceImpl(
-                LifecycleCoordinatorFactoryImpl(),
-                ConfigReaderFactoryImpl(InMemSubscriptionFactory(configurationTopicService)),
+                LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl()),
+                ConfigReaderFactoryImpl(InMemSubscriptionFactory(configurationTopicService), smartConfifFactory),
             ).also {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()
@@ -98,7 +101,7 @@ open class TestBase {
                         "config.topic.name",
                         ConfigValueFactory.fromAnyRef(topicName)
                     )
-                it.bootstrapConfig(bootstrapper)
+                it.bootstrapConfig(smartConfifFactory.create(bootstrapper))
             }
         }
 
@@ -106,7 +109,6 @@ open class TestBase {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hostAddress", ConfigValueFactory.fromAnyRef(configuration.hostAddress))
                 .withValue("hostPort", ConfigValueFactory.fromAnyRef(configuration.hostPort))
-                .withValue("traceLogging", ConfigValueFactory.fromAnyRef(configuration.traceLogging))
                 .withValue("sslConfig.keyStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.keyStorePassword))
                 .withValue("sslConfig.keyStore", ConfigValueFactory.fromAnyRef(configuration.sslConfig.rawKeyStore.toBase64()))
                 .withValue("sslConfig.trustStorePassword", ConfigValueFactory.fromAnyRef(configuration.sslConfig.trustStorePassword))

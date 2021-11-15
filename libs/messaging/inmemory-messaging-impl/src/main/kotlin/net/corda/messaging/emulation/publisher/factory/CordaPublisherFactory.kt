@@ -1,8 +1,9 @@
 package net.corda.messaging.emulation.publisher.factory
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -32,9 +33,9 @@ class CordaPublisherFactory @Activate constructor(
 
     override fun createPublisher(
         publisherConfig: PublisherConfig,
-        nodeConfig: Config
+        kafkaConfig: SmartConfig
     ): Publisher {
-        var config = nodeConfig
+        var config = kafkaConfig
             .withFallback(ConfigFactory.load("tmpInMemDefaults"))
             .withValue(PUBLISHER_CLIENT_ID, ConfigValueFactory.fromAnyRef(publisherConfig.clientId))
 
@@ -45,11 +46,11 @@ class CordaPublisherFactory @Activate constructor(
         return CordaPublisher(config, topicService)
     }
 
-    override fun <TREQ : Any, TRESP : Any> createRPCSender(
-        rpcConfig: RPCConfig<TREQ, TRESP>,
-        nodeConfig: Config,
-        lifecycleListener: LifecycleListener?
-    ): RPCSender<TREQ, TRESP> {
+    override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+        rpcConfig: RPCConfig<REQUEST, RESPONSE>,
+        kafkaConfig: SmartConfig,
+        lifecycleCoordinator: LifecycleCoordinator
+    ): RPCSender<REQUEST, RESPONSE> {
         TODO("Not yet implemented")
     }
 }

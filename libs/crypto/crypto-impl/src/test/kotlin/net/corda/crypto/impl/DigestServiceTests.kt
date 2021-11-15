@@ -41,7 +41,8 @@ class DigestServiceTests {
             schemeMetadata = factory.schemeMetadata
             digestService = DigestServiceImpl(
                 factory.schemeMetadata,
-                listOf(DoubleSHA256DigestFactory())
+                listOf(DoubleSHA256DigestFactory()),
+                null
             )
         }
 

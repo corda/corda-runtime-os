@@ -53,13 +53,16 @@ class CustomSerializerRegistryTests {
     }
 
     @CordaSerializable
-    class Cash
+    open class Cash
+    @CordaSerializable
+    class CashSubclass : Cash()
     @Test
     fun `two custom serializers cannot register to serialize the same type`() {
-        class TestCashCustomSerializer : AbstractTestCustomSerializer<Cash, String>()
+        class TestCashCustomSerializerA : AbstractTestCustomSerializer<Cash, String>()
+        class TestCashCustomSerializerB : AbstractTestCustomSerializer<CashSubclass, String>()
 
-        val weSerializeCash = TestCashCustomSerializer()
-        val weMaliciouslySerializeCash = TestCashCustomSerializer()
+        val weSerializeCash = TestCashCustomSerializerA()
+        val weMaliciouslySerializeCash = TestCashCustomSerializerB()
 
         unit.run {
             register(weSerializeCash, true)
@@ -67,7 +70,7 @@ class CustomSerializerRegistryTests {
         }
 
         assertFailsWith<DuplicateCustomSerializerException> {
-            unit.find(Cash::class.java)
+            unit.find(CashSubclass::class.java)
         }
     }
 

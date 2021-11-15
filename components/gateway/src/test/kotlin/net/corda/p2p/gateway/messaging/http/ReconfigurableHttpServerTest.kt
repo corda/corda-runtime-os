@@ -30,7 +30,7 @@ class ReconfigurableHttpServerTest {
         on { createCoordinator(any(), coordinatorHandler.capture()) } doReturn coordinator
     }
     private val configurationReaderService = mock<ConfigurationReadService>()
-    private val listener = mock<HttpEventListener>()
+    private val listener = mock<HttpServerListener>()
     private val address = InetSocketAddress("www.r3.com", 30)
     private val serverMock = mockConstruction(HttpServer::class.java)
     private val configuration = GatewayConfiguration(
@@ -39,8 +39,7 @@ class ReconfigurableHttpServerTest {
         sslConfig = mock {
             on { keyStore } doReturn mock()
             on { keyStorePassword } doReturn "hi"
-        },
-        traceLogging = false
+        }
     )
 
     private val server = ReconfigurableHttpServer(

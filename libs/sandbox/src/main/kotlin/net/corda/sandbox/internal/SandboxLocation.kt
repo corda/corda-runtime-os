@@ -8,7 +8,7 @@ import java.util.UUID
 data class SandboxLocation(val securityDomain: String, val id: UUID, val source: String) {
     companion object {
         fun fromString(string: String): SandboxLocation {
-            val components = string.split('/')
+            val components = string.split('/', limit = 3)
 
             if (components.size != 3) {
                 throw SandboxException(

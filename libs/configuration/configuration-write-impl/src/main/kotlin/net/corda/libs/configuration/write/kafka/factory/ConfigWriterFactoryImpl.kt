@@ -1,6 +1,6 @@
 package net.corda.libs.configuration.write.kafka.factory
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.ConfigWriter
 import net.corda.libs.configuration.write.factory.ConfigWriterFactory
 import net.corda.libs.configuration.write.kafka.ConfigWriterImpl
@@ -24,7 +24,7 @@ class ConfigWriterFactoryImpl @Activate constructor(
         private const val CONFIGURATION_WRITER = "CONFIGURATION_WRITER"
     }
 
-    override fun createWriter(destination: String, config: Config): ConfigWriter {
+    override fun createWriter(destination: String, config: SmartConfig): ConfigWriter {
         val publisher = publisherFactory.createPublisher(
             PublisherConfig(
                 CONFIGURATION_WRITER

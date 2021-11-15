@@ -3,6 +3,7 @@ package net.corda.lifecycle.domino.logic
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -107,7 +108,7 @@ class ConfigurationAwareLeafTileTest {
 
     @Test
     fun `onNewConfiguration will invoke error if can not use`() {
-        val config = mock<Config>()
+        val config = mock<SmartConfig>()
         doThrow(RuntimeException("")).whenever(configFactory).invoke(config)
         val tile = Tile()
         tile.start()
@@ -119,7 +120,7 @@ class ConfigurationAwareLeafTileTest {
 
     @Test
     fun `onNewConfiguration will apply correct configuration if valid`() {
-        val config = mock<Config> {
+        val config = mock<SmartConfig> {
             on { getInt(any()) } doReturn 33
         }
         val tile = Tile()
@@ -134,7 +135,7 @@ class ConfigurationAwareLeafTileTest {
 
     @Test
     fun `onNewConfiguration will set the state to running if valid`() {
-        val config = mock<Config> {
+        val config = mock<SmartConfig> {
             on { getInt(any()) } doReturn 33
         }
         val tile = Tile()
@@ -147,10 +148,10 @@ class ConfigurationAwareLeafTileTest {
 
     @Test
     fun `onNewConfiguration will call only once if the configuration did not changed`() {
-        val config1 = mock<Config> {
+        val config1 = mock<SmartConfig> {
             on { getInt(any()) } doReturn 33
         }
-        val config2 = mock<Config> {
+        val config2 = mock<SmartConfig> {
             on { getInt(any()) } doReturn 33
         }
         val tile = Tile()
@@ -166,10 +167,10 @@ class ConfigurationAwareLeafTileTest {
 
     @Test
     fun `onNewConfiguration will call on every change`() {
-        val config1 = mock<Config> {
+        val config1 = mock<SmartConfig> {
             on { getInt(any()) } doReturn 33
         }
-        val config2 = mock<Config> {
+        val config2 = mock<SmartConfig> {
             on { getInt(any()) } doReturn 25
         }
         val tile = Tile()
@@ -186,7 +187,7 @@ class ConfigurationAwareLeafTileTest {
 
     @Test
     fun `onNewConfiguration will not apply new configuration if not started`() {
-        val config = mock<Config> {
+        val config = mock<SmartConfig> {
             on { getInt(any()) } doReturn 11
         }
         whenever(service.registerForUpdates(any())).doAnswer {
@@ -202,8 +203,8 @@ class ConfigurationAwareLeafTileTest {
 
     @Test
     fun `onNewConfiguration will re-apply after error`() {
-        val badConfig = mock<Config>()
-        val goodConfig = mock<Config> {
+        val badConfig = mock<SmartConfig>()
+        val goodConfig = mock<SmartConfig> {
             on { getInt(any()) } doReturn 17
         }
         doThrow(RuntimeException("")).whenever(configFactory).invoke(badConfig)
@@ -220,7 +221,7 @@ class ConfigurationAwareLeafTileTest {
 
     @Test
     fun `startTile will apply new configuration when started`() {
-        val config = mock<Config> {
+        val config = mock<SmartConfig> {
             on { getInt(any()) } doReturn 11
         }
         whenever(service.registerForUpdates(any())).doAnswer {
@@ -249,7 +250,7 @@ class ConfigurationAwareLeafTileTest {
 
     @Test
     fun `startTile will set as error if tile failed to apply`() {
-        val config = mock<Config> {
+        val config = mock<SmartConfig> {
             on { getInt(any()) } doReturn 11
         }
         whenever(service.registerForUpdates(any())).doAnswer {

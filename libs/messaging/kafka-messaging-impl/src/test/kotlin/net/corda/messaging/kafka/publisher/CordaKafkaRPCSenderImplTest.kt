@@ -44,23 +44,20 @@ class CordaKafkaRPCSenderImplTest {
     private lateinit var lifecycleCoordinator: LifecycleCoordinator
     private lateinit var partitionListener: RPCConsumerRebalanceListener<String>
 
-
-    private val okResponse = listOf<ConsumerRecordAndMeta<String, RPCResponse>>(
-        ConsumerRecordAndMeta(
-            TOPIC_PREFIX,
-            ConsumerRecord(
-                ConfigProperties.TOPIC,
-                0,
-                0,
+    private val okResponse = listOf<ConsumerRecord<String, RPCResponse>>(
+        ConsumerRecord(
+            TOPIC_PREFIX + ConfigProperties.TOPIC,
+            0,
+            0,
+            "0",
+            RPCResponse(
                 "0",
-                RPCResponse(
-                    "0",
-                    Instant.now().toEpochMilli(),
-                    ResponseStatus.OK,
-                    ByteBuffer.wrap("test".encodeToByteArray())
-                )
+                Instant.now().toEpochMilli(),
+                ResponseStatus.OK,
+                ByteBuffer.wrap("test".encodeToByteArray())
             )
         )
+
     )
 
 

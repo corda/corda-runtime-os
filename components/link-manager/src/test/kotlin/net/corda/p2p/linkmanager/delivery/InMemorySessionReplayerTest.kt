@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.delivery
 
-import com.typesafe.config.Config
+import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -31,7 +32,7 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import java.security.KeyPairGenerator
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 
@@ -91,15 +92,15 @@ class InMemorySessionReplayerTest {
         val totalReplays = 5
         val publisher = SinglePhaseTestListBasedPublisher(totalReplays)
         val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
+            override fun createPublisher(publisherConfig: PublisherConfig, kafkaConfig: SmartConfig): Publisher {
                 return publisher
             }
 
-            override fun <TREQ : Any, TRESP : Any> createRPCSender(
-                rpcConfig: RPCConfig<TREQ, TRESP>,
-                nodeConfig: Config,
-                lifecycleListener: LifecycleListener?
-            ): RPCSender<TREQ, TRESP> {
+            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
+                kafkaConfig: SmartConfig,
+                lifecycleCoordinator: LifecycleCoordinator
+            ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
         }
@@ -179,15 +180,15 @@ class InMemorySessionReplayerTest {
         val furtherReplays = 4
         val publisher = TwoPhaseTestListBasedPublisher(initialReplays, furtherReplays)
         val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
+            override fun createPublisher(publisherConfig: PublisherConfig, kafkaConfig: SmartConfig): Publisher {
                 return publisher
             }
 
-            override fun <TREQ : Any, TRESP : Any> createRPCSender(
-                rpcConfig: RPCConfig<TREQ, TRESP>,
-                nodeConfig: Config,
-                lifecycleListener: LifecycleListener?
-            ): RPCSender<TREQ, TRESP> {
+            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
+                kafkaConfig: SmartConfig,
+                lifecycleCoordinator: LifecycleCoordinator
+            ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
         }
@@ -249,15 +250,15 @@ class InMemorySessionReplayerTest {
         val totalReplays = 1
         val publisher = SinglePhaseTestListBasedPublisher(totalReplays)
         val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
+            override fun createPublisher(publisherConfig: PublisherConfig, kafkaConfig: SmartConfig): Publisher {
                 return publisher
             }
 
-            override fun <TREQ : Any, TRESP : Any> createRPCSender(
-                rpcConfig: RPCConfig<TREQ, TRESP>,
-                nodeConfig: Config,
-                lifecycleListener: LifecycleListener?
-            ): RPCSender<TREQ, TRESP> {
+            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
+                kafkaConfig: SmartConfig,
+                lifecycleCoordinator: LifecycleCoordinator
+            ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
         }
@@ -297,15 +298,15 @@ class InMemorySessionReplayerTest {
         val totalReplays = 1
         val publisher = SinglePhaseTestListBasedPublisher(totalReplays)
         val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
+            override fun createPublisher(publisherConfig: PublisherConfig, kafkaConfig: SmartConfig): Publisher {
                 return publisher
             }
 
-            override fun <TREQ : Any, TRESP : Any> createRPCSender(
-                rpcConfig: RPCConfig<TREQ, TRESP>,
-                nodeConfig: Config,
-                lifecycleListener: LifecycleListener?
-            ): RPCSender<TREQ, TRESP> {
+            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
+                kafkaConfig: SmartConfig,
+                lifecycleCoordinator: LifecycleCoordinator
+            ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
         }
@@ -344,15 +345,15 @@ class InMemorySessionReplayerTest {
     fun `The InMemorySessionReplayer will not replay before start`() {
         val publisher = Mockito.mock(Publisher::class.java)
         val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, nodeConfig: Config): Publisher {
+            override fun createPublisher(publisherConfig: PublisherConfig, kafkaConfig: SmartConfig): Publisher {
                 return publisher
             }
 
-            override fun <TREQ : Any, TRESP : Any> createRPCSender(
-                rpcConfig: RPCConfig<TREQ, TRESP>,
-                nodeConfig: Config,
-                lifecycleListener: LifecycleListener?
-            ): RPCSender<TREQ, TRESP> {
+            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
+                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
+                kafkaConfig: SmartConfig,
+                lifecycleCoordinator: LifecycleCoordinator
+            ): RPCSender<REQUEST, RESPONSE> {
                 fail("createRPCSender should not be used in this test.")
             }
         }

@@ -8,7 +8,6 @@ import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_DURABLE
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.stubs.StubEventLogProcessor
@@ -39,10 +38,7 @@ class KafkaEventLogSubscriptionImplTest {
     private val producerBuilder: ProducerBuilder = mock()
     private val mockCordaConsumer: CordaKafkaConsumer<String, ByteBuffer> = mock()
     private val mockCordaProducer: CordaKafkaProducer = mock()
-    private val mockConsumerRecords =
-        generateMockConsumerRecordList(mockRecordCount, "topic", 1)
-            .map { ConsumerRecordAndMeta("", it) }
-            .toList()
+    private val mockConsumerRecords = generateMockConsumerRecordList(mockRecordCount, "topic", 1)
     private var pollInvocationCount : Int = 0
     private var builderInvocationCount : Int = 0
     private lateinit var kafkaEventLogSubscription: KafkaEventLogSubscriptionImpl<String, ByteBuffer>
@@ -94,7 +90,7 @@ class KafkaEventLogSubscriptionImplTest {
         verify(mockCordaProducer, times(1)).beginTransaction()
         verify(mockCordaProducer, times(1)).sendRecords(any())
         verify(mockCordaProducer, times(1)).sendAllOffsetsToTransaction(any())
-        verify(mockCordaProducer, times(1)).tryCommitTransaction()
+        verify(mockCordaProducer, times(1)).commitTransaction()
     }
 
     /**
@@ -219,7 +215,7 @@ class KafkaEventLogSubscriptionImplTest {
         verify(mockCordaProducer, times(consumerPollAndProcessRetriesCount+1)).beginTransaction()
         verify(mockCordaProducer, times(0)).sendRecords(any())
         verify(mockCordaProducer, times(0)).sendAllOffsetsToTransaction(any())
-        verify(mockCordaProducer, times(0)).tryCommitTransaction()
+        verify(mockCordaProducer, times(0)).commitTransaction()
     }
 
     @Test
@@ -247,6 +243,6 @@ class KafkaEventLogSubscriptionImplTest {
         verify(mockCordaProducer, times(1)).beginTransaction()
         verify(mockCordaProducer, times(0)).sendRecords(any())
         verify(mockCordaProducer, times(0)).sendRecordOffsetsToTransaction(any(), anyOrNull())
-        verify(mockCordaProducer, times(0)).tryCommitTransaction()
+        verify(mockCordaProducer, times(0)).commitTransaction()
     }
 }

@@ -11,10 +11,9 @@ import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
-import net.corda.messaging.kafka.subscription.consumer.wrapper.asRecord
+import net.corda.messaging.kafka.utils.toRecord
 import net.corda.v5.base.util.seconds
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.TopicPartition
@@ -39,7 +38,7 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
     private var running = false
     private val startStopLock = ReentrantReadWriteLock()
 
-    private val topic = "${config.getString(TOPIC_PREFIX)}${config.getString(TOPIC_NAME)}"
+    private val topic = config.getString(TOPIC_NAME)
     private var consumer: CordaKafkaConsumer<K, V>? = null
     private var assignedPartitions = emptySet<Int>()
 
@@ -91,14 +90,14 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
                 consumer!!.resume(listOf(partitionToBeQueried))
                 consumer!!.seek(partitionToBeQueried, offset)
                 val records = consumer!!.poll()
-                    .filter { it.record.partition() == partition && it.record.offset() == offset }
+                    .filter { it.partition() == partition && it.offset() == offset }
 
                 return when {
                     records.isEmpty() -> {
                         null
                     }
                     records.size == 1 -> {
-                        records.single().asRecord()
+                        records.single().toRecord()
                     }
                     else -> {
                         val errorMsg = "Multiple records located for partition=$partition, offset=$offset, topic=$topic : $records."

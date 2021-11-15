@@ -24,7 +24,7 @@ import java.security.Provider
 import java.security.PublicKey
 import javax.crypto.Cipher
 
-@Suppress("TooGenericExceptionCaught", "TooManyFunctions")
+@Suppress("TooManyFunctions")
 open class DefaultCryptoService(
     private val cache: DefaultCryptoKeyCache,
     private val schemeMetadata: CipherSchemeMetadata,

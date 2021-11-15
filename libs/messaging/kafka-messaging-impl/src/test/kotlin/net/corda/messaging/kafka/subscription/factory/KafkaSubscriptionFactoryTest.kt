@@ -3,6 +3,7 @@ package net.corda.messaging.kafka.subscription.factory
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -37,7 +38,7 @@ class KafkaSubscriptionFactoryTest {
 
     @Test
     fun createDurableSub() {
-        factory.createDurableSubscription<Any, Any>(subscriptionConfig, mock(), ConfigFactory.empty(), null)
+        factory.createDurableSubscription<Any, Any>(subscriptionConfig, mock(), SmartConfigImpl.empty(), null)
     }
 
     @Test
@@ -45,7 +46,7 @@ class KafkaSubscriptionFactoryTest {
         assertThrows<CordaMessageAPIFatalException> {
             factory.createDurableSubscription<Any, Any>(
                 SubscriptionConfig("group1", "event"),
-                mock(), ConfigFactory.empty(), null
+                mock(), SmartConfigImpl.empty(), null
             )
         }
     }

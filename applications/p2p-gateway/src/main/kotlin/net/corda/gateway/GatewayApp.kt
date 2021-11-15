@@ -1,9 +1,7 @@
 package net.corda.gateway
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.libs.configuration.write.CordaConfigurationKey
-import net.corda.libs.configuration.write.CordaConfigurationVersion
-import net.corda.libs.configuration.write.factory.ConfigWriterFactory
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -25,14 +23,14 @@ class GatewayApp @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = ConfigWriterFactory::class)
-    private val configWriterFactory: ConfigWriterFactory,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = SmartConfigFactory::class)
+    private val smartConfigFactory: SmartConfigFactory,
 ) : Application {
     companion object {
         private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
@@ -47,19 +45,8 @@ class GatewayApp @Activate constructor(
         } else {
 
             configurationReadService.start()
-            configurationReadService.bootstrapConfig(arguments.kafkaNodeConfiguration)
-
-            val writer = configWriterFactory.createWriter(
-                arguments.configTopicName,
-                arguments.kafkaNodeConfiguration
-            )
-            writer.updateConfiguration(
-                CordaConfigurationKey(
-                    "p2p-gateway",
-                    CordaConfigurationVersion("p2p", 1, 0),
-                    CordaConfigurationVersion("gateway", 1, 0)
-                ),
-                arguments.gatewayConfiguration
+            configurationReadService.bootstrapConfig(
+                smartConfigFactory.create(arguments.kafkaNodeConfiguration)
             )
 
             consoleLogger.info("Starting gateway")
@@ -68,7 +55,7 @@ class GatewayApp @Activate constructor(
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
-                arguments.kafkaNodeConfiguration,
+                smartConfigFactory.create(arguments.kafkaNodeConfiguration),
                 arguments.instanceId,
             ).also { gateway ->
                 gateway.start()
@@ -78,7 +65,7 @@ class GatewayApp @Activate constructor(
                         consoleLogger.info("Waiting for gateway to start...")
                         Thread.sleep(1000)
                     }
-                    consoleLogger.info("Gateway is running - HTTP server is ${arguments.hostname}:${arguments.port}")
+                    consoleLogger.info("Gateway is running")
                 }
             }
         }

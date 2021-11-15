@@ -15,7 +15,6 @@ import net.corda.messaging.kafka.publisher.CordaAvroSerializer
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.KafkaRPCSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
-import net.corda.messaging.kafka.subscription.consumer.wrapper.ConsumerRecordAndMeta
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
@@ -49,21 +48,18 @@ class KafkaRPCSubscriptionImplTest {
         "identity",
         "group"
     )
-    private val requestRecord = listOf<ConsumerRecordAndMeta<String, RPCRequest>>(
-        ConsumerRecordAndMeta(
-            TOPIC_PREFIX,
-            ConsumerRecord(
-                TOPIC,
-                0,
-                0,
+    private val requestRecord = listOf<ConsumerRecord<String, RPCRequest>>(
+        ConsumerRecord(
+            TOPIC_PREFIX + TOPIC,
+            0,
+            0,
+            "0",
+            RPCRequest(
                 "0",
-                RPCRequest(
-                    "0",
-                    Instant.now().toEpochMilli(),
-                    "$TOPIC.resp",
-                    0,
-                    dummyRequest.toByteBuffer()
-                )
+                Instant.now().toEpochMilli(),
+                "$TOPIC_PREFIX$TOPIC.resp",
+                0,
+                dummyRequest.toByteBuffer()
             )
         )
     )
@@ -114,7 +110,7 @@ class KafkaRPCSubscriptionImplTest {
             Thread.sleep(10)
         }
 
-        verify(kafkaConsumer, times(1)).subscribe(listOf("topic"))
+        verify(kafkaConsumer, times(1)).subscribeToTopic()
         assertThat(processor.incomingRecords.size).isEqualTo(1)
         verify(publisher, times(1)).publishToPartition(captor.capture())
         val capturedValue = captor.firstValue
@@ -139,7 +135,7 @@ class KafkaRPCSubscriptionImplTest {
             Thread.sleep(10)
         }
 
-        verify(kafkaConsumer, times(1)).subscribe(listOf("topic"))
+        verify(kafkaConsumer, times(1)).subscribeToTopic()
         assertThat(processor.incomingRecords.size).isEqualTo(1)
         verify(publisher, times(1)).publishToPartition(captor.capture())
         val capturedValue = captor.firstValue
@@ -168,7 +164,7 @@ class KafkaRPCSubscriptionImplTest {
             Thread.sleep(10)
         }
 
-        verify(kafkaConsumer, times(1)).subscribe(listOf("topic"))
+        verify(kafkaConsumer, times(1)).subscribeToTopic()
         assertThat(processor.incomingRecords.size).isEqualTo(1)
         verify(publisher, times(1)).publishToPartition(captor.capture())
         val capturedValue = captor.firstValue
