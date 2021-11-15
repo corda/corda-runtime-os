@@ -15,14 +15,7 @@ class GatewayTest {
         val gateway = Gateway(
             mock(),
             mock {
-                on {
-                    createEventLogSubscription(
-                        any(),
-                        any<OutboundMessageHandler>(),
-                        any(),
-                        anyOrNull()
-                    )
-                } doReturn mock()
+                on { createEventLogSubscription(any(), any<OutboundMessageHandler>(), any(), anyOrNull()) } doReturn mock()
             },
             mock {
                 on { createPublisher(any(), any()) } doReturn mock()

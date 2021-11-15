@@ -9,7 +9,6 @@ import net.corda.p2p.test.KeyPairEntry
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
@@ -21,12 +20,7 @@ class StubCryptoServiceTest {
     private var clientProcessor: CompactedProcessor<String, KeyPairEntry>? = null
 
     private val subscriptionFactory = mock<SubscriptionFactory>() {
-        on { createCompactedSubscription(
-            any(),
-            any<CompactedProcessor<String, KeyPairEntry>>(),
-            any(),
-            anyOrNull()
-        ) } doAnswer { invocation ->
+        on { createCompactedSubscription(any(), any<CompactedProcessor<String, KeyPairEntry>>(), any()) } doAnswer { invocation ->
             @Suppress("UNCHECKED_CAST")
             clientProcessor = invocation.arguments[1] as CompactedProcessor<String, KeyPairEntry>
             mock()

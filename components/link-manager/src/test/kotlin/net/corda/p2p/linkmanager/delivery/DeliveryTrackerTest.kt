@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.delivery
 
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -89,7 +90,10 @@ class DeliveryTrackerTest {
             isRunning = true
             return
         }
-        
+
+        override val subscriptionName: LifecycleCoordinatorName
+            get() = LifecycleCoordinatorName("MockStateAndEventSubscription")
+
     }
 
     private fun createTracker(
@@ -105,13 +109,7 @@ class DeliveryTrackerTest {
         val subscriptionFactory = Mockito.mock(SubscriptionFactory::class.java)
         val mockSubscription = MockStateAndEventSubscription<String, AuthenticatedMessageDeliveryState, AppMessageMarker>()
         Mockito.`when`(subscriptionFactory
-            .createStateAndEventSubscription<String, AuthenticatedMessageDeliveryState, AppMessageMarker>(
-                any(),
-                any(),
-                any(),
-                any(),
-                anyOrNull()
-            ))
+            .createStateAndEventSubscription<String, AuthenticatedMessageDeliveryState, AppMessageMarker>(any(), any(), any(), any()))
             .thenReturn(mockSubscription)
 
         val tracker = DeliveryTracker(
@@ -125,13 +123,7 @@ class DeliveryTrackerTest {
         val listenerCaptor = argumentCaptor<StateAndEventListener<String, AuthenticatedMessageDeliveryState>>()
 
         Mockito.verify(subscriptionFactory)
-            .createStateAndEventSubscription(
-                anyOrNull(),
-                processorCaptor.capture(),
-                anyOrNull(),
-                listenerCaptor.capture(),
-                anyOrNull()
-            )
+            .createStateAndEventSubscription(anyOrNull(), processorCaptor.capture(), anyOrNull(), listenerCaptor.capture())
         return Triple(tracker, processorCaptor.firstValue , listenerCaptor.firstValue)
     }
 

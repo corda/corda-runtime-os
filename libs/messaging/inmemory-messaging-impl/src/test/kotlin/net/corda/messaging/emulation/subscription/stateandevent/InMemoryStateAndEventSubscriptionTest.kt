@@ -29,8 +29,7 @@ class InMemoryStateAndEventSubscriptionTest {
         SubscriptionConfig("group", "topic"),
         mock(),
         mock(),
-        topicService,
-        null
+        topicService
     )
 
     @Test

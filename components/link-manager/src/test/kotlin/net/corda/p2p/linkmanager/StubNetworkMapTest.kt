@@ -4,17 +4,16 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.NetworkMapEntry
-import net.corda.p2p.NetworkType
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
@@ -26,12 +25,7 @@ class StubNetworkMapTest {
     private var clientProcessor: CompactedProcessor<String, NetworkMapEntry>? = null
 
     private val subscriptionFactory = mock<SubscriptionFactory> {
-        on { createCompactedSubscription(
-            any(),
-            any<CompactedProcessor<String, KeyPairEntry>>(),
-            any(),
-            anyOrNull()
-        ) } doAnswer { invocation ->
+        on { createCompactedSubscription(any(), any<CompactedProcessor<String, KeyPairEntry>>(), any()) } doAnswer { invocation ->
             @Suppress("UNCHECKED_CAST")
             clientProcessor = invocation.arguments[1] as CompactedProcessor<String, NetworkMapEntry>
             mock()

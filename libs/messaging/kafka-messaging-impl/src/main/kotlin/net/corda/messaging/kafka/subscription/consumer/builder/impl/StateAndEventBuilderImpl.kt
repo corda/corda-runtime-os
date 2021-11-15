@@ -41,19 +41,12 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
         val eventConsumer = eventConsumerBuilder.createDurableConsumer(config.eventConsumerConfig, kClazz, eClazz)
         validateConsumers(config, stateConsumer, eventConsumer)
 
-        val partitionState =
-            StateAndEventPartitionState(mutableMapOf<Int, MutableMap<K, Pair<Long, S>>>(), mutableMapOf())
+        val partitionState = StateAndEventPartitionState(mutableMapOf<Int, MutableMap<K, Pair<Long, S>>>(), mutableMapOf())
 
         val stateAndEventConsumer =
-            StateAndEventConsumerImpl(
-                config,
-                eventConsumer,
-                stateConsumer,
-                partitionState,
-                stateAndEventListener
-            )
-        val rebalanceListener = StateAndEventRebalanceListener(
-            config,
+            StateAndEventConsumerImpl(config, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
+        val rebalanceListener =
+            StateAndEventRebalanceListener(config,
             mapFactory,
             stateAndEventConsumer,
             partitionState,

@@ -43,7 +43,6 @@ interface SubscriptionFactory {
      * @param executor This will allow for the threading model to be controlled by the subscriber. If null processor will
      * execute on the same thread as the consumer.
      * @param nodeConfig Configuration to override the default settings for the subscription
-     * @param lifecycleListener optional listener to be notified of any lifecycle events as they happen
      * @return A [Subscription] with key (of type [K]) and value (of type [V]) to manage lifecycle.
      */
     fun <K : Any, V : Any> createPubSubSubscription(
@@ -67,7 +66,6 @@ interface SubscriptionFactory {
      * @param processor This provides the callback mechanism for feed updates (see [CompactedProcessor])
      * @param nodeConfig Configuration to override the default settings for the subscription
      * @param partitionAssignmentListener a listener that reacts to partition assignment and revocations.
-     * @param lifecycleListener optional listener to be notified of any lifecycle events as they happen
      * @return A [Subscription] with key (of type [K]) and value (of type [V]) to manage lifecycle.
      */
     fun <K : Any, V : Any> createDurableSubscription(
@@ -87,7 +85,6 @@ interface SubscriptionFactory {
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param processor This provides the callback mechanism for feed updates (see [CompactedProcessor])
      * @param nodeConfig Configuration to override the default settings for the subscription
-     * @param lifecycleListener optional listener to be notified of any lifecycle events as they happen
      * @return A subscription to manage lifecycle.
      */
     fun <K : Any, V : Any> createCompactedSubscription(
@@ -114,7 +111,6 @@ interface SubscriptionFactory {
      * @param processor This provides the callback mechanism for feed updates (see [StateAndEventProcessor])
      * @param nodeConfig Configuration to override the default settings for the subscription
      * @param stateAndEventListener listener to give client access to the in-memory map of states
-     * @param lifecycleListener optional listener to be notified of any lifecycle events as they happen
      * @return A [StateAndEventSubscription] to manage lifecycle.
      */
     fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
@@ -130,7 +126,6 @@ interface SubscriptionFactory {
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
      * @param partitionAssignmentListener a listener that reacts to partition assignment and revocations.
-     * @param lifecycleListener optional listener to be notified of any lifecycle events as they happen
      */
     fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
@@ -143,7 +138,6 @@ interface SubscriptionFactory {
      * Creates a random access subscription.
      * @param subscriptionConfig Define the mandatory params for creating a subscription.
      * @param nodeConfig Map of properties to override the default settings for the connection to the source of events
-     * @param lifecycleListener optional listener to be notified of any lifecycle events as they happen
      */
     fun <K : Any, V : Any> createRandomAccessSubscription(
         subscriptionConfig: SubscriptionConfig,
