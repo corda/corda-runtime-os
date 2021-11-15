@@ -1,6 +1,7 @@
 package net.corda.crypto.component.config
 
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
+import net.corda.crypto.impl.config.DefaultConfigConsts
 import net.corda.crypto.impl.config.isDev
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
@@ -17,8 +18,8 @@ class CryptoRocConfigTests {
     fun `Should be able to use all helper properties`() {
         val raw = mapOf<String, Any?>(
             "rpc" to mapOf(
-                "groupName" to "rpcGroupName",
-                "clientName" to "rpcClientName",
+                DefaultConfigConsts.Kafka.GROUP_NAME_KEY to "rpcGroupName",
+                DefaultConfigConsts.Kafka.CLIENT_ID_KEY to "rpcClientName",
                 "signingRequestTopic" to "rpcSigningRequestTopic",
                 "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic",
                 "clientTimeout" to "11",
@@ -28,7 +29,7 @@ class CryptoRocConfigTests {
         val config = CryptoLibraryConfigImpl(raw)
         assertFalse(config.isDev)
         assertEquals("rpcGroupName", config.rpc.groupName)
-        assertEquals("rpcClientName", config.rpc.clientName)
+        assertEquals("rpcClientName", config.rpc.clientId)
         assertEquals("rpcSigningRequestTopic", config.rpc.signingRequestTopic)
         assertEquals("rpcFreshKeysRequestTopic", config.rpc.freshKeysRequestTopic)
         assertEquals(11, config.rpc.clientTimeout)
@@ -40,9 +41,9 @@ class CryptoRocConfigTests {
     fun `CryptoRpcConfig should return default values if the value is not provided`() {
         val config = CryptoRpcConfig(emptyMap())
         assertEquals("crypto.rpc", config.groupName)
-        assertEquals("crypto.rpc", config.clientName)
+        assertEquals("crypto.rpc", config.clientId)
         assertEquals("crypto.rpc.signing", config.signingRequestTopic)
-        assertEquals("crypto.rpc.freshKeys", config.freshKeysRequestTopic)
+        assertEquals("crypto.rpc.freshkeys", config.freshKeysRequestTopic)
         assertEquals(15, config.clientTimeout)
         assertEquals(1, config.clientRetries)
     }
@@ -51,8 +52,8 @@ class CryptoRocConfigTests {
     @Timeout(5)
     fun `CryptoRpcConfig should create RPC config for signing service`() {
         val raw = mapOf(
-            "groupName" to "rpcGroupName",
-            "clientName" to "rpcClientName",
+            DefaultConfigConsts.Kafka.GROUP_NAME_KEY to "rpcGroupName",
+            DefaultConfigConsts.Kafka.CLIENT_ID_KEY to "rpcClientName",
             "signingRequestTopic" to "rpcSigningRequestTopic",
             "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic"
 
@@ -70,8 +71,8 @@ class CryptoRocConfigTests {
     @Timeout(5)
     fun `CryptoRpcConfig should create RPC config for fresh keys service`() {
         val raw = mapOf(
-            "groupName" to "rpcGroupName",
-            "clientName" to "rpcClientName",
+            DefaultConfigConsts.Kafka.GROUP_NAME_KEY to "rpcGroupName",
+            DefaultConfigConsts.Kafka.CLIENT_ID_KEY to "rpcClientName",
             "signingRequestTopic" to "rpcSigningRequestTopic",
             "freshKeysRequestTopic" to "rpcFreshKeysRequestTopic"
 
@@ -90,9 +91,9 @@ class CryptoRocConfigTests {
     fun `Should use default values if the 'rpc' path is not supplied`() {
         val config = CryptoLibraryConfigImpl(emptyMap())
         assertEquals("crypto.rpc", config.rpc.groupName)
-        assertEquals("crypto.rpc", config.rpc.clientName)
+        assertEquals("crypto.rpc", config.rpc.clientId)
         assertEquals("crypto.rpc.signing", config.rpc.signingRequestTopic)
-        assertEquals("crypto.rpc.freshKeys", config.rpc.freshKeysRequestTopic)
+        assertEquals("crypto.rpc.freshkeys", config.rpc.freshKeysRequestTopic)
         assertEquals(15, config.rpc.clientTimeout)
         assertEquals(1, config.rpc.clientRetries)
     }

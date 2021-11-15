@@ -1,7 +1,7 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
-import net.corda.crypto.impl.config.keyCache
+import net.corda.crypto.impl.config.defaultCryptoService
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCacheImpl
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactoryProvider
@@ -61,7 +61,7 @@ open class DefaultCryptoServiceProvider @Activate constructor(
         logger.info("Received new configuration...")
         impl = Impl(
             persistenceProviders,
-            config.keyCache,
+            config.defaultCryptoService,
             logger
         )
     }

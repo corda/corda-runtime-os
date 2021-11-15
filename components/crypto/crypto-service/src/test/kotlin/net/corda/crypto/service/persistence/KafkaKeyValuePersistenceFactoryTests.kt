@@ -36,7 +36,7 @@ class KafkaKeyValuePersistenceFactoryTests {
         val factory = KafkaKeyValuePersistenceFactory(
             subscriptionFactory = subscriptionFactory,
             publisherFactory = publisherFactory,
-            config = KafkaInfrastructure.config
+            config = KafkaInfrastructure.customConfig
         )
         (factory as AutoCloseable).close()
         // twice - for the signing & crypto proxies
@@ -65,7 +65,7 @@ class KafkaKeyValuePersistenceFactoryTests {
         val factory = KafkaKeyValuePersistenceFactory(
             subscriptionFactory = subscriptionFactory,
             publisherFactory = publisherFactory,
-            config = KafkaInfrastructure.config
+            config = KafkaInfrastructure.customConfig
         )
         factory.createSigningPersistence(memberId) { it }
         factory.createDefaultCryptoPersistence(UUID.randomUUID().toString()) {

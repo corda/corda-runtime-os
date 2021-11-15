@@ -2,6 +2,7 @@ package net.corda.crypto.component.config
 
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
+import net.corda.crypto.impl.config.DefaultConfigConsts
 import net.corda.data.crypto.config.CryptoConfigurationRecord
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -71,17 +72,23 @@ class MemberConfigWriterTests {
         records = argumentCaptor()
     }
 
-    private fun initializeWriter() {
+    private fun initializeWriterWithCustomConfiguration() {
         writer.start()
         val config = CryptoLibraryConfigImpl(
             mapOf(
                 "memberConfig" to mapOf(
-                    "groupName" to "group",
-                    "topicName" to "topic",
-                    "clientId" to "client"
+                    DefaultConfigConsts.Kafka.GROUP_NAME_KEY to "group",
+                    DefaultConfigConsts.Kafka.TOPIC_NAME_KEY to "topic",
+                    DefaultConfigConsts.Kafka.CLIENT_ID_KEY to "client"
                 )
             )
         )
+        writer.handleConfigEvent(config)
+    }
+
+    private fun initializeWriterWithDefaultConfiguration() {
+        writer.start()
+        val config = CryptoLibraryConfigImpl(emptyMap())
         writer.handleConfigEvent(config)
     }
 
@@ -97,7 +104,32 @@ class MemberConfigWriterTests {
     @Test
     @Timeout(5)
     fun `Should publish config changes`() {
-        initializeWriter()
+        initializeWriterWithCustomConfiguration()
+        val before = Instant.now()
+        writer.put("123", cryptoMemberConfig)
+        val after = Instant.now()
+        Mockito.verify(pub, times(1)).start()
+        Mockito.verify(pub, times(1)).publish(records.capture())
+        assertEquals(1, records.allValues.size)
+        assertEquals(1, records.firstValue.size)
+        val record = records.firstValue[0]
+        assertEquals("123", record.key)
+        assertNotNull(record.value)
+        assertEquals(1, record.value!!.version)
+        assertThat(
+            record.value!!.timestamp.epochSecond,
+            allOf(greaterThanOrEqualTo(before.epochSecond), lessThanOrEqualTo(after.epochSecond))
+        )
+        val publishedConfig = ConfigFactory.parseString(record.value!!.value).root().unwrapped()
+        assertEquals(2, publishedConfig.size)
+        assertThat(publishedConfig.keys, contains("default", "LEDGER"))
+        writer.stop()
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should publish config changes using default configuration`() {
+        initializeWriterWithDefaultConfiguration()
         val before = Instant.now()
         writer.put("123", cryptoMemberConfig)
         val after = Instant.now()
@@ -122,7 +154,7 @@ class MemberConfigWriterTests {
     @Test
     @Timeout(5)
     fun `Should close initialized publishers`() {
-        initializeWriter()
+        initializeWriterWithCustomConfiguration()
         Mockito.verify(pub, never()).close()
         writer.stop()
         Mockito.verify(pub, times(1)).close()
@@ -131,9 +163,9 @@ class MemberConfigWriterTests {
     @Test
     @Timeout(5)
     fun `Should close old publisher and create new`() {
-        initializeWriter()
+        initializeWriterWithCustomConfiguration()
         Mockito.verify(pub, never()).close()
-        initializeWriter()
+        initializeWriterWithCustomConfiguration()
         Mockito.verify(pub, times(1)).close()
         writer.stop()
         Mockito.verify(pub, times(2)).close()

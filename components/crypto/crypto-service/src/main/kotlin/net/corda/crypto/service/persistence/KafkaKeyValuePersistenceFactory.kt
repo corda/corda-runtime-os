@@ -1,8 +1,8 @@
 package net.corda.crypto.service.persistence
 
 import net.corda.crypto.impl.closeGracefully
-import net.corda.crypto.impl.config.keyCache
-import net.corda.crypto.impl.config.mngCache
+import net.corda.crypto.impl.config.defaultCryptoService
+import net.corda.crypto.impl.config.publicKeys
 import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
 import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
 import net.corda.crypto.impl.persistence.KeyValueMutator
@@ -25,13 +25,13 @@ class KafkaKeyValuePersistenceFactory constructor(
     private val signingProxy = KafkaSigningKeyProxy(
         subscriptionFactory = subscriptionFactory,
         publisherFactory = publisherFactory,
-        config = config.mngCache
+        config = config.publicKeys
     )
 
     private val cryptoProxy = KafkaDefaultCryptoKeyProxy(
         subscriptionFactory = subscriptionFactory,
         publisherFactory = publisherFactory,
-        config = config.keyCache
+        config = config.defaultCryptoService
     )
 
     override fun createSigningPersistence(
@@ -41,7 +41,7 @@ class KafkaKeyValuePersistenceFactory constructor(
         return KafkaKeyValuePersistence(
             proxy = signingProxy,
             memberId = memberId,
-            config = config.mngCache,
+            config = config.publicKeys,
             mutator = mutator
         )
     }
@@ -53,7 +53,7 @@ class KafkaKeyValuePersistenceFactory constructor(
         return KafkaKeyValuePersistence(
             proxy = cryptoProxy,
             memberId = memberId,
-            config = config.keyCache,
+            config = config.defaultCryptoService,
             mutator = mutator
         )
     }

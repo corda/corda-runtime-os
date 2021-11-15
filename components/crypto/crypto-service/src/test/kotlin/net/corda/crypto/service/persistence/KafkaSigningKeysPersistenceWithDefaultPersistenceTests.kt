@@ -22,7 +22,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
-class KafkaSigningKeysPersistenceTests {
+class KafkaSigningKeysPersistenceWithDefaultPersistenceTests {
     private lateinit var memberId: String
     private lateinit var memberId2: String
     private lateinit var kafka: KafkaInfrastructure
@@ -35,7 +35,7 @@ class KafkaSigningKeysPersistenceTests {
         memberId = UUID.randomUUID().toString()
         memberId2 = UUID.randomUUID().toString()
         kafka = KafkaInfrastructure()
-        factory = kafka.createFactory(KafkaInfrastructure.customConfig)
+        factory = kafka.createFactory(KafkaInfrastructure.defaultConfig)
         signingPersistence = factory.createSigningPersistence(
             memberId = memberId
         ) {
@@ -84,8 +84,8 @@ class KafkaSigningKeysPersistenceTests {
         )
         signingPersistence.put("hash1", original)
         val records = kafka.getRecords<SigningKeyRecord>(
-            KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig),
-            KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig)
+            KafkaInfrastructure.signingGroupName(KafkaInfrastructure.defaultConfig),
+            KafkaInfrastructure.signingTopicName(KafkaInfrastructure.defaultConfig)
         )
         assertEquals(1, records.size)
         val publishedRecord = records[0]
@@ -128,8 +128,8 @@ class KafkaSigningKeysPersistenceTests {
         signingPersistence.put(original.publicKeyHash, original)
         signingPersistence2.put(original2.publicKeyHash, original2)
         val records = kafka.getRecords<SigningKeyRecord>(
-            KafkaInfrastructure.cryptoSvcGroupName(KafkaInfrastructure.customConfig),
-            KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.signingGroupName(KafkaInfrastructure.defaultConfig),
+            KafkaInfrastructure.signingTopicName(KafkaInfrastructure.defaultConfig),
             2
         )
         assertEquals(2, records.size)
@@ -176,9 +176,9 @@ class KafkaSigningKeysPersistenceTests {
             schemeCodeName = "CODE"
         )
         kafka.publish(
-            KafkaInfrastructure.signingClientId(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.signingClientId(KafkaInfrastructure.defaultConfig),
             signingPersistence,
-            KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.signingTopicName(KafkaInfrastructure.defaultConfig),
             "hash1",
             KafkaSigningKeyProxy.toRecord(original)
         )
