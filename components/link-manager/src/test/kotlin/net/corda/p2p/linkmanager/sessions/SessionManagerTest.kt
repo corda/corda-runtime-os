@@ -960,7 +960,7 @@ class SessionManagerTest {
             Duration.ofMillis(longPeriodMilliSec)
         )
         val resourcesHolder = ResourcesHolder()
-        var sessionManager = SessionManagerImpl(
+        val sessionManager = SessionManagerImpl(
             networkMap,
             cryptoService,
             pendingSessionMessageQueues,
@@ -1131,7 +1131,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            heartbeatConfigHandler.applyNewConfiguration(configLongTimeout, null, mock())
             createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourcesHolder) }
             createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock()) }
         }
