@@ -44,5 +44,6 @@ internal fun sandboxGroupContainsBundle(sandboxGroup: SandboxGroup, bundle: Bund
 /** Indicates whether the [sandbox] contains the [bundle]. */
 private fun sandboxContainsBundle(sandbox: Any, bundle: Bundle): Boolean {
     val containsMethod = sandbox::class.java.getMethod("containsBundle", Bundle::class.java, Boolean::class.java)
-    return containsMethod.invoke(sandbox, bundle, false) as Boolean
+    val lookInPublicBundlesOnly = false
+    return containsMethod.invoke(sandbox, bundle, lookInPublicBundlesOnly) as Boolean
 }
