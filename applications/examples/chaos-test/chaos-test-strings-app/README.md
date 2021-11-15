@@ -1,15 +1,37 @@
-build
+#Chaos Test Strings Application
+This is a test 'application' or Patterns/messaging library driver for use in chaos testing. This is similar to the 'demo-app', except that string, not integer, based messages are used. It can run set of publisher/subscribers apps as threads or individual publisher/subscribers as specified by the "--clientType" option.  
+It is anticipated that it will be run by automated testing tools but it is also intended to be runnable 'by-hand' to allow ad-hoc testing and test development.
+
+##To build
 `gradlew clean appJar`
 
-Except this is ***actually*** ChrisB's test application.
+##Examples
+### Run the Durable Subscriber/Publisher
+    java -Dlog4j2.configurationFile=log4j2.xml \
+        -Dbootstrap.servers=localhost:9092 \
+        -Dmessaging.topic.prefix=demo \
+        -jar corda-chaos-test-strings-app-5.0.0.0-SNAPSHOT.jar \
+        --instanceId 1 \
+        --clientType Durable
 
-run worker(s) from separate dirs. For example:
+### Run the Subscriber
+* NB: This depends on the Durable Subscriber/Publisher running
 
-- From resources/node1: `java -jar corda-demo-app-5.0.0-SNAPSHOT.jar --instanceId 1 --kafka kafka.properties`
-- From resources/node2: `java -jar corda-demo-app-5.0.0-SNAPSHOT.jar --instanceId 2 --kafka kafka.properties`
-- From resources/node3: `java -jar corda-demo-app-5.0.0-SNAPSHOT.jar --instanceId 3 --kafka kafka.properties`
 
-Command line args/system properties can be used instead of a kafka properties file
--  `java -jar -Dbootstrap.servers=localhost:9092 -Dconfig.topic.name=ConfigTopic -Dmessaging.topic.prefix=demo  corda-demo-app-5.0.0-SNAPSHOT.jar --instanceId 4`
+    java -Dlog4j2.configurationFile=log4j2.xml \
+        -Dbootstrap.servers=localhost:9092 \
+        -Dmessaging.topic.prefix=demo \
+        -jar corda-chaos-test-strings-app-5.0.0.0-SNAPSHOT.jar \
+        --instanceId 1 \
+        --clientType Sub
 
-Additional info on the demo process: https://github.com/corda/platform-eng-design/blob/master/core/corda-5/corda-5.1/flow-worker/message-patterns-demo.md
+### Run the State And Events Subscriber/Publisher Running
+* NB: This depends on the Durable Subscriber/Publisher running
+
+
+    java -Dlog4j2.configurationFile=log4j2.xml \
+        -Dbootstrap.servers=localhost:9092 \
+        -Dmessaging.topic.prefix=demo \
+        -jar corda-chaos-test-strings-app-5.0.0.0-SNAPSHOT.jar \
+        --instanceId 1 \
+        --clientType StateEvent

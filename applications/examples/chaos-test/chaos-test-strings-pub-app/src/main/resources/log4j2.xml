@@ -2,7 +2,7 @@
 <configuration status="WARN">
     <appenders>
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <PatternLayout pattern="{ &quot;ver&quot;:&quot;0.1&quot;, &quot;message&quot; : &quot;%d{yyyy-MM-dd'T'HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg&quot;}%n"/>
         </Console>
 
         <File name="App" fileName="logs/app.log">
@@ -18,6 +18,7 @@
     <loggers>
         <logger name="net.corda.components.examples.publisher">
             <appender-ref ref="Publisher" level="info"/>
+            <appender-ref ref="Console" level="info"/>
         </logger>
 
         <logger name="Console">

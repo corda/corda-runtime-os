@@ -7,7 +7,7 @@ It is anticipated that it will be run by automated testing tools but it is also 
 
 ##An example execution 
 
-    java -Dlog4j2.configurationFile=demo-pub-log4j2.xml \
+    java -Dlog4j2.configurationFile=log4j2.xml \
         -Dbootstrap.servers=localhost:9092 \
         -Dmessaging.topic.prefix=demo \
         -jar corda-chaos-test-strings-pub-app-5.0.0.0-SNAPSHOT.jar \
