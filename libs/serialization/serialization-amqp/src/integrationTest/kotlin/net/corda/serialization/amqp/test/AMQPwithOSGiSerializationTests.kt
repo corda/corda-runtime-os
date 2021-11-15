@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.io.TempDir
+import org.junit.jupiter.api.assertThrows
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.runtime.ServiceComponentRuntime
@@ -232,22 +233,8 @@ class AMQPwithOSGiSerializationTests {
         val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle.MainBundleItem", Any::class.java)
         val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
 
-        assertFailsWith<SandboxException> {
+        assertThrows<SandboxException> {
             SerializationOutput(factory).serialize(mainBundleItemInstance, context)
         }
     }
-}
-
-// TODO below method needs to be removed .I kept getting ? osgi.wiring.package: (osgi.wiring.package=kotlin.test). Could not fix it and just wrote it.
-inline fun <reified T: Exception> assertFailsWith(block: () -> Unit) {
-    try {
-        block()
-    } catch (e: Exception) {
-        if (!T::class.java.isAssignableFrom(e::class.java)) {
-            throw IllegalStateException("Expected to throw ${T::class.java.name} but threw $e instead")
-        } else {
-            return
-        }
-    }
-    throw IllegalStateException("Expected to fail with ${T::class.java.name} but succeeded")
 }
