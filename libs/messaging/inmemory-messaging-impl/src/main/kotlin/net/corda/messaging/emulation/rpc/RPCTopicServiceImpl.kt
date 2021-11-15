@@ -56,9 +56,6 @@ class RPCTopicServiceImpl(
 
         fun addConsumer(consumer: RPCResponderProcessor<REQUEST, RESPONSE>) {
             synchronized(consumerList) {
-                if(consumerList.contains(consumer)){
-                    throw CordaRPCAPIResponderException("The instance of the consumer is already added.")
-                }
                 consumerList.add(consumer)
             }
         }

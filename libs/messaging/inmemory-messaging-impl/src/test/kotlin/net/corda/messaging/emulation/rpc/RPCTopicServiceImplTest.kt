@@ -202,16 +202,4 @@ class RPCTopicServiceImplTest {
         // We expect a timeout now as no listeners are left to consume the request
         assertThrows<TimeoutException> { requestCompletion4.get(250, TimeUnit.MILLISECONDS)}
     }
-
-    @Test
-    @Timeout(1)
-    fun `Listeners can only be added once`() {
-        val executorService = Executors.newSingleThreadExecutor()
-        val service = RPCTopicServiceImpl(executorService)
-
-        val topic = "topic1"
-
-        service.subscribe(topic, successListener0)
-        assertThrows<CordaRPCAPIResponderException> { service.subscribe(topic, successListener0) }
-    }
 }
