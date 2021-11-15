@@ -1,9 +1,11 @@
 package net.corda.sandboxtests
 
+import net.corda.sandbox.SandboxException
 import net.corda.v5.application.flows.Flow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.assertThrows
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.framework.FrameworkUtil
 import org.osgi.test.common.annotation.InjectService
@@ -48,13 +50,26 @@ class SandboxClassTagTests {
     }
 
     @Test
-    fun `can create class tags for a CPK class and use them to retrieve the class`() {
-        val cpkClass = sandboxLoader.group1.loadClassFromMainBundles(LIBRARY_QUERY_CLASS, Any::class.java)
+    fun `can create class tags for a CPK main bundle class and use them to retrieve the class`() {
+        val cpkClass = sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1, Any::class.java)
         val staticTag = sandboxLoader.group1.getStaticTag(cpkClass)
         val evolvableTag = sandboxLoader.group1.getEvolvableTag(cpkClass)
 
         assertEquals(cpkClass, sandboxLoader.group1.getClass(cpkClass.name, staticTag))
         assertEquals(cpkClass, sandboxLoader.group1.getClass(cpkClass.name, evolvableTag))
+    }
+
+    @Test
+    fun `throws if attempted to create tags for a CPK library class`() {
+        val cpkClass = sandboxLoader.group1.loadClassFromMainBundles(LIBRARY_QUERY_CLASS, Any::class.java)
+
+        assertThrows<SandboxException> {
+            sandboxLoader.group1.getStaticTag(cpkClass)
+        }
+
+        assertThrows<SandboxException> {
+            sandboxLoader.group1.getEvolvableTag(cpkClass)
+        }
     }
 
     @Test
