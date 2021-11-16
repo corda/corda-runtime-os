@@ -113,11 +113,9 @@ internal class SandboxGroupImpl(
         val cpkSandbox =
             cpkSandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
                 ?: throw SandboxException("Bundle ${bundle.symbolicName} was not found in the sandbox group or in a public sandbox.")
-
         if (bundle in cpkSandbox.privateBundles && !isStaticTag) {
             throw SandboxException("Attempted to create evolvable class tag for cpk private bundle ${bundle.symbolicName}.")
         }
-
         return classTagFactory.createSerialisedTag(isStaticTag, bundle, cpkSandbox)
     }
 }
