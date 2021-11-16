@@ -5,6 +5,10 @@ cordaNightlyPipeline(
     runIntegrationTests: true,
     publishRepoPrefix: 'corda-ent-maven',
     createPostgresDb: true,
-    publishOSGiImage: false
+    publishOSGiImage: false,
+    dailyBuildCron: '''\
+        TZ=Europe/London
+        H 02 * * *
+    '''.stripIndent()
     )
 
