@@ -31,7 +31,6 @@ import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.io.NotSerializableException
-import java.lang.IllegalStateException
 import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
@@ -233,7 +232,9 @@ class AMQPwithOSGiSerializationTests {
         val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle.MainBundleItem", Any::class.java)
         val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
 
-        assertThrows<SandboxException> {
+        assertThrows<SandboxException>(
+            "Attempted to create evolvable class tag for cpk private bundle com.example.serialization.serialization-cpk-library."
+        ) {
             SerializationOutput(factory).serialize(mainBundleItemInstance, context)
         }
     }
