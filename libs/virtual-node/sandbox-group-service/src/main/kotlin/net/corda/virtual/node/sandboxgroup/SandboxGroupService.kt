@@ -1,7 +1,6 @@
 package net.corda.virtual.node.sandboxgroup
 
 import net.corda.packaging.CPI
-import net.corda.sandbox.SandboxGroup
 import net.corda.virtual.node.context.HoldingIdentity
 
 interface SandboxGroupService {
@@ -41,9 +40,10 @@ interface SandboxGroupService {
      *       someObject.doThing()
      *    }
      */
-    fun get(holdingIdentity: HoldingIdentity,
-            cpi : CPI.Identifier,
-            sandboxGroupType: SandboxGroupType,
-            initializer: (holdingIdentity: HoldingIdentity, sandboxGroupContext: MutableSandboxGroupContext) -> AutoCloseable
-    ) : SandboxGroupContext
+    fun get(
+        holdingIdentity: HoldingIdentity,
+        cpi: CPI.Identifier,
+        sandboxGroupType: SandboxGroupType,
+        initializer: (holdingIdentity: HoldingIdentity, sandboxGroupContext: MutableSandboxGroupContext) -> AutoCloseable
+    ): SandboxGroupContext
 }
