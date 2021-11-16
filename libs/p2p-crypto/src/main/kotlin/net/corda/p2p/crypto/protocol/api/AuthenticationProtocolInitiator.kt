@@ -11,8 +11,6 @@ import net.corda.p2p.crypto.internal.InitiatorEncryptedExtensions
 import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
 import net.corda.p2p.crypto.internal.InitiatorHandshakePayload
 import net.corda.p2p.crypto.internal.ResponderHandshakePayload
-import net.corda.p2p.crypto.protocol.AuthenticationProtocol
-import net.corda.p2p.crypto.protocol.InvalidMaxMessageSizeProposedError
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_SIG_PAD
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION

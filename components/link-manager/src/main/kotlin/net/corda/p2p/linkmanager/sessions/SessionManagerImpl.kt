@@ -10,6 +10,7 @@ import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.AuthenticatedMessageAndKey
@@ -72,13 +73,15 @@ open class SessionManagerImpl(
     private val configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
+    instanceId: Int,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
     private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
         publisherFactory,
         configurationReaderService,
         coordinatorFactory,
         configuration,
-        networkMap
+        networkMap,
+        instanceId
     )
 ) : SessionManager {
 
@@ -110,7 +113,8 @@ open class SessionManagerImpl(
         coordinatorFactory,
         configuration,
         networkMap,
-        ::destroyOutboundSession
+        ::destroyOutboundSession,
+        instanceId
     )
 
     override val dominoTile = DominoTile(
@@ -508,7 +512,8 @@ open class SessionManagerImpl(
         coordinatorFactory: LifecycleCoordinatorFactory,
         configuration: SmartConfig,
         private val networkMap: LinkManagerNetworkMap,
-        private val destroySession: (key: SessionKey, sessionId: String) -> Any
+        private val destroySession: (key: SessionKey, sessionId: String) -> Any,
+        instanceId: Int
     ) : LifecycleWithDominoTile {
 
         companion object {
@@ -563,7 +568,7 @@ open class SessionManagerImpl(
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            HEARTBEAT_MANAGER_CLIENT_ID,
+            PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID, instanceId),
             configuration
         )
 

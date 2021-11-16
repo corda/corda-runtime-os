@@ -21,14 +21,15 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
 
 class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-                        subscriptionFactory: SubscriptionFactory): LinkManagerCryptoService {
+                        subscriptionFactory: SubscriptionFactory,
+                        instanceId: Int): LinkManagerCryptoService {
 
     companion object {
         val logger = contextLogger()
     }
 
     private val keyPairEntryProcessor = KeyPairEntryProcessor()
-    private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC)
+    private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC, instanceId)
     private val subscription =
         subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor)
 

@@ -1,4 +1,4 @@
-package net.corda.p2p.crypto.protocol
+package net.corda.p2p.crypto.protocol.api
 
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
@@ -23,7 +23,6 @@ import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_HANDS
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SESSION_ENCRYPTION_KEY_INFO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SESSION_NONCE_INFO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RSA_SIGNATURE_ALGO
-import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.util.convertToBCDigest
 import net.corda.p2p.crypto.util.generateKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
