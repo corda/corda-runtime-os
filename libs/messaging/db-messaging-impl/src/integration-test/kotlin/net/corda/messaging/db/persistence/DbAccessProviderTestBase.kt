@@ -297,6 +297,7 @@ abstract class DbAccessProviderTestBase {
 
         dbAccessProvider.writeRecords(recordsBeforeWindow) { _, _ -> }
         val cutoffWindow = Instant.now()
+        Thread.sleep(3000)
         dbAccessProvider.writeRecords(recordsAfterWindow) { _, _ -> }
 
         dbAccessProvider.deleteRecordsOlderThan(topic1, cutoffWindow)
@@ -317,6 +318,7 @@ abstract class DbAccessProviderTestBase {
 
         dbAccessProvider.writeOffsets(topic1, consumer1, offsetsBeforeWindow)
         val cutoffWindow = Instant.now()
+        Thread.sleep(3000)
         dbAccessProvider.writeOffsets(topic1, consumer1, offsetsAfterWindow)
 
         dbAccessProvider.deleteOffsetsOlderThan(topic1, cutoffWindow)
