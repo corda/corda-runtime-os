@@ -76,7 +76,7 @@ internal class SandboxGroupImpl(
                         sandbox?.let {
                             if (classTag.classBundleName != it.mainBundle.symbolicName) {
                                 throw SandboxException(
-                                    "Attempted to load class $className with an evolvable class tag for cpk private bundle " +
+                                    "Attempted to load class $className with an evolvable class tag from cpk private bundle " +
                                             "${classTag.classBundleName}."
                                 )
                             } else {
