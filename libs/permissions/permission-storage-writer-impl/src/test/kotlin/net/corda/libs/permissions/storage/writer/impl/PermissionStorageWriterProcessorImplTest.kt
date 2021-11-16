@@ -23,7 +23,7 @@ import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.Query
 
-class PermissionStorageWriterProcessorTest {
+class PermissionStorageWriterProcessorImplTest {
 
     // Not static so that it can be modified in the tests
     private val createUserRequest = CreateUserRequest().apply {
@@ -41,7 +41,7 @@ class PermissionStorageWriterProcessorTest {
     }
     private val query = mock<Query>()
 
-    private val processor = PermissionStorageWriterProcessor(entityManagerFactory)
+    private val processor = PermissionStorageWriterProcessorImpl(entityManagerFactory)
 
     @Test
     fun `receiving invalid request completes exceptionally`() {
