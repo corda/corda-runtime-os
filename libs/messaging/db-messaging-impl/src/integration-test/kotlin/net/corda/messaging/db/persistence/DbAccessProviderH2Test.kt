@@ -56,4 +56,8 @@ class DbAccessProviderH2Test: DbAccessProviderTestBase() {
     override fun getCallingClass(): String {
         return "h2"
     }
+
+    override fun hasDbConfigured(): Boolean {
+        return true
+    }
 }

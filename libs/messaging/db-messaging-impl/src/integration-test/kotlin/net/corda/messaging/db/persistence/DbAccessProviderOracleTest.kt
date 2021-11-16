@@ -44,4 +44,8 @@ class DbAccessProviderOracleTest: DbAccessProviderTestBase() {
     override fun getCallingClass(): String {
         return "oracle"
     }
+
+    override fun hasDbConfigured(): Boolean {
+        return true
+    }
 }

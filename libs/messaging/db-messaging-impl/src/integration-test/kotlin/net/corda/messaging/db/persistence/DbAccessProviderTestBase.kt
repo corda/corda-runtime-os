@@ -39,28 +39,30 @@ abstract class DbAccessProviderTestBase {
 
     abstract fun getCallingClass(): String
 
-    @BeforeClass
-    fun checkIfTestsShouldBeSkipped() {
-        if(getCallingClass() == "postgres" && System.getProperty("postgresDb") == null) {
-            org.junit.Assume.assumeThat(System.getProperty("postgresDb"), isNotNull())
-        }
-    }
+    abstract fun hasDbConfigured(): Boolean
 
     @BeforeAll
     fun setupBeforeAllTests() {
-        if(getDbType() != DBType.POSTGRESQL) {
+        if(hasDbConfigured()) {
             startDatabase()
+            createTables()
+            dbAccessProvider = DBAccessProviderImpl(getJdbcUrl(), getUsername(), getPassword(), getDbType(), 5)
+            dbAccessProvider.start()
+        } else {
+            org.junit.Assume.assumeTrue(System.getProperty("postgresDb") != "")
         }
-        createTables()
-        dbAccessProvider = DBAccessProviderImpl(getJdbcUrl(), getUsername(), getPassword(), getDbType(), 5)
-        dbAccessProvider.start()
+
     }
 
     @AfterAll
     fun cleanupAfterAllTests() {
-        dbAccessProvider.stop()
-        if(getDbType() != DBType.POSTGRESQL) {
-            stopDatabase()
+        if(hasDbConfigured()) {
+            dbAccessProvider.stop()
+            if(getDbType() != DBType.POSTGRESQL) {
+                stopDatabase()
+            }
+        } else {
+            org.junit.Assume.assumeTrue(System.getProperty("postgresDb") != "")
         }
 
     }
