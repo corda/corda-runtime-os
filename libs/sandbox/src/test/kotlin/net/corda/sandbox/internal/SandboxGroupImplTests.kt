@@ -33,31 +33,38 @@ private const val PUBLIC_EVOLVABLE_TAG = "serialised_evolvable_public_class"
 private const val BAD_MAIN_BUNDLE_NAME_EVOLVABLE_TAG = "serialised_evolvable_bad_main_bundle_name"
 private const val BAD_SIGNERS_EVOLVABLE_TAG = "serialised_evolvable_bad_signers"
 
+private const val PUBLIC_LIBRARY_BUNDLE_NAME = "public_library_bundle_symbolic_name"
+
 /**
  * Tests of [SandboxGroupImpl].
  *
  * There are no tests of the sandbox-retrieval and class-loading functionality, since this is likely to be deprecated.
  */
 class SandboxGroupImplTests {
-    private val nonBundleClass = Boolean::class.java
-    private val cpkClass = String::class.java
+    private val cpkClass = Double::class.java
+    private val cpkLibraryClass = String::class.java
     private val publicClass = Int::class.java
+    private val publicLibraryClass = Char::class.java
     private val nonSandboxClass = Float::class.java
+    private val nonBundleClass = Boolean::class.java
 
-    private val mockCpkBundle = mockBundle(CPK_BUNDLE_NAME, cpkClass)
+    private val mockCpkMainBundle = mockBundle(CPK_MAIN_BUNDLE_NAME, cpkClass)
+    private val mockCpkLibraryBundle = mockBundle(CPK_LIBRARY_BUNDLE_NAME, cpkLibraryClass)
     private val mockPublicBundle = mockBundle(PUBLIC_BUNDLE_NAME, publicClass)
+    private val mockPublicLibraryBundle = mockBundle(PUBLIC_LIBRARY_BUNDLE_NAME, publicLibraryClass)
     private val mockNonSandboxBundle = mockBundle()
-    private val mockMainBundle = mockBundle(MAIN_BUNDLE_NAME)
 
     private val mockBundleUtils = mock<BundleUtils>().apply {
-        whenever(getBundle(cpkClass)).thenReturn(mockCpkBundle)
+        whenever(getBundle(cpkClass)).thenReturn(mockCpkMainBundle)
+        whenever(getBundle(cpkLibraryClass)).thenReturn(mockCpkLibraryBundle)
         whenever(getBundle(publicClass)).thenReturn(mockPublicBundle)
+        whenever(getBundle(publicLibraryClass)).thenReturn(mockPublicLibraryBundle)
         whenever(getBundle(nonSandboxClass)).thenReturn(mockNonSandboxBundle)
     }
 
     private val cpkSandbox =
-        CpkSandboxImpl(randomUUID(), mockCpk(), mockMainBundle, setOf(mockCpkBundle))
-    private val publicSandbox = SandboxImpl(randomUUID(), setOf(mockPublicBundle), emptySet())
+        CpkSandboxImpl(randomUUID(), mockCpk(), mockCpkMainBundle, setOf(mockCpkLibraryBundle))
+    private val publicSandbox = SandboxImpl(randomUUID(), setOf(mockPublicBundle), setOf(mockPublicLibraryBundle))
 
     private val sandboxGroupImpl = SandboxGroupImpl(
         setOf(cpkSandbox), setOf(publicSandbox), DummyClassTagFactory(cpkSandbox.cpk), mockBundleUtils
@@ -70,15 +77,27 @@ class SandboxGroupImplTests {
     }
 
     @Test
-    fun `creates valid static tag for a CPK class`() {
-        val expectedTag = "$STATIC_IDENTIFIER;$mockCpkBundle;$cpkSandbox"
+    fun `creates valid static tag for a CPK main bundle class`() {
+        val expectedTag = "$STATIC_IDENTIFIER;$mockCpkMainBundle;$cpkSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(cpkClass))
+    }
+
+    @Test
+    fun `creates valid static tag for a CPK library class`() {
+        val expectedTag = "$STATIC_IDENTIFIER;$mockCpkLibraryBundle;$cpkSandbox"
+        assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(cpkLibraryClass))
     }
 
     @Test
     fun `creates valid static tag for a public class`() {
         val expectedTag = "$STATIC_IDENTIFIER;$mockPublicBundle;${null}"
         assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(publicClass))
+    }
+
+    @Test
+    fun `creates valid static tag for a public sandbox library class`() {
+        val expectedTag = "$STATIC_IDENTIFIER;$mockPublicLibraryBundle;${null}"
+        assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(publicLibraryClass))
     }
 
     @Test
@@ -95,15 +114,28 @@ class SandboxGroupImplTests {
     }
 
     @Test
-    fun `creates valid evolvable tag for a CPK class`() {
-        val expectedTag = "$EVOLVABLE_IDENTIFIER;$mockCpkBundle;$cpkSandbox"
+    fun `creates valid evolvable tag for a CPK main bundle class`() {
+        val expectedTag = "$EVOLVABLE_IDENTIFIER;$mockCpkMainBundle;$cpkSandbox"
         assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(cpkClass))
+    }
+
+    @Test
+    fun `throws if asked to create evolvable tag for a CPK library class`() {
+        assertThrows<SandboxException> {
+            sandboxGroupImpl.getEvolvableTag(cpkLibraryClass)
+        }
     }
 
     @Test
     fun `creates valid evolvable tag for a public class`() {
         val expectedTag = "$EVOLVABLE_IDENTIFIER;$mockPublicBundle;${null}"
         assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(publicClass))
+    }
+
+    @Test
+    fun `creates valid evolvable tag for a public sandbox library class`() {
+        val expectedTag = "$EVOLVABLE_IDENTIFIER;$mockPublicLibraryBundle;${null}"
+        assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(publicLibraryClass))
     }
 
     @Test
@@ -115,7 +147,7 @@ class SandboxGroupImplTests {
 
     @Test
     fun `returns CPK class identified by a static tag`() {
-        assertEquals(cpkClass, sandboxGroupImpl.getClass(cpkClass.name, CPK_STATIC_TAG))
+        assertEquals(cpkLibraryClass, sandboxGroupImpl.getClass(cpkLibraryClass.name, CPK_STATIC_TAG))
     }
 
     @Test
@@ -124,8 +156,10 @@ class SandboxGroupImplTests {
     }
 
     @Test
-    fun `returns CPK class identified by an evolvable tag`() {
-        assertEquals(cpkClass, sandboxGroupImpl.getClass(cpkClass.name, CPK_EVOLVABLE_TAG))
+    fun `throws if attempted to load CPK library class identified by an evolvable tag`() {
+        assertThrows<SandboxException> {
+            sandboxGroupImpl.getClass(cpkLibraryClass.name, CPK_EVOLVABLE_TAG)
+        }
     }
 
     @Test
@@ -136,17 +170,17 @@ class SandboxGroupImplTests {
     @Test
     fun `throws if asked to return class but cannot find matching sandbox for a static tag`() {
         assertThrows<SandboxException> {
-            sandboxGroupImpl.getClass(cpkClass.name, BAD_CPK_FILE_HASH_STATIC_TAG)
+            sandboxGroupImpl.getClass(cpkLibraryClass.name, BAD_CPK_FILE_HASH_STATIC_TAG)
         }
     }
 
     @Test
     fun `throws if asked to return class but cannot find matching sandbox for an evolvable tag`() {
         assertThrows<SandboxException> {
-            sandboxGroupImpl.getClass(cpkClass.name, BAD_MAIN_BUNDLE_NAME_EVOLVABLE_TAG)
+            sandboxGroupImpl.getClass(cpkLibraryClass.name, BAD_MAIN_BUNDLE_NAME_EVOLVABLE_TAG)
         }
         assertThrows<SandboxException> {
-            sandboxGroupImpl.getClass(cpkClass.name, BAD_SIGNERS_EVOLVABLE_TAG)
+            sandboxGroupImpl.getClass(cpkLibraryClass.name, BAD_SIGNERS_EVOLVABLE_TAG)
         }
     }
 
@@ -185,18 +219,18 @@ private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
     val staticIdentifier = STATIC_IDENTIFIER
     val evolvableIdentifier = EVOLVABLE_IDENTIFIER
 
-    private val cpkStaticTag = StaticTagImpl(ClassType.CpkSandboxClass, CPK_BUNDLE_NAME, cpk.metadata.hash)
+    private val cpkStaticTag = StaticTagImpl(ClassType.CpkSandboxClass, CPK_LIBRARY_BUNDLE_NAME, cpk.metadata.hash)
 
     private val publicStaticTag = StaticTagImpl(ClassType.PublicSandboxClass, PUBLIC_BUNDLE_NAME, PLACEHOLDER_HASH)
 
     private val invalidCpkFileHashStaticTag =
-        StaticTagImpl(ClassType.CpkSandboxClass, CPK_BUNDLE_NAME, randomSecureHash())
+        StaticTagImpl(ClassType.CpkSandboxClass, CPK_LIBRARY_BUNDLE_NAME, randomSecureHash())
 
     private val cpkEvolvableTag =
         EvolvableTagImpl(
             ClassType.CpkSandboxClass,
-            CPK_BUNDLE_NAME,
-            MAIN_BUNDLE_NAME,
+            CPK_LIBRARY_BUNDLE_NAME,
+            CPK_MAIN_BUNDLE_NAME,
             cpk.metadata.id.signerSummaryHash
         )
 
@@ -206,13 +240,13 @@ private class DummyClassTagFactory(cpk: CPK) : ClassTagFactory {
     private val invalidMainBundleNameEvolvableTag =
         EvolvableTagImpl(
             ClassType.CpkSandboxClass,
-            CPK_BUNDLE_NAME,
+            CPK_LIBRARY_BUNDLE_NAME,
             "invalid_main_bundle_name",
             cpk.metadata.id.signerSummaryHash
         )
 
     private val invalidSignersEvolvableTag =
-        EvolvableTagImpl(ClassType.CpkSandboxClass, CPK_BUNDLE_NAME, MAIN_BUNDLE_NAME, randomSecureHash())
+        EvolvableTagImpl(ClassType.CpkSandboxClass, CPK_LIBRARY_BUNDLE_NAME, CPK_MAIN_BUNDLE_NAME, randomSecureHash())
 
     override fun createSerialisedTag(
         isStaticTag: Boolean,

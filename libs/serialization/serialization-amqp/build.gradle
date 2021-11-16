@@ -53,6 +53,8 @@ dependencies {
     cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-three', configuration: 'cordaCPK')
     cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-four', configuration: 'cordaCPK')
 
+    cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-using-lib', configuration: 'cordaCPK')
+
     integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     integrationTestImplementation "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
