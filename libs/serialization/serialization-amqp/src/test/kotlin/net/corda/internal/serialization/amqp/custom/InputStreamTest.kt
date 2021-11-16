@@ -2,9 +2,15 @@ package net.corda.internal.serialization.amqp.custom
 
 import net.corda.internal.serialization.amqp.EnumEvolveTests
 import net.corda.internal.serialization.amqp.EvolvabilityTests
+import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.Companion.factory
 import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.Companion.serializeDeserialize
+import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.TypeNotation
+import net.corda.internal.serialization.amqp.testutils.testSerializationContext
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.fail
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.net.URL
@@ -58,4 +64,16 @@ class InputStreamTest {
         return resource
     }
 
+    @Test
+    fun testSerializerIsRegisteredForSubclass() {
+        val byteArray = "ABC".toByteArray(Charset.defaultCharset())
+        val stream = ByteArrayInputStream(byteArray)
+
+        val schemas = SerializationOutput(factory).serializeAndReturnSchema(stream, testSerializationContext)
+        assertThat(schemas.schema.types.map(TypeNotation::name)).contains(stream::class.java.name)
+
+        val serializer = factory.findCustomSerializer(stream::class.java, stream::class.java)
+            ?: fail("No custom serializer found")
+        assertThat(serializer.type).isSameAs(stream::class.java)
+    }
 }

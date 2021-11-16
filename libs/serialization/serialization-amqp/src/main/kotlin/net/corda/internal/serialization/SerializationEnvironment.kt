@@ -1,7 +1,7 @@
 package net.corda.internal.serialization
 
-import net.corda.v5.serialization.SerializationContext
-import net.corda.v5.serialization.SerializationFactory
+import net.corda.serialization.SerializationContext
+import net.corda.serialization.SerializationFactory
 
 interface SerializationEnvironment {
 
@@ -21,8 +21,6 @@ interface SerializationEnvironment {
     val serializationFactory: SerializationFactory
     val p2pContext: SerializationContext
     val storageContext: SerializationContext
-
-    val defaultContext: SerializationContext get() = serializationFactory.currentContext ?: p2pContext
 
     /**
      * Get the [SerializationEnvironment]'s default [P2pSerializationService].

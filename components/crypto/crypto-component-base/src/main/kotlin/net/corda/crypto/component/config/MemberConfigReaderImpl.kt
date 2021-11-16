@@ -3,6 +3,7 @@ package net.corda.crypto.component.config
 import com.typesafe.config.ConfigFactory
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoConfigMap
+import net.corda.crypto.impl.config.DefaultConfigConsts
 import net.corda.crypto.impl.config.memberConfig
 import net.corda.data.crypto.config.CryptoConfigurationRecord
 import net.corda.lifecycle.Lifecycle
@@ -78,9 +79,15 @@ class MemberConfigReaderImpl @Activate constructor(
         config: CryptoConfigMap,
         private val logger: Logger
     ) : CompactedProcessor<String, CryptoConfigurationRecord>, Reader {
-        private val groupName: String = config.getString(ConfigConsts.GROUP_NAME_KEY)
+        private val groupName: String = config.getString(
+            DefaultConfigConsts.Kafka.GROUP_NAME_KEY,
+            DefaultConfigConsts.Kafka.MemberConfig.GROUP_NAME
+        )
 
-        private val topicName: String = config.getString(ConfigConsts.TOPIC_NAME_KEY)
+        private val topicName: String = config.getString(
+            DefaultConfigConsts.Kafka.TOPIC_NAME_KEY,
+            DefaultConfigConsts.Kafka.MemberConfig.TOPIC_NAME
+        )
 
         private var subscription = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(groupName, topicName),

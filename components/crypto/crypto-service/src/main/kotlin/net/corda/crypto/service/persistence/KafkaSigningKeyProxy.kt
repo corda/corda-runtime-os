@@ -2,6 +2,7 @@ package net.corda.crypto.service.persistence
 
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
+import net.corda.crypto.impl.config.DefaultConfigConsts
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.data.crypto.persistence.SigningKeyRecord
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -29,9 +30,6 @@ class KafkaSigningKeyProxy(
 ) : CompactedProcessor<String, SigningKeyRecord>, KafkaProxy<SigningPersistentKeyInfo> {
     companion object {
         private val logger: Logger = contextLogger()
-        private const val GROUP_NAME_KEY = "groupName"
-        private const val TOPIC_NAME_KEY = "topicName"
-        private const val CLIENT_ID_KEY = "clientId"
 
         internal fun toKeyInfo(value: SigningKeyRecord): SigningPersistentKeyInfo {
             val publicKey = value.publicKey.array()
@@ -71,11 +69,20 @@ class KafkaSigningKeyProxy(
 
     private var keyMap = ConcurrentHashMap<String, SigningPersistentKeyInfo>()
 
-    private val groupName: String = config.persistenceConfig.getString(GROUP_NAME_KEY)
+    private val groupName: String = config.persistenceConfig.getString(
+        DefaultConfigConsts.Kafka.GROUP_NAME_KEY,
+        DefaultConfigConsts.Kafka.Signing.GROUP_NAME
+    )
 
-    private val topicName: String = config.persistenceConfig.getString(TOPIC_NAME_KEY)
+    private val topicName: String = config.persistenceConfig.getString(
+        DefaultConfigConsts.Kafka.TOPIC_NAME_KEY,
+        DefaultConfigConsts.Kafka.Signing.TOPIC_NAME
+    )
 
-    private val clientId: String = config.persistenceConfig.getString(CLIENT_ID_KEY)
+    private val clientId: String = config.persistenceConfig.getString(
+        DefaultConfigConsts.Kafka.CLIENT_ID_KEY,
+        DefaultConfigConsts.Kafka.Signing.CLIENT_ID
+    )
 
     private val pub: Publisher = publisherFactory.createPublisher(
         PublisherConfig(clientId)

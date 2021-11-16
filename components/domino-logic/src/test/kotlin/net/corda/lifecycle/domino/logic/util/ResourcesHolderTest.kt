@@ -59,31 +59,4 @@ class ResourcesHolderTest {
 
         assertThat(closed).isEqualTo(listOf(20, 10))
     }
-    /*
-class ResourcesHolder : AutoCloseable {
-    companion object {
-        private val logger = contextLogger()
-    }
-    private val resources = ConcurrentLinkedDeque<AutoCloseable>()
-
-    fun keep(resource: AutoCloseable) {
-        resources.addFirst(resource)
-    }
-    override fun close() {
-        do {
-            val resource = resources.pollFirst()
-            if (resource != null) {
-                try {
-                    resource.close()
-                } catch (e: Throwable) {
-                    logger.warn("Fail to close", e)
-                }
-            } else {
-                break
-            }
-        } while (true)
-    }
-}
-
-     */
 }

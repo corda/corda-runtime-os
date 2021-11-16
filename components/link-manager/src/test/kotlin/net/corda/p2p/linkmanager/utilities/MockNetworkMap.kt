@@ -1,10 +1,12 @@
 package net.corda.p2p.linkmanager.utilities
 
+import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions
+import org.mockito.kotlin.mock
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
@@ -74,6 +76,8 @@ class MockNetworkMap(nodes: List<LinkManagerNetworkMap.HoldingIdentity>) {
             override fun getNetworkType(groupId: String): LinkManagerNetworkMap.NetworkType? {
                 return LinkManagerNetworkMap.NetworkType.CORDA_5
             }
+
+            override val dominoTile = mock<DominoTile>()
         }
     }
 }

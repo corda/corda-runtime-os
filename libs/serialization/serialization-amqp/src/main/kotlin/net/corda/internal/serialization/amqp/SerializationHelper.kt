@@ -1,9 +1,9 @@
 package net.corda.internal.serialization.amqp
 
 import com.google.common.reflect.TypeToken
-import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.serialization.ClassWhitelist
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.serialization.ClassWhitelist
+import net.corda.v5.base.annotations.CordaSerializable
 import org.apache.qpid.proton.codec.Data
 import java.lang.reflect.GenericArrayType
 import java.lang.reflect.ParameterizedType
@@ -110,13 +110,6 @@ internal fun Type.asParameterizedType(): ParameterizedType {
 
 internal fun Type.isSubClassOf(type: Type): Boolean {
     return TypeToken.of(this).isSubtypeOf(TypeToken.of(type).rawType)
-}
-
-/**
- * Common properties that are to be used in the [SerializationContext.properties] to alter serialization behavior/content
- */
-enum class CommonPropertyNames {
-    IncludeInternalInfo,
 }
 
 fun ClassWhitelist.requireWhitelisted(type: Type) {

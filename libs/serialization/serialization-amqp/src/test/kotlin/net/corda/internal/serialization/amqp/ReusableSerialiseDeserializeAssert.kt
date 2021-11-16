@@ -5,7 +5,7 @@ import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.internal.serialization.registerCustomSerializers
-import net.corda.v5.serialization.SerializationContext
+import net.corda.serialization.SerializationContext
 import kotlin.test.assertEquals
 
 class ReusableSerialiseDeserializeAssert {
@@ -18,9 +18,7 @@ class ReusableSerialiseDeserializeAssert {
             val bytes = SerializationOutput(withFactory).serialize(instance)
 
             // Deserialize
-            val deserialized = DeserializationInput(withFactory).deserialize(bytes)
-
-            return deserialized
+            return DeserializationInput(withFactory).deserialize(bytes)
         }
 
 
