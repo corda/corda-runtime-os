@@ -296,7 +296,7 @@ class LinkManagerTest {
 
         val sessionManager = Mockito.mock(SessionManager::class.java)
 
-        val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, mock(), mock())
+        val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, mock(), mock(), 1)
         queue.start()
         createResources!!(mock())
 
@@ -331,7 +331,7 @@ class LinkManagerTest {
             on {createEventLogSubscription<String, LinkInMessage>(any(), any(), any(), any()) } doReturn subscription
         }
 
-        val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), mock(), mock(), mock())
+        val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), 1, mock(), mock(), mock())
         val resourcesHolder = mock<ResourcesHolder>()
         linkManager.createInboundResources(resourcesHolder)
         verify(subscription).start()
@@ -349,7 +349,7 @@ class LinkManagerTest {
             on {createEventLogSubscription<String, AppMessage>(any(), any(), any(), any()) } doReturn mock()
         }
 
-        val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), mock(), mock(), mock())
+        val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), 1, mock(), mock(), mock())
         val resourcesHolder = mock<ResourcesHolder>()
         linkManager.createInboundResources(mock())
         linkManager.createOutboundResources(resourcesHolder)

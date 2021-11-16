@@ -50,7 +50,7 @@ class StubCryptoServiceTest {
         whenever(mock.isRunning).doReturn(true)
     }
 
-    private val cryptoService = StubCryptoService(coordinatorFactory, subscriptionFactory).apply {
+    private val cryptoService = StubCryptoService(coordinatorFactory, subscriptionFactory, 0).apply {
         start()
     }
 
