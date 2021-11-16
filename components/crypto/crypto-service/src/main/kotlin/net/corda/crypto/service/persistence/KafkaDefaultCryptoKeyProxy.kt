@@ -2,6 +2,7 @@ package net.corda.crypto.service.persistence
 
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
+import net.corda.crypto.impl.config.DefaultConfigConsts
 import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
 import net.corda.data.crypto.persistence.DefaultCryptoKeyRecord
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -26,9 +27,6 @@ class KafkaDefaultCryptoKeyProxy(
 ) : CompactedProcessor<String, DefaultCryptoKeyRecord>, KafkaProxy<DefaultCryptoPersistentKeyInfo> {
     companion object {
         private val logger: Logger = contextLogger()
-        private const val GROUP_NAME_KEY = "groupName"
-        private const val TOPIC_NAME_KEY = "topicName"
-        private const val CLIENT_ID_KEY = "clientId"
 
         internal fun toKeyInfo(value: DefaultCryptoKeyRecord): DefaultCryptoPersistentKeyInfo {
             val publicKey = value.publicKey?.array()
@@ -60,11 +58,20 @@ class KafkaDefaultCryptoKeyProxy(
 
     private var keyMap = ConcurrentHashMap<String, DefaultCryptoPersistentKeyInfo>()
 
-    private val groupName: String = config.persistenceConfig.getString(GROUP_NAME_KEY)
+    private val groupName: String = config.persistenceConfig.getString(
+        DefaultConfigConsts.Kafka.GROUP_NAME_KEY,
+        DefaultConfigConsts.Kafka.DefaultCryptoService.GROUP_NAME
+    )
 
-    private val topicName: String = config.persistenceConfig.getString(TOPIC_NAME_KEY)
+    private val topicName: String = config.persistenceConfig.getString(
+        DefaultConfigConsts.Kafka.TOPIC_NAME_KEY,
+        DefaultConfigConsts.Kafka.DefaultCryptoService.TOPIC_NAME
+    )
 
-    private val clientId: String = config.persistenceConfig.getString(CLIENT_ID_KEY)
+    private val clientId: String = config.persistenceConfig.getString(
+        DefaultConfigConsts.Kafka.CLIENT_ID_KEY,
+        DefaultConfigConsts.Kafka.DefaultCryptoService.CLIENT_ID
+    )
 
     private val pub: Publisher = publisherFactory.createPublisher(
         PublisherConfig(clientId)

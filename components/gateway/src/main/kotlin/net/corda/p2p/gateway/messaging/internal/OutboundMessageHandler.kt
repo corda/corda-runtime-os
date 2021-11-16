@@ -4,9 +4,10 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.InternalTileWithResources
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -39,10 +40,7 @@ internal class OutboundMessageHandler(
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
     instanceId: Int,
-) : EventLogProcessor<String, LinkOutMessage>,
-    Lifecycle,
-    InternalTileWithResources(lifecycleCoordinatorFactory) {
-
+) : EventLogProcessor<String, LinkOutMessage>, LifecycleWithDominoTile {
     companion object {
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
         const val MAX_RETRIES = 1
@@ -51,6 +49,13 @@ internal class OutboundMessageHandler(
     private val connectionManager = ReconfigurableConnectionManager(
         lifecycleCoordinatorFactory,
         configurationReaderService
+    )
+
+    override val dominoTile = DominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        children = listOf(connectionManager.dominoTile),
+        createResources = ::createResources
     )
 
     private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
@@ -63,7 +68,7 @@ internal class OutboundMessageHandler(
     private val retryThreadPool = Executors.newSingleThreadScheduledExecutor()
 
     override fun onNext(events: List<EventLogRecord<String, LinkOutMessage>>): List<Record<*, *>> {
-        withLifecycleLock {
+        dominoTile.withLifecycleLock {
             if (!isRunning) {
                 throw IllegalStateException("Can not handle events")
             }
@@ -174,10 +179,13 @@ internal class OutboundMessageHandler(
     override val valueClass: Class<LinkOutMessage>
         get() = LinkOutMessage::class.java
 
-    override val children = listOf(connectionManager)
-    override fun createResources() {
-        resources.keep(p2pMessageSubscription::stop)
+
+    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+        val future = CompletableFuture<Unit>()
+        resources.keep(p2pMessageSubscription)
         p2pMessageSubscription.start()
+        future.complete(Unit)
+        return future
     }
 
     private data class PendingRequest(val gatewayMessage: GatewayMessage,

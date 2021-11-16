@@ -3,7 +3,6 @@ package net.corda.crypto.service.persistence
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
-import net.corda.crypto.service.persistence.KafkaInfrastructure.Companion.MNG_CACHE_TOPIC_NAME
 import net.corda.data.crypto.persistence.SigningKeyRecord
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.crypto.sha256Bytes
@@ -36,7 +35,7 @@ class KafkaSigningKeysPersistenceTests {
         memberId = UUID.randomUUID().toString()
         memberId2 = UUID.randomUUID().toString()
         kafka = KafkaInfrastructure()
-        factory = kafka.createFactory()
+        factory = kafka.createFactory(KafkaInfrastructure.customConfig)
         signingPersistence = factory.createSigningPersistence(
             memberId = memberId
         ) {
@@ -84,7 +83,10 @@ class KafkaSigningKeysPersistenceTests {
             schemeCodeName = "CODE"
         )
         signingPersistence.put("hash1", original)
-        val records = kafka.getRecords<SigningKeyRecord>(MNG_CACHE_TOPIC_NAME)
+        val records = kafka.getRecords<SigningKeyRecord>(
+            KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig)
+        )
         assertEquals(1, records.size)
         val publishedRecord = records[0]
         assertPublishedRecord(publishedRecord, original)
@@ -125,7 +127,11 @@ class KafkaSigningKeysPersistenceTests {
         )
         signingPersistence.put(original.publicKeyHash, original)
         signingPersistence2.put(original2.publicKeyHash, original2)
-        val records = kafka.getRecords<SigningKeyRecord>(MNG_CACHE_TOPIC_NAME, 2)
+        val records = kafka.getRecords<SigningKeyRecord>(
+            KafkaInfrastructure.cryptoSvcGroupName(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig),
+            2
+        )
         assertEquals(2, records.size)
         val publishedRecord = records.first { it.second.memberId == original.memberId }
         val publishedRecord2 = records.first { it.second.memberId == original2.memberId }
@@ -169,7 +175,13 @@ class KafkaSigningKeysPersistenceTests {
             privateKeyMaterial = "material".toByteArray(),
             schemeCodeName = "CODE"
         )
-        kafka.publish(signingPersistence, MNG_CACHE_TOPIC_NAME, "hash1",  KafkaSigningKeyProxy.toRecord(original))
+        kafka.publish(
+            KafkaInfrastructure.signingClientId(KafkaInfrastructure.customConfig),
+            signingPersistence,
+            KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig),
+            "hash1",
+            KafkaSigningKeyProxy.toRecord(original)
+        )
         val cachedRecord1 = signingPersistence.get("hash1")
         assertNotNull(cachedRecord1)
         assertEquals(original.publicKeyHash, cachedRecord1.publicKeyHash)

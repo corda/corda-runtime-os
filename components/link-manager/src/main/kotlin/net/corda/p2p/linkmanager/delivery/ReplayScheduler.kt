@@ -1,31 +1,46 @@
 package net.corda.p2p.linkmanager.delivery
 
-import net.corda.lifecycle.Lifecycle
+import com.typesafe.config.Config
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.v5.base.util.contextLogger
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * This class keeps track of messages which may need to be replayed.
  */
+@Suppress("LongParameterList")
 class ReplayScheduler<M>(
-    private val replayPeriod: Duration,
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    private val configReadService: ConfigurationReadService,
+    private val replayPeriodKey: String,
     private val replayMessage: (message: M) -> Unit,
-    private val currentTimestamp: () -> Long = { Instant.now().toEpochMilli() }
-) : Lifecycle {
+    private val currentTimestamp: () -> Long = { Instant.now().toEpochMilli() },
+    ) : LifecycleWithDominoTile {
+
+    override val dominoTile = DominoTile(
+        this::class.java.simpleName,
+        coordinatorFactory,
+        ::createResources,
+        configurationChangeHandler = ReplaySchedulerConfigurationChangeHandler()
+    )
+
+    private val replayPeriod = AtomicReference<Duration>()
 
     @Volatile
-    private var running = false
-    private val startStopLock = ReentrantReadWriteLock()
-
     private lateinit var executorService: ScheduledExecutorService
     private val replayFutures = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
@@ -33,33 +48,45 @@ class ReplayScheduler<M>(
         private val logger = contextLogger()
     }
 
-    override val isRunning: Boolean
-        get() = running
-
-    override fun start() {
-        startStopLock.write {
-            if (!running) {
-                executorService = Executors.newSingleThreadScheduledExecutor()
-                running = true
+    inner class ReplaySchedulerConfigurationChangeHandler: ConfigurationChangeHandler<Duration>(configReadService,
+        replayPeriodKey,
+        ::fromConfig) {
+        override fun applyNewConfiguration(
+            newConfiguration: Duration,
+            oldConfiguration: Duration?,
+            resources: ResourcesHolder,
+        ): CompletableFuture<Unit> {
+            val configUpdateResult = CompletableFuture<Unit>()
+            if (newConfiguration.isNegative) {
+                configUpdateResult.completeExceptionally(
+                    IllegalArgumentException("The duration configuration (with key $replayPeriod) must be positive.")
+                )
+                return configUpdateResult
             }
+            replayPeriod.set(newConfiguration)
+            configUpdateResult.complete(Unit)
+            return configUpdateResult
         }
     }
 
-    override fun stop() {
-        startStopLock.write {
-            if (running) {
-                executorService.shutdown()
-                running = false
-            }
-        }
+    private fun fromConfig(config: Config): Duration {
+        return config.getDuration(replayPeriodKey)
+    }
+
+    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+        executorService = Executors.newSingleThreadScheduledExecutor()
+        resources.keep(AutoClosableScheduledExecutorService(executorService))
+        val future = CompletableFuture<Unit>()
+        future.complete(Unit)
+        return future
     }
 
     fun addForReplay(originalAttemptTimestamp: Long, uniqueId: String, message: M) {
-        startStopLock.read {
-            if (!running) {
+         dominoTile.withLifecycleLock {
+            if (!isRunning) {
                 throw IllegalStateException("A message was added for replay before the ReplayScheduler was started.")
             }
-            val delay = replayPeriod.toMillis() + originalAttemptTimestamp - currentTimestamp()
+            val delay = replayPeriod.get().toMillis() + originalAttemptTimestamp - currentTimestamp()
             val future = executorService.schedule({ replay(message, uniqueId) }, delay, TimeUnit.MILLISECONDS)
             replayFutures[uniqueId] = future
         }
@@ -75,7 +102,7 @@ class ReplayScheduler<M>(
             replayMessage(message)
         } catch (exception: Exception) {
             logger.error("An exception was thrown when replaying a message. The task will be retried again in " +
-                "${replayPeriod.toMillis()} ms.\nException:",
+                "${replayPeriod.get().toMillis()} ms.\nException:",
                 exception
             )
         }
@@ -84,7 +111,7 @@ class ReplayScheduler<M>(
 
     private fun reschedule(message: M, uniqueId: String) {
         replayFutures.computeIfPresent(uniqueId) { _, _ ->
-            executorService.schedule({ replay(message, uniqueId) }, replayPeriod.toMillis(), TimeUnit.MILLISECONDS)
+            executorService.schedule({ replay(message, uniqueId) }, replayPeriod.get().toMillis(), TimeUnit.MILLISECONDS)
         }
     }
 }

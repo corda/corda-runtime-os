@@ -1,12 +1,16 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.lifecycle.Lifecycle
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.EventLogProcessor
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.AuthenticatedMessageAck
@@ -44,27 +48,28 @@ import net.corda.p2p.schema.Schema
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
+import net.corda.v5.base.annotations.VisibleForTesting
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.util.*
-import java.util.concurrent.locks.ReentrantLock
 import java.time.Instant
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.withLock
-import kotlin.concurrent.write
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicReference
 
 @Suppress("LongParameterList")
 class LinkManager(@Reference(service = SubscriptionFactory::class)
-                  subscriptionFactory: SubscriptionFactory,
+                  val subscriptionFactory: SubscriptionFactory,
                   @Reference(service = PublisherFactory::class)
-                  publisherFactory: PublisherFactory,
-                  linkManagerNetworkMap: LinkManagerNetworkMap,
-                  linkManagerHostingMap: LinkManagerHostingMap,
-                  linkManagerCryptoService: LinkManagerCryptoService,
-                  config: LinkManagerConfig
-) : Lifecycle {
+                  val publisherFactory: PublisherFactory,
+                  @Reference(service = LifecycleCoordinatorFactory::class)
+                  val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+                  @Reference(service = ConfigurationReadService::class)
+                  val configurationReaderService: ConfigurationReadService,
+                  private val configuration: SmartConfig,
+                  val linkManagerNetworkMap: LinkManagerNetworkMap,
+                  private val linkManagerHostingMap: LinkManagerHostingMap,
+                  private val linkManagerCryptoService: LinkManagerCryptoService,
+) : LifecycleWithDominoTile {
 
     companion object {
         const val LINK_MANAGER_PUBLISHER_CLIENT_ID = "linkmanager"
@@ -76,85 +81,86 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
     }
 
-    @Volatile
-    private var running = false
-    private val startStopLock = ReentrantLock()
+    private val inboundAssigned = AtomicReference<CompletableFuture<Unit>>()
+    private var inboundAssignmentListener = InboundAssignmentListener(inboundAssigned)
 
-    private val outboundMessageSubscription: Subscription<String, AppMessage>
-    private val inboundMessageSubscription: Subscription<String, LinkInMessage>
-    private val inboundAssignmentListener = InboundAssignmentListener()
-
-    private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory)
-
+    private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory, lifecycleCoordinatorFactory, configuration)
 
     private val sessionManager = SessionManagerImpl(
-        config,
         linkManagerNetworkMap,
         linkManagerCryptoService,
         messagesPendingSession,
         publisherFactory,
+        configurationReaderService,
+        lifecycleCoordinatorFactory,
+        configuration
     )
 
-    private val deliveryTracker: DeliveryTracker
+    @VisibleForTesting
+    internal fun createInboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+        val future = CompletableFuture<Unit>()
+        inboundAssigned.set(future)
+        val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
+            SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, 1),
+            InboundMessageProcessor(sessionManager, linkManagerNetworkMap),
+            partitionAssignmentListener = inboundAssignmentListener
+        )
+        inboundMessageSubscription.start()
+        resources.keep(inboundMessageSubscription)
+        //We complete the future inside inboundAssignmentListener.
+        return future
+    }
 
-    init {
-        val outboundMessageSubscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, 1)
+    @VisibleForTesting
+    internal fun createOutboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val outboundMessageProcessor = OutboundMessageProcessor(
             sessionManager,
             linkManagerHostingMap,
             linkManagerNetworkMap,
             inboundAssignmentListener,
         )
-
-        outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-            outboundMessageSubscriptionConfig,
+        val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
+            SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, 1),
             outboundMessageProcessor,
             partitionAssignmentListener = null
         )
-        val inboundMessageSubscriptionConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, 1)
-        inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-            inboundMessageSubscriptionConfig,
-            InboundMessageProcessor(sessionManager, linkManagerNetworkMap),
-            partitionAssignmentListener = inboundAssignmentListener
-        )
-        deliveryTracker = DeliveryTracker(
-            Duration.ofSeconds(config.messageReplayPeriodSecs),
+        val deliveryTracker = DeliveryTracker(
+            lifecycleCoordinatorFactory,
+            configurationReaderService,
             publisherFactory,
-            subscriptionFactory
+            configuration,
+            subscriptionFactory,
+            linkManagerNetworkMap,
+            linkManagerCryptoService,
+            sessionManager,
         ) { outboundMessageProcessor.processAuthenticatedMessage(it, true) }
+        deliveryTracker.start()
+        resources.keep(deliveryTracker)
+        outboundMessageSubscription.start()
+        resources.keep(outboundMessageSubscription)
+        val outboundReady = CompletableFuture<Unit>()
+        outboundReady.complete(Unit)
+        return outboundReady
     }
 
-    override fun start() {
-        startStopLock.withLock {
-            if (!running) {
-                messagesPendingSession.start()
-                sessionManager.start()
-                inboundMessageSubscription.start()
-                /*We must wait for partitions to be assigned to the inbound subscription before we can start the outbound
-                *subscription otherwise the gateway won't know which partition to route message back to.*/
-                inboundAssignmentListener.awaitFirstAssignment()
-                deliveryTracker.start()
-                outboundMessageSubscription.start()
-                running = true
-            }
-        }
-    }
+    private val commonChildren = setOf(linkManagerNetworkMap.dominoTile, linkManagerCryptoService.dominoTile,
+        linkManagerHostingMap.dominoTile)
+    private val inboundDominoTile = DominoTile(
+        "InboundProcessor",
+        lifecycleCoordinatorFactory,
+        ::createInboundResources,
+        children = commonChildren
+    )
+    private val outboundDominoTile = DominoTile(
+        "OutboundProcessor",
+        lifecycleCoordinatorFactory,
+        ::createOutboundResources,
+        children = setOf(inboundDominoTile, messagesPendingSession.dominoTile) + commonChildren)
 
-    override fun stop() {
-        startStopLock.withLock {
-            if (running) {
-                outboundMessageSubscription.stop()
-                deliveryTracker.stop()
-                inboundMessageSubscription.stop()
-                sessionManager.stop()
-                messagesPendingSession.stop()
-                running = false
-            }
-        }
-    }
-
-    override val isRunning: Boolean
-        get() = running
+    override val dominoTile = DominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        children = setOf(inboundDominoTile, outboundDominoTile))
 
     class OutboundMessageProcessor(
         private val sessionManager: SessionManager,
@@ -413,18 +419,23 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             networkMap: LinkManagerNetworkMap,
         )
         fun destroyQueue(key: SessionKey)
+        fun destroyAllQueues()
+        val dominoTile: DominoTile
     }
 
     class PendingSessionMessageQueuesImpl(
         publisherFactory: PublisherFactory,
-    ): PendingSessionMessageQueues, Lifecycle {
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        configuration: SmartConfig
+    ): PendingSessionMessageQueues, LifecycleWithDominoTile {
         private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<AuthenticatedMessageAndKey>>()
-        private val config = PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, 1)
-        private val publisher = publisherFactory.createPublisher(config)
-
-        @Volatile
-        private var running = false
-        private val startStopLock = ReentrantReadWriteLock()
+        private val publisher = PublisherWithDominoLogic(
+            publisherFactory,
+            coordinatorFactory,
+            LINK_MANAGER_PUBLISHER_CLIENT_ID,
+            configuration
+        )
+        override val dominoTile = publisher.dominoTile
 
         /**
          * Either adds a [FlowMessage] to a queue for a session which is pending (has started but hasn't finished
@@ -448,11 +459,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             session: Session,
             networkMap: LinkManagerNetworkMap,
         ) {
-            startStopLock.read {
-                if (!running) {
+            publisher.dominoTile.withLifecycleLock {
+                if (!isRunning) {
                     throw IllegalStateException("sessionNegotiatedCallback was called before the PendingSessionMessageQueues was started.")
                 }
-                val queuedMessages = queuedMessagesPendingSession[key] ?: return
+                val queuedMessages = queuedMessagesPendingSession[key] ?: return@withLifecycleLock
                 val records = mutableListOf<Record<String, *>>()
                 while (queuedMessages.isNotEmpty()) {
                     val message = queuedMessages.poll()
@@ -466,25 +477,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             queuedMessagesPendingSession.remove(key)
         }
 
-        override val isRunning: Boolean
-            get() = running
-
-        override fun start() {
-            startStopLock.write {
-                if (!running) {
-                    publisher.start()
-                    running = true
-                }
-            }
+        override fun destroyAllQueues() {
+            queuedMessagesPendingSession.clear()
         }
 
-        override fun stop() {
-            startStopLock.write {
-                if (running) {
-                    running = false
-                }
-            }
-        }
     }
 }
 

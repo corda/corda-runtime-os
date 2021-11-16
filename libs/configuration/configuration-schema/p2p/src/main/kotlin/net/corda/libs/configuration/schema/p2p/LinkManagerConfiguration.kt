@@ -13,6 +13,11 @@ class LinkManagerConfiguration {
         const val LOCALLY_HOSTED_IDENTITIES_KEY = "locallyHostedIdentities"
         const val LOCALLY_HOSTED_IDENTITY_X500_NAME = "x500Name"
         const val LOCALLY_HOSTED_IDENTITY_GPOUP_ID = "groupId"
+        const val MAX_MESSAGE_SIZE_KEY = "maxMessageSize"
+        const val PROTOCOL_MODE_KEY = "protocolMode"
+        const val MESSAGE_REPLAY_PERIOD_KEY = "messageReplayPeriod"
+        const val HEARTBEAT_MESSAGE_PERIOD_KEY = "heartbeatMessagePeriod"
+        const val SESSION_TIMEOUT_KEY = "sessionTimeout"
     }
 
 }

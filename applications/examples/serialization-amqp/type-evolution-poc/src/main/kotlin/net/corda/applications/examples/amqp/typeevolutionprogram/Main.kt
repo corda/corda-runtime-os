@@ -5,12 +5,12 @@ import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
+import net.corda.serialization.SerializationContext
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxCreationService
 import net.corda.v5.base.types.ByteSequence
-import net.corda.v5.serialization.SerializationContext
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
