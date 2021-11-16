@@ -84,6 +84,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
+                lifecycleCoordinator.start()
                 consumeLoopThread = thread(
                     true,
                     isDaemon = true,
@@ -110,6 +111,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
             executor?.shutdown()
             thread?.join(consumerThreadStopTimeout)
             lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+            lifecycleCoordinator.stop()
         }
     }
 

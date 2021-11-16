@@ -69,6 +69,7 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
+                lifecycleCoordinator.start()
                 consumeLoopThread = thread(
                     start = true,
                     isDaemon = true,
@@ -91,6 +92,7 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             }
             thread?.join(consumerThreadStopTimeout)
             lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+            lifecycleCoordinator.stop()
         }
     }
 

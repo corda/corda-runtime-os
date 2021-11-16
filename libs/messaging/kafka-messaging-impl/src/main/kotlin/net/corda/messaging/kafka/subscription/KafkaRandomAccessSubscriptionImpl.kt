@@ -58,6 +58,7 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
                 consumer!!.assignPartitionsManually(allPartitions)
                 assignedPartitions = allPartitions
                 running = true
+                lifecycleCoordinator.start()
                 lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             }
         }
@@ -71,6 +72,7 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
             }
         }
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        lifecycleCoordinator.stop()
     }
 
     @Synchronized

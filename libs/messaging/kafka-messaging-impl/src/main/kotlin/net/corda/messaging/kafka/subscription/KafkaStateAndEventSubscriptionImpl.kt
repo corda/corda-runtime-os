@@ -81,6 +81,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
+                lifecycleCoordinator.start()
                 consumeLoopThread = thread(
                     start = true,
                     isDaemon = true,
@@ -103,6 +104,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             }
             thread?.join(consumerThreadStopTimeout)
             lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+            lifecycleCoordinator.stop()
         }
     }
 

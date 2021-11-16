@@ -62,6 +62,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
             }
             thread?.join(consumerThreadStopTimeout)
             lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+            lifecycleCoordinator.stop()
         }
     }
 
@@ -70,6 +71,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
+                lifecycleCoordinator.start()
                 consumeLoopThread = thread(
                     start = true,
                     isDaemon = true,
