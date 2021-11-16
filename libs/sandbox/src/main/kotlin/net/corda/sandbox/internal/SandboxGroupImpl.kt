@@ -105,7 +105,7 @@ internal class SandboxGroupImpl(
             ?: return classTagFactory.createSerialisedTag(isStaticTag, null, null)
 
         val publicSandbox =
-            publicSandboxes.find { sandbox -> sandbox.containsBundle(bundle, lookInPublicBundlesOnly = true) }
+            publicSandboxes.find { sandbox -> sandbox.containsBundle(bundle, lookInPublicBundlesOnly = false) }
         if (publicSandbox != null) {
             return classTagFactory.createSerialisedTag(isStaticTag, bundle, null)
         }

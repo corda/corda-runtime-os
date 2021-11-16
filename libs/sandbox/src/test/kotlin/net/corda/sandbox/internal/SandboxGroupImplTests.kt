@@ -33,6 +33,8 @@ private const val PUBLIC_EVOLVABLE_TAG = "serialised_evolvable_public_class"
 private const val BAD_MAIN_BUNDLE_NAME_EVOLVABLE_TAG = "serialised_evolvable_bad_main_bundle_name"
 private const val BAD_SIGNERS_EVOLVABLE_TAG = "serialised_evolvable_bad_signers"
 
+private const val PUBLIC_LIBRARY_BUNDLE_NAME = "public_library_bundle_symbolic_name"
+
 /**
  * Tests of [SandboxGroupImpl].
  *
@@ -42,24 +44,27 @@ class SandboxGroupImplTests {
     private val cpkClass = Double::class.java
     private val cpkLibraryClass = String::class.java
     private val publicClass = Int::class.java
+    private val publicLibraryClass = Char::class.java
     private val nonSandboxClass = Float::class.java
     private val nonBundleClass = Boolean::class.java
 
     private val mockCpkMainBundle = mockBundle(CPK_MAIN_BUNDLE_NAME, cpkClass)
     private val mockCpkLibraryBundle = mockBundle(CPK_LIBRARY_BUNDLE_NAME, cpkLibraryClass)
     private val mockPublicBundle = mockBundle(PUBLIC_BUNDLE_NAME, publicClass)
+    private val mockPublicLibraryBundle = mockBundle(PUBLIC_LIBRARY_BUNDLE_NAME, publicLibraryClass)
     private val mockNonSandboxBundle = mockBundle()
 
     private val mockBundleUtils = mock<BundleUtils>().apply {
         whenever(getBundle(cpkClass)).thenReturn(mockCpkMainBundle)
         whenever(getBundle(cpkLibraryClass)).thenReturn(mockCpkLibraryBundle)
         whenever(getBundle(publicClass)).thenReturn(mockPublicBundle)
+        whenever(getBundle(publicLibraryClass)).thenReturn(mockPublicLibraryBundle)
         whenever(getBundle(nonSandboxClass)).thenReturn(mockNonSandboxBundle)
     }
 
     private val cpkSandbox =
         CpkSandboxImpl(randomUUID(), mockCpk(), mockCpkMainBundle, setOf(mockCpkLibraryBundle))
-    private val publicSandbox = SandboxImpl(randomUUID(), setOf(mockPublicBundle), emptySet())
+    private val publicSandbox = SandboxImpl(randomUUID(), setOf(mockPublicBundle), setOf(mockPublicLibraryBundle))
 
     private val sandboxGroupImpl = SandboxGroupImpl(
         setOf(cpkSandbox), setOf(publicSandbox), DummyClassTagFactory(cpkSandbox.cpk), mockBundleUtils
@@ -88,6 +93,12 @@ class SandboxGroupImplTests {
     fun `creates valid static tag for a public class`() {
         val expectedTag = "$STATIC_IDENTIFIER;$mockPublicBundle;${null}"
         assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(publicClass))
+    }
+
+    @Test
+    fun `creates valid static tag for a public sandbox library class`() {
+        val expectedTag = "$STATIC_IDENTIFIER;$mockPublicLibraryBundle;${null}"
+        assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(publicLibraryClass))
     }
 
     @Test
@@ -120,6 +131,12 @@ class SandboxGroupImplTests {
     fun `creates valid evolvable tag for a public class`() {
         val expectedTag = "$EVOLVABLE_IDENTIFIER;$mockPublicBundle;${null}"
         assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(publicClass))
+    }
+
+    @Test
+    fun `creates valid evolvable tag for a public sandbox library class`() {
+        val expectedTag = "$EVOLVABLE_IDENTIFIER;$mockPublicLibraryBundle;${null}"
+        assertEquals(expectedTag, sandboxGroupImpl.getEvolvableTag(publicLibraryClass))
     }
 
     @Test
