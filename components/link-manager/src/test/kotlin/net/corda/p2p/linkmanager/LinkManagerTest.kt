@@ -637,6 +637,7 @@ class LinkManagerTest {
         val processor = LinkManager.InboundMessageProcessor(
             mockSessionManager,
             Mockito.mock(LinkManagerNetworkMap::class.java),
+            assignedListener(listOf(1))
         )
         val messages = listOf(
             EventLogRecord(TOPIC, KEY, LinkInMessage(mockMessage), 0, 0),
@@ -673,7 +674,7 @@ class LinkManagerTest {
             )
         )
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
 
         val records = processor.onNext(messages)
         assertThat(records).filteredOn { it.value is AppMessage }.hasSize(messages.size)
@@ -740,7 +741,7 @@ class LinkManagerTest {
             )
         )
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
         val records = processor.onNext(listOf(EventLogRecord(TOPIC, KEY, message, 0, 0)))
 
         assertThat(records).hasSize(0)
@@ -767,7 +768,7 @@ class LinkManagerTest {
             )
         )
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
         val records = processor.onNext(listOf(EventLogRecord(TOPIC, KEY, message, 0, 0)))
 
         assertThat(records).hasSize(1)
@@ -806,7 +807,8 @@ class LinkManagerTest {
         Mockito.`when`(networkMapAfterRemoval.getMemberInfo(FIRST_SOURCE.toHoldingIdentity())).thenReturn(null)
         val processor = LinkManager.InboundMessageProcessor(
             mockSessionManager,
-            networkMapAfterRemoval
+            networkMapAfterRemoval,
+            assignedListener(listOf(1))
         )
 
         val records = processor.onNext(messages)
@@ -838,7 +840,7 @@ class LinkManagerTest {
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.getSessionById(any())).thenReturn(SessionManager.SessionDirection.NoSession)
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
 
         val records = processor.onNext(messages)
         assertEquals(records.size, 0)
@@ -869,7 +871,7 @@ class LinkManagerTest {
             )
         )
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
 
         val records = processor.onNext(messages)
         assertEquals(records.size, 0)
@@ -898,7 +900,7 @@ class LinkManagerTest {
             )
         )
 
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap)
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
         val records = processor.onNext(listOf(EventLogRecord(TOPIC, KEY, message, 0, 0)))
         assertEquals(records.size, 0)
 
