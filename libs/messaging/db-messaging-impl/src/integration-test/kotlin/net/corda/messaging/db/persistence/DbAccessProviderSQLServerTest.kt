@@ -41,10 +41,6 @@ class DbAccessProviderSQLServerTest: DbAccessProviderTestBase() {
         return sqlServer.password
     }
 
-    override fun getCallingClass(): String {
-        return "sqlServer"
-    }
-
     override fun hasDbConfigured(): Boolean {
         return true
     }

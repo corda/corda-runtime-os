@@ -41,10 +41,6 @@ class DbAccessProviderOracleTest: DbAccessProviderTestBase() {
         return oracleServer.password
     }
 
-    override fun getCallingClass(): String {
-        return "oracle"
-    }
-
     override fun hasDbConfigured(): Boolean {
         return true
     }

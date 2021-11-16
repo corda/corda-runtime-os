@@ -37,8 +37,6 @@ abstract class DbAccessProviderTestBase {
 
     abstract fun getPassword(): String
 
-    abstract fun getCallingClass(): String
-
     abstract fun hasDbConfigured(): Boolean
 
     @BeforeAll

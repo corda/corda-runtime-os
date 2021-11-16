@@ -19,12 +19,13 @@ To run locally:
  */
 
 class DbAccessProviderPostgresTest: DbAccessProviderTestBase() {
-    override fun getCallingClass(): String {
-        return "postgres"
+
+    override fun startDatabase() {
+
     }
 
-    override fun hasDbConfigured(): Boolean {
-        return System.getProperty("postgresDb") != ""
+    override fun stopDatabase() {
+
     }
 
     override fun createTables() {
@@ -50,11 +51,8 @@ class DbAccessProviderPostgresTest: DbAccessProviderTestBase() {
         return "${System.getProperty("postgresPassword")}"
     }
 
-    override fun startDatabase() {
-
+    override fun hasDbConfigured(): Boolean {
+        return System.getProperty("postgresDb") != ""
     }
 
-    override fun stopDatabase() {
-
-    }
 }
