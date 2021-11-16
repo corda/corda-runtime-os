@@ -1,6 +1,7 @@
 package net.corda.messaging.db.subscription
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.records.Record
@@ -12,7 +13,6 @@ import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
-import java.lang.Exception
 import java.nio.ByteBuffer
 import java.sql.SQLClientInfoException
 import java.sql.SQLNonTransientException
@@ -92,5 +92,8 @@ class DBRandomAccessSubscription<K: Any, V: Any>(private val subscriptionConfig:
             }
         }
     }
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = TODO("Not yet implemented")
 
 }

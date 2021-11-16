@@ -1,5 +1,6 @@
 package net.corda.messaging.db.subscription
 
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -200,5 +201,8 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
 
         return RecordDbEntry(record.topic, partition, offset, serialisedKey, serialisedValue)
     }
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = TODO("Not yet implemented")
 
 }

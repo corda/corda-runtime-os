@@ -1,6 +1,7 @@
 package net.corda.messaging.db.subscription
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
@@ -58,4 +59,7 @@ class DBDurableSubscription<K: Any, V: Any>(subscriptionConfig: SubscriptionConf
             get() = durableProcessor.valueClass
 
     }
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = TODO("Not yet implemented")
 }
