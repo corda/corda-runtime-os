@@ -1,6 +1,7 @@
 package net.corda.p2p.crypto.protocol
 
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
 class ProtocolModeNegotiation {
@@ -26,9 +27,4 @@ class ProtocolModeNegotiation {
             }
         }
     }
-
 }
-
-class NoCommonModeError(initiatorModes: Set<ProtocolMode>, responderModes: Set<ProtocolMode>):
-    CordaRuntimeException("There was no common mode between those supported by the initiator ($initiatorModes) " +
-            "and those supported by the responder ($responderModes).")
