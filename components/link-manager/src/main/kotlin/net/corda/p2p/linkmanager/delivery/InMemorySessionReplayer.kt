@@ -18,6 +18,7 @@ import net.corda.p2p.schema.Schema
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
+@Suppress("LongParameterList")
 class InMemorySessionReplayer(
     publisherFactory: PublisherFactory,
     configurationReaderService: ConfigurationReadService,

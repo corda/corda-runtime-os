@@ -34,6 +34,7 @@ import java.util.UUID
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
  */
+@Suppress("LongParameterList")
 internal class InboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
