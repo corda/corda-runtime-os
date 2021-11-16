@@ -92,7 +92,7 @@ class DominoTile(
     private val configResources = ResourcesHolder()
 
     @Volatile
-    private var registrations: Collection<RegistrationHandle>? = null
+    private var registrations: Map<RegistrationHandle, DominoTile>? = null
 
     private val currentState = AtomicReference(State.Created)
 
@@ -191,15 +191,21 @@ class DominoTile(
                     }
                 }
                 is RegistrationStatusChangeEvent -> {
+                    val child = registrations?.get(event.registration)
+                    if (child == null) {
+                        logger.warn("Signal ${event.status} received from registration that didn't map to a component.")
+                        return
+                    }
+
                     if (event.status == LifecycleStatus.UP) {
                         logger.info("RegistrationStatusChangeEvent $name going up.")
-                        handleLifecycleUp()
+                        handleLifecycleUp(child)
                     } else {
-                        val errorKids = children.filter { it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig }
-                        if (errorKids.isEmpty()) {
-                            stop()
-                        } else {
-                            gotError(Exception("$name Had error in ${errorKids.map { it.name }}"))
+                        when(state) {
+                            State.StoppedByParent, State.StoppedDueToError -> {}
+                            State.Created, State.Started, State.StoppedDueToBadConfig -> {
+                                gotError(Exception("Child $child went down."))
+                            }
                         }
                     }
                 }
@@ -291,14 +297,14 @@ class DominoTile(
         coordinator.postEvent(StopTile(true))
     }
 
-    private fun handleLifecycleUp() {
+    private fun handleLifecycleUp(child: DominoTile) {
         if (!isRunning) {
             when {
                 children.all { it.isRunning } -> {
                     createResourcesAndStart()
                 }
                 children.any { it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig } -> {
-                    children.filter { it.isRunning || it.state == State.Created }.forEach { it.stop() }
+                    child.stop()
                 }
                 else -> { // any children that are not running have been stopped by the parent
                     startDependenciesIfNeeded()
@@ -310,10 +316,9 @@ class DominoTile(
     private fun readyOrStartTile() {
         if (registrations == null && children.isNotEmpty()) {
             registrations = children.map {
-                it.name
-            }.map {
-                coordinator.followStatusChangesByName(setOf(it))
-            }
+                val dominoTileName = it.name
+                coordinator.followStatusChangesByName(setOf(dominoTileName)) to it
+            }.toMap()
             logger.info("Created $name with ${children.map { it.name }}")
         }
         startDependenciesIfNeeded()
@@ -396,7 +401,7 @@ class DominoTile(
 
     override fun close() {
         registrations?.forEach {
-            it.close()
+            it.key.close()
         }
         configRegistration?.close()
         configRegistration = null
@@ -424,6 +429,6 @@ class DominoTile(
     }
 
     override fun toString(): String {
-        return "$name: $state: $children"
+        return "$name (state: $state, children: $children)"
     }
 }
