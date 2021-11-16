@@ -288,7 +288,7 @@ class AuthenticationProtocolResponder(private val sessionId: String,
  */
 class NoCommonModeError(initiatorModes: Set<ProtocolMode>, responderModes: Set<ProtocolMode>):
     CordaRuntimeException("There was no common mode between those supported by the initiator ($initiatorModes) " +
-                          "and those supported by the responder ($responderModes)")
+                          "and those supported by the responder ($responderModes).")
 
 /**
  * @property initiatorPublicKeyHash the SHA-256 hash of the initiator's public key.
