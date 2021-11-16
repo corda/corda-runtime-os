@@ -156,8 +156,10 @@ class SandboxGroupImplTests {
     }
 
     @Test
-    fun `returns CPK class identified by an evolvable tag`() {
-        assertEquals(cpkLibraryClass, sandboxGroupImpl.getClass(cpkLibraryClass.name, CPK_EVOLVABLE_TAG))
+    fun `throws if attempted to load CPK library class identified by an evolvable tag`() {
+        assertThrows<SandboxException> {
+            sandboxGroupImpl.getClass(cpkLibraryClass.name, CPK_EVOLVABLE_TAG)
+        }
     }
 
     @Test

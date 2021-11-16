@@ -68,9 +68,21 @@ internal class SandboxGroupImpl(
             ClassType.CpkSandboxClass -> {
                 val sandbox = when (classTag) {
                     is StaticTag -> cpkSandboxes.find { sandbox -> sandbox.cpk.metadata.hash == classTag.cpkFileHash }
-                    is EvolvableTag -> cpkSandboxes.find { sandbox ->
-                        sandbox.cpk.metadata.id.signerSummaryHash == classTag.cpkSignerSummaryHash
-                                && sandbox.mainBundle.symbolicName == classTag.mainBundleName
+                    is EvolvableTag -> {
+                        val sandbox = cpkSandboxes.find {
+                            it.cpk.metadata.id.signerSummaryHash == classTag.cpkSignerSummaryHash
+                                    && it.mainBundle.symbolicName == classTag.mainBundleName
+                        }
+                        sandbox?.let {
+                            if (classTag.classBundleName != it.mainBundle.symbolicName) {
+                                throw SandboxException(
+                                    "Attempted to load class $className with an evolvable class tag for cpk private bundle " +
+                                            "${classTag.classBundleName}."
+                                )
+                            } else {
+                                it
+                            }
+                        }
                     }
                 } ?: throw SandboxException(
                     "Class tag $serialisedClassTag did not match any sandbox in the sandbox group."
