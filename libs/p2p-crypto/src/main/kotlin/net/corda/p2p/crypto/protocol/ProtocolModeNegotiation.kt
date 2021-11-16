@@ -2,7 +2,6 @@ package net.corda.p2p.crypto.protocol
 
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
-import net.corda.v5.base.exceptions.CordaRuntimeException
 
 class ProtocolModeNegotiation {
 
