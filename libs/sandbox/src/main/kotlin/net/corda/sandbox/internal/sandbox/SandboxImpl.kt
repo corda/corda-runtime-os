@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 internal open class SandboxImpl(
     override val id: UUID,
     final override val publicBundles: Set<Bundle>,
-    private val privateBundles: Set<Bundle>
+    val privateBundles: Set<Bundle>
 ) : Sandbox {
     private val logger = loggerFor<SandboxImpl>()
 
@@ -28,18 +28,7 @@ internal open class SandboxImpl(
     // All the bundles in the sandbox.
     private val allBundles = privateBundles + publicBundles
 
-    override fun containsBundle(bundle: Bundle, lookInPublicBundlesOnly: Boolean): Boolean {
-        if (bundle in publicBundles) {
-            return true
-        }
-
-        if (!lookInPublicBundlesOnly) {
-            if (bundle in privateBundles) {
-                return true
-            }
-        }
-        return false
-    }
+    override fun containsBundle(bundle: Bundle) = bundle in allBundles
 
     override fun hasVisibility(otherSandbox: Sandbox) = otherSandbox.id in visibleSandboxes
 

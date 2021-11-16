@@ -60,12 +60,16 @@ class SandboxClassTagTests {
     }
 
     @Test
-    fun `throws if attempted to create tags for a CPK library class`() {
-        val cpkClass = sandboxLoader.group1.loadClassFromMainBundles(LIBRARY_QUERY_CLASS, Any::class.java)
+    fun `can create static tag for a CPK library class and use it to retrieve the class`() {
+        val cpkLibClass = sandboxLoader.group1.loadClassFromMainBundles(LIBRARY_QUERY_CLASS, Any::class.java)
+        val staticTag = sandboxLoader.group1.getStaticTag(cpkLibClass)
 
-        assertThrows<SandboxException> {
-            sandboxLoader.group1.getStaticTag(cpkClass)
-        }
+        assertEquals(cpkLibClass, sandboxLoader.group1.getClass(cpkLibClass.name, staticTag))
+    }
+
+    @Test
+    fun `throws if attempted to create evolvable tag for a CPK library class`() {
+        val cpkClass = sandboxLoader.group1.loadClassFromMainBundles(LIBRARY_QUERY_CLASS, Any::class.java)
 
         assertThrows<SandboxException> {
             sandboxLoader.group1.getEvolvableTag(cpkClass)

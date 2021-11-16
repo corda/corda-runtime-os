@@ -105,15 +105,19 @@ internal class SandboxGroupImpl(
             ?: return classTagFactory.createSerialisedTag(isStaticTag, null, null)
 
         val publicSandbox =
-            publicSandboxes.find { sandbox -> sandbox.containsBundle(bundle, lookInPublicBundlesOnly = false) }
+            publicSandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
         if (publicSandbox != null) {
             return classTagFactory.createSerialisedTag(isStaticTag, bundle, null)
         }
 
-        val sandbox =
-            cpkSandboxes.find { sandbox -> sandbox.containsBundle(bundle, lookInPublicBundlesOnly = true) }
+        val cpkSandbox =
+            cpkSandboxes.find { sandbox -> sandbox.containsBundle(bundle) }
                 ?: throw SandboxException("Bundle ${bundle.symbolicName} was not found in the sandbox group or in a public sandbox.")
 
-        return classTagFactory.createSerialisedTag(isStaticTag, bundle, sandbox)
+        if (bundle in cpkSandbox.privateBundles && !isStaticTag) {
+            throw SandboxException("Attempted to create evolvable class tag for cpk private bundle ${bundle.symbolicName}.")
+        }
+
+        return classTagFactory.createSerialisedTag(isStaticTag, bundle, cpkSandbox)
     }
 }

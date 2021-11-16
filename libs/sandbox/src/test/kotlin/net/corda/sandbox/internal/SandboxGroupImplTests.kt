@@ -83,10 +83,9 @@ class SandboxGroupImplTests {
     }
 
     @Test
-    fun `throws if asked to create static tag for a CPK library class`() {
-        assertThrows<SandboxException> {
-            sandboxGroupImpl.getStaticTag(cpkLibraryClass)
-        }
+    fun `creates valid static tag for a CPK library class`() {
+        val expectedTag = "$STATIC_IDENTIFIER;$mockCpkLibraryBundle;$cpkSandbox"
+        assertEquals(expectedTag, sandboxGroupImpl.getStaticTag(cpkLibraryClass))
     }
 
     @Test
