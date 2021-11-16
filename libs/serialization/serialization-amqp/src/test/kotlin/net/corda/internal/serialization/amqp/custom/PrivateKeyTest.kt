@@ -20,11 +20,11 @@ class PrivateKeyTest {
         class PrivateKeyProxy
     }
 
-    val factory = testDefaultFactory().apply { registerExternal(PrivateKeySerializer()) }
+    val factory = testDefaultFactory().apply { registerExternal(PrivateKeySerializer(), this) }
 
     @Test
     @Timeout(5)
-    fun `Should throw IllegalStateException when serializing a private key`() {
+    fun `Should throw IllegalCustomSerializerException when serializing a private key`() {
         val output = SerializationOutput(factory)
         val privateKey: PrivateKey = mock()
         Assertions.assertThatThrownBy { output.serialize(privateKey, testSerializationContext) }
