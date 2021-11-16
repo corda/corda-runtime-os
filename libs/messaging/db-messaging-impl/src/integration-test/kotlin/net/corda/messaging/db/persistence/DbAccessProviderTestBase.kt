@@ -49,22 +49,18 @@ abstract class DbAccessProviderTestBase {
             dbAccessProvider = DBAccessProviderImpl(getJdbcUrl(), getUsername(), getPassword(), getDbType(), 5)
             dbAccessProvider.start()
         } else {
-            org.junit.Assume.assumeTrue(System.getProperty("postgresDb") != "")
+            org.junit.Assume.assumeTrue(hasDbConfigured())
         }
-
     }
 
     @AfterAll
     fun cleanupAfterAllTests() {
         if(hasDbConfigured()) {
             dbAccessProvider.stop()
-            if(getDbType() != DBType.POSTGRESQL) {
-                stopDatabase()
-            }
+            stopDatabase()
         } else {
-            org.junit.Assume.assumeTrue(System.getProperty("postgresDb") != "")
+            org.junit.Assume.assumeTrue(hasDbConfigured())
         }
-
     }
 
     @BeforeEach
@@ -331,5 +327,4 @@ abstract class DbAccessProviderTestBase {
             2 to 11L
         ))
     }
-
 }
