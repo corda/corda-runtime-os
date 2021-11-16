@@ -32,6 +32,7 @@ import java.net.URLConnection
 import java.security.AccessController
 import java.security.KeyStore
 import java.security.Permission
+import java.security.PrivateKey
 import java.security.Provider
 import java.sql.Connection
 import java.util.Dictionary
@@ -78,6 +79,7 @@ object AllButBlacklisted : ClassWhitelist {
             KeyStore::class.java.name,
             AccessController::class.java.name,
             Permission::class.java.name,
+            PrivateKey::class.java.name,
 
             // java.net.
             DatagramSocket::class.java.name,
