@@ -705,7 +705,7 @@ class SerializationOutputTests {
 
         val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         val factory2 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
-        serdes(obj, factory, factory2)
+        assertThrows<NotSerializableException> { serdes(obj, factory, factory2) }
     }
 
     data class BigDecimals(val a: BigDecimal, val b: BigDecimal)
