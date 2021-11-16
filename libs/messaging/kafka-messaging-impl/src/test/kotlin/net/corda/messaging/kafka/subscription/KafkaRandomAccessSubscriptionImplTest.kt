@@ -32,6 +32,7 @@ class KafkaRandomAccessSubscriptionImplTest {
     private val config = createStandardTestConfig().getConfig(PATTERN_RANDOMACCESS)
         .withValue(ConfigProperties.TOPIC_NAME, ConfigValueFactory.fromAnyRef(topic))
     private val consumer: CordaKafkaConsumer<String, String> = mock()
+
     @Suppress("UNCHECKED_CAST")
     private val consumerBuilder: ConsumerBuilder<String, String> = mock()
 
@@ -42,7 +43,8 @@ class KafkaRandomAccessSubscriptionImplTest {
         doReturn(topicPartitions).whenever(consumer).getPartitions(topic, 5.seconds)
         doReturn(consumer).whenever(consumerBuilder).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
 
-        randomAccessSubscription = KafkaRandomAccessSubscriptionImpl(config, consumerBuilder, String::class.java, String::class.java, mock())
+        randomAccessSubscription =
+            KafkaRandomAccessSubscriptionImpl(config, consumerBuilder, String::class.java, String::class.java, mock())
         randomAccessSubscription.start()
     }
 
@@ -62,7 +64,8 @@ class KafkaRandomAccessSubscriptionImplTest {
         assertThat(record!!.key).isEqualTo("key")
         assertThat(record.value).isEqualTo("value")
         val resumedPartition = TopicPartition(topic, 1)
-        val pausedPartitions = (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
+        val pausedPartitions =
+            (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
         verify(consumer, times(1)).pause(pausedPartitions)
         verify(consumer, times(1)).resume(listOf(resumedPartition))
         verify(consumer, times(1)).seek(resumedPartition, 4)
@@ -77,7 +80,8 @@ class KafkaRandomAccessSubscriptionImplTest {
 
         assertThat(record).isNull()
         val resumedPartition = TopicPartition(topic, 1)
-        val pausedPartitions = (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
+        val pausedPartitions =
+            (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
         verify(consumer, times(1)).pause(pausedPartitions)
         verify(consumer, times(1)).resume(listOf(resumedPartition))
         verify(consumer, times(1)).seek(resumedPartition, 4)
@@ -91,7 +95,8 @@ class KafkaRandomAccessSubscriptionImplTest {
 
         assertThat(record).isNull()
         val resumedPartition = TopicPartition(topic, 1)
-        val pausedPartitions = (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
+        val pausedPartitions =
+            (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
         verify(consumer, times(1)).pause(pausedPartitions)
         verify(consumer, times(1)).resume(listOf(resumedPartition))
         verify(consumer, times(1)).seek(resumedPartition, 4)
@@ -107,7 +112,8 @@ class KafkaRandomAccessSubscriptionImplTest {
             .hasMessageContaining("Multiple records located")
 
         val resumedPartition = TopicPartition(topic, 1)
-        val pausedPartitions = (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
+        val pausedPartitions =
+            (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
         verify(consumer, times(1)).pause(pausedPartitions)
         verify(consumer, times(1)).resume(listOf(resumedPartition))
         verify(consumer, times(1)).seek(resumedPartition, 4)
