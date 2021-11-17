@@ -53,7 +53,7 @@ class DbAccessProviderPostgresTest: DbAccessProviderTestBase() {
     }
 
     override fun hasDbConfigured(): Boolean {
-        return System.getProperty("postgresDb") != ""
+        return !System.getProperty("postgresDb").isNullOrBlank()
     }
 
 }
