@@ -135,7 +135,9 @@ class FlowManagerImpl @Activate constructor(
 
     private fun getCheckpointSerializer(sandboxGroup: SandboxGroup): CheckpointSerializer {
         return checkpointSerializers.computeIfAbsent(sandboxGroup) {
-            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(it).build()
+            val builder = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(it)
+            builder.addSingletonSerializableInstances(dependencyInjector.getRegisteredAsTokenSingletons())
+            builder.build()
         }
     }
 

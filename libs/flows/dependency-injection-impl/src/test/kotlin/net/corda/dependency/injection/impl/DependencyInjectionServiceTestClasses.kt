@@ -5,6 +5,7 @@ import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.application.injection.CordaInject
 import net.corda.v5.application.injection.CordaServiceInjectable
 import net.corda.v5.application.services.CordaService
+import net.corda.v5.serialization.SingletonSerializeAsToken
 
 /** A flow that requires the injection of services. */
 open class InjectDependenciesFlow : Flow<Unit> {
@@ -121,3 +122,7 @@ interface CordaServiceAndFlowInjectableInterface: CordaServiceInjectable, CordaF
     fun call() = true
 }
 class CordaServiceAndFlowInjectableImpl: CordaServiceAndFlowInjectableInterface
+
+/** A dummy as token singleton service */
+interface  CordaAsTokenSingletonService: SingletonSerializeAsToken, CordaFlowInjectable
+class CordaAsTokenSingletonServiceImpl: CordaAsTokenSingletonService

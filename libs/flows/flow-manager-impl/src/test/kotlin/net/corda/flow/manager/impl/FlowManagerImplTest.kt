@@ -19,10 +19,7 @@ import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.application.flows.Flow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
+import org.mockito.kotlin.*
 import java.nio.ByteBuffer
 
 class FlowManagerImplTest {
@@ -65,6 +62,7 @@ class FlowManagerImplTest {
         val eventsOut = listOf(FlowEvent(flowKey, cpiId, rpcFlowResult))
         val serialized = "Test".toByteArray()
         val topic = "Topic1"
+
 
         doReturn(TestFlow::class.java).`when`(sandboxGroup).loadClassFromMainBundles(any(), eq(Flow::class.java))
         doReturn(stateMachine).`when`(flowStateMachineFactory).createStateMachine(any(), any(), any(), any(), any(), any())

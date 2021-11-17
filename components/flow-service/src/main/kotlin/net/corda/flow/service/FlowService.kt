@@ -4,6 +4,8 @@ import net.corda.configuration.read.ConfigKeys.Companion.BOOTSTRAP_KEY
 import net.corda.configuration.read.ConfigKeys.Companion.FLOW_KEY
 import net.corda.configuration.read.ConfigKeys.Companion.MESSAGING_KEY
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.dependency.injection.DependencyInjectionService
+import net.corda.dependency.injection.FlowDependencies
 import net.corda.flow.manager.FlowManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
@@ -30,6 +32,7 @@ import org.osgi.service.component.annotations.Reference
  * libraries to put together a component that reacts to config changes. It should be read as not a finished component,
  * but rather a suggestion of how to put together the pieces to create components.
  */
+@Suppress("LongParameterList")
 @Component(service = [FlowService::class])
 class FlowService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -41,7 +44,11 @@ class FlowService @Activate constructor(
     @Reference(service = FlowManager::class)
     private val flowManager: FlowManager,
     @Reference(service = SandboxService::class)
-    private val sandboxService: SandboxService
+    private val sandboxService: SandboxService,
+    @Reference(service = DependencyInjectionService::class)
+    private val dependencyInjector: DependencyInjectionService,
+    @Reference(service = FlowDependencies::class)
+    private val flowDependencies: FlowDependencies
 ) : Lifecycle {
 
     companion object {
@@ -59,6 +66,7 @@ class FlowService @Activate constructor(
         when (event) {
             is StartEvent -> {
                 logger.debug { "Starting flow runner component." }
+                flowDependencies.configureInjectionService(dependencyInjector)
                 registration?.close()
                 registration =
                     coordinator.followStatusChangesByName(

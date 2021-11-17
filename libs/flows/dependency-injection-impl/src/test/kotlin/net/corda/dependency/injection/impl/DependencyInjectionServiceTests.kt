@@ -4,6 +4,7 @@ import net.corda.dependency.injection.CordaInjectableException
 import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -15,6 +16,7 @@ import org.mockito.kotlin.whenever
 class DependencyInjectionServiceTests {
     private companion object {
         private val dependencyInjectionService = DependencyInjectionServiceImpl()
+        private val cordaAsTokenSingletonService = CordaAsTokenSingletonServiceImpl()
 
         init {
             dependencyInjectionService.registerSingletonService(
@@ -25,6 +27,9 @@ class DependencyInjectionServiceTests {
             )
             dependencyInjectionService.registerSingletonService(
                 CordaServiceAndFlowInjectableInterface::class.java, CordaServiceAndFlowInjectableImpl()
+            )
+            dependencyInjectionService.registerSingletonService(
+                CordaAsTokenSingletonService::class.java, cordaAsTokenSingletonService
             )
         }
     }
@@ -119,5 +124,17 @@ class DependencyInjectionServiceTests {
             dependencyInjectionService.injectDependencies(service)
         }
         assertFalse(service.isInitialized())
+    }
+
+    @Test
+    fun `Can retrieve list of as token singleton services`() {
+        val flow = InjectDependenciesFlow()
+        val stateMachine = createMockStateMachine(flow)
+        dependencyInjectionService.injectDependencies(flow, stateMachine)
+
+        var results = dependencyInjectionService.getRegisteredAsTokenSingletons()
+        assertThat(results)
+            .hasSize(1)
+            .contains(cordaAsTokenSingletonService)
     }
 }

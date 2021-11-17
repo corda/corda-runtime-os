@@ -137,6 +137,12 @@ class DependencyInjectionServiceImpl : DependencyInjectionService {
             }
     }
 
+    override fun getRegisteredAsTokenSingletons(): Set<SingletonSerializeAsToken> {
+        return singletonServices.values
+            .filterIsInstance(SingletonSerializeAsToken::class.java)
+            .toSet()
+    }
+
     /**
      * Safe-cast an object as a [DynamicPropertyInjectable] of type [FlowStateMachineInjectable].
      * Return null if the object is not a [DynamicPropertyInjectable], or if it is a [DynamicPropertyInjectable] but

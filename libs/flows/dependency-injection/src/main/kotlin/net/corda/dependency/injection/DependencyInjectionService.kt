@@ -58,6 +58,8 @@ interface DependencyInjectionService {
      * Inject all available dependencies into a given flow.
      */
     fun injectDependencies(flow: Flow<*>, flowStateMachineInjectable: FlowStateMachineInjectable)
+
+    fun getRegisteredAsTokenSingletons(): Set<SingletonSerializeAsToken>
 }
 
 /**

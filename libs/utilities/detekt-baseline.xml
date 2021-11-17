@@ -4,15 +4,15 @@
   <CurrentIssues>
     <ID>SpreadOperator:ConcurrencyUtils.kt$(*toTypedArray())</ID>
     <ID>SpreadOperator:InternalUtils.kt$(this, target, *options)</ID>
-    <ID>SpreadOperator:PathUtils.kt$(*options)</ID>
-    <ID>SpreadOperator:PathUtils.kt$(charset, *options)</ID>
-    <ID>SpreadOperator:PathUtils.kt$(this, *attrs)</ID>
-    <ID>SpreadOperator:PathUtils.kt$(this, *options)</ID>
-    <ID>SpreadOperator:PathUtils.kt$(this, bytes, *options)</ID>
-    <ID>SpreadOperator:PathUtils.kt$(this, charset, *options)</ID>
-    <ID>SpreadOperator:PathUtils.kt$(this, lines, charset, *options)</ID>
-    <ID>SpreadOperator:PathUtils.kt$(this, target, *options)</ID>
-    <ID>SpreadOperator:PathUtils.kt$(this, targetFile, *options)</ID>
-    <ID>TooManyFunctions:PathUtils.kt$net.corda.utilities.PathUtils.kt</ID>
+    <ID>SpreadOperator:JsonMarshallingServiceImpl.kt$(*options)</ID>
+    <ID>SpreadOperator:JsonMarshallingServiceImpl.kt$(charset, *options)</ID>
+    <ID>SpreadOperator:JsonMarshallingServiceImpl.kt$(this, *attrs)</ID>
+    <ID>SpreadOperator:JsonMarshallingServiceImpl.kt$(this, *options)</ID>
+    <ID>SpreadOperator:JsonMarshallingServiceImpl.kt$(this, bytes, *options)</ID>
+    <ID>SpreadOperator:JsonMarshallingServiceImpl.kt$(this, charset, *options)</ID>
+    <ID>SpreadOperator:JsonMarshallingServiceImpl.kt$(this, lines, charset, *options)</ID>
+    <ID>SpreadOperator:JsonMarshallingServiceImpl.kt$(this, target, *options)</ID>
+    <ID>SpreadOperator:JsonMarshallingServiceImpl.kt$(this, targetFile, *options)</ID>
+    <ID>TooManyFunctions:JsonMarshallingServiceImpl.kt$net.corda.utilities.JsonMarshallingServiceImpl.kt</ID>
   </CurrentIssues>
 </SmellBaseline>

@@ -24,7 +24,7 @@ class FlowExecutor(
     private val config: SmartConfig,
     private val subscriptionFactory: SubscriptionFactory,
     private val flowManager: FlowManager,
-    private val sandboxService: SandboxService,
+    private val sandboxService: SandboxService
 ) : Lifecycle {
 
     companion object {
