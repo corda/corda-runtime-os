@@ -1,5 +1,6 @@
 package net.corda.permissions.model
 
+import net.corda.db.schema.DbSchema
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -15,7 +16,7 @@ import javax.persistence.Version
  * A role can be associated with many permissions and a permission maybe associated in multiple roles.
  */
 @Entity
-@Table(name = "rpc_role_perm_rel")
+@Table(name = "rpc_role_perm_rel", schema = DbSchema.RPC_RBAC)
 class RolePermissionAssociation(
     @Id
     @Column(name = "id", nullable = false, updatable = false)

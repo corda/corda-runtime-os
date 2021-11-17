@@ -1,0 +1,20 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Permission storage writer library'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-avro-schema"
+
+    implementation project(":libs:messaging:messaging")
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "javax.persistence:javax.persistence-api"
+
+    implementation project(":libs:lifecycle:lifecycle")
+}

@@ -1,35 +1,37 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.CommonPropertyNames
 import net.corda.internal.serialization.amqp.LocalSerializerFactory
 import net.corda.internal.serialization.amqp.PropertyReader
 import net.corda.internal.serialization.model.LocalConstructorInformation
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.osgi.TypeResolver
+import net.corda.serialization.BaseProxySerializer
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.exceptions.CordaThrowable
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.serialization.SerializationCustomSerializer
-import net.corda.v5.serialization.SerializationFactory
 import java.io.NotSerializableException
 
 @Suppress("LongParameterList")
 class ThrowableSerializer(
     private val factory: LocalSerializerFactory
-) : SerializationCustomSerializer<Throwable, ThrowableSerializer.ThrowableProxy> {
+) : BaseProxySerializer<Throwable, ThrowableSerializer.ThrowableProxy>() {
+    override val type: Class<Throwable> get() = Throwable::class.java
+    override val proxyType: Class<ThrowableProxy> get() = ThrowableProxy::class.java
+    override val withInheritance: Boolean get() = true
+    override val revealSubclasses: Boolean get() = true
 
     companion object {
         private val logger = contextLogger()
     }
 
-    private val LocalTypeInformation.constructor: LocalConstructorInformation get() = when (this) {
-        is LocalTypeInformation.NonComposable ->
-            constructor
-                ?: throw NotSerializableException("$this has no deserialization constructor")
-        is LocalTypeInformation.Composable -> constructor
-        is LocalTypeInformation.Opaque -> wrapped.constructor
-        else -> throw NotSerializableException("$this has no deserialization constructor")
-    }
+    private val LocalTypeInformation.constructor: LocalConstructorInformation
+        get() = when (this) {
+            is LocalTypeInformation.NonComposable ->
+                constructor ?: throw NotSerializableException("$this has no deserialization constructor")
+            is LocalTypeInformation.Composable -> constructor
+            is LocalTypeInformation.Opaque -> wrapped.constructor
+            else -> throw NotSerializableException("$this has no deserialization constructor")
+        }
 
     override fun toProxy(obj: Throwable): ThrowableProxy {
         val extraProperties: MutableMap<String, Any?> = LinkedHashMap()
@@ -49,16 +51,10 @@ class ThrowableSerializer(
         } else {
             obj.message
         }
-        val stackTraceToInclude = if (shouldIncludeInternalInfo()) obj.stackTrace else emptyArray()
-        return ThrowableProxy(obj.javaClass.name, message, stackTraceToInclude, obj.cause, obj.suppressed, extraProperties)
+        return ThrowableProxy(obj.javaClass.name, message, obj.stackTrace, obj.cause, obj.suppressed, extraProperties)
     }
 
-    private fun shouldIncludeInternalInfo(): Boolean {
-        val currentContext = SerializationFactory.currentFactory?.currentContext
-        val includeInternalInfo = currentContext?.properties?.get(CommonPropertyNames.IncludeInternalInfo)
-        return true == includeInternalInfo
-    }
-
+    @Suppress("NestedBlockDepth")
     override fun fromProxy(proxy: ThrowableProxy): Throwable {
         try {
             val clazz = TypeResolver.resolve(proxy.exceptionClass, proxy::class.java.classLoader)

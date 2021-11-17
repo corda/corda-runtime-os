@@ -25,5 +25,5 @@ class DefaultDescriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistr
     }
 
     override fun getOrBuild(descriptor: String, builder: () -> AMQPSerializer<Any>) =
-            registry.getOrPut(descriptor) { builder() }
+            registry.getOrPut(descriptor, builder)
 }

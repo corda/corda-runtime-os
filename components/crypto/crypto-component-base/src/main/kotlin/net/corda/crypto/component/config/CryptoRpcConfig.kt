@@ -1,6 +1,7 @@
 package net.corda.crypto.component.config
 
 import net.corda.crypto.impl.config.CryptoConfigMap
+import net.corda.crypto.impl.config.DefaultConfigConsts
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
 import net.corda.data.crypto.wire.signing.WireSigningRequest
@@ -12,16 +13,16 @@ class CryptoRpcConfig(
     map: Map<String, Any?>
 ) : CryptoConfigMap(map) {
     val groupName: String
-        get() = getString(this::groupName.name, "crypto.rpc")
+        get() = getString(this::groupName.name, DefaultConfigConsts.Kafka.Rpc.GROUP_NAME)
 
-    val clientName: String
-        get() = getString(this::clientName.name, "crypto.rpc")
+    val clientId: String
+        get() = getString(this::clientId.name, DefaultConfigConsts.Kafka.Rpc.CLIENT_ID)
 
     val signingRequestTopic: String
-        get() = getString(this::signingRequestTopic.name, "crypto.rpc.signing")
+        get() = getString(this::signingRequestTopic.name, DefaultConfigConsts.Kafka.Rpc.SIGNING_REQUEST_TOPIC_NAME)
 
     val freshKeysRequestTopic: String
-        get() = getString(this::freshKeysRequestTopic.name, "crypto.rpc.freshKeys")
+        get() = getString(this::freshKeysRequestTopic.name, DefaultConfigConsts.Kafka.Rpc.FRESH_KEY_REQUEST_TOPIC_NAME)
 
     val clientTimeout: Long
         get() = getLong(this::clientTimeout.name, 15)
@@ -32,7 +33,7 @@ class CryptoRpcConfig(
     val signingRpcConfig by lazy(LazyThreadSafetyMode.PUBLICATION) {
         RPCConfig(
             groupName = groupName,
-            clientName = clientName,
+            clientName = clientId,
             requestTopic = signingRequestTopic,
             requestType = WireSigningRequest::class.java,
             responseType = WireSigningResponse::class.java
@@ -42,7 +43,7 @@ class CryptoRpcConfig(
     val freshKeysRpcConfig by lazy(LazyThreadSafetyMode.PUBLICATION) {
         RPCConfig(
             groupName = groupName,
-            clientName = clientName,
+            clientName = clientId,
             requestTopic = freshKeysRequestTopic,
             requestType = WireFreshKeysRequest::class.java,
             responseType = WireFreshKeysResponse::class.java

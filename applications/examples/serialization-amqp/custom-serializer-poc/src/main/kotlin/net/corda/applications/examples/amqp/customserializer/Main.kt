@@ -12,6 +12,7 @@ import net.corda.osgi.api.Shutdown
 import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
+import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.serialization.MissingSerializerException
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.osgi.framework.FrameworkUtil
@@ -19,7 +20,8 @@ import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ReferenceCardinality
+import org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE
+import org.osgi.service.component.annotations.ReferencePolicyOption.GREEDY
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
@@ -48,8 +50,8 @@ class Main @Activate constructor(
     private val configurationAdmin: ConfigurationAdmin,
     @Reference
     private val installService: InstallService,
-    @Reference(cardinality = ReferenceCardinality.MULTIPLE)
-    private val internalCustomSerializers: List<SerializationCustomSerializer<*, *>>
+    @Reference(cardinality = MULTIPLE, policyOption = GREEDY)
+    private val internalCustomSerializers: List<InternalCustomSerializer<out Any>>
 ) : Application {
     private companion object {
         private val consoleLogger: Logger = LoggerFactory.getLogger("Console")
@@ -122,8 +124,8 @@ class Main @Activate constructor(
         val factory = SerializerFactoryBuilder.build(AllWhitelist)
         // Register platform serializers
         for (customSerializer in internalCustomSerializers) {
-            consoleLogger.info("Registering internal serializer " + customSerializer.javaClass.name)
-            factory.register(customSerializer, true)
+            consoleLogger.info("Registering internal serializer {}", customSerializer.javaClass.name)
+            factory.register(customSerializer, factory)
         }
         // Build CorDapp serializers
         val cordappCustomSerializers = buildCorDappSerializers(
@@ -132,8 +134,8 @@ class Main @Activate constructor(
         )
         // Register CorDapp serializers
         for (customSerializer in cordappCustomSerializers) {
-            consoleLogger.info("Registering CorDapp serializer " + customSerializer.javaClass.name)
-            factory.registerExternal(customSerializer)
+            consoleLogger.info("Registering CorDapp serializer {}", customSerializer.javaClass.name)
+            factory.registerExternal(customSerializer, factory)
         }
         return factory
     }
@@ -222,8 +224,8 @@ class Main @Activate constructor(
         val cordappCustomSerializer = constructor.newInstance("using CORDAPP serializer", consoleLogger)
 
         // Register SandBox A custom serializers as platform serializers and CorDapp serializers
-        factory.register(internalCustomSerializer, true)
-        factory.registerExternal(cordappCustomSerializer)
+        factory.registerExternal(internalCustomSerializer, factory)
+        factory.registerExternal(cordappCustomSerializer, factory)
 
         // Build test object
         val obj = sandboxA.sandboxGroup.loadClassFromMainBundles(

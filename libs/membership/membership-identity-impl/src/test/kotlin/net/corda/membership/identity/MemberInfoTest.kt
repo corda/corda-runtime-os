@@ -38,8 +38,10 @@ import org.apache.avro.io.DatumReader
 import org.apache.avro.io.DatumWriter
 import org.apache.avro.specific.SpecificDatumReader
 import org.apache.avro.specific.SpecificDatumWriter
+import org.assertj.core.util.Files
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.whenever
@@ -93,7 +95,7 @@ class MemberInfoTest {
                     PARTY_NAME to "O=Alice,L=London,C=GB",
                     PARTY_OWNING_KEY to KEY,
                     GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
-                    *convertPublicKeys(keyEncodingService).toTypedArray(),
+                    *convertPublicKeys().toTypedArray(),
                     *convertEndpoints().toTypedArray(),
                     *convertTestObjects().toTypedArray(),
                     *createInvalidListFormat().toTypedArray(),
@@ -124,7 +126,7 @@ class MemberInfoTest {
             return result
         }
 
-        private fun convertPublicKeys(keyEncodingService: KeyEncodingService): List<Pair<String, String>> =
+        private fun convertPublicKeys(): List<Pair<String, String>> =
             identityKeys.mapIndexed { i, identityKey -> String.format(IDENTITY_KEYS_KEY, i) to keyEncodingService.encodeAsString(identityKey) }
 
         private fun convertTestObjects(): List<Pair<String, String>> {
@@ -142,18 +144,27 @@ class MemberInfoTest {
             get() = this.memberProvidedContext.parseList("custom.testObjects")
 
         private var memberInfo: MemberInfo? = null
-    }
 
-    @BeforeEach
-    fun setUp() {
-        whenever(
-            keyEncodingService.decodePublicKey(KEY)
-        ).thenReturn(key)
-        whenever(
-            keyEncodingService.encodeAsString(key)
-        ).thenReturn(KEY)
+        private val avroMemberInfo = File("avro-member-info.avro")
 
-        memberInfo = createDummyMemberInfo()
+        @BeforeAll
+        @JvmStatic
+        fun setUp() {
+            whenever(
+                keyEncodingService.decodePublicKey(KEY)
+            ).thenReturn(key)
+            whenever(
+                keyEncodingService.encodeAsString(key)
+            ).thenReturn(KEY)
+
+            memberInfo = createDummyMemberInfo()
+        }
+
+        @AfterAll
+        @JvmStatic
+        fun tearDown() {
+            Files.delete(avroMemberInfo)
+        }
     }
 
     @Test
@@ -176,7 +187,7 @@ class MemberInfoTest {
             WireMemberInfo::class.java
         )
         val dataFileReader: DataFileReader<WireMemberInfo> =
-            DataFileReader(File("avro-member-info.avro"), userDatumReader)
+            DataFileReader(avroMemberInfo, userDatumReader)
 
         var recreatedMemberInfo: MemberInfo? = null
         while (dataFileReader.hasNext()) {

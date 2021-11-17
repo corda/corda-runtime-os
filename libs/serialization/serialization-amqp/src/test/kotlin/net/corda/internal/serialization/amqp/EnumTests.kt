@@ -7,8 +7,8 @@ import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvel
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.amqp.testutils.testName
+import net.corda.serialization.ClassWhitelist
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.serialization.ClassWhitelist
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Assertions.assertNotSame

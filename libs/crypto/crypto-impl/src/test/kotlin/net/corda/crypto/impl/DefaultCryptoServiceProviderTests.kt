@@ -88,8 +88,8 @@ class DefaultCryptoServiceProviderTests {
         provider.handleConfigEvent(
             CryptoLibraryConfigImpl(
                 mapOf(
-                    "keyCache" to emptyMap<String, String>(),
-                    "mngCache" to emptyMap()
+                    "defaultCryptoService" to emptyMap<String, String>(),
+                    "publicKeys" to emptyMap()
                 )
             )
         )
@@ -108,10 +108,10 @@ class DefaultCryptoServiceProviderTests {
             provider.handleConfigEvent(
                 CryptoLibraryConfigImpl(
                     mapOf(
-                        "keyCache" to mapOf(
+                        "defaultCryptoService" to mapOf(
                             "factoryName" to InMemoryKeyValuePersistenceFactoryProvider.NAME
                         ),
-                        "mngCache" to emptyMap()
+                        "publicKeys" to emptyMap()
                     )
                 )
             )
@@ -131,10 +131,10 @@ class DefaultCryptoServiceProviderTests {
         provider.handleConfigEvent(
             CryptoLibraryConfigImpl(
                 mapOf(
-                    "keyCache" to mapOf(
+                    "defaultCryptoService" to mapOf(
                         "factoryName" to InMemoryKeyValuePersistenceFactoryProvider.NAME
                     ),
-                    "mngCache" to emptyMap()
+                    "publicKeys" to emptyMap()
                 )
             )
         )

@@ -9,12 +9,12 @@ import net.corda.internal.serialization.model.TypeIdentifier.Parameterised
 import net.corda.internal.serialization.osgi.TypeResolver
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
+import net.corda.serialization.ClassWhitelist
+import net.corda.serialization.SerializationContext
 import net.corda.utilities.reflection.kotlinObjectInstance
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.v5.serialization.ClassWhitelist
-import net.corda.v5.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Symbol
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type

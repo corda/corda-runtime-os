@@ -11,7 +11,3 @@ gradle :libs:permissions:permission-datamodel:clean :libs:permissions:permission
 Should you need to debug `-D-runjdb=5005` can be added to expose port 5005 for remote debugging.
 
 For more information on DB integration tests, please see [here](../../db/readme.md).
-
-## There is more to do
-1. Switch to use a dedicated schema for RBAC
-1. Make change to Corda API to be able to use `db.changelog-master.xml`

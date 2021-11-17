@@ -27,9 +27,7 @@ class GatewayTest {
 
         val children = gateway.children
 
-        assertThat(children)
-            .hasSize(2)
-            .hasAtLeastOneElementOfType(InboundMessageHandler::class.java)
-            .hasAtLeastOneElementOfType(OutboundMessageHandler::class.java)
+        assertThat(children.map { it.name.componentName })
+            .containsExactlyInAnyOrder(InboundMessageHandler::class.java.simpleName, OutboundMessageHandler::class.java.simpleName)
     }
 }

@@ -1,16 +1,16 @@
 package net.corda.internal.serialization
 
 import net.corda.internal.serialization.amqp.amqpMagic
+import net.corda.serialization.ClassWhitelist
+import net.corda.serialization.EncodingWhitelist
+import net.corda.serialization.ObjectWithCompatibleContext
+import net.corda.serialization.SerializationContext
+import net.corda.serialization.SerializationEncoding
+import net.corda.serialization.SerializationFactory
+import net.corda.serialization.SerializationMagic
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.ByteSequence
-import net.corda.v5.serialization.ClassWhitelist
-import net.corda.v5.serialization.EncodingWhitelist
-import net.corda.v5.serialization.ObjectWithCompatibleContext
-import net.corda.v5.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
-import net.corda.v5.serialization.SerializationEncoding
-import net.corda.v5.serialization.SerializationFactory
-import net.corda.v5.serialization.SerializationMagic
 import net.corda.v5.serialization.SerializedBytes
 import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
@@ -30,7 +30,7 @@ object SnappyEncodingWhitelist : EncodingWhitelist {
 
 data class SerializationContextImpl @JvmOverloads constructor(
     override val preferredSerializationVersion: SerializationMagic,
-    override val deserializationClassLoader: ClassLoader = SerializationDefaults.javaClass.classLoader,
+    override val deserializationClassLoader: ClassLoader = SerializationContextImpl::class.java.classLoader,
     override val whitelist: ClassWhitelist,
     override val properties: Map<Any, Any>,
     override val objectReferencesEnabled: Boolean,
@@ -81,7 +81,7 @@ data class SerializationContextImpl @JvmOverloads constructor(
 open class SerializationFactoryImpl(
     // TODO: This is read-mostly. Probably a faster implementation to be found.
     private val schemes: MutableMap<Pair<CordaSerializationMagic, SerializationContext.UseCase>, SerializationScheme>
-) : SerializationFactory() {
+) : SerializationFactory {
     constructor() : this(ConcurrentHashMap())
 
     companion object {
@@ -106,23 +106,22 @@ open class SerializationFactoryImpl(
         // ConcurrentHashMap.get() is lock free, but computeIfAbsent is not, even if the key is in the map already.
         return (
             schemes[lookupKey] ?: schemes.computeIfAbsent(lookupKey) {
-                registeredSchemes.filter {
+                registeredSchemes.firstOrNull {
                     it.canDeserializeVersion(magic, target)
-                }.forEach {
-                    return@computeIfAbsent it
-                } // XXX: Not single?
-                logger.warn(
-                    "Cannot find serialization scheme for: [$lookupKey, " +
-                        "${if (magic == amqpMagic) "AMQP" else "UNKNOWN MAGIC"}] registeredSchemes are: $registeredSchemes"
-                )
-                throw UnsupportedOperationException("Serialization scheme $lookupKey not supported.")
+                } ?: run {
+                    logger.warn(
+                        "Cannot find serialization scheme for: [$lookupKey, " +
+                                "${if (magic == amqpMagic) "AMQP" else "UNKNOWN MAGIC"}] registeredSchemes are: $registeredSchemes"
+                    )
+                    throw UnsupportedOperationException("Serialization scheme $lookupKey not supported.")
+                }
             }
-            ) to magic
+        ) to magic
     }
 
     @Throws(NotSerializableException::class)
     override fun <T : Any> deserialize(byteSequence: ByteSequence, clazz: Class<T>, context: SerializationContext): T {
-        return asCurrent { withCurrentContext(context) { schemeFor(byteSequence, context.useCase).first.deserialize(byteSequence, clazz, context) } }
+        return schemeFor(byteSequence, context.useCase).first.deserialize(byteSequence, clazz, context)
     }
 
     @Throws(NotSerializableException::class)
@@ -131,17 +130,13 @@ open class SerializationFactoryImpl(
         clazz: Class<T>,
         context: SerializationContext
     ): ObjectWithCompatibleContext<T> {
-        return asCurrent {
-            withCurrentContext(context) {
-                val (scheme, magic) = schemeFor(byteSequence, context.useCase)
-                val deserializedObject = scheme.deserialize(byteSequence, clazz, context)
-                ObjectWithCompatibleContext(deserializedObject, context.withPreferredSerializationVersion(magic))
-            }
-        }
+        val (scheme, magic) = schemeFor(byteSequence, context.useCase)
+        val deserializedObject = scheme.deserialize(byteSequence, clazz, context)
+        return ObjectWithCompatibleContext(deserializedObject, context.withPreferredSerializationVersion(magic))
     }
 
     override fun <T : Any> serialize(obj: T, context: SerializationContext): SerializedBytes<T> {
-        return asCurrent { withCurrentContext(context) { schemeFor(context.preferredSerializationVersion, context.useCase).first.serialize(obj, context) } }
+        return schemeFor(context.preferredSerializationVersion, context.useCase).first.serialize(obj, context)
     }
 
     fun registerScheme(scheme: SerializationScheme) {

@@ -7,6 +7,7 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -19,6 +20,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 
 class PublisherWithDominoLogicTest {
+
     private val handler = argumentCaptor<LifecycleEventHandler>()
     private val coordinator = mock<LifecycleCoordinator> {
         on { postEvent(any()) } doAnswer {
@@ -34,7 +36,7 @@ class PublisherWithDominoLogicTest {
         on { createPublisher(any(), eq(nodeConfig)) } doReturn publisher
     }
 
-    private val wrapper = PublisherWithDominoLogic(factory, coordinatorFactory, "", nodeConfig)
+    private val wrapper = PublisherWithDominoLogic(factory, coordinatorFactory, PublisherConfig("", 1), nodeConfig)
 
     @Test
     fun `createResources will start the publisher`() {

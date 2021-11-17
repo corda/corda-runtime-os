@@ -14,7 +14,6 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
-    implementation project(":libs:p2p-crypto")
     api project(":libs:messaging:messaging")
     api project(":libs:lifecycle:lifecycle")
     api project(":components:configuration:configuration-read-service")
@@ -41,6 +40,7 @@ dependencies {
 
     integrationTestImplementation project(":libs:messaging:inmemory-messaging-impl")
     integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
+    integrationTestImplementation project(":libs:lifecycle:registry")
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
     integrationTestImplementation project(":libs:configuration:configuration-core")
     integrationTestImplementation project(":libs:configuration:configuration-read-impl")

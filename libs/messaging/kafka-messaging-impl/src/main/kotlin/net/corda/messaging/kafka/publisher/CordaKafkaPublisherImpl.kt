@@ -82,7 +82,6 @@ class CordaKafkaPublisherImpl(
 
         return futures
     }
-
     /**
      * Publish list of [records] asynchronously with results stored in [futures]
      */

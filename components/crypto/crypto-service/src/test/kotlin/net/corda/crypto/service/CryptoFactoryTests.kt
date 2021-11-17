@@ -46,10 +46,10 @@ class CryptoFactoryTests {
         )
         config = CryptoLibraryConfigImpl(
             mapOf(
-                "keyCache" to mapOf(
+                "defaultCryptoService" to mapOf(
                     "factoryName" to InMemoryKeyValuePersistenceFactoryProvider.NAME
                 ),
-                "mngCache" to mapOf(
+                "publicKeys" to mapOf(
                     "factoryName" to InMemoryKeyValuePersistenceFactoryProvider.NAME
                 )
             )

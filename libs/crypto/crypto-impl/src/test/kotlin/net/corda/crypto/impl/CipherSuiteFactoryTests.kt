@@ -117,8 +117,8 @@ class CipherSuiteFactoryTests {
                     CryptoLibraryConfigImpl(
                         mapOf(
                             "isDev" to "false",
-                            "keyCache" to emptyMap<String, Any?>(),
-                            "mngCache" to emptyMap<String, Any?>(),
+                            "defaultCryptoService" to emptyMap<String, Any?>(),
+                            "publicKeys" to emptyMap<String, Any?>(),
                             "rpc" to emptyMap<String, Any?>(),
                             "cipherSuite" to mapOf(
                                 "schemeMetadataProvider" to "p0",
@@ -132,8 +132,8 @@ class CipherSuiteFactoryTests {
                     CryptoLibraryConfigImpl(
                         mapOf(
                             "isDev" to "false",
-                            "keyCache" to emptyMap<String, Any?>(),
-                            "mngCache" to emptyMap<String, Any?>(),
+                            "defaultCryptoService" to emptyMap<String, Any?>(),
+                            "publicKeys" to emptyMap<String, Any?>(),
                             "rpc" to emptyMap<String, Any?>(),
                             "cipherSuite" to mapOf(
                                 "schemeMetadataProvider" to "p1",
@@ -147,8 +147,8 @@ class CipherSuiteFactoryTests {
                     CryptoLibraryConfigImpl(
                         mapOf(
                             "isDev" to "false",
-                            "keyCache" to emptyMap<String, Any?>(),
-                            "mngCache" to emptyMap<String, Any?>(),
+                            "defaultCryptoService" to emptyMap<String, Any?>(),
+                            "publicKeys" to emptyMap<String, Any?>(),
                             "rpc" to emptyMap<String, Any?>()
                         )
                     )
