@@ -407,7 +407,7 @@ class DominoTileTest {
         @Test
         fun `resourcesStarted will start tile stopped`() {
             val outerFuture = CompletableFuture<Unit>()
-            val tile = DominoTile(TILE_NAME, factory, createResources = {outerFuture})
+            val tile = DominoTile(TILE_NAME, factory, createResources = { outerFuture })
             tile.start()
             tile.stop()
 
@@ -463,6 +463,17 @@ class DominoTileTest {
             tile().start()
 
             verify(service).registerForUpdates(any())
+        }
+
+        @Test
+        fun `start empty the last configuration`() {
+            val handler = TileConfigurationChangeHandler()
+            handler.lastConfiguration = mock()
+            val tile = DominoTile(TILE_NAME, factory, configurationChangeHandler = handler)
+
+            tile.start()
+
+            assertThat(handler.lastConfiguration).isNull()
         }
 
         @Test
@@ -1243,7 +1254,7 @@ class DominoTileTest {
             val tile = DominoTile(
                 TILE_NAME,
                 factory,
-                createResources = {resourceFuture},
+                createResources = { resourceFuture },
                 configurationChangeHandler = TileConfigurationChangeHandler()
             )
             tile.start()
@@ -1260,7 +1271,7 @@ class DominoTileTest {
             val tile = DominoTile(
                 TILE_NAME,
                 factory,
-                createResources = {resourceFuture},
+                createResources = { resourceFuture },
                 configurationChangeHandler = TileConfigurationChangeHandler()
             )
             tile.start()
@@ -1277,7 +1288,7 @@ class DominoTileTest {
             val tile = DominoTile(
                 TILE_NAME,
                 factory,
-                createResources = {resourceFuture},
+                createResources = { resourceFuture },
                 configurationChangeHandler = TileConfigurationChangeHandler()
             )
             tile.start()
@@ -1294,7 +1305,7 @@ class DominoTileTest {
             val tile = DominoTile(
                 TILE_NAME,
                 factory,
-                createResources = {resourceFuture},
+                createResources = { resourceFuture },
                 configurationChangeHandler = TileConfigurationChangeHandler()
             )
             tile.start()
@@ -1311,7 +1322,7 @@ class DominoTileTest {
             val tile = DominoTile(
                 TILE_NAME,
                 factory,
-                createResources = {resourceFuture},
+                createResources = { resourceFuture },
                 configurationChangeHandler = TileConfigurationChangeHandler()
             )
             tile.start()
@@ -1328,7 +1339,7 @@ class DominoTileTest {
             val tile = DominoTile(
                 TILE_NAME,
                 factory,
-                createResources = {resourceFuture},
+                createResources = { resourceFuture },
                 configurationChangeHandler = TileConfigurationChangeHandler()
             )
             tile.start()
@@ -1338,6 +1349,5 @@ class DominoTileTest {
 
             assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
         }
-
     }
 }

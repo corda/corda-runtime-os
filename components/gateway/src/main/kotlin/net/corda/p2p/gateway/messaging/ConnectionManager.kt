@@ -57,7 +57,9 @@ class ConnectionManager(
     override fun close() {
         clientPool.invalidateAll()
         // Using short quiet period (100 ms) - all the clients had been closed.
-        writeGroup.shutdownGracefully(100, 15000, TimeUnit.MILLISECONDS).sync()
-        nettyGroup.shutdownGracefully(100, 15000, TimeUnit.MILLISECONDS).sync()
+        val shutdownWriteGroup = writeGroup.shutdownGracefully(100, 15000, TimeUnit.MILLISECONDS)
+        val shutdownNettyGroup = nettyGroup.shutdownGracefully(100, 15000, TimeUnit.MILLISECONDS)
+        shutdownWriteGroup.sync()
+        shutdownNettyGroup.sync()
     }
 }
