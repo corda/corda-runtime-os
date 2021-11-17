@@ -63,7 +63,6 @@ class FlowManagerImplTest {
         val serialized = "Test".toByteArray()
         val topic = "Topic1"
 
-
         doReturn(TestFlow::class.java).`when`(sandboxGroup).loadClassFromMainBundles(any(), eq(Flow::class.java))
         doReturn(stateMachine).`when`(flowStateMachineFactory).createStateMachine(any(), any(), any(), any(), any(), any())
         doReturn(Pair(checkpoint, eventsOut)).`when`(stateMachine).waitForCheckpoint()

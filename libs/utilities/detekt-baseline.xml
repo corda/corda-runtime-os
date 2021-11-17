@@ -4,6 +4,7 @@
   <CurrentIssues>
     <ID>SpreadOperator:ConcurrencyUtils.kt$(*toTypedArray())</ID>
     <ID>SpreadOperator:InternalUtils.kt$(this, target, *options)</ID>
+    <ID>SpreadOperator:PathUtils.kt$(*options)</ID>
     <ID>SpreadOperator:JsonMarshallingServiceImpl.kt$(*options)</ID>
     <ID>SpreadOperator:JsonMarshallingServiceImpl.kt$(charset, *options)</ID>
     <ID>SpreadOperator:JsonMarshallingServiceImpl.kt$(this, *attrs)</ID>
