@@ -9,13 +9,14 @@ import java.sql.SQLException
 
 /*
 To run locally:
-- start your local postgres
+- start your local postgres (e.g. docker run --name some-postgres -p 5432:5432 -e POSTGRES_PASSWORD=mysecretpassword -d postgres)
 - populate the variables (below) in gradle.properties with your local postgres values.
-  postgresHost=
-  postgresPort=
-  postgresDb=
-  postgresUser=
-  postgresPassword=
+e.g.
+postgresHost=localhost
+postgresPort=5432
+postgresDb=some-postgres
+postgresUser=postgres
+postgresPassword=mysecretpassword
  */
 
 class DbAccessProviderPostgresTest: DbAccessProviderTestBase() {
