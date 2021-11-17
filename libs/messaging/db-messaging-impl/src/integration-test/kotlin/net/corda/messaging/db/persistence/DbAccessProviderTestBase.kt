@@ -3,6 +3,7 @@ package net.corda.messaging.db.persistence
 import net.corda.messaging.db.util.DbUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.Assume
 import org.junit.BeforeClass
 import org.junit.jupiter.api.*
 import org.mockito.kotlin.isNotNull
@@ -41,14 +42,11 @@ abstract class DbAccessProviderTestBase {
 
     @BeforeAll
     fun setupBeforeAllTests() {
-        if(hasDbConfigured()) {
-            startDatabase()
-            createTables()
-            dbAccessProvider = DBAccessProviderImpl(getJdbcUrl(), getUsername(), getPassword(), getDbType(), 5)
-            dbAccessProvider.start()
-        } else {
-            org.junit.Assume.assumeTrue(hasDbConfigured())
-        }
+        Assume.assumeTrue(hasDbConfigured())
+        startDatabase()
+        createTables()
+        dbAccessProvider = DBAccessProviderImpl(getJdbcUrl(), getUsername(), getPassword(), getDbType(), 5)
+        dbAccessProvider.start()
     }
 
     @AfterAll
