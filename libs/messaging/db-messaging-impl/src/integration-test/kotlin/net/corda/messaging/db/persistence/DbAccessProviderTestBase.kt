@@ -54,8 +54,6 @@ abstract class DbAccessProviderTestBase {
         if(hasDbConfigured()) {
             dbAccessProvider.stop()
             stopDatabase()
-        } else {
-            org.junit.Assume.assumeTrue(hasDbConfigured())
         }
     }
 
