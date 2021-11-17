@@ -20,9 +20,9 @@
       "type": "string"
     },
     {
-      "name": "parentGroupId",
-      "type": [ "null", "string" ],
-      "doc": "Optional parent group ID of this group."
+      "name": "parentGroupAssociation",
+      "type": [ "null", "net.corda.data.permissions.GroupAssociation" ],
+      "doc": "Optional parent group associated with this group."
     },
     {
       "name": "properties",
@@ -33,12 +33,12 @@
       "doc": "List of group properties."
     },
     {
-      "name": "roleIds",
+      "name": "roleAssociations",
       "type": {
         "type": "array",
-        "items": "string"
+        "items": "net.corda.data.permissions.RoleAssociation"
       },
-      "doc": "List of role IDs associated with this group."
+      "doc": "List of roles associated with this Group."
     }
   ]
 }

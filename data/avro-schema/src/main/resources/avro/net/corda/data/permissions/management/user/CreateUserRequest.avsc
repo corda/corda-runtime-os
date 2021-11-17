@@ -25,10 +25,13 @@
     },
     {
       "name": "passwordExpiry",
-      "type": {
-        "type": "long",
-        "logicalType": "timestamp-millis"
-      },
+      "type": [
+        "null",
+        {
+          "type": "long",
+          "logicalType": "timestamp-millis"
+        }
+      ],
       "doc": "Time ([Instant]) in milliseconds when the user's password expires."
     },
     {

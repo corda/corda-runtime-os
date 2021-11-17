@@ -16,6 +16,10 @@
       "type": "net.corda.data.permissions.ChangeDetails"
     },
     {
+      "name": "loginName",
+      "type": "string"
+    },
+    {
       "name": "fullName",
       "type": "string"
     },
@@ -32,13 +36,21 @@
       "type": [ "null", "string" ]
     },
     {
+      "name": "passwordExpiry",
+      "type": ["null", {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }],
+      "doc": "Optional time ([Instant]) in milliseconds when the password expires."
+    },
+    {
       "name": "ssoAuth",
       "type": "boolean"
     },
     {
-      "name": "parentGroupId",
-      "type": [ "null", "string" ],
-      "doc": "Optional parent group ID of this User."
+      "name": "parentGroupAssociation",
+      "type": [ "null", "net.corda.data.permissions.GroupAssociation" ],
+      "doc": "Optional parent group associated with this User."
     },
     {
       "name": "properties",
@@ -49,12 +61,12 @@
       "doc": "List of user properties."
     },
     {
-      "name": "roleIds",
+      "name": "roleAssociations",
       "type": {
         "type": "array",
-        "items": "string"
+        "items": "net.corda.data.permissions.RoleAssociation"
       },
-      "doc": "List of role IDs associated with this User."
+      "doc": "List of roles associated with this User."
     }
   ]
 }

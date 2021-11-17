@@ -11,11 +11,6 @@
         "logicalType": "timestamp-millis"
       },
       "doc": "Time ([Instant]) in milliseconds when this entity was last updated."
-    },
-    {
-      "name": "changedBy",
-      "type": "string",
-      "doc": "ID of user who made the most recent update."
     }
   ]
 }
