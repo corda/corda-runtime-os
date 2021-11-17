@@ -5,10 +5,10 @@ import net.corda.internal.serialization.model.LocalTypeModel
 import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeDescriptor
 import net.corda.internal.serialization.model.TypeLoader
+import net.corda.serialization.SerializationContext
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.MissingSerializerException
-import net.corda.v5.serialization.SerializationContext
 import java.io.NotSerializableException
 import java.util.Collections.singletonList
 
@@ -21,7 +21,7 @@ interface RemoteSerializerFactory {
      * contained in the provided [Schema].
      *
      * @param typeDescriptor The type descriptor for the type to obtain a serializer for.
-     * @param schema The schemas sent along with the serialized data.
+     * @param serializationSchemas The schemas sent along with the serialized data.
      */
     @Throws(NotSerializableException::class, ClassNotFoundException::class)
     fun get(

@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoConfigMap
+import net.corda.crypto.impl.config.DefaultConfigConsts
 import net.corda.crypto.impl.config.memberConfig
 import net.corda.data.crypto.config.CryptoConfigurationRecord
 import net.corda.lifecycle.Lifecycle
@@ -69,9 +70,15 @@ class MemberConfigWriterImpl @Activate constructor(
         config: CryptoConfigMap,
         val logger: Logger
     ) : AutoCloseable {
-        private val topicName: String = config.getString(ConfigConsts.TOPIC_NAME_KEY)
+        private val topicName: String = config.getString(
+            DefaultConfigConsts.Kafka.TOPIC_NAME_KEY,
+            DefaultConfigConsts.Kafka.MemberConfig.TOPIC_NAME
+        )
 
-        private val clientId: String = config.getString(ConfigConsts.CLIENT_ID_KEY)
+        private val clientId: String = config.getString(
+            DefaultConfigConsts.Kafka.CLIENT_ID_KEY,
+            DefaultConfigConsts.Kafka.MemberConfig.CLIENT_ID
+        )
 
         private val pub: Publisher = publisherFactory.createPublisher(
             PublisherConfig(clientId)

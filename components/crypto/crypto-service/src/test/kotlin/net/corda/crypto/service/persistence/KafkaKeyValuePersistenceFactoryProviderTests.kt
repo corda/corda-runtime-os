@@ -1,6 +1,7 @@
 package net.corda.crypto.service.persistence
 
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
+import net.corda.crypto.impl.config.DefaultConfigConsts
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -52,18 +53,18 @@ class KafkaKeyValuePersistenceFactoryProviderTests {
         ).thenReturn(pub)
         config = CryptoLibraryConfigImpl(
             mapOf(
-                "keyCache" to mapOf(
+                "defaultCryptoService" to mapOf(
                     "persistenceConfig" to mapOf(
-                        "groupName" to GROUP_NAME,
-                        "topicName" to KEY_CACHE_TOPIC_NAME,
-                        "clientId" to CLIENT_ID
+                        DefaultConfigConsts.Kafka.GROUP_NAME_KEY to GROUP_NAME,
+                        DefaultConfigConsts.Kafka.TOPIC_NAME_KEY to KEY_CACHE_TOPIC_NAME,
+                        DefaultConfigConsts.Kafka.CLIENT_ID_KEY to CLIENT_ID
                     )
                 ),
-                "mngCache" to mapOf(
+                "publicKeys" to mapOf(
                     "persistenceConfig" to mapOf(
-                        "groupName" to GROUP_NAME,
-                        "topicName" to MNG_CACHE_TOPIC_NAME,
-                        "clientId" to CLIENT_ID
+                        DefaultConfigConsts.Kafka.GROUP_NAME_KEY to GROUP_NAME,
+                        DefaultConfigConsts.Kafka.TOPIC_NAME_KEY to MNG_CACHE_TOPIC_NAME,
+                        DefaultConfigConsts.Kafka.CLIENT_ID_KEY to CLIENT_ID
                     )
 
                 )

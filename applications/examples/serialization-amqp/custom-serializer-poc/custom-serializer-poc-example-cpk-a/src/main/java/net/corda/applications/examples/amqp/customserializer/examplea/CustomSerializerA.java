@@ -3,7 +3,7 @@ package net.corda.applications.examples.amqp.customserializer.examplea;
 import net.corda.v5.serialization.SerializationCustomSerializer;
 import org.slf4j.Logger;
 
-public class CustomSerializerA implements SerializationCustomSerializer<NeedsCustomSerializerExampleA, Integer> {
+public class CustomSerializerA implements SerializationCustomSerializer<NeedsCustomSerializerExampleA, CustomSerializerA.MyProxy> {
 
     private final String name;
     private final Logger logger;
@@ -19,23 +19,35 @@ public class CustomSerializerA implements SerializationCustomSerializer<NeedsCus
     }
 
     @Override
-    public NeedsCustomSerializerExampleA fromProxy(Integer integer) {
+    public NeedsCustomSerializerExampleA fromProxy(MyProxy proxy) {
 
         if (logger != null) {
-            logger.info("fromProxy - " + name);
+            logger.info("fromProxy - {}", name);
         }
 
-        return new NeedsCustomSerializerExampleA(integer);
+        return new NeedsCustomSerializerExampleA(proxy.getInteger());
     }
 
     @Override
-    public Integer toProxy(NeedsCustomSerializerExampleA needsCustomSerializerExampleA) {
+    public MyProxy toProxy(NeedsCustomSerializerExampleA needsCustomSerializerExampleA) {
 
         if (logger != null) {
-            logger.info("toProxy - " + name);
+            logger.info("toProxy - {}", name);
         }
 
-        return needsCustomSerializerExampleA.getB();
+        return new MyProxy(needsCustomSerializerExampleA.getB());
+    }
+
+    public static class MyProxy {
+        private final int integer;
+
+        MyProxy(int integer) {
+            this.integer = integer;
+        }
+
+        int getInteger() {
+            return integer;
+        }
     }
 }
 

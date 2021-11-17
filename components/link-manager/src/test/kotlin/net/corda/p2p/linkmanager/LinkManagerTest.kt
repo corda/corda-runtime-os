@@ -1,9 +1,14 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.emulation.subscription.eventlog.EventLogSubscription
 import net.corda.p2p.AuthenticatedMessageAck
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.DataMessagePayload
@@ -30,6 +35,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
+import net.corda.p2p.linkmanager.delivery.DeliveryTracker
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAck
@@ -60,6 +66,9 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -69,6 +78,7 @@ import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicReference
 
 class LinkManagerTest {
 
@@ -170,9 +180,21 @@ class LinkManagerTest {
         }
     }
 
+    private var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)? = null
+    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
+        whenever(mock.isRunning).doReturn(true)
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.name).doReturn(LifecycleCoordinatorName(context.arguments()[0] as String, ""))
+        @Suppress("UNCHECKED_CAST")
+        createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)?
+    }
+
     @AfterEach
     fun resetLogging() {
         loggingInterceptor.reset()
+        dominoTile.close()
     }
 
     class TestListBasedPublisher : Publisher {
@@ -234,7 +256,9 @@ class LinkManagerTest {
     }
 
     private fun assignedListener(partitions: List<Int>): InboundAssignmentListener {
-        val listener = InboundAssignmentListener()
+        val reference = AtomicReference<CompletableFuture<Unit>>()
+        reference.set(mock())
+        val listener = InboundAssignmentListener(reference)
         for (partition in partitions) {
             listener.onPartitionsAssigned(listOf(Schema.LINK_IN_TOPIC to partition))
         }
@@ -272,8 +296,9 @@ class LinkManagerTest {
 
         val sessionManager = Mockito.mock(SessionManager::class.java)
 
-        val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory)
+        val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, mock(), mock(), 1)
         queue.start()
+        createResources!!(mock())
 
         queue.queueMessage(message1, key1)
         queue.queueMessage(message2, key1)
@@ -297,6 +322,43 @@ class LinkManagerTest {
             .hasSize(2).containsExactlyInAnyOrder(payload1, payload2)
 
         verify(sessionManager, times(5)).dataMessageSent(sessionPair.initiatorSession)
+    }
+
+    @Test
+    fun `createInboundResources adds the correct resource to the resourceHolder`() {
+        val subscription = mock<EventLogSubscription<String, LinkInMessage>>()
+        val subscriptionFactory = mock<SubscriptionFactory> {
+            on {createEventLogSubscription<String, LinkInMessage>(any(), any(), any(), any()) } doReturn subscription
+        }
+
+        val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), 1, mock(), mock(), mock())
+        val resourcesHolder = mock<ResourcesHolder>()
+        linkManager.createInboundResources(resourcesHolder)
+        verify(subscription).start()
+        verify(resourcesHolder).keep(subscription)
+    }
+
+    @Test
+    fun `createOutboundResources adds the correct resource to the resourceHolder`() {
+        val deliveryTracker = Mockito.mockConstruction(DeliveryTracker::class.java) { _, _ -> }
+        val subscription = mock<EventLogSubscription<String, AppMessage>>()
+        val subscriptionFactory = mock<SubscriptionFactory> {
+            //Used in createOutboundResources
+            on {createEventLogSubscription<String, AppMessage>(any(), any(), any(), eq(null)) } doReturn subscription
+            //Used in createInboundResources
+            on {createEventLogSubscription<String, AppMessage>(any(), any(), any(), any()) } doReturn mock()
+        }
+
+        val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), 1, mock(), mock(), mock())
+        val resourcesHolder = mock<ResourcesHolder>()
+        linkManager.createInboundResources(mock())
+        linkManager.createOutboundResources(resourcesHolder)
+        verify(subscription).start()
+        verify(resourcesHolder).keep(subscription)
+        val constructedDeliveryTracker = deliveryTracker.constructed().last()
+        verify(constructedDeliveryTracker).start()
+        verify(resourcesHolder).keep(constructedDeliveryTracker)
+        deliveryTracker.close()
     }
 
     @Test

@@ -1,6 +1,6 @@
 package net.corda.internal.serialization
 
-import net.corda.v5.serialization.ClassWhitelist
+import net.corda.serialization.ClassWhitelist
 import java.io.BufferedInputStream
 import java.io.Console
 import java.io.File
@@ -32,6 +32,7 @@ import java.net.URLConnection
 import java.security.AccessController
 import java.security.KeyStore
 import java.security.Permission
+import java.security.PrivateKey
 import java.security.Provider
 import java.sql.Connection
 import java.util.Dictionary
@@ -40,8 +41,6 @@ import java.util.Random
 import java.util.WeakHashMap
 import java.util.logging.Handler
 import java.util.zip.ZipFile
-import kotlin.collections.HashSet
-import kotlin.collections.LinkedHashSet
 
 /**
  * This is a [ClassWhitelist] implementation where everything is whitelisted except for blacklisted classes and interfaces.
@@ -80,6 +79,7 @@ object AllButBlacklisted : ClassWhitelist {
             KeyStore::class.java.name,
             AccessController::class.java.name,
             Permission::class.java.name,
+            PrivateKey::class.java.name,
 
             // java.net.
             DatagramSocket::class.java.name,

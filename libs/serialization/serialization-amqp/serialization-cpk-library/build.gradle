@@ -1,0 +1,15 @@
+plugins {
+    id 'corda.common-library'
+}
+
+description 'Corda Sandbox CPK Library'
+
+group 'com.example.serialization'
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    compileOnly "org.osgi:osgi.core"
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+}

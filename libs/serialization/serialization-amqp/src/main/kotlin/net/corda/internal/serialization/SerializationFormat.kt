@@ -2,12 +2,12 @@ package net.corda.internal.serialization
 
 import aQute.bnd.annotation.spi.ServiceConsumer
 import net.corda.internal.serialization.OrdinalBits.OrdinalWriter
-import net.corda.v5.base.types.ByteSequence
-import net.corda.v5.base.types.OpaqueBytes
-import net.corda.v5.serialization.SerializationEncoding
 import net.corda.internal.serialization.encoding.Encoder
 import net.corda.internal.serialization.encoding.EncoderService
 import net.corda.internal.serialization.encoding.EncoderType
+import net.corda.serialization.SerializationEncoding
+import net.corda.v5.base.types.ByteSequence
+import net.corda.v5.base.types.OpaqueBytes
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer

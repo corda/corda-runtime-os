@@ -4,9 +4,12 @@ import com.google.common.reflect.TypeToken
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.AMQPSerializer
 import net.corda.internal.serialization.amqp.CachingCustomSerializerRegistry
+import net.corda.internal.serialization.amqp.CustomSerializer
 import net.corda.internal.serialization.amqp.CustomSerializerRegistry
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
+import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.WhitelistBasedTypeModelConfiguration
+import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.base.annotations.SerializableCalculatedProperty
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.assertj.core.api.Assertions.assertThat
@@ -26,11 +29,9 @@ class LocalTypeModelTests {
     private val model = ConfigurableLocalTypeModel(WhitelistBasedTypeModelConfiguration(AllWhitelist, customSerializerRegistry))
     private val emptyCustomSerializerRegistry = object : CustomSerializerRegistry {
         override val customSerializerNames: List<String> = emptyList()
-        override fun register(
-            customSerializer: SerializationCustomSerializer<*, *>,
-            withInheritance: Boolean
-        ) {}
-        override fun registerExternal(customSerializer: SerializationCustomSerializer<*, *>) {}
+        override fun register(customSerializer: CustomSerializer<out Any>) {}
+        override fun register(serializer: InternalCustomSerializer<out Any>, factory: SerializerFactory) {}
+        override fun registerExternal(serializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {}
         override fun findCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? = null
     }
     private val modelWithoutOpacity =
