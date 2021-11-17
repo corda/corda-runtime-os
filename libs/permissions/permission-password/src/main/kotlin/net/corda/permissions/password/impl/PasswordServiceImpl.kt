@@ -5,17 +5,23 @@ import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.apache.commons.text.RandomStringGenerator
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import java.util.*
 import kotlin.math.abs
 
-class PasswordServiceImpl(private val cipherSchemeMetadata: CipherSchemeMetadata) : PasswordService {
+@Component(service = [PasswordService::class])
+class PasswordServiceImpl(
+    @Reference(service = CipherSchemeMetadata::class)
+    private val cipherSchemeMetadata: CipherSchemeMetadata
+) : PasswordService {
 
     companion object {
         private const val SALT_LENGTH = 100
     }
 
     private val saltGenerator = RandomStringGenerator.Builder()
-        .withinRange( "az".toCharArray(), "AZ".toCharArray(), "09".toCharArray())
+        .withinRange("az".toCharArray(), "AZ".toCharArray(), "09".toCharArray())
         .usingRandom { maxCount ->
             abs(cipherSchemeMetadata.secureRandom.nextInt()) % maxCount
         }
@@ -27,8 +33,7 @@ class PasswordServiceImpl(private val cipherSchemeMetadata: CipherSchemeMetadata
     }
 
     private fun doSaltAndHash(clearTextPassword: String, salt: String): PasswordHash {
-        val wrappingKey = WrappingKey.deriveMasterKey(cipherSchemeMetadata, clearTextPassword, salt)
-        val encodedBytes = wrappingKey.master.encoded
+        val encodedBytes = WrappingKey.encodePassPhrase(clearTextPassword, salt)
         return PasswordHash(salt, Base64.getEncoder().encodeToString(encodedBytes))
     }
 

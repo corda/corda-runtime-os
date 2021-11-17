@@ -6,7 +6,8 @@ plugins {
 description 'Handles password salting and hashing as well as verification.'
 
 dependencies {
-    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 

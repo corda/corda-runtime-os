@@ -15,7 +15,7 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 class WrappingKey(
-    val master: SecretKey,
+    private val master: SecretKey,
     private val schemeMetadata: CipherSchemeMetadata,
 ) {
     companion object {
@@ -30,6 +30,14 @@ class WrappingKey(
         private val logger = contextLogger()
 
         fun deriveMasterKey(schemeMetadata: CipherSchemeMetadata, originalPassphrase: String?, originalSalt: String?): WrappingKey {
+            val encoded = encodePassPhrase(originalPassphrase, originalSalt)
+            return WrappingKey(
+                schemeMetadata = schemeMetadata,
+                master = SecretKeySpec(encoded, WRAPPING_KEY_ALGORITHM)
+            )
+        }
+
+        fun encodePassPhrase(originalPassphrase: String?, originalSalt: String?): ByteArray {
             val passphrase = if (originalPassphrase.isNullOrBlank()) {
                 logger.warn("Please specify the passphrase in the configuration, for now will be using the dev value!")
                 "PASSPHRASE"
@@ -44,12 +52,10 @@ class WrappingKey(
             }
             /* Derive the key, given password and salt. */
             val factory = SecretKeyFactory.getInstance(DERIVE_ALGORITHM)
-            val spec: KeySpec = PBEKeySpec(passphrase.toCharArray(), salt.toByteArray(), DERIVE_ITERATION_COUNT, AES_KEY_LENGTH)
+            val spec: KeySpec =
+                PBEKeySpec(passphrase.toCharArray(), salt.toByteArray(), DERIVE_ITERATION_COUNT, AES_KEY_LENGTH)
             val tmp = factory.generateSecret(spec)
-            return WrappingKey(
-                schemeMetadata = schemeMetadata,
-                master = SecretKeySpec(tmp.encoded, WRAPPING_KEY_ALGORITHM)
-            )
+            return tmp.encoded
         }
 
         fun createWrappingKey(schemeMetadata: CipherSchemeMetadata): WrappingKey {
