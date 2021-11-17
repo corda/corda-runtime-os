@@ -1,7 +1,7 @@
 package net.corda.permissions.password.impl
 
 import net.corda.crypto.impl.CipherSchemeMetadataProviderImpl
-import net.corda.permissions.password.PasswordService
+import net.corda.permissions.password.PasswordServiceFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -11,7 +11,7 @@ class PasswordServiceImplTest {
 
     private val cipherSchemeMetadataProvider = CipherSchemeMetadataProviderImpl()
     private val cipherSchemeMetadata = cipherSchemeMetadataProvider.getInstance()
-    private val passwordService: PasswordService = PasswordServiceImpl(cipherSchemeMetadata)
+    private val passwordService = PasswordServiceFactory().createPasswordService(cipherSchemeMetadata.secureRandom)
 
     @Test
     fun test() {
@@ -24,5 +24,4 @@ class PasswordServiceImplTest {
         assertTrue(passwordService.verifies(correctPassword, passwordHash))
         assertFalse(passwordService.verifies("completelyRandom", passwordHash))
     }
-
 }
