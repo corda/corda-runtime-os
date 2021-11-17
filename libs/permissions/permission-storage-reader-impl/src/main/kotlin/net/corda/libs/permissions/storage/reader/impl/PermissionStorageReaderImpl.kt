@@ -2,6 +2,8 @@ package net.corda.libs.permissions.storage.reader.impl
 
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
+import net.corda.libs.permissions.storage.reader.impl.repository.PermissionRepositoryImpl
+import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.permissions.model.Group
@@ -17,9 +19,15 @@ import net.corda.data.permissions.User as AvroUser
 
 class PermissionStorageReaderImpl(
     private val permissionCache: PermissionCache,
-    private val entityManagerFactory: EntityManagerFactory,
-    private val publisher: Publisher
+    private val permissionRepository: PermissionRepository,
+    private val publisher: Publisher,
 ) : PermissionStorageReader {
+
+    constructor(
+        permissionCache: PermissionCache,
+        publisher: Publisher,
+        entityManagerFactory: EntityManagerFactory
+    ) : this(permissionCache, PermissionRepositoryImpl(entityManagerFactory), publisher)
 
     override val isRunning: Boolean get() = !stopped
 
@@ -35,21 +43,21 @@ class PermissionStorageReaderImpl(
     }
 
     override fun publishUsers(ids: List<String>) {
-        publisher.publish(createUserRecords(findAllUsers(ids)))
+        publisher.publish(createUserRecords(permissionRepository.findAllUsers(ids)))
     }
 
     override fun publishGroups(ids: List<String>) {
-        publisher.publish(createGroupRecords(findAllGroups(ids)))
+        publisher.publish(createGroupRecords(permissionRepository.findAllGroups(ids)))
     }
 
     override fun publishRoles(ids: List<String>) {
-        publisher.publish(createRoleRecords(findAllRoles(ids)))
+        publisher.publish(createRoleRecords(permissionRepository.findAllRoles(ids)))
     }
 
     private fun publishOnStartup() {
-        publisher.publish(createUserRecords(findAllUsers()))
-        publisher.publish(createGroupRecords(findAllGroups()))
-        publisher.publish(createRoleRecords(findAllRoles()))
+        publisher.publish(createUserRecords(permissionRepository.findAllUsers()))
+        publisher.publish(createGroupRecords(permissionRepository.findAllGroups()))
+        publisher.publish(createRoleRecords(permissionRepository.findAllRoles()))
     }
 
     private fun createUserRecords(users: List<User>): List<Record<String, AvroUser>> {
@@ -86,53 +94,5 @@ class PermissionStorageReaderImpl(
             .map { (name, _) -> Record(RPC_PERM_ROLE_TOPIC, key = name, value = null) }
 
         return updated + removed
-    }
-
-    private fun findAllUsers(): List<User> {
-        return findAll("SELECT u from User u")
-    }
-
-    private fun findAllGroups(): List<Group> {
-        return findAll("SELECT g from Group g")
-    }
-
-    private fun findAllRoles(): List<Role> {
-        return findAll("SELECT r from Role r")
-    }
-
-    private fun findAllUsers(ids: List<String>): List<User> {
-        return findAll("SELECT u from User u WHERE u.id IN :ids", ids)
-    }
-
-    private fun findAllGroups(ids: List<String>): List<Group> {
-        return findAll("SELECT g from Group g WHERE g.id IN :ids", ids)
-    }
-
-    private fun findAllRoles(ids: List<String>): List<Role> {
-        return findAll("SELECT r from Role r WHERE r.id IN :ids", ids)
-    }
-
-    private inline fun <reified T> findAll(qlString: String): List<T> {
-        val entityManager = entityManagerFactory.createEntityManager()
-        return try {
-            entityManager.transaction.begin()
-            entityManager.createQuery(qlString, T::class.java).resultList
-        } finally {
-            entityManager.close()
-        }
-    }
-
-    private inline fun <reified T> findAll(qlString: String, ids: List<String>): List<T> {
-        val entityManager = entityManagerFactory.createEntityManager()
-        return try {
-            entityManager.transaction.begin()
-            ids.chunked(100) { chunkedIds ->
-                entityManager.createQuery(qlString, T::class.java)
-                    .setParameter("ids", chunkedIds)
-                    .resultList
-            }.flatten()
-        } finally {
-            entityManager.close()
-        }
     }
 }

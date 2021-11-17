@@ -2,6 +2,7 @@ package net.corda.libs.permissions.storage.reader.impl
 
 import net.corda.data.permissions.ChangeDetails
 import net.corda.libs.permissions.cache.PermissionCache
+import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.permissions.model.Group
@@ -16,18 +17,12 @@ import net.corda.permissions.model.User
 import net.corda.rpc.schema.Schema
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
-import javax.persistence.EntityTransaction
-import javax.persistence.TypedQuery
 import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.Role as AvroRole
@@ -238,7 +233,7 @@ class PermissionStorageReaderImplTest {
             user.enabled,
             user.hashedPassword,
             user.saltValue,
-            false,
+            true,
             group.id,
             emptyList(),
             listOf(role.id)
@@ -252,7 +247,7 @@ class PermissionStorageReaderImplTest {
             user2.enabled,
             user2.hashedPassword,
             user2.saltValue,
-            false,
+            true,
             group.id,
             emptyList(),
             listOf(role.id)
@@ -260,31 +255,19 @@ class PermissionStorageReaderImplTest {
     }
 
     private val permissionCache = mock<PermissionCache>()
-    private val transaction = mock<EntityTransaction>()
-    private val entityManager = mock<EntityManager>().apply {
-        whenever(transaction).thenReturn(this@PermissionStorageReaderImplTest.transaction)
-    }
-    private val entityManagerFactory = mock<EntityManagerFactory>().apply {
-        whenever(createEntityManager()).thenReturn(entityManager)
-    }
-    private val userQuery = mock<TypedQuery<User>>()
-    private val groupQuery = mock<TypedQuery<Group>>()
-    private val roleQuery = mock<TypedQuery<Role>>()
+    private val permissionRepository = mock<PermissionRepository>()
     private val publisher = mock<Publisher>()
 
-    private val processor = PermissionStorageReaderImpl(permissionCache, entityManagerFactory, publisher)
+    private val processor = PermissionStorageReaderImpl(permissionCache, permissionRepository, publisher)
 
     @Test
     fun `starting the reader publishes stored users, groups and roles`() {
         whenever(permissionCache.users).thenReturn(emptyMap())
         whenever(permissionCache.groups).thenReturn(emptyMap())
         whenever(permissionCache.roles).thenReturn(emptyMap())
-        whenever(userQuery.resultList).thenReturn(listOf(user))
-        whenever(groupQuery.resultList).thenReturn(listOf(group))
-        whenever(roleQuery.resultList).thenReturn(listOf(role))
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
+        whenever(permissionRepository.findAllUsers()).thenReturn(listOf(user))
+        whenever(permissionRepository.findAllGroups()).thenReturn(listOf(group))
+        whenever(permissionRepository.findAllRoles()).thenReturn(listOf(role))
 
         processor.start()
 
@@ -304,12 +287,9 @@ class PermissionStorageReaderImplTest {
         whenever(permissionCache.users).thenReturn(mapOf(user.loginName to avroUser))
         whenever(permissionCache.groups).thenReturn(mapOf(avroGroup.name to avroGroup))
         whenever(permissionCache.roles).thenReturn(mapOf(avroRole.name to avroRole))
-        whenever(userQuery.resultList).thenReturn(emptyList())
-        whenever(groupQuery.resultList).thenReturn(emptyList())
-        whenever(roleQuery.resultList).thenReturn(emptyList())
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
+        whenever(permissionRepository.findAllUsers()).thenReturn(emptyList())
+        whenever(permissionRepository.findAllGroups()).thenReturn(emptyList())
+        whenever(permissionRepository.findAllRoles()).thenReturn(emptyList())
 
         processor.start()
 
@@ -329,9 +309,7 @@ class PermissionStorageReaderImplTest {
         val userIds = listOf("user id")
 
         whenever(permissionCache.users).thenReturn(emptyMap())
-        whenever(userQuery.setParameter(any<String>(), eq(userIds))).thenReturn(userQuery)
-        whenever(userQuery.resultList).thenReturn(listOf(user))
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
+        whenever(permissionRepository.findAllUsers(userIds)).thenReturn(listOf(user))
 
         processor.publishUsers(userIds)
 
@@ -345,9 +323,7 @@ class PermissionStorageReaderImplTest {
         val groupIds = listOf("group id")
 
         whenever(permissionCache.groups).thenReturn(emptyMap())
-        whenever(groupQuery.setParameter(any<String>(), eq(groupIds))).thenReturn(groupQuery)
-        whenever(groupQuery.resultList).thenReturn(listOf(group))
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
+        whenever(permissionRepository.findAllGroups(groupIds)).thenReturn(listOf(group))
 
         processor.publishGroups(groupIds)
 
@@ -361,9 +337,7 @@ class PermissionStorageReaderImplTest {
         val roleIds = listOf("role id")
 
         whenever(permissionCache.roles).thenReturn(emptyMap())
-        whenever(roleQuery.setParameter(any<String>(), eq(roleIds))).thenReturn(roleQuery)
-        whenever(roleQuery.resultList).thenReturn(listOf(role))
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
+        whenever(permissionRepository.findAllRoles(roleIds)).thenReturn(listOf(role))
 
         processor.publishRoles(roleIds)
 
@@ -377,9 +351,7 @@ class PermissionStorageReaderImplTest {
         val userIds = listOf("user id")
 
         whenever(permissionCache.users).thenReturn(mapOf(user.loginName to avroUser))
-        whenever(userQuery.setParameter(any<String>(), eq(userIds))).thenReturn(userQuery)
-        whenever(userQuery.resultList).thenReturn(emptyList())
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
+        whenever(permissionRepository.findAllUsers(userIds)).thenReturn(emptyList())
 
         processor.publishUsers(userIds)
 
@@ -393,9 +365,7 @@ class PermissionStorageReaderImplTest {
         val groupIds = listOf("group id")
 
         whenever(permissionCache.groups).thenReturn(mapOf(avroGroup.name to avroGroup))
-        whenever(groupQuery.setParameter(any<String>(), eq(groupIds))).thenReturn(groupQuery)
-        whenever(groupQuery.resultList).thenReturn(emptyList())
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
+        whenever(permissionRepository.findAllGroups(groupIds)).thenReturn(emptyList())
 
         processor.publishGroups(groupIds)
 
@@ -409,9 +379,7 @@ class PermissionStorageReaderImplTest {
         val roleIds = listOf("role id")
 
         whenever(permissionCache.roles).thenReturn(mapOf(avroRole.name to avroRole))
-        whenever(roleQuery.setParameter(any<String>(), eq(roleIds))).thenReturn(roleQuery)
-        whenever(roleQuery.resultList).thenReturn(emptyList())
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
+        whenever(permissionRepository.findAllRoles(roleIds)).thenReturn(emptyList())
 
         processor.publishRoles(roleIds)
 
@@ -425,9 +393,7 @@ class PermissionStorageReaderImplTest {
         val userIds = listOf("user id")
 
         whenever(permissionCache.users).thenReturn(mapOf(user.loginName to avroUser, user2.loginName to avroUser2))
-        whenever(userQuery.setParameter(any<String>(), eq(userIds))).thenReturn(userQuery)
-        whenever(userQuery.resultList).thenReturn(listOf(user))
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
+        whenever(permissionRepository.findAllUsers(userIds)).thenReturn(listOf(user))
 
         processor.publishUsers(userIds)
 
@@ -444,9 +410,7 @@ class PermissionStorageReaderImplTest {
         val groupIds = listOf("group id")
 
         whenever(permissionCache.groups).thenReturn(mapOf(group.name to avroGroup, group2.name to avroGroup2))
-        whenever(groupQuery.setParameter(any<String>(), eq(groupIds))).thenReturn(groupQuery)
-        whenever(groupQuery.resultList).thenReturn(listOf(group))
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
+        whenever(permissionRepository.findAllGroups(groupIds)).thenReturn(listOf(group))
 
         processor.publishGroups(groupIds)
 
@@ -463,9 +427,7 @@ class PermissionStorageReaderImplTest {
         val roleIds = listOf("role id")
 
         whenever(permissionCache.roles).thenReturn(mapOf(role.name to avroRole, role2.name to avroRole2))
-        whenever(roleQuery.setParameter(any<String>(), eq(roleIds))).thenReturn(roleQuery)
-        whenever(roleQuery.resultList).thenReturn(listOf(role))
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
+        whenever(permissionRepository.findAllRoles(roleIds)).thenReturn(listOf(role))
 
         processor.publishRoles(roleIds)
 

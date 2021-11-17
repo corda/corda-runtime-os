@@ -13,9 +13,9 @@ class PermissionStorageReaderFactoryImpl : PermissionStorageReaderFactory {
 
     override fun create(
         permissionCache: PermissionCache,
-        entityManagerFactory: EntityManagerFactory,
-        publisher: Publisher
+        publisher: Publisher,
+        entityManagerFactory: EntityManagerFactory
     ): PermissionStorageReader {
-        return PermissionStorageReaderImpl(permissionCache, entityManagerFactory, publisher)
+        return PermissionStorageReaderImpl(permissionCache, publisher, entityManagerFactory)
     }
 }

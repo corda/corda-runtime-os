@@ -45,6 +45,7 @@ class PermissionStorageReaderServiceEventHandler(
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
+                registrationHandle?.close()
                 registrationHandle = coordinator.followStatusChangesByName(
                     setOf(LifecycleCoordinatorName.forComponent<PermissionCacheService>())
                 )
@@ -64,8 +65,8 @@ class PermissionStorageReaderServiceEventHandler(
                             checkNotNull(permissionCacheService.permissionCache) {
                                 "The ${PermissionCacheService::class.java} should be up and ready to provide the cache"
                             },
-                            entityManagerFactory,
-                            checkNotNull(publisher) { "The ${Publisher::class.java} must be initialised" }
+                            checkNotNull(publisher) { "The ${Publisher::class.java} must be initialised" },
+                            entityManagerFactory
                         )
                         permissionStorageReader?.start()
                         coordinator.updateStatus(UP)

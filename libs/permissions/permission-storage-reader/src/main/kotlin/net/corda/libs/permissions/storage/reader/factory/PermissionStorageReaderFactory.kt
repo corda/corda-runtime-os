@@ -7,5 +7,5 @@ import javax.persistence.EntityManagerFactory
 
 interface PermissionStorageReaderFactory {
 
-    fun create(permissionCache: PermissionCache, entityManagerFactory: EntityManagerFactory, publisher: Publisher): PermissionStorageReader
+    fun create(permissionCache: PermissionCache, publisher: Publisher, entityManagerFactory: EntityManagerFactory): PermissionStorageReader
 }
