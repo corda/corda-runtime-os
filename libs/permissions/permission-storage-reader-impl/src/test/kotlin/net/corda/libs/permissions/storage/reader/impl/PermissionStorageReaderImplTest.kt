@@ -14,11 +14,13 @@ import net.corda.permissions.model.RolePermissionAssociation
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
 import net.corda.rpc.schema.Schema
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
@@ -26,6 +28,10 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.TypedQuery
+import net.corda.data.permissions.Group as AvroGroup
+import net.corda.data.permissions.Permission as AvroPermission
+import net.corda.data.permissions.Role as AvroRole
+import net.corda.data.permissions.User as AvroUser
 
 class PermissionStorageReaderImplTest {
 
@@ -47,7 +53,7 @@ class PermissionStorageReaderImplTest {
             permissionString = "URL:/*"
         )
 
-        val avroPermission = net.corda.data.permissions.Permission(
+        val avroPermission = AvroPermission(
             permission.id,
             -1,
             ChangeDetails(permission.updateTimestamp, "Need to get the changed by user from somewhere"),
@@ -88,7 +94,7 @@ class PermissionStorageReaderImplTest {
             )
         }
 
-        val avroRole = net.corda.data.permissions.Role(
+        val avroRole = AvroRole(
             role.id,
             -1,
             ChangeDetails(role.updateTimestamp, "Need to get the changed by user from somewhere"),
@@ -96,7 +102,7 @@ class PermissionStorageReaderImplTest {
             listOf(avroPermission)
         )
 
-        val avroRole2 = net.corda.data.permissions.Role(
+        val avroRole2 = AvroRole(
             role2.id,
             -1,
             ChangeDetails(role2.updateTimestamp, "Need to get the changed by user from somewhere"),
@@ -146,7 +152,7 @@ class PermissionStorageReaderImplTest {
             group.groupProperties = mutableSetOf(this)
         }
 
-        val avroGroup = net.corda.data.permissions.Group(
+        val avroGroup = AvroGroup(
             group.id,
             -1,
             ChangeDetails(group.updateTimestamp, "Need to get the changed by user from somewhere"),
@@ -164,7 +170,7 @@ class PermissionStorageReaderImplTest {
             listOf(role.id)
         )
 
-        val avroGroup2 = net.corda.data.permissions.Group(
+        val avroGroup2 = AvroGroup(
             group2.id,
             -1,
             ChangeDetails(group2.updateTimestamp, "Need to get the changed by user from somewhere"),
@@ -224,7 +230,7 @@ class PermissionStorageReaderImplTest {
             )
         }
 
-        val avroUser = net.corda.data.permissions.User(
+        val avroUser = AvroUser(
             user.id,
             -1,
             ChangeDetails(user.updateTimestamp, "Need to get the changed by user from somewhere"),
@@ -238,7 +244,7 @@ class PermissionStorageReaderImplTest {
             listOf(role.id)
         )
 
-        val avroUser2 = net.corda.data.permissions.User(
+        val avroUser2 = AvroUser(
             user2.id,
             -1,
             ChangeDetails(user2.updateTimestamp, "Need to get the changed by user from somewhere"),
@@ -286,330 +292,188 @@ class PermissionStorageReaderImplTest {
         val groupRecord = Record(Schema.RPC_PERM_GROUP_TOPIC, group.name, avroGroup)
         val roleRecord = Record(Schema.RPC_PERM_ROLE_TOPIC, role.name, avroRole)
 
-        verify(publisher).publish(listOf(userRecord, groupRecord, roleRecord))
+        val captor = argumentCaptor<List<Record<String, Any>>>()
+        verify(publisher, times(3)).publish(captor.capture())
+        assertEquals(listOf(userRecord), captor.firstValue)
+        assertEquals(listOf(groupRecord), captor.secondValue)
+        assertEquals(listOf(roleRecord), captor.thirdValue)
     }
 
     @Test
-    fun `calling the reader's publish method finds the specified users, groups and roles and publishes them`() {
-        val userIds = listOf("user id")
-        val groupIds = listOf("group id")
-        val roleIds = listOf("role id")
-
-        whenever(permissionCache.users).thenReturn(emptyMap())
-        whenever(permissionCache.groups).thenReturn(emptyMap())
-        whenever(permissionCache.roles).thenReturn(emptyMap())
-        whenever(userQuery.setParameter(any<String>(), eq(userIds))).thenReturn(userQuery)
-        whenever(groupQuery.setParameter(any<String>(), eq(groupIds))).thenReturn(groupQuery)
-        whenever(roleQuery.setParameter(any<String>(), eq(roleIds))).thenReturn(roleQuery)
-        whenever(userQuery.resultList).thenReturn(listOf(user))
-        whenever(groupQuery.resultList).thenReturn(listOf(group))
-        whenever(roleQuery.resultList).thenReturn(listOf(role))
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-
-        processor.publish(userIds, groupIds, roleIds)
-
-        val userRecord = Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, avroUser)
-        val groupRecord = Record(Schema.RPC_PERM_GROUP_TOPIC, group.name, avroGroup)
-        val roleRecord = Record(Schema.RPC_PERM_ROLE_TOPIC, role.name, avroRole)
-
-        verify(publisher).publish(listOf(userRecord, groupRecord, roleRecord))
-    }
-
-    @Test
-    fun `publish diffs the permission cache and removes any specified user records that were deleted`() {
-        val userIds = listOf("user id")
-        val groupIds = listOf("group id")
-        val roleIds = listOf("role id")
-
+    fun `starting the reader diffs the permission cache and removes any users, groups and roles that were deleted`() {
         whenever(permissionCache.users).thenReturn(mapOf(user.loginName to avroUser))
-        whenever(permissionCache.groups).thenReturn(emptyMap())
-        whenever(permissionCache.roles).thenReturn(emptyMap())
-        whenever(userQuery.setParameter(any<String>(), eq(userIds))).thenReturn(userQuery)
-        whenever(groupQuery.setParameter(any<String>(), eq(groupIds))).thenReturn(groupQuery)
-        whenever(roleQuery.setParameter(any<String>(), eq(roleIds))).thenReturn(roleQuery)
-        whenever(userQuery.resultList).thenReturn(emptyList())
-        whenever(groupQuery.resultList).thenReturn(listOf(group))
-        whenever(roleQuery.resultList).thenReturn(listOf(role))
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-
-        processor.publish(userIds, groupIds, roleIds)
-
-        val userRecord = Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, value = null)
-        val groupRecord = Record(Schema.RPC_PERM_GROUP_TOPIC, group.name, avroGroup)
-        val roleRecord = Record(Schema.RPC_PERM_ROLE_TOPIC, role.name, avroRole)
-
-        verify(publisher).publish(listOf(userRecord, groupRecord, roleRecord))
-    }
-
-    @Test
-    fun `publish diffs the permission cache and removes any specified groups records that were deleted`() {
-        val userIds = listOf("user id")
-        val groupIds = listOf("group id")
-        val roleIds = listOf("role id")
-
-        whenever(permissionCache.users).thenReturn(emptyMap())
         whenever(permissionCache.groups).thenReturn(mapOf(avroGroup.name to avroGroup))
-        whenever(permissionCache.roles).thenReturn(emptyMap())
-        whenever(userQuery.setParameter(any<String>(), eq(userIds))).thenReturn(userQuery)
-        whenever(groupQuery.setParameter(any<String>(), eq(groupIds))).thenReturn(groupQuery)
-        whenever(roleQuery.setParameter(any<String>(), eq(roleIds))).thenReturn(roleQuery)
-        whenever(userQuery.resultList).thenReturn(listOf(user))
-        whenever(groupQuery.resultList).thenReturn(emptyList())
-        whenever(roleQuery.resultList).thenReturn(listOf(role))
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-
-        processor.publish(userIds, groupIds, roleIds)
-
-        val userRecord = Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, avroUser)
-        val groupRecord = Record(Schema.RPC_PERM_GROUP_TOPIC, group.name, value = null)
-        val roleRecord = Record(Schema.RPC_PERM_ROLE_TOPIC, role.name, avroRole)
-
-        verify(publisher).publish(listOf(userRecord, groupRecord, roleRecord))
-    }
-
-    @Test
-    fun `publish diffs the permission cache and removes any specified roles records that were deleted`() {
-        val userIds = listOf("user id")
-        val groupIds = listOf("group id")
-        val roleIds = listOf("role id")
-
-        whenever(permissionCache.users).thenReturn(emptyMap())
-        whenever(permissionCache.groups).thenReturn(emptyMap())
         whenever(permissionCache.roles).thenReturn(mapOf(avroRole.name to avroRole))
-        whenever(userQuery.setParameter(any<String>(), eq(userIds))).thenReturn(userQuery)
-        whenever(groupQuery.setParameter(any<String>(), eq(groupIds))).thenReturn(groupQuery)
-        whenever(roleQuery.setParameter(any<String>(), eq(roleIds))).thenReturn(roleQuery)
-        whenever(userQuery.resultList).thenReturn(listOf(user))
-        whenever(groupQuery.resultList).thenReturn(listOf(group))
+        whenever(userQuery.resultList).thenReturn(emptyList())
+        whenever(groupQuery.resultList).thenReturn(emptyList())
         whenever(roleQuery.resultList).thenReturn(emptyList())
         whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
         whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
         whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
 
-        processor.publish(userIds, groupIds, roleIds)
+        processor.start()
 
-        val userRecord = Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, avroUser)
-        val groupRecord = Record(Schema.RPC_PERM_GROUP_TOPIC, group.name, avroGroup)
+        val userRecord = Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, value = null)
+        val groupRecord = Record(Schema.RPC_PERM_GROUP_TOPIC, group.name, value = null)
         val roleRecord = Record(Schema.RPC_PERM_ROLE_TOPIC, role.name, value = null)
 
-        verify(publisher).publish(listOf(userRecord, groupRecord, roleRecord))
+        val captor = argumentCaptor<List<Record<String, Any>>>()
+        verify(publisher, times(3)).publish(captor.capture())
+        assertEquals(listOf(userRecord), captor.firstValue)
+        assertEquals(listOf(groupRecord), captor.secondValue)
+        assertEquals(listOf(roleRecord), captor.thirdValue)
     }
 
     @Test
-    fun `publish allows users to be updated and removed at the same time`() {
+    fun `publishUsers finds the specified users and publishes them`() {
         val userIds = listOf("user id")
+
+        whenever(permissionCache.users).thenReturn(emptyMap())
+        whenever(userQuery.setParameter(any<String>(), eq(userIds))).thenReturn(userQuery)
+        whenever(userQuery.resultList).thenReturn(listOf(user))
+        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
+
+        processor.publishUsers(userIds)
+
+        val userRecord = Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, avroUser)
+
+        verify(publisher).publish(listOf(userRecord))
+    }
+
+    @Test
+    fun `publishGroups finds the specified groups and publishes them`() {
         val groupIds = listOf("group id")
+
+        whenever(permissionCache.groups).thenReturn(emptyMap())
+        whenever(groupQuery.setParameter(any<String>(), eq(groupIds))).thenReturn(groupQuery)
+        whenever(groupQuery.resultList).thenReturn(listOf(group))
+        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
+
+        processor.publishGroups(groupIds)
+
+        val groupRecord = Record(Schema.RPC_PERM_GROUP_TOPIC, group.name, avroGroup)
+
+        verify(publisher).publish(listOf(groupRecord))
+    }
+
+    @Test
+    fun `publishRoles finds the specified roles and publishes them`() {
         val roleIds = listOf("role id")
 
-        whenever(permissionCache.users).thenReturn(mapOf(user.loginName to avroUser, user2.loginName to avroUser2))
-        whenever(permissionCache.groups).thenReturn(emptyMap())
         whenever(permissionCache.roles).thenReturn(emptyMap())
-        whenever(userQuery.setParameter(any<String>(), eq(userIds))).thenReturn(userQuery)
-        whenever(groupQuery.setParameter(any<String>(), eq(groupIds))).thenReturn(groupQuery)
         whenever(roleQuery.setParameter(any<String>(), eq(roleIds))).thenReturn(roleQuery)
-        whenever(userQuery.resultList).thenReturn(listOf(user))
-        whenever(groupQuery.resultList).thenReturn(listOf(group))
         whenever(roleQuery.resultList).thenReturn(listOf(role))
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
         whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
 
-        processor.publish(userIds, groupIds, roleIds)
+        processor.publishRoles(roleIds)
+
+        val roleRecord = Record(Schema.RPC_PERM_ROLE_TOPIC, role.name, avroRole)
+
+        verify(publisher).publish(listOf(roleRecord))
+    }
+
+    @Test
+    fun `publishUsers diffs the permission cache and removes any specified user records that were deleted`() {
+        val userIds = listOf("user id")
+
+        whenever(permissionCache.users).thenReturn(mapOf(user.loginName to avroUser))
+        whenever(userQuery.setParameter(any<String>(), eq(userIds))).thenReturn(userQuery)
+        whenever(userQuery.resultList).thenReturn(emptyList())
+        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
+
+        processor.publishUsers(userIds)
+
+        val userRecord = Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, value = null)
+
+        verify(publisher).publish(listOf(userRecord))
+    }
+
+    @Test
+    fun `publishGroups diffs the permission cache and removes any specified groups records that were deleted`() {
+        val groupIds = listOf("group id")
+
+        whenever(permissionCache.groups).thenReturn(mapOf(avroGroup.name to avroGroup))
+        whenever(groupQuery.setParameter(any<String>(), eq(groupIds))).thenReturn(groupQuery)
+        whenever(groupQuery.resultList).thenReturn(emptyList())
+        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
+
+        processor.publishGroups(groupIds)
+
+        val groupRecord = Record(Schema.RPC_PERM_GROUP_TOPIC, group.name, value = null)
+
+        verify(publisher).publish(listOf(groupRecord))
+    }
+
+    @Test
+    fun `publishRoles diffs the permission cache and removes any specified roles records that were deleted`() {
+        val roleIds = listOf("role id")
+
+        whenever(permissionCache.roles).thenReturn(mapOf(avroRole.name to avroRole))
+        whenever(roleQuery.setParameter(any<String>(), eq(roleIds))).thenReturn(roleQuery)
+        whenever(roleQuery.resultList).thenReturn(emptyList())
+        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
+
+        processor.publishRoles(roleIds)
+
+        val roleRecord = Record(Schema.RPC_PERM_ROLE_TOPIC, role.name, value = null)
+
+        verify(publisher).publish(listOf(roleRecord))
+    }
+
+    @Test
+    fun `publishUsers allows users to be updated and removed at the same time`() {
+        val userIds = listOf("user id")
+
+        whenever(permissionCache.users).thenReturn(mapOf(user.loginName to avroUser, user2.loginName to avroUser2))
+        whenever(userQuery.setParameter(any<String>(), eq(userIds))).thenReturn(userQuery)
+        whenever(userQuery.resultList).thenReturn(listOf(user))
+        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
+
+        processor.publishUsers(userIds)
 
         val userRecords = listOf(
             Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, avroUser),
             Record(Schema.RPC_PERM_USER_TOPIC, user2.loginName, value = null)
         )
-        val groupRecord = Record(Schema.RPC_PERM_GROUP_TOPIC, group.name, avroGroup)
-        val roleRecord = Record(Schema.RPC_PERM_ROLE_TOPIC, role.name, avroRole)
 
-        verify(publisher).publish(userRecords + listOf(groupRecord, roleRecord))
+        verify(publisher).publish(userRecords)
     }
 
     @Test
-    fun `publish allows groups to be updated and removed at the same time`() {
-        val userIds = listOf("user id")
+    fun `publishGroups allows groups to be updated and removed at the same time`() {
         val groupIds = listOf("group id")
-        val roleIds = listOf("role id")
 
-        whenever(permissionCache.users).thenReturn(emptyMap())
         whenever(permissionCache.groups).thenReturn(mapOf(group.name to avroGroup, group2.name to avroGroup2))
-        whenever(permissionCache.roles).thenReturn(emptyMap())
-        whenever(userQuery.setParameter(any<String>(), eq(userIds))).thenReturn(userQuery)
         whenever(groupQuery.setParameter(any<String>(), eq(groupIds))).thenReturn(groupQuery)
-        whenever(roleQuery.setParameter(any<String>(), eq(roleIds))).thenReturn(roleQuery)
-        whenever(userQuery.resultList).thenReturn(listOf(user))
         whenever(groupQuery.resultList).thenReturn(listOf(group))
-        whenever(roleQuery.resultList).thenReturn(listOf(role))
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
         whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
 
-        processor.publish(userIds, groupIds, roleIds)
+        processor.publishGroups(groupIds)
 
-        val userRecord = Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, avroUser)
         val groupRecords = listOf(
             Record(Schema.RPC_PERM_GROUP_TOPIC, group.name, avroGroup),
             Record(Schema.RPC_PERM_GROUP_TOPIC, group2.name, value = null)
         )
-        val roleRecord = Record(Schema.RPC_PERM_ROLE_TOPIC, role.name, avroRole)
 
-        verify(publisher).publish((groupRecords + roleRecord).toMutableList().apply { add(0, userRecord) })
+        verify(publisher).publish(groupRecords)
     }
 
     @Test
     fun `publish allows roles to be updated and removed at the same time`() {
-        val userIds = listOf("user id")
-        val groupIds = listOf("group id")
         val roleIds = listOf("role id")
 
-        whenever(permissionCache.users).thenReturn(emptyMap())
-        whenever(permissionCache.groups).thenReturn(emptyMap())
         whenever(permissionCache.roles).thenReturn(mapOf(role.name to avroRole, role2.name to avroRole2))
-        whenever(userQuery.setParameter(any<String>(), eq(userIds))).thenReturn(userQuery)
-        whenever(groupQuery.setParameter(any<String>(), eq(groupIds))).thenReturn(groupQuery)
         whenever(roleQuery.setParameter(any<String>(), eq(roleIds))).thenReturn(roleQuery)
-        whenever(userQuery.resultList).thenReturn(listOf(user))
-        whenever(groupQuery.resultList).thenReturn(listOf(group))
         whenever(roleQuery.resultList).thenReturn(listOf(role))
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
         whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
 
-        processor.publish(userIds, groupIds, roleIds)
+        processor.publishRoles(roleIds)
 
-        val userRecord = Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, avroUser)
-        val groupRecord = Record(Schema.RPC_PERM_GROUP_TOPIC, group.name, avroGroup)
         val roleRecords = listOf(
             Record(Schema.RPC_PERM_ROLE_TOPIC, role.name, avroRole),
             Record(Schema.RPC_PERM_ROLE_TOPIC, role2.name, value = null)
         )
 
-        verify(publisher).publish(listOf(userRecord, groupRecord) + roleRecords)
-    }
-
-    @Test
-    fun `no records are published if no records must be updated or removed`() {
-        whenever(permissionCache.users).thenReturn(emptyMap())
-        whenever(permissionCache.groups).thenReturn(emptyMap())
-        whenever(permissionCache.roles).thenReturn(emptyMap())
-        whenever(userQuery.resultList).thenReturn(emptyList())
-        whenever(groupQuery.resultList).thenReturn(emptyList())
-        whenever(roleQuery.resultList).thenReturn(emptyList())
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-
-        processor.start()
-
-        verify(publisher, never()).publish(any())
-    }
-
-    @Test
-    fun `records are published if users exist`() {
-        whenever(permissionCache.users).thenReturn(emptyMap())
-        whenever(permissionCache.groups).thenReturn(emptyMap())
-        whenever(permissionCache.roles).thenReturn(emptyMap())
-        whenever(userQuery.resultList).thenReturn(listOf(user))
-        whenever(groupQuery.resultList).thenReturn(emptyList())
-        whenever(roleQuery.resultList).thenReturn(emptyList())
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-
-        processor.start()
-
-        verify(publisher).publish(any())
-    }
-
-    @Test
-    fun `records are published if users must be removed`() {
-        whenever(permissionCache.users).thenReturn(mapOf(user.loginName to avroUser))
-        whenever(permissionCache.groups).thenReturn(emptyMap())
-        whenever(permissionCache.roles).thenReturn(emptyMap())
-        whenever(userQuery.resultList).thenReturn(emptyList())
-        whenever(groupQuery.resultList).thenReturn(emptyList())
-        whenever(roleQuery.resultList).thenReturn(emptyList())
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-
-        processor.start()
-
-        verify(publisher).publish(any())
-    }
-
-    @Test
-    fun `records are published if groups exist`() {
-        whenever(permissionCache.users).thenReturn(emptyMap())
-        whenever(permissionCache.groups).thenReturn(emptyMap())
-        whenever(permissionCache.roles).thenReturn(emptyMap())
-        whenever(userQuery.resultList).thenReturn(emptyList())
-        whenever(groupQuery.resultList).thenReturn(listOf(group))
-        whenever(roleQuery.resultList).thenReturn(emptyList())
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-
-        processor.start()
-
-        verify(publisher).publish(any())
-    }
-
-    @Test
-    fun `records are published if groups must be removed`() {
-        whenever(permissionCache.users).thenReturn(emptyMap())
-        whenever(permissionCache.groups).thenReturn(mapOf(group.name to avroGroup))
-        whenever(permissionCache.roles).thenReturn(emptyMap())
-        whenever(userQuery.resultList).thenReturn(emptyList())
-        whenever(groupQuery.resultList).thenReturn(emptyList())
-        whenever(roleQuery.resultList).thenReturn(emptyList())
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-
-        processor.start()
-
-        verify(publisher).publish(any())
-    }
-
-    @Test
-    fun `records are published if roles exist`() {
-        whenever(permissionCache.users).thenReturn(emptyMap())
-        whenever(permissionCache.groups).thenReturn(emptyMap())
-        whenever(permissionCache.roles).thenReturn(emptyMap())
-        whenever(userQuery.resultList).thenReturn(emptyList())
-        whenever(groupQuery.resultList).thenReturn(emptyList())
-        whenever(roleQuery.resultList).thenReturn(listOf(role))
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-
-        processor.start()
-
-        verify(publisher).publish(any())
-    }
-
-    @Test
-    fun `records are published if roles must be removed`() {
-        whenever(permissionCache.users).thenReturn(emptyMap())
-        whenever(permissionCache.groups).thenReturn(emptyMap())
-        whenever(permissionCache.roles).thenReturn(mapOf(role.name to avroRole))
-        whenever(userQuery.resultList).thenReturn(emptyList())
-        whenever(groupQuery.resultList).thenReturn(emptyList())
-        whenever(roleQuery.resultList).thenReturn(emptyList())
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
-        whenever(entityManager.createQuery(any(), eq(Group::class.java))).thenReturn(groupQuery)
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-
-        processor.start()
-
-        verify(publisher).publish(any())
+        verify(publisher).publish(roleRecords)
     }
 }

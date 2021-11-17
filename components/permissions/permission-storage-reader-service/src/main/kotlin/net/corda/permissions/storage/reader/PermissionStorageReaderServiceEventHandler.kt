@@ -75,7 +75,10 @@ class PermissionStorageReaderServiceEventHandler(
                         permissionStorageReader = null
                         coordinator.updateStatus(DOWN)
                     }
-                    ERROR -> coordinator.stop()
+                    ERROR -> {
+                        coordinator.updateStatus(ERROR)
+                        coordinator.stop()
+                    }
                 }
             }
             is StopEvent -> {

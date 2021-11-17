@@ -6,9 +6,13 @@ import net.corda.permissions.model.Group
 import net.corda.permissions.model.PermissionType
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.User
+import net.corda.data.permissions.Group as AvroGroup
+import net.corda.data.permissions.PermissionType as AvroPermissionType
+import net.corda.data.permissions.Role as AvroRole
+import net.corda.data.permissions.User as AvroUser
 
-fun User.toAvroUser(): net.corda.data.permissions.User {
-    return net.corda.data.permissions.User(
+fun User.toAvroUser(): AvroUser {
+    return AvroUser(
         id,
         version,
         ChangeDetails(updateTimestamp, "Need to get the changed by user from somewhere"),
@@ -16,7 +20,7 @@ fun User.toAvroUser(): net.corda.data.permissions.User {
         enabled,
         hashedPassword,
         saltValue,
-        false, // ssoAuth isn't in the db
+        hashedPassword == null,
         parentGroup?.id,
         userProperties.map { property ->
             Property(
@@ -31,8 +35,8 @@ fun User.toAvroUser(): net.corda.data.permissions.User {
     )
 }
 
-fun Group.toAvroGroup(): net.corda.data.permissions.Group {
-    return net.corda.data.permissions.Group(
+fun Group.toAvroGroup(): AvroGroup {
+    return AvroGroup(
         id,
         version,
         ChangeDetails(updateTimestamp, "Need to get the changed by user from somewhere"),
@@ -51,8 +55,8 @@ fun Group.toAvroGroup(): net.corda.data.permissions.Group {
     )
 }
 
-fun Role.toAvroRole(): net.corda.data.permissions.Role {
-    return net.corda.data.permissions.Role(
+fun Role.toAvroRole(): AvroRole {
+    return AvroRole(
         id,
         version,
         ChangeDetails(updateTimestamp, "Need to get the changed by user from somewhere"),
@@ -70,9 +74,9 @@ fun Role.toAvroRole(): net.corda.data.permissions.Role {
     )
 }
 
-fun PermissionType.toAvroPermissionType(): net.corda.data.permissions.PermissionType {
+fun PermissionType.toAvroPermissionType(): AvroPermissionType {
     return when (this) {
-        PermissionType.ALLOW -> net.corda.data.permissions.PermissionType.ALLOW
-        PermissionType.DENY -> net.corda.data.permissions.PermissionType.DENY
+        PermissionType.ALLOW -> AvroPermissionType.ALLOW
+        PermissionType.DENY -> AvroPermissionType.DENY
     }
 }
