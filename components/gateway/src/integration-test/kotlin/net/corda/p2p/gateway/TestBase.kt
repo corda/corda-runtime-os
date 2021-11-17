@@ -84,7 +84,7 @@ open class TestBase {
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
 
-    protected val smartConfifFactory = SmartConfigFactoryImpl()
+    protected val smartConfigFactory = SmartConfigFactoryImpl()
 
     protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
 
@@ -98,7 +98,7 @@ open class TestBase {
                 LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl()),
                 ConfigReaderFactoryImpl(
                     InMemSubscriptionFactory(configurationTopicService, rpcTopicService),
-                    smartConfifFactory
+                    smartConfigFactory
                 ),
             ).also {
                 it.start()
@@ -107,7 +107,7 @@ open class TestBase {
                         "config.topic.name",
                         ConfigValueFactory.fromAnyRef(topicName)
                     )
-                it.bootstrapConfig(smartConfifFactory.create(bootstrapper))
+                it.bootstrapConfig(smartConfigFactory.create(bootstrapper))
             }
         }
 
