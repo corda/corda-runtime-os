@@ -14,6 +14,7 @@ import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
+import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.NetworkType
@@ -83,17 +84,22 @@ open class TestBase {
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
 
-    protected val smartConfifFactory = SmartConfigFactoryImpl()
+    protected val smartConfigFactory = SmartConfigFactoryImpl()
 
     protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+
     protected inner class ConfigPublisher {
         private val configurationTopicService = TopicServiceImpl()
+        private val rpcTopicService = RPCTopicServiceImpl()
         private val topicName = "config.${UUID.randomUUID().toString().replace("-", "")}"
 
         val readerService by lazy {
             ConfigurationReadServiceImpl(
                 LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl()),
-                ConfigReaderFactoryImpl(InMemSubscriptionFactory(configurationTopicService), smartConfifFactory),
+                ConfigReaderFactoryImpl(
+                    InMemSubscriptionFactory(configurationTopicService, rpcTopicService),
+                    smartConfigFactory
+                ),
             ).also {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()
@@ -101,7 +107,7 @@ open class TestBase {
                         "config.topic.name",
                         ConfigValueFactory.fromAnyRef(topicName)
                     )
-                it.bootstrapConfig(smartConfifFactory.create(bootstrapper))
+                it.bootstrapConfig(smartConfigFactory.create(bootstrapper))
             }
         }
 
@@ -119,7 +125,7 @@ open class TestBase {
                 .withValue("connectionConfig.acquireTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
                 .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
                 .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
-            CordaPublisherFactory(configurationTopicService).createPublisher(PublisherConfig((topicName))).use { publisher ->
+            CordaPublisherFactory(configurationTopicService, rpcTopicService).createPublisher(PublisherConfig((topicName))).use { publisher ->
                 val configurationPublisher = ConfigWriterImpl(topicName, publisher)
                 configurationPublisher.updateConfiguration(
                     CordaConfigurationKey(
@@ -134,17 +140,19 @@ open class TestBase {
         fun publishBadConfig() {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hello", ConfigValueFactory.fromAnyRef("world"))
-            CordaPublisherFactory(configurationTopicService).createPublisher(PublisherConfig((topicName))).use { publisher ->
-                val configurationPublisher = ConfigWriterImpl(topicName, publisher)
-                configurationPublisher.updateConfiguration(
-                    CordaConfigurationKey(
-                        "myKey",
-                        CordaConfigurationVersion("p2p", 0, 1),
-                        CordaConfigurationVersion("gateway", 0, 1)
-                    ),
-                    publishConfig
-                )
-            }
+            CordaPublisherFactory(configurationTopicService, rpcTopicService)
+                .createPublisher(PublisherConfig((topicName)))
+                .use { publisher ->
+                    val configurationPublisher = ConfigWriterImpl(topicName, publisher)
+                    configurationPublisher.updateConfiguration(
+                        CordaConfigurationKey(
+                            "myKey",
+                            CordaConfigurationVersion("p2p", 0, 1),
+                            CordaConfigurationVersion("gateway", 0, 1)
+                        ),
+                        publishConfig
+                    )
+                }
         }
     }
 
