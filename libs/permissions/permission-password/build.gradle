@@ -1,0 +1,20 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Handles password salting and hashing as well as verification.'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    implementation project(":libs:crypto:crypto-impl")
+    implementation "net.corda:corda-cipher-suite"
+    implementation "org.apache.commons:commons-text:$commonsTextVersion"
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+}

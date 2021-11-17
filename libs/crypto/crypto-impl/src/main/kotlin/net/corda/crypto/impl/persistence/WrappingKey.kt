@@ -15,7 +15,7 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 class WrappingKey(
-    private val master: SecretKey,
+    val master: SecretKey,
     private val schemeMetadata: CipherSchemeMetadata,
 ) {
     companion object {
