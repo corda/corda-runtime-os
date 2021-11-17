@@ -1,6 +1,6 @@
 package net.corda.permissions.password.impl
 
-import net.corda.crypto.impl.persistence.WrappingKey
+import net.corda.crypto.PasswordEncodeUtils.encodePassPhrase
 import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
 import org.apache.commons.text.RandomStringGenerator
@@ -29,7 +29,7 @@ class PasswordServiceImpl(
     }
 
     private fun doSaltAndHash(clearTextPassword: String, salt: String): PasswordHash {
-        val encodedBytes = WrappingKey.encodePassPhrase(clearTextPassword, salt)
+        val encodedBytes = encodePassPhrase(clearTextPassword, salt)
         return PasswordHash(salt, Base64.getEncoder().encodeToString(encodedBytes))
     }
 

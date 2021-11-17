@@ -13,9 +13,10 @@ dependencies {
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
-    implementation project(":libs:crypto:crypto-impl")
-    implementation "net.corda:corda-cipher-suite"
+    implementation project(":libs:crypto:crypto-internal")
     implementation "org.apache.commons:commons-text:$commonsTextVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "net.corda:corda-cipher-suite"
+    testImplementation project(":libs:crypto:crypto-impl")
 }
