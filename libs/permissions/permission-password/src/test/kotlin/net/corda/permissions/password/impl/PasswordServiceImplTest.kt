@@ -23,5 +23,15 @@ class PasswordServiceImplTest {
 
         assertTrue(passwordService.verifies(correctPassword, passwordHash))
         assertFalse(passwordService.verifies("completelyRandom", passwordHash))
+
+        // Do second round of salt and hash on exactly the same password and check that
+        // password hash and salt value are different
+        with(passwordService.saltAndHash(correctPassword)) {
+            assertThat(salt.length).isLessThan(200)
+            assertThat(value.length).isLessThan(200)
+
+            assertThat(salt).isNotEqualTo(passwordHash.salt)
+            assertThat(value).isNotEqualTo(passwordHash.value)
+        }
     }
 }
