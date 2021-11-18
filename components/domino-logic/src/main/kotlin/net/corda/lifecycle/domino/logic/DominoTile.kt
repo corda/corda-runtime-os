@@ -92,7 +92,7 @@ class DominoTile(
     private val configResources = ResourcesHolder()
 
     @Volatile
-    private var registrations: Map<RegistrationHandle, DominoTile>? = null
+    private var registrations: Collection<RegistrationHandle>? = null
 
     private val currentState = AtomicReference(State.Created)
 
@@ -191,12 +191,10 @@ class DominoTile(
                     }
                 }
                 is RegistrationStatusChangeEvent -> {
-                    val child = registrations!![event.registration]
                     if (event.status == LifecycleStatus.UP) {
-                        logger.info("Child $child of $name went up.")
-                        handleLifecycleUp(child!!)
+                        logger.info("RegistrationStatusChangeEvent $name going up.")
+                        handleLifecycleUp()
                     } else {
-                        logger.info("Child $child of $name went down.")
                         val errorKids = children.filter { it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig }
                         if (errorKids.isEmpty()) {
                             stop()
@@ -293,15 +291,14 @@ class DominoTile(
         coordinator.postEvent(StopTile(true))
     }
 
-    private fun handleLifecycleUp(child: DominoTile) {
+    private fun handleLifecycleUp() {
         if (!isRunning) {
             when {
                 children.all { it.isRunning } -> {
                     createResourcesAndStart()
                 }
                 children.any { it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig } -> {
-                    logger.info("Stopping child $child again, which previously went up.")
-                    child.stop()
+                    children.filter { it.isRunning || it.state == State.Created }.forEach { it.stop() }
                 }
                 else -> { // any children that are not running have been stopped by the parent
                     startDependenciesIfNeeded()
@@ -313,8 +310,10 @@ class DominoTile(
     private fun readyOrStartTile() {
         if (registrations == null && children.isNotEmpty()) {
             registrations = children.map {
-                coordinator.followStatusChangesByName(setOf(it.name)) to it
-            }.toMap()
+                it.name
+            }.map {
+                coordinator.followStatusChangesByName(setOf(it))
+            }
             logger.info("Created $name with ${children.map { it.name }}")
         }
         startDependenciesIfNeeded()
@@ -398,7 +397,7 @@ class DominoTile(
 
     override fun close() {
         registrations?.forEach {
-            it.key.close()
+            it.close()
         }
         configRegistration?.close()
         configRegistration = null

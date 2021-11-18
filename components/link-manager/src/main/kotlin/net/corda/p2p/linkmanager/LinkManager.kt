@@ -132,7 +132,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         val future = CompletableFuture<Unit>()
         inboundAssigned.set(future)
         val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, 1),
+            SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, instanceId),
             InboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
             partitionAssignmentListener = inboundAssignmentListener
         )
