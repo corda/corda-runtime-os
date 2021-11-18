@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture
 class PublisherWithDominoLogic(
     private val publisherFactory: PublisherFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val publisherId: String,
+    private val publisherConfig: PublisherConfig,
     private val configuration: SmartConfig,
 ) : LifecycleWithDominoTile {
 
@@ -24,7 +24,6 @@ class PublisherWithDominoLogic(
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val resourceReady = CompletableFuture<Unit>()
-        val publisherConfig = PublisherConfig(publisherId)
         publisher = publisherFactory.createPublisher(
             publisherConfig,
             configuration

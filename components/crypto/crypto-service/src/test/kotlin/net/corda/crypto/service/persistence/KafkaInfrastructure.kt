@@ -14,6 +14,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
+import net.corda.messaging.emulation.rpc.RPCTopicService
+import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
@@ -95,8 +97,9 @@ class KafkaInfrastructure {
     }
 
     private val topicService: TopicService = TopicServiceImpl()
-    val subscriptionFactory: SubscriptionFactory = InMemSubscriptionFactory(topicService)
-    val publisherFactory: PublisherFactory = CordaPublisherFactory(topicService)
+    private val rpcTopicService: RPCTopicService = RPCTopicServiceImpl()
+    val subscriptionFactory: SubscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService)
+    val publisherFactory: PublisherFactory = CordaPublisherFactory(topicService, rpcTopicService)
 
     fun createFactory(config: CryptoLibraryConfig, snapshot: (() -> Unit)? = null): KafkaKeyValuePersistenceFactory {
         if(snapshot != null) {

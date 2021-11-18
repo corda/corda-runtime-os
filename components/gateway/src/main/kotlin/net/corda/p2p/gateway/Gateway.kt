@@ -38,6 +38,7 @@ class Gateway(
         publisherFactory,
         subscriptionFactory,
         nodeConfiguration,
+        instanceId
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
         lifecycleCoordinatorFactory,

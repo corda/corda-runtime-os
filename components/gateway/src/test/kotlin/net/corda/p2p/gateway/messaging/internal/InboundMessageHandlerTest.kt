@@ -77,7 +77,9 @@ class InboundMessageHandlerTest {
         publisherFactory,
         subscriptionFactory,
         SmartConfigImpl.empty(),
+        1
     )
+
 
     @AfterEach
     fun cleanUp() {

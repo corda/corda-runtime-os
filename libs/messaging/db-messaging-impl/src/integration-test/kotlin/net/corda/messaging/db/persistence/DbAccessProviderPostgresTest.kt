@@ -3,21 +3,30 @@ package net.corda.messaging.db.persistence
 import net.corda.messaging.db.util.DbUtils.Companion.createOffsetsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicRecordsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicsTableStmt
-import org.junit.jupiter.api.Disabled
-import org.testcontainers.containers.PostgreSQLContainer
+import org.mockito.kotlin.isNotNull
 import java.sql.DriverManager
+import java.sql.SQLException
 
-@Disabled("Disabled for CI until we have a shared database hosted by the infrastructure team. See INFRA-1485")
+/*
+To run locally:
+- start your local postgres (e.g. docker run --name some-postgres -p 5432:5432 -e POSTGRES_PASSWORD=mysecretpassword -d postgres)
+- populate the variables (below) in gradle.properties with your local postgres values.
+e.g.
+postgresHost=localhost
+postgresPort=5432
+postgresDb=some-postgres
+postgresUser=postgres
+postgresPassword=mysecretpassword
+ */
+
 class DbAccessProviderPostgresTest: DbAccessProviderTestBase() {
 
-    private val postgresqlServer = PostgreSQLContainer<Nothing>("postgres:9.6")
-
     override fun startDatabase() {
-        postgresqlServer.start()
+
     }
 
     override fun stopDatabase() {
-        postgresqlServer.stop()
+
     }
 
     override fun createTables() {
@@ -32,14 +41,19 @@ class DbAccessProviderPostgresTest: DbAccessProviderTestBase() {
     }
 
     override fun getJdbcUrl(): String {
-        return postgresqlServer.jdbcUrl
+        return "jdbc:postgresql://${System.getProperty("postgresHost")}:${System.getProperty("postgresPort")}/${System.getProperty("postgresDb")}"
     }
 
     override fun getUsername(): String {
-        return postgresqlServer.username
+        return System.getProperty("postgresUser")
     }
 
     override fun getPassword(): String {
-        return postgresqlServer.password
+        return System.getProperty("postgresPassword")
     }
+
+    override fun hasDbConfigured(): Boolean {
+        return !System.getProperty("postgresDb").isNullOrBlank()
+    }
+
 }

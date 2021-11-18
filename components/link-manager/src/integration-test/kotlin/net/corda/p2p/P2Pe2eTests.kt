@@ -29,6 +29,7 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
+import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.app.AppMessage
@@ -89,8 +90,8 @@ class P2Pe2eTests {
     private val aliceX500Name = "O=Alice, L=London, C=GB"
     private val aliceKeyPair = KeyPairGenerator.getInstance("EC").genKeyPair()
     private val hostATopicService = TopicServiceImpl()
-    private val hostASubscriptionFactory = InMemSubscriptionFactory(hostATopicService)
-    private val hostAPublisherFactory = CordaPublisherFactory(hostATopicService)
+    private val hostASubscriptionFactory = InMemSubscriptionFactory(hostATopicService, RPCTopicServiceImpl())
+    private val hostAPublisherFactory = CordaPublisherFactory(hostATopicService, RPCTopicServiceImpl())
     private val hostALifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
     private val hostAConfigReadService = ConfigurationReadServiceImpl(hostALifecycleCoordinatorFactory, ConfigReaderFactoryImpl(hostASubscriptionFactory, SmartConfigFactoryImpl()))
     private val hostAConfigWriter = hostAPublisherFactory.createPublisher(PublisherConfig("config-writer")).let {
@@ -127,8 +128,8 @@ class P2Pe2eTests {
     private val chipX500Name = "O=Chip, L=London, C=GB"
     private val chipKeyPair = KeyPairGenerator.getInstance("EC").genKeyPair()
     private val hostBTopicService = TopicServiceImpl()
-    private val hostBSubscriptionFactory = InMemSubscriptionFactory(hostBTopicService)
-    private val hostBPublisherFactory = CordaPublisherFactory(hostBTopicService)
+    private val hostBSubscriptionFactory = InMemSubscriptionFactory(hostBTopicService, RPCTopicServiceImpl())
+    private val hostBPublisherFactory = CordaPublisherFactory(hostBTopicService, RPCTopicServiceImpl())
     private val hostBLifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
     private val hostBConfigReadService = ConfigurationReadServiceImpl(hostBLifecycleCoordinatorFactory, ConfigReaderFactoryImpl(hostBSubscriptionFactory, SmartConfigFactoryImpl()))
     private val hostBConfigWriter = hostBPublisherFactory.createPublisher(PublisherConfig("config-writer")).let {
@@ -286,14 +287,14 @@ class P2Pe2eTests {
         hostBConfigReadService.bootstrapConfig(bootstrapConfig)
 
         val hostALinkManager = LinkManager(hostASubscriptionFactory, hostAPublisherFactory, hostALifecycleCoordinatorFactory, hostAConfigReadService,
-            SmartConfigImpl.empty(), StubNetworkMap(hostALifecycleCoordinatorFactory, hostASubscriptionFactory),
-            ConfigBasedLinkManagerHostingMap(hostAConfigReadService, hostALifecycleCoordinatorFactory), StubCryptoService(hostALifecycleCoordinatorFactory, hostASubscriptionFactory)
+            SmartConfigImpl.empty(), 1, StubNetworkMap(hostALifecycleCoordinatorFactory, hostASubscriptionFactory, 1),
+            ConfigBasedLinkManagerHostingMap(hostAConfigReadService, hostALifecycleCoordinatorFactory), StubCryptoService(hostALifecycleCoordinatorFactory, hostASubscriptionFactory, 1)
         )
         val hostAGateway = Gateway(hostAConfigReadService, hostASubscriptionFactory, hostAPublisherFactory, hostALifecycleCoordinatorFactory, SmartConfigImpl.empty(), 1)
 
         val hostBLinkManager = LinkManager(hostBSubscriptionFactory, hostBPublisherFactory, hostBLifecycleCoordinatorFactory, hostBConfigReadService,
-            SmartConfigImpl.empty(), StubNetworkMap(hostBLifecycleCoordinatorFactory, hostBSubscriptionFactory),
-            ConfigBasedLinkManagerHostingMap(hostBConfigReadService, hostBLifecycleCoordinatorFactory), StubCryptoService(hostBLifecycleCoordinatorFactory, hostBSubscriptionFactory)
+            SmartConfigImpl.empty(), 1, StubNetworkMap(hostBLifecycleCoordinatorFactory, hostBSubscriptionFactory, 1),
+            ConfigBasedLinkManagerHostingMap(hostBConfigReadService, hostBLifecycleCoordinatorFactory), StubCryptoService(hostBLifecycleCoordinatorFactory, hostBSubscriptionFactory, 1)
         )
         val hostBGateway = Gateway(hostBConfigReadService, hostBSubscriptionFactory, hostBPublisherFactory, hostBLifecycleCoordinatorFactory, SmartConfigImpl.empty(), 1)
 

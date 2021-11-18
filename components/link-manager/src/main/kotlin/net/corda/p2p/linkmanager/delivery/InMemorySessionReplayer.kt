@@ -7,6 +7,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.LinkManager
@@ -17,12 +18,14 @@ import net.corda.p2p.schema.Schema
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
+@Suppress("LongParameterList")
 class InMemorySessionReplayer(
     publisherFactory: PublisherFactory,
     configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
     private val networkMap: LinkManagerNetworkMap,
+    instanceId: Int
 ): LifecycleWithDominoTile {
 
     companion object {
@@ -31,7 +34,12 @@ class InMemorySessionReplayer(
 
     private var logger = LoggerFactory.getLogger(this::class.java.name)
 
-    private val publisher = PublisherWithDominoLogic(publisherFactory, coordinatorFactory, MESSAGE_REPLAYER_CLIENT_ID, configuration)
+    private val publisher = PublisherWithDominoLogic(
+        publisherFactory,
+        coordinatorFactory,
+        PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, instanceId),
+        configuration
+    )
 
     private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService,
         LinkManagerConfiguration.MESSAGE_REPLAY_PERIOD_KEY, ::replayMessage)
