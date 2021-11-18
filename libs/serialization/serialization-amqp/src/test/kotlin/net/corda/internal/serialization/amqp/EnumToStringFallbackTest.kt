@@ -1,11 +1,8 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.AllWhitelist
-import net.corda.internal.serialization.SerializationContextImpl
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
-import net.corda.serialization.SerializationContext
-import net.corda.serialization.SerializationContext.UseCase.Testing
+import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Java6Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -22,15 +19,6 @@ import java.util.concurrent.TimeUnit
 class EnumToStringFallbackTest {
     private lateinit var serializationOutput: TestSerializationOutput
 
-    private fun createTestContext(): SerializationContext = SerializationContextImpl(
-        preferredSerializationVersion = amqpMagic,
-        whitelist = AllWhitelist,
-        properties = emptyMap(),
-        objectReferencesEnabled = false,
-        useCase = Testing,
-        encoding = null
-    )
-
     @BeforeEach
     fun setup() {
         serializationOutput = TestSerializationOutput(verbose = false)
@@ -39,9 +27,9 @@ class EnumToStringFallbackTest {
     @Test
     fun deserializeEnumWithToString() {
         val broken = BrokenContainer(Broken.Twice)
-        val brokenData = serializationOutput.serialize(broken, createTestContext())
+        val brokenData = serializationOutput.serialize(broken, testSerializationContext)
         val workingData = brokenData.rewriteAsWorking()
-        val working = DeserializationInput(testDefaultFactory()).deserialize(workingData, createTestContext())
+        val working = DeserializationInput(testDefaultFactory()).deserialize(workingData, testSerializationContext)
         assertThat(working.value).isEqualTo(Working.TWO)
     }
 
