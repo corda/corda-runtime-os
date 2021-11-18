@@ -65,7 +65,7 @@ import java.security.KeyPairGenerator
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-class P2Pe2eTests {
+class P2PLayerEndToEndTest {
 
     companion object {
         private const val TTL = 1_000_000L
