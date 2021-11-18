@@ -5,8 +5,10 @@ import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.Group
 import net.corda.data.permissions.Permission
+import net.corda.data.permissions.PermissionAssociation
 import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.Role
+import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.User
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.cache.exception.PermissionCacheException
@@ -23,25 +25,25 @@ internal class PermissionCacheImplTest {
     private val roleData = ConcurrentHashMap<String, Role>()
     private val permissionCache: PermissionCache = PermissionCacheImpl(userData, groupData, roleData)
 
-    private val user1 = User("id1", 1, ChangeDetails(Instant.now(), "changeUser"), "full name1", true,
-        "hashedPassword", "saltValue", false, null, null, null)
-    private val user2 = User("id2", 1, ChangeDetails(Instant.now(), "changeUser"), "full name2", false,
-        "hashedPassword", "saltValue", false, null, null, null)
+    private val user1 = User("id1", 1, ChangeDetails(Instant.now()), "user-login1", "full name", true,
+        "hashedPassword", "saltValue", null, false, null, null, emptyList())
+    private val user2 = User("id2", 1, ChangeDetails(Instant.now()), "user-login2", "full name2", true,
+        "hashedPassword", "saltValue", null, false, null, null, emptyList())
 
-    private val group1 = Group("grpId1", 0, ChangeDetails(Instant.now(), "changeUser"), "group1", null,
+    private val group1 = Group("grpId1", 0, ChangeDetails(Instant.now()), "group1", null,
         emptyList(), emptyList())
-    private val group2 = Group("grpId2", 0, ChangeDetails(Instant.now(), "changeUser"), "group1", null,
-        emptyList(), listOf("role1", "role2"))
+    private val group2 = Group("grpId2", 0, ChangeDetails(Instant.now()), "group1", null,
+        emptyList(), listOf(RoleAssociation(ChangeDetails(Instant.now()), "role1"), RoleAssociation(ChangeDetails(Instant.now()), "role2")))
 
-    private val permission1 = Permission("perm1", 0, ChangeDetails(Instant.now(), "changeUser"), "virtNode1",
+    private val permission1 = Permission("perm1", 0, ChangeDetails(Instant.now()), "virtNode1",
         "*", PermissionType.ALLOW)
-    private val permission2 = Permission("perm2", 0, ChangeDetails(Instant.now(), "changeUser"), "virtNode2",
+    private val permission2 = Permission("perm2", 0, ChangeDetails(Instant.now()), "virtNode2",
         "*", PermissionType.DENY)
 
-    private val role1 = Role("role1", 0, ChangeDetails(Instant.now(), "changeUser"), "admin",
-        listOf(permission1))
-    private val role2 = Role("role2", 0, ChangeDetails(Instant.now(), "changeUser"), "admin",
-        listOf(permission2))
+    private val role1 = Role("role1", 0, ChangeDetails(Instant.now()), "admin",
+        listOf(PermissionAssociation(ChangeDetails(Instant.now()), permission1)))
+    private val role2 = Role("role2", 0, ChangeDetails(Instant.now()), "admin",
+        listOf(PermissionAssociation(ChangeDetails(Instant.now()), permission2)))
 
     @BeforeEach
     fun setUp() {
