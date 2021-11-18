@@ -53,7 +53,6 @@ internal object SecureHashDeserializer : JsonDeserializer<SecureHash>() {
 
     private val log = LoggerFactory.getLogger(this::class.java)
 
-    @Suppress("TooGenericExceptionCaught")
     override fun deserialize(parser: JsonParser, context: DeserializationContext): SecureHash {
         log.trace { "Deserialize." }
         try {

@@ -160,7 +160,7 @@ class TopicTemplates {
         const val RPC_TOPIC  = "RPCTopic"
         const val RPC_TOPIC_TEMPLATE = """topics = [
                     {
-                        topicName = "$RPC_TOPIC" 
+                        topicName = "$TEST_TOPIC_PREFIX$RPC_TOPIC" 
                         numPartitions = 1
                         replicationFactor = 3
                         config {
@@ -172,7 +172,7 @@ class TopicTemplates {
         const val RPC_RESPONSE_TOPIC  = "RPCTopic.resp"
         const val RPC_RESPONSE_TOPIC_TEMPLATE = """topics = [
                     { 
-                        topicName = "$RPC_RESPONSE_TOPIC"
+                        topicName = "$TEST_TOPIC_PREFIX$RPC_RESPONSE_TOPIC"
                         numPartitions = 1
                         replicationFactor = 3
                         config { 

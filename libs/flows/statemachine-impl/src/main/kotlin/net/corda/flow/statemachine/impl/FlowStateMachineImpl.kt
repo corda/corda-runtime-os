@@ -30,12 +30,13 @@ import java.nio.ByteBuffer
 
 class TransientReference<out A>(@Transient val value: A)
 
-@Suppress("TooManyFunctions", "ComplexMethod", "TooGenericExceptionCaught")
+@Suppress("TooManyFunctions", "ComplexMethod", "LongParameterList")
 class FlowStateMachineImpl<R>(
     private val clientId: String?,
     private val id: FlowKey,
     private val logic: Flow<R>,
-//    val ourIdentity: Party,
+    private val cpiId: String,
+    private val flowName: String,
     scheduler: FiberScheduler
 ) : Fiber<Unit>(id.toString(), scheduler), FlowStateMachine<R> {
 
@@ -79,7 +80,7 @@ class FlowStateMachineImpl<R>(
         setLoggingContext()
         log.debug { "Calling flow: $logic" }
         val resultOrError = executeFlowLogic()
-        log.info("flow ended $id")
+        log.debug { "flow ended $id. isSuccess: ${resultOrError.isSuccess}" }
 
         when (resultOrError) {
             is Try.Success -> {
@@ -92,28 +93,32 @@ class FlowStateMachineImpl<R>(
         nonSerializableState.suspended.complete(null)
     }
 
-    private fun executeFlowLogic() = try {
-        //TODOs: we might need the sandbox class loader
-        Thread.currentThread().contextClassLoader = logic.javaClass.classLoader
-        suspend(FlowIORequest.ForceCheckpoint)
-        val result = logic.call()
-        Try.Success(result)
-    } catch (t: Throwable) {
-        if (t.isUnrecoverable()) {
-            errorAndTerminate(
-                "Caught unrecoverable error from flow. Forcibly terminating the JVM, this might leave " +
-                        "resources open, and most likely will.",
-                t
-            )
+    @Suspendable
+    private fun executeFlowLogic(): Try<R> {
+        return try {
+            //TODOs: we might need the sandbox class loader
+            Thread.currentThread().contextClassLoader = logic.javaClass.classLoader
+            suspend(FlowIORequest.ForceCheckpoint)
+            val result = logic.call()
+            Try.Success(result)
+        } catch (t: Throwable) {
+            if (t.isUnrecoverable()) {
+                errorAndTerminate(
+                    "Caught unrecoverable error from flow. Forcibly terminating the JVM, this might leave " +
+                            "resources open, and most likely will.",
+                    t
+                )
+            }
+            logFlowError(t)
+            Try.Failure(t)
         }
-        logFlowError(t)
-        Try.Failure(t)
     }
 
     private fun handleSuccess(resultOrError: Try.Success<R>) {
         if (clientId != null) {
             nonSerializableState.eventsOut += FlowEvent(
                 id,
+                cpiId,
                 RPCFlowResult(
                     clientId,
                     logic.javaClass.name,
@@ -129,6 +134,7 @@ class FlowStateMachineImpl<R>(
         if (clientId != null) {
             nonSerializableState.eventsOut += FlowEvent(
                 id,
+                cpiId,
                 RPCFlowResult(
                     clientId,
                     logic.javaClass.name,
@@ -164,8 +170,8 @@ class FlowStateMachineImpl<R>(
                 return uncheckedCast(ret)
             }
             parkAndSerialize { _, _ ->
-                val fiberState = nonSerializableState.checkpointSerializationService.serialize(this)
-                nonSerializableState.suspended.complete(fiberState.bytes)
+                val fiberState = nonSerializableState.checkpointSerializer.serialize(this)
+                nonSerializableState.suspended.complete(fiberState)
             }
             setLoggingContext()
         }
@@ -177,7 +183,8 @@ class FlowStateMachineImpl<R>(
             FlowIORequest.ForceCheckpoint -> {
                 nonSerializableState.eventsOut += FlowEvent(
                     id,
-                    Wakeup()
+                    cpiId,
+                    Wakeup(flowName)
                 )
             }
             is FlowIORequest.CloseSessions -> TODO()
@@ -194,7 +201,7 @@ class FlowStateMachineImpl<R>(
         log.info("processEvent $ioRequest")
         return when (ioRequest) {
             is FlowIORequest.ForceCheckpoint -> {
-                val wakeup = housekeepingState.eventsIn.firstOrNull { it is Wakeup }
+                val wakeup = housekeepingState.eventsIn.firstOrNull { it.payload is Wakeup }
                 if (wakeup != null) {
                     housekeepingState.eventsIn.remove(wakeup)
                 }

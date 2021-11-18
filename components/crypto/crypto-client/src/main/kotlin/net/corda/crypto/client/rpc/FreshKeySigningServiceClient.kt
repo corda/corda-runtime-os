@@ -133,7 +133,7 @@ class FreshKeySigningServiceClient(
         emptyList()
     )
 
-    @Suppress("ThrowsCount", "UNCHECKED_CAST", "ComplexMethod", "TooGenericExceptionCaught")
+    @Suppress("ThrowsCount", "UNCHECKED_CAST", "ComplexMethod")
     private fun <RESPONSE> WireFreshKeysRequest.executeWithTimeoutRetry(
         respClazz: Class<RESPONSE>
     ): RESPONSE {

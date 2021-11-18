@@ -65,6 +65,7 @@
 	net.corda.sandbox;version='[5.0.0,5.0.1)',\
 	net.corda.sandbox-hooks;version='[5.0.0,5.0.1)',\
 	net.corda.serialization;version='[5.0.0,5.0.1)',\
+	net.corda.serialization-internal;version='[5.0.0,5.0.1)',\
 	net.corda.serialization-kryo;version='[5.0.0,5.0.1)',\
 	net.corda.utilities;version='[5.0.0,5.0.1)',\
 	net.i2p.crypto.eddsa;version='[0.3.0,0.3.1)',\

@@ -20,6 +20,6 @@ class ConfigReaderFactoryImpl @Activate constructor(
 ) : ConfigReaderFactory {
 
     override fun createReader(bootstrapConfig: SmartConfig): ConfigReader {
-        return ConfigReaderImpl(ConfigRepository(), subscriptionFactory, bootstrapConfig, smartConfigFactory)
+        return ConfigReaderImpl(ConfigRepository(bootstrapConfig), subscriptionFactory, bootstrapConfig, smartConfigFactory)
     }
 }

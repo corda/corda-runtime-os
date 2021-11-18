@@ -86,7 +86,6 @@ open class FreshKeySigningServiceImpl(
         return wrappedKeyPair.publicKey
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun doSign(
         publicKey: PublicKey,
         signatureSpec: SignatureSpec?,

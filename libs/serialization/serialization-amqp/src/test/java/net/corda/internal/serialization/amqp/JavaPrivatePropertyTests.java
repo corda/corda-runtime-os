@@ -1,8 +1,5 @@
 package net.corda.internal.serialization.amqp;
 
-import net.corda.internal.serialization.amqp.DeserializationInput;
-import net.corda.internal.serialization.amqp.SerializationOutput;
-import net.corda.internal.serialization.amqp.SerializerFactory;
 import net.corda.internal.serialization.amqp.testutils.TestDescriptorBasedSerializerRegistry;
 import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
 import org.junit.jupiter.api.Test;

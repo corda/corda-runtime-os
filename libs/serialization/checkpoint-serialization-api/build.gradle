@@ -3,6 +3,8 @@ plugins {
     id 'corda.common-library'
 }
 
+description 'Corda Checkpoint Serialization API'
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'

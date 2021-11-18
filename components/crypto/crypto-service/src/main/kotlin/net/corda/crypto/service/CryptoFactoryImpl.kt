@@ -17,7 +17,7 @@ import net.corda.crypto.impl.SigningServiceImpl
 import net.corda.crypto.impl.clearCache
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
-import net.corda.crypto.impl.config.mngCache
+import net.corda.crypto.impl.config.publicKeys
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactoryProvider
 import net.corda.crypto.component.config.MemberConfigReader
 import net.corda.lifecycle.Lifecycle
@@ -130,7 +130,6 @@ class CryptoFactoryImpl @Activate constructor(
             cipherSuiteFactory.getSchemeMap()
         }
 
-        @Suppress("TooGenericExceptionCaught")
         override fun getFreshKeySigningService(memberId: String): FreshKeySigningService =
             try {
                 logger.debug("Getting the fresh key service for memberId=$memberId")
@@ -141,7 +140,7 @@ class CryptoFactoryImpl @Activate constructor(
                     val ledgerCryptoService = getCryptoService(memberId, CryptoCategories.LEDGER, ledgerConfig)
                     val freshKeysCryptoService = getCryptoService(memberId, CryptoCategories.FRESH_KEYS, freshKeysConfig)
                     FreshKeySigningServiceImpl(
-                        cache = getSigningKeyCache(memberId, libraryConfig.mngCache),
+                        cache = getSigningKeyCache(memberId, libraryConfig.publicKeys),
                         cryptoService = ledgerCryptoService,
                         freshKeysCryptoService = freshKeysCryptoService,
                         defaultFreshKeySignatureSchemeCodeName = freshKeysConfig.defaultSignatureScheme,
@@ -152,7 +151,6 @@ class CryptoFactoryImpl @Activate constructor(
                 throw CryptoServiceLibraryException("Failed to get fresh key service for '$memberId'", e)
             }
 
-        @Suppress("TooGenericExceptionCaught")
         override fun getSigningService(memberId: String, category: String): SigningService =
             try {
                 logger.debug("Getting the signing service for memberId=$memberId")
@@ -161,7 +159,7 @@ class CryptoFactoryImpl @Activate constructor(
                     val config = getServiceConfig(memberId, category)
                     val cryptoService = getCryptoService(memberId, category, config)
                     SigningServiceImpl(
-                        cache = getSigningKeyCache(memberId, libraryConfig.mngCache),
+                        cache = getSigningKeyCache(memberId, libraryConfig.publicKeys),
                         cryptoService = cryptoService,
                         defaultSignatureSchemeCodeName = config.defaultSignatureScheme,
                         schemeMetadata = cipherSchemeMetadata
@@ -180,7 +178,7 @@ class CryptoFactoryImpl @Activate constructor(
         private fun getServiceConfig(memberId: String, category: String): CryptoServiceConfig =
             memberConfigReader.get(memberId).getCategory(category)
 
-        @Suppress("UNCHECKED_CAST", "TooGenericExceptionCaught")
+        @Suppress("UNCHECKED_CAST")
         private fun getCryptoService(memberId: String, category: String, config: CryptoServiceConfig): CryptoService {
             logger.debug("Getting the crypto service '${config.serviceName}' for '$memberId:$category'")
             val provider =

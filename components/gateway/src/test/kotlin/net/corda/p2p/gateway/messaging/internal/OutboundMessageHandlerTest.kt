@@ -7,26 +7,31 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
 import net.corda.p2p.app.HoldingIdentity
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
+import net.corda.data.p2p.gateway.GatewayMessage
+import net.corda.data.p2p.gateway.GatewayResponse
+import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
-import net.corda.p2p.gateway.messaging.http.HttpMessage
+import net.corda.p2p.gateway.messaging.http.HttpResponse
+import net.corda.v5.base.util.millis
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
@@ -38,9 +43,12 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.net.InetSocketAddress
+import java.lang.RuntimeException
 import java.net.URI
 import java.nio.ByteBuffer
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class OutboundMessageHandlerTest {
     private val coordinatorHandler = argumentCaptor<LifecycleEventHandler>()
@@ -65,7 +73,31 @@ class OutboundMessageHandlerTest {
             )
         } doReturn subscription
     }
-    private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java)
+    private var connectionConfig = ConnectionConfiguration()
+    private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java) { mock, _ ->
+        whenever(mock.latestConnectionConfig()).thenAnswer { connectionConfig }
+    }
+
+    private val sentMessages = mutableListOf<GatewayMessage>()
+    private val client = mock<HttpClient> {
+        on { write(any()) } doAnswer {
+            val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
+            sentMessages.add(gatewayMessage)
+            val httpResponse = mock<HttpResponse> {
+                on { statusCode } doReturn HttpResponseStatus.OK
+                on { payload } doReturn GatewayResponse(gatewayMessage.id).toByteBuffer().array()
+            }
+            CompletableFuture.completedFuture(httpResponse)
+        }
+    }
+
+    private lateinit var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
+    private val dominoTile = mockConstruction(DominoTile::class.java) { mock, context ->
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
+        @Suppress("UNCHECKED_CAST")
+        createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
+    }
 
     private val handler = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
@@ -78,31 +110,36 @@ class OutboundMessageHandlerTest {
     @AfterEach
     fun cleanUp() {
         connectionManager.close()
+        dominoTile.close()
     }
 
     @Test
-    fun `children return all the children`() {
-        assertThat(handler.children).containsExactlyInAnyOrder(
-            connectionManager.constructed().first(),
-        )
-    }
+    fun `createResources will start a subscription`() {
+        startHandler()
 
-    @Test
-    fun `start will start a subscription`() {
-        whenever(connectionManager.constructed().first().isRunning).doReturn(true)
-
-        handler.start()
+        val resourcesHolder = mock<ResourcesHolder>()
+        createResources(resourcesHolder)
 
         verify(subscription).start()
     }
 
     @Test
-    fun `stop will stop the subscription`() {
+    fun `createResources keeps the subscription in the resource holder`() {
         startHandler()
 
-        handler.stop()
+        val resourcesHolder = mock<ResourcesHolder>()
+        createResources(resourcesHolder)
+        verify(resourcesHolder).keep(subscription)
+    }
 
-        verify(subscription).stop()
+    @Test
+    fun `createResources completes the future`() {
+        startHandler()
+
+        val resourcesHolder = mock<ResourcesHolder>()
+        val future = createResources(resourcesHolder)
+        assertThat(future.isDone).isTrue
+        assertThat(future.isCompletedExceptionally).isFalse
     }
 
     @Test
@@ -115,11 +152,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/")
-        val message = LinkOutMessage(
-            headers,
-            payload,
-        )
-        val client = mock<HttpClient>()
+        val message = LinkOutMessage(headers, payload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
         assertThrows<IllegalStateException> {
@@ -133,9 +166,9 @@ class OutboundMessageHandlerTest {
     }
 
     @Test
-    fun `onNext will write message to the client`() {
+    fun `onNext will write message to the client and return empty list`() {
         startHandler()
-        val payload = UnauthenticatedMessage.newBuilder().apply {
+        val msgPayload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
                 HoldingIdentity("C", "D")
@@ -143,39 +176,7 @@ class OutboundMessageHandlerTest {
             payload = ByteBuffer.wrap(byteArrayOf())
         }.build()
         val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/")
-        val message = LinkOutMessage(
-            headers,
-            payload,
-        )
-        val client = mock<HttpClient>()
-        whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
-
-        handler.onNext(
-            listOf(
-                EventLogRecord("", "", message, 1, 1L),
-                EventLogRecord("", "", null, 2, 2L)
-            )
-        )
-
-        verify(client).write(LinkInMessage(payload).toByteBuffer().array())
-    }
-
-    @Test
-    fun `onNext will return empty list`() {
-        startHandler()
-        val payload = UnauthenticatedMessage.newBuilder().apply {
-            header = UnauthenticatedMessageHeader(
-                HoldingIdentity("A", "B"),
-                HoldingIdentity("C", "D")
-            )
-            payload = ByteBuffer.wrap(byteArrayOf())
-        }.build()
-        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/")
-        val message = LinkOutMessage(
-            headers,
-            payload,
-        )
-        val client = mock<HttpClient>()
+        val message = LinkOutMessage(headers, msgPayload)
         whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
 
         val events = handler.onNext(
@@ -185,6 +186,8 @@ class OutboundMessageHandlerTest {
             )
         )
 
+        assertThat(sentMessages).hasSize(1)
+        assertThat(sentMessages.first().payload).isEqualTo(msgPayload)
         assertThat(events).isEmpty()
     }
 
@@ -203,7 +206,6 @@ class OutboundMessageHandlerTest {
             headers,
             payload,
         )
-        val client = mock<HttpClient>()
         val destinationInfo = argumentCaptor<DestinationInfo>()
         whenever(connectionManager.constructed().first().acquire(destinationInfo.capture())).doReturn(client)
 
@@ -238,7 +240,6 @@ class OutboundMessageHandlerTest {
             headers,
             payload,
         )
-        val client = mock<HttpClient>()
         val destinationInfo = argumentCaptor<DestinationInfo>()
         whenever(connectionManager.constructed().first().acquire(destinationInfo.capture())).doReturn(client)
 
@@ -284,33 +285,177 @@ class OutboundMessageHandlerTest {
     }
 
     @Test
-    fun `onMessage will handle OK message without exception`() {
-        val message = HttpMessage(
-            statusCode = HttpResponseStatus.OK,
-            payload = ByteArray(0),
-            source = InetSocketAddress("www.r3.com", 30),
-            destination = InetSocketAddress("www.r3.com", 31),
-        )
-        assertDoesNotThrow {
-            handler.onMessage(message)
+    fun `when message times out, it is retried once`() {
+        startHandler()
+        val messagesLatch = CountDownLatch(2)
+        val client = mock<HttpClient> {
+            on { write(any()) } doAnswer {
+                val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
+                sentMessages.add(gatewayMessage)
+                messagesLatch.countDown()
+                CompletableFuture<HttpResponse>()
+                // simulate scenario where no response is received.
+            }
         }
+        connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = 10.millis)
+        val msgPayload = UnauthenticatedMessage.newBuilder().apply {
+            header = UnauthenticatedMessageHeader(
+                HoldingIdentity("A", "B"),
+                HoldingIdentity("C", "D")
+            )
+            payload = ByteBuffer.wrap(byteArrayOf())
+        }.build()
+        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/")
+        val message = LinkOutMessage(headers, msgPayload)
+        whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
+
+        handler.onNext(
+            listOf(
+                EventLogRecord("", "", message, 1, 1L),
+                EventLogRecord("", "", null, 2, 2L)
+            )
+        )
+
+        assertTrue(messagesLatch.await(1, TimeUnit.SECONDS)) { "Not enough attempts to send message." }
+        assertThat(sentMessages).hasSize(2)
+        sentMessages.forEach {
+            assertThat(it.payload).isEqualTo(msgPayload)
+        }
+
+        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
+        Thread.sleep(waitTime.toMillis())
+        assertThat(sentMessages).hasSize(2)
     }
 
     @Test
-    fun `onMessage will handle Error message without exception`() {
-        val message = HttpMessage(
-            statusCode = HttpResponseStatus.BAD_REQUEST,
-            payload = ByteArray(0),
-            source = InetSocketAddress("www.r3.com", 30),
-            destination = InetSocketAddress("www.r3.com", 31),
-        )
-        assertDoesNotThrow {
-            handler.onMessage(message)
+    fun `when message fails, it is retried once`() {
+        startHandler()
+        val messagesLatch = CountDownLatch(2)
+        val client = mock<HttpClient> {
+            on { write(any()) } doAnswer {
+                val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
+                sentMessages.add(gatewayMessage)
+                messagesLatch.countDown()
+                CompletableFuture.failedFuture(RuntimeException("some error happened"))
+            }
         }
+        connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = 10.millis)
+        val msgPayload = UnauthenticatedMessage.newBuilder().apply {
+            header = UnauthenticatedMessageHeader(
+                HoldingIdentity("A", "B"),
+                HoldingIdentity("C", "D")
+            )
+            payload = ByteBuffer.wrap(byteArrayOf())
+        }.build()
+        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/")
+        val message = LinkOutMessage(headers, msgPayload)
+        whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
+
+        handler.onNext(
+            listOf(
+                EventLogRecord("", "", message, 1, 1L),
+                EventLogRecord("", "", null, 2, 2L)
+            )
+        )
+
+        assertTrue(messagesLatch.await(1, TimeUnit.SECONDS)) { "Not enough attempts to send message." }
+        assertThat(sentMessages).hasSize(2)
+        sentMessages.forEach {
+            assertThat(it.payload).isEqualTo(msgPayload)
+        }
+
+        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
+        Thread.sleep(waitTime.toMillis())
+        assertThat(sentMessages).hasSize(2)
+    }
+
+    @Test
+    fun `when 5xx error code is received, it is retried once`() {
+        startHandler()
+        val messagesLatch = CountDownLatch(2)
+        val client = mock<HttpClient> {
+            on { write(any()) } doAnswer {
+                val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
+                sentMessages.add(gatewayMessage)
+                messagesLatch.countDown()
+                val response = mock<HttpResponse> {
+                    on { statusCode } doReturn HttpResponseStatus.INTERNAL_SERVER_ERROR
+                }
+                CompletableFuture.completedFuture(response)
+            }
+        }
+        connectionConfig = ConnectionConfiguration().copy(retryDelay = 10.millis)
+        val msgPayload = UnauthenticatedMessage.newBuilder().apply {
+            header = UnauthenticatedMessageHeader(
+                HoldingIdentity("A", "B"),
+                HoldingIdentity("C", "D")
+            )
+            payload = ByteBuffer.wrap(byteArrayOf())
+        }.build()
+        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/")
+        val message = LinkOutMessage(headers, msgPayload)
+        whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
+
+        handler.onNext(
+            listOf(
+                EventLogRecord("", "", message, 1, 1L),
+                EventLogRecord("", "", null, 2, 2L)
+            )
+        )
+
+        assertTrue(messagesLatch.await(1, TimeUnit.SECONDS)) { "Not enough attempts to send message." }
+        assertThat(sentMessages).hasSize(2)
+        sentMessages.forEach {
+            assertThat(it.payload).isEqualTo(msgPayload)
+        }
+
+        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
+        Thread.sleep(waitTime.toMillis())
+        assertThat(sentMessages).hasSize(2)
+    }
+
+    @Test
+    fun `when 4xx error code is received, it is not retried`() {
+        startHandler()
+        val client = mock<HttpClient> {
+            on { write(any()) } doAnswer {
+                val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(it.arguments[0] as ByteArray))
+                sentMessages.add(gatewayMessage)
+                val response = mock<HttpResponse> {
+                    on { statusCode } doReturn HttpResponseStatus.BAD_REQUEST
+                }
+                CompletableFuture.completedFuture(response)
+            }
+        }
+        val retryDelay = 10.millis
+        connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = retryDelay)
+        val msgPayload = UnauthenticatedMessage.newBuilder().apply {
+            header = UnauthenticatedMessageHeader(
+                HoldingIdentity("A", "B"),
+                HoldingIdentity("C", "D")
+            )
+            payload = ByteBuffer.wrap(byteArrayOf())
+        }.build()
+        val headers = LinkOutHeader("a", NetworkType.CORDA_5, "https://r3.com/")
+        val message = LinkOutMessage(headers, msgPayload)
+        whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
+
+        handler.onNext(
+            listOf(
+                EventLogRecord("", "", message, 1, 1L),
+                EventLogRecord("", "", null, 2, 2L)
+            )
+        )
+
+        val waitTime = ((connectionConfig.responseTimeout.toMillis() + connectionConfig.retryDelay.toMillis()) * 4).toInt().millis
+        Thread.sleep(waitTime.toMillis())
+        assertThat(sentMessages).hasSize(1)
+        assertThat(sentMessages.first().payload).isEqualTo(msgPayload)
     }
 
     private fun startHandler() {
         whenever(connectionManager.constructed().first().isRunning).doReturn(true)
+        whenever(dominoTile.constructed().first().isRunning).doReturn(true)
         handler.start()
     }
 }

@@ -31,6 +31,14 @@ dependencies {
     runtimeOnly project(":libs:configuration:configuration-read-impl")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-read")
-    implementation project(":libs:configuration:configuration-write")
-    runtimeOnly project(":libs:configuration:configuration-write-impl")
+}
+
+tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
+    if (project.hasProperty('jibRemotePublish')) {
+        remotePublish = jibRemotePublish.toBoolean()
+    }
+
+    if (project.hasProperty('releaseCandidate')) {
+        releaseCandidate = releaseCandidate.toBoolean()
+    }
 }

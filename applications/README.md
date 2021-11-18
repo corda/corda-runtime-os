@@ -12,3 +12,4 @@ implements startup/specific logic etc.
   the start-up and shut-down behavior of an application distributed as a bootable JAR.
   * `tools` module should contain tooling around the node, rather than node processes themselves.
   * `p2p-gateway` The P2P Gateway executable
+  * `p2p-link-manager` The P2P Link Manager executable

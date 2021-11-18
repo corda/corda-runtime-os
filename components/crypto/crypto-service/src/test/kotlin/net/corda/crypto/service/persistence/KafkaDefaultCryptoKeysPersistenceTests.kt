@@ -4,7 +4,6 @@ import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
 import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
-import net.corda.crypto.service.persistence.KafkaInfrastructure.Companion.KEY_CACHE_TOPIC_NAME
 import net.corda.data.crypto.persistence.DefaultCryptoKeyRecord
 import org.hamcrest.MatcherAssert
 import org.hamcrest.Matchers
@@ -33,7 +32,7 @@ class KafkaDefaultCryptoKeysPersistenceTests {
         memberId = UUID.randomUUID().toString()
         memberId2 = UUID.randomUUID().toString()
         kafka = KafkaInfrastructure()
-        factory = kafka.createFactory()
+        factory = kafka.createFactory(KafkaInfrastructure.customConfig)
         defaultPersistence = factory.createDefaultCryptoPersistence(
             memberId = memberId
         ) {
@@ -79,7 +78,9 @@ class KafkaDefaultCryptoKeysPersistenceTests {
             version = 2
         )
         defaultPersistence.put(original.alias, original)
-        val records = kafka.getRecords<DefaultCryptoKeyRecord>(KEY_CACHE_TOPIC_NAME)
+        val records = kafka.getRecords<DefaultCryptoKeyRecord>(
+            KafkaInfrastructure.cryptoSvcGroupName(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.cryptoSvcTopicName(KafkaInfrastructure.customConfig))
         assertEquals(1, records.size)
         val publishedRecord = records[0]
         assertPublishedRecord(publishedRecord, original)
@@ -110,7 +111,11 @@ class KafkaDefaultCryptoKeysPersistenceTests {
         )
         defaultPersistence.put(original.alias, original)
         defaultPersistence2.put(original2.alias, original2)
-        val records = kafka.getRecords<DefaultCryptoKeyRecord>(KEY_CACHE_TOPIC_NAME, 2)
+        val records = kafka.getRecords<DefaultCryptoKeyRecord>(
+            KafkaInfrastructure.cryptoSvcGroupName(KafkaInfrastructure.customConfig),
+            KafkaInfrastructure.cryptoSvcTopicName(KafkaInfrastructure.customConfig),
+            2
+        )
         assertEquals(2, records.size)
         val publishedRecord = records.first { it.second.alias == original.alias }
         val publishedRecord2 = records.first { it.second.alias == original2.alias }
@@ -139,8 +144,9 @@ class KafkaDefaultCryptoKeysPersistenceTests {
             version = 2
         )
         kafka.publish(
+            KafkaInfrastructure.cryptoSvcClientId(KafkaInfrastructure.customConfig),
             defaultPersistence,
-            KEY_CACHE_TOPIC_NAME,
+            KafkaInfrastructure.cryptoSvcTopicName(KafkaInfrastructure.customConfig),
             original.alias,
             KafkaDefaultCryptoKeyProxy.toRecord(original)
         )

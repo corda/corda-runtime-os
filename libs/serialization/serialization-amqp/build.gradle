@@ -27,6 +27,7 @@ dependencies {
 
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-serialization"
+    implementation project(':libs:serialization:serialization-internal')
     implementation project(":components:install:install-legacy")
     implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
     implementation project(":libs:sandbox")
@@ -44,12 +45,15 @@ dependencies {
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
     testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
     testRuntimeOnly 'org.osgi:osgi.core'
 
     cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-one', configuration: 'cordaCPK')
     cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-two', configuration: 'cordaCPK')
     cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-three', configuration: 'cordaCPK')
     cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-four', configuration: 'cordaCPK')
+
+    cpks project(path: ':libs:serialization:serialization-amqp:serializable-cpk-using-lib', configuration: 'cordaCPK')
 
     integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"

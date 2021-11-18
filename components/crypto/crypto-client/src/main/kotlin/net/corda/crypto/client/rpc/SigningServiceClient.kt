@@ -35,7 +35,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.TimeoutException
 
-@Suppress("TooGenericExceptionCaught", "LongParameterList")
+@Suppress("LongParameterList")
 class SigningServiceClient(
     private val memberId: String,
     private val requestingComponent: String,

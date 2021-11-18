@@ -13,14 +13,14 @@ import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.TransformsSchema
+import net.corda.serialization.SerializationContext
+import net.corda.serialization.SerializationEncoding
 import net.corda.utilities.copyTo
 import net.corda.utilities.div
 import net.corda.utilities.isDirectory
 import net.corda.utilities.reflection.packageName_
 import net.corda.utilities.toPath
 import net.corda.v5.base.types.OpaqueBytes
-import net.corda.v5.serialization.SerializationContext
-import net.corda.v5.serialization.SerializationEncoding
 import net.corda.v5.serialization.SerializedBytes
 import org.apache.qpid.proton.codec.Data
 import org.junit.jupiter.api.Test
@@ -99,7 +99,6 @@ class TestSerializationOutput(
     }
 }
 
-@Suppress("TooGenericExceptionCaught")
 fun testName(): String {
     val classLoader = Thread.currentThread().contextClassLoader
     return Thread.currentThread().stackTrace.first {

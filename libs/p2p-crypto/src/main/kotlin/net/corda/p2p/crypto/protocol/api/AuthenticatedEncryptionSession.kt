@@ -4,7 +4,6 @@ import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_ALGO
-import net.corda.p2p.crypto.protocol.toByteArray
 import net.corda.p2p.crypto.util.decrypt
 import net.corda.p2p.crypto.util.encryptWithAssociatedData
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -56,7 +55,7 @@ class AuthenticatedEncryptionSession(override val sessionId: String,
     /**
      * @throws DecryptionFailedError if decryption of the provided data failed, e.g because of invalid or modified data.
      */
-    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
+    @Suppress("ThrowsCount")
     fun decryptData(header: CommonHeader, encryptedPayload: ByteArray, authTag: ByteArray): ByteArray {
         val nonce = xor(inboundNonce, header.sequenceNo.toByteArray())
         val plaintext = try {

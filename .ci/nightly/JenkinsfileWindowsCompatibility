@@ -1,8 +1,6 @@
-@Library('corda-shared-build-pipeline-steps@ronanb/INFRA-1643/create-nightly') _
+@Library('corda-shared-build-pipeline-steps@5.0') _
 
 windowsCompatibility(
-    nexusAppId: 'flow-worker-5.0',
     runIntegrationTests: false,
-    publishRepoPrefix: 'corda-ent-maven',
-    dailyBuildCron: 'H 02 * * *'
+    dailyBuildCron: 'H 03 * * *'
     )

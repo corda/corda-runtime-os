@@ -2,7 +2,8 @@ package net.corda.lifecycle.domino.logic.util
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.domino.logic.LeafTile
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -12,19 +13,20 @@ import java.util.concurrent.CompletableFuture
 class PublisherWithDominoLogic(
     private val publisherFactory: PublisherFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val publisherId: String,
-    private val nodeConfiguration: SmartConfig,
-) :
-    LeafTile(coordinatorFactory) {
+    private val publisherConfig: PublisherConfig,
+    private val configuration: SmartConfig,
+) : LifecycleWithDominoTile {
 
     @Volatile
     private var publisher: Publisher? = null
 
-    override fun createResources() {
-        val publisherConfig = PublisherConfig(publisherId)
+    override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources)
+
+    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+        val resourceReady = CompletableFuture<Unit>()
         publisher = publisherFactory.createPublisher(
             publisherConfig,
-            nodeConfiguration
+            configuration
         ).also {
             resources.keep {
                 it.close()
@@ -32,18 +34,18 @@ class PublisherWithDominoLogic(
             }
             it.start()
         }
-
-        started()
+        resourceReady.complete(Unit)
+        return resourceReady
     }
 
     fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-        return withLifecycleLock {
+        return dominoTile.withLifecycleLock {
             publisher?.publishToPartition(records) ?: throw IllegalStateException("Publisher had not started")
         }
     }
 
     fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-        return withLifecycleLock {
+        return dominoTile.withLifecycleLock {
             publisher?.publish(records) ?: throw IllegalStateException("Publisher had not started")
         }
     }

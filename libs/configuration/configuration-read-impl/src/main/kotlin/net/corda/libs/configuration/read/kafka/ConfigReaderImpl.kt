@@ -15,7 +15,6 @@ import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-@Suppress("TooGenericExceptionCaught")
 class ConfigReaderImpl(
     private val configurationRepository: ConfigRepository,
     private val subscriptionFactory: SubscriptionFactory,
@@ -66,10 +65,16 @@ class ConfigReaderImpl(
             if (!stopped) {
                 subscription?.stop()
                 subscription = null
-                configUpdates.clear()
                 stopped = true
                 snapshotReceived = false
             }
+        }
+    }
+
+    override fun close() {
+        lock.withLock {
+            stop()
+            configUpdates.clear()
         }
     }
 

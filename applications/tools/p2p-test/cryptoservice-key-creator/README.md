@@ -22,7 +22,7 @@ bootstrap.servers=localhost:9092
 The file provided on the `--keys-config` CLI parameter should have the following structure:
 ```json
 {
-    "entries": [
+    "keys": [
         {
           "alias": "key1",
           "keystoreFile": "<path_to_the_keystore_file>",

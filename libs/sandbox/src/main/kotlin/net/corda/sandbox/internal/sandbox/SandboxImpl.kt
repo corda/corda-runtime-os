@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 internal open class SandboxImpl(
     override val id: UUID,
     final override val publicBundles: Set<Bundle>,
-    private val privateBundles: Set<Bundle>
+    val privateBundles: Set<Bundle>
 ) : Sandbox {
     private val logger = loggerFor<SandboxImpl>()
 
@@ -52,7 +52,6 @@ internal open class SandboxImpl(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override fun unload() = allBundles.mapNotNull { bundle ->
         try {
             bundle.uninstall()
@@ -61,5 +60,9 @@ internal open class SandboxImpl(
             logger.warn("Bundle ${bundle.symbolicName} could not be uninstalled, due to: $e")
             bundle
         }
+    }
+
+    override fun toString(): String {
+        return "Sandbox[ID: $id, PUBLIC: ${publicBundles.joinToString()}, PRIVATE: ${privateBundles.joinToString()}]"
     }
 }

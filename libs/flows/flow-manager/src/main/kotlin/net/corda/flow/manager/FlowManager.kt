@@ -1,28 +1,26 @@
 package net.corda.flow.manager
 
 import net.corda.data.flow.Checkpoint
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.FlowSessionMessage
-import net.corda.messaging.api.records.Record
-import net.corda.virtual.node.cache.FlowMetadata
-
-data class FlowResult(
-    val checkpoint: Checkpoint?,
-    val events: List<Record<String, ByteArray>>
-)
+import net.corda.sandbox.SandboxGroup
 
 interface FlowManager {
     fun startInitiatingFlow(
-        newFlowMetadata: FlowMetadata,
+        flowMetaData: FlowMetaData,
         clientId: String,
-        args: List<Any?>,
+        sandboxGroup: SandboxGroup
     ): FlowResult
 
     fun startRemoteInitiatedFlow(
-        newFlowMetadata: FlowMetadata,
+        flowMetaData: FlowMetaData,
         flowSessionMessage: FlowSessionMessage,
     ): FlowResult
 
     fun wakeFlow(
         lastCheckpoint: Checkpoint,
+        wakeupEvent: FlowEvent,
+        flowEventTopic: String,
+        sandboxGroup: SandboxGroup,
     ): FlowResult
 }

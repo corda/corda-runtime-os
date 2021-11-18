@@ -2,7 +2,7 @@
 package net.corda.internal.serialization
 
 import net.corda.internal.serialization.amqp.amqpMagic
-import net.corda.v5.serialization.SerializationContext
+import net.corda.serialization.SerializationContext
 
 /*
  * Serialisation contexts for the server.
@@ -16,7 +16,7 @@ import net.corda.v5.serialization.SerializationContext
 
 val AMQP_STORAGE_CONTEXT = SerializationContextImpl(
         amqpMagic,
-        SerializationDefaults.javaClass.classLoader,
+        SerializationContextImpl::class.java.classLoader,
         AllButBlacklisted,
         emptyMap(),
         true,

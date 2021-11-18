@@ -1,9 +1,12 @@
 package net.corda.lifecycle.impl
 
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.v5.base.util.debug
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
@@ -27,6 +30,9 @@ internal class Registration(
     private val coordinators: Set<LifecycleCoordinator>,
     private val registeringCoordinator: LifecycleCoordinator
 ) : RegistrationHandle {
+
+
+    private val logger = LoggerFactory.getLogger(toString())
 
     private val coordinatorStatusMap = ConcurrentHashMap(coordinators.associateWith { LifecycleStatus.DOWN })
 
@@ -92,8 +98,19 @@ internal class Registration(
      */
     override fun close() {
         if (!isClosed.getAndSet(true)) {
-            registeringCoordinator.postEvent(StopTrackingRegistration(this))
-            coordinators.forEach { it.postEvent(CancelRegistration(this)) }
+            try {
+                registeringCoordinator.postEvent(StopTrackingRegistration(this))
+                coordinators.forEach { it.postEvent(CancelRegistration(this)) }
+            } catch (ex: LifecycleException) {
+                // An error here means we're probably already in the process of closing, so we can safely ignore it
+                logger.debug { "Caught but ignoring exception during Registration close: $ex" }
+            }
+
         }
+    }
+
+    override fun toString(): String {
+        return "Registration(registeringCoordinator=${registeringCoordinator.name}," +
+                "coordinators=${coordinators.map { it.name }.joinToString()})"
     }
 }

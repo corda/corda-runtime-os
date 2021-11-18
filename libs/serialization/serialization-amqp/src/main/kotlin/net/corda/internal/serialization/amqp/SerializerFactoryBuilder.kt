@@ -8,12 +8,10 @@ import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeLoader
 import net.corda.internal.serialization.model.TypeModellingFingerPrinter
-import net.corda.v5.serialization.ClassWhitelist
+import net.corda.serialization.ClassWhitelist
 import java.io.NotSerializableException
 import java.lang.reflect.Method
 import java.util.Collections.unmodifiableMap
-import java.util.function.Function
-import java.util.function.Predicate
 
 object SerializerFactoryBuilder {
     private const val FRAMEWORK_UTIL_CLASS_NAME = "org.osgi.framework.FrameworkUtil"
@@ -29,7 +27,6 @@ object SerializerFactoryBuilder {
         var getBundleContextMethod: Method?
         var getBundlesMethod: Method?
 
-        @Suppress("TooGenericExceptionCaught")
         try {
             val frameworkUtilClass = Class.forName(FRAMEWORK_UTIL_CLASS_NAME, false, this::class.java.classLoader)
             val bundleContextClass = Class.forName(BUNDLE_CONTEXT_CLASS_NAME, false, frameworkUtilClass.classLoader)
@@ -93,12 +90,13 @@ object SerializerFactoryBuilder {
     @JvmStatic
     fun build(whitelist: ClassWhitelist): SerializerFactory {
         return makeFactory(
-                whitelist,
-                DefaultDescriptorBasedSerializerRegistry(),
-                allowEvolution = true,
-                overrideFingerPrinter = null,
-                onlyCustomSerializers = false,
-                mustPreserveDataWhenEvolving = false)
+            whitelist,
+            DefaultDescriptorBasedSerializerRegistry(),
+            allowEvolution = true,
+            overrideFingerPrinter = null,
+            onlyCustomSerializers = false,
+            mustPreserveDataWhenEvolving = false
+        )
     }
 
     @Suppress("LongParameterList")
@@ -120,7 +118,7 @@ object SerializerFactoryBuilder {
                 mustPreserveDataWhenEvolving)
     }
 
-    @Suppress("TooGenericExceptionCaught", "LongParameterList")
+    @Suppress("LongParameterList")
     private fun makeFactory(whitelist: ClassWhitelist,
                             descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
                             allowEvolution: Boolean,
@@ -135,14 +133,15 @@ object SerializerFactoryBuilder {
         val fingerPrinter = overrideFingerPrinter ?: TypeModellingFingerPrinter(customSerializerRegistry)
 
         val localSerializerFactory = DefaultLocalSerializerFactory(
-                whitelist,
-                localTypeModel,
-                fingerPrinter,
-                descriptorBasedSerializerRegistry,
-                Function { clazz -> AMQPPrimitiveSerializer(clazz) },
-                Predicate { clazz -> clazz.isPrimitive || Primitives.unwrap(clazz).isPrimitive },
-                customSerializerRegistry,
-                onlyCustomSerializers)
+            whitelist,
+            localTypeModel,
+            fingerPrinter,
+            descriptorBasedSerializerRegistry,
+            ::AMQPPrimitiveSerializer,
+            { clazz -> clazz.isPrimitive || Primitives.unwrap(clazz).isPrimitive },
+            customSerializerRegistry,
+            onlyCustomSerializers
+        )
 
         val typeLoader: TypeLoader = ClassTypeLoader()
 

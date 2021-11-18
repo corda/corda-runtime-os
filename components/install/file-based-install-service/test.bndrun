@@ -4,7 +4,7 @@
 -resolve.effective: active
 #-runtrace: true
 
--runproperties: cpi.path=${project.cpiPath}
+-runproperties: cpi.path=${task.cpiPath}
 
 -runvm: \
     --add-opens, 'java.base/java.net=ALL-UNNAMED'
@@ -29,6 +29,8 @@
 # the artifacts and/or their dependencies change.
 -runbundles: \
 	bcprov;version='[1.69.0,1.69.1)',\
+	com.google.guava;version='[30.1.1,30.1.2)',\
+	com.google.guava.failureaccess;version='[1.0.1,1.0.2)',\
 	com.typesafe.config;version='[1.4.1,1.4.2)',\
 	file-based-install-service-tests;version='[5.0.0,5.0.1)',\
 	junit-jupiter-api;version='[5.7.2,5.7.3)',\
