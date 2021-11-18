@@ -361,31 +361,6 @@ class InboundMessageHandlerTest {
     }
 
     @Test
-    fun `onMessage use the correct session ID from InitiatorHelloMessage payload`() {
-        val sessionId = "id"
-        setRunning()
-        val payload = InitiatorHelloMessage.newBuilder()
-            .apply {
-                header = CommonHeader(MessageType.DATA, 0, sessionId, 1, 1)
-                initiatorPublicKey = ByteBuffer.wrap(byteArrayOf())
-                supportedModes = emptyList()
-                source = InitiatorHandshakeIdentity(ByteBuffer.wrap(byteArrayOf()), "")
-            }.build()
-        val gatewayMessage = GatewayMessage("msg-id", payload)
-        whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
-
-        handler.onRequest(
-            HttpRequest(
-                source = InetSocketAddress("www.r3.com", 1231),
-                payload = gatewayMessage.toByteBuffer().array(),
-                destination = InetSocketAddress("www.r3.com", 344),
-            )
-        )
-
-        verify(sessionPartitionMapper.constructed().first()).getPartitions(sessionId)
-    }
-
-    @Test
     fun `onMessage use the correct session ID from InitiatorHandshakeMessage payload`() {
         val sessionId = "id"
         setRunning()
