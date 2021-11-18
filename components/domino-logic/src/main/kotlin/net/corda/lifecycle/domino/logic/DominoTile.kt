@@ -389,7 +389,6 @@ class DominoTile(
 
         children.forEach {
             if (!(it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig)) {
-                logger.info("$name is stopping child ${it.name}")
                 it.stop()
             }
         }

@@ -321,10 +321,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return if (response != null) {
                 when(val payload = message.payload) {
                     is InitiatorHelloMessage -> {
-                        val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
+                        val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
                         listOf(
                             Record(Schema.LINK_OUT_TOPIC, generateKey(), response),
-                            Record(Schema.SESSION_OUT_PARTITIONS, payload.header.sessionId, SessionPartitions(partitions))
+                            Record(Schema.SESSION_OUT_PARTITIONS, payload.header.sessionId, SessionPartitions(partitionsAssigned))
                         )
                     }
                     else -> {
