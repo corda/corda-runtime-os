@@ -14,15 +14,29 @@ class PasswordServiceImplTest {
     private val passwordService = PasswordServiceFactory().createPasswordService(cipherSchemeMetadata.secureRandom)
 
     @Test
-    fun test() {
+    fun `password service salt and hash produces salt and hash with length less than 200`() {
         val correctPassword = "myPassword"
 
         val passwordHash = passwordService.saltAndHash(correctPassword)
         assertThat(passwordHash.salt.length).isLessThan(200)
         assertThat(passwordHash.value.length).isLessThan(200)
+    }
+
+    @Test
+    fun `password service salt and hash verifies the correct password`() {
+        val correctPassword = "myPassword"
+
+        val passwordHash = passwordService.saltAndHash(correctPassword)
 
         assertTrue(passwordService.verifies(correctPassword, passwordHash))
         assertFalse(passwordService.verifies("completelyRandom", passwordHash))
+    }
+
+    @Test
+    fun `password service salt and hash produces a different result every time with the same password`() {
+        val correctPassword = "myPassword"
+
+        val passwordHash = passwordService.saltAndHash(correctPassword)
 
         // Do second round of salt and hash on exactly the same password and check that
         // password hash and salt value are different
