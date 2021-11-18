@@ -52,4 +52,8 @@ class DbAccessProviderH2Test: DbAccessProviderTestBase() {
     override fun getPassword(): String {
         return password
     }
+
+    override fun hasDbConfigured(): Boolean {
+        return true
+    }
 }

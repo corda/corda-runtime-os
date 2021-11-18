@@ -3,14 +3,13 @@ package net.corda.messaging.db.persistence
 import net.corda.messaging.db.util.DbUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
+import org.junit.Assume
+import org.junit.BeforeClass
+import org.junit.jupiter.api.*
+import org.mockito.kotlin.isNotNull
 import java.sql.DriverManager
 import java.time.Instant
+
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class DbAccessProviderTestBase {
@@ -39,19 +38,23 @@ abstract class DbAccessProviderTestBase {
 
     abstract fun getPassword(): String
 
+    abstract fun hasDbConfigured(): Boolean
+
     @BeforeAll
     fun setupBeforeAllTests() {
+        Assume.assumeTrue(hasDbConfigured())
         startDatabase()
         createTables()
-
         dbAccessProvider = DBAccessProviderImpl(getJdbcUrl(), getUsername(), getPassword(), getDbType(), 5)
         dbAccessProvider.start()
     }
 
     @AfterAll
     fun cleanupAfterAllTests() {
-        dbAccessProvider.stop()
-        stopDatabase()
+        if(hasDbConfigured()) {
+            dbAccessProvider.stop()
+            stopDatabase()
+        }
     }
 
     @BeforeEach
@@ -69,7 +72,7 @@ abstract class DbAccessProviderTestBase {
     }
 
     @Test
-    fun `getTopics returns topics with their number of partitions successfuly`() {
+    fun `getTopics returns topics with their number of partitions successfully`() {
         val topicsWithPartitions = dbAccessProvider.getTopics()
 
         assertThat(topicsWithPartitions).containsExactlyEntriesOf(mapOf(
@@ -289,7 +292,9 @@ abstract class DbAccessProviderTestBase {
         )
 
         dbAccessProvider.writeRecords(recordsBeforeWindow) { _, _ -> }
+        Thread.sleep(100)
         val cutoffWindow = Instant.now()
+        Thread.sleep(100)
         dbAccessProvider.writeRecords(recordsAfterWindow) { _, _ -> }
 
         dbAccessProvider.deleteRecordsOlderThan(topic1, cutoffWindow)
@@ -309,7 +314,9 @@ abstract class DbAccessProviderTestBase {
         )
 
         dbAccessProvider.writeOffsets(topic1, consumer1, offsetsBeforeWindow)
+        Thread.sleep(100)
         val cutoffWindow = Instant.now()
+        Thread.sleep(100)
         dbAccessProvider.writeOffsets(topic1, consumer1, offsetsAfterWindow)
 
         dbAccessProvider.deleteOffsetsOlderThan(topic1, cutoffWindow)
@@ -318,5 +325,4 @@ abstract class DbAccessProviderTestBase {
             2 to 11L
         ))
     }
-
 }

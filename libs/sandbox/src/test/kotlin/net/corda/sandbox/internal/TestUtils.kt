@@ -15,8 +15,8 @@ import kotlin.random.Random.Default.nextLong
 const val HASH_ALGORITHM = "SHA-256"
 const val HASH_LENGTH = 32
 const val PUBLIC_BUNDLE_NAME = "public_bundle_symbolic_name"
-const val CPK_BUNDLE_NAME = "cpk_bundle_symbolic_name"
-const val MAIN_BUNDLE_NAME = "main_bundle_symbolic_name"
+const val CPK_LIBRARY_BUNDLE_NAME = "cpk_library_bundle_symbolic_name"
+const val CPK_MAIN_BUNDLE_NAME = "cpk_main_bundle_symbolic_name"
 
 val random = Random(0)
 
