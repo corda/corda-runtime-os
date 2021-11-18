@@ -1,6 +1,5 @@
 package net.corda.flow.manager.impl
 
-import jdk.internal.vm.compiler.word.LocationIdentity.any
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
 import net.corda.data.flow.Checkpoint
