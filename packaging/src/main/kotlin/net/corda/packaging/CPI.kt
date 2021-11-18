@@ -17,7 +17,7 @@ interface CPI : AutoCloseable {
 
         /**
          * Known file extensions for a CPI file; the only difference between CPI and CPB files is that CPB files
-         * have no [Identifier.identity]
+         * have no [CPI.Metadata.networkPolicy]
          */
         val fileExtensions = listOf(".cpb", ".cpi")
 
