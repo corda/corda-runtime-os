@@ -237,7 +237,10 @@ class LinkManagerTest {
             header = CommonHeader(MessageType.INITIATOR_HELLO, 0, SESSION_ID, 1, 1)
             initiatorPublicKey = ByteBuffer.wrap(FIRST_DEST_MEMBER_INFO.publicKey.encoded)
             supportedModes = listOf(ProtocolMode.AUTHENTICATION_ONLY)
-            source = InitiatorHandshakeIdentity(ByteBuffer.wrap(FIRST_DEST_MEMBER_INFO.publicKey.encoded), FIRST_DEST_MEMBER_INFO.holdingIdentity.groupId)
+            source = InitiatorHandshakeIdentity(
+                ByteBuffer.wrap(FIRST_DEST_MEMBER_INFO.publicKey.encoded),
+                FIRST_DEST_MEMBER_INFO.holdingIdentity.groupId
+            )
         }.build()
     }
 
@@ -685,7 +688,8 @@ class LinkManagerTest {
 
         val linkOutRecords = records.filter { it.topic == LINK_OUT_TOPIC }
         val sessionMappingRecords = records.filter { it.topic == SESSION_OUT_PARTITIONS }
-        assertThat(sessionMappingRecords).containsExactlyElementsOf(listOf(Record(SESSION_OUT_PARTITIONS, SESSION_ID, SessionPartitions(listOf(1)))))
+        assertThat(sessionMappingRecords)
+            .containsExactlyElementsOf(listOf(Record(SESSION_OUT_PARTITIONS, SESSION_ID, SessionPartitions(listOf(1)))))
         assertThat(linkOutRecords).hasSize(1)
         assertThat(linkOutRecords.first().value).isEqualTo(response)
     }
