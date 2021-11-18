@@ -1,5 +1,6 @@
 package net.corda.flow.manager.impl
 
+import jdk.internal.vm.compiler.word.LocationIdentity.any
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
 import net.corda.data.flow.Checkpoint
@@ -19,7 +20,10 @@ import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.application.flows.Flow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.*
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 
 class FlowManagerImplTest {
