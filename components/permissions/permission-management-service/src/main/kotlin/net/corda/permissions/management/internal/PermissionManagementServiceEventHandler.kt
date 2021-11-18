@@ -1,4 +1,4 @@
-package net.corda.permissions.management
+package net.corda.permissions.management.internal
 
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
@@ -22,7 +22,7 @@ import net.corda.permissions.cache.PermissionCacheService
 import net.corda.rpc.schema.Schema
 import net.corda.v5.base.annotations.VisibleForTesting
 
-class PermissionManagementServiceEventHandler(
+internal class PermissionManagementServiceEventHandler(
     private val publisherFactory: PublisherFactory,
     private val permissionCacheService: PermissionCacheService,
     private val permissionManagerFactory: PermissionManagerFactory

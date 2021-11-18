@@ -14,36 +14,38 @@ import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.v5.base.util.Try
 
 class PermissionUserManagerImpl(
     private val rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
     private val permissionCache: PermissionCache
 ) : PermissionUserManager {
 
-    override fun createUser(createUserRequestDto: CreateUserRequestDto): UserResponseDto {
-        val future = rpcSender.sendRequest(
-            PermissionManagementRequest(
-                createUserRequestDto.requestedBy,
-                createUserRequestDto.virtualNodeId,
-                CreateUserRequest(
-                    createUserRequestDto.fullName,
-                    createUserRequestDto.loginName,
-                    createUserRequestDto.enabled,
-                    "temp-hashed-password", // todo perform hashing and salting
-                    "temporary-salt",
-                    createUserRequestDto.passwordExpiry,
-                    createUserRequestDto.parentGroup
+    override fun createUser(createUserRequestDto: CreateUserRequestDto): Try<UserResponseDto> {
+        return Try.on {
+            val future = rpcSender.sendRequest(
+                PermissionManagementRequest(
+                    createUserRequestDto.requestedBy,
+                    createUserRequestDto.virtualNodeId,
+                    CreateUserRequest(
+                        createUserRequestDto.fullName,
+                        createUserRequestDto.loginName,
+                        createUserRequestDto.enabled,
+                        "temp-hashed-password", // todo perform hashing and salting
+                        "temporary-salt",
+                        createUserRequestDto.passwordExpiry,
+                        createUserRequestDto.parentGroup
+                    )
                 )
             )
-        )
 
-        val futureResponse = future.getOrThrow(Duration.ofSeconds(10))
+            val futureResponse = future.getOrThrow(Duration.ofSeconds(10))
 
-        val result = futureResponse.response
-        if (result is User) {
-            return result.convertAvroUserToUserResponseDto()
-        } else {
-            throw PermissionManagerException("Unknown response for Create User operation: $result")
+            val result = futureResponse.response
+            if (result !is User)
+                throw PermissionManagerException("Unknown response for Create User operation: $result")
+
+            result.convertAvroUserToUserResponseDto()
         }
     }
 

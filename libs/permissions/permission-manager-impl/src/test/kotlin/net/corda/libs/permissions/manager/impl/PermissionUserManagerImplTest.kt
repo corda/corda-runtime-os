@@ -17,9 +17,11 @@ import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 import org.mockito.kotlin.argumentCaptor
@@ -74,17 +76,21 @@ class PermissionUserManagerImplTest {
         assertEquals(createUserRequestDto.passwordExpiry!!.toEpochMilli(), avroCreateUserRequest.passwordExpiry.toEpochMilli())
         assertEquals(createUserRequestDto.parentGroup, avroCreateUserRequest.parentGroupId)
 
-        assertEquals(fullName, result.fullName)
-        assertEquals(avroUser.enabled, result.enabled)
-        assertEquals(avroUser.lastChangeDetails.updateTimestamp, result.lastUpdatedTimestamp)
-        assertEquals(avroUser.ssoAuth, result.ssoAuth)
-        assertEquals(avroUser.parentGroupId, result.parentGroup)
-        assertEquals(1, result.properties.size)
+        assertTrue(result.isSuccess)
+        assertFalse(result.isFailure)
+        result.doOnSuccess {
+            assertEquals(fullName, it.fullName)
+            assertEquals(avroUser.enabled, it.enabled)
+            assertEquals(avroUser.lastChangeDetails.updateTimestamp, it.lastUpdatedTimestamp)
+            assertEquals(avroUser.ssoAuth, it.ssoAuth)
+            assertEquals(avroUser.parentGroupId, it.parentGroup)
+            assertEquals(1, it.properties.size)
 
-        val property = result.properties.first()
-        assertEquals(userProperty.lastChangeDetails.updateTimestamp, property.lastChangedTimestamp)
-        assertEquals(userProperty.key, property.key)
-        assertEquals(userProperty.value, property.value)
+            val property = it.properties.first()
+            assertEquals(userProperty.lastChangeDetails.updateTimestamp, property.lastChangedTimestamp)
+            assertEquals(userProperty.key, property.key)
+            assertEquals(userProperty.value, property.value)
+        }
     }
 
     @Test
@@ -96,8 +102,12 @@ class PermissionUserManagerImplTest {
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
 
+        val result = manager.createUser(createUserRequestDto)
+
+        assertTrue(result.isFailure)
+        assertFalse(result.isSuccess)
         assertThrows(PermissionManagerException::class.java) {
-            manager.createUser(createUserRequestDto)
+            result.getOrThrow()
         }
     }
 
