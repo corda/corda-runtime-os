@@ -968,8 +968,8 @@ class SerializationOutputTests {
         val compressedSize = ser.serialize(obj, CordaSerializationEncoding.SNAPPY).bytes.size
         // Ordinarily this might be considered high maintenance, but we promised wire compatibility, so they'd better not change!
         // Different than Corda 4, because this includes the Metadata element.
-        assertEquals(20075, uncompressedSize)
-        assertEquals(1022, compressedSize)
+        assertEquals(20097, uncompressedSize)
+        assertEquals(1044, compressedSize)
     }
 
     // JDK11: backwards compatibility function to deal with StacktraceElement comparison pre-JPMS
