@@ -1,3 +1,5 @@
+@file:JvmName("TestSerializationContext")
+
 package net.corda.internal.serialization.amqp.testutils
 
 import net.corda.internal.serialization.AllWhitelist

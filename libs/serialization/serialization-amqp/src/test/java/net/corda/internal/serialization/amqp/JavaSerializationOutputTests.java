@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp;
 
+import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
 import net.corda.v5.serialization.SerializedBytes;
 import net.corda.v5.serialization.annotations.ConstructorForDeserialization;
-import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
 import org.apache.qpid.proton.codec.DecoderImpl;
 import org.apache.qpid.proton.codec.EncoderImpl;
 import org.junit.jupiter.api.Test;
@@ -183,7 +183,7 @@ public class JavaSerializationOutputTests {
         SerializerFactory factory1 = testDefaultFactory();
         SerializerFactory factory2 = testDefaultFactory();
         SerializationOutput ser = new SerializationOutput(factory1);
-        SerializedBytes<Object> bytes = ser.serialize(obj, TestSerializationContext.testSerializationContext);
+        SerializedBytes<Object> bytes = ser.serialize(obj, TestSerializationContext.getTestSerializationContext());
 
         DecoderImpl decoder = new DecoderImpl();
 
@@ -204,14 +204,14 @@ public class JavaSerializationOutputTests {
         assertNotNull(result);
 
         DeserializationInput des = new DeserializationInput(factory2);
-        Object desObj = des.deserialize(bytes, Object.class, TestSerializationContext.testSerializationContext);
+        Object desObj = des.deserialize(bytes, Object.class, TestSerializationContext.getTestSerializationContext());
         assertTrue(Objects.deepEquals(obj, desObj));
 
         // Now repeat with a re-used factory
         SerializationOutput ser2 = new SerializationOutput(factory1);
         DeserializationInput des2 = new DeserializationInput(factory1);
-        Object desObj2 = des2.deserialize(ser2.serialize(obj, TestSerializationContext.testSerializationContext),
-                Object.class, TestSerializationContext.testSerializationContext);
+        Object desObj2 = des2.deserialize(ser2.serialize(obj, TestSerializationContext.getTestSerializationContext()),
+                Object.class, TestSerializationContext.getTestSerializationContext());
 
         assertTrue(Objects.deepEquals(obj, desObj2));
         // TODO: check schema is as expected

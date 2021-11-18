@@ -1,7 +1,7 @@
 package net.corda.internal.serialization.amqp;
 
-import net.corda.v5.serialization.SerializedBytes;
 import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
+import net.corda.v5.serialization.SerializedBytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -137,7 +137,7 @@ public class SetterConstructorTests {
         c1.setA(1);
         c1.setB(2);
         c1.setC(3);
-        Schema schemas = ser.serializeAndReturnSchema(c1, TestSerializationContext.testSerializationContext).component2();
+        Schema schemas = ser.serializeAndReturnSchema(c1, TestSerializationContext.getTestSerializationContext()).component2();
         assertThat(schemas.component1().size()).isEqualTo(1);
         assertEquals(this.getClass().getName() + "$C", schemas.component1().get(0).getName());
 
@@ -152,7 +152,7 @@ public class SetterConstructorTests {
         C2 c2 = new C2();
         c2.setA(1);
         c2.setB(2);
-        schemas = ser.serializeAndReturnSchema(c2, TestSerializationContext.testSerializationContext).component2();
+        schemas = ser.serializeAndReturnSchema(c2, TestSerializationContext.getTestSerializationContext()).component2();
 
         assertEquals(1, schemas.component1().size());
         assertEquals(this.getClass().getName() + "$C2", schemas.component1().get(0).getName());
@@ -169,7 +169,7 @@ public class SetterConstructorTests {
         c3.setA(1);
         c3.setB(2);
         c3.setC(3);
-        schemas = ser.serializeAndReturnSchema(c3, TestSerializationContext.testSerializationContext).component2();
+        schemas = ser.serializeAndReturnSchema(c3, TestSerializationContext.getTestSerializationContext()).component2();
 
         assertEquals(1, schemas.component1().size());
         assertEquals(this.getClass().getName() + "$C3", schemas.component1().get(0).getName());
@@ -185,7 +185,7 @@ public class SetterConstructorTests {
         c4.setA(1);
         c4.setB(2);
         c4.setC(3);
-        schemas = ser.serializeAndReturnSchema(c4, TestSerializationContext.testSerializationContext).component2();
+        schemas = ser.serializeAndReturnSchema(c4, TestSerializationContext.getTestSerializationContext()).component2();
 
         assertEquals(1, schemas.component1().size());
         assertEquals(this.getClass().getName() + "$C4", schemas.component1().get(0).getName());
@@ -211,9 +211,9 @@ public class SetterConstructorTests {
         cPre1.setB(b);
         cPre1.setC(c);
 
-        SerializedBytes bytes = new SerializationOutput(factory1).serialize(cPre1, TestSerializationContext.testSerializationContext);
+        SerializedBytes bytes = new SerializationOutput(factory1).serialize(cPre1, TestSerializationContext.getTestSerializationContext());
 
-        C cPost1 = new DeserializationInput(factory1).deserialize(bytes, C.class, TestSerializationContext.testSerializationContext);
+        C cPost1 = new DeserializationInput(factory1).deserialize(bytes, C.class, TestSerializationContext.getTestSerializationContext());
 
         assertEquals(a, cPost1.a);
         assertEquals(b, cPost1.b);
@@ -223,8 +223,8 @@ public class SetterConstructorTests {
         cPre2.setA(1);
         cPre2.setB(2);
 
-        C2 cPost2 = new DeserializationInput(factory1).deserialize(new SerializationOutput(factory1).serialize(cPre2, TestSerializationContext.testSerializationContext),
-                C2.class, TestSerializationContext.testSerializationContext);
+        C2 cPost2 = new DeserializationInput(factory1).deserialize(new SerializationOutput(factory1).serialize(cPre2, TestSerializationContext.getTestSerializationContext()),
+                C2.class, TestSerializationContext.getTestSerializationContext());
 
         assertEquals(a, cPost2.a);
         assertEquals(b, cPost2.b);
@@ -239,8 +239,8 @@ public class SetterConstructorTests {
         cPre3.setC(3);
 
         C3 cPost3 = new DeserializationInput(factory1).deserialize(
-                new SerializationOutput(factory1).serialize(cPre3, TestSerializationContext.testSerializationContext),
-                C3.class, TestSerializationContext.testSerializationContext);
+                new SerializationOutput(factory1).serialize(cPre3, TestSerializationContext.getTestSerializationContext()),
+                C3.class, TestSerializationContext.getTestSerializationContext());
 
         assertEquals(a, cPost3.a);
 
@@ -255,9 +255,9 @@ public class SetterConstructorTests {
 
         C4 cPost4 = new DeserializationInput(factory1).deserialize(
                 new SerializationOutput(factory1).serialize(cPre4,
-                        TestSerializationContext.testSerializationContext),
+                        TestSerializationContext.getTestSerializationContext()),
                 C4.class,
-                TestSerializationContext.testSerializationContext);
+                TestSerializationContext.getTestSerializationContext());
 
         assertEquals(0, cPost4.a);
         assertEquals(0, cPost4.b);
@@ -279,8 +279,8 @@ public class SetterConstructorTests {
 
         Outer post = new DeserializationInput(factory1).deserialize(
                 new SerializationOutput(factory1).serialize(
-                        o, TestSerializationContext.testSerializationContext),
-                Outer.class, TestSerializationContext.testSerializationContext);
+                        o, TestSerializationContext.getTestSerializationContext()),
+                Outer.class, TestSerializationContext.getTestSerializationContext());
 
         assertEquals("Hello", post.a.a);
         assertEquals("World", post.b);
@@ -297,7 +297,7 @@ public class SetterConstructorTests {
         assertEquals("10", tm.getA());
 
         assertThatThrownBy(() -> new SerializationOutput(factory1).serialize(tm,
-                TestSerializationContext.testSerializationContext)).isInstanceOf (
+                TestSerializationContext.getTestSerializationContext())).isInstanceOf (
                 NotSerializableException.class);
     }
 
@@ -310,7 +310,7 @@ public class SetterConstructorTests {
         assertEquals((Integer)10, tm.getA());
 
         assertThatThrownBy(() -> new SerializationOutput(factory1).serialize(tm,
-                TestSerializationContext.testSerializationContext)).isInstanceOf(
+                TestSerializationContext.getTestSerializationContext())).isInstanceOf(
                 NotSerializableException.class);
     }
 
@@ -332,8 +332,8 @@ public class SetterConstructorTests {
         // explode. See CORDA-1229 (https://r3-cev.atlassian.net/browse/CORDA-1229)
         new DeserializationInput(factory1).deserialize(
                 new SerializationOutput(factory1).serialize(
-                        cil, TestSerializationContext.testSerializationContext),
+                        cil, TestSerializationContext.getTestSerializationContext()),
                 CIntList.class,
-                TestSerializationContext.testSerializationContext);
+                TestSerializationContext.getTestSerializationContext());
     }
 }

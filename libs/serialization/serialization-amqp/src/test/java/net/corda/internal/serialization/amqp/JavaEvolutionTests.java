@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp;
 
+import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
 import net.corda.v5.serialization.SerializedBytes;
 import net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt;
-import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.Assertions;
@@ -76,7 +76,7 @@ public class JavaEvolutionTests {
         N1 n2 = new DeserializationInput(factory).deserialize(
                 new SerializedBytes<>(AMQPTestUtilsKt.readTestResource(this)),
                 N1.class,
-                TestSerializationContext.testSerializationContext);
+                TestSerializationContext.getTestSerializationContext());
         assertThat(n2.getWord()).isEqualTo("potato");
         assertThat(n2.getWibble()).isNull();
     }
@@ -95,7 +95,7 @@ public class JavaEvolutionTests {
             new DeserializationInput(factory).deserialize(
                     new SerializedBytes<>(AMQPTestUtilsKt.readTestResource(this)),
                     N2.class,
-                    TestSerializationContext.testSerializationContext);
+                    TestSerializationContext.getTestSerializationContext());
         });
     }
 
@@ -149,7 +149,7 @@ public class JavaEvolutionTests {
         POJOWithInteger n2 = new DeserializationInput(factory).deserialize(
                 new SerializedBytes<>(AMQPTestUtilsKt.readTestResource(this)),
                 POJOWithInteger.class,
-                TestSerializationContext.testSerializationContext);
+                TestSerializationContext.getTestSerializationContext());
 
         assertThat(n2.getId()).isEqualTo(Integer.valueOf(100));
     }

@@ -35,7 +35,7 @@ public class ErrorMessageTests {
     public void testJavaConstructorAnnotations() {
         SerializationOutput ser = new SerializationOutput(testDefaultFactory());
 
-        assertThatThrownBy(() -> ser.serialize(new C(1), TestSerializationContext.testSerializationContext))
+        assertThatThrownBy(() -> ser.serialize(new C(1), TestSerializationContext.getTestSerializationContext()))
                 .isInstanceOf(NotSerializableException.class)
                 .hasMessage(errMsg("a", getClass().getName()));
     }

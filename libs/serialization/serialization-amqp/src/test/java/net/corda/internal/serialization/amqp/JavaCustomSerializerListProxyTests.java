@@ -42,6 +42,6 @@ public class JavaCustomSerializerListProxyTests {
         factory.registerExternal(new ExampleSerializer(), factory);
 
         assertThrows(NotSerializableException.class,
-                () -> ser.serialize(e, TestSerializationContext.testSerializationContext));
+                () -> ser.serialize(e, TestSerializationContext.getTestSerializationContext()));
     }
 }

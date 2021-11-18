@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp;
 
+import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.serialization.SerializedBytes;
-import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -132,9 +132,9 @@ public class ListsSerializationJavaTest {
     private static <T> void assertEqualAfterRoundTripSerialization(T container, Class<T> clazz) throws Exception {
         SerializerFactory factory1 = testDefaultFactory();
         SerializationOutput ser = new SerializationOutput(factory1);
-        SerializedBytes<Object> bytes = ser.serialize(container, TestSerializationContext.testSerializationContext);
+        SerializedBytes<Object> bytes = ser.serialize(container, TestSerializationContext.getTestSerializationContext());
         DeserializationInput des = new DeserializationInput(factory1);
-        T deserialized = des.deserialize(bytes, clazz, TestSerializationContext.testSerializationContext);
+        T deserialized = des.deserialize(bytes, clazz, TestSerializationContext.getTestSerializationContext());
         assertThat(deserialized).isEqualTo(container);
     }
 }

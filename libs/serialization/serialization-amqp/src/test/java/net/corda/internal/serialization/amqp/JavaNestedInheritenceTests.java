@@ -44,7 +44,7 @@ public class JavaNestedInheritenceTests extends JavaNestedInheritenceTestsBase {
 
         SerializationOutput ser = new SerializationOutput(factory);
 
-        assertThatThrownBy(() -> ser.serialize(new DummyState(), TestSerializationContext.testSerializationContext)).isInstanceOf(
+        assertThatThrownBy(() -> ser.serialize(new DummyState(), TestSerializationContext.getTestSerializationContext())).isInstanceOf(
                 NotSerializableException.class).hasMessageContaining(
                 "has synthetic fields and is likely a nested inner class");
     }
@@ -54,7 +54,7 @@ public class JavaNestedInheritenceTests extends JavaNestedInheritenceTestsBase {
         SerializerFactory factory = testDefaultFactory();
 
         SerializationOutput ser = new SerializationOutput(factory);
-        assertThatThrownBy(() -> ser.serialize(new Wrapper (new DummyState()), TestSerializationContext.testSerializationContext)).isInstanceOf(
+        assertThatThrownBy(() -> ser.serialize(new Wrapper (new DummyState()), TestSerializationContext.getTestSerializationContext())).isInstanceOf(
                 NotSerializableException.class).hasMessageContaining(
                 "has synthetic fields and is likely a nested inner class");
     }
@@ -65,7 +65,7 @@ public class JavaNestedInheritenceTests extends JavaNestedInheritenceTestsBase {
 
         SerializationOutput ser = new SerializationOutput(factory1);
 
-        assertThatThrownBy(() -> ser.serialize(new TemplateWrapper<JavaTestContractState>(new DummyState()), TestSerializationContext.testSerializationContext)).isInstanceOf(
+        assertThatThrownBy(() -> ser.serialize(new TemplateWrapper<JavaTestContractState>(new DummyState()), TestSerializationContext.getTestSerializationContext())).isInstanceOf(
                 NotSerializableException.class).hasMessageContaining(
                 "has synthetic fields and is likely a nested inner class");
     }
