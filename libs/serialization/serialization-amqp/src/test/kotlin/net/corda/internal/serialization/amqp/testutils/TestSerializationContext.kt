@@ -7,7 +7,7 @@ import net.corda.serialization.SerializationContext
 
 val serializationProperties: MutableMap<Any, Any> = mutableMapOf()
 
-val testSerializationContext = SerializationContextImpl(
+val testSerializationContext: SerializationContext = SerializationContextImpl(
         preferredSerializationVersion = amqpMagic,
         whitelist = AllWhitelist,
         properties = serializationProperties,
