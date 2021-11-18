@@ -5,7 +5,7 @@ import net.corda.libs.permission.factory.PermissionValidatorFactory
 import net.corda.lifecycle.Lifecycle
 import org.osgi.service.component.annotations.Reference
 
-class PermissionServiceComponent(
+class PermissionValidationService(
     @Reference(service = PermissionValidatorFactory::class)
     private val permissionValidatorFactory: PermissionValidatorFactory
 ) : Lifecycle {
