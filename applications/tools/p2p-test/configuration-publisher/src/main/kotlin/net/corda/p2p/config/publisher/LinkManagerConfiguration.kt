@@ -98,7 +98,7 @@ class LinkManagerConfiguration : ConfigProducer() {
 
     override val key = CordaConfigurationKey(
         "p2p-link-manager",
-        CordaConfigurationVersion("p2p", 1, 0),
-        CordaConfigurationVersion("link-manager", 1, 0)
+        CordaConfigurationVersion(net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.PACKAGE_NAME , 1, 0),
+        CordaConfigurationVersion(net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.COMPONENT_NAME, 1, 0)
     )
 }

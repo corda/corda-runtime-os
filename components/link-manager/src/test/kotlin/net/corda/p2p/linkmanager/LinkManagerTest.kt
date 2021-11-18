@@ -35,7 +35,6 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.delivery.DeliveryTracker
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAck
@@ -340,7 +339,6 @@ class LinkManagerTest {
 
     @Test
     fun `createOutboundResources adds the correct resource to the resourceHolder`() {
-        val deliveryTracker = Mockito.mockConstruction(DeliveryTracker::class.java) { _, _ -> }
         val subscription = mock<EventLogSubscription<String, AppMessage>>()
         val subscriptionFactory = mock<SubscriptionFactory> {
             //Used in createOutboundResources
@@ -355,10 +353,6 @@ class LinkManagerTest {
         linkManager.createOutboundResources(resourcesHolder)
         verify(subscription).start()
         verify(resourcesHolder).keep(subscription)
-        val constructedDeliveryTracker = deliveryTracker.constructed().last()
-        verify(constructedDeliveryTracker).start()
-        verify(resourcesHolder).keep(constructedDeliveryTracker)
-        deliveryTracker.close()
     }
 
     @Test

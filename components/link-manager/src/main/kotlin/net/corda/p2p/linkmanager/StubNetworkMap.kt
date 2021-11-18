@@ -33,10 +33,10 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        subscription.start()
-        resources.keep (subscription)
         val future = CompletableFuture<Unit>()
         readyFuture.set(future)
+        subscription.start()
+        resources.keep (subscription)
         return future
     }
 
