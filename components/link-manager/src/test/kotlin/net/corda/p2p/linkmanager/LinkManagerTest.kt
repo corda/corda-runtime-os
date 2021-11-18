@@ -340,7 +340,6 @@ class LinkManagerTest {
 
     @Test
     fun `createOutboundResources adds the correct resource to the resourceHolder`() {
-        val deliveryTracker = Mockito.mockConstruction(DeliveryTracker::class.java) { _, _ -> }
         val subscription = mock<EventLogSubscription<String, AppMessage>>()
         val subscriptionFactory = mock<SubscriptionFactory> {
             //Used in createOutboundResources
@@ -355,10 +354,6 @@ class LinkManagerTest {
         linkManager.createOutboundResources(resourcesHolder)
         verify(subscription).start()
         verify(resourcesHolder).keep(subscription)
-        val constructedDeliveryTracker = deliveryTracker.constructed().last()
-        verify(constructedDeliveryTracker).start()
-        verify(resourcesHolder).keep(constructedDeliveryTracker)
-        deliveryTracker.close()
     }
 
     @Test
