@@ -3,6 +3,7 @@ package net.corda.internal.serialization.model
 import com.google.common.reflect.TypeToken
 import net.corda.internal.serialization.amqp.Metadata
 import net.corda.internal.serialization.amqp.asClass
+import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.osgi.TypeResolver
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
@@ -272,7 +273,7 @@ sealed class TypeIdentifier {
         return if (metadata.containsKey(name)) {
             val serializedClassTag = metadata.getValue(name) as String
             try {
-                (context.sandboxGroup as? SandboxGroup)?.getClass(name, serializedClassTag) as Class<*>
+                context.currentSandboxGroup().getClass(name, serializedClassTag) as Class<*>
             } catch (ex: SandboxException) {
                 throw ClassNotFoundException("Unable to load CPK type $name", ex)
             }

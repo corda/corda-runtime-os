@@ -2,9 +2,12 @@ package net.corda.internal.serialization.amqp
 
 import com.google.common.reflect.TypeToken
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.ClassWhitelist
+import net.corda.serialization.SerializationContext
 import net.corda.v5.base.annotations.CordaSerializable
 import org.apache.qpid.proton.codec.Data
+import java.io.NotSerializableException
 import java.lang.reflect.GenericArrayType
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
@@ -133,3 +136,6 @@ fun hasCordaSerializable(type: Class<*>): Boolean {
             || type.interfaces.any(::hasCordaSerializable)
             || (type.superclass != null && hasCordaSerializable(type.superclass))
 }
+
+fun SerializationContext.currentSandboxGroup(): SandboxGroup = this.sandboxGroup as? SandboxGroup
+    ?: throw NotSerializableException("sandboxGroup is not set in serialization context")

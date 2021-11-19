@@ -133,8 +133,8 @@ open class SerializationOutput constructor(
      * Attaches information about the CPKs associated with the serialised objects to the metadata
      */
     private fun putTypeToMetadata(type: Type, context: SerializationContext) {
-        val classTag = (context.sandboxGroup as? SandboxGroup)?.getEvolvableTag(type.asClass())
-        if (classTag != null && !metadata.containsKey(type.typeName)) {
+        val classTag = context.currentSandboxGroup().getEvolvableTag(type.asClass())
+        if (!metadata.containsKey(type.typeName)) {
             val key = type.asClass().name
             metadata.putValue(key, classTag)
         }

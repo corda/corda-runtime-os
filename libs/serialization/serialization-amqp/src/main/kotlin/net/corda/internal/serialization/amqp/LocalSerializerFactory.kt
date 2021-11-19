@@ -145,7 +145,7 @@ class DefaultLocalSerializerFactory(
         return typesByName.getOrPut(typeName) {
             val localType = try {
                 val serializedClassTag = metadata.getValue(typeName) as String
-                (context.sandboxGroup as? SandboxGroup)?.getClass(typeName, serializedClassTag)
+                context.currentSandboxGroup().getClass(typeName, serializedClassTag)
             } catch (_: SandboxException) {
                 logger.trace { "Failed to load class $typeName from any sandboxes" }
                 null
