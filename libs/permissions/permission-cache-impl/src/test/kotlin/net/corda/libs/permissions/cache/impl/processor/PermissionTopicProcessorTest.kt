@@ -11,15 +11,11 @@ import org.junit.jupiter.api.Test
 
 class PermissionTopicProcessorTest {
 
-    private val user = User(
-        "id1", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
-        "hashedPassword", "saltValue", false, null, null, null
-    )
+    private val user = User("id1", 1, ChangeDetails(Instant.now()), "user-login1", "full name", true,
+    "hashedPassword", "saltValue", null, false, null, null, emptyList())
 
-    private val userUpdated = User(
-        "id2", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", false,
-        "hashedPassword", "saltValue", false, null, null, null
-    )
+    private val userUpdated = User("id2", 1, ChangeDetails(Instant.now()), "user-login2", "full name", true,
+        "hashedPassword", "saltValue", null, false, null, null, emptyList())
 
     private val userData: ConcurrentHashMap<String, User> = ConcurrentHashMap()
 
