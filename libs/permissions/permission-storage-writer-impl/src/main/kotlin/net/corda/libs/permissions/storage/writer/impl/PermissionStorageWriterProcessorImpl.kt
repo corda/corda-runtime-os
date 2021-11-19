@@ -14,6 +14,7 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import net.corda.data.permissions.GroupAssociation
 
 class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: EntityManagerFactory) : PermissionStorageWriterProcessor {
 
@@ -91,13 +92,20 @@ class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: Ent
         return net.corda.data.permissions.User(
             id,
             version,
-            ChangeDetails(updateTimestamp, "Need to get the changed by user from somewhere"),
+            ChangeDetails(updateTimestamp),
+            loginName,
             fullName,
             enabled,
             hashedPassword,
             saltValue,
+            passwordExpiry,
             false,
-            parentGroup?.id,
+            parentGroup?.let {
+                GroupAssociation(
+                    ChangeDetails(Instant.now()), // Group association to be removed v29
+                    it.id
+                )
+            },
             emptyList(),
             emptyList()
         )
