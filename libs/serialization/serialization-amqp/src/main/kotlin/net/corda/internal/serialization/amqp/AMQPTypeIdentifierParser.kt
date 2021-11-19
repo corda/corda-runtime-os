@@ -2,7 +2,6 @@ package net.corda.internal.serialization.amqp
 
 import com.google.common.primitives.Primitives
 import net.corda.internal.serialization.model.TypeIdentifier
-import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Decimal128
 import org.apache.qpid.proton.amqp.Decimal32
 import org.apache.qpid.proton.amqp.Decimal64
