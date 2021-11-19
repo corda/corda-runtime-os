@@ -6,6 +6,7 @@ import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.Property
 import net.corda.data.permissions.User
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 
@@ -16,11 +17,13 @@ internal class ConverterUtilsKtTest {
         val avroUser = User(
             UUID.randomUUID().toString(),
             0,
-            ChangeDetails(Instant.now(), "me"),
+            ChangeDetails(Instant.now()),
+            "user-login1",
             "fullName",
             true,
             "hashed-pass",
             "salt",
+            Instant.now(),
             false,
             "parentGroup",
             emptyList(),
@@ -28,6 +31,8 @@ internal class ConverterUtilsKtTest {
         )
         val userResponseDto = avroUser.convertAvroUserToUserResponseDto()
 
+        assertEquals(avroUser.loginName, userResponseDto.loginName)
+        assertEquals(avroUser.version, userResponseDto.version)
         assertEquals(avroUser.fullName, userResponseDto.fullName)
         assertEquals(avroUser.lastChangeDetails.updateTimestamp.toEpochMilli(), userResponseDto.lastUpdatedTimestamp.toEpochMilli())
         assertEquals(avroUser.enabled, userResponseDto.enabled)
@@ -41,29 +46,33 @@ internal class ConverterUtilsKtTest {
 
         val property1ChangeTimestamp = Instant.now()
         val property2ChangeTimestamp = Instant.now()
-        val avroUser = User(
+        val userWithoutPassword = User(
             UUID.randomUUID().toString(),
             0,
-            ChangeDetails(Instant.now(), "me"),
+            ChangeDetails(Instant.now()),
+            "loginName",
             "fullName",
             true,
-            "hashed-pass",
-            "salt",
-            false,
+            null,
+            null,
+            null,
+            true,
             "parentGroup",
             listOf(
-                Property(UUID.randomUUID().toString(), 0, ChangeDetails(property1ChangeTimestamp, "requestUserName"), "key1", "a@b"),
-                Property(UUID.randomUUID().toString(), 0, ChangeDetails(property2ChangeTimestamp, "requestUserName"), "key2", "c@d")
+                Property(UUID.randomUUID().toString(), 0, ChangeDetails(property1ChangeTimestamp), "key1", "a@b"),
+                Property(UUID.randomUUID().toString(), 0, ChangeDetails(property2ChangeTimestamp), "key2", "c@d")
             ),
             emptyList()
         )
-        val userResponseDto = avroUser.convertAvroUserToUserResponseDto()
+        val userResponseDto = userWithoutPassword.convertAvroUserToUserResponseDto()
 
-        assertEquals(avroUser.fullName, userResponseDto.fullName)
-        assertEquals(avroUser.lastChangeDetails.updateTimestamp.toEpochMilli(), userResponseDto.lastUpdatedTimestamp.toEpochMilli())
-        assertEquals(avroUser.enabled, userResponseDto.enabled)
-        assertEquals(avroUser.ssoAuth, userResponseDto.ssoAuth)
-        assertEquals(avroUser.parentGroupId, userResponseDto.parentGroup)
+        assertEquals(userWithoutPassword.fullName, userResponseDto.fullName)
+        assertEquals(userWithoutPassword.lastChangeDetails.updateTimestamp.toEpochMilli(),
+            userResponseDto.lastUpdatedTimestamp.toEpochMilli())
+        assertEquals(userWithoutPassword.enabled, userResponseDto.enabled)
+        assertNull(userResponseDto.passwordExpiry)
+        assertEquals(true, userResponseDto.ssoAuth)
+        assertEquals(userWithoutPassword.parentGroupId, userResponseDto.parentGroup)
         assertEquals(2, userResponseDto.properties.size)
 
         val propertyResponseDtos = userResponseDto.properties

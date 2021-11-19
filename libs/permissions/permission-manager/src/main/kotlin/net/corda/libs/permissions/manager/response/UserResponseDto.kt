@@ -7,6 +7,7 @@ import java.time.Instant
  */
 data class UserResponseDto(
     val id: String,
+    val version: Int,
     val lastUpdatedTimestamp: Instant,
     val fullName: String,
     val loginName: String,

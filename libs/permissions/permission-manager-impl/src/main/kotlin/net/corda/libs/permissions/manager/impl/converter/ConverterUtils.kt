@@ -1,6 +1,5 @@
 package net.corda.libs.permissions.manager.impl.converter
 
-import java.time.Instant
 import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.data.permissions.User as AvroUser
@@ -8,12 +7,13 @@ import net.corda.data.permissions.User as AvroUser
 fun AvroUser.convertAvroUserToUserResponseDto(): UserResponseDto {
     return UserResponseDto(
         id,
+        version,
         lastChangeDetails.updateTimestamp,
         fullName,
-        "todo",// todo add loginName to User object
+        loginName,
         enabled,
         ssoAuth,
-        Instant.now(),// todo add password expiry to User object
+        passwordExpiry,
         parentGroupId,
         properties.map {
             PropertyResponseDto(

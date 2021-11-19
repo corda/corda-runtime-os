@@ -6,6 +6,7 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.Property
+import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.User
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
@@ -52,15 +53,19 @@ class PermissionUserManagerImplTest {
         loginName = "loginname123", fullName = fullName, enabled = true, initialPassword = null, passwordExpiry = null,
         parentGroup = parentGroup)
 
+    private val userCreationTime = Instant.now()
     private val getUserRequestDto = GetUserRequestDto(requestedBy = requestUserName, virtualNodeId = "virtNode1",
         loginName = "loginname123")
-    private val userProperty = Property(UUID.randomUUID().toString(), 0, ChangeDetails(Instant.now(), requestUserName), "email",
+    private val userProperty = Property(UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "email",
         "a@b.com")
-    private val avroUser = User(UUID.randomUUID().toString(), 0, ChangeDetails(Instant.now(), requestUserName), fullName,
-        true, "temp-hashed-password", "temporary-salt", false, parentGroup, listOf(userProperty),
-        listOf("roleId1"))
-    private val avroUserWithoutPassword = User(UUID.randomUUID().toString(), 0, ChangeDetails(Instant.now(), requestUserName), fullName,
-        true, null, null, true, parentGroup, listOf(userProperty), listOf("roleId1"))
+
+    private val avroUser = User(UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "user-login1", fullName, true,
+        "temp-hashed-password", "temporary-salt", userCreationTime, false, parentGroup, listOf(userProperty),
+        listOf(RoleAssociation(ChangeDetails(userCreationTime), "roleId1")))
+
+    private val avroUserWithoutPassword = User(UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime),
+        "user-login2", fullName, true, null, null, null,
+        true, parentGroup, listOf(userProperty), listOf(RoleAssociation(ChangeDetails(userCreationTime), "roleId1")))
 
     private val permissionManagementResponse = PermissionManagementResponse(avroUser)
     private val permissionManagementResponseWithoutPassword = PermissionManagementResponse(avroUserWithoutPassword)
