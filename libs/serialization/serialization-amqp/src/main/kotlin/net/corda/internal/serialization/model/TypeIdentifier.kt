@@ -273,7 +273,7 @@ sealed class TypeIdentifier {
         return if (metadata.containsKey(name)) {
             val serializedClassTag = metadata.getValue(name) as String
             try {
-                context.currentSandboxGroup().getClass(name, serializedClassTag) as Class<*>
+                context.currentSandboxGroup().getClass(name, serializedClassTag)
             } catch (ex: SandboxException) {
                 throw ClassNotFoundException("Unable to load CPK type $name", ex)
             }
