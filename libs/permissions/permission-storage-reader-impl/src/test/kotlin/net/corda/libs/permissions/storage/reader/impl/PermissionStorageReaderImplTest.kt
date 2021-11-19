@@ -23,7 +23,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import net.corda.data.permissions.GroupAssociation
 import net.corda.data.permissions.PermissionAssociation
 import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.Group as AvroGroup
@@ -165,10 +164,7 @@ class PermissionStorageReaderImplTest {
             -1,
             ChangeDetails(group.updateTimestamp),
             group.name,
-            GroupAssociation(
-                ChangeDetails(Instant.EPOCH), // Group association to be removed v29
-                parentGroup.id
-            ),
+            parentGroup.id,
             listOf(
                 net.corda.data.permissions.Property(
                     groupProperty.id,
@@ -186,10 +182,7 @@ class PermissionStorageReaderImplTest {
             -1,
             ChangeDetails(group2.updateTimestamp),
             group2.name,
-            GroupAssociation(
-                ChangeDetails(Instant.EPOCH), // Group association to be removed v29
-                parentGroup.id
-            ),
+            parentGroup.id,
             listOf(
                 net.corda.data.permissions.Property(
                     groupProperty.id,
@@ -255,10 +248,7 @@ class PermissionStorageReaderImplTest {
             user.saltValue,
             user.passwordExpiry,
             true,
-            GroupAssociation(
-                ChangeDetails(Instant.EPOCH), // Group association to be removed v29
-                group.id
-            ),
+            group.id,
             emptyList(),
             listOf(
                 RoleAssociation(
@@ -279,10 +269,7 @@ class PermissionStorageReaderImplTest {
             user2.saltValue,
             user2.passwordExpiry,
             true,
-            GroupAssociation(
-                ChangeDetails(Instant.EPOCH), // Group association to be removed v29
-                group.id
-            ),
+            group.id,
             emptyList(),
             listOf(
                 RoleAssociation(

@@ -14,7 +14,6 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import net.corda.data.permissions.GroupAssociation
 
 class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: EntityManagerFactory) : PermissionStorageWriterProcessor {
 
@@ -100,12 +99,7 @@ class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: Ent
             saltValue,
             passwordExpiry,
             false,
-            parentGroup?.let {
-                GroupAssociation(
-                    ChangeDetails(Instant.now()), // Group association to be removed v29
-                    it.id
-                )
-            },
+            parentGroup?.id,
             emptyList(),
             emptyList()
         )
