@@ -131,7 +131,6 @@ internal class InboundMessageHandler(
         return when (message.payload) {
             is AuthenticatedDataMessage -> (message.payload as AuthenticatedDataMessage).header.sessionId
             is AuthenticatedEncryptedDataMessage -> (message.payload as AuthenticatedEncryptedDataMessage).header.sessionId
-            is InitiatorHelloMessage -> (message.payload as InitiatorHelloMessage).header.sessionId
             is InitiatorHandshakeMessage -> (message.payload as InitiatorHandshakeMessage).header.sessionId
             is ResponderHelloMessage -> (message.payload as ResponderHelloMessage).header.sessionId
             is ResponderHandshakeMessage -> (message.payload as ResponderHandshakeMessage).header.sessionId
