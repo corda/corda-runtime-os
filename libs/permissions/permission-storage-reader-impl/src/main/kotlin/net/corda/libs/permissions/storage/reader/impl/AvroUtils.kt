@@ -1,7 +1,5 @@
 package net.corda.libs.permissions.storage.reader.impl
 
-import java.time.Instant
-import net.corda.data.permissions.GroupAssociation
 import net.corda.data.permissions.ChangeDetails as AvroChangeDetails
 import net.corda.data.permissions.PermissionAssociation as AvroPermissionAssociation
 import net.corda.data.permissions.Property as AvroProperty
@@ -28,12 +26,7 @@ fun User.toAvroUser(): AvroUser {
         saltValue,
         passwordExpiry,
         hashedPassword == null,
-        parentGroup?.let {
-            GroupAssociation(
-                net.corda.data.permissions.ChangeDetails(Instant.EPOCH), // Group association to be removed v29
-                it.id
-            )
-        },
+        parentGroup?.id,
         userProperties.map { property ->
             AvroProperty(
                 property.id,
@@ -58,12 +51,7 @@ fun Group.toAvroGroup(): AvroGroup {
         version,
         AvroChangeDetails(updateTimestamp),
         name,
-        parentGroup?.let {
-            GroupAssociation(
-                net.corda.data.permissions.ChangeDetails(Instant.EPOCH),// Group association to be removed v29
-                it.id
-            )
-        },
+        parentGroup?.id,
         groupProperties.map { property ->
             AvroProperty(
                 property.id,

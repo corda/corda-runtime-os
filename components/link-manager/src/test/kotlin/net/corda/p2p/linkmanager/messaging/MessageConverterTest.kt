@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager.messaging
 
 import net.corda.p2p.AuthenticatedMessageAndKey
-import net.corda.p2p.app.HoldingIdentity
+import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.crypto.AuthenticatedDataMessage

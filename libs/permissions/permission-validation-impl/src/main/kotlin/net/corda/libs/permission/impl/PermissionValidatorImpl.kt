@@ -93,7 +93,7 @@ class PermissionValidatorImpl(
 
         return performCheckRec(
             user.roleAssociations.map { it.roleId },
-            user.parentGroupAssociation?.groupId,
+            user.parentGroupId,
             PermissionUrl.fromUrl(permission)
         )
     }
@@ -139,7 +139,7 @@ class PermissionValidatorImpl(
             return false
         }
         val rolesIdsForGroup = parentGroup.roleAssociations.map { it.roleId }
-        return performCheckRec(rolesIdsForGroup, parentGroup.parentGroupAssociation.groupId, permissionUrl)
+        return performCheckRec(rolesIdsForGroup, parentGroup.parentGroupId, permissionUrl)
     }
 
     private fun wildcardMatch(existingPermission: Permission, permissionRequested: String): Boolean {
