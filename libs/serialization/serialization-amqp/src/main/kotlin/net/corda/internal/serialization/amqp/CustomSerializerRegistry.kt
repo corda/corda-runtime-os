@@ -14,6 +14,7 @@ import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import java.io.NotSerializableException
 import java.lang.reflect.Type
+import java.security.PrivateKey
 
 /**
  * Thrown when a [SerializationCustomSerializer] offers to serialize a type for which custom serialization is not permitted, because
@@ -214,6 +215,7 @@ class CachingCustomSerializerRegistry(
     }
 
     private val Class<*>.isCustomSerializationForbidden: Boolean get() = when {
+        isSubClassOf(PrivateKey::class.java) -> true
         AMQPTypeIdentifiers.isPrimitive(this) -> true
         isSubClassOf(CordaThrowable::class.java) -> false
         allowedFor.any { it.isAssignableFrom(this) } -> false

@@ -20,7 +20,7 @@ import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
-import net.corda.p2p.app.HoldingIdentity
+import net.corda.data.identity.HoldingIdentity
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.ConsumerRecord

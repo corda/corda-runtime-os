@@ -3,8 +3,8 @@ package net.corda.libs.configuration.schema.p2p
 class LinkManagerConfiguration {
 
     companion object {
-        private const val PACKAGE_NAME = "net.corda.p2p.linkmanager"
-        private const val COMPONENT_NAME = "linkManager"
+        const val PACKAGE_NAME = "net.corda.p2p.linkmanager"
+        const val COMPONENT_NAME = "linkManager"
         const val CONFIG_KEY = "$PACKAGE_NAME.$COMPONENT_NAME"
 
         /**

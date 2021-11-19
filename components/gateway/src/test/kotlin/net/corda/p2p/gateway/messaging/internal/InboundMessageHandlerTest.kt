@@ -15,7 +15,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.LinkInMessage
-import net.corda.p2p.app.HoldingIdentity
+import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.crypto.AuthenticatedDataMessage
@@ -77,7 +77,9 @@ class InboundMessageHandlerTest {
         publisherFactory,
         subscriptionFactory,
         SmartConfigImpl.empty(),
+        1
     )
+
 
     @AfterEach
     fun cleanUp() {

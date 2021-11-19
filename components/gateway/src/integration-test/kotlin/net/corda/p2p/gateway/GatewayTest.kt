@@ -12,6 +12,7 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
+import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.LinkInMessage
@@ -70,8 +71,9 @@ class GatewayTest : TestBase() {
 
     private class Node(private val name: String) {
         private val topicService = TopicServiceImpl()
-        val subscriptionFactory = InMemSubscriptionFactory(topicService)
-        val publisherFactory = CordaPublisherFactory(topicService)
+        private val rpcTopicService = RPCTopicServiceImpl()
+        val subscriptionFactory = InMemSubscriptionFactory(topicService,rpcTopicService)
+        val publisherFactory = CordaPublisherFactory(topicService,rpcTopicService)
         val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id"))
 
         fun stop() {

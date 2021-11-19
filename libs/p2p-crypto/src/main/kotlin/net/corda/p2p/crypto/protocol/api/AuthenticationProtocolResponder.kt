@@ -11,8 +11,6 @@ import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
 import net.corda.p2p.crypto.internal.InitiatorHandshakePayload
 import net.corda.p2p.crypto.internal.ResponderEncryptedExtensions
 import net.corda.p2p.crypto.internal.ResponderHandshakePayload
-import net.corda.p2p.crypto.protocol.AuthenticationProtocol
-import net.corda.p2p.crypto.protocol.InvalidMaxMessageSizeProposedError
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_SIG_PAD
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
@@ -288,9 +286,9 @@ class AuthenticationProtocolResponder(private val sessionId: String,
 /**
  * Thrown when is no mode that is supported both by the initiator and the responder.
  */
-class NoCommonModeError(initiatorModes: List<ProtocolMode>, responderModes: List<ProtocolMode>):
+class NoCommonModeError(initiatorModes: Set<ProtocolMode>, responderModes: Set<ProtocolMode>):
     CordaRuntimeException("There was no common mode between those supported by the initiator ($initiatorModes) " +
-                          "and those supported by the responder ($responderModes)")
+                          "and those supported by the responder ($responderModes).")
 
 /**
  * @property initiatorPublicKeyHash the SHA-256 hash of the initiator's public key.

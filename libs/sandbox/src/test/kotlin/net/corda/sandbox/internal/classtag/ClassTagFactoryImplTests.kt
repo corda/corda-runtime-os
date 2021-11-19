@@ -4,13 +4,12 @@ import net.corda.sandbox.SandboxException
 import net.corda.sandbox.internal.CLASS_TAG_DELIMITER
 import net.corda.sandbox.internal.CLASS_TAG_IDENTIFIER_IDX
 import net.corda.sandbox.internal.CLASS_TAG_VERSION_IDX
-import net.corda.sandbox.internal.CPK_BUNDLE_NAME
 import net.corda.sandbox.internal.ClassTagV1
 import net.corda.sandbox.internal.ClassTagV1.CLASS_TYPE_IDX
 import net.corda.sandbox.internal.ClassTagV1.CPK_SANDBOX_CLASS
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_HASH
 import net.corda.sandbox.internal.ClassTagV1.PLACEHOLDER_STRING
-import net.corda.sandbox.internal.MAIN_BUNDLE_NAME
+import net.corda.sandbox.internal.CPK_MAIN_BUNDLE_NAME
 import net.corda.sandbox.internal.classtag.v1.EvolvableTagImplV1
 import net.corda.sandbox.internal.classtag.v1.StaticTagImplV1
 import net.corda.sandbox.internal.mockBundle
@@ -23,13 +22,15 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import java.util.UUID.randomUUID
 
+const val MOCK_BUNDLE_NAME = "mock_bundle_symbolic_name"
+
 class ClassTagFactoryImplTests {
     private val classTagFactory = ClassTagFactoryImpl()
 
-    private val mockBundle = mockBundle(CPK_BUNDLE_NAME)
-    private val mockMainBundle = mockBundle(MAIN_BUNDLE_NAME)
+    private val mockBundle = mockBundle(MOCK_BUNDLE_NAME)
+    private val mockCpkMainBundle = mockBundle(CPK_MAIN_BUNDLE_NAME)
     private val mockCpk = mockCpk()
-    private val mockSandbox = CpkSandboxImpl(randomUUID(), mockCpk, mockMainBundle, emptySet())
+    private val mockSandbox = CpkSandboxImpl(randomUUID(), mockCpk, mockCpkMainBundle, emptySet())
 
     /**
      * Returns a serialised class tag.

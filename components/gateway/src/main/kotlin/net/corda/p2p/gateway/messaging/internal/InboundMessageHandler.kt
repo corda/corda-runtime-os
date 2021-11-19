@@ -9,6 +9,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -33,20 +34,32 @@ import java.util.*
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
  */
+@Suppress("LongParameterList")
 internal class InboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
-) : HttpServerListener, LifecycleWithDominoTile {
+    instanceId: Int,
+    ) : HttpServerListener, LifecycleWithDominoTile {
 
     companion object {
         private val logger = contextLogger()
     }
 
-    private var p2pInPublisher = PublisherWithDominoLogic(publisherFactory, lifecycleCoordinatorFactory, PUBLISHER_ID, nodeConfiguration)
-    private val sessionPartitionMapper = SessionPartitionMapperImpl(lifecycleCoordinatorFactory, subscriptionFactory, nodeConfiguration)
+    private var p2pInPublisher = PublisherWithDominoLogic(
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        PublisherConfig(PUBLISHER_ID, instanceId),
+        nodeConfiguration
+    )
+    private val sessionPartitionMapper = SessionPartitionMapperImpl(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        nodeConfiguration,
+        instanceId
+    )
     private val server = ReconfigurableHttpServer(lifecycleCoordinatorFactory, configurationReaderService, this)
     override val dominoTile = DominoTile(
         this::class.java.simpleName,

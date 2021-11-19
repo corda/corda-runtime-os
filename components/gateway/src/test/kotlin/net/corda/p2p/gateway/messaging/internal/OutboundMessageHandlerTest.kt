@@ -18,7 +18,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.LinkOutHeader
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
-import net.corda.p2p.app.HoldingIdentity
+import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration

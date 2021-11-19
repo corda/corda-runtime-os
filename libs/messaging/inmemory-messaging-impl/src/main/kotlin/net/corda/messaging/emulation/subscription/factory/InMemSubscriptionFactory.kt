@@ -17,10 +17,12 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
+import net.corda.messaging.emulation.rpc.RPCTopicService
 import net.corda.messaging.emulation.subscription.compacted.InMemoryCompactedSubscription
 import net.corda.messaging.emulation.subscription.durable.DurableSubscription
 import net.corda.messaging.emulation.subscription.eventlog.EventLogSubscription
 import net.corda.messaging.emulation.subscription.pubsub.PubSubSubscription
+import net.corda.messaging.emulation.subscription.rpc.RPCSubscriptionImpl
 import net.corda.messaging.emulation.subscription.stateandevent.InMemoryStateAndEventSubscription
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Activate
@@ -34,7 +36,9 @@ import java.util.concurrent.ExecutorService
 @Component(service = [SubscriptionFactory::class])
 class InMemSubscriptionFactory @Activate constructor(
     @Reference(service = TopicService::class)
-    private val topicService: TopicService
+    private val topicService: TopicService,
+    @Reference(service = RPCTopicService::class)
+    private val rpcTopicService: RPCTopicService
 ) : SubscriptionFactory {
 
     override fun <K : Any, V : Any> createPubSubSubscription(
@@ -114,6 +118,6 @@ class InMemSubscriptionFactory @Activate constructor(
         nodeConfig: SmartConfig,
         responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE> {
-        TODO("Not yet implemented")
+        return RPCSubscriptionImpl(rpcConfig.requestTopic,rpcTopicService,responderProcessor)
     }
 }

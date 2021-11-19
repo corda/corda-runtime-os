@@ -21,10 +21,11 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-                     subscriptionFactory: SubscriptionFactory): LinkManagerNetworkMap {
+                     subscriptionFactory: SubscriptionFactory,
+                     instanceId: Int): LinkManagerNetworkMap {
 
     private val processor = NetworkMapEntryProcessor()
-    private val subscriptionConfig = SubscriptionConfig("network-map", TestSchema.NETWORK_MAP_TOPIC)
+    private val subscriptionConfig = SubscriptionConfig("network-map", TestSchema.NETWORK_MAP_TOPIC, instanceId)
     private val subscription = subscriptionFactory.createCompactedSubscription(subscriptionConfig, processor)
     private val keyDeserialiser = KeyDeserialiser()
 
@@ -32,10 +33,10 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        subscription.start()
-        resources.keep (subscription)
         val future = CompletableFuture<Unit>()
         readyFuture.set(future)
+        subscription.start()
+        resources.keep (subscription)
         return future
     }
 

@@ -22,7 +22,7 @@ import net.corda.p2p.SessionPartitions
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.p2p.app.HoldingIdentity
+import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.crypto.AuthenticatedDataMessage
@@ -35,7 +35,6 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
-import net.corda.p2p.linkmanager.delivery.DeliveryTracker
 import net.corda.p2p.linkmanager.messaging.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAck
@@ -296,7 +295,7 @@ class LinkManagerTest {
 
         val sessionManager = Mockito.mock(SessionManager::class.java)
 
-        val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, mock(), mock())
+        val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, mock(), mock(), 1)
         queue.start()
         createResources!!(mock())
 
@@ -331,7 +330,7 @@ class LinkManagerTest {
             on {createEventLogSubscription<String, LinkInMessage>(any(), any(), any(), any()) } doReturn subscription
         }
 
-        val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), mock(), mock(), mock())
+        val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), 1, mock(), mock(), mock())
         val resourcesHolder = mock<ResourcesHolder>()
         linkManager.createInboundResources(resourcesHolder)
         verify(subscription).start()
@@ -340,7 +339,6 @@ class LinkManagerTest {
 
     @Test
     fun `createOutboundResources adds the correct resource to the resourceHolder`() {
-        val deliveryTracker = Mockito.mockConstruction(DeliveryTracker::class.java) { _, _ -> }
         val subscription = mock<EventLogSubscription<String, AppMessage>>()
         val subscriptionFactory = mock<SubscriptionFactory> {
             //Used in createOutboundResources
@@ -349,16 +347,12 @@ class LinkManagerTest {
             on {createEventLogSubscription<String, AppMessage>(any(), any(), any(), any()) } doReturn mock()
         }
 
-        val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), mock(), mock(), mock())
+        val linkManager = LinkManager(subscriptionFactory, mock(), mock(), mock(), mock(), 1, mock(), mock(), mock())
         val resourcesHolder = mock<ResourcesHolder>()
         linkManager.createInboundResources(mock())
         linkManager.createOutboundResources(resourcesHolder)
         verify(subscription).start()
         verify(resourcesHolder).keep(subscription)
-        val constructedDeliveryTracker = deliveryTracker.constructed().last()
-        verify(constructedDeliveryTracker).start()
-        verify(resourcesHolder).keep(constructedDeliveryTracker)
-        deliveryTracker.close()
     }
 
     @Test
