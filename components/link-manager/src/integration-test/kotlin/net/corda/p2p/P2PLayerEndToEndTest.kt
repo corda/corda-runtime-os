@@ -5,6 +5,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.read.kafka.factory.ConfigReaderFactoryImpl
@@ -36,7 +37,6 @@ import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.p2p.app.HoldingIdentity
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.RevocationConfig
