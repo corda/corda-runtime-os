@@ -950,4 +950,10 @@ class LinkManagerTest {
         loggingInterceptor.assertErrorContains("Could not deserialize message for session $SESSION_ID.")
         loggingInterceptor.assertErrorContains("The message was discarded.")
     }
+
+    @Test
+    fun `SOMETHING discards MESSAGETYPE with invalid source or destination`() {
+
+    }
+
 }
