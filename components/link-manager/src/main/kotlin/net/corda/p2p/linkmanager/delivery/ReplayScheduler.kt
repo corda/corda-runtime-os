@@ -2,6 +2,7 @@ package net.corda.p2p.linkmanager.delivery
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
@@ -49,7 +50,7 @@ class ReplayScheduler<M>(
     }
 
     inner class ReplaySchedulerConfigurationChangeHandler: ConfigurationChangeHandler<Duration>(configReadService,
-        replayPeriodKey,
+        LinkManagerConfiguration.CONFIG_KEY,
         ::fromConfig) {
         override fun applyNewConfiguration(
             newConfiguration: Duration,

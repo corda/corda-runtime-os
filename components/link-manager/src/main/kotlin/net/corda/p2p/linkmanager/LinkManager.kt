@@ -107,6 +107,25 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         instanceId
     )
 
+    private val outboundMessageProcessor = OutboundMessageProcessor(
+        sessionManager,
+        linkManagerHostingMap,
+        linkManagerNetworkMap,
+        inboundAssignmentListener,
+    )
+
+    private val deliveryTracker = DeliveryTracker(
+        lifecycleCoordinatorFactory,
+        configurationReaderService,
+        publisherFactory,
+        configuration,
+        subscriptionFactory,
+        linkManagerNetworkMap,
+        linkManagerCryptoService,
+        sessionManager,
+        instanceId
+    ) { outboundMessageProcessor.processAuthenticatedMessage(it, true) }
+
     @VisibleForTesting
     internal fun createInboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()
@@ -124,30 +143,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     @VisibleForTesting
     internal fun createOutboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val outboundMessageProcessor = OutboundMessageProcessor(
-            sessionManager,
-            linkManagerHostingMap,
-            linkManagerNetworkMap,
-            inboundAssignmentListener,
-        )
         val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, instanceId),
             outboundMessageProcessor,
             partitionAssignmentListener = null
         )
-        val deliveryTracker = DeliveryTracker(
-            lifecycleCoordinatorFactory,
-            configurationReaderService,
-            publisherFactory,
-            configuration,
-            subscriptionFactory,
-            linkManagerNetworkMap,
-            linkManagerCryptoService,
-            sessionManager,
-            instanceId
-        ) { outboundMessageProcessor.processAuthenticatedMessage(it, true) }
-        deliveryTracker.start()
-        resources.keep(deliveryTracker)
         outboundMessageSubscription.start()
         resources.keep(outboundMessageSubscription)
         val outboundReady = CompletableFuture<Unit>()
@@ -172,7 +172,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        children = setOf(inboundDominoTile, outboundDominoTile))
+        children = setOf(inboundDominoTile, outboundDominoTile, deliveryTracker.dominoTile))
 
     class OutboundMessageProcessor(
         private val sessionManager: SessionManager,
