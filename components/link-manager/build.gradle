@@ -38,9 +38,9 @@ dependencies {
     testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 
     integrationTestImplementation project(":components:gateway")
-    implementation project(":libs:messaging:inmemory-messaging-impl")
+    integrationTestImplementation project(":libs:messaging:inmemory-messaging-impl")
     integrationTestImplementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(":libs:configuration:configuration-schema:p2p")
+    integrationTestImplementation project(":libs:configuration:configuration-schema:p2p")
     integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
     integrationTestImplementation project(":libs:lifecycle:registry")
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")

@@ -71,92 +71,33 @@ class P2PLayerEndToEndTest {
         private const val TTL = 1_000_000L
         private const val SUBSYSTEM = "e2e.test.app"
         private val logger = contextLogger()
+        private const val CONFIG_TOPIC_NAME = "config"
+        private const val GROUP_ID = "group-1"
     }
-
-    private val configTopicName = "config"
     private val bootstrapConfig = SmartConfigFactoryImpl().create(ConfigFactory.empty()
         .withValue(
             "config.topic.name",
-            ConfigValueFactory.fromAnyRef(configTopicName)
+            ConfigValueFactory.fromAnyRef(CONFIG_TOPIC_NAME)
         ))
-    private val groupId = "group-1"
 
-    private val linkManagerConfig = """
-            {
-                $LOCALLY_HOSTED_IDENTITIES_KEY: [
-                    {
-                        "$LOCALLY_HOSTED_IDENTITY_X500_NAME": "<x500-name>",
-                        "$LOCALLY_HOSTED_IDENTITY_GPOUP_ID": "$groupId"
-                    }
-                ],
-                $MAX_MESSAGE_SIZE_KEY: 1000000,
-                $PROTOCOL_MODE_KEY: ["${ProtocolMode.AUTHENTICATION_ONLY}", "${ProtocolMode.AUTHENTICATED_ENCRYPTION}"],
-                $MESSAGE_REPLAY_PERIOD_KEY: 2000,
-                $HEARTBEAT_MESSAGE_PERIOD_KEY: 2000,
-                $SESSION_TIMEOUT_KEY: 10000
-            }
-        """.trimIndent()
-
-
-    private val hostAPort = 10000
-    private val hostADomainName = "www.alice.net"
-    private val aliceX500Name = "O=Alice, L=London, C=GB"
-    private val hostASslConfig = SslConfiguration(
-        keyStorePassword = "password",
-        rawKeyStore = readKeyStore("sslkeystore_alice"),
-        trustStorePassword = "password",
-        rawTrustStore = readKeyStore("truststore"),
-        revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
-    )
-    private val aliceKeyPair = KeyPairGenerator.getInstance("EC").genKeyPair()
-    private val hostATopicService = TopicServiceImpl()
-    private val hostASubscriptionFactory = InMemSubscriptionFactory(hostATopicService, RPCTopicServiceImpl())
-    private val hostAPublisherFactory = CordaPublisherFactory(hostATopicService, RPCTopicServiceImpl())
-    private val hostALifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
-    private val hostAConfigReadService = ConfigurationReadServiceImpl(hostALifecycleCoordinatorFactory, ConfigReaderFactoryImpl(hostASubscriptionFactory, SmartConfigFactoryImpl()))
-    private val hostAConfigWriter = hostAPublisherFactory.createPublisher(PublisherConfig("config-writer")).let {
-        ConfigWriterImpl(configTopicName, it)
-    }
-    private val hostAGatewayConfig = createGatewayConfig(hostAPort, hostADomainName, hostASslConfig)
-    private val hostALinkManagerConfig = ConfigFactory.parseString(linkManagerConfig.replace("<x500-name>", aliceX500Name))
-
-    private val hostBPort = 10001
-    private val hostBDomainName = "chip.net"
-    private val chipX500Name = "O=Chip, L=London, C=GB"
-    private val hostBSslConfig = SslConfiguration(
-        keyStorePassword = "password",
-        rawKeyStore = readKeyStore("sslkeystore_chip"),
-        trustStorePassword = "password",
-        rawTrustStore = readKeyStore("truststore"),
-        revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
-    )
-    private val chipKeyPair = KeyPairGenerator.getInstance("EC").genKeyPair()
-    private val hostBTopicService = TopicServiceImpl()
-    private val hostBSubscriptionFactory = InMemSubscriptionFactory(hostBTopicService, RPCTopicServiceImpl())
-    private val hostBPublisherFactory = CordaPublisherFactory(hostBTopicService, RPCTopicServiceImpl())
-    private val hostBLifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
-    private val hostBConfigReadService = ConfigurationReadServiceImpl(hostBLifecycleCoordinatorFactory, ConfigReaderFactoryImpl(hostBSubscriptionFactory, SmartConfigFactoryImpl()))
-    private val hostBConfigWriter = hostBPublisherFactory.createPublisher(PublisherConfig("config-writer")).let {
-        ConfigWriterImpl(configTopicName, it)
-    }
-    private val hostBGatewayConfig = createGatewayConfig(hostBPort, hostBDomainName, hostBSslConfig)
-    private val hostBLinkManagerConfig = ConfigFactory.parseString(linkManagerConfig.replace("<x500-name>", chipX500Name))
+    private val hostA = Host("www.alice.net", 10500, "O=Alice, L=London, C=GB", "sslkeystore_alice", "truststore")
+    private val hostB = Host("chip.net", 10501, "O=Chip, L=London, C=GB", "sslkeystore_chip", "truststore")
 
     @BeforeEach
     fun setup() {
-        hostAConfigReadService.start()
-        hostAConfigReadService.bootstrapConfig(bootstrapConfig)
-        hostBConfigReadService.start()
-        hostBConfigReadService.bootstrapConfig(bootstrapConfig)
+        hostA.configReadService.start()
+        hostA.configReadService.bootstrapConfig(bootstrapConfig)
+        hostB.configReadService.start()
+        hostB.configReadService.bootstrapConfig(bootstrapConfig)
     }
 
     @Test
     @Timeout(60)
     fun `two hosts can exchange data messages over the p2p layer successfully`() {
-        val hostALinkManager = createLinkManager(hostASubscriptionFactory, hostAPublisherFactory, hostALifecycleCoordinatorFactory, hostAConfigReadService)
-        val hostAGateway = Gateway(hostAConfigReadService, hostASubscriptionFactory, hostAPublisherFactory, hostALifecycleCoordinatorFactory, SmartConfigImpl.empty(), 1)
-        val hostBLinkManager = createLinkManager(hostBSubscriptionFactory, hostBPublisherFactory, hostBLifecycleCoordinatorFactory, hostBConfigReadService)
-        val hostBGateway = Gateway(hostBConfigReadService, hostBSubscriptionFactory, hostBPublisherFactory, hostBLifecycleCoordinatorFactory, SmartConfigImpl.empty(), 1)
+        val hostALinkManager = createLinkManager(hostA.subscriptionFactory, hostA.publisherFactory, hostA.lifecycleCoordinatorFactory, hostA.configReadService)
+        val hostAGateway = Gateway(hostA.configReadService, hostA.subscriptionFactory, hostA.publisherFactory, hostA.lifecycleCoordinatorFactory, SmartConfigImpl.empty(), 1)
+        val hostBLinkManager = createLinkManager(hostB.subscriptionFactory, hostB.publisherFactory, hostB.lifecycleCoordinatorFactory, hostB.configReadService)
+        val hostBGateway = Gateway(hostB.configReadService, hostB.subscriptionFactory, hostB.publisherFactory, hostB.lifecycleCoordinatorFactory, SmartConfigImpl.empty(), 1)
 
         hostALinkManager.start()
         hostAGateway.start()
@@ -172,12 +113,12 @@ class P2PLayerEndToEndTest {
         }
 
         val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
-        val hostAApplicationReader = hostASubscriptionFactory.createDurableSubscription(
+        val hostAApplicationReader = hostA.subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("app-layer", Schema.P2P_IN_TOPIC, 1), InitiatorProcessor(hostAReceivedMessages),
             bootstrapConfig,
             null
         )
-        val hostBApplicationReaderWriter = hostBSubscriptionFactory.createDurableSubscription(
+        val hostBApplicationReaderWriter = hostB.subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("app-layer", Schema.P2P_IN_TOPIC, 1), ResponderProcessor(),
             bootstrapConfig,
             null
@@ -185,10 +126,10 @@ class P2PLayerEndToEndTest {
         hostAApplicationReader.start()
         hostBApplicationReaderWriter.start()
 
-        val hostAApplicationWriter = hostAPublisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
+        val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
         val initialMessages = (1..10).map { index ->
             val randomId = UUID.randomUUID().toString()
-            val messageHeader = AuthenticatedMessageHeader(HoldingIdentity(chipX500Name, groupId), HoldingIdentity(aliceX500Name, groupId), TTL, randomId, randomId, SUBSYSTEM)
+            val messageHeader = AuthenticatedMessageHeader(HoldingIdentity(hostB.x500Name, GROUP_ID), HoldingIdentity(hostA.x500Name, GROUP_ID), TTL, randomId, randomId, SUBSYSTEM)
             val message = AuthenticatedMessage(messageHeader, ByteBuffer.wrap("ping ($index)".toByteArray()))
             Record(Schema.P2P_OUT_TOPIC, randomId, AppMessage(message))
         }
@@ -221,34 +162,34 @@ class P2PLayerEndToEndTest {
     }
 
     private fun publishNetworkMapAndKeys() {
-        val publisherForHostA = hostAPublisherFactory.createPublisher(PublisherConfig("test-runner-publisher", 1), bootstrapConfig)
-        val publisherForHostB = hostBPublisherFactory.createPublisher(PublisherConfig("test-runner-publisher", 1), bootstrapConfig)
+        val publisherForHostA = hostA.publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", 1), bootstrapConfig)
+        val publisherForHostB = hostB.publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", 1), bootstrapConfig)
         val networkMapEntries = mapOf(
-            "$aliceX500Name-$groupId" to NetworkMapEntry(net.corda.data.identity.HoldingIdentity(aliceX500Name, groupId), ByteBuffer.wrap(aliceKeyPair.public.encoded), KeyAlgorithm.ECDSA, "http://$hostADomainName:$hostAPort", NetworkType.CORDA_5),
-            "$chipX500Name-$groupId" to NetworkMapEntry(net.corda.data.identity.HoldingIdentity(chipX500Name, groupId), ByteBuffer.wrap(chipKeyPair.public.encoded), KeyAlgorithm.ECDSA, "http://$hostBDomainName:$hostBPort", NetworkType.CORDA_5)
+            "${hostA.x500Name}-$GROUP_ID" to NetworkMapEntry(net.corda.data.identity.HoldingIdentity(hostA.x500Name, GROUP_ID), ByteBuffer.wrap(hostA.keyPair.public.encoded), KeyAlgorithm.ECDSA, "http://${hostA.p2pAddress}:${hostA.p2pPort}", NetworkType.CORDA_5),
+            "${hostB.x500Name}-$GROUP_ID" to NetworkMapEntry(net.corda.data.identity.HoldingIdentity(hostB.x500Name, GROUP_ID), ByteBuffer.wrap(hostB.keyPair.public.encoded), KeyAlgorithm.ECDSA, "http://${hostB.p2pAddress}:${hostB.p2pPort}", NetworkType.CORDA_5)
         )
         val networkMapRecords = networkMapEntries.map { Record(TestSchema.NETWORK_MAP_TOPIC, it.key, it.value) }
         publisherForHostA.use { publisher ->
             publisher.start()
             publisher.publish(networkMapRecords).forEach { it.get() }
             publisher.publish(listOf(
-                Record(TestSchema.CRYPTO_KEYS_TOPIC, "key-1", KeyPairEntry(KeyAlgorithm.ECDSA, ByteBuffer.wrap(aliceKeyPair.public.encoded), ByteBuffer.wrap(aliceKeyPair.private.encoded)))
+                Record(TestSchema.CRYPTO_KEYS_TOPIC, "key-1", KeyPairEntry(KeyAlgorithm.ECDSA, ByteBuffer.wrap(hostA.keyPair.public.encoded), ByteBuffer.wrap(hostA.keyPair.private.encoded)))
             )).forEach { it.get() }
         }
         publisherForHostB.use { publisher ->
             publisher.start()
             publisher.publish(networkMapRecords).forEach { it.get() }
             publisher.publish(listOf(
-                Record(TestSchema.CRYPTO_KEYS_TOPIC, "key-1", KeyPairEntry(KeyAlgorithm.ECDSA, ByteBuffer.wrap(chipKeyPair.public.encoded), ByteBuffer.wrap(chipKeyPair.private.encoded)))
+                Record(TestSchema.CRYPTO_KEYS_TOPIC, "key-1", KeyPairEntry(KeyAlgorithm.ECDSA, ByteBuffer.wrap(hostB.keyPair.public.encoded), ByteBuffer.wrap(hostB.keyPair.private.encoded)))
             )).forEach { it.get() }
         }
     }
 
     private fun publishConfig() {
-        publishGatewayConfig(hostAConfigWriter, hostAGatewayConfig)
-        publishLinkManagerConfig(hostAConfigWriter, hostALinkManagerConfig)
-        publishGatewayConfig(hostBConfigWriter, hostBGatewayConfig)
-        publishLinkManagerConfig(hostBConfigWriter, hostBLinkManagerConfig)
+        publishGatewayConfig(hostA.configWriter, hostA.gatewayConfig)
+        publishLinkManagerConfig(hostA.configWriter, hostA.linkManagerConfig)
+        publishGatewayConfig(hostB.configWriter, hostB.gatewayConfig)
+        publishLinkManagerConfig(hostB.configWriter, hostB.linkManagerConfig)
     }
 
     private fun publishGatewayConfig(configWriter: ConfigWriter, gatewayConfig: Config) {
@@ -271,21 +212,6 @@ class P2PLayerEndToEndTest {
             ),
             linkManagerConfig
         )
-    }
-
-    private fun createGatewayConfig(port: Int, domainName: String, sslConfig: SslConfiguration): Config {
-        return ConfigFactory.empty()
-            .withValue("hostAddress", ConfigValueFactory.fromAnyRef(domainName))
-            .withValue("hostPort", ConfigValueFactory.fromAnyRef(port))
-            .withValue("sslConfig.keyStorePassword", ConfigValueFactory.fromAnyRef(sslConfig.keyStorePassword))
-            .withValue("sslConfig.keyStore", ConfigValueFactory.fromAnyRef(sslConfig.rawKeyStore.toBase64()))
-            .withValue("sslConfig.trustStorePassword", ConfigValueFactory.fromAnyRef(sslConfig.trustStorePassword))
-            .withValue("sslConfig.trustStore", ConfigValueFactory.fromAnyRef(sslConfig.rawTrustStore.toBase64()))
-            .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(sslConfig.revocationCheck.mode.toString()))
-    }
-
-    private fun readKeyStore(fileName: String): ByteArray {
-        return javaClass.classLoader.getResource("$fileName.jks").readBytes()
     }
 
     private class InitiatorProcessor(val receivedMessages: ConcurrentHashMap.KeySetView<String, Boolean>): DurableProcessor<String, AppMessage> {
@@ -326,6 +252,61 @@ class P2PLayerEndToEndTest {
             }
         }
 
+    }
+
+    private class Host(val p2pAddress: String, val p2pPort: Int, val x500Name: String, keyStoreFileName: String, trustStoreFileName: String) {
+        companion object {
+            private val linkManagerConfigTemplate = """
+                {
+                    $LOCALLY_HOSTED_IDENTITIES_KEY: [
+                        {
+                            "$LOCALLY_HOSTED_IDENTITY_X500_NAME": "<x500-name>",
+                            "$LOCALLY_HOSTED_IDENTITY_GPOUP_ID": "$GROUP_ID"
+                        }
+                    ],
+                    $MAX_MESSAGE_SIZE_KEY: 1000000,
+                    $PROTOCOL_MODE_KEY: ["${ProtocolMode.AUTHENTICATION_ONLY}", "${ProtocolMode.AUTHENTICATED_ENCRYPTION}"],
+                    $MESSAGE_REPLAY_PERIOD_KEY: 2000,
+                    $HEARTBEAT_MESSAGE_PERIOD_KEY: 2000,
+                    $SESSION_TIMEOUT_KEY: 10000
+                }
+            """.trimIndent()
+        }
+
+        private val sslConfig = SslConfiguration(
+            keyStorePassword = "password",
+            rawKeyStore = readKeyStore(keyStoreFileName),
+            trustStorePassword = "password",
+            rawTrustStore = readKeyStore(trustStoreFileName),
+            revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL)
+        )
+        val keyPair = KeyPairGenerator.getInstance("EC").genKeyPair()
+        val topicService = TopicServiceImpl()
+        val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl())
+        val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl())
+        val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, ConfigReaderFactoryImpl(subscriptionFactory, SmartConfigFactoryImpl()))
+        val configWriter = publisherFactory.createPublisher(PublisherConfig("config-writer")).let {
+            ConfigWriterImpl(CONFIG_TOPIC_NAME, it)
+        }
+        val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
+        val linkManagerConfig = ConfigFactory.parseString(linkManagerConfigTemplate.replace("<x500-name>", x500Name))
+
+
+        private fun readKeyStore(fileName: String): ByteArray {
+            return javaClass.classLoader.getResource("$fileName.jks").readBytes()
+        }
+
+        private fun createGatewayConfig(port: Int, domainName: String, sslConfig: SslConfiguration): Config {
+            return ConfigFactory.empty()
+                .withValue("hostAddress", ConfigValueFactory.fromAnyRef(domainName))
+                .withValue("hostPort", ConfigValueFactory.fromAnyRef(port))
+                .withValue("sslConfig.keyStorePassword", ConfigValueFactory.fromAnyRef(sslConfig.keyStorePassword))
+                .withValue("sslConfig.keyStore", ConfigValueFactory.fromAnyRef(sslConfig.rawKeyStore.toBase64()))
+                .withValue("sslConfig.trustStorePassword", ConfigValueFactory.fromAnyRef(sslConfig.trustStorePassword))
+                .withValue("sslConfig.trustStore", ConfigValueFactory.fromAnyRef(sslConfig.rawTrustStore.toBase64()))
+                .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(sslConfig.revocationCheck.mode.toString()))
+        }
     }
 
 }
