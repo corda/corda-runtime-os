@@ -108,7 +108,9 @@ class P2PLayerEndToEndTest {
         publishNetworkMapAndKeys()
 
         eventually(30.seconds) {
+            assertThat(hostALinkManager.isRunning).isTrue
             assertThat(hostAGateway.isRunning).isTrue
+            assertThat(hostBLinkManager.isRunning).isTrue
             assertThat(hostBGateway.isRunning).isTrue
         }
 
