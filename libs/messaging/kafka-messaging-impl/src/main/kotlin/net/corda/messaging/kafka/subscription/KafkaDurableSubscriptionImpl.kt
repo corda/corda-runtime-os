@@ -1,7 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
-import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -41,7 +41,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     private val producerBuilder: ProducerBuilder,
     private val processor: DurableProcessor<K, V>,
     private val partitionAssignmentListener: PartitionAssignmentListener?,
-    private val lifecycleCoordinator: LifecycleCoordinator
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
@@ -49,7 +49,7 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     )
 
     private val subscription = KafkaEventLogSubscriptionImpl(config, consumerBuilder, producerBuilder,
-        ForwardingEventLogProcessor(processor), partitionAssignmentListener, lifecycleCoordinator)
+        ForwardingEventLogProcessor(processor), partitionAssignmentListener, lifecycleCoordinatorFactory)
 
     override val subscriptionName: LifecycleCoordinatorName
         get() = subscription.subscriptionName

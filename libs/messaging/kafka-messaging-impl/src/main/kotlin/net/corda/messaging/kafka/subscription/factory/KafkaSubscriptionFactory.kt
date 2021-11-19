@@ -3,9 +3,8 @@ package net.corda.messaging.kafka.subscription.factory
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.messaging.RPCRequest
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
@@ -87,19 +86,12 @@ class KafkaSubscriptionFactory @Activate constructor(
         )
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(avroSchemaRegistry)
 
-        val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-            LifecycleCoordinatorName(
-                subscriptionConfig.groupName + "-KafkaPubSubSubscription-" + subscriptionConfig.eventTopic,
-                subscriptionConfig.instanceId.toString()
-            )
-        ) { _, _ -> }
-
         return KafkaPubSubSubscriptionImpl(
             config,
             consumerBuilder,
             processor,
             executor,
-            lifecycleCoordinator
+            lifecycleCoordinatorFactory
         )
     }
 
@@ -124,20 +116,13 @@ class KafkaSubscriptionFactory @Activate constructor(
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(avroSchemaRegistry)
         val producerBuilder = KafkaProducerBuilderImpl(avroSchemaRegistry)
 
-        val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-            LifecycleCoordinatorName(
-                subscriptionConfig.groupName + "-KafkaDurableSubscription-" + subscriptionConfig.eventTopic,
-                subscriptionConfig.instanceId.toString()
-            )
-        ) { _, _ -> }
-
         return KafkaDurableSubscriptionImpl(
             config,
             consumerBuilder,
             producerBuilder,
             processor,
             partitionAssignmentListener,
-            lifecycleCoordinator
+            lifecycleCoordinatorFactory
         )
     }
 
@@ -160,19 +145,12 @@ class KafkaSubscriptionFactory @Activate constructor(
         }
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(avroSchemaRegistry)
 
-        val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-            LifecycleCoordinatorName(
-                subscriptionConfig.groupName + "-KafkaCompactedSubscription-" + subscriptionConfig.eventTopic,
-                subscriptionConfig.instanceId.toString()
-            )
-        ) { _, _ -> }
-
         return KafkaCompactedSubscriptionImpl(
             config,
             mapFactory,
             consumerBuilder,
             processor,
-            lifecycleCoordinator
+            lifecycleCoordinatorFactory
         )
     }
 
@@ -197,13 +175,6 @@ class KafkaSubscriptionFactory @Activate constructor(
         val eventConsumerBuilder = CordaKafkaConsumerBuilderImpl<K, E>(avroSchemaRegistry)
         val stateConsumerBuilder = CordaKafkaConsumerBuilderImpl<K, S>(avroSchemaRegistry)
 
-        val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-            LifecycleCoordinatorName(
-                subscriptionConfig.groupName + "-KafkaStateAndEventSubscription-" + subscriptionConfig.eventTopic,
-                subscriptionConfig.instanceId.toString()
-            )
-        ) { _, _ -> }
-
         val mapFactory = object : SubscriptionMapFactory<K, Pair<Long, S>> {
             override fun createMap(): MutableMap<K, Pair<Long, S>> = ConcurrentHashMap()
             override fun destroyMap(map: MutableMap<K, Pair<Long, S>>) = map.clear()
@@ -222,7 +193,7 @@ class KafkaSubscriptionFactory @Activate constructor(
             processor,
             avroSchemaRegistry,
             stateAndEventListener,
-            lifecycleCoordinator
+            lifecycleCoordinatorFactory
         )
     }
 
@@ -247,20 +218,13 @@ class KafkaSubscriptionFactory @Activate constructor(
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(avroSchemaRegistry)
         val producerBuilder = KafkaProducerBuilderImpl(avroSchemaRegistry)
 
-        val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-            LifecycleCoordinatorName(
-                subscriptionConfig.groupName + "-KafkaEventLogSubscription-" + subscriptionConfig.eventTopic,
-                subscriptionConfig.instanceId.toString()
-            )
-        ) { _, _ -> }
-
         return KafkaEventLogSubscriptionImpl(
             config,
             consumerBuilder,
             producerBuilder,
             processor,
             partitionAssignmentListener,
-            lifecycleCoordinator
+            lifecycleCoordinatorFactory
         )
     }
 
@@ -278,14 +242,14 @@ class KafkaSubscriptionFactory @Activate constructor(
         )
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(avroSchemaRegistry)
 
-        val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-            LifecycleCoordinatorName(
-                subscriptionConfig.groupName + "-KafkaRandomAccessSubscription-" + subscriptionConfig.eventTopic,
-                subscriptionConfig.instanceId.toString()
-            )
-        ) { _, _ -> }
 
-        return KafkaRandomAccessSubscriptionImpl(config, consumerBuilder, keyClass, valueClass, lifecycleCoordinator)
+        return KafkaRandomAccessSubscriptionImpl(
+            config,
+            consumerBuilder,
+            keyClass,
+            valueClass,
+            lifecycleCoordinatorFactory
+        )
     }
 
     override fun <REQUEST : Any, RESPONSE : Any> createRPCSubscription(
@@ -311,12 +275,6 @@ class KafkaSubscriptionFactory @Activate constructor(
         val cordaAvroDeserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, rpcConfig.requestType)
         val publisherFactory = CordaKafkaPublisherFactory(avroSchemaRegistry, lifecycleCoordinatorFactory)
         val publisher = publisherFactory.createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig)
-        val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-            LifecycleCoordinatorName(
-                rpcConfig.groupName + "-KafkaRPCSubscription-" + rpcConfig.requestTopic,
-                nodeConfig.getString("instanceId")
-            )
-        ) { _, _ -> }
 
         return KafkaRPCSubscriptionImpl(
             config,
@@ -325,7 +283,7 @@ class KafkaSubscriptionFactory @Activate constructor(
             responderProcessor,
             cordaAvroSerializer,
             cordaAvroDeserializer,
-            lifecycleCoordinator
+            lifecycleCoordinatorFactory
         )
     }
 }

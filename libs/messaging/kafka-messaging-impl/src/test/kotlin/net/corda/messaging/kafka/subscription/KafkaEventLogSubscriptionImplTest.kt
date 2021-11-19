@@ -1,6 +1,8 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
@@ -39,6 +41,8 @@ class KafkaEventLogSubscriptionImplTest {
     private val mockCordaConsumer: CordaKafkaConsumer<String, ByteBuffer> = mock()
     private val mockCordaProducer: CordaKafkaProducer = mock()
     private val mockConsumerRecords = generateMockConsumerRecordList(mockRecordCount, "topic", 1)
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
+    private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private var pollInvocationCount : Int = 0
     private var builderInvocationCount : Int = 0
     private lateinit var kafkaEventLogSubscription: KafkaEventLogSubscriptionImpl<String, ByteBuffer>
@@ -65,6 +69,7 @@ class KafkaEventLogSubscriptionImplTest {
         builderInvocationCount = 0
         doReturn(mockCordaConsumer).whenever(consumerBuilder).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
         doReturn(mockCordaProducer).whenever(producerBuilder).createProducer(any())
+        doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
     }
 
     /**
@@ -78,7 +83,7 @@ class KafkaEventLogSubscriptionImplTest {
             producerBuilder,
             processor,
             null,
-            mock()
+            lifecycleCoordinatorFactory
         )
         kafkaEventLogSubscription.start()
 
@@ -107,7 +112,7 @@ class KafkaEventLogSubscriptionImplTest {
             producerBuilder,
             processor,
             null,
-            mock()
+            lifecycleCoordinatorFactory
         )
 
         kafkaEventLogSubscription.start()
@@ -132,7 +137,7 @@ class KafkaEventLogSubscriptionImplTest {
             producerBuilder,
             processor,
             null,
-            mock()
+            lifecycleCoordinatorFactory
         )
 
         kafkaEventLogSubscription.start()
@@ -166,7 +171,7 @@ class KafkaEventLogSubscriptionImplTest {
             producerBuilder,
             processor,
             null,
-            mock()
+            lifecycleCoordinatorFactory
         )
 
         kafkaEventLogSubscription.start()
@@ -202,7 +207,7 @@ class KafkaEventLogSubscriptionImplTest {
             producerBuilder,
             processor,
             null,
-            mock()
+            lifecycleCoordinatorFactory
         )
 
         kafkaEventLogSubscription.start()
@@ -230,7 +235,7 @@ class KafkaEventLogSubscriptionImplTest {
             producerBuilder,
             processor,
             null,
-            mock()
+            lifecycleCoordinatorFactory
         )
 
         kafkaEventLogSubscription.start()

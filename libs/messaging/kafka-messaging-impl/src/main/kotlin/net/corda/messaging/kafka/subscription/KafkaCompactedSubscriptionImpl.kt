@@ -1,7 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
-import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -30,7 +30,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     private val mapFactory: SubscriptionMapFactory<K, V>,
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val processor: CompactedProcessor<K, V>,
-    private val lifecycleCoordinator: LifecycleCoordinator
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : CompactedSubscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
@@ -47,6 +47,11 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "$groupName-KafkaCompactedSubscription-$topic"
+        )
+    ) { _, _ -> }
 
     private var latestValues: MutableMap<K, V>? = null
 

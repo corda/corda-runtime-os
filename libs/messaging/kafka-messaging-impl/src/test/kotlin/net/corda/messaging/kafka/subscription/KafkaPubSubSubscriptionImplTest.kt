@@ -1,6 +1,8 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
@@ -40,6 +42,8 @@ class KafkaPubSubSubscriptionImplTest {
     private val consumerBuilder: ConsumerBuilder<String, ByteBuffer> = mock()
     private val mockCordaConsumer: CordaKafkaConsumer<String, ByteBuffer> = mock()
     private val mockConsumerRecords = generateMockConsumerRecordList(mockRecordCount, "topic", 1)
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
+    private val lifecycleCoordinator: LifecycleCoordinator = mock()
 
     private var executorService: ExecutorService? = null
     private var pollInvocationCount: Int = 0
@@ -65,6 +69,7 @@ class KafkaPubSubSubscriptionImplTest {
 
         builderInvocationCount = 0
         doReturn(mockCordaConsumer).whenever(consumerBuilder).createPubSubConsumer(any(), any(), any(), any())
+        doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
     }
 
     /**
@@ -73,7 +78,13 @@ class KafkaPubSubSubscriptionImplTest {
     @Test
     fun testPubSubConsumer() {
         kafkaPubSubSubscription =
-            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, mock())
+            KafkaPubSubSubscriptionImpl(
+                config,
+                consumerBuilder,
+                processor,
+                executorService,
+                lifecycleCoordinatorFactory
+            )
         kafkaPubSubSubscription.start()
 
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -90,7 +101,13 @@ class KafkaPubSubSubscriptionImplTest {
     fun testPubSubConsumerWithExecutor() {
         executorService = Executors.newFixedThreadPool(1)
         kafkaPubSubSubscription =
-            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, mock())
+            KafkaPubSubSubscriptionImpl(
+                config,
+                consumerBuilder,
+                processor,
+                executorService,
+                lifecycleCoordinatorFactory
+            )
 
         kafkaPubSubSubscription.start()
 
@@ -118,11 +135,18 @@ class KafkaPubSubSubscriptionImplTest {
 
         doThrow(CordaMessageAPIFatalException::class).whenever(mockCordaConsumer).commitSyncOffsets(any(), anyOrNull())
         kafkaPubSubSubscription =
-            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, mock())
+            KafkaPubSubSubscriptionImpl(
+                config,
+                consumerBuilder,
+                processor,
+                executorService,
+                lifecycleCoordinatorFactory
+            )
 
         kafkaPubSubSubscription.start()
         @Suppress("EmptyWhileBlock")
-        while (kafkaPubSubSubscription.isRunning) { }
+        while (kafkaPubSubSubscription.isRunning) {
+        }
 
         assertThat(latch.count).isEqualTo(1)
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll()
@@ -143,11 +167,18 @@ class KafkaPubSubSubscriptionImplTest {
         )
 
         kafkaPubSubSubscription =
-            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, mock())
+            KafkaPubSubSubscriptionImpl(
+                config,
+                consumerBuilder,
+                processor,
+                executorService,
+                lifecycleCoordinatorFactory
+            )
 
         kafkaPubSubSubscription.start()
         @Suppress("EmptyWhileBlock")
-        while (kafkaPubSubSubscription.isRunning) { }
+        while (kafkaPubSubSubscription.isRunning) {
+        }
 
         verify(mockCordaConsumer, times(0)).poll()
         verify(consumerBuilder, times(1)).createPubSubConsumer(any(), any(), any(), any())
@@ -170,7 +201,13 @@ class KafkaPubSubSubscriptionImplTest {
         whenever(mockCordaConsumer.poll()).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
 
         kafkaPubSubSubscription =
-            KafkaPubSubSubscriptionImpl(config, consumerBuilder, processor, executorService, mock())
+            KafkaPubSubSubscriptionImpl(
+                config,
+                consumerBuilder,
+                processor,
+                executorService,
+                lifecycleCoordinatorFactory
+            )
 
         kafkaPubSubSubscription.start()
         @Suppress("EmptyWhileBlock")
@@ -204,16 +241,17 @@ class KafkaPubSubSubscriptionImplTest {
 
         kafkaPubSubSubscription = KafkaPubSubSubscriptionImpl(
             config, consumerBuilder,
-            processor, executorService, mock()
+            processor, executorService, lifecycleCoordinatorFactory
         )
 
         kafkaPubSubSubscription.start()
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         @Suppress("EmptyWhileBlock")
-        while (kafkaPubSubSubscription.isRunning) {}
+        while (kafkaPubSubSubscription.isRunning) {
+        }
         assertThat(latch.count).isEqualTo(0)
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
-        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+1)).poll()
+        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll()
     }
 
     @Test
@@ -233,7 +271,7 @@ class KafkaPubSubSubscriptionImplTest {
 
         kafkaPubSubSubscription = KafkaPubSubSubscriptionImpl(
             config, consumerBuilder,
-            processor, executorService, mock()
+            processor, executorService, lifecycleCoordinatorFactory
         )
 
         kafkaPubSubSubscription.start()

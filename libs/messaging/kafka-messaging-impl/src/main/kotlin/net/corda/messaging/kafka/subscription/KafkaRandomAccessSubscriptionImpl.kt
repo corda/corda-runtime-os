@@ -2,7 +2,7 @@ package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigValueFactory
-import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -27,7 +27,7 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val keyClass: Class<K>,
     private val valueClass: Class<V>,
-    private val lifecycleCoordinator: LifecycleCoordinator
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ): RandomAccessSubscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
@@ -38,9 +38,16 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
     private var running = false
     private val startStopLock = ReentrantReadWriteLock()
 
+    private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
     private var consumer: CordaKafkaConsumer<K, V>? = null
     private var assignedPartitions = emptySet<Int>()
+
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "$groupName-KafkaRandomAccessSubscription-$topic"
+        )
+    ) { _, _ -> }
 
     override val isRunning: Boolean
         get() = running

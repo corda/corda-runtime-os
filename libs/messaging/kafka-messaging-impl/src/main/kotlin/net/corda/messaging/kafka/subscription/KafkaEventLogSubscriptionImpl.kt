@@ -1,7 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
-import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -54,8 +54,8 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
     private val producerBuilder: ProducerBuilder,
     private val processor: EventLogProcessor<K, V>,
     private val partitionAssignmentListener: PartitionAssignmentListener?,
-    private val lifecycleCoordinator: LifecycleCoordinator
-): Subscription<K, V> {
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+) : Subscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
         "${config.getString(CONSUMER_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
@@ -71,6 +71,12 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
     private val topic = config.getString(TOPIC_NAME)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val producerClientId: String = config.getString(PRODUCER_CLIENT_ID)
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "$groupName-KafkaDurableSubscription-$topic"
+        )
+    ) { _, _ -> }
+
 
     /**
      * Is the subscription running.

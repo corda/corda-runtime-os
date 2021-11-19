@@ -1,7 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
-import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -46,7 +46,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val processor: PubSubProcessor<K, V>,
     private val executor: ExecutorService?,
-    private val lifecycleCoordinator: LifecycleCoordinator
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
@@ -62,6 +62,11 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
     private var consumeLoopThread: Thread? = null
     private val topic = config.getString(TOPIC_NAME)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "$groupName-KafkaPubSubSubscription-$topic"
+        )
+    ) { _, _ -> }
 
     /**
      * Is the subscription running.

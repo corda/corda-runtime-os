@@ -5,7 +5,7 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
-import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -48,8 +48,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val consumerBuilder: ConsumerBuilder<String, RPCResponse>,
     private val serializer: CordaAvroSerializer<REQUEST>,
     private val deserializer: CordaAvroDeserializer<RESPONSE>,
-    private val responseListener: RPCConsumerRebalanceListener<RESPONSE>,
-    private val lifecycleCoordinator: LifecycleCoordinator
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : RPCSender<REQUEST, RESPONSE>, RPCSubscription<REQUEST, RESPONSE> {
 
     private companion object {
@@ -60,7 +59,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private val futureTracker = FutureTracker<RESPONSE>()
+
 
     override val isRunning: Boolean
         get() = !stopped
@@ -72,11 +71,22 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
     private val responseTopic = config.getString(RESPONSE_TOPIC)
+    private val futureTracker = FutureTracker<RESPONSE>()
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "$groupName-KafkaRPCSender-$topic"
+        )
+    ) { _, _ -> }
+    private val partitionListener = RPCConsumerRebalanceListener(
+        responseTopic,
+        "RPC Response listener",
+        futureTracker,
+        lifecycleCoordinator
+    )
 
     private val errorMsg = "Failed to read records from group $groupName, topic $topic"
 
     override fun start() {
-        responseListener.setTracker(futureTracker)
         log.debug { "Starting subscription with config:\n${config.render()}" }
         lock.withLock {
             if (consumeLoopThread == null) {
@@ -121,7 +131,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 ).use {
                     it.subscribe(
                         listOf(responseTopic),
-                        responseListener
+                        partitionListener
                     )
                     pollAndProcessRecords(it)
                 }
@@ -209,7 +219,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     override fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE> {
         val correlationId = UUID.randomUUID().toString()
         val future = CompletableFuture<RESPONSE>()
-        val partitions = responseListener.getPartitions()
+        val partitions = partitionListener.getPartitions()
         var reqBytes: ByteArray? = null
         try {
             reqBytes = serializer.serialize(topic, req)

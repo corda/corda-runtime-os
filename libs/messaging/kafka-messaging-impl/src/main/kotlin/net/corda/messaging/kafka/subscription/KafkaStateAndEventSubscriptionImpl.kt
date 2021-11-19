@@ -1,7 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
-import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -38,7 +38,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val processor: StateAndEventProcessor<K, S, E>,
     private val avroSchemaRegistry: AvroSchemaRegistry,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
-    private val lifecycleCoordinator: LifecycleCoordinator,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val clock: Clock = Clock.systemUTC()
 ) : StateAndEventSubscription<K, S, E> {
 
@@ -64,6 +64,9 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val consumerPollAndProcessMaxRetries = config.consumerPollAndProcessMaxRetries
     private val processorTimeout = config.processorTimeout
     private val deadLetterQueueSuffix = config.deadLetterQueueSuffix
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName("$groupName-KafkaRandomAccessSubscription-$stateTopic.$eventTopic")
+    ) { _, _ -> }
 
     /**
      * Is the subscription running.
