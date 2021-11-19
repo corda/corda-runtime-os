@@ -279,7 +279,7 @@ sealed class TypeIdentifier {
             }
         } else {
             // Must be a Platform type as these are not attached to the metadata
-            TypeResolver.resolve(name, this::class.java.classLoader)
+            TypeResolver.resolve(name, context.currentSandboxGroup())
         }
     }
 }
