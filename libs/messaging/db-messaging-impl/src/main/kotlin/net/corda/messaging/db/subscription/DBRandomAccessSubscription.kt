@@ -94,6 +94,6 @@ class DBRandomAccessSubscription<K: Any, V: Any>(private val subscriptionConfig:
     }
 
     override val subscriptionName: LifecycleCoordinatorName
-        get() = TODO("Not yet implemented")
+        get() = LifecycleCoordinatorName("DBRandomAccessSubscription")
 
 }

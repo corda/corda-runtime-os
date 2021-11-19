@@ -118,7 +118,6 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
-            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
             lifecycleCoordinator.stop()
         }
     }
@@ -158,11 +157,11 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribeToTopic()
                     producer.use { cordaProducer ->
+                        lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                         pollAndProcessRecords(cordaConsumer, cordaProducer)
                     }
                 }
                 attempts = 0
-                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
@@ -182,6 +181,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                 }
             }
         }
+        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     /**

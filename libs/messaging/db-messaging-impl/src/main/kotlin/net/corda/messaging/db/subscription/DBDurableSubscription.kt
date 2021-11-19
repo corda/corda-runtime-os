@@ -61,5 +61,5 @@ class DBDurableSubscription<K: Any, V: Any>(subscriptionConfig: SubscriptionConf
     }
 
     override val subscriptionName: LifecycleCoordinatorName
-        get() = TODO("Not yet implemented")
+        get() = LifecycleCoordinatorName("DBDurableSubscription")
 }

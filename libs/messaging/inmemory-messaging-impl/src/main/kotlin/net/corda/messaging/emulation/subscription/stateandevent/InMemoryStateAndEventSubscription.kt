@@ -59,5 +59,5 @@ class InMemoryStateAndEventSubscription<K : Any, S : Any, E : Any>(
     }
 
     override val subscriptionName: LifecycleCoordinatorName
-        get() = TODO("Not yet implemented")
+        get() = LifecycleCoordinatorName("InMemoryStateAndEventSubscription")
 }

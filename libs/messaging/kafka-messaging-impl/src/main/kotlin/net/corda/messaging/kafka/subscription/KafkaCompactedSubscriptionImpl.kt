@@ -61,7 +61,6 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
-            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
             lifecycleCoordinator.stop()
         }
     }
@@ -108,11 +107,11 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                         Duration.ofSeconds(consumerThreadStopTimeout)
                     )
                     it.assign(partitions)
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                     pollAndProcessSnapshot(it)
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
-                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
@@ -126,6 +125,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                 }
             }
         }
+        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     private fun getLatestValues(): MutableMap<K, V> {

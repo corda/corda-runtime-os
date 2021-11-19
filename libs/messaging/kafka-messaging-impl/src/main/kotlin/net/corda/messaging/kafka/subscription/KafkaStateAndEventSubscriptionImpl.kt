@@ -103,7 +103,6 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
-            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
             lifecycleCoordinator.stop()
         }
     }
@@ -124,7 +123,6 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 stateAndEventConsumer = stateAndEventConsumerTmp
                 eventConsumer = stateAndEventConsumer.eventConsumer
                 eventConsumer.subscribeToTopic(rebalanceListener)
-
                 lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
 
                 while (!stopped) {
@@ -155,6 +153,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 stateAndEventConsumer.close()
             }
         }
+        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         producer.close(producerCloseTimeout)
         stateAndEventConsumer.close()
     }

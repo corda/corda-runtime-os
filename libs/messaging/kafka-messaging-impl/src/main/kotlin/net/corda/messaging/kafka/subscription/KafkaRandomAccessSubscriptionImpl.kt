@@ -71,7 +71,6 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
                 running = false
             }
         }
-        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         lifecycleCoordinator.stop()
     }
 

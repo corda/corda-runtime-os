@@ -104,7 +104,6 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
-            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
             lifecycleCoordinator.stop()
         }
     }
@@ -140,6 +139,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 }
             }
         }
+        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<String, RPCResponse>) {

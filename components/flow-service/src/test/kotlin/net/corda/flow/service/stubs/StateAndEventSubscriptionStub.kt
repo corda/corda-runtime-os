@@ -23,5 +23,5 @@ class StateAndEventSubscriptionStub(private val startLatch: CountDownLatch,priva
     }
 
     override val subscriptionName: LifecycleCoordinatorName
-        get() = TODO("Not yet implemented")
+        get() = LifecycleCoordinatorName("StateAndEventSubscriptionStub")
 }

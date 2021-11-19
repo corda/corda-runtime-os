@@ -87,5 +87,5 @@ class PubSubSubscription<K : Any, V : Any>(
     }
 
     override val subscriptionName: LifecycleCoordinatorName
-        get() = TODO("Not yet implemented")
+        get() = LifecycleCoordinatorName("PubSubSubscription")
 }

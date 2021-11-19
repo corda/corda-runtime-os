@@ -110,7 +110,6 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
             }
             executor?.shutdown()
             thread?.join(consumerThreadStopTimeout)
-            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
             lifecycleCoordinator.stop()
         }
     }
@@ -133,10 +132,10 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
                     config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass,::logFailedDeserialize
                 ).use {
                     it.subscribeToTopic()
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
-                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             } catch (ex: CordaMessageAPIIntermittentException) {
                 log.warn(
                     "PubSubConsumer from group $groupName failed to read and process records from topic $topic, " +
@@ -159,6 +158,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
                 stop()
             }
         }
+        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     /**

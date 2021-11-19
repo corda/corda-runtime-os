@@ -91,7 +91,6 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 threadTmp
             }
             thread?.join(consumerThreadStopTimeout)
-            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
             lifecycleCoordinator.stop()
         }
     }
@@ -108,10 +107,10 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     RPCRequest::class.java
                 ).use {
                     it.subscribeToTopic()
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
-                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
@@ -125,6 +124,7 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 }
             }
         }
+        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<String, RPCRequest>) {

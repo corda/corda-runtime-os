@@ -1,4 +1,4 @@
-package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.publisher
+package net.corda.messaging.kafka.publisher
 
 import com.typesafe.config.Config
 import net.corda.data.messaging.RPCResponse
@@ -8,8 +8,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.kafka.properties.ConfigProperties
-import net.corda.messaging.kafka.publisher.CordaAvroSerializer
-import net.corda.messaging.kafka.publisher.CordaKafkaRPCSenderImpl
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.listener.RPCConsumerRebalanceListener
@@ -24,7 +22,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -40,7 +37,7 @@ class CordaKafkaRPCSenderImplTest {
 
     private val config: Config = createStandardTestConfig().getConfig(ConfigProperties.PATTERN_RPC_SENDER)
 
-    private lateinit var lifecycleCoordinator: LifecycleCoordinator
+    private var lifecycleCoordinator: LifecycleCoordinator = mock()
     private lateinit var partitionListener: RPCConsumerRebalanceListener<String>
 
     private val okResponse = listOf<ConsumerRecord<String, RPCResponse>>(
@@ -80,9 +77,6 @@ class CordaKafkaRPCSenderImplTest {
             listOf(TopicPartition(ConfigProperties.TOPIC, 0))
         }.whenever(kafkaConsumer).getPartitions(any(), any())
 
-        lifecycleCoordinator = mock()
-        doNothing().whenever(lifecycleCoordinator).updateStatus(LifecycleStatus.UP)
-        doNothing().whenever(lifecycleCoordinator).updateStatus(LifecycleStatus.DOWN)
         partitionListener = RPCConsumerRebalanceListener("test", "test", lifecycleCoordinator)
         cordaSenderImpl =
             CordaKafkaRPCSenderImpl(

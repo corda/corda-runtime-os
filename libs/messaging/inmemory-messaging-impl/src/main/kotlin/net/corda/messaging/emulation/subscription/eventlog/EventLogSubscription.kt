@@ -56,5 +56,5 @@ class EventLogSubscription<K : Any, V : Any>(
     override val isRunning: Boolean
         get() = currentConsumer?.isRunning ?: false
     override val subscriptionName: LifecycleCoordinatorName
-        get() = TODO("Not yet implemented")
+        get() = LifecycleCoordinatorName("EventLogSubscription")
 }

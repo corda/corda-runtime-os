@@ -19,10 +19,9 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
-import java.lang.Exception
 import java.nio.ByteBuffer
 import java.time.Duration
-import java.util.HashMap
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.locks.ReentrantLock
@@ -203,6 +202,6 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
     }
 
     override val subscriptionName: LifecycleCoordinatorName
-        get() = TODO("Not yet implemented")
+        get() = LifecycleCoordinatorName("DBEventLogSubscription")
 
 }
