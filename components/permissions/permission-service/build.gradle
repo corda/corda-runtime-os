@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Permission Service Component'
+description 'Permission Service'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
