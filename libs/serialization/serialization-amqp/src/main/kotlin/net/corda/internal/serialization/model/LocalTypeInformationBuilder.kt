@@ -525,11 +525,13 @@ private fun constructorForDeserialization(type: Type): KFunction<Any>? {
     val defaultCtor = kotlinCtors.firstOrNull { it.parameters.isEmpty() }
     val nonDefaultCtors = kotlinCtors.filter { it != defaultCtor }
 
-    return clazz.kotlin.primaryConstructor ?: when (nonDefaultCtors.size) {
+    val preferredCandidate = clazz.kotlin.primaryConstructor ?:
+    when (nonDefaultCtors.size) {
         1 -> nonDefaultCtors.first()
         0 -> defaultCtor
         else -> null
     }
+    return preferredCandidate
 }
 
 /**
