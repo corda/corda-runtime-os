@@ -6,6 +6,7 @@ import java.time.Instant
  * Response object containing information for a User.
  */
 data class UserResponseDto(
+    val id: String,
     val lastUpdatedTimestamp: Instant,
     val fullName: String,
     val loginName: String,

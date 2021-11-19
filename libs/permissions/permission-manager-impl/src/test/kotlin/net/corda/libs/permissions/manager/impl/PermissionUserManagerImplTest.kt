@@ -15,6 +15,8 @@ import net.corda.libs.permissions.manager.exception.PermissionManagerException
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.messaging.api.publisher.RPCSender
+import net.corda.permissions.password.PasswordHash
+import net.corda.permissions.password.PasswordService
 import net.corda.v5.base.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -23,23 +25,33 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class PermissionUserManagerImplTest {
 
     private val rpcSender = mock<RPCSender<PermissionManagementRequest, PermissionManagementResponse>>()
     private val permissionCache = mock<PermissionCache>()
+    private val passwordService = mock<PasswordService>()
 
     private val fullName = "first last"
     private val requestUserName = "requestUserName"
     private val passwordExpiry = Instant.now()
     private val parentGroup = "some-parent-group"
+
     private val createUserRequestDto = CreateUserRequestDto(requestedBy = requestUserName, virtualNodeId = "virtNode1",
         loginName = "loginname123", fullName = fullName, enabled = true, initialPassword = "mypassword", passwordExpiry = passwordExpiry,
         parentGroup = parentGroup)
+    private val createUserRequestDtoWithoutPassword = CreateUserRequestDto(requestedBy = requestUserName, virtualNodeId = "virtNode1",
+        loginName = "loginname123", fullName = fullName, enabled = true, initialPassword = null, passwordExpiry = null,
+        parentGroup = parentGroup)
+
     private val getUserRequestDto = GetUserRequestDto(requestedBy = requestUserName, virtualNodeId = "virtNode1",
         loginName = "loginname123")
     private val userProperty = Property(UUID.randomUUID().toString(), 0, ChangeDetails(Instant.now(), requestUserName), "email",
@@ -47,10 +59,14 @@ class PermissionUserManagerImplTest {
     private val avroUser = User(UUID.randomUUID().toString(), 0, ChangeDetails(Instant.now(), requestUserName), fullName,
         true, "temp-hashed-password", "temporary-salt", false, parentGroup, listOf(userProperty),
         listOf("roleId1"))
+    private val avroUserWithoutPassword = User(UUID.randomUUID().toString(), 0, ChangeDetails(Instant.now(), requestUserName), fullName,
+        true, null, null, true, parentGroup, listOf(userProperty), listOf("roleId1"))
+
     private val permissionManagementResponse = PermissionManagementResponse(avroUser)
+    private val permissionManagementResponseWithoutPassword = PermissionManagementResponse(avroUserWithoutPassword)
 
 
-    private val manager = PermissionUserManagerImpl(rpcSender, permissionCache)
+    private val manager = PermissionUserManagerImpl(rpcSender, permissionCache, passwordService)
 
     @Test
     fun `create a user sends rpc request and converts result`() {
@@ -60,21 +76,23 @@ class PermissionUserManagerImplTest {
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
 
+        whenever(passwordService.saltAndHash(eq("mypassword"))).thenReturn(PasswordHash("randomSalt", "hashedPass"))
+
         val result = manager.createUser(createUserRequestDto)
 
-        val requestCapture = requestCaptor.firstValue
-        assertEquals(requestUserName, requestCapture.requestUserId)
-        assertEquals("virtNode1", requestCapture.virtualNodeId)
+        val capturedPermissionManagementRequest = requestCaptor.firstValue
+        assertEquals(requestUserName, capturedPermissionManagementRequest.requestUserId)
+        assertEquals("virtNode1", capturedPermissionManagementRequest.virtualNodeId)
 
-        val avroCreateUserRequest = requestCapture.request as CreateUserRequest
-        assertEquals(createUserRequestDto.loginName, avroCreateUserRequest.loginName)
-        assertEquals(createUserRequestDto.fullName, avroCreateUserRequest.fullName)
-        assertEquals(createUserRequestDto.enabled, avroCreateUserRequest.enabled)
-        assertEquals("temp-hashed-password", avroCreateUserRequest.initialHashedPassword) // todo - hashing
-        assertEquals("temporary-salt", avroCreateUserRequest.saltValue)
-        assertNotNull(avroCreateUserRequest.passwordExpiry)
-        assertEquals(createUserRequestDto.passwordExpiry!!.toEpochMilli(), avroCreateUserRequest.passwordExpiry.toEpochMilli())
-        assertEquals(createUserRequestDto.parentGroup, avroCreateUserRequest.parentGroupId)
+        val capturedCreateUserRequest = capturedPermissionManagementRequest.request as CreateUserRequest
+        assertEquals(createUserRequestDto.loginName, capturedCreateUserRequest.loginName)
+        assertEquals(createUserRequestDto.fullName, capturedCreateUserRequest.fullName)
+        assertEquals(createUserRequestDto.enabled, capturedCreateUserRequest.enabled)
+        assertEquals("hashedPass", capturedCreateUserRequest.initialHashedPassword)
+        assertEquals("randomSalt", capturedCreateUserRequest.saltValue)
+        assertNotNull(capturedCreateUserRequest.passwordExpiry)
+        assertEquals(createUserRequestDto.passwordExpiry!!.toEpochMilli(), capturedCreateUserRequest.passwordExpiry.toEpochMilli())
+        assertEquals(createUserRequestDto.parentGroup, capturedCreateUserRequest.parentGroupId)
 
         assertTrue(result.isSuccess)
         assertFalse(result.isFailure)
@@ -82,7 +100,49 @@ class PermissionUserManagerImplTest {
             assertEquals(fullName, it.fullName)
             assertEquals(avroUser.enabled, it.enabled)
             assertEquals(avroUser.lastChangeDetails.updateTimestamp, it.lastUpdatedTimestamp)
-            assertEquals(avroUser.ssoAuth, it.ssoAuth)
+            assertEquals(false, it.ssoAuth)
+            assertEquals(avroUser.parentGroupId, it.parentGroup)
+            assertEquals(1, it.properties.size)
+
+            val property = it.properties.first()
+            assertEquals(userProperty.lastChangeDetails.updateTimestamp, property.lastChangedTimestamp)
+            assertEquals(userProperty.key, property.key)
+            assertEquals(userProperty.value, property.value)
+        }
+    }
+
+    @Test
+    fun `create a user sends rpc request and converts result correctly when no password is provided`() {
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(Duration.ofSeconds(10))).thenReturn(permissionManagementResponseWithoutPassword)
+
+        val requestCaptor = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
+
+        val result = manager.createUser(createUserRequestDtoWithoutPassword)
+
+        verify(passwordService, times(0)).saltAndHash(any())
+
+        val capturedPermissionManagementRequest = requestCaptor.firstValue
+        assertEquals(requestUserName, capturedPermissionManagementRequest.requestUserId)
+        assertEquals("virtNode1", capturedPermissionManagementRequest.virtualNodeId)
+
+        val capturedCreateUserRequest = capturedPermissionManagementRequest.request as CreateUserRequest
+        assertEquals(createUserRequestDto.loginName, capturedCreateUserRequest.loginName)
+        assertEquals(createUserRequestDto.fullName, capturedCreateUserRequest.fullName)
+        assertEquals(createUserRequestDto.enabled, capturedCreateUserRequest.enabled)
+        assertNull(capturedCreateUserRequest.initialHashedPassword)
+        assertNull(capturedCreateUserRequest.saltValue)
+        assertNull(capturedCreateUserRequest.passwordExpiry)
+        assertEquals(createUserRequestDto.parentGroup, capturedCreateUserRequest.parentGroupId)
+
+        assertTrue(result.isSuccess)
+        assertFalse(result.isFailure)
+        result.doOnSuccess {
+            assertEquals(fullName, it.fullName)
+            assertEquals(avroUser.enabled, it.enabled)
+            assertEquals(avroUser.lastChangeDetails.updateTimestamp, it.lastUpdatedTimestamp)
+            assertEquals(true, it.ssoAuth)
             assertEquals(avroUser.parentGroupId, it.parentGroup)
             assertEquals(1, it.properties.size)
 

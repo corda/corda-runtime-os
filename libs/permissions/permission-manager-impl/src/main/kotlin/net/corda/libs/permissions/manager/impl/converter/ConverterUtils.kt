@@ -7,6 +7,7 @@ import net.corda.data.permissions.User as AvroUser
 
 fun AvroUser.convertAvroUserToUserResponseDto(): UserResponseDto {
     return UserResponseDto(
+        id,
         lastChangeDetails.updateTimestamp,
         fullName,
         "todo",// todo add loginName to User object
