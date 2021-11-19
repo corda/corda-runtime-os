@@ -38,6 +38,8 @@ class FlowExecutor(
 
     private var messagingSubscription: StateAndEventSubscription<FlowKey, Checkpoint, FlowEvent>? = null
 
+    // We need to add lifecycle on dependent components at some point, create a jira for this or is there one already?
+    // Looks like its lifecycle might be handled by the [FlowService] already?
     private fun eventHandler(event: LifecycleEvent) {
         when (event) {
             is StartEvent -> {

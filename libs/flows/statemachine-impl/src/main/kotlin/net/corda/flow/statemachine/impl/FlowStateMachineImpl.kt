@@ -44,6 +44,8 @@ class FlowStateMachineImpl<R>(
         private val log: Logger = contextLogger()
     }
 
+    // This code is messy but I'm also the one that wrote the original code this is based on so its my fault.
+    // Dno if there is a nicer way to write it (as I hope I would have done that originally if that was the case).
     private var nonSerializableStateReference: TransientReference<NonSerializableState>? = null
     private var nonSerializableState: NonSerializableState
         // After the flow has been created, the transient values should never be null
@@ -82,22 +84,26 @@ class FlowStateMachineImpl<R>(
         val resultOrError = executeFlowLogic()
         log.debug { "flow ended $id. isSuccess: ${resultOrError.isSuccess}" }
 
+        // Never really liked the [Try] that was here but never bothered to remove it
+        // Personally I would rather [Try] was deleted as it exists on the public API and is only really used by the state machine and RPC
+        // code
+        // All of this is just my opinion here though...
         when (resultOrError) {
-            is Try.Success -> {
-                handleSuccess(resultOrError)
-            }
-            is Try.Failure -> {
-                handleFailure(resultOrError)
-            }
+            is Try.Success -> handleSuccess(resultOrError)
+            is Try.Failure -> handleFailure(resultOrError)
         }
+        // potentially this will change in the future to set the final future where the result is then put into a kafka topic for RPC to
+        // retrieve results from, might need some changes so failures can be handled too. This might have handled in the code above already.
         nonSerializableState.suspended.complete(null)
     }
 
+    // Rename to [executeFlow] or [runFlow]
     @Suspendable
     private fun executeFlowLogic(): Try<R> {
         return try {
             //TODOs: we might need the sandbox class loader
             Thread.currentThread().contextClassLoader = logic.javaClass.classLoader
+            // Did we add this for a reason? If so why, so we know if we need to keep or remove it at some point.
             suspend(FlowIORequest.ForceCheckpoint)
             val result = logic.call()
             Try.Success(result)
@@ -122,6 +128,7 @@ class FlowStateMachineImpl<R>(
                 RPCFlowResult(
                     clientId,
                     logic.javaClass.name,
+                    // Should be the JSON string
                     resultOrError.value.toString(),
                     SecureHash(),
                     null
@@ -140,6 +147,12 @@ class FlowStateMachineImpl<R>(
                     logic.javaClass.name,
                     null,
                     SecureHash(),
+                    // How does the exception envelope work for peers?
+                    // I thought we were sticking with throwing exceptions on peer nodes, which we were sending across before as a serialized
+                    // blob. We could also send the class name and construct a new one via reflection (exceptions must provide certain
+                    // constructors in this case though.
+                    // Or is the [ExceptionEnvelope] only for sending errors back as results of flows to rpc clients? In which case it
+                    // provides enough information as it is.
                     ExceptionEnvelope(
                         resultOrError.exception.cause.toString(),
                         resultOrError.exception.message
@@ -173,10 +186,15 @@ class FlowStateMachineImpl<R>(
                 val fiberState = nonSerializableState.checkpointSerializer.serialize(this)
                 nonSerializableState.suspended.complete(fiberState)
             }
+            // Does it matter that the logging context is set after completing the suspended future? I assume not because a different thread
+            // must be waiting on the future
+            // It is inside the while loop though which implies the next loop will have the context set and will log differently than the
+            // first run through
             setLoggingContext()
         }
     }
 
+    // really need to start extracting this code out now because its going to become very big
     private fun sendEvents(ioRequest: FlowIORequest<*>) {
         log.info("sendEvents $ioRequest")
         when (ioRequest) {
@@ -197,6 +215,9 @@ class FlowStateMachineImpl<R>(
         }
     }
 
+    // this isn't really processing an event
+    // e.g. we need to handle incoming data messages from peers while keeping the io request the same to know the send we're trying to complete
+    // really need to start extracting this code out now because its going to become very big
     private fun processEvent(ioRequest: FlowIORequest<*>): Pair<Any?, Boolean> {
         log.info("processEvent $ioRequest")
         return when (ioRequest) {
@@ -214,22 +235,28 @@ class FlowStateMachineImpl<R>(
             is FlowIORequest.SendAndReceive -> TODO()
             is FlowIORequest.Sleep -> TODO()
             is FlowIORequest.WaitForSessionConfirmations -> TODO()
-            else -> throw IllegalArgumentException("unrecognised IOREQUEST type ${ioRequest.javaClass.name}")
         }
     }
 
+    // can we make this a [FlowIORequest]?
+    // it wasn't in C4 but doesn't mean we couldn't make it do it, although [initiateFlow] doesn't suspend the fiber
+    // so it might not fit it correctly?
     override fun initiateFlow(destination: Destination, wellKnownParty: Party): FlowSession {
         TODO("Not yet implemented")
     }
 
+    // same as the above, make subFlow a [FlowIORequest] - Maybe we can have an interface that sits on [FlowIORequest]
+    // then we can have a sealed class for the existing [FlowIORequest] (meaning suspending operations) and another for non-suspending operations
     override fun <SUBFLOWRETURN> subFlow(currentFlow: Flow<*>, subFlow: Flow<SUBFLOWRETURN>): SUBFLOWRETURN {
         TODO("Not yet implemented")
     }
 
+    // Update timed flow timeout is basically a hack into the underlying timeout service (at least with how it was implemented in C4)
     override fun updateTimedFlowTimeout(timeoutSeconds: Long) {
         TODO("Not yet implemented")
     }
 
+    // makes sense as an API
     override fun waitForCheckpoint(): Pair<Checkpoint?, List<FlowEvent>> {
         val fibreState = nonSerializableState.suspended.getOrThrow() ?: return Pair(null, emptyList())
 
@@ -253,6 +280,7 @@ class FlowStateMachineImpl<R>(
         )
     }
 
+    // is there a reason this isn't called [start] and have it override [Fiber.start]? Only a small thing though
     override fun startFlow(): Fiber<Unit> = start()
 
     override fun nonSerializableState(nonSerializableState: NonSerializableState) {
@@ -263,6 +291,7 @@ class FlowStateMachineImpl<R>(
         this.housekeepingState = housekeepingState
     }
 
+    // Just make this a `val flow`
     override fun getFlowLogic(): Flow<R> {
         return logic
     }

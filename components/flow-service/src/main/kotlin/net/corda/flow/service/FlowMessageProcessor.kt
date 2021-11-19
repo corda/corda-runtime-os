@@ -34,12 +34,16 @@ class FlowMessageProcessor(
         val cpiId = flowEvent.cpiId
         val identity = flowKey.identity.x500Name
         val result = when (val payload = flowEvent.payload) {
+            // If we don't want to wake up the fiber for everything, does that mean the processing logic would be branched out from here, or
+            // go through the [FlowManager] first who then delegates to other services?
             is StartRPCFlow -> {
                 val flowName = payload.flowName
                 if (state != null) {
                     logger.warn("Skipping record with key ${event.key}")
                     FlowResult(state, emptyList())
                 } else {
+                    // Is there a reason not to do this lookup inside the flow manager?
+                    // Yes, the [SandboxService] is a component but shouldn't its functionality actually be a library?
                     val sandboxGroup = sandboxService.getSandboxGroupFor(cpiId, identity, SandboxType.FLOW)
                     flowManager.startInitiatingFlow(
                         FlowMetaData(flowName, flowKey, payload.jsonArgs, cpiId, flowEventTopic),
@@ -49,6 +53,8 @@ class FlowMessageProcessor(
                 }
             }
             is Wakeup -> {
+                // The [FlowHospitalException] is meant to DLQ the event but nothing catches the exception
+                // Has the DLQ logic not been implemented yet?
                 val checkpoint = state ?: throw FlowHospitalException("State for wakeup FlowEvent was null")
                 flowManager.wakeFlow(
                     checkpoint,

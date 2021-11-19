@@ -63,6 +63,9 @@ class FlowManagerImpl @Activate constructor(
             scheduler,
         )
 
+        // Should this setting of the [houseKeeping] state be contained in [FlowStateMachineFactory.createStateMachine]? Or should these
+        // be the _default_ values for this property? I think the state should be kept internal to the state machine module if possible.
+        // Possible the factory should have multiple create methods to mimic the different start flow methods in this class.
         stateMachine.housekeepingState(
             HousekeepingState(
                 0,
@@ -93,6 +96,8 @@ class FlowManagerImpl @Activate constructor(
         flowEventTopic: String,
         sandboxGroup: SandboxGroup,
     ): FlowResult {
+        // could this become a alternative factory method?
+        // we can then move the addition of the housekeeping state into the statemachine module
         val flowStateMachine = getCheckpointSerializer(sandboxGroup).deserialize(
             lastCheckpoint.fiber.array(),
             FlowStateMachineImpl::class.java
@@ -105,12 +110,13 @@ class FlowManagerImpl @Activate constructor(
         flowStateMachine.housekeepingState(housekeepingState)
 
         setupFlow(flowStateMachine, sandboxGroup)
+        // Make this a function on [FlowStateMachine]
         Fiber.unparkDeserialized(flowStateMachine, scheduler)
         val (checkpoint, events) = flowStateMachine.waitForCheckpoint()
         return FlowResult(checkpoint, events.toRecordsWithKey(flowEventTopic))
     }
 
-    @Suppress("SpreadOperator")
+    // Doesn't seem like this function needs to be called [getOrCreate]
     private fun getOrCreate(sandboxGroup: SandboxGroup, flowName: String, jsonArg: String?): Flow<*> {
         val flowClazz: Class<Flow<*>> =
             uncheckedCast(sandboxGroup.loadClassFromMainBundles(flowName, Flow::class.java))
@@ -118,6 +124,7 @@ class FlowManagerImpl @Activate constructor(
         return constructor.newInstance(jsonArg)
     }
 
+    // can this also be contained within the factory method?
     private fun setupFlow(flow: FlowStateMachine<*>, sandboxGroup: SandboxGroup) {
         val checkpointSerializer = getCheckpointSerializer(sandboxGroup)
 
@@ -130,6 +137,7 @@ class FlowManagerImpl @Activate constructor(
             )
         }
 
+        // Maybe this part doesn't go into the factory, however it might also work inside the factory.
         dependencyInjector.injectDependencies(flow.getFlowLogic(), flow)
     }
 
