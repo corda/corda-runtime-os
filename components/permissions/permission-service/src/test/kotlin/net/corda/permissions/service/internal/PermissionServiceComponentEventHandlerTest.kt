@@ -80,15 +80,6 @@ internal class PermissionServiceComponentEventHandlerTest {
     }
 
     @Test
-    fun `processing an UP event from a service when the parent is not started throws an exception`() {
-        whenever(coordinator.isRunning).thenReturn(false)
-
-        assertThrows<IllegalStateException> {
-            handler.processEvent(RegistrationStatusChangeEvent(registrationHandle, LifecycleStatus.UP), coordinator)
-        }
-    }
-
-    @Test
     fun `processing a DOWN event from the validation service when the parent is started sets the status to DOWN`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(registrationHandle, LifecycleStatus.UP), coordinator)

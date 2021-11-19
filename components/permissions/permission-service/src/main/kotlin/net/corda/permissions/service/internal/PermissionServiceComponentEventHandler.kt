@@ -42,7 +42,6 @@ internal class PermissionServiceComponentEventHandler(
                 permissionValidationService.start()
             }
             is RegistrationStatusChangeEvent -> {
-                check(coordinator.isRunning)
                 logger.debug { "Permission Service Component received lifecycle status ${event.status.name}." }
                 coordinator.updateStatus(event.status)
             }
