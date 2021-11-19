@@ -41,13 +41,6 @@ object AMQPTypeIdentifierParser {
                 }.getTypeIdentifier()
     }
 
-    fun parse(typeString: String, context: SerializationContext): TypeIdentifier {
-        validate(typeString)
-        return typeString.fold<ParseState>(ParseState.ParsingRawType(null)) { state, c ->
-            state.accept(c)
-        }.getTypeIdentifier(context)
-    }
-
     // Make sure our inputs aren't designed to blow things up.
     private fun validate(typeString: String) {
         var maxTypeParamDepth = 0
@@ -84,7 +77,6 @@ object AMQPTypeIdentifierParser {
         abstract val parent: ParsingParameterList?
         abstract fun accept(c: Char): ParseState
         abstract fun getTypeIdentifier(): TypeIdentifier
-        abstract fun getTypeIdentifier(context: SerializationContext): TypeIdentifier
 
         fun unexpected(c: Char): ParseState = throw IllegalTypeNameParserStateException("Unexpected character: '$c'")
         fun notInParameterList(c: Char): ParseState =
@@ -120,15 +112,6 @@ object AMQPTypeIdentifierParser {
                     else -> TypeIdentifier.Unparameterised(typeName)
                 }
             }
-
-            override fun getTypeIdentifier(context: SerializationContext): TypeIdentifier {
-                return when (val typeName = getTypeName()) {
-                    "*" -> TypeIdentifier.TopType
-                    "?" -> TypeIdentifier.UnknownType
-                    in simplified -> simplified[typeName]!!
-                    else -> TypeIdentifier.Unparameterised(typeName)
-                }
-            }
         }
 
         /**
@@ -154,8 +137,6 @@ object AMQPTypeIdentifierParser {
             fun addParameter(parameter: TypeIdentifier) = copy(parameters = parameters + parameter)
 
             override fun getTypeIdentifier() = TypeIdentifier.Parameterised(typeName, null, parameters)
-
-            override fun getTypeIdentifier(context: SerializationContext) = TypeIdentifier.Parameterised(typeName, null, parameters)
         }
 
         /**
@@ -170,8 +151,6 @@ object AMQPTypeIdentifierParser {
             }
 
             override fun getTypeIdentifier() = TypeIdentifier.ArrayOf(componentType)
-
-            override fun getTypeIdentifier(context: SerializationContext) = TypeIdentifier.ArrayOf(componentType)
 
             private fun forcePrimitive(componentType: TypeIdentifier): TypeIdentifier =
                     TypeIdentifier.forClass(Primitives.unwrap(componentType.getLocalType().asClass()))
@@ -189,8 +168,6 @@ object AMQPTypeIdentifierParser {
             }
 
             override fun getTypeIdentifier() = identifier
-
-            override fun getTypeIdentifier(context: SerializationContext) = identifier
         }
     }
 
