@@ -1,5 +1,6 @@
 package net.corda.messaging.emulation.subscription.rpc
 
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.emulation.rpc.RPCTopicService
@@ -13,6 +14,9 @@ class RPCSubscriptionImpl<REQUEST, RESPONSE>(
     private var running = false
 
     override val isRunning get() = running
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = LifecycleCoordinatorName("RPCSubscription")
 
     override fun start() {
         running = true
