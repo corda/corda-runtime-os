@@ -68,7 +68,7 @@ interface LocalSerializerFactory {
      *
      * @return null if the type with the given name does not exist in the [ClassLoader] for this factory.
      */
-    fun getTypeInformation(typeName: String): LocalTypeInformation?
+    fun getTypeInformation(context: SerializationContext, typeName: String): LocalTypeInformation?
 
     /**
      * Obtain [LocalTypeInformation] for the [Type] that has the given name in the CPK group associated
@@ -130,10 +130,10 @@ class DefaultLocalSerializerFactory(
 
     override fun getTypeInformation(type: Type): LocalTypeInformation = typeModel.inspect(type)
 
-    override fun getTypeInformation(typeName: String): LocalTypeInformation? {
+    override fun getTypeInformation(context: SerializationContext, typeName: String): LocalTypeInformation? {
         return typesByName.getOrPut(typeName) {
             val localType = try {
-                TypeResolver.resolve(typeName, this::class.java.classLoader)
+                TypeResolver.resolve(typeName, context.currentSandboxGroup())
             } catch (e: Exception) {
                 null
             }
