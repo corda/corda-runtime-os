@@ -41,7 +41,7 @@ class PermissionServiceComponent @Activate constructor(
     val permissionManager: PermissionManager
         get() {
             validatePermissionServiceRunning()
-            return permissionManagementService.permissionManager!!
+            return permissionManagementService.permissionManager
         }
 
     /**
@@ -51,12 +51,13 @@ class PermissionServiceComponent @Activate constructor(
     val permissionValidator: PermissionValidator
         get() {
             validatePermissionServiceRunning()
-            return permissionValidationService.permissionValidator!!
+            return permissionValidationService.permissionValidator
         }
 
     private fun validatePermissionServiceRunning() {
-        check(coordinator.status != LifecycleStatus.UP) {
-            "Permission Service Component is not running. Status: '${coordinator.status}'."
+        val status = coordinator.status
+        check(status == LifecycleStatus.UP) {
+            "Permission Service Component is not running. (Status: '$status')."
         }
     }
 

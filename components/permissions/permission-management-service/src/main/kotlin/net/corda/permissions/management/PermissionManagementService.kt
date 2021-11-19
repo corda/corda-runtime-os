@@ -27,9 +27,12 @@ class PermissionManagementService @Activate constructor(
     private val handler = PermissionManagementServiceEventHandler(publisherFactory, permissionCacheService, permissionManagerFactory)
     private val coordinator = coordinatorFactory.createCoordinator<PermissionManagementService>(handler)
 
-    val permissionManager: PermissionManager?
+    val permissionManager: PermissionManager
         get() {
-            return handler.permissionManager
+            checkNotNull(handler.permissionManager){
+                "Permission Manager is null. Getter should be called only after service is UP."
+            }
+            return handler.permissionManager!!
         }
 
     override val isRunning: Boolean

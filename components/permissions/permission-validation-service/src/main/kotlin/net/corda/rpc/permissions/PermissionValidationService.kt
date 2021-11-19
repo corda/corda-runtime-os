@@ -10,20 +10,28 @@ class PermissionValidationService(
     private val permissionValidatorFactory: PermissionValidatorFactory
 ) : Lifecycle {
 
+    val permissionValidator: PermissionValidator
+        get() {
+            checkNotNull(_permissionValidator) {
+                "Permission Validator is null. Getter should be called only after service is UP."
+            }
+            return _permissionValidator!!
+        }
+
     @Volatile
-    private var permissionValidator: PermissionValidator? = null
+    private var _permissionValidator: PermissionValidator? = null
 
     override val isRunning: Boolean
-        get() = permissionValidator.let { it?.isRunning ?: false }
+        get() = _permissionValidator.let { it?.isRunning ?: false }
 
     override fun start() {
-        if (permissionValidator == null) {
-            permissionValidator = permissionValidatorFactory.createPermissionValidator().also { it.start() }
+        if (_permissionValidator == null) {
+            _permissionValidator = permissionValidatorFactory.createPermissionValidator().also { it.start() }
         }
     }
 
     override fun stop() {
-        permissionValidator?.stop()
-        permissionValidator = null
+        _permissionValidator?.stop()
+        _permissionValidator = null
     }
 }
