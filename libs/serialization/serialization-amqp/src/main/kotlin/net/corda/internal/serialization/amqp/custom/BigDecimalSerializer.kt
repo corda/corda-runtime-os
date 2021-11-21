@@ -1,6 +1,8 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.v5.serialization.SerializationCustomSerializer
+import net.corda.serialization.BaseDirectSerializer
+import net.corda.serialization.InternalDirectSerializer.ReadObject
+import net.corda.serialization.InternalDirectSerializer.WriteObject
 import java.math.BigDecimal
 
 /**
@@ -8,7 +10,15 @@ import java.math.BigDecimal
  * features that are precision independent other than via a string.  The format of the string is discussed in the
  * documentation for [BigDecimal.toString].
  */
-object BigDecimalSerializer : SerializationCustomSerializer<BigDecimal, String> {
-    override fun toProxy(obj: BigDecimal): String = obj.toString()
-    override fun fromProxy(proxy: String): BigDecimal = BigDecimal(proxy)
+class BigDecimalSerializer : BaseDirectSerializer<BigDecimal>() {
+    override val type: Class<BigDecimal> get() = BigDecimal::class.java
+    override val withInheritance: Boolean get() = false
+
+    override fun readObject(reader: ReadObject): BigDecimal {
+        return BigDecimal(reader.getAs(String::class.java))
+    }
+
+    override fun writeObject(obj: BigDecimal, writer: WriteObject) {
+        writer.putAsString(obj.toString())
+    }
 }

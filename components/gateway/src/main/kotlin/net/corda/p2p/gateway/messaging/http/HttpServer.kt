@@ -127,7 +127,9 @@ class HttpServer(
                     logger.warn("Could not stop HTTP server", e)
                 }
             }
-
+            val host = configuration.hostAddress
+            val port = configuration.hostPort
+            logger.info("Stopping HTTP Server $host:$port")
             shutdownSequence.clear()
         }
     }

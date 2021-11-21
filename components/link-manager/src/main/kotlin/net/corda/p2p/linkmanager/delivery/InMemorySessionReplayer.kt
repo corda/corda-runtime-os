@@ -1,6 +1,12 @@
 package net.corda.p2p.linkmanager.delivery
 
-import net.corda.lifecycle.Lifecycle
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -10,17 +16,17 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.schema.Schema
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
 
+@Suppress("LongParameterList")
 class InMemorySessionReplayer(
-    sessionMessageReplayPeriod: Duration,
     publisherFactory: PublisherFactory,
+    configurationReaderService: ConfigurationReadService,
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    configuration: SmartConfig,
     private val networkMap: LinkManagerNetworkMap,
-): Lifecycle {
+    instanceId: Int
+): LifecycleWithDominoTile {
 
     companion object {
         const val MESSAGE_REPLAYER_CLIENT_ID = "session-message-replayer-client"
@@ -28,49 +34,36 @@ class InMemorySessionReplayer(
 
     private var logger = LoggerFactory.getLogger(this::class.java.name)
 
-    @Volatile
-    private var running = false
-    private val startStopLock = ReentrantReadWriteLock()
-    private val config = PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, 1)
-    private val publisher = publisherFactory.createPublisher(config)
-    private val replayScheduler = ReplayScheduler(sessionMessageReplayPeriod, ::replayMessage)
+    private val publisher = PublisherWithDominoLogic(
+        publisherFactory,
+        coordinatorFactory,
+        PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, instanceId),
+        configuration
+    )
 
-    override val isRunning: Boolean
-        get() = running
+    private val replayScheduler = ReplayScheduler(coordinatorFactory, configurationReaderService,
+        LinkManagerConfiguration.MESSAGE_REPLAY_PERIOD_KEY, ::replayMessage)
 
-    override fun start() {
-        startStopLock.write {
-            if (!isRunning) {
-                publisher.start()
-                replayScheduler.start()
-                running = true
-            }
-        }
-    }
-
-    override fun stop() {
-        startStopLock.write {
-            if (isRunning) {
-                running = false
-                replayScheduler.stop()
-            }
-        }
-    }
+    override val dominoTile = DominoTile(
+        this::class.java.simpleName,
+        coordinatorFactory,
+        children = setOf(replayScheduler.dominoTile, publisher.dominoTile, networkMap.dominoTile)
+    )
 
     data class SessionMessageReplay(
         val message: Any,
         val sessionId: String,
         val source: LinkManagerNetworkMap.HoldingIdentity,
         val dest: LinkManagerNetworkMap.HoldingIdentity,
-        val sentSessionMessageCallback: (key: SessionManager.SessionKey, sessionId: String) -> Any
+        val sentSessionMessageCallback: (key: SessionManager.SessionKey, sessionId: String) -> Unit
     )
 
     fun addMessageForReplay(
         uniqueId: String,
         messageReplay: SessionMessageReplay
     ) {
-        startStopLock.read {
-            if (!running) {
+        dominoTile.withLifecycleLock {
+            if (!isRunning) {
                 throw IllegalStateException("A message was added for replay before the InMemorySessionReplayer was started.")
             }
             replayScheduler.addForReplay(Instant.now().toEpochMilli(), uniqueId, messageReplay)

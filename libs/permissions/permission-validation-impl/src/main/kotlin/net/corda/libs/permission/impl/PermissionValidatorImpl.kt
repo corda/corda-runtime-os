@@ -91,7 +91,11 @@ class PermissionValidatorImpl(
             return false
         }
 
-        return performCheckRec(user.roleIds, user.parentGroupId, PermissionUrl.fromUrl(permission))
+        return performCheckRec(
+            user.roleAssociations.map { it.roleId },
+            user.parentGroupId,
+            PermissionUrl.fromUrl(permission)
+        )
     }
 
     private tailrec fun performCheckRec(
@@ -111,7 +115,7 @@ class PermissionValidatorImpl(
         val roles = roleIds.mapNotNull { roleTopicProcessor.getRole(it) }
 
         val permissionRequested: String = permissionUrl.permissionRequested
-        val allPermissions = roles.flatMap { it.permissions }
+        val allPermissions = roles.flatMap { it.permissions.map { permissionAssociation -> permissionAssociation.permission } }
 
         // Perform checks, with deny taking priority over allow
         val (denies, allows) = allPermissions.partition { it.type == PermissionType.DENY }
@@ -134,7 +138,7 @@ class PermissionValidatorImpl(
             logger.warn("Group with id: '$parentGroupId' cannot be found")
             return false
         }
-        val rolesIdsForGroup = parentGroup.roleIds
+        val rolesIdsForGroup = parentGroup.roleAssociations.map { it.roleId }
         return performCheckRec(rolesIdsForGroup, parentGroup.parentGroupId, permissionUrl)
     }
 

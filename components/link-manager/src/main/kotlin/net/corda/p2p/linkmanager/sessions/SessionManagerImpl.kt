@@ -1,6 +1,15 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.lifecycle.Lifecycle
+import com.typesafe.config.Config
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -9,9 +18,10 @@ import net.corda.p2p.HeartbeatMessage
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.app.HoldingIdentity
+import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
+import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
@@ -20,8 +30,8 @@ import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
+import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.LinkManagerConfig
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap.Companion.toHoldingIdentity
@@ -38,11 +48,13 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerH
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
 import net.corda.p2p.schema.Schema
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
@@ -50,21 +62,28 @@ import kotlin.concurrent.write
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 @Suppress("LongParameterList", "TooManyFunctions")
 open class SessionManagerImpl(
-    private val config: LinkManagerConfig,
     private val networkMap: LinkManagerNetworkMap,
     private val cryptoService: LinkManagerCryptoService,
     private val pendingOutboundSessionMessageQueues: LinkManager.PendingSessionMessageQueues,
     publisherFactory: PublisherFactory,
+    private val configurationReaderService: ConfigurationReadService,
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    configuration: SmartConfig,
+    instanceId: Int,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
     private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
-        Duration.ofSeconds(config.messageReplayPeriodSecs),
         publisherFactory,
+        configurationReaderService,
+        coordinatorFactory,
+        configuration,
         networkMap,
+        instanceId
     )
-) : SessionManager, Lifecycle {
+) : SessionManager {
 
     companion object {
         fun getSessionKeyFromMessage(message: AuthenticatedMessage): SessionKey {
@@ -73,10 +92,6 @@ open class SessionManagerImpl(
             return SessionKey(us, peer)
         }
     }
-
-    @Volatile
-    private var running = false
-    private val startStopLock = ReentrantReadWriteLock()
 
     private val pendingOutboundSessions = ConcurrentHashMap<String, Pair<SessionKey, AuthenticationProtocolInitiator>>()
     private val pendingOutboundSessionKeys = ConcurrentHashMap.newKeySet<SessionKey>()
@@ -90,71 +105,97 @@ open class SessionManagerImpl(
 
     private val sessionNegotiationLock = ReentrantReadWriteLock()
 
+    private val config = AtomicReference<SessionManagerConfig>()
+
     private val heartbeatManager: HeartbeatManager = HeartbeatManager(
         publisherFactory,
+        configurationReaderService,
+        coordinatorFactory,
+        configuration,
         networkMap,
-        Duration.ofMillis(config.heartbeatMessagePeriodMilliSecs),
-        Duration.ofMillis(config.sessionTimeoutMilliSecs),
-        ::destroyOutboundSession
+        ::destroyOutboundSession,
+        instanceId
     )
 
-    override val isRunning: Boolean
-        get() = running
+    override val dominoTile = DominoTile(
+        this::class.java.simpleName,
+        coordinatorFactory,
+        children = setOf(
+            heartbeatManager.dominoTile, sessionReplayer.dominoTile, networkMap.dominoTile, cryptoService.dominoTile,
+            pendingOutboundSessionMessageQueues.dominoTile
+        ),
+        configurationChangeHandler = SessionManagerConfigChangeHandler()
+    )
 
-    override fun start() {
-        startStopLock.write {
-            if (!running) {
-                heartbeatManager.start()
-                sessionReplayer.start()
-                running = true
+    @VisibleForTesting
+    internal data class SessionManagerConfig(
+        val maxMessageSize: Int,
+        val protocolModes: Set<ProtocolMode>,
+    )
+
+    internal inner class SessionManagerConfigChangeHandler: ConfigurationChangeHandler<SessionManagerConfig>(
+        configurationReaderService,
+        LinkManagerConfiguration.CONFIG_KEY,
+        ::fromConfig
+    ) {
+        override fun applyNewConfiguration(
+            newConfiguration: SessionManagerConfig,
+            oldConfiguration: SessionManagerConfig?,
+            resources: ResourcesHolder,
+        ): CompletableFuture<Unit> {
+            val configUpdateResult = CompletableFuture<Unit>()
+            dominoTile.withLifecycleWriteLock {
+                config.set(newConfiguration)
+                destroyAllSessions()
             }
+            configUpdateResult.complete(Unit)
+            return configUpdateResult
         }
     }
 
-    override fun stop() {
-        startStopLock.write {
-            if (running) {
-                heartbeatManager.stop()
-                sessionReplayer.stop()
-                running = false
-            }
-        }
+    private fun fromConfig(config: Config): SessionManagerConfig {
+        return SessionManagerConfig(config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
+        config.getEnumList(ProtocolMode::class.java, LinkManagerConfiguration.PROTOCOL_MODE_KEY).toSet())
     }
 
     override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
-        sessionNegotiationLock.read {
-            val key = getSessionKeyFromMessage(message.message)
+        return dominoTile.withLifecycleLock {
+            sessionNegotiationLock.read {
+                val key = getSessionKeyFromMessage(message.message)
 
-            val activeSession = activeOutboundSessions[key]
-            if (activeSession != null) {
-                return SessionState.SessionEstablished(activeSession)
-            }
-            pendingOutboundSessionMessageQueues.queueMessage(message, key)
-            if (pendingOutboundSessionKeys.contains(key)) {
-                return SessionState.SessionAlreadyPending
-            } else {
-                val (sessionId, initMessage) = getSessionInitMessage(key) ?: return SessionState.CannotEstablishSession
-                return SessionState.NewSessionNeeded(sessionId, initMessage)
+                val activeSession = activeOutboundSessions[key]
+                if (activeSession != null) {
+                    return@read SessionState.SessionEstablished(activeSession)
+                }
+                pendingOutboundSessionMessageQueues.queueMessage(message, key)
+                if (pendingOutboundSessionKeys.contains(key)) {
+                    return@read SessionState.SessionAlreadyPending
+                } else {
+                    val (sessionId, initMessage) = getSessionInitMessage(key) ?: return@read SessionState.CannotEstablishSession
+                    return@read SessionState.NewSessionNeeded(sessionId, initMessage)
+                }
             }
         }
     }
 
     override fun getSessionById(uuid: String): SessionManager.SessionDirection {
-        val inboundSession = activeInboundSessions[uuid]
-        if (inboundSession != null) {
-            return SessionManager.SessionDirection.Inbound(inboundSession.first, inboundSession.second)
-        }
-        val outboundSession = activeOutboundSessionsById[uuid]
-        return if (outboundSession != null) {
-            SessionManager.SessionDirection.Outbound(outboundSession.first, outboundSession.second)
-        } else {
-            SessionManager.SessionDirection.NoSession
+        return dominoTile.withLifecycleLock {
+            val inboundSession = activeInboundSessions[uuid]
+            if (inboundSession != null) {
+                return@withLifecycleLock SessionManager.SessionDirection.Inbound(inboundSession.first, inboundSession.second)
+            }
+            val outboundSession = activeOutboundSessionsById[uuid]
+            return@withLifecycleLock if (outboundSession != null) {
+                SessionManager.SessionDirection.Outbound(outboundSession.first, outboundSession.second)
+            } else {
+                SessionManager.SessionDirection.NoSession
+            }
         }
     }
 
     override fun processSessionMessage(message: LinkInMessage): LinkOutMessage? {
-        startStopLock.read {
-            return when (val payload = message.payload) {
+        return dominoTile.withLifecycleLock {
+            when (val payload = message.payload) {
                 is ResponderHelloMessage -> processResponderHello(payload)
                 is ResponderHandshakeMessage -> processResponderHandshake(payload)
                 is InitiatorHelloMessage -> processInitiatorHello(payload)
@@ -172,15 +213,23 @@ open class SessionManagerImpl(
     }
 
     override fun dataMessageSent(session: Session) {
-        startStopLock.read {
+        dominoTile.withLifecycleLock {
             heartbeatManager.dataMessageSent(session)
         }
     }
 
     override fun messageAcknowledged(sessionId: String) {
-        startStopLock.read {
+        dominoTile.withLifecycleLock {
             heartbeatManager.messageAcknowledged(sessionId)
         }
+    }
+
+    private fun destroyAllSessions() {
+        activeOutboundSessions.clear()
+        pendingOutboundSessions.clear()
+        pendingOutboundSessionKeys.clear()
+        //This is suboptimal we could instead restart session negotiation
+        pendingOutboundSessionMessageQueues.destroyAllQueues()
     }
 
     private fun destroyOutboundSession(sessionKey: SessionKey, sessionId: String) {
@@ -213,10 +262,11 @@ open class SessionManagerImpl(
             return null
         }
 
+        val sessionManagerConfig = config.get()
         val session = protocolFactory.createInitiator(
             sessionId,
-            config.protocolModes,
-            config.maxMessageSize,
+            sessionManagerConfig.protocolModes,
+            sessionManagerConfig.maxMessageSize,
             ourMemberInfo.publicKey,
             ourMemberInfo.holdingIdentity.groupId
         )
@@ -355,11 +405,12 @@ open class SessionManagerImpl(
     }
 
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
+        val sessionManagerConfig = config.get()
         val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
             val session = protocolFactory.createResponder(
                 sessionId,
-                config.protocolModes,
-                config.maxMessageSize
+                sessionManagerConfig.protocolModes,
+                sessionManagerConfig.maxMessageSize
             )
             session.receiveInitiatorHello(message)
             session
@@ -457,26 +508,77 @@ open class SessionManagerImpl(
 
     class HeartbeatManager(
         publisherFactory: PublisherFactory,
+        private val configurationReaderService: ConfigurationReadService,
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        configuration: SmartConfig,
         private val networkMap: LinkManagerNetworkMap,
-        private val heartbeatPeriod: Duration,
-        private val sessionTimeout: Duration,
-        private val destroySession: (key: SessionKey, sessionId: String) -> Any
-    ) : Lifecycle {
+        private val destroySession: (key: SessionKey, sessionId: String) -> Any,
+        instanceId: Int
+    ) : LifecycleWithDominoTile {
 
         companion object {
             private val logger = contextLogger()
             const val HEARTBEAT_MANAGER_CLIENT_ID = "heartbeat-manager-client"
         }
 
+        private val config = AtomicReference<HeartbeatManagerConfig>()
+
+        @VisibleForTesting
+        internal data class HeartbeatManagerConfig(
+            val heartbeatPeriod: Duration,
+            val sessionTimeout: Duration
+        )
+
+        @VisibleForTesting
+        internal inner class HeartbeatManagerConfigChangeHandler: ConfigurationChangeHandler<HeartbeatManagerConfig>(
+            configurationReaderService,
+            LinkManagerConfiguration.CONFIG_KEY,
+            ::fromConfig
+        ) {
+            override fun applyNewConfiguration(
+                newConfiguration: HeartbeatManagerConfig,
+                oldConfiguration: HeartbeatManagerConfig?,
+                resources: ResourcesHolder,
+            ): CompletableFuture<Unit> {
+                val configUpdateResult = CompletableFuture<Unit>()
+                config.set(newConfiguration)
+                configUpdateResult.complete(Unit)
+                return configUpdateResult
+            }
+        }
+
+        private fun fromConfig(config: Config): HeartbeatManagerConfig {
+            return HeartbeatManagerConfig(Duration.ofMillis(config.getLong(LinkManagerConfiguration.HEARTBEAT_MESSAGE_PERIOD_KEY)),
+            Duration.ofMillis(config.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY)))
+        }
+
+        private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+            val future = CompletableFuture<Unit>()
+            executorService = Executors.newSingleThreadScheduledExecutor()
+            resources.keep(AutoClosableScheduledExecutorService(executorService))
+            future.complete(Unit)
+            return future
+        }
+
         @Volatile
-        private var running = false
-        private val startStopLock = ReentrantReadWriteLock()
         private lateinit var executorService: ScheduledExecutorService
 
         private val trackedSessions = ConcurrentHashMap<String, TrackedSession>()
 
-        private val config = PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID, 1)
-        private val publisher = publisherFactory.createPublisher(config)
+        private val publisher = PublisherWithDominoLogic(
+            publisherFactory,
+            coordinatorFactory,
+            PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID, instanceId),
+            configuration
+        )
+
+        override val dominoTile = DominoTile(
+            this::class.java.simpleName,
+            coordinatorFactory,
+            ::createResources,
+            setOf(networkMap.dominoTile, publisher.dominoTile),
+            HeartbeatManagerConfigChangeHandler(),
+        )
 
         /**
          * For each Session we track the following.
@@ -495,32 +597,9 @@ open class SessionManagerImpl(
             var sendingHeartbeats: Boolean = false
         )
 
-        override val isRunning: Boolean
-            get() = running
-
-        override fun start() {
-            startStopLock.write {
-                if (!running) {
-                    executorService = Executors.newSingleThreadScheduledExecutor()
-                    publisher.start()
-                    running = true
-                }
-            }
-        }
-
-        override fun stop() {
-            startStopLock.write {
-                if (running) {
-                    executorService.shutdownNow()
-                    publisher.close()
-                    running = false
-                }
-            }
-        }
-
         fun sessionMessageSent(key: SessionKey, sessionId: String) {
-            startStopLock.read {
-                if (!running) {
+            dominoTile.withLifecycleLock {
+                if (!isRunning) {
                     throw IllegalStateException("A session message was added before the HeartbeatManager was started.")
                 }
                 trackedSessions.compute(sessionId) { _, initialTrackedSession ->
@@ -530,7 +609,7 @@ open class SessionManagerImpl(
                     } else {
                         executorService.schedule(
                             { sessionTimeout(key, sessionId) },
-                            sessionTimeout.toMillis(),
+                            config.get().sessionTimeout.toMillis(),
                             TimeUnit.MILLISECONDS
                         )
                         TrackedSession(key, timeStamp(), timeStamp())
@@ -540,8 +619,8 @@ open class SessionManagerImpl(
         }
 
         fun dataMessageSent(session: Session) {
-            startStopLock.read {
-                if (!running) {
+            dominoTile.withLifecycleLock {
+                if (!isRunning) {
                     throw IllegalStateException("A message was sent before the HeartbeatManager was started.")
                 }
                 trackedSessions.computeIfPresent(session.sessionId) { _, trackedSession ->
@@ -549,7 +628,7 @@ open class SessionManagerImpl(
                     if (!trackedSession.sendingHeartbeats) {
                         executorService.schedule(
                             { sendHeartbeat(trackedSession.identityData, session) },
-                            heartbeatPeriod.toMillis(),
+                            config.get().heartbeatPeriod.toMillis(),
                             TimeUnit.MILLISECONDS
                         )
                         trackedSession.sendingHeartbeats = true
@@ -560,11 +639,11 @@ open class SessionManagerImpl(
         }
 
         fun messageAcknowledged(sessionId: String) {
-            startStopLock.read {
-                if (!running) {
+            dominoTile.withLifecycleLock {
+                if (!isRunning) {
                     throw IllegalStateException("A message was acknowledged before the HeartbeatManager was started.")
                 }
-                val sessionInfo = trackedSessions[sessionId] ?: return
+                val sessionInfo = trackedSessions[sessionId] ?: return@withLifecycleLock
                 logger.trace("Message acknowledged with on a session with Id $sessionId.")
                 sessionInfo.lastAckTimestamp = timeStamp()
             }
@@ -573,13 +652,13 @@ open class SessionManagerImpl(
         private fun sessionTimeout(key: SessionKey, sessionId: String) {
             val sessionInfo = trackedSessions[sessionId] ?: return
             val timeSinceLastAck = timeStamp() - sessionInfo.lastAckTimestamp
-            if (timeSinceLastAck >= sessionTimeout.toMillis()) {
+            if (timeSinceLastAck >= config.get().sessionTimeout.toMillis()) {
                 destroySession(key, sessionId)
                 trackedSessions.remove(sessionId)
             } else {
                 executorService.schedule(
                     { sessionTimeout(key, sessionId) },
-                    sessionTimeout.toMillis() - timeSinceLastAck,
+                    config.get().sessionTimeout.toMillis() - timeSinceLastAck,
                     TimeUnit.MILLISECONDS
                 )
             }
@@ -591,20 +670,21 @@ open class SessionManagerImpl(
                 logger.info("Stopped sending heartbeats for session (${session.sessionId}), which expired.")
                 return
             }
+            val config = config.get()
 
             val timeSinceLastSend = timeStamp() - sessionInfo.lastSendTimestamp
-            if (timeSinceLastSend >= heartbeatPeriod.toMillis()) {
+            if (timeSinceLastSend >= config.heartbeatPeriod.toMillis()) {
                 logger.trace("Sending heartbeat message between ${sessionKey.ourId} (our Identity) and ${sessionKey.responderId}.")
                 sendHeartbeatMessage(
                     sessionKey.ourId.toHoldingIdentity(),
                     sessionKey.responderId.toHoldingIdentity(),
                     session,
                 )
-                executorService.schedule({ sendHeartbeat(sessionKey, session) }, heartbeatPeriod.toMillis(), TimeUnit.MILLISECONDS)
+                executorService.schedule({ sendHeartbeat(sessionKey, session) }, config.heartbeatPeriod.toMillis(), TimeUnit.MILLISECONDS)
             } else {
                 executorService.schedule(
                     { sendHeartbeat(sessionKey, session) },
-                    heartbeatPeriod.toMillis() - timeSinceLastSend,
+                    config.heartbeatPeriod.toMillis() - timeSinceLastSend,
                     TimeUnit.MILLISECONDS
                 )
             }

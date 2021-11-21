@@ -2,8 +2,8 @@ package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.serialization.SerializationContext
 import net.corda.v5.base.util.uncheckedCast
-import net.corda.v5.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
 import java.io.NotSerializableException
@@ -82,7 +82,7 @@ class MapSerializer(private val declaredType: ParameterizedType, factory: LocalS
         }
 
         private fun findMostSuitableMapType(actualClass: Class<*>): Class<out Map<*, *>> =
-                MapSerializer.supportedTypes.keys.findLast { it.isAssignableFrom(actualClass) }!!
+                supportedTypes.keys.findLast { it.isAssignableFrom(actualClass) }!!
     }
 
     private val concreteBuilder: MapCreationFunction = findConcreteType(declaredType.rawType as Class<*>)

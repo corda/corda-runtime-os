@@ -64,8 +64,8 @@ class CryptoLibraryClientsFactoryTests {
         val config = CryptoLibraryConfigImpl(
             mapOf(
                 "isDev" to "false",
-                "keyCache" to emptyMap<String, Any?>(),
-                "mngCache" to emptyMap<String, Any?>(),
+                "defaultCryptoService" to emptyMap<String, Any?>(),
+                "publicKeys" to emptyMap<String, Any?>(),
                 "rpc" to emptyMap<String, Any?>()
             )
         )
@@ -107,8 +107,8 @@ class CryptoLibraryClientsFactoryTests {
         val config = CryptoLibraryConfigImpl(
             mapOf(
                 "isDev" to "true",
-                "keyCache" to emptyMap<String, Any?>(),
-                "mngCache" to emptyMap<String, Any?>(),
+                "defaultCryptoService" to emptyMap<String, Any?>(),
+                "publicKeys" to emptyMap<String, Any?>(),
                 "rpc" to emptyMap<String, Any?>()
             )
         )
