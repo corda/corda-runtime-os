@@ -17,11 +17,9 @@ class ChaosTestStringsDurableProcessor(
 
     private companion object {
         val log: Logger = contextLogger()
-        val consoleLogger: Logger = LoggerFactory.getLogger("Console")
     }
 
     var counter = 1
-    private var expectedNextValues = mutableMapOf<String, Int>()
 
     override val keyClass: Class<String>
         get() = String::class.java

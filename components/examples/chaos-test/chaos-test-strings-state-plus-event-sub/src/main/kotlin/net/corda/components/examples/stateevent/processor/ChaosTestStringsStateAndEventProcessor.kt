@@ -39,18 +39,15 @@ class ChaosTestStringsStateAndEventProcessor(
         //
         val key = event.key
         val oldState = "$state"
-        val eventRecord = event
-        val eventRecordValue = eventRecord
-
-        val updatedState = updateState(state, eventRecordValue.toString())
+        val updatedState = updateState(state, event.toString())
 
         val responseEvent = Record(outputTopic, key, updatedState)
-        log.info("Key: $key, Old State: $oldState, new event value: $eventRecordValue, new state value: $updatedState")
+        log.info("Key: $key, Old State: $oldState, new event value: $event, new state value: $updatedState")
         counter++
         return StateAndEventProcessor.Response(updatedState, listOf(responseEvent))
     }
 
-    fun updateState(state: String?, eventRecordValue: String): String{
+    private fun updateState(state: String?, eventRecordValue: String): String{
         val reStr = """state-event-state\(([0-9]+)\)"""
         val re = reStr.toRegex()
 

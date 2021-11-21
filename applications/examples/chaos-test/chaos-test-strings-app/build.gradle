@@ -19,6 +19,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
 
+    implementation project(":applications:common")
     implementation project(":components:examples:config-reader")
     implementation project(":components:examples:chaos-test:chaos-test-strings-pub")
     implementation project(":components:examples:chaos-test:chaos-test-strings-durable-sub")
@@ -42,5 +43,5 @@ dependencies {
 }
 
 
-description 'Test Application'
+description 'Chaos Test Strings Durable, Sub and State & Event Application'
 

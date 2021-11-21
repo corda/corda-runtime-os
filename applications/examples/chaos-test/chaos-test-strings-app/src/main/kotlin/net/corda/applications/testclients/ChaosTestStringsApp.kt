@@ -1,7 +1,9 @@
 package net.corda.applications.testclients
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.applications.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
 import net.corda.components.examples.config.reader.ConfigReader
 import net.corda.components.examples.config.reader.ConfigReader.Companion.MESSAGING_CONFIG
 import net.corda.components.examples.config.reader.ConfigReceivedEvent
@@ -56,7 +58,8 @@ class ChaosTestApp @Activate constructor(
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val TOPIC_PREFIX = "messaging.topic.prefix"
         const val CONFIG_TOPIC_NAME = "config.topic.name"
-        const val BOOTSTRAP_SERVERS = "bootstrap.servers"
+        // Can use SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH instead
+        // const val BOOTSTRAP_SERVERS = "bootstrap.servers"
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
@@ -79,7 +82,9 @@ class ChaosTestApp @Activate constructor(
             var configReader: ConfigReader? = null
 
             val instanceId = parameters.instanceId.toInt()
+
             val kafkaProperties = getKafkaPropertiesFromFile(parameters.kafkaProperties)
+            //fun getBootstrapConfig(instanceId: Int?): Config
             val bootstrapConfig = getBootstrapConfig(kafkaProperties)
             var state: LifeCycleState = LifeCycleState.UNINITIALIZED
             log.info("Creating life cycle coordinator")
@@ -167,7 +172,7 @@ class ChaosTestApp @Activate constructor(
     }
 
     private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
-        val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
+        val bootstrapServer = getConfigValue(kafkaConnectionProperties, SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH)
         return smartConfigFactory.create(ConfigFactory.empty())
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
             .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))

@@ -2,6 +2,7 @@ package net.corda.applications.examples.testclients
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.applications.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
 import net.corda.components.examples.publisher.RunChaosTestStringsPub
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -107,7 +108,7 @@ class ChaosTestStringsPubApp @Activate constructor(
     }
 
     private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
-        val bootstrapServer = getConfigValue(kafkaConnectionProperties, KAFKA_BOOTSTRAP_SERVER)
+        val bootstrapServer = getConfigValue(kafkaConnectionProperties, SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH)
         return smartConfigFactory.create(ConfigFactory.empty())
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
