@@ -1,12 +1,11 @@
 package net.corda.cpi.read.impl.file
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 import net.corda.cpi.read.CPIListener
 import net.corda.cpi.read.CPIRead
 import net.corda.cpi.read.CPISegmentReader
 import net.corda.cpi.utils.CPX_FILE_FINDER_PATTERN
 import net.corda.cpi.utils.CPX_FILE_FINDER_ROOT_DIR_CONFIG_PATH
+import net.corda.libs.configuration.SmartConfig
 import net.corda.packaging.CPI
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
@@ -27,7 +26,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class CPIReadImplFile(private val nodeConfig: Config = ConfigFactory.empty()): CPIFileListener, CPIRead, CPISegmentReader {
+class CPIReadImplFile(private val vnodeConfig: SmartConfig): CPIFileListener, CPIRead, CPISegmentReader {
     private val cpis = Collections.synchronizedMap(mutableMapOf<Path, CPI>())
     private val cpiListeners: MutableList<CPIListener> = Collections.synchronizedList(mutableListOf())
     private lateinit var watcher: CPIWatcher
@@ -55,7 +54,7 @@ class CPIReadImplFile(private val nodeConfig: Config = ConfigFactory.empty()): C
 
     override fun start() {
 
-        startDir = Paths.get(nodeConfig.getString(CPX_FILE_FINDER_ROOT_DIR_CONFIG_PATH))
+        startDir = Paths.get(vnodeConfig.getString(CPX_FILE_FINDER_ROOT_DIR_CONFIG_PATH))
 
         lock.withLock {
             if (stopped) {
