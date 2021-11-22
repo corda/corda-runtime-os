@@ -70,11 +70,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                   private val configuration: SmartConfig,
                   private val instanceId: Int,
                   val linkManagerNetworkMap: LinkManagerNetworkMap
-                      = StubNetworkMap(lifecycleCoordinatorFactory, subscriptionFactory, instanceId),
+                      = StubNetworkMap(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration),
                   private val linkManagerHostingMap: LinkManagerHostingMap
                       = ConfigBasedLinkManagerHostingMap(configurationReaderService, lifecycleCoordinatorFactory),
                   private val linkManagerCryptoService: LinkManagerCryptoService
-                      = StubCryptoService(lifecycleCoordinatorFactory, subscriptionFactory, instanceId)
+                      = StubCryptoService(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration)
 ) : LifecycleWithDominoTile {
 
     companion object {
@@ -134,7 +134,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, instanceId),
             InboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
-            partitionAssignmentListener = inboundAssignmentListener
+            configuration,
+            inboundAssignmentListener
         )
         inboundMessageSubscription.start()
         resources.keep(inboundMessageSubscription)
@@ -147,7 +148,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, instanceId),
             outboundMessageProcessor,
-            partitionAssignmentListener = null
+            configuration,
+            null
         )
         outboundMessageSubscription.start()
         resources.keep(outboundMessageSubscription)
