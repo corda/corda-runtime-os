@@ -1,5 +1,6 @@
 package net.corda.cpi.read.impl.file
 
+import com.typesafe.config.Config
 import net.corda.cpi.read.CPIListener
 import net.corda.cpi.read.CPIRead
 import net.corda.cpi.read.CPISegmentReader
@@ -26,7 +27,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class CPIReadImplFile(private val vnodeConfig: SmartConfig): CPIFileListener, CPIRead, CPISegmentReader {
+class CPIReadImplFile(private val vnodeConfig: Config): CPIFileListener, CPIRead, CPISegmentReader {
     private val cpis = Collections.synchronizedMap(mutableMapOf<Path, CPI>())
     private val cpiListeners: MutableList<CPIListener> = Collections.synchronizedList(mutableListOf())
     private lateinit var watcher: CPIWatcher
