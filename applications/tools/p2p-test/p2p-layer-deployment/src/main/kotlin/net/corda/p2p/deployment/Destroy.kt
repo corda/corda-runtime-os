@@ -46,8 +46,8 @@ class Destroy : Runnable {
             val metadata = volume["metadata"] as Yaml
             val name = metadata["name"] as String
             val spec = volume["spec"] as Yaml
-            val claimRef = spec["claimRef"] as Yaml
-            val namespace = claimRef["namespace"] as? String
+            val claimRef = spec["claimRef"] as? Yaml
+            val namespace = claimRef?.get("namespace") as? String
             name to namespace
         }.filter {
             it.second == namespaceName

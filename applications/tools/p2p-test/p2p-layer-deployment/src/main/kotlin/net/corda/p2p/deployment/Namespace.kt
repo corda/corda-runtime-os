@@ -23,7 +23,7 @@ class Namespace : Runnable {
         names = ["-l", "--link-manager-count"],
         description = ["Number of Link Managers in the cluster"]
     )
-    private var linkManager = 3
+    private var linkManagerCount = 1
 
     @Option(
         names = ["-H", "--hosts"],
@@ -106,7 +106,7 @@ class Namespace : Runnable {
         KafkaBroker.kafka(namespaceName, zooKeeperCount, kafkaBrokerCount) +
             PostGreSql(dbUsername, dbPassword, sqlInitFile) +
             Gateway.gateways(gatewayCount, hostsNames, kafkaServers) +
-            LinkManager.linkManagers(linkManager, kafkaServers) +
+            LinkManager.linkManagers(linkManagerCount, kafkaServers) +
             ConfiguratorPod(kafkaServers)
     }
 

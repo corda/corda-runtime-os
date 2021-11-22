@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -22,7 +23,8 @@ import java.util.concurrent.atomic.AtomicReference
 
 class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                         subscriptionFactory: SubscriptionFactory,
-                        instanceId: Int): LinkManagerCryptoService {
+                        instanceId: Int,
+                        configuration: SmartConfig,): LinkManagerCryptoService {
 
     companion object {
         val logger = contextLogger()
@@ -31,7 +33,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     private val keyPairEntryProcessor = KeyPairEntryProcessor()
     private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC, instanceId)
     private val subscription =
-        subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor)
+        subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor, configuration)
 
     private val rsaSignature = Signature.getInstance(RSA_SIGNATURE_ALGO)
     private val ecdsaSignature = Signature.getInstance(ECDSA_SIGNATURE_ALGO)

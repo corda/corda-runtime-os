@@ -274,8 +274,11 @@ class DominoTile(
                 configurationChangeHandler.lastConfiguration,
                 configResources
             )
+            println("QQQ ${Thread.currentThread().name} Applying... $name")
             future.whenComplete { _, exception ->
+                println("QQQ ${Thread.currentThread().name} applied... $name")
                 if (exception != null) {
+                    exception.printStackTrace()
                     configApplied(ConfigUpdateResult.Error(exception))
                 } else {
                     configApplied(ConfigUpdateResult.Success)
