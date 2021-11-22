@@ -137,7 +137,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
                     config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass,::logFailedDeserialize
                 ).use {
                     it.subscribeToTopic()
-                    lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                     pollAndProcessRecords(it)
                 }
                 attempts = 0

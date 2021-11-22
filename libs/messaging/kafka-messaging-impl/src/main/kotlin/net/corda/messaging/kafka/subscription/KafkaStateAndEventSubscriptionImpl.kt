@@ -65,7 +65,10 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val processorTimeout = config.processorTimeout
     private val deadLetterQueueSuffix = config.deadLetterQueueSuffix
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName("$groupName-KafkaRandomAccessSubscription-$stateTopic.$eventTopic")
+        LifecycleCoordinatorName(
+            "$groupName-KafkaStateAndEventSubscription-$stateTopic.$eventTopic",
+            config.instanceId
+        )
     ) { _, _ -> }
 
     /**

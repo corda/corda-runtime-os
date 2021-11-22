@@ -107,12 +107,13 @@ class KafkaSubscriptionFactory @Activate constructor(
             )
         }
 
-        val config = resolveSubscriptionConfiguration(
+        var config = resolveSubscriptionConfiguration(
             subscriptionConfig.toConfig(),
             nodeConfig,
             clientIdCounter.getAndIncrement(),
             PATTERN_DURABLE
         )
+        config = config.withValue("instanceId", ConfigValueFactory.fromAnyRef(subscriptionConfig.instanceId))
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(avroSchemaRegistry)
         val producerBuilder = KafkaProducerBuilderImpl(avroSchemaRegistry)
 
@@ -162,12 +163,13 @@ class KafkaSubscriptionFactory @Activate constructor(
     ): StateAndEventSubscription<K, S, E> {
 
         val subscriptionConfiguration = subscriptionConfig.toConfig()
-        val config = resolveSubscriptionConfiguration(
+        var config = resolveSubscriptionConfiguration(
             subscriptionConfiguration,
             nodeConfig,
             clientIdCounter.getAndIncrement(),
             PATTERN_STATEANDEVENT
         )
+        config = config.withValue("instanceId", ConfigValueFactory.fromAnyRef(subscriptionConfig.instanceId))
 
         val stateAndEventConfig = getStateAndEventConfig(config)
 
@@ -209,12 +211,13 @@ class KafkaSubscriptionFactory @Activate constructor(
             )
         }
 
-        val config = resolveSubscriptionConfiguration(
+        var config = resolveSubscriptionConfiguration(
             subscriptionConfig.toConfig(),
             nodeConfig,
             clientIdCounter.getAndIncrement(),
             PATTERN_EVENTLOG
         )
+        config = config.withValue("instanceId", ConfigValueFactory.fromAnyRef(subscriptionConfig.instanceId))
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(avroSchemaRegistry)
         val producerBuilder = KafkaProducerBuilderImpl(avroSchemaRegistry)
 
