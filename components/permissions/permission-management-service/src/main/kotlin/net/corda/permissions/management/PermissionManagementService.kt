@@ -29,7 +29,7 @@ class PermissionManagementService @Activate constructor(
 
     val permissionManager: PermissionManager
         get() {
-            checkNotNull(handler.permissionManager){
+            checkNotNull(handler.permissionManager) {
                 "Permission Manager is null. Getter should be called only after service is UP."
             }
             return handler.permissionManager!!

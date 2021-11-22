@@ -46,13 +46,15 @@ internal class PermissionServiceComponentEventHandlerTest {
         whenever(permissionManagementService.permissionManager).thenReturn(permissionManager)
         whenever(permissionValidationService.permissionValidator).thenReturn(permissionValidator)
 
-        whenever(coordinator.followStatusChangesByName(
-            setOf(
-                LifecycleCoordinatorName.forComponent<PermissionCacheService>(),
-                LifecycleCoordinatorName.forComponent<PermissionManagementService>(),
-                LifecycleCoordinatorName.forComponent<PermissionValidationService>()
+        whenever(
+            coordinator.followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<PermissionCacheService>(),
+                    LifecycleCoordinatorName.forComponent<PermissionManagementService>(),
+                    LifecycleCoordinatorName.forComponent<PermissionValidationService>()
+                )
             )
-        )).thenReturn(registrationHandle)
+        ).thenReturn(registrationHandle)
 
         whenever(coordinator.isRunning).thenReturn(true)
     }
