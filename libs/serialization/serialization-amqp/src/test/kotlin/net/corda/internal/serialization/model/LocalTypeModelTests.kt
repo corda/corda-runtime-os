@@ -33,8 +33,7 @@ class LocalTypeModelTests {
         override fun register(customSerializer: CustomSerializer<out Any>) {}
         override fun register(
             serializer: InternalCustomSerializer<out Any>,
-            factory: SerializerFactory,
-            sandboxGroup: SandboxGroup
+            factory: SerializerFactory
         ) {}
         override fun registerExternal(serializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {}
         override fun findCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? = null

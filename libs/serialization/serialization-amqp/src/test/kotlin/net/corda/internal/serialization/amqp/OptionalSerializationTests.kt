@@ -5,6 +5,7 @@ import net.corda.internal.serialization.amqp.custom.OptionalSerializer
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
+import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -17,7 +18,7 @@ class OptionalSerializationTests {
     @Test
     fun setupEnclosedSerializationTest() {
         fun `java optionals should serialize`() {
-            val factory = SerializerFactoryBuilder.build(AllWhitelist)
+            val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
             factory.register(OptionalSerializer(), factory,)
             val obj = Optional.ofNullable("YES")
             val bytes = TestSerializationOutput(true, factory).serialize(obj)

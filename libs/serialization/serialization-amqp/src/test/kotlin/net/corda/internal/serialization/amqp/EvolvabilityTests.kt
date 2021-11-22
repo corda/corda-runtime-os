@@ -6,6 +6,7 @@ import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testName
+import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.v5.base.annotations.SerializableCalculatedProperty
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.annotations.ConstructorForDeserialization
@@ -478,7 +479,8 @@ class EvolvabilityTests {
         // Repeat, but receiving a message with the newer version of Inner
         val newVersion = SerializationOutput(sf).serializeAndReturnSchema(Outer(oa, Inner(ia, "new value")))
         val model = AMQPRemoteTypeModel()
-        val remoteTypeInfo = model.interpret(SerializationSchemas(newVersion.schema, newVersion.transformsSchema),)
+        val remoteTypeInfo = model.interpret(SerializationSchemas(newVersion.schema, newVersion.transformsSchema),
+            testSerializationContext.currentSandboxGroup())
         println(remoteTypeInfo)
 
         val newOuter = DeserializationInput(sf).deserialize(SerializedBytes<Outer>(newVersion.obj.bytes))

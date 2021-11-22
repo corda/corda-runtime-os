@@ -24,8 +24,7 @@ interface EvolutionSerializerFactory {
      */
     fun getEvolutionSerializer(
         remote: RemoteTypeInformation,
-        local: LocalTypeInformation,
-        sandboxGroup: SandboxGroup
+        local: LocalTypeInformation
     ): AMQPSerializer<Any>?
 
     /**
@@ -58,22 +57,20 @@ class DefaultEvolutionSerializerFactory(
 
     override fun getEvolutionSerializer(
         remote: RemoteTypeInformation,
-        local: LocalTypeInformation,
-        sandboxGroup: SandboxGroup
+        local: LocalTypeInformation
     ): AMQPSerializer<Any>? =
             when(remote) {
                 is RemoteTypeInformation.Composable ->
-                    if (local is LocalTypeInformation.Composable) remote.getEvolutionSerializer(local, sandboxGroup)
+                    if (local is LocalTypeInformation.Composable) remote.getEvolutionSerializer(local)
                     else null
                 is RemoteTypeInformation.AnEnum ->
-                    if (local is LocalTypeInformation.AnEnum) remote.getEvolutionSerializer(local, sandboxGroup)
+                    if (local is LocalTypeInformation.AnEnum) remote.getEvolutionSerializer(local)
                     else null
                 else -> null
             }
     
     private fun RemoteTypeInformation.Composable.getEvolutionSerializer(
-        localTypeInformation: LocalTypeInformation.Composable,
-        sandboxGroup: SandboxGroup
+        localTypeInformation: LocalTypeInformation.Composable
     ): AMQPSerializer<Any>? {
         // The no-op case: although the fingerprints don't match for some reason, we have compatible signatures.
         // This might happen because of inconsistent type erasure, changes to the behaviour of the fingerprinter,
@@ -81,35 +78,33 @@ class DefaultEvolutionSerializerFactory(
         // signature.
         if (propertyNamesMatch(localTypeInformation)) {
             // Make sure types are assignment-compatible, and return the local serializer for the type.
-            validateCompatibility(localTypeInformation, sandboxGroup)
+            validateCompatibility(localTypeInformation)
             return null
         }
 
         // Failing that, we have to create an evolution serializer.
         val bestMatchEvolutionConstructor = findEvolverConstructor(
             localTypeInformation.evolutionConstructors,
-            properties,
-            sandboxGroup
+            properties
         )
         val constructorForEvolution = bestMatchEvolutionConstructor?.constructor ?: localTypeInformation.constructor
         val evolverProperties = bestMatchEvolutionConstructor?.properties ?: localTypeInformation.properties
 
         validateEvolvability(evolverProperties)
 
-        return buildComposableEvolutionSerializer(localTypeInformation, constructorForEvolution, evolverProperties, sandboxGroup)
+        return buildComposableEvolutionSerializer(localTypeInformation, constructorForEvolution, evolverProperties)
     }
 
     private fun RemoteTypeInformation.Composable.propertyNamesMatch(localTypeInformation: LocalTypeInformation.Composable): Boolean =
             properties.keys == localTypeInformation.properties.keys
 
     private fun RemoteTypeInformation.Composable.validateCompatibility(
-        localTypeInformation: LocalTypeInformation.Composable,
-        sandboxGroup: SandboxGroup
+        localTypeInformation: LocalTypeInformation.Composable
     ) {
         properties.asSequence().zip(localTypeInformation.properties.values.asSequence()).forEach { (remote, localProperty) ->
             val (name, remoteProperty) = remote
             val localClass = localProperty.type.observedType.asClass()
-            val remoteClass = remoteProperty.type.typeIdentifier.getLocalType(sandboxGroup).asClass()
+            val remoteClass = remoteProperty.type.typeIdentifier.getLocalType(localSerializerFactory.sandboxGroup).asClass()
 
             if (!localClass.isAssignableFrom(remoteClass) && remoteClass != primitiveTypes[localClass]) {
                 throw EvolutionSerializationException(this,
@@ -122,10 +117,9 @@ class DefaultEvolutionSerializerFactory(
     // provided property types.
     private fun findEvolverConstructor(
         constructors: List<EvolutionConstructorInformation>,
-        properties: Map<String, RemotePropertyInformation>,
-        sandboxGroup: SandboxGroup
+        properties: Map<String, RemotePropertyInformation>
     ): EvolutionConstructorInformation? {
-        val propertyTypes = properties.mapValues { (_, info) -> info.type.typeIdentifier.getLocalType(sandboxGroup).asClass() }
+        val propertyTypes = properties.mapValues { (_, info) -> info.type.typeIdentifier.getLocalType(localSerializerFactory.sandboxGroup).asClass() }
 
         // Evolver constructors are listed in ascending version order, so we just want the last that matches.
         return constructors.lastOrNull { (_, evolverProperties) ->
@@ -172,8 +166,7 @@ class DefaultEvolutionSerializerFactory(
     }
 
     private fun RemoteTypeInformation.AnEnum.getEvolutionSerializer(
-        localTypeInformation: LocalTypeInformation.AnEnum,
-        sandboxGroup: SandboxGroup
+        localTypeInformation: LocalTypeInformation.AnEnum
     ): AMQPSerializer<Any>? {
         if (members == localTypeInformation.members) return null
 
@@ -204,8 +197,7 @@ class DefaultEvolutionSerializerFactory(
             localSerializerFactory,
             baseTypes,
             conversions,
-            localOrdinals,
-            sandboxGroup
+            localOrdinals
         )
     }
 
@@ -217,8 +209,7 @@ class DefaultEvolutionSerializerFactory(
     private fun RemoteTypeInformation.Composable.buildComposableEvolutionSerializer(
         localTypeInformation: LocalTypeInformation.Composable,
         constructor: LocalConstructorInformation,
-        properties: Map<String, LocalPropertyInformation>,
-        sandboxGroup: SandboxGroup
+        properties: Map<String, LocalPropertyInformation>
     ): AMQPSerializer<Any> =
         EvolutionObjectSerializer.make(
             localTypeInformation,
@@ -226,6 +217,6 @@ class DefaultEvolutionSerializerFactory(
             constructor,
             properties,
             mustPreserveDataWhenEvolving,
-            sandboxGroup
+            localSerializerFactory.sandboxGroup
         )
 }

@@ -42,8 +42,7 @@ private const val PROXY_TYPE = 1
  */
 class CorDappCustomSerializer(
     private val serializer: SerializationCustomSerializer<*, *>,
-    factory: SerializerFactory,
-    sandboxGroup: SandboxGroup
+    factory: SerializerFactory
 ) : AMQPSerializer<Any>, SerializerFor {
     override val revealSubclassesInSchema: Boolean
         get() = false
@@ -73,7 +72,7 @@ class CorDappCustomSerializer(
     }
 
     private val proxySerializer: ObjectSerializer by lazy {
-        ObjectSerializer.make(factory.getTypeInformation(proxyType), factory, sandboxGroup)
+        ObjectSerializer.make(factory.getTypeInformation(proxyType), factory)
     }
 
     override val typeDescriptor: Symbol = typeDescriptorFor(type)

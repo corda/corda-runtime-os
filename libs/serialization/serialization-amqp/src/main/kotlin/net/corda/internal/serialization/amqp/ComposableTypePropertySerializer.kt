@@ -52,8 +52,7 @@ interface PropertyWriteStrategy {
         fun make(
             name: String,
             propertyInformation: LocalPropertyInformation,
-            factory: LocalSerializerFactory,
-            sandboxGroup: SandboxGroup
+            factory: LocalSerializerFactory
         ): PropertyWriteStrategy {
             val reader = PropertyReader.make(propertyInformation)
             val type = propertyInformation.type
@@ -63,7 +62,7 @@ interface PropertyWriteStrategy {
                     else -> AMQPPropertyWriteStrategy(reader)
                 }
             } else {
-                DescribedTypeWriteStrategy(name, propertyInformation, reader) { factory.get(propertyInformation.type, sandboxGroup) }
+                DescribedTypeWriteStrategy(name, propertyInformation, reader) { factory.get(propertyInformation.type) }
             }
         }
     }
@@ -116,14 +115,13 @@ class ComposableTypePropertySerializer(
         fun make(
             name: String,
             propertyInformation: LocalPropertyInformation,
-            factory: LocalSerializerFactory,
-            sandboxGroup: SandboxGroup
+            factory: LocalSerializerFactory
         ): PropertySerializer =
                 ComposableTypePropertySerializer(
                         name,
                         propertyInformation.isCalculated,
                         PropertyReadStrategy.make(name, propertyInformation.type.typeIdentifier, propertyInformation.type.observedType),
-                        PropertyWriteStrategy.make(name, propertyInformation, factory, sandboxGroup))
+                        PropertyWriteStrategy.make(name, propertyInformation, factory))
 
         /**
          * Make a [PropertySerializer] for use in deserialization only, when deserializing a type that requires evolution.

@@ -1,7 +1,6 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.BaseLocalTypes
-import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.codec.Data
 import java.lang.reflect.Type
@@ -37,10 +36,9 @@ class EnumEvolutionSerializer(
     factory: LocalSerializerFactory,
     private val baseLocalTypes: BaseLocalTypes,
     private val conversions: Map<String, String>,
-    private val ordinals: Map<String, Int>,
-    sandboxGroup: SandboxGroup
+    private val ordinals: Map<String, Int>
 ) : AMQPSerializer<Any> {
-    override val typeDescriptor = factory.createDescriptor(type, sandboxGroup)
+    override val typeDescriptor = factory.createDescriptor(type)
 
     override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,
                             input: DeserializationInput, context: SerializationContext

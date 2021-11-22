@@ -121,7 +121,7 @@ class Main @Activate constructor(
 
     private fun configureSerialization(sandboxAndSerializers: SandboxAndSerializers): SerializerFactory {
         // Create SerializerFactory
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory = SerializerFactoryBuilder.build(AllWhitelist, sandboxAndSerializers.sandboxGroup)
         // Register platform serializers
         for (customSerializer in internalCustomSerializers) {
             consoleLogger.info("Registering internal serializer {}", customSerializer.javaClass.name)
@@ -213,7 +213,7 @@ class Main @Activate constructor(
         consoleLogger.info("Attempt to override platform serialiser:")
 
         // Create SerializerFactory
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory = SerializerFactoryBuilder.build(AllWhitelist, sandboxA.sandboxGroup)
 
         // Build serializers
         val constructor = sandboxA

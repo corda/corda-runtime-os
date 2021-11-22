@@ -140,7 +140,7 @@ open class SerializationOutput constructor(
     }
 
     fun writeObject(obj: Any, data: Data, type: Type, context: SerializationContext, debugIndent: Int = 0) {
-        val serializer = serializerFactory.get(obj.javaClass, type, context.currentSandboxGroup())
+        val serializer = serializerFactory.get(obj.javaClass, type)
         if (serializer !in serializerHistory) {
             serializerHistory.add(serializer)
             serializer.writeClassInfo(this, context)
@@ -174,7 +174,7 @@ open class SerializationOutput constructor(
                 else -> type
             }
 
-            val serializer = serializerFactory.get(resolvedType, context.currentSandboxGroup())
+            val serializer = serializerFactory.get(resolvedType)
             if (serializer !in serializerHistory) {
                 serializerHistory.add(serializer)
                 serializer.writeClassInfo(this, context)

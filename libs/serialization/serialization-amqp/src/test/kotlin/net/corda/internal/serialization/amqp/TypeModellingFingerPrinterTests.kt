@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.AllWhitelist
+import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.internal.serialization.model.ConfigurableLocalTypeModel
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.TypeModellingFingerPrinter
@@ -23,7 +24,10 @@ class TypeModellingFingerPrinterTests {
         val objectType = LocalTypeInformation.Top
         val anyType = LocalTypeInformation.Unknown
 
-        assertNotEquals(fingerprinter.fingerprint(objectType,), fingerprinter.fingerprint(anyType,))
+        val sandboxGroup = testSerializationContext.currentSandboxGroup()
+        assertNotEquals(fingerprinter.fingerprint(objectType, sandboxGroup), fingerprinter.fingerprint(anyType,
+            sandboxGroup
+        ))
     }
 
     // Not serializable, because there is no readable property corresponding to the constructor parameter
@@ -42,6 +46,6 @@ class TypeModellingFingerPrinterTests {
         val propertyTypeInfo = typeInfo.propertiesOrEmptyMap["value"]?.type as LocalTypeInformation.Composable
         assertThat(propertyTypeInfo.typeParameters[0]).isInstanceOf(LocalTypeInformation.NonComposable::class.java)
 
-        fingerprinter.fingerprint(typeInfo,)
+        fingerprinter.fingerprint(typeInfo, testSerializationContext.currentSandboxGroup())
     }
 }

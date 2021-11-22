@@ -12,12 +12,11 @@ import java.lang.reflect.Type
 class EnumSerializer(
     declaredType: Type,
     declaredClass: Class<*>,
-    factory: LocalSerializerFactory,
-    sandboxGroup: SandboxGroup
+    factory: LocalSerializerFactory
 ) : AMQPSerializer<Any> {
     override val type: Type = declaredType
     private val typeNotation: TypeNotation
-    override val typeDescriptor = factory.createDescriptor(type, sandboxGroup)
+    override val typeDescriptor = factory.createDescriptor(type)
 
     init {
         @Suppress("unchecked_cast")

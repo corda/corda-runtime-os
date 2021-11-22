@@ -109,7 +109,7 @@ class DefaultRemoteSerializerFactory(
         val remoteDescriptor = remoteTypeInformation.typeDescriptor
 
         // Obtain a serializer and descriptor for the local type.
-        val localSerializer = localSerializerFactory.get(localTypeInformation, sandboxGroup)
+        val localSerializer = localSerializerFactory.get(localTypeInformation)
         val localDescriptor = localSerializer.typeDescriptor.toString()
 
         return when {
@@ -122,7 +122,7 @@ class DefaultRemoteSerializerFactory(
             // Are the remote/local types evolvable? If so, ask the evolution serializer factory for a serializer, returning
             // the local serializer if it returns null (i.e. no evolution required).
             remoteTypeInformation.isEvolvableTo(localTypeInformation) ->
-                evolutionSerializerFactory.getEvolutionSerializer(remoteTypeInformation, localTypeInformation, sandboxGroup)
+                evolutionSerializerFactory.getEvolutionSerializer(remoteTypeInformation, localTypeInformation)
                     ?: localSerializer
 
             // The type descriptors are never going to match when we deserialise into

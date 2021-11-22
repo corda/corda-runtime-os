@@ -19,13 +19,12 @@ import java.util.TreeSet
  */
 class CollectionSerializer(
     private val declaredType: ParameterizedType,
-    factory: LocalSerializerFactory,
-    sandboxGroup: SandboxGroup
+    factory: LocalSerializerFactory
 ) : AMQPSerializer<Any> {
     override val type: Type = declaredType
 
     override val typeDescriptor: Symbol by lazy {
-        factory.createDescriptor(type, sandboxGroup)
+        factory.createDescriptor(type)
     }
 
     companion object {
@@ -103,7 +102,7 @@ class CollectionSerializer(
 
     private val typeNotation: TypeNotation = RestrictedType(AMQPTypeIdentifiers.nameForType(declaredType), null, emptyList(), "list", Descriptor(typeDescriptor), emptyList())
 
-    private val outboundType = resolveTypeVariables(declaredType.actualTypeArguments[0], null, sandboxGroup)
+    private val outboundType = resolveTypeVariables(declaredType.actualTypeArguments[0], null, factory.sandboxGroup)
     private val inboundType = declaredType.actualTypeArguments[0]
 
     override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) = ifThrowsAppend(declaredType::getTypeName) {

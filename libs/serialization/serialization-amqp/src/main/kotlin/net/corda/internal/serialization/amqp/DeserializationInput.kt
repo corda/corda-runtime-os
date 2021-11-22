@@ -216,7 +216,7 @@ class DeserializationInput constructor(
                     obj
                 } else {
                     // these will be boxed primitive types
-                    serializerFactory.get(obj::class.java, type, sandboxGroup).readObject(obj, serializationSchemas, metadata, this, context)
+                    serializerFactory.get(obj::class.java, type).readObject(obj, serializationSchemas, metadata, this, context)
                 }
             }
 

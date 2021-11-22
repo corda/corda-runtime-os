@@ -26,12 +26,11 @@ private typealias MapCreationFunction = (Map<*, *>) -> Map<*, *>
  */
 class MapSerializer(
     private val declaredType: ParameterizedType,
-    factory: LocalSerializerFactory,
-    sandboxGroup: SandboxGroup
+    factory: LocalSerializerFactory
 ) : AMQPSerializer<Any> {
     override val type: Type = declaredType
 
-    override val typeDescriptor: Symbol = factory.createDescriptor(type, sandboxGroup)
+    override val typeDescriptor: Symbol = factory.createDescriptor(type)
 
     companion object {
         // NB: Order matters in this map, the most specific classes should be listed at the end
@@ -101,9 +100,9 @@ class MapSerializer(
     private val typeNotation: TypeNotation = RestrictedType(AMQPTypeIdentifiers.nameForType(declaredType), null, emptyList(), "map", Descriptor(typeDescriptor), emptyList())
 
     private val inboundKeyType = declaredType.actualTypeArguments[0]
-    private val outboundKeyType = resolveTypeVariables(inboundKeyType, null, sandboxGroup)
+    private val outboundKeyType = resolveTypeVariables(inboundKeyType, null, factory.sandboxGroup)
     private val inboundValueType = declaredType.actualTypeArguments[1]
-    private val outboundValueType = resolveTypeVariables(inboundValueType, null, sandboxGroup)
+    private val outboundValueType = resolveTypeVariables(inboundValueType, null, factory.sandboxGroup)
 
     override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) = ifThrowsAppend({ declaredType.typeName }) {
         if (output.writeTypeNotations(typeNotation)) {

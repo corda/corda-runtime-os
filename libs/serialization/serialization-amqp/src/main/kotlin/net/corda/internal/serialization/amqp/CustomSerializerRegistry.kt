@@ -2,7 +2,6 @@ package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.DefaultCacheProvider
 import net.corda.internal.serialization.model.TypeIdentifier
-import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.InternalDirectSerializer
 import net.corda.serialization.InternalProxySerializer
@@ -57,7 +56,7 @@ interface CustomSerializerRegistry {
      *
      * @param serializer an [InternalCustomSerializer] that converts the target type to/from a proxy object
      */
-    fun register(serializer: InternalCustomSerializer<out Any>, factory: SerializerFactory, sandboxGroup: SandboxGroup)
+    fun register(serializer: InternalCustomSerializer<out Any>, factory: SerializerFactory)
 
     /**
      * Register a user defined custom serializer for any type that cannot be serialized or deserialized by the default
@@ -124,18 +123,17 @@ class CachingCustomSerializerRegistry(
 
     override fun register(
         serializer: InternalCustomSerializer<out Any>,
-        factory: SerializerFactory,
-        sandboxGroup: SandboxGroup
+        factory: SerializerFactory
     ) {
         register(when(serializer) {
-            is InternalProxySerializer<out Any, out Any> -> CustomSerializer.Proxy(serializer, factory, sandboxGroup)
+            is InternalProxySerializer<out Any, out Any> -> CustomSerializer.Proxy(serializer, factory)
             is InternalDirectSerializer<out Any> -> CustomSerializer.Direct(serializer)
             else -> throw UnsupportedOperationException("Unknown custom serializer $serializer")
         })
     }
 
     override fun registerExternal(serializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {
-        val customSerializer = CorDappCustomSerializer(serializer, factory,)
+        val customSerializer = CorDappCustomSerializer(serializer, factory)
         logger.trace { "action=\"Registering external serializer\", class=\"${customSerializer.type}\"" }
         registerCustomSerializer(customSerializer)
     }

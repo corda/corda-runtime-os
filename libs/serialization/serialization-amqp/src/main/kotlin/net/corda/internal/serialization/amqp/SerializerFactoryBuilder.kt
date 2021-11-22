@@ -90,9 +90,10 @@ object SerializerFactoryBuilder {
     }) as Map<Class<*>, Class<*>>
 
     @JvmStatic
-    fun build(whitelist: ClassWhitelist): SerializerFactory {
+    fun build(whitelist: ClassWhitelist, sandboxGroup: SandboxGroup): SerializerFactory {
         return makeFactory(
             whitelist,
+            sandboxGroup,
             DefaultDescriptorBasedSerializerRegistry(),
             allowEvolution = true,
             overrideFingerPrinter = null,
@@ -105,6 +106,7 @@ object SerializerFactoryBuilder {
     @JvmStatic
     fun build(
             whitelist: ClassWhitelist,
+            sandboxGroup: SandboxGroup,
             descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
                     DefaultDescriptorBasedSerializerRegistry(),
             allowEvolution: Boolean = true,
@@ -113,6 +115,7 @@ object SerializerFactoryBuilder {
             mustPreserveDataWhenEvolving: Boolean = false): SerializerFactory {
         return makeFactory(
                 whitelist,
+                sandboxGroup,
                 descriptorBasedSerializerRegistry,
                 allowEvolution,
                 overrideFingerPrinter,
@@ -122,6 +125,7 @@ object SerializerFactoryBuilder {
 
     @Suppress("LongParameterList")
     private fun makeFactory(whitelist: ClassWhitelist,
+                            sandboxGroup: SandboxGroup,
                             descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
                             allowEvolution: Boolean,
                             overrideFingerPrinter: FingerPrinter?,
@@ -136,6 +140,7 @@ object SerializerFactoryBuilder {
 
         val localSerializerFactory = DefaultLocalSerializerFactory(
             whitelist,
+            sandboxGroup,
             localTypeModel,
             fingerPrinter,
             descriptorBasedSerializerRegistry,
@@ -170,8 +175,7 @@ object SerializerFactoryBuilder {
 object NoEvolutionSerializerFactory : EvolutionSerializerFactory {
     override fun getEvolutionSerializer(
         remote: RemoteTypeInformation,
-        local: LocalTypeInformation,
-        sandboxGroup: SandboxGroup
+        local: LocalTypeInformation
     ): AMQPSerializer<Any> {
         throw NotSerializableException("""
 Evolution not permitted.

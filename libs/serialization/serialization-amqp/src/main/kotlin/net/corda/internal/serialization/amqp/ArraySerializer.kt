@@ -1,7 +1,6 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.resolveAgainst
-import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -14,13 +13,13 @@ import java.lang.reflect.Type
 /**
  * Serialization / deserialization of arrays.
  */
-open class ArraySerializer(override val type: Type, factory: LocalSerializerFactory, sandboxGroup: SandboxGroup) : AMQPSerializer<Any> {
+open class ArraySerializer(override val type: Type, factory: LocalSerializerFactory) : AMQPSerializer<Any> {
     companion object {
-        fun make(type: Type, factory: LocalSerializerFactory, sandboxGroup: SandboxGroup) : AMQPSerializer<Any> {
+        fun make(type: Type, factory: LocalSerializerFactory) : AMQPSerializer<Any> {
             contextLogger().debug { "Making array serializer, typename=${type.typeName}" }
             return when (type) {
-                Array<Char>::class.java -> CharArraySerializer(factory,sandboxGroup)
-                else -> ArraySerializer(type, factory, sandboxGroup)
+                Array<Char>::class.java -> CharArraySerializer(factory)
+                else -> ArraySerializer(type, factory)
             }
         }
     }
@@ -56,7 +55,7 @@ open class ArraySerializer(override val type: Type, factory: LocalSerializerFact
     }
 
     override val typeDescriptor: Symbol by lazy {
-        factory.createDescriptor(type, sandboxGroup)
+        factory.createDescriptor(type)
     }
 
     internal val elementType: Type by lazy { type.componentType().resolveAgainst(type) }
@@ -106,7 +105,10 @@ open class ArraySerializer(override val type: Type, factory: LocalSerializerFact
 
 // Boxed Character arrays required a specialisation to handle the type conversion properly when populating
 // the array since Kotlin won't allow an implicit cast from Int (as they're stored as 16bit ints) to Char
-class CharArraySerializer(factory: LocalSerializerFactory, sandboxGroup: SandboxGroup) : ArraySerializer(Array<Char>::class.java, factory, sandboxGroup) {
+class CharArraySerializer(factory: LocalSerializerFactory) : ArraySerializer(
+    Array<Char>::class.java,
+    factory
+) {
     override fun <T> List<T>.toArrayOfType(type: Type): Any {
         val elementType = type.asClass()
         val list = this
@@ -117,18 +119,21 @@ class CharArraySerializer(factory: LocalSerializerFactory, sandboxGroup: Sandbox
 }
 
 // Specialisation of [ArraySerializer] that handles arrays of unboxed java primitive types
-abstract class PrimArraySerializer(type: Type, factory: LocalSerializerFactory, sandboxGroup: SandboxGroup) : ArraySerializer(type, factory, sandboxGroup) {
+abstract class PrimArraySerializer(type: Type, factory: LocalSerializerFactory) : ArraySerializer(
+    type,
+    factory
+) {
     companion object {
 
-        fun make(type: Type, factory: LocalSerializerFactory, sandboxGroup: SandboxGroup) =
+        fun make(type: Type, factory: LocalSerializerFactory) =
             mapOf<Type, (LocalSerializerFactory) -> PrimArraySerializer>(
-                    IntArray::class.java to { f -> PrimIntArraySerializer(f, sandboxGroup) },
-                    CharArray::class.java to { f -> PrimCharArraySerializer(f, sandboxGroup) },
-                    BooleanArray::class.java to { f -> PrimBooleanArraySerializer(f, sandboxGroup) },
-                    FloatArray::class.java to { f -> PrimFloatArraySerializer(f, sandboxGroup) },
-                    ShortArray::class.java to { f -> PrimShortArraySerializer(f, sandboxGroup) },
-                    DoubleArray::class.java to { f -> PrimDoubleArraySerializer(f, sandboxGroup) },
-                    LongArray::class.java to { f -> PrimLongArraySerializer(f, sandboxGroup) }
+                    IntArray::class.java to { f -> PrimIntArraySerializer(f) },
+                    CharArray::class.java to { f -> PrimCharArraySerializer(f) },
+                    BooleanArray::class.java to { f -> PrimBooleanArraySerializer(f) },
+                    FloatArray::class.java to { f -> PrimFloatArraySerializer(f) },
+                    ShortArray::class.java to { f -> PrimShortArraySerializer(f) },
+                    DoubleArray::class.java to { f -> PrimDoubleArraySerializer(f) },
+                    LongArray::class.java to { f -> PrimLongArraySerializer(f) }
                     // ByteArray::class.java <-> NOT NEEDED HERE (see comment above)
             )[type]!!(factory)
     }
@@ -138,7 +143,10 @@ abstract class PrimArraySerializer(type: Type, factory: LocalSerializerFactory, 
     }
 }
 
-class PrimIntArraySerializer(factory: LocalSerializerFactory, sandboxGroup: SandboxGroup) : PrimArraySerializer(IntArray::class.java, factory, sandboxGroup) {
+class PrimIntArraySerializer(factory: LocalSerializerFactory) : PrimArraySerializer(
+    IntArray::class.java,
+    factory
+) {
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
                              context: SerializationContext, debugIndent: Int
     ) {
@@ -148,7 +156,10 @@ class PrimIntArraySerializer(factory: LocalSerializerFactory, sandboxGroup: Sand
     }
 }
 
-class PrimCharArraySerializer(factory: LocalSerializerFactory, sandboxGroup: SandboxGroup) : PrimArraySerializer(CharArray::class.java, factory, sandboxGroup) {
+class PrimCharArraySerializer(factory: LocalSerializerFactory) : PrimArraySerializer(
+    CharArray::class.java,
+    factory
+) {
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
                              context: SerializationContext, debugIndent: Int
     ) {
@@ -169,10 +180,10 @@ class PrimCharArraySerializer(factory: LocalSerializerFactory, sandboxGroup: San
     }
 }
 
-class PrimBooleanArraySerializer(factory: LocalSerializerFactory, sandboxGroup: SandboxGroup) : PrimArraySerializer(
+class PrimBooleanArraySerializer(factory: LocalSerializerFactory) : PrimArraySerializer(
     BooleanArray::class.java,
-    factory,
-    sandboxGroup) {
+    factory
+) {
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
                              context: SerializationContext, debugIndent: Int
     ) {
@@ -182,8 +193,8 @@ class PrimBooleanArraySerializer(factory: LocalSerializerFactory, sandboxGroup: 
     }
 }
 
-class PrimDoubleArraySerializer(factory: LocalSerializerFactory, sandboxGroup: SandboxGroup) :
-        PrimArraySerializer(DoubleArray::class.java, factory, sandboxGroup) {
+class PrimDoubleArraySerializer(factory: LocalSerializerFactory) :
+        PrimArraySerializer(DoubleArray::class.java, factory) {
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
                              context: SerializationContext, debugIndent: Int
     ) {
@@ -193,8 +204,8 @@ class PrimDoubleArraySerializer(factory: LocalSerializerFactory, sandboxGroup: S
     }
 }
 
-class PrimFloatArraySerializer(factory: LocalSerializerFactory, sandboxGroup: SandboxGroup) :
-        PrimArraySerializer(FloatArray::class.java, factory, sandboxGroup) {
+class PrimFloatArraySerializer(factory: LocalSerializerFactory) :
+        PrimArraySerializer(FloatArray::class.java, factory) {
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
                              context: SerializationContext, debugIndent: Int) {
         localWriteObject(data) {
@@ -203,8 +214,8 @@ class PrimFloatArraySerializer(factory: LocalSerializerFactory, sandboxGroup: Sa
     }
 }
 
-class PrimShortArraySerializer(factory: LocalSerializerFactory, sandboxGroup: SandboxGroup) :
-        PrimArraySerializer(ShortArray::class.java, factory, sandboxGroup) {
+class PrimShortArraySerializer(factory: LocalSerializerFactory) :
+        PrimArraySerializer(ShortArray::class.java, factory) {
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
                              context: SerializationContext, debugIndent: Int
     ) {
@@ -214,8 +225,8 @@ class PrimShortArraySerializer(factory: LocalSerializerFactory, sandboxGroup: Sa
     }
 }
 
-class PrimLongArraySerializer(factory: LocalSerializerFactory, sandboxGroup: SandboxGroup) :
-        PrimArraySerializer(LongArray::class.java, factory, sandboxGroup) {
+class PrimLongArraySerializer(factory: LocalSerializerFactory) :
+        PrimArraySerializer(LongArray::class.java, factory) {
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
                              context: SerializationContext, debugIndent: Int
     ) {

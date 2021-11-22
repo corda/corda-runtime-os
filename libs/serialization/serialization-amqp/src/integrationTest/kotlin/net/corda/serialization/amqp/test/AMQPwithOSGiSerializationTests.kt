@@ -11,6 +11,8 @@ import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.amqpMagic
+import net.corda.internal.serialization.amqp.currentSandboxGroup
+import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
@@ -118,6 +120,7 @@ class AMQPwithOSGiSerializationTests {
                                               DefaultDescriptorBasedSerializerRegistry()): SerializerFactory =
             SerializerFactoryBuilder.build(
                     AllWhitelist,
+                    testSerializationContext.currentSandboxGroup(),
                     descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
                     allowEvolution = false)
 

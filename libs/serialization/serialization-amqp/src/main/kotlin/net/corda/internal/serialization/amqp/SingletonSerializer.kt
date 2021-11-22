@@ -1,7 +1,6 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.LocalTypeInformation
-import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.codec.Data
 import java.lang.reflect.Type
@@ -14,10 +13,9 @@ import java.lang.reflect.Type
 class SingletonSerializer(
     override val type: Class<*>,
     val singleton: Any,
-    factory: LocalSerializerFactory,
-    sandboxGroup: SandboxGroup
+    factory: LocalSerializerFactory
 ) : AMQPSerializer<Any> {
-    override val typeDescriptor = factory.createDescriptor(type, sandboxGroup)
+    override val typeDescriptor = factory.createDescriptor(type)
 
     private val interfaces = (factory.getTypeInformation(type) as LocalTypeInformation.Singleton).interfaces
 

@@ -38,6 +38,11 @@ interface LocalSerializerFactory {
     val whitelist: ClassWhitelist
 
     /**
+     * Sandbox group to work within
+     */
+    val sandboxGroup: SandboxGroup
+
+    /**
      * Retrieves the names of the registered custom serializers.
      */
     val customSerializerNames: List<String>
@@ -45,18 +50,18 @@ interface LocalSerializerFactory {
     /**
      * Obtain an [AMQPSerializer] for an object of actual type [actualClass], and declared type [declaredType].
      */
-    fun get(actualClass: Class<*>, declaredType: Type, sandboxGroup: SandboxGroup): AMQPSerializer<Any>
+    fun get(actualClass: Class<*>, declaredType: Type): AMQPSerializer<Any>
 
     /**
      * Obtain an [AMQPSerializer] for the [declaredType].
      */
     @JvmDefault
-    fun get(declaredType: Type, sandboxGroup: SandboxGroup): AMQPSerializer<Any> = get(getTypeInformation(declaredType), sandboxGroup)
+    fun get(declaredType: Type): AMQPSerializer<Any> = get(getTypeInformation(declaredType))
 
     /**
      * Obtain an [AMQPSerializer] for the type having the given [typeInformation].
      */
-    fun get(typeInformation: LocalTypeInformation, sandboxGroup: SandboxGroup): AMQPSerializer<Any>
+    fun get(typeInformation: LocalTypeInformation): AMQPSerializer<Any>
 
     /**
      * Obtain [LocalTypeInformation] for the given [Type].
@@ -82,12 +87,12 @@ interface LocalSerializerFactory {
      * Use the [FingerPrinter] to create a type descriptor for the given [type].
      */
     @JvmDefault
-    fun createDescriptor(type: Type, sandboxGroup: SandboxGroup): Symbol = createDescriptor(getTypeInformation(type), sandboxGroup)
+    fun createDescriptor(type: Type): Symbol = createDescriptor(getTypeInformation(type))
 
     /**
      * Use the [FingerPrinter] to create a type descriptor for the given [typeInformation].
      */
-    fun createDescriptor(typeInformation: LocalTypeInformation, sandboxGroup: SandboxGroup): Symbol
+    fun createDescriptor(typeInformation: LocalTypeInformation): Symbol
 
     /**
      * Determines whether instances of this type should be added to the object history
@@ -103,6 +108,7 @@ interface LocalSerializerFactory {
 @ThreadSafe
 class DefaultLocalSerializerFactory(
         override val whitelist: ClassWhitelist,
+        override val sandboxGroup: SandboxGroup,
         private val typeModel: LocalTypeModel,
         private val fingerPrinter: FingerPrinter,
         private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
@@ -125,7 +131,7 @@ class DefaultLocalSerializerFactory(
     private val serializersByTypeId: MutableMap<TypeIdentifier, AMQPSerializer<Any>> = DefaultCacheProvider.createCache()
     private val typesByName = DefaultCacheProvider.createCache<String, Optional<LocalTypeInformation>>()
 
-    override fun createDescriptor(typeInformation: LocalTypeInformation, sandboxGroup: SandboxGroup): Symbol =
+    override fun createDescriptor(typeInformation: LocalTypeInformation): Symbol =
             Symbol.valueOf("$DESCRIPTOR_DOMAIN:${fingerPrinter.fingerprint(typeInformation, sandboxGroup)}")
 
     override fun getTypeInformation(type: Type): LocalTypeInformation = typeModel.inspect(type)
@@ -154,8 +160,8 @@ class DefaultLocalSerializerFactory(
         }.orElse(null)
     }
 
-    override fun get(typeInformation: LocalTypeInformation, sandboxGroup: SandboxGroup): AMQPSerializer<Any> =
-            get(typeInformation.observedType, typeInformation, sandboxGroup)
+    override fun get(typeInformation: LocalTypeInformation): AMQPSerializer<Any> =
+            get(typeInformation.observedType, typeInformation)
 
     // ByteArrays, primitives and boxed primitives are not stored in the object history
     override fun isSuitableForObjectReference(type: Type): Boolean {
@@ -173,7 +179,7 @@ class DefaultLocalSerializerFactory(
             }
         }
 
-    private fun get(declaredType: Type, localTypeInformation: LocalTypeInformation, sandboxGroup: SandboxGroup): AMQPSerializer<Any> =
+    private fun get(declaredType: Type, localTypeInformation: LocalTypeInformation): AMQPSerializer<Any> =
         serializersByTypeId.getOrElse(localTypeInformation.typeIdentifier) {
             val declaredClass = declaredType.asClass()
 
@@ -183,7 +189,7 @@ class DefaultLocalSerializerFactory(
             val declaredGenericType = if (declaredType !is ParameterizedType
                     && localTypeInformation.typeIdentifier is Parameterised
                     && declaredClass != Class::class.java) {
-                localTypeInformation.typeIdentifier.getLocalType(sandboxGroup)
+                localTypeInformation.typeIdentifier.getLocalType(this.sandboxGroup)
             } else {
                 declaredType
             }
@@ -193,53 +199,50 @@ class DefaultLocalSerializerFactory(
             customSerializerRegistry.findCustomSerializer(declaredClass, declaredGenericType)?.apply { return@get this }
 
             when (localTypeInformation) {
-                is LocalTypeInformation.ACollection -> makeDeclaredCollection(localTypeInformation, sandboxGroup)
-                is LocalTypeInformation.AMap -> makeDeclaredMap(localTypeInformation, sandboxGroup)
-                is LocalTypeInformation.AnEnum -> makeDeclaredEnum(localTypeInformation, declaredType, declaredClass, sandboxGroup)
-                else -> makeClassSerializer(declaredClass, declaredType, localTypeInformation, sandboxGroup)
+                is LocalTypeInformation.ACollection -> makeDeclaredCollection(localTypeInformation)
+                is LocalTypeInformation.AMap -> makeDeclaredMap(localTypeInformation)
+                is LocalTypeInformation.AnEnum -> makeDeclaredEnum(localTypeInformation, declaredType, declaredClass)
+                else -> makeClassSerializer(declaredClass, declaredType, localTypeInformation)
             }
         }
 
     private fun makeDeclaredEnum(
         localTypeInformation: LocalTypeInformation,
         declaredType: Type,
-        declaredClass: Class<*>,
-        sandboxGroup: SandboxGroup
+        declaredClass: Class<*>
     ): AMQPSerializer<Any> =
             makeAndCache(localTypeInformation) {
                 whitelist.requireWhitelisted(declaredType)
-                EnumSerializer(declaredType, declaredClass, this, sandboxGroup)
+                EnumSerializer(declaredType, declaredClass, this)
             }
 
     private fun makeActualEnum(
         localTypeInformation: LocalTypeInformation,
         declaredType: Type,
-        declaredClass: Class<*>,
-        sandboxGroup: SandboxGroup
+        declaredClass: Class<*>
     ): AMQPSerializer<Any> =
             makeAndCache(localTypeInformation) {
                 whitelist.requireWhitelisted(declaredType)
-                EnumSerializer(declaredType, declaredClass, this, sandboxGroup)
+                EnumSerializer(declaredType, declaredClass, this)
             }
 
     private fun makeDeclaredCollection(
-        localTypeInformation: LocalTypeInformation.ACollection,
-        sandboxGroup: SandboxGroup
+        localTypeInformation: LocalTypeInformation.ACollection
     ): AMQPSerializer<Any> {
-        val resolved = CollectionSerializer.resolveDeclared(localTypeInformation, sandboxGroup)
+        val resolved = CollectionSerializer.resolveDeclared(localTypeInformation, this.sandboxGroup)
         return makeAndCache(resolved) {
-            CollectionSerializer(resolved.typeIdentifier.getLocalType(sandboxGroup) as ParameterizedType, this, sandboxGroup)
+            CollectionSerializer(resolved.typeIdentifier.getLocalType(this.sandboxGroup) as ParameterizedType, this)
         }
     }
 
-    private fun makeDeclaredMap(localTypeInformation: LocalTypeInformation.AMap, sandboxGroup: SandboxGroup): AMQPSerializer<Any> {
-        val resolved = MapSerializer.resolveDeclared(localTypeInformation, sandboxGroup)
+    private fun makeDeclaredMap(localTypeInformation: LocalTypeInformation.AMap): AMQPSerializer<Any> {
+        val resolved = MapSerializer.resolveDeclared(localTypeInformation, this.sandboxGroup)
         return makeAndCache(resolved) {
-            MapSerializer(resolved.typeIdentifier.getLocalType(sandboxGroup) as ParameterizedType, this, sandboxGroup)
+            MapSerializer(resolved.typeIdentifier.getLocalType(this.sandboxGroup) as ParameterizedType, this)
         }
     }
 
-    override fun get(actualClass: Class<*>, declaredType: Type, sandboxGroup: SandboxGroup): AMQPSerializer<Any> {
+    override fun get(actualClass: Class<*>, declaredType: Type): AMQPSerializer<Any> {
         val actualAndDeclaredType = ActualAndDeclaredType(actualClass, declaredType)
         return serializersByActualAndDeclaredType.getOrPut(actualAndDeclaredType) {
             // can be useful to enable but will be *extremely* chatty if you do
@@ -247,7 +250,7 @@ class DefaultLocalSerializerFactory(
             customSerializerRegistry.findCustomSerializer(actualClass, declaredType)?.apply { return@get this }
 
             val declaredClass = declaredType.asClass()
-            val actualType: Type = inferTypeVariables(actualClass, declaredClass, declaredType, sandboxGroup) ?: declaredType
+            val actualType: Type = inferTypeVariables(actualClass, declaredClass, declaredType, this.sandboxGroup) ?: declaredType
             val declaredTypeInformation = typeModel.inspect(declaredType)
             val actualTypeInformation = typeModel.inspect(actualType)
 
@@ -255,16 +258,15 @@ class DefaultLocalSerializerFactory(
                 is LocalTypeInformation.ACollection -> makeActualCollection(
                     actualClass,
                     declaredTypeInformation as? LocalTypeInformation.ACollection
-                            ?: actualTypeInformation,
-                    sandboxGroup
+                            ?: actualTypeInformation
                 )
                 is LocalTypeInformation.AMap -> makeActualMap(
                     declaredType, actualClass,
                     declaredTypeInformation as? LocalTypeInformation.AMap
-                            ?: actualTypeInformation,
-                    sandboxGroup)
-                is LocalTypeInformation.AnEnum -> makeActualEnum(actualTypeInformation, actualType, actualClass, sandboxGroup)
-                else -> makeClassSerializer(actualClass, actualType, actualTypeInformation, sandboxGroup)
+                            ?: actualTypeInformation
+                )
+                is LocalTypeInformation.AnEnum -> makeActualEnum(actualTypeInformation, actualType, actualClass)
+                else -> makeClassSerializer(actualClass, actualType, actualTypeInformation)
             }
         }
     }
@@ -272,33 +274,30 @@ class DefaultLocalSerializerFactory(
     private fun makeActualMap(
         declaredType: Type,
         actualClass: Class<*>,
-        typeInformation: LocalTypeInformation.AMap,
-        sandboxGroup: SandboxGroup
+        typeInformation: LocalTypeInformation.AMap
     ): AMQPSerializer<Any> {
         declaredType.asClass().checkSupportedMapType()
-        val resolved = MapSerializer.resolveActual(actualClass, typeInformation, sandboxGroup)
+        val resolved = MapSerializer.resolveActual(actualClass, typeInformation, this.sandboxGroup)
         return makeAndCache(resolved) {
-            MapSerializer(resolved.typeIdentifier.getLocalType(sandboxGroup) as ParameterizedType, this, sandboxGroup)
+            MapSerializer(resolved.typeIdentifier.getLocalType(this.sandboxGroup) as ParameterizedType, this)
         }
     }
 
     private fun makeActualCollection(
         actualClass: Class<*>,
-        typeInformation: LocalTypeInformation.ACollection,
-        sandboxGroup: SandboxGroup
+        typeInformation: LocalTypeInformation.ACollection
     ): AMQPSerializer<Any> {
-        val resolved = CollectionSerializer.resolveActual(actualClass, typeInformation, sandboxGroup)
+        val resolved = CollectionSerializer.resolveActual(actualClass, typeInformation, this.sandboxGroup)
 
         return makeAndCache(resolved) {
-            CollectionSerializer(resolved.typeIdentifier.getLocalType(sandboxGroup) as ParameterizedType, this, sandboxGroup)
+            CollectionSerializer(resolved.typeIdentifier.getLocalType(this.sandboxGroup) as ParameterizedType, this)
         }
     }
 
     private fun makeClassSerializer(
         clazz: Class<*>,
         type: Type,
-        typeInformation: LocalTypeInformation,
-        sandboxGroup: SandboxGroup
+        typeInformation: LocalTypeInformation
     ): AMQPSerializer<Any> = makeAndCache(typeInformation) {
         logger.debug { "class=${clazz.simpleName}, type=$type is a composite type" }
         when {
@@ -308,30 +307,29 @@ class DefaultLocalSerializerFactory(
                         type,
                         "Serializer does not support synthetic classes")
             AMQPTypeIdentifiers.isPrimitive(typeInformation.typeIdentifier) -> primitiveSerializerFactory.apply(clazz)
-            else -> makeNonCustomSerializer(type, typeInformation, clazz, sandboxGroup)
+            else -> makeNonCustomSerializer(type, typeInformation, clazz)
         }
     }
 
     private fun makeNonCustomSerializer(
         type: Type,
         typeInformation: LocalTypeInformation,
-        clazz: Class<*>,
-        sandboxGroup: SandboxGroup
+        clazz: Class<*>
     ): AMQPSerializer<Any> = when {
         onlyCustomSerializers -> throw AMQPNotSerializableException(type, "Only allowing custom serializers")
         type.isArray() ->
-            if (clazz.componentType.isPrimitive) PrimArraySerializer.make(type, this, sandboxGroup)
+            if (clazz.componentType.isPrimitive) PrimArraySerializer.make(type, this)
             else {
-                ArraySerializer.make(type, this, sandboxGroup)
+                ArraySerializer.make(type, this)
             }
         else -> {
             val singleton = clazz.kotlinObjectInstance
             if (singleton != null) {
                 whitelist.requireWhitelisted(clazz)
-                SingletonSerializer(clazz, singleton, this, sandboxGroup)
+                SingletonSerializer(clazz, singleton, this)
             } else {
                 whitelist.requireWhitelisted(type)
-                ObjectSerializer.make(typeInformation, this, sandboxGroup)
+                ObjectSerializer.make(typeInformation, this)
             }
         }
     }

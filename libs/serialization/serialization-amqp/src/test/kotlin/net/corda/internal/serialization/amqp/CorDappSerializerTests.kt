@@ -7,6 +7,7 @@ import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvel
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
+import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.serialization.BaseProxySerializer
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.assertj.core.api.Assertions
@@ -22,7 +23,7 @@ class CorDappSerializerTests {
 
     private fun proxyFactory(
             serializers: List<SerializationCustomSerializer<*, *>>
-    ) = SerializerFactoryBuilder.build(AllWhitelist).apply {
+    ) = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup()).apply {
         serializers.forEach {
             registerExternal(it, this)
         }
@@ -111,7 +112,7 @@ class CorDappSerializerTests {
         }
 
         val whitelist = WL()
-        val factory = SerializerFactoryBuilder.build(whitelist)
+        val factory = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
         factory.registerExternal(NeedsProxyProxySerializer(), factory)
 
         val tv1 = 100
@@ -137,7 +138,7 @@ class CorDappSerializerTests {
         }
 
         val whitelist = WL()
-        val factory = SerializerFactoryBuilder.build(whitelist)
+        val factory = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
         factory.registerExternal(NeedsProxyProxySerializer(), factory)
 
         val tv1 = 100
@@ -167,7 +168,7 @@ class CorDappSerializerTests {
         }
 
         val whitelist = WL()
-        val factory = SerializerFactoryBuilder.build(whitelist)
+        val factory = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
         factory.registerExternal(NeedsProxyProxySerializer(), factory)
 
         val tv1 = 100
