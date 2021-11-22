@@ -15,7 +15,8 @@ import net.corda.lifecycle.Lifecycle
  *
  * This service will transition to [LifecycleStatus.UP] once the first snapshot of configuration is received.
  */
-interface ConfigurationReadService : Lifecycle {
+interface ConfigurationReadService :
+    Lifecycle {
 
     /**
      * Register for configuration updates.
