@@ -38,6 +38,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -511,6 +512,7 @@ class GatewayTest : TestBase() {
     inner class BadConfigurationTests {
         @Test
         @Timeout(120)
+        @Disabled("Disabled temporarily until we identify the reason for the flakiness and remove it.")
         fun `Gateway can recover from bad configuration`() {
             val configPublisher = ConfigPublisher()
             val host = "www.alice.net"
