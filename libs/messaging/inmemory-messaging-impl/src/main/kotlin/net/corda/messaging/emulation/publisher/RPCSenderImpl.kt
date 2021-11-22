@@ -1,5 +1,6 @@
 package net.corda.messaging.emulation.publisher
 
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.emulation.rpc.RPCTopicService
@@ -29,4 +30,7 @@ class RPCSenderImpl<REQUEST, RESPONSE>(
             rpcTopicService.publish(topicName, req, it)
         }
     }
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = LifecycleCoordinatorName("RPCSender")
 }
