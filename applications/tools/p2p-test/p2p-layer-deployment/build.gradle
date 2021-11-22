@@ -1,0 +1,25 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+    id 'application'
+}
+
+description "P2P Testing tools - P2P layer deployment"
+
+dependencies {
+    implementation platform('org.jetbrains.kotlin:kotlin-bom')
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    implementation "info.picocli:picocli:$picocliVersion"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+
+}
+
+application {
+    mainClass = 'net.corda.p2p.deployment.GoKt'
+}
+
+//YIFT: Remove when have access to images
+jar.dependsOn(':applications:p2p-gateway:build')
+jar.dependsOn(':applications:p2p-link-manager:build')
+jar.dependsOn(':applications:tools:p2p-test:configuration-publisher:build')
+jar.dependsOn(':applications:tools:p2p-test:app-simulator:build')

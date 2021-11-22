@@ -112,3 +112,6 @@ build
 
 
 kafka-docker/data/
+
+# Ignore Visual studio directory
+bin/
