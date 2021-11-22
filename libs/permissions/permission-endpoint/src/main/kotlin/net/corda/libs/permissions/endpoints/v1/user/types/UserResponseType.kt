@@ -3,7 +3,7 @@ package net.corda.libs.permissions.endpoints.v1.user.types
 import java.time.Instant
 
 /**
- * Object representing a User to be returned to the caller.
+ * Response type representing a User to be returned to the caller.
  */
 data class UserResponseType(
 

@@ -3,7 +3,7 @@ package net.corda.libs.permissions.endpoints.v1.user.types
 import java.time.Instant
 
 /**
- * Request object for creating a User in the permission system.
+ * Request type for creating a User in the permission system.
  */
 data class CreateUserType(
     /**

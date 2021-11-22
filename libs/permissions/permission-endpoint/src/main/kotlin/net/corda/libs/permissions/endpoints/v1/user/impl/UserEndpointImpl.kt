@@ -10,7 +10,6 @@ import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.util.Try
 
 /**
  * An RPC Ops endpoint for User operations.
@@ -31,8 +30,9 @@ class UserEndpointImpl(
     override fun createUser(virtualNodeId: String, createUserType: CreateUserType): UserResponseType {
         validatePermissionManager()
 
-        val createUserRequestDto = convertFromUserType(createUserType)
-        val createUserResult = permissionManager!!.createUser(createUserRequestDto)
+        val createUserResult = permissionManager!!.createUser(
+            convertFromUserType(createUserType)
+        )
 
         return createUserResult.getOrThrow()
             .convertToUserType()
@@ -50,6 +50,7 @@ class UserEndpointImpl(
         return userResponseDto?.convertToUserType()
     }
 
+    @Suppress("ThrowsCount")
     private fun validatePermissionManager() {
         if (!running) {
             throw PermissionEndpointException("User Endpoint must be started.", 500)

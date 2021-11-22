@@ -4,7 +4,6 @@ import java.time.Instant
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.endpoints.exception.PermissionEndpointException
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
-import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -12,11 +11,9 @@ import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.v5.base.util.Try
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
 
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -49,16 +46,6 @@ internal class UserEndpointImplTest {
         now,
         "parentGroupId",
         emptyList()
-    )
-    private val userResponseType = UserResponseType(
-        "uuid",
-        0,
-        now,
-        "fullName1",
-        "loginName1",
-        true,
-        now,
-        "parentGroupId"
     )
 
     private val permissionManager = mock<PermissionManager>()

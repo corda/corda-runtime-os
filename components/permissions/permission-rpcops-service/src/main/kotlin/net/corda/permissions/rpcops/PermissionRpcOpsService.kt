@@ -5,7 +5,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.rpcops.internal.PermissionRpcOpsServiceEventHandler
-import net.corda.permissions.service.PermissionService
+import net.corda.permissions.service.PermissionServiceComponent
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -14,11 +14,11 @@ import org.osgi.service.component.annotations.Reference
 class PermissionRpcOpsService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = PermissionService::class)
-    private val parentPermission: PermissionService,
+    @Reference(service = PermissionServiceComponent::class)
+    private val permissionServiceComponent: PermissionServiceComponent
 ) : Lifecycle {
 
-    private val handler = PermissionRpcOpsServiceEventHandler(parentPermissionService)
+    private val handler = PermissionRpcOpsServiceEventHandler(permissionServiceComponent)
     private val coordinator = coordinatorFactory.createCoordinator<PermissionRpcOpsService>(handler)
 
     override val isRunning: Boolean

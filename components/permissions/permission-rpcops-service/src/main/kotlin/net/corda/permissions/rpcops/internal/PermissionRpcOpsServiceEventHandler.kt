@@ -10,11 +10,11 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.permissions.service.PermissionService
+import net.corda.permissions.service.PermissionServiceComponent
 import net.corda.v5.base.annotations.VisibleForTesting
 
 internal class PermissionRpcOpsServiceEventHandler(
-    private val permissionService: PermissionService
+    private val permissionServiceComponent: PermissionServiceComponent
 ) : LifecycleEventHandler {
 
     internal var userEndpoint: UserEndpointImpl? = null
@@ -27,7 +27,7 @@ internal class PermissionRpcOpsServiceEventHandler(
             is StartEvent -> {
                 registration?.close()
                 registration = coordinator.followStatusChangesByName(
-                    setOf(LifecycleCoordinatorName.forComponent<PermissionService>())
+                    setOf(LifecycleCoordinatorName.forComponent<PermissionServiceComponent>())
                 )
             }
             is RegistrationStatusChangeEvent -> {
@@ -37,6 +37,9 @@ internal class PermissionRpcOpsServiceEventHandler(
                         coordinator.updateStatus(LifecycleStatus.UP)
                     }
                     else -> {
+                        // nulling these when permission service is DOWN/ERROR allows us to keep servicing requests to the HTTP endpoints
+                        userEndpoint?.setPermissionManager(null)
+                        userEndpoint?.setPermissionValidator(null)
                         coordinator.updateStatus(event.status)
                     }
                 }
@@ -52,11 +55,10 @@ internal class PermissionRpcOpsServiceEventHandler(
 
     private fun startEndpoints() {
         if(userEndpoint == null){
-            userEndpoint = UserEndpointImpl(permissionService.permissionManager, permissionService.permissionValidator)
+            userEndpoint = UserEndpointImpl(permissionServiceComponent.permissionManager, permissionServiceComponent.permissionValidator)
         } else {
-            // Maintaining an endpoint with manager and validator being null allows us to keep servicing requests
-            userEndpoint!!.setPermissionManager(permissionService.permissionManager)
-            userEndpoint!!.setPermissionValidator(permissionService.permissionValidator)
+            userEndpoint!!.setPermissionManager(permissionServiceComponent.permissionManager)
+            userEndpoint!!.setPermissionValidator(permissionServiceComponent.permissionValidator)
         }
 
         userEndpoint!!.start()
