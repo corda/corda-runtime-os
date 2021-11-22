@@ -348,7 +348,7 @@ class DominoTileTest {
         @Test
         fun `second start will not restart anything`() {
             val called = AtomicInteger(0)
-            val tile = DominoTile(TILE_NAME, factory, createResources = { _ ->
+            val tile = DominoTile(TILE_NAME, factory, createResources = {
                 called.incrementAndGet()
                 val future = CompletableFuture<Unit>()
                 future.complete(Unit)
@@ -364,7 +364,7 @@ class DominoTileTest {
         @Test
         fun `second start will not recreate the resources if it had errors`() {
             val called = AtomicInteger(0)
-            val tile = DominoTile(TILE_NAME, factory, createResources = { _ ->
+            val tile = DominoTile(TILE_NAME, factory, createResources = {
                 called.incrementAndGet()
                 val future = CompletableFuture<Unit>()
                 future.completeExceptionally(RuntimeException("Ohh no"))
@@ -466,23 +466,37 @@ class DominoTileTest {
         }
 
         @Test
-        fun `start empty the last configuration`() {
-            val handler = TileConfigurationChangeHandler()
-            handler.lastConfiguration = mock()
-            val tile = DominoTile(TILE_NAME, factory, configurationChangeHandler = handler)
-
+        fun `close unregister listener`() {
+            val tile = tile()
             tile.start()
+
+            tile.close()
+
+            verify(registration).close()
+        }
+
+        @Test
+        fun `stop empty last configuration`() {
+            val handler = TileConfigurationChangeHandler()
+            val tile = DominoTile(TILE_NAME, factory, configurationChangeHandler = handler)
+            tile.start()
+            handler.lastConfiguration = mock()
+
+            tile.stop()
 
             assertThat(handler.lastConfiguration).isNull()
         }
 
         @Test
-        fun `close unregister listener`() {
-            val tile = tile()
+        fun `close empty last configuration`() {
+            val handler = TileConfigurationChangeHandler()
+            val tile = DominoTile(TILE_NAME, factory, configurationChangeHandler = handler)
             tile.start()
+            handler.lastConfiguration = mock()
+
             tile.close()
 
-            verify(registration).close()
+            assertThat(handler.lastConfiguration).isNull()
         }
 
         @Test

@@ -360,7 +360,6 @@ class DominoTile(
         }
         if (configRegistration == null && configurationChangeHandler != null) {
             logger.info("Registering for Config Updates $name.")
-            configurationChangeHandler.lastConfiguration = null
             configRegistration =
                 configurationChangeHandler.configurationReaderService
                     .registerForUpdates(
@@ -385,6 +384,7 @@ class DominoTile(
             configRegistration?.close()
             if (configRegistration != null) logger.info("Unregistered for Config Updates $name.")
             configRegistration = null
+            configurationChangeHandler?.lastConfiguration = null
         }
         configReady = false
 
@@ -401,6 +401,7 @@ class DominoTile(
         }
         configRegistration?.close()
         configRegistration = null
+        configurationChangeHandler?.lastConfiguration = null
         configResources.close()
         withLifecycleWriteLock {
             isOpen.set(false)
