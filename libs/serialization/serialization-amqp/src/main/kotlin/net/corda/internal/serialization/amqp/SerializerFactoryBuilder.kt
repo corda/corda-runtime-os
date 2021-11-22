@@ -10,7 +10,6 @@ import net.corda.internal.serialization.model.TypeLoader
 import net.corda.internal.serialization.model.TypeModellingFingerPrinter
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.ClassWhitelist
-import net.corda.serialization.SerializationContext
 import java.io.NotSerializableException
 import java.lang.reflect.Method
 import java.util.Collections.unmodifiableMap
@@ -136,7 +135,7 @@ object SerializerFactoryBuilder {
         val typeModelConfiguration = WhitelistBasedTypeModelConfiguration(whitelist, customSerializerRegistry)
         val localTypeModel = ConfigurableLocalTypeModel(typeModelConfiguration)
 
-        val fingerPrinter = overrideFingerPrinter ?: TypeModellingFingerPrinter(customSerializerRegistry)
+        val fingerPrinter = overrideFingerPrinter ?: TypeModellingFingerPrinter(customSerializerRegistry, sandboxGroup)
 
         val localSerializerFactory = DefaultLocalSerializerFactory(
             whitelist,

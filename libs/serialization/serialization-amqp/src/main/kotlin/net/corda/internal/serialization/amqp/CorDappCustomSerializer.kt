@@ -1,12 +1,11 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
-import java.lang.reflect.Type
 import java.lang.reflect.ParameterizedType
+import java.lang.reflect.Type
 
 /**
  * Index into the types list of the parent type of the serializer object, should be the

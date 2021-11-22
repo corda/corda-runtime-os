@@ -8,7 +8,6 @@ import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.PropertyName
 import net.corda.internal.serialization.model.RemotePropertyInformation
 import net.corda.internal.serialization.model.RemoteTypeInformation
-import net.corda.sandbox.SandboxGroup
 import java.io.NotSerializableException
 
 /**

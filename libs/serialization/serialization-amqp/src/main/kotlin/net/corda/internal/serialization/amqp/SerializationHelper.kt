@@ -137,5 +137,5 @@ fun hasCordaSerializable(type: Class<*>): Boolean {
             || (type.superclass != null && hasCordaSerializable(type.superclass))
 }
 
-fun SerializationContext.currentSandboxGroup(): SandboxGroup = this.sandboxGroup as? SandboxGroup
+fun SerializationContext.currentSandboxGroup(): SandboxGroup = sandboxGroup as? SandboxGroup
     ?: throw NotSerializableException("sandboxGroup is not set in serialization context")

@@ -16,7 +16,7 @@ class TypeModellingFingerPrinterTests {
 
     val descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry()
     val customRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
-    val fingerprinter = TypeModellingFingerPrinter(customRegistry, true)
+    val fingerprinter = TypeModellingFingerPrinter(customRegistry, testSerializationContext.currentSandboxGroup(),true)
 
     // See https://r3-cev.atlassian.net/browse/CORDA-2266
     @Test
@@ -24,10 +24,7 @@ class TypeModellingFingerPrinterTests {
         val objectType = LocalTypeInformation.Top
         val anyType = LocalTypeInformation.Unknown
 
-        val sandboxGroup = testSerializationContext.currentSandboxGroup()
-        assertNotEquals(fingerprinter.fingerprint(objectType, sandboxGroup), fingerprinter.fingerprint(anyType,
-            sandboxGroup
-        ))
+        assertNotEquals(fingerprinter.fingerprint(objectType), fingerprinter.fingerprint(anyType))
     }
 
     // Not serializable, because there is no readable property corresponding to the constructor parameter
@@ -46,6 +43,6 @@ class TypeModellingFingerPrinterTests {
         val propertyTypeInfo = typeInfo.propertiesOrEmptyMap["value"]?.type as LocalTypeInformation.Composable
         assertThat(propertyTypeInfo.typeParameters[0]).isInstanceOf(LocalTypeInformation.NonComposable::class.java)
 
-        fingerprinter.fingerprint(typeInfo, testSerializationContext.currentSandboxGroup())
+        fingerprinter.fingerprint(typeInfo)
     }
 }

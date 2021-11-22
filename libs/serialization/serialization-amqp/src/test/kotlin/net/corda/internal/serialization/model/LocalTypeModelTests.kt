@@ -9,7 +9,6 @@ import net.corda.internal.serialization.amqp.CustomSerializerRegistry
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.WhitelistBasedTypeModelConfiguration
-import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.base.annotations.SerializableCalculatedProperty
 import net.corda.v5.serialization.SerializationCustomSerializer

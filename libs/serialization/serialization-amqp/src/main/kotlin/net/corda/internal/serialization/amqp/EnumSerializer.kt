@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.codec.Data
 import java.lang.reflect.Type

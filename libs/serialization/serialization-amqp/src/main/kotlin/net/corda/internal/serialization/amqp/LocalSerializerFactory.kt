@@ -132,7 +132,7 @@ class DefaultLocalSerializerFactory(
     private val typesByName = DefaultCacheProvider.createCache<String, Optional<LocalTypeInformation>>()
 
     override fun createDescriptor(typeInformation: LocalTypeInformation): Symbol =
-            Symbol.valueOf("$DESCRIPTOR_DOMAIN:${fingerPrinter.fingerprint(typeInformation, sandboxGroup)}")
+            Symbol.valueOf("$DESCRIPTOR_DOMAIN:${fingerPrinter.fingerprint(typeInformation)}")
 
     override fun getTypeInformation(type: Type): LocalTypeInformation = typeModel.inspect(type)
 
@@ -189,7 +189,7 @@ class DefaultLocalSerializerFactory(
             val declaredGenericType = if (declaredType !is ParameterizedType
                     && localTypeInformation.typeIdentifier is Parameterised
                     && declaredClass != Class::class.java) {
-                localTypeInformation.typeIdentifier.getLocalType(this.sandboxGroup)
+                localTypeInformation.typeIdentifier.getLocalType(sandboxGroup)
             } else {
                 declaredType
             }
@@ -229,16 +229,16 @@ class DefaultLocalSerializerFactory(
     private fun makeDeclaredCollection(
         localTypeInformation: LocalTypeInformation.ACollection
     ): AMQPSerializer<Any> {
-        val resolved = CollectionSerializer.resolveDeclared(localTypeInformation, this.sandboxGroup)
+        val resolved = CollectionSerializer.resolveDeclared(localTypeInformation, sandboxGroup)
         return makeAndCache(resolved) {
-            CollectionSerializer(resolved.typeIdentifier.getLocalType(this.sandboxGroup) as ParameterizedType, this)
+            CollectionSerializer(resolved.typeIdentifier.getLocalType(sandboxGroup) as ParameterizedType, this)
         }
     }
 
     private fun makeDeclaredMap(localTypeInformation: LocalTypeInformation.AMap): AMQPSerializer<Any> {
-        val resolved = MapSerializer.resolveDeclared(localTypeInformation, this.sandboxGroup)
+        val resolved = MapSerializer.resolveDeclared(localTypeInformation, sandboxGroup)
         return makeAndCache(resolved) {
-            MapSerializer(resolved.typeIdentifier.getLocalType(this.sandboxGroup) as ParameterizedType, this)
+            MapSerializer(resolved.typeIdentifier.getLocalType(sandboxGroup) as ParameterizedType, this)
         }
     }
 
@@ -250,7 +250,7 @@ class DefaultLocalSerializerFactory(
             customSerializerRegistry.findCustomSerializer(actualClass, declaredType)?.apply { return@get this }
 
             val declaredClass = declaredType.asClass()
-            val actualType: Type = inferTypeVariables(actualClass, declaredClass, declaredType, this.sandboxGroup) ?: declaredType
+            val actualType: Type = inferTypeVariables(actualClass, declaredClass, declaredType, sandboxGroup) ?: declaredType
             val declaredTypeInformation = typeModel.inspect(declaredType)
             val actualTypeInformation = typeModel.inspect(actualType)
 
@@ -277,9 +277,9 @@ class DefaultLocalSerializerFactory(
         typeInformation: LocalTypeInformation.AMap
     ): AMQPSerializer<Any> {
         declaredType.asClass().checkSupportedMapType()
-        val resolved = MapSerializer.resolveActual(actualClass, typeInformation, this.sandboxGroup)
+        val resolved = MapSerializer.resolveActual(actualClass, typeInformation, sandboxGroup)
         return makeAndCache(resolved) {
-            MapSerializer(resolved.typeIdentifier.getLocalType(this.sandboxGroup) as ParameterizedType, this)
+            MapSerializer(resolved.typeIdentifier.getLocalType(sandboxGroup) as ParameterizedType, this)
         }
     }
 
@@ -287,10 +287,10 @@ class DefaultLocalSerializerFactory(
         actualClass: Class<*>,
         typeInformation: LocalTypeInformation.ACollection
     ): AMQPSerializer<Any> {
-        val resolved = CollectionSerializer.resolveActual(actualClass, typeInformation, this.sandboxGroup)
+        val resolved = CollectionSerializer.resolveActual(actualClass, typeInformation, sandboxGroup)
 
         return makeAndCache(resolved) {
-            CollectionSerializer(resolved.typeIdentifier.getLocalType(this.sandboxGroup) as ParameterizedType, this)
+            CollectionSerializer(resolved.typeIdentifier.getLocalType(sandboxGroup) as ParameterizedType, this)
         }
     }
 

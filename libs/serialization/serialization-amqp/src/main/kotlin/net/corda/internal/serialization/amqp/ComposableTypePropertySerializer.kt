@@ -4,7 +4,6 @@ import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers.isPrimitive
 import net.corda.internal.serialization.model.LocalPropertyInformation
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.TypeIdentifier
-import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Binary
 import org.apache.qpid.proton.codec.Data
