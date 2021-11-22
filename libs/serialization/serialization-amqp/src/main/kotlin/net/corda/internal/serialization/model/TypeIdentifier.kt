@@ -132,7 +132,7 @@ sealed class TypeIdentifier {
         override fun toString() = "TopType"
     }
 
-    private object UnboundedWildcardType : WildcardType {
+    internal object UnboundedWildcardType : WildcardType {
         override fun getLowerBounds(): Array<Type> = emptyArray()
         override fun getUpperBounds(): Array<Type> = arrayOf(Any::class.java)
         override fun toString() = "?"

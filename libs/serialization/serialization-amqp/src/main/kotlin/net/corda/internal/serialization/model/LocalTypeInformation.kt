@@ -132,7 +132,7 @@ sealed class LocalTypeInformation {
      * The [LocalTypeInformation] corresponding to an unbounded wildcard ([TypeIdentifier.UnknownType])
      */
     object Unknown : LocalTypeInformation() {
-        override val observedType get() = TypeIdentifier.UnknownType.getLocalType(sandboxGroup)
+        override val observedType: Type get() = TypeIdentifier.UnboundedWildcardType
         override val typeIdentifier get() = TypeIdentifier.UnknownType
     }
 
@@ -140,7 +140,7 @@ sealed class LocalTypeInformation {
      * The [LocalTypeInformation] corresponding to [java.lang.Object] / [Any] ([TypeIdentifier.TopType])
      */
     object Top : LocalTypeInformation() {
-        override val observedType get() = TypeIdentifier.TopType.getLocalType(sandboxGroup)
+        override val observedType get() = Any::class.java
         override val typeIdentifier get() = TypeIdentifier.TopType
     }
 
