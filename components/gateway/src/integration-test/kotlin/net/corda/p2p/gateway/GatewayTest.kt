@@ -507,70 +507,70 @@ class GatewayTest : TestBase() {
         authTag = ByteBuffer.wrap(ByteArray(0))
     }.build()
 
-//    @Nested
-//    inner class BadConfigurationTests {
-//        @Test
-//        @Timeout(120)
-//        fun `Gateway can recover from bad configuration`() {
-//            val configPublisher = ConfigPublisher()
-//            val host = "www.alice.net"
-//            Gateway(
-//                configPublisher.readerService,
-//                alice.subscriptionFactory,
-//                alice.publisherFactory,
-//                lifecycleCoordinatorFactory,
-//                nodeConfig,
-//                instanceId.incrementAndGet(),
-//            ).use { gateway ->
-//                configPublisher.publishConfig(
-//                    GatewayConfiguration(
-//                        host,
-//                        10005,
-//                        aliceSslConfig
-//                    )
-//                )
-//                gateway.startAndWaitForStarted()
-//                assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.Started)
-//
-//                // -20 is invalid port, serer should fail
-//                configPublisher.publishConfig(
-//                    GatewayConfiguration(
-//                        host,
-//                        -20,
-//                        aliceSslConfig
-//                    )
-//                )
-//                eventually(duration = 20.seconds) {
-//                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToError)
-//                }
-//                assertThrows<ConnectException> {
-//                    Socket(host, 10005).close()
-//                }
-//
-//                configPublisher.publishConfig(
-//                    GatewayConfiguration(
-//                        host,
-//                        10006,
-//                        aliceSslConfig
-//                    )
-//                )
-//                eventually(duration = 20.seconds) {
-//                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.Started)
-//                }
-//                assertDoesNotThrow {
-//                    Socket(host, 10006).close()
-//                }
-//
-//                configPublisher.publishBadConfig()
-//                eventually(duration = 20.seconds) {
-//                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToError)
-//                }
-//                assertThrows<ConnectException> {
-//                    Socket(host, 10006).close()
-//                }
-//            }
-//        }
-//    }
+    @Nested
+    inner class BadConfigurationTests {
+        @Test
+        @Timeout(120)
+        fun `Gateway can recover from bad configuration`() {
+            val configPublisher = ConfigPublisher()
+            val host = "www.alice.net"
+            Gateway(
+                configPublisher.readerService,
+                alice.subscriptionFactory,
+                alice.publisherFactory,
+                lifecycleCoordinatorFactory,
+                nodeConfig,
+                instanceId.incrementAndGet(),
+            ).use { gateway ->
+                configPublisher.publishConfig(
+                    GatewayConfiguration(
+                        host,
+                        10005,
+                        aliceSslConfig
+                    )
+                )
+                gateway.startAndWaitForStarted()
+                assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.Started)
+
+                // -20 is invalid port, serer should fail
+                configPublisher.publishConfig(
+                    GatewayConfiguration(
+                        host,
+                        -20,
+                        aliceSslConfig
+                    )
+                )
+                eventually(duration = 20.seconds) {
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+                }
+                assertThrows<ConnectException> {
+                    Socket(host, 10005).close()
+                }
+
+                configPublisher.publishConfig(
+                    GatewayConfiguration(
+                        host,
+                        10006,
+                        aliceSslConfig
+                    )
+                )
+                eventually(duration = 20.seconds) {
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.Started)
+                }
+                assertDoesNotThrow {
+                    Socket(host, 10006).close()
+                }
+
+                configPublisher.publishBadConfig()
+                eventually(duration = 20.seconds) {
+                    assertThat(gateway.dominoTile.state).isEqualTo(DominoTile.State.StoppedDueToError)
+                }
+                assertThrows<ConnectException> {
+                    Socket(host, 10006).close()
+                }
+            }
+        }
+    }
 
 
 }
