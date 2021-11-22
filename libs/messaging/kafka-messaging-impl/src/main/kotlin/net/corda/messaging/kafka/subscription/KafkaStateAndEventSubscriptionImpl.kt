@@ -37,8 +37,8 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val builder: StateAndEventBuilder<K, S, E>,
     private val processor: StateAndEventProcessor<K, S, E>,
     private val avroSchemaRegistry: AvroSchemaRegistry,
-    private val stateAndEventListener: StateAndEventListener<K, S>? = null,
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val stateAndEventListener: StateAndEventListener<K, S>? = null,
     private val clock: Clock = Clock.systemUTC()
 ) : StateAndEventSubscription<K, S, E> {
 

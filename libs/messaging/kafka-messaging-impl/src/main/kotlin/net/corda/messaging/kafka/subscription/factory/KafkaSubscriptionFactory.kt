@@ -192,8 +192,8 @@ class KafkaSubscriptionFactory @Activate constructor(
             stateAndEventBuilder,
             processor,
             avroSchemaRegistry,
-            stateAndEventListener,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            stateAndEventListener
         )
     }
 

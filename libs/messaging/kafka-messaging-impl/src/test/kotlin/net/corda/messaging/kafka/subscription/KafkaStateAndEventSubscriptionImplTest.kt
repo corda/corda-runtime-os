@@ -122,7 +122,6 @@ class KafkaStateAndEventSubscriptionImplTest {
             builder,
             mock(),
             avroSchemaRegistry,
-            null,
             lifecycleCoordinatorFactory
         )
 
@@ -156,7 +155,6 @@ class KafkaStateAndEventSubscriptionImplTest {
             builder,
             mock(),
             avroSchemaRegistry,
-            null,
             lifecycleCoordinatorFactory
         )
 
@@ -210,7 +208,6 @@ class KafkaStateAndEventSubscriptionImplTest {
             builder,
             mock(),
             avroSchemaRegistry,
-            null,
             lifecycleCoordinatorFactory
         )
 
@@ -262,7 +259,6 @@ class KafkaStateAndEventSubscriptionImplTest {
             builder,
             mock(),
             avroSchemaRegistry,
-            null,
             lifecycleCoordinatorFactory
         )
 
@@ -325,7 +321,6 @@ class KafkaStateAndEventSubscriptionImplTest {
             builder,
             mock(),
             avroSchemaRegistry,
-            null,
             lifecycleCoordinatorFactory
         )
 
