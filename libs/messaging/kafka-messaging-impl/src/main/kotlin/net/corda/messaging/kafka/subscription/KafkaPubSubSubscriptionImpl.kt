@@ -8,6 +8,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
@@ -64,7 +65,8 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
-            "$groupName-KafkaPubSubSubscription-$topic"
+            "$groupName-KafkaPubSubSubscription-$topic",
+            config.getString(ConfigProperties.INSTANCE_ID)
         )
     ) { _, _ -> }
 

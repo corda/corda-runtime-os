@@ -14,6 +14,7 @@ import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
@@ -52,7 +53,8 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val topic = config.getString(TOPIC_NAME)
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
-            "$groupName-KafkaRPCSubscription-$topic"
+            "$groupName-KafkaRPCSubscription-$topic",
+            config.getString(ConfigProperties.INSTANCE_ID)
         )
     ) { _, _ -> }
 

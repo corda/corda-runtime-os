@@ -8,6 +8,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RandomAccessSubscription
+import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
@@ -45,7 +46,8 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
 
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
-            "$groupName-KafkaRandomAccessSubscription-$topic"
+            "$groupName-KafkaRandomAccessSubscription-$topic",
+            config.getString(ConfigProperties.INSTANCE_ID)
         )
     ) { _, _ -> }
 
