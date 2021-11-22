@@ -1,0 +1,23 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Permission Manager Implementation'
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-base"
+
+    implementation project(":libs:permissions:permission-manager")
+    implementation project(":libs:permissions:permission-cache")
+    implementation project(":libs:permissions:permission-password")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:messaging:messaging")
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

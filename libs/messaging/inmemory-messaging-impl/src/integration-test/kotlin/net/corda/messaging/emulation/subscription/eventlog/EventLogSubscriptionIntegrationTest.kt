@@ -10,9 +10,11 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -158,5 +160,50 @@ class EventLogSubscriptionIntegrationTest {
         // Stop the subscriber
         subscription.stop()
         assertThat(subscription.isRunning).isFalse
+    }
+
+    @Test
+    @Timeout(10)
+    fun `test that events log publish reply`() {
+        val configurations = (1..2).map {
+            SubscriptionConfig(groupName = "events.group.$it", eventTopic = "events.topic.$it")
+        }
+        val proccessed = CompletableFuture<Record<String, String>>()
+        val subscriptions = listOf<(List<EventLogRecord<String, String>>) -> List<Record<*, *>>>(
+            { events ->
+                events.map {
+                    Record(configurations[1].eventTopic, it.key, it.value)
+                }
+            }, { events ->
+            proccessed.complete(events.map { Record(it.topic, it.key, it.value) }.firstOrNull())
+            emptyList()
+        }
+        ).map { onNext ->
+            object : EventLogProcessor<String, String> {
+                override fun onNext(events: List<EventLogRecord<String, String>>): List<Record<*, *>> {
+                    return onNext.invoke(events)
+                }
+
+                override val keyClass = String::class.java
+                override val valueClass = String::class.java
+            }
+        }.zip(configurations).map { (processor, config) ->
+            subscriptionFactory.createEventLogSubscription(
+                subscriptionConfig = config,
+                processor = processor,
+                partitionAssignmentListener = null
+            )
+        }.onEach {
+            it.start()
+        }
+
+        publish(Record(configurations[0].eventTopic, "keyOne", "valueOne"))
+
+        proccessed.join()
+        assertThat(proccessed).isCompletedWithValue(Record(configurations[1].eventTopic, "keyOne", "valueOne"))
+
+        subscriptions.forEach {
+            it.close()
+        }
     }
 }

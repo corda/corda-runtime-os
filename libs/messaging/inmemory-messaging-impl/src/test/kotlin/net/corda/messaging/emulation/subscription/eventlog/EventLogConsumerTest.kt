@@ -8,21 +8,26 @@ import net.corda.messaging.emulation.topic.model.CommitStrategy
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
 import net.corda.messaging.emulation.topic.model.PartitionStrategy
 import net.corda.messaging.emulation.topic.model.RecordMetadata
+import net.corda.messaging.emulation.topic.service.TopicService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class EventLogConsumerTest {
     private val processor = mock< EventLogProcessor<String, SubscriptionConfig>> {
         on { keyClass } doReturn String::class.java
         on { valueClass } doReturn SubscriptionConfig::class.java
     }
+    private val topicService = mock<TopicService>()
     private val subscription = mock<EventLogSubscription<String, SubscriptionConfig>> {
         on { processor } doReturn processor
         on { subscriptionConfig } doReturn SubscriptionConfig("group", "topic")
         on { partitionAssignmentListener } doReturn mock()
+        on { topicService } doReturn topicService
     }
     private val consumer = EventLogConsumer(subscription)
 
@@ -59,6 +64,26 @@ class EventLogConsumerTest {
                 EventLogRecord(topic = "topic", key = "key6", value = SubscriptionConfig("c", "d"), partition = 3, offset = 100),
             )
         )
+    }
+
+    @Test
+    fun `handleRecords push the reply`() {
+        val toSend = listOf(Record("topic.1", "key", "valu2"))
+        whenever(processor.onNext(any())).doReturn(toSend)
+        val records = listOf(
+            RecordMetadata(
+                offset = 1L,
+                partition = 10,
+                record = Record(
+                    "topic", "key",
+                    SubscriptionConfig("a", "b")
+                )
+            ),
+        )
+
+        consumer.handleRecords(records)
+
+        verify(topicService).addRecords(toSend)
     }
 
     @Test

@@ -123,6 +123,8 @@ include 'components:kafka-topic-admin'
 include 'components:link-manager'
 include 'components:membership:membership-impl'
 include 'components:permissions:permission-cache-service'
+include 'components:permissions:permission-management-service'
+include 'components:permissions:permission-storage-reader-service'
 include 'components:permissions:permission-storage-writer-service'
 include 'components:permissions:permission-validation-service'
 include 'components:sandbox:sandbox-service'
@@ -178,12 +180,17 @@ include 'libs:messaging:kafka-messaging-impl'
 include 'libs:messaging:inmemory-messaging-impl'
 include 'libs:permissions:permission-cache'
 include 'libs:permissions:permission-cache-impl'
+include 'libs:permissions:permission-manager'
+include 'libs:permissions:permission-manager-impl'
+include 'libs:permissions:permission-storage-reader'
+include 'libs:permissions:permission-storage-reader-impl'
 include 'libs:permissions:permission-storage-writer'
 include 'libs:permissions:permission-storage-writer-impl'
 include 'libs:p2p-crypto'
 include 'libs:permissions:permission-datamodel'
 include 'libs:permissions:permission-validation'
 include 'libs:permissions:permission-validation-impl'
+include 'libs:permissions:permission-password'
 include 'libs:sandbox'
 include 'libs:sandbox:sandbox-cpk-library'
 include 'libs:sandbox:sandbox-cpk-one'
@@ -248,6 +255,7 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
             substitute module('net.corda:corda-ledger') using project(':ledger')
             substitute module('net.corda:corda-membership') using project(':membership')
+            substitute module('net.corda:corda-membership-conversion') using project(':membership-conversion')
             substitute module('net.corda:corda-membership-identity') using project(':membership-identity')
             substitute module('net.corda:corda-packaging') using project(':packaging')
             substitute module('net.corda:corda-persistence') using project(':persistence')
