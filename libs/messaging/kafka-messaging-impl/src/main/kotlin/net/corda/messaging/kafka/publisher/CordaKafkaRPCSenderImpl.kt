@@ -16,6 +16,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
@@ -74,7 +75,8 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val futureTracker = FutureTracker<RESPONSE>()
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
-            "$groupName-KafkaRPCSender-$topic"
+            "$groupName-KafkaRPCSender-$topic",
+            config.getString(ConfigProperties.INSTANCE_ID)
         )
     ) { _, _ -> }
     private val partitionListener = RPCConsumerRebalanceListener(
