@@ -103,9 +103,9 @@ internal fun Class<*>.asParameterizedType(sandboxGroup: SandboxGroup): Parameter
             .toParameterized(this.typeParameters.map { TypeIdentifier.forGenericType(it) })
             .getLocalType(sandboxGroup) as ParameterizedType
 
-internal fun Type.asParameterizedType(): ParameterizedType {
+internal fun Type.asParameterizedType(sandboxGroup: SandboxGroup): ParameterizedType {
     return when (this) {
-        is Class<*> -> this.asParameterizedType()
+        is Class<*> -> this.asParameterizedType(sandboxGroup)
         is ParameterizedType -> this
         else -> throw AMQPNotSerializableException(this, "Don't know how to convert to ParameterizedType")
     }
