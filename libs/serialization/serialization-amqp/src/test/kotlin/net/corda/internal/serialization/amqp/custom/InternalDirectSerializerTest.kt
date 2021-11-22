@@ -57,7 +57,7 @@ class InternalDirectSerializerTest {
     private lateinit var factory: SerializerFactory
 
     private fun register(serializer: InternalDirectSerializer<out Any>) {
-        factory.register(serializer, factory)
+        factory.register(serializer, factory,)
     }
 
     private fun <T: Any> serializeAndReturnSchema(obj: T): BytesAndSchemas<T> {

@@ -1,5 +1,6 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.codec.Data
 import java.lang.reflect.Type
@@ -8,10 +9,15 @@ import java.lang.reflect.Type
  * Our definition of an enum with the AMQP spec is a list (of two items, a string and an int) that is
  * a restricted type with a number of choices associated with it
  */
-class EnumSerializer(declaredType: Type, declaredClass: Class<*>, factory: LocalSerializerFactory) : AMQPSerializer<Any> {
+class EnumSerializer(
+    declaredType: Type,
+    declaredClass: Class<*>,
+    factory: LocalSerializerFactory,
+    sandboxGroup: SandboxGroup
+) : AMQPSerializer<Any> {
     override val type: Type = declaredType
     private val typeNotation: TypeNotation
-    override val typeDescriptor = factory.createDescriptor(type)
+    override val typeDescriptor = factory.createDescriptor(type, sandboxGroup)
 
     init {
         @Suppress("unchecked_cast")

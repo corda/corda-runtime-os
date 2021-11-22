@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp
 
 import com.google.common.reflect.TypeResolver
+import net.corda.sandbox.SandboxGroup
 import java.lang.reflect.GenericArrayType
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
@@ -9,13 +10,16 @@ import java.lang.reflect.Type
  * Try and infer concrete types for any generics type variables for the actual class encountered,
  * based on the declared type.
  */
-fun inferTypeVariables(actualClass: Class<*>,
-                       declaredClass: Class<*>,
-                       declaredType: Type): Type? = when (declaredType) {
+fun inferTypeVariables(
+    actualClass: Class<*>,
+    declaredClass: Class<*>,
+    declaredType: Type,
+    sandboxGroup: SandboxGroup
+): Type? = when (declaredType) {
     is ParameterizedType -> inferTypeVariables(actualClass, declaredClass, declaredType)
     is GenericArrayType -> {
         val declaredComponent = declaredType.genericComponentType
-        inferTypeVariables(actualClass.componentType, declaredComponent.asClass(), declaredComponent)?.asArray()
+        inferTypeVariables(actualClass.componentType, declaredComponent.asClass(), declaredComponent, sandboxGroup)?.asArray(sandboxGroup)
     }
     // Nothing to infer, otherwise we'd have ParameterizedType
     else -> actualClass

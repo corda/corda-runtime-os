@@ -51,15 +51,15 @@ fun Data.writeReferencedObject(refObject: ReferencedObject) {
     exit() // exit described
 }
 
-fun resolveTypeVariables(actualType: Type, contextType: Type?): Type {
+fun resolveTypeVariables(actualType: Type, contextType: Type?, sandboxGroup: SandboxGroup): Type {
     val resolvedType = if (contextType != null) TypeToken.of(contextType).resolveType(actualType).type else actualType
     // TODO: surely we check it is concrete at this point with no TypeVariables
     return if (resolvedType is TypeVariable<*>) {
         val bounds = resolvedType.bounds
         return if (bounds.isEmpty()) {
-            TypeIdentifier.UnknownType.getLocalType()
+            TypeIdentifier.UnknownType.getLocalType(sandboxGroup)
         } else if (bounds.size == 1) {
-            resolveTypeVariables(bounds[0], contextType)
+            resolveTypeVariables(bounds[0], contextType, sandboxGroup)
         } else throw AMQPNotSerializableException(
                 actualType,
                 "Got bounded type $actualType but only support single bound.")
@@ -81,10 +81,10 @@ internal fun Type.asClass(): Class<*> {
     }
 }
 
-internal fun Type.asArray(): Type? {
+internal fun Type.asArray(sandboxGroup: SandboxGroup): Type? {
     return when(this) {
         is Class<*>,
-        is ParameterizedType -> TypeIdentifier.ArrayOf(TypeIdentifier.forGenericType(this)).getLocalType()
+        is ParameterizedType -> TypeIdentifier.ArrayOf(TypeIdentifier.forGenericType(this)).getLocalType(sandboxGroup)
         else -> null
     }
 }
@@ -98,10 +98,10 @@ internal fun Type.componentType(): Type {
     return (this as? Class<*>)?.componentType ?: (this as GenericArrayType).genericComponentType
 }
 
-internal fun Class<*>.asParameterizedType(): ParameterizedType =
+internal fun Class<*>.asParameterizedType(sandboxGroup: SandboxGroup): ParameterizedType =
     TypeIdentifier.Erased(this.name, this.typeParameters.size)
             .toParameterized(this.typeParameters.map { TypeIdentifier.forGenericType(it) })
-            .getLocalType() as ParameterizedType
+            .getLocalType(sandboxGroup) as ParameterizedType
 
 internal fun Type.asParameterizedType(): ParameterizedType {
     return when (this) {

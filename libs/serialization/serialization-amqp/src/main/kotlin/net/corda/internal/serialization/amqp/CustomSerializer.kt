@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.FingerprintWriter
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.InternalDirectSerializer
 import net.corda.serialization.InternalProxySerializer
@@ -175,11 +176,11 @@ abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
     @Suppress("unchecked_cast")
     class Proxy<T : Any, P : Any>(
         serializer: InternalProxySerializer<T, P>,
-        factory: SerializerFactory
+        private val factory: SerializerFactory,
+        sandboxGroup: SandboxGroup
     ) : CustomSerializerImpl<T>(serializer) {
-        private val proxySerializer: ObjectSerializer by lazy {
-            ObjectSerializer.make(factory.getTypeInformation(serializer.proxyType), factory)
-        }
+        private val proxySerializer: ObjectSerializer =
+            ObjectSerializer.make(factory.getTypeInformation(serializer.proxyType), factory, sandboxGroup)
 
         override fun writeDescribedObject(
             obj: T,

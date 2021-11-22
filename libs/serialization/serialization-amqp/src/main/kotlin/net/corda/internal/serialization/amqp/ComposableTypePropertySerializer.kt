@@ -4,6 +4,7 @@ import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers.isPrimitive
 import net.corda.internal.serialization.model.LocalPropertyInformation
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Binary
 import org.apache.qpid.proton.codec.Data
@@ -48,7 +49,12 @@ interface PropertyWriteStrategy {
         /**
          * Select the correct strategy for writing properties, based on the property information.
          */
-        fun make(name: String, propertyInformation: LocalPropertyInformation, factory: LocalSerializerFactory): PropertyWriteStrategy {
+        fun make(
+            name: String,
+            propertyInformation: LocalPropertyInformation,
+            factory: LocalSerializerFactory,
+            sandboxGroup: SandboxGroup
+        ): PropertyWriteStrategy {
             val reader = PropertyReader.make(propertyInformation)
             val type = propertyInformation.type
             return if (isPrimitive(type.typeIdentifier)) {
@@ -57,7 +63,7 @@ interface PropertyWriteStrategy {
                     else -> AMQPPropertyWriteStrategy(reader)
                 }
             } else {
-                DescribedTypeWriteStrategy(name, propertyInformation, reader) { factory.get(propertyInformation.type) }
+                DescribedTypeWriteStrategy(name, propertyInformation, reader) { factory.get(propertyInformation.type, sandboxGroup) }
             }
         }
     }
@@ -107,12 +113,17 @@ class ComposableTypePropertySerializer(
          * @param propertyInformation [LocalPropertyInformation] for the property.
          * @param factory The [LocalSerializerFactory] to use when writing values for this property.
          */
-        fun make(name: String, propertyInformation: LocalPropertyInformation, factory: LocalSerializerFactory): PropertySerializer =
+        fun make(
+            name: String,
+            propertyInformation: LocalPropertyInformation,
+            factory: LocalSerializerFactory,
+            sandboxGroup: SandboxGroup
+        ): PropertySerializer =
                 ComposableTypePropertySerializer(
                         name,
                         propertyInformation.isCalculated,
                         PropertyReadStrategy.make(name, propertyInformation.type.typeIdentifier, propertyInformation.type.observedType),
-                        PropertyWriteStrategy.make(name, propertyInformation, factory))
+                        PropertyWriteStrategy.make(name, propertyInformation, factory, sandboxGroup))
 
         /**
          * Make a [PropertySerializer] for use in deserialization only, when deserializing a type that requires evolution.

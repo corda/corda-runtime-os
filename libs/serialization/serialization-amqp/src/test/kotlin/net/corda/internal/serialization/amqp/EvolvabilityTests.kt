@@ -273,7 +273,7 @@ class EvolvabilityTests {
         )
 
         val factory = testDefaultFactory().apply {
-            register(InstantSerializer(), this)
+            register(InstantSerializer(), this,)
         }
 
         // Uncomment to regenerate test case
@@ -478,7 +478,7 @@ class EvolvabilityTests {
         // Repeat, but receiving a message with the newer version of Inner
         val newVersion = SerializationOutput(sf).serializeAndReturnSchema(Outer(oa, Inner(ia, "new value")))
         val model = AMQPRemoteTypeModel()
-        val remoteTypeInfo = model.interpret(SerializationSchemas(newVersion.schema, newVersion.transformsSchema))
+        val remoteTypeInfo = model.interpret(SerializationSchemas(newVersion.schema, newVersion.transformsSchema),)
         println(remoteTypeInfo)
 
         val newOuter = DeserializationInput(sf).deserialize(SerializedBytes<Outer>(newVersion.obj.bytes))

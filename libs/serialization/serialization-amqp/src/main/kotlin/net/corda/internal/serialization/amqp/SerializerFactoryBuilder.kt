@@ -8,7 +8,9 @@ import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeLoader
 import net.corda.internal.serialization.model.TypeModellingFingerPrinter
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.ClassWhitelist
+import net.corda.serialization.SerializationContext
 import java.io.NotSerializableException
 import java.lang.reflect.Method
 import java.util.Collections.unmodifiableMap
@@ -166,7 +168,11 @@ object SerializerFactoryBuilder {
 }
 
 object NoEvolutionSerializerFactory : EvolutionSerializerFactory {
-    override fun getEvolutionSerializer(remote: RemoteTypeInformation, local: LocalTypeInformation): AMQPSerializer<Any> {
+    override fun getEvolutionSerializer(
+        remote: RemoteTypeInformation,
+        local: LocalTypeInformation,
+        sandboxGroup: SandboxGroup
+    ): AMQPSerializer<Any> {
         throw NotSerializableException("""
 Evolution not permitted.
 

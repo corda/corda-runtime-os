@@ -22,13 +22,13 @@ class StreamTests {
         val id: InputStream = WrapperStream(attachmentInputStream)
 
         val serializerFactory = testDefaultFactory().apply {
-            register(InputStreamSerializer(), this)
+            register(InputStreamSerializer(), this,)
         }
 
         val bytes = TestSerializationOutput(true, serializerFactory).serialize(id)
 
         val deserializerFactory = testDefaultFactory().apply {
-            register(InputStreamSerializer(), this)
+            register(InputStreamSerializer(), this,)
         }
 
         DeserializationInput(serializerFactory).deserialize(bytes)
@@ -41,13 +41,13 @@ class StreamTests {
         val id /* : List<InputStream> */ = listOf(WrapperStream(attachmentInputStream))
 
         val serializerFactory = testDefaultFactory().apply {
-            register(InputStreamSerializer(), this)
+            register(InputStreamSerializer(), this,)
         }
 
         val bytes = TestSerializationOutput(true, serializerFactory).serialize(id)
 
         val deserializerFactory = testDefaultFactory().apply {
-            register(InputStreamSerializer(), this)
+            register(InputStreamSerializer(), this,)
         }
 
         DeserializationInput(serializerFactory).deserialize(bytes)

@@ -68,7 +68,7 @@ class AMQPRemoteTypeModelTests {
     private fun getRemoteType(obj: Any): RemoteTypeInformation {
         val schema = SerializationOutput(factory).serializeAndReturnSchema(obj)
         schema.schema.types.forEach { println(it) }
-        val values = typeModel.interpret(SerializationSchemas(schema.schema, schema.transformsSchema)).values
+        val values = typeModel.interpret(SerializationSchemas(schema.schema, schema.transformsSchema),).values
         return values.find { it.typeIdentifier.getLocalType().accessAsClass().isAssignableFrom(obj::class.java) } ?:
         throw IllegalArgumentException(
             "Can't find ${obj::class.java.name} in ${values.map { it.typeIdentifier.name}}")

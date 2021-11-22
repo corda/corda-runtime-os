@@ -9,6 +9,7 @@ import net.corda.internal.serialization.amqp.CustomSerializerRegistry
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.WhitelistBasedTypeModelConfiguration
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.base.annotations.SerializableCalculatedProperty
 import net.corda.v5.serialization.SerializationCustomSerializer
@@ -30,7 +31,11 @@ class LocalTypeModelTests {
     private val emptyCustomSerializerRegistry = object : CustomSerializerRegistry {
         override val customSerializerNames: List<String> = emptyList()
         override fun register(customSerializer: CustomSerializer<out Any>) {}
-        override fun register(serializer: InternalCustomSerializer<out Any>, factory: SerializerFactory) {}
+        override fun register(
+            serializer: InternalCustomSerializer<out Any>,
+            factory: SerializerFactory,
+            sandboxGroup: SandboxGroup
+        ) {}
         override fun registerExternal(serializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {}
         override fun findCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? = null
     }

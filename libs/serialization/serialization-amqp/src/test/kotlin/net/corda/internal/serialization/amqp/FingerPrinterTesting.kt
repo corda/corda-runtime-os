@@ -6,6 +6,7 @@ import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.model.ConfigurableLocalTypeModel
 import net.corda.internal.serialization.model.FingerPrinter
 import net.corda.internal.serialization.model.LocalTypeInformation
+import net.corda.sandbox.SandboxGroup
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.util.concurrent.TimeUnit
@@ -15,7 +16,7 @@ class FingerPrinterTesting : FingerPrinter {
     private var index = 0
     private val cache = mutableMapOf<LocalTypeInformation, String>()
 
-    override fun fingerprint(typeInformation: LocalTypeInformation): String {
+    override fun fingerprint(typeInformation: LocalTypeInformation, sandboxGroup: SandboxGroup): String {
         return cache.computeIfAbsent(typeInformation) { index++.toString() }
     }
 
@@ -38,10 +39,10 @@ class FingerPrinterTestingTests {
         val customSerializerRegistry: CustomSerializerRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
         val typeModel = ConfigurableLocalTypeModel(WhitelistBasedTypeModelConfiguration(AllWhitelist, customSerializerRegistry))
 
-        assertEquals("0", fpt.fingerprint(typeModel.inspect(Integer::class.java)))
-        assertEquals("1", fpt.fingerprint(typeModel.inspect(String::class.java)))
-        assertEquals("0", fpt.fingerprint(typeModel.inspect(Integer::class.java)))
-        assertEquals("1", fpt.fingerprint(typeModel.inspect(String::class.java)))
+        assertEquals("0", fpt.fingerprint(typeModel.inspect(Integer::class.java),))
+        assertEquals("1", fpt.fingerprint(typeModel.inspect(String::class.java),))
+        assertEquals("0", fpt.fingerprint(typeModel.inspect(Integer::class.java),))
+        assertEquals("1", fpt.fingerprint(typeModel.inspect(String::class.java),))
     }
 
     @Test

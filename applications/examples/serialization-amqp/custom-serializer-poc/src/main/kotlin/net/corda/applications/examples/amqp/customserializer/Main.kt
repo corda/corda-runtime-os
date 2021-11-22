@@ -125,7 +125,7 @@ class Main @Activate constructor(
         // Register platform serializers
         for (customSerializer in internalCustomSerializers) {
             consoleLogger.info("Registering internal serializer {}", customSerializer.javaClass.name)
-            factory.register(customSerializer, factory)
+            factory.register(customSerializer, factory,)
         }
         // Build CorDapp serializers
         val cordappCustomSerializers = buildCorDappSerializers(

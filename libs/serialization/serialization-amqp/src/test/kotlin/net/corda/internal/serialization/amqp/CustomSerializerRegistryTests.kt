@@ -30,7 +30,7 @@ class CustomSerializerRegistryTests {
                 = throw UnsupportedOperationException()
         }
 
-        val serializerForEverything = CustomSerializer.Proxy(EverythingCustomSerializer(), mock())
+        val serializerForEverything = CustomSerializer.Proxy(EverythingCustomSerializer(), mock(),)
         unit.register(serializerForEverything)
 
         assertSame(serializerForEverything, unit.find(NotAnnotatedWithCordaSerializable::class.java))
@@ -55,7 +55,7 @@ class CustomSerializerRegistryTests {
                 = throw UnsupportedOperationException()
         }
 
-        val customExceptionSerializer = CustomSerializer.Proxy(ExceptionCustomSerializer(), mock())
+        val customExceptionSerializer = CustomSerializer.Proxy(ExceptionCustomSerializer(), mock(),)
 
         unit.register(customExceptionSerializer)
         assertSame(customExceptionSerializer, unit.find(MyCustomException::class.java))
@@ -84,7 +84,7 @@ class CustomSerializerRegistryTests {
                 = throw UnsupportedOperationException()
         }
 
-        val weSerializeCash = CustomSerializer.Proxy(CordaCashCustomSerializer(), mock())
+        val weSerializeCash = CustomSerializer.Proxy(CordaCashCustomSerializer(), mock(),)
         val weMaliciouslySerializeCash = EvilCorDappCashSerializer()
 
         unit.run {
@@ -109,7 +109,7 @@ class CustomSerializerRegistryTests {
             override fun fromProxy(proxy: String): Float
                 = throw UnsupportedOperationException()
         }
-        unit.register(TestCustomSerializer(), mock())
+        unit.register(TestCustomSerializer(), mock(),)
 
         assertFailsWith<IllegalCustomSerializerException> {
             unit.find(Float::class.java)

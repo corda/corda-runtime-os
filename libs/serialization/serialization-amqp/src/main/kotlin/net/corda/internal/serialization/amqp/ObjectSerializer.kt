@@ -7,6 +7,7 @@ import net.corda.internal.serialization.model.PropertyName
 import net.corda.internal.serialization.model.RemotePropertyInformation
 import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.serialization.MissingSerializerException
 import org.apache.qpid.proton.amqp.Symbol
@@ -20,7 +21,7 @@ interface ObjectSerializer : AMQPSerializer<Any> {
     val fields: List<Field>
 
     companion object {
-        fun make(typeInformation: LocalTypeInformation, factory: LocalSerializerFactory): ObjectSerializer {
+        fun make(typeInformation: LocalTypeInformation, factory: LocalSerializerFactory, sandboxGroup: SandboxGroup): ObjectSerializer {
             if (typeInformation is LocalTypeInformation.NonComposable) {
                 val typeNames = typeInformation.nonComposableTypes.map { it.observedType.typeName }
                 throw MissingSerializerException(
@@ -29,15 +30,15 @@ interface ObjectSerializer : AMQPSerializer<Any> {
                 )
             }
 
-            val typeDescriptor = factory.createDescriptor(typeInformation)
+            val typeDescriptor = factory.createDescriptor(typeInformation, sandboxGroup)
             val typeNotation = TypeNotationGenerator.getTypeNotation(typeInformation, typeDescriptor)
 
             return when (typeInformation) {
                 is LocalTypeInformation.Composable ->
-                    makeForComposable(typeInformation, typeNotation, typeDescriptor, factory)
+                    makeForComposable(typeInformation, typeNotation, typeDescriptor, factory, sandboxGroup)
                 is LocalTypeInformation.AnInterface,
                 is LocalTypeInformation.Abstract ->
-                    makeForAbstract(typeNotation, typeInformation, typeDescriptor, factory)
+                    makeForAbstract(typeNotation, typeInformation, typeDescriptor, factory, sandboxGroup)
                 else -> throw NotSerializableException("Cannot build object serializer for $typeInformation")
             }
         }
@@ -58,21 +59,27 @@ interface ObjectSerializer : AMQPSerializer<Any> {
                     "$serializerInformation\n"
         }
 
-        private fun makeForAbstract(typeNotation: CompositeType,
-                                    typeInformation: LocalTypeInformation,
-                                    typeDescriptor: Symbol,
-                                    factory: LocalSerializerFactory): AbstractObjectSerializer {
-            val propertySerializers = makePropertySerializers(typeInformation.propertiesOrEmptyMap, factory)
+        private fun makeForAbstract(
+            typeNotation: CompositeType,
+            typeInformation: LocalTypeInformation,
+            typeDescriptor: Symbol,
+            factory: LocalSerializerFactory,
+            sandboxGroup: SandboxGroup
+        ): AbstractObjectSerializer {
+            val propertySerializers = makePropertySerializers(typeInformation.propertiesOrEmptyMap, factory, sandboxGroup)
             val writer = ComposableObjectWriter(typeNotation, typeInformation.interfacesOrEmptyList, propertySerializers)
             return AbstractObjectSerializer(typeInformation.observedType, typeDescriptor, propertySerializers,
                     typeNotation.fields, writer)
         }
 
-        private fun makeForComposable(typeInformation: LocalTypeInformation.Composable,
-                                      typeNotation: CompositeType,
-                                      typeDescriptor: Symbol,
-                                      factory: LocalSerializerFactory): ComposableObjectSerializer {
-            val propertySerializers = makePropertySerializers(typeInformation.properties, factory)
+        private fun makeForComposable(
+            typeInformation: LocalTypeInformation.Composable,
+            typeNotation: CompositeType,
+            typeDescriptor: Symbol,
+            factory: LocalSerializerFactory,
+            sandboxGroup: SandboxGroup
+        ): ComposableObjectSerializer {
+            val propertySerializers = makePropertySerializers(typeInformation.properties, factory, sandboxGroup)
             val reader = ComposableObjectReader(
                     typeInformation.typeIdentifier,
                     propertySerializers,
@@ -92,10 +99,13 @@ interface ObjectSerializer : AMQPSerializer<Any> {
                     writer)
         }
 
-        private fun makePropertySerializers(properties: Map<PropertyName, LocalPropertyInformation>,
-                                            factory: LocalSerializerFactory): Map<String, PropertySerializer> =
+        private fun makePropertySerializers(
+            properties: Map<PropertyName, LocalPropertyInformation>,
+            factory: LocalSerializerFactory,
+            sandboxGroup: SandboxGroup
+        ): Map<String, PropertySerializer> =
                 properties.mapValues { (name, property) ->
-                    ComposableTypePropertySerializer.make(name, property, factory)
+                    ComposableTypePropertySerializer.make(name, property, factory, sandboxGroup)
                 }
     }
 }
@@ -202,12 +212,15 @@ class EvolutionObjectSerializer(
         private val reader: ComposableObjectReader): ObjectSerializer {
 
     companion object {
-        fun make(localTypeInformation: LocalTypeInformation.Composable,
-                 remoteTypeInformation: RemoteTypeInformation.Composable,
-                 constructor: LocalConstructorInformation,
-                 properties: Map<String, LocalPropertyInformation>,
-                 mustPreserveData: Boolean): EvolutionObjectSerializer {
-            val propertySerializers = makePropertySerializers(properties, remoteTypeInformation.properties)
+        fun make(
+            localTypeInformation: LocalTypeInformation.Composable,
+            remoteTypeInformation: RemoteTypeInformation.Composable,
+            constructor: LocalConstructorInformation,
+            properties: Map<String, LocalPropertyInformation>,
+            mustPreserveData: Boolean,
+            sandboxGroup: SandboxGroup
+        ): EvolutionObjectSerializer {
+            val propertySerializers = makePropertySerializers(properties, remoteTypeInformation.properties, sandboxGroup)
             val reader = ComposableObjectReader(
                     localTypeInformation.typeIdentifier,
                     propertySerializers,
@@ -225,12 +238,15 @@ class EvolutionObjectSerializer(
                     reader)
         }
 
-        private fun makePropertySerializers(localProperties: Map<String, LocalPropertyInformation>,
-                                            remoteProperties: Map<String, RemotePropertyInformation>): Map<String, PropertySerializer> =
+        private fun makePropertySerializers(
+            localProperties: Map<String, LocalPropertyInformation>,
+            remoteProperties: Map<String, RemotePropertyInformation>,
+            sandboxGroup: SandboxGroup
+        ): Map<String, PropertySerializer> =
                 remoteProperties.mapValues { (name, property) ->
                     val localProperty = localProperties[name]
                     val isCalculated = localProperty?.isCalculated ?: false
-                    val type = localProperty?.type?.observedType ?: property.type.typeIdentifier.getLocalType()
+                    val type = localProperty?.type?.observedType ?: property.type.typeIdentifier.getLocalType(sandboxGroup)
                     ComposableTypePropertySerializer.makeForEvolution(name, isCalculated, property.type.typeIdentifier, type)
                 }
     }

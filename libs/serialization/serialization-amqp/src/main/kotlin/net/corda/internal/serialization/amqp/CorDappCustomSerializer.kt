@@ -1,5 +1,6 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.apache.qpid.proton.amqp.Symbol
@@ -41,7 +42,8 @@ private const val PROXY_TYPE = 1
  */
 class CorDappCustomSerializer(
     private val serializer: SerializationCustomSerializer<*, *>,
-    factory: SerializerFactory
+    factory: SerializerFactory,
+    sandboxGroup: SandboxGroup
 ) : AMQPSerializer<Any>, SerializerFor {
     override val revealSubclassesInSchema: Boolean
         get() = false
@@ -71,7 +73,7 @@ class CorDappCustomSerializer(
     }
 
     private val proxySerializer: ObjectSerializer by lazy {
-        ObjectSerializer.make(factory.getTypeInformation(proxyType), factory)
+        ObjectSerializer.make(factory.getTypeInformation(proxyType), factory, sandboxGroup)
     }
 
     override val typeDescriptor: Symbol = typeDescriptorFor(type)

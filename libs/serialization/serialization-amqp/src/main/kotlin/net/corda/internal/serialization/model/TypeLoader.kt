@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.model
 
 import net.corda.internal.serialization.amqp.Metadata
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.util.contextLogger
 import java.io.NotSerializableException
@@ -16,9 +17,9 @@ interface TypeLoader {
      * @param remoteTypeInformation The type information for the remote types.
      */
     fun load(
-            remoteTypeInformation: Collection<RemoteTypeInformation>,
-            context: SerializationContext,
-            metadata: Metadata
+        remoteTypeInformation: Collection<RemoteTypeInformation>,
+        sandboxGroup: SandboxGroup,
+        metadata: Metadata
     ): Map<TypeIdentifier, Type>
 }
 
@@ -35,16 +36,16 @@ class ClassTypeLoader: TypeLoader {
     val cache = DefaultCacheProvider.createCache<TypeIdentifier, Type>()
 
     override fun load(
-            remoteTypeInformation: Collection<RemoteTypeInformation>,
-            context: SerializationContext,
-            metadata: Metadata
+        remoteTypeInformation: Collection<RemoteTypeInformation>,
+        sandboxGroup: SandboxGroup,
+        metadata: Metadata
     ): Map<TypeIdentifier, Type> {
         val remoteInformationByIdentifier = remoteTypeInformation.associateBy { it.typeIdentifier }
 
         // Grab all the types we can from the cache, or the classloader.
         val resolvedTypes = remoteInformationByIdentifier.asSequence().mapNotNull { (identifier, _) ->
             try {
-                identifier to cache.computeIfAbsent(identifier) { identifier.getLocalType(context, metadata) }
+                identifier to cache.computeIfAbsent(identifier) { identifier.getLocalType(sandboxGroup, metadata) }
             } catch (ex: ClassNotFoundException) {
                 null
             }

@@ -4,7 +4,6 @@ import net.corda.internal.serialization.CordaSerializationEncoding
 import net.corda.internal.serialization.SectionId
 import net.corda.internal.serialization.byteArrayOutput
 import net.corda.internal.serialization.model.TypeIdentifier
-import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.serialization.SerializedBytes
@@ -121,7 +120,7 @@ open class SerializationOutput constructor(
         if (obj == null) {
             data.putNull()
         } else {
-            writeObject(obj, data, if (type == TypeIdentifier.UnknownType.getLocalType()) obj.javaClass else type, context, debugIndent)
+            writeObject(obj, data, if (type == TypeIdentifier.UnknownType.getLocalType(context.currentSandboxGroup())) obj.javaClass else type, context, debugIndent)
         }
     }
 
@@ -141,7 +140,7 @@ open class SerializationOutput constructor(
     }
 
     fun writeObject(obj: Any, data: Data, type: Type, context: SerializationContext, debugIndent: Int = 0) {
-        val serializer = serializerFactory.get(obj.javaClass, type)
+        val serializer = serializerFactory.get(obj.javaClass, type, context.currentSandboxGroup())
         if (serializer !in serializerHistory) {
             serializerHistory.add(serializer)
             serializer.writeClassInfo(this, context)
@@ -175,7 +174,7 @@ open class SerializationOutput constructor(
                 else -> type
             }
 
-            val serializer = serializerFactory.get(resolvedType)
+            val serializer = serializerFactory.get(resolvedType, context.currentSandboxGroup())
             if (serializer !in serializerHistory) {
                 serializerHistory.add(serializer)
                 serializer.writeClassInfo(this, context)

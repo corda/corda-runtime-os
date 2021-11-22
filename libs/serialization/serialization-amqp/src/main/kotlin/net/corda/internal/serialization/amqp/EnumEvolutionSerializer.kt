@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.BaseLocalTypes
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.codec.Data
 import java.lang.reflect.Type
@@ -32,12 +33,14 @@ import java.lang.reflect.Type
  * @property ordinals Convenience mapping of constant to ordinality
  */
 class EnumEvolutionSerializer(
-        override val type: Type,
-        factory: LocalSerializerFactory,
-        private val baseLocalTypes: BaseLocalTypes,
-        private val conversions: Map<String, String>,
-        private val ordinals: Map<String, Int>) : AMQPSerializer<Any> {
-    override val typeDescriptor = factory.createDescriptor(type)
+    override val type: Type,
+    factory: LocalSerializerFactory,
+    private val baseLocalTypes: BaseLocalTypes,
+    private val conversions: Map<String, String>,
+    private val ordinals: Map<String, Int>,
+    sandboxGroup: SandboxGroup
+) : AMQPSerializer<Any> {
+    override val typeDescriptor = factory.createDescriptor(type, sandboxGroup)
 
     override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,
                             input: DeserializationInput, context: SerializationContext

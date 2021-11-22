@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.LocalTypeInformation
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.codec.Data
 import java.lang.reflect.Type
@@ -10,8 +11,13 @@ import java.lang.reflect.Type
  * absolutely nothing, or null as a described type) when we have a singleton within the node that we just
  * want converting back to that singleton instance on the receiving JVM.
  */
-class SingletonSerializer(override val type: Class<*>, val singleton: Any, factory: LocalSerializerFactory) : AMQPSerializer<Any> {
-    override val typeDescriptor = factory.createDescriptor(type)
+class SingletonSerializer(
+    override val type: Class<*>,
+    val singleton: Any,
+    factory: LocalSerializerFactory,
+    sandboxGroup: SandboxGroup
+) : AMQPSerializer<Any> {
+    override val typeDescriptor = factory.createDescriptor(type, sandboxGroup)
 
     private val interfaces = (factory.getTypeInformation(type) as LocalTypeInformation.Singleton).interfaces
 
