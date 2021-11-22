@@ -137,7 +137,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             partitionAssignmentListener = inboundAssignmentListener,
             nodeConfig = configuration
         )
+        println("QQQ Starting subscription...")
         inboundMessageSubscription.start()
+        println("QQQ started!...")
         resources.keep(inboundMessageSubscription)
         //We complete the future inside inboundAssignmentListener.
         return future
