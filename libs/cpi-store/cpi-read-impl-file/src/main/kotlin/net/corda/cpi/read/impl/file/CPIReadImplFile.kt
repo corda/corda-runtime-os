@@ -6,7 +6,6 @@ import net.corda.cpi.read.CPIRead
 import net.corda.cpi.read.CPISegmentReader
 import net.corda.cpi.utils.CPX_FILE_FINDER_PATTERN
 import net.corda.cpi.utils.CPX_FILE_FINDER_ROOT_DIR_CONFIG_PATH
-import net.corda.libs.configuration.SmartConfig
 import net.corda.packaging.CPI
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
