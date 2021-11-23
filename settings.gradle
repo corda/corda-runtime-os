@@ -42,7 +42,7 @@ pluginManagement {
         id 'net.corda.plugins.cordapp-cpk' version gradlePluginsVersion
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
-        id 'org.jetbrains.kotlin.plugin.noarg' version kotlinVersion
+        id 'org.jetbrains.kotlin.plugin.jpa' version kotlinVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'org.ajoberstar.grgit' version grgitPluginVersion // used for GIT interaction (e.g. extract commit hash)
         id 'com.r3.internal.gradle.plugins.r3Publish' version internalPublishVersion

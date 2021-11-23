@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import static org.gradle.api.JavaVersion.*
+import static org.gradle.api.JavaVersion.VERSION_11
+import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
 
 buildscript {
     ext {
@@ -12,7 +13,7 @@ plugins {
     id 'net.corda.cordapp.cordapp-configuration'
     id 'org.jetbrains.kotlin.jvm' apply false
     id 'org.jetbrains.kotlin.plugin.allopen' apply false
-    id 'org.jetbrains.kotlin.plugin.noarg' apply false
+    id 'org.jetbrains.kotlin.plugin.jpa' apply false
     id 'io.gitlab.arturbosch.detekt' apply false
     id 'org.ajoberstar.grgit' // used for GIT interaction (e.g. extract commit hash)
     id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish'
@@ -86,6 +87,18 @@ subprojects {
     version rootProject.version
     group 'net.corda'
 
+    pluginManager.withPlugin('java') {
+        java {
+            toolchain {
+                languageVersion = of(javaVersion.majorVersion.toInteger())
+            }
+
+            if (releaseType != 'GA' || releaseType != 'RC') {
+                withSourcesJar()
+            }
+        }
+    }
+
     pluginManager.withPlugin('org.jetbrains.kotlin.jvm') {
         apply plugin: 'io.gitlab.arturbosch.detekt'
         apply plugin: 'jacoco'
@@ -111,14 +124,6 @@ subprojects {
             detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
         }
 
-        java {
-            if(releaseType != 'GA' || releaseType != 'RC') {
-                withSourcesJar()
-            }
-            sourceCompatibility = javaVersion
-            targetCompatibility = javaVersion
-        }
-
         // Making all persistence entity open and with an empty constructor to allow Hibernate to work.
         apply plugin: 'kotlin-allopen'
         allOpen {
@@ -128,14 +133,7 @@ subprojects {
                 "javax.persistence.MappedSuperclass"
             )
         }
-        apply plugin: 'kotlin-noarg'
-        noArg {
-            annotations(
-                "javax.persistence.Entity",
-                "javax.persistence.Embeddable",
-                "javax.persistence.MappedSuperclass"
-            )
-        }
+        apply plugin: 'kotlin-jpa'
 
         configurations {
             all {
@@ -173,15 +171,6 @@ subprojects {
             compilerArgs << '-parameters'
 
             options.encoding = 'UTF-8'
-        }
-
-        // TODO: does this really need to apply to all modules or can this be moved to the modules that need it only?
-        tasks.named('compileTestJava', JavaCompile) {
-            def compilerArgs = options.compilerArgs
-            compilerArgs << '--add-exports'
-            compilerArgs << 'java.base/sun.security.x509=ALL-UNNAMED'
-            compilerArgs << '--add-exports'
-            compilerArgs << 'java.base/sun.security.util=ALL-UNNAMED'
         }
 
         // TODO: as above, this may not apply to all modules, so maybe should be moved out
