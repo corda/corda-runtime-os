@@ -1,7 +1,7 @@
 package net.corda.permissions.rpcops.internal
 
 import net.corda.libs.permission.PermissionValidator
-import net.corda.libs.permissions.endpoints.v1.user.impl.UserEndpointImpl
+import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus
@@ -25,15 +25,20 @@ internal class PermissionRpcOpsServiceEventHandlerTest {
     private val permissionServiceComponent = mock<PermissionServiceComponent>()
     private val coordinator = mock<LifecycleCoordinator>()
     private val registration = mock<RegistrationHandle>()
+    private val userEndpoint = mock<UserEndpoint>()
+    private val permissionManager = mock<PermissionManager>()
+    private val permissionValidator = mock<PermissionValidator>()
 
-    private val handler = PermissionRpcOpsServiceEventHandler(permissionServiceComponent)
+    private val handler = PermissionRpcOpsServiceEventHandler(permissionServiceComponent, userEndpoint)
 
     @BeforeEach
     fun setUp() {
         whenever(coordinator.followStatusChangesByName(any())).thenReturn(registration)
+        whenever(permissionServiceComponent.permissionManager).thenReturn(permissionManager)
+        whenever(permissionServiceComponent.permissionValidator).thenReturn(permissionValidator)
     }
 
-    private fun startService() {
+    private fun startAndReceiveStatusUP() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
     }
@@ -49,114 +54,67 @@ internal class PermissionRpcOpsServiceEventHandlerTest {
 
     @Test
     fun `processing an UP event from permission service starts the user endpoint`() {
-        assertNull(handler.userEndpoint)
+        startAndReceiveStatusUP()
 
-        startService()
-
+        verify(userEndpoint).permissionManager = permissionManager
+        verify(userEndpoint).permissionValidator = permissionValidator
+        verify(userEndpoint).start()
         verify(coordinator).updateStatus(LifecycleStatus.UP)
-        assertNotNull(handler.userEndpoint)
     }
 
-    @Test
-    fun `processing a DOWN event from permission service sets the coordinator to DOWN but does not null out the endpoints`() {
-        assertNull(handler.userEndpoint)
 
-        startService()
+    @Test
+    fun `processing a DOWN event sets the coordinator to DOWN and nulls the endpoint permission manager and validator`() {
+        startAndReceiveStatusUP()
 
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), coordinator)
 
+        verify(userEndpoint).permissionValidator = null
+        verify(userEndpoint).permissionManager = null
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
-        assertNotNull(handler.userEndpoint)
     }
 
     @Test
-    fun `processing a ERROR event from permission service sets the coordinator to ERROR and nulls out the endpoint dependencies`() {
-        assertNull(handler.userEndpoint)
-
-        startService()
+    fun `processing a ERROR event from permission service sets the coordinator to ERROR and stops the user endpoint`() {
+        startAndReceiveStatusUP()
 
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.ERROR), coordinator)
 
+        verify(userEndpoint).stop()
         verify(coordinator).updateStatus(LifecycleStatus.ERROR)
-        assertNotNull(handler.userEndpoint)
     }
 
     @Test
     fun `processing a stop event stops the service's dependencies`() {
         assertNull(handler.registration)
 
-        startService()
+        startAndReceiveStatusUP()
 
         handler.processEvent(StopEvent(), coordinator)
 
+        assertNull(handler.registration)
+        verify(userEndpoint).stop()
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
-        assertNull(handler.registration)
-        assertNotNull(handler.userEndpoint)
     }
 
-    @Test
-    fun `processing UP event from permission service when user endpoint is not null will use setters to update validator and manager`() {
-        val permissionManager = mock<PermissionManager>()
-        val permissionValidator = mock<PermissionValidator>()
-        whenever(permissionServiceComponent.permissionManager).thenReturn(permissionManager)
-        whenever(permissionServiceComponent.permissionValidator).thenReturn(permissionValidator)
-
-        assertNull(handler.registration)
-
-        handler.processEvent(StartEvent(), coordinator)
-
-        val mockEndpoint = mock<UserEndpointImpl>()
-        handler.userEndpoint = mockEndpoint
-
-        handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-
-        verify(mockEndpoint).setPermissionManager(permissionManager)
-        verify(mockEndpoint).setPermissionValidator(permissionValidator)
-        assertNotNull(handler.userEndpoint)
-    }
 
     @Test
     fun `processing DOWN event from permission service will set validator and manager to null on endpoints`() {
-        val permissionManager = mock<PermissionManager>()
-        val permissionValidator = mock<PermissionValidator>()
-        whenever(permissionServiceComponent.permissionManager).thenReturn(permissionManager)
-        whenever(permissionServiceComponent.permissionValidator).thenReturn(permissionValidator)
-
-        assertNull(handler.registration)
-
         handler.processEvent(StartEvent(), coordinator)
-
-        val mockEndpoint = mock<UserEndpointImpl>()
-        handler.userEndpoint = mockEndpoint
-
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), coordinator)
 
-        verify(mockEndpoint).setPermissionManager(null)
-        verify(mockEndpoint).setPermissionValidator(null)
-        assertNotNull(handler.userEndpoint)
+        verify(userEndpoint).permissionManager = null
+        verify(userEndpoint).permissionValidator = null
+        verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
 
     @Test
     fun `processing ERROR event from permission service will set validator and manager to null on endpoints`() {
-        val permissionManager = mock<PermissionManager>()
-        val permissionValidator = mock<PermissionValidator>()
-        whenever(permissionServiceComponent.permissionManager).thenReturn(permissionManager)
-        whenever(permissionServiceComponent.permissionValidator).thenReturn(permissionValidator)
-
-        assertNull(handler.registration)
-
         handler.processEvent(StartEvent(), coordinator)
-
-        val mockEndpoint = mock<UserEndpointImpl>()
-        handler.userEndpoint = mockEndpoint
-
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.ERROR), coordinator)
 
-        verify(mockEndpoint).setPermissionManager(null)
-        verify(mockEndpoint).setPermissionValidator(null)
-        assertNotNull(handler.userEndpoint)
+        verify(userEndpoint).stop()
+        verify(coordinator).updateStatus(LifecycleStatus.ERROR)
     }
-
-
 
 }

@@ -7,6 +7,7 @@ description 'Endpoint API for management of the role-based access control (RBAC)
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-base"

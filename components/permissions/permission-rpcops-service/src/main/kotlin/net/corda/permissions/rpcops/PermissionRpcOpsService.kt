@@ -1,7 +1,6 @@
 package net.corda.permissions.rpcops
 
-import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.RpcOps
+import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
@@ -16,10 +15,12 @@ class PermissionRpcOpsService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PermissionServiceComponent::class)
-    private val permissionServiceComponent: PermissionServiceComponent
+    private val permissionServiceComponent: PermissionServiceComponent,
+    @Reference(service = UserEndpoint::class)
+    private val userEndpoint: UserEndpoint
 ) : Lifecycle {
 
-    private val handler = PermissionRpcOpsServiceEventHandler(permissionServiceComponent)
+    private val handler = PermissionRpcOpsServiceEventHandler(permissionServiceComponent, userEndpoint)
     private val coordinator = coordinatorFactory.createCoordinator<PermissionRpcOpsService>(handler)
 
     override val isRunning: Boolean
@@ -32,18 +33,4 @@ class PermissionRpcOpsService @Activate constructor(
     override fun stop() {
         coordinator.stop()
     }
-
-    /**
-     * Get a list of the Permission endpoints.
-     */
-    val rpcOps: List<PluggableRPCOps<out RpcOps>>
-        get() {
-            check(isRunning) {
-                "Can only get list of permission endpoints from PermissionRPCOpsService when it is running."
-            }
-            checkNotNull(handler.userEndpoint) {
-                "Can only get list of permission endpoints from PermissionRPCOpsService when the endpoints are running."
-            }
-            return listOf(handler.userEndpoint!!)
-        }
 }

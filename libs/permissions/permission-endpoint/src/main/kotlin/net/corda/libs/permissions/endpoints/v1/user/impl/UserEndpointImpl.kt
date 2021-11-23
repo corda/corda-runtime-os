@@ -1,5 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
+import net.corda.httprpc.PluggableRPCOps
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.endpoints.exception.PermissionEndpointException
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
@@ -10,19 +11,18 @@ import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.v5.base.annotations.VisibleForTesting
+import org.osgi.service.component.annotations.Component
 
 /**
  * An RPC Ops endpoint for User operations.
- *
- * @param permissionManager for performing permission management operations.
- * @param permissionValidator for performing additional permission validation for certain operations.
  */
-class UserEndpointImpl(
-    private var permissionManager: PermissionManager?,
-    private var permissionValidator: PermissionValidator?
-) : UserEndpoint {
+@Component(service = [UserEndpoint::class, PluggableRPCOps::class])
+class UserEndpointImpl : UserEndpoint {
 
     override val targetInterface: Class<UserEndpoint> = UserEndpoint::class.java
+
+    override var permissionManager: PermissionManager? = null
+    override var permissionValidator: PermissionValidator? = null
 
     @VisibleForTesting
     internal var running: Boolean = false
@@ -87,20 +87,6 @@ class UserEndpointImpl(
             createUserType.passwordExpiry,
             createUserType.parentGroup,
         )
-    }
-
-    /**
-     * Expose a setter to control the instance of the permission manager.
-     */
-    fun setPermissionManager(permissionManager: PermissionManager?) {
-        this.permissionManager = permissionManager
-    }
-
-    /**
-     * Expose a setter to control the instance of the permission validator.
-     */
-    fun setPermissionValidator(permissionValidator: PermissionValidator?) {
-        this.permissionValidator = permissionValidator
     }
 
     override val isRunning: Boolean

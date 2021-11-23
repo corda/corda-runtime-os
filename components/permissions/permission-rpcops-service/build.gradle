@@ -14,14 +14,12 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-topic-schema"
-    implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:http-rpc:http-rpc")
     implementation project(':components:permissions:permission-service')
-    implementation project(':libs:permissions:permission-manager')
     implementation project(':libs:permissions:permission-endpoint')
+    implementation project(':libs:permissions:permission-manager')
     implementation project(':libs:permissions:permission-validation')
-    implementation project(':libs:permissions:permission-cache')
 
     implementation project(":osgi-framework-api")
 

@@ -47,10 +47,11 @@ internal class UserEndpointImplTest {
     private val permissionManager = mock<PermissionManager>()
     private val permissionValidator = mock<PermissionValidator>()
 
-    private val endpoint = UserEndpointImpl(
-        permissionManager,
-        permissionValidator
-    )
+    private val endpoint = UserEndpointImpl()
+        .also {
+            it.permissionManager = permissionManager
+            it.permissionValidator = permissionValidator
+        }
 
     @Test
     fun getProtocolVersion() {
@@ -80,7 +81,7 @@ internal class UserEndpointImplTest {
     @Test
     fun `create a user throws with status 500 when permission manager is null`() {
         endpoint.start()
-        endpoint.setPermissionManager(null)
+        endpoint.permissionManager = null
 
         val e = assertThrows<PermissionEndpointException> {
             endpoint.createUser(createUserType)
@@ -130,7 +131,7 @@ internal class UserEndpointImplTest {
     @Test
     fun `get a user throws with status 500 when permission manager is null`() {
         endpoint.start()
-        endpoint.setPermissionManager(null)
+        endpoint.permissionManager = null
 
         val e = assertThrows<PermissionEndpointException> {
             endpoint.getUser("abc")
