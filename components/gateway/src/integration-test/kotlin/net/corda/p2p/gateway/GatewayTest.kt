@@ -5,6 +5,7 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -44,7 +45,9 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
+import java.net.ConnectException
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URI
