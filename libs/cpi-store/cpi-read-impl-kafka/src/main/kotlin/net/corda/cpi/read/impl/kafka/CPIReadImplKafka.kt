@@ -23,7 +23,7 @@ import kotlin.concurrent.withLock
 class CPIReadImplKafka(
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
-    nodeConfig: SmartConfig
+    vnodeConfig: SmartConfig
 ) : CPIRead {
 
     private val lock = ReentrantLock()
@@ -34,8 +34,8 @@ class CPIReadImplKafka(
 
     @Volatile
     private var stopped = true
-    private val cpiListHandler: CPIListHandler = CPIListHandler(subscriptionFactory, nodeConfig)
-    private  val streamReader = CPIStreamReaderImpl(rpcConfig, nodeConfig, publisherFactory)
+    private val cpiListHandler: CPIListHandler = CPIListHandler(subscriptionFactory, vnodeConfig)
+    private  val streamReader = CPIStreamReaderImpl(rpcConfig, vnodeConfig, publisherFactory)
 
     override fun registerCallback(cpiListener: CPIListener): AutoCloseable {
         return cpiListHandler.registerCPIListCallback(cpiListener)

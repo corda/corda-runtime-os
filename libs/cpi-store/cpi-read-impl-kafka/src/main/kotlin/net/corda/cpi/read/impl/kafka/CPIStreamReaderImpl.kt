@@ -27,9 +27,9 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-class CPIStreamReaderImpl(private val rpcConfig: RPCConfig<CPISegmentRequest, CPISegmentResponse>,
-                          private val nodeConfig: SmartConfig,
-                          private val publisherFactory: PublisherFactory): Lifecycle {
+class CPIStreamReaderImpl(rpcConfig: RPCConfig<CPISegmentRequest, CPISegmentResponse>,
+                          nodeConfig: SmartConfig,
+                          publisherFactory: PublisherFactory): Lifecycle {
 
     val executorService: ExecutorService = Executors.newFixedThreadPool(10)
     val rpcSender = publisherFactory.createRPCSender(rpcConfig, nodeConfig)

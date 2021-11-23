@@ -1,9 +1,10 @@
 package net.corda.cpi.read.impl.file
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.cpi.read.CPIListener
 import net.corda.cpi.utils.CPX_FILE_FINDER_ROOT_DIR_CONFIG_PATH
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.packaging.CPI
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -31,7 +32,7 @@ class CPIReadImplFileTest {
 
     @Test
     fun `start and stop CPI read in empty directory sends an empty snapshot`() {
-        val config: Config = ConfigFactory.parseMap(mapOf(CPX_FILE_FINDER_ROOT_DIR_CONFIG_PATH to cpisLocation.toString()))
+        val config: SmartConfig = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf(CPX_FILE_FINDER_ROOT_DIR_CONFIG_PATH to cpisLocation.toString())))
         val cpiListenerImpl = CPIListenerImpl()
         val cpiReadImplFile = CPIReadImplFile(config)
         cpiReadImplFile.start()
@@ -43,7 +44,7 @@ class CPIReadImplFileTest {
     @Test
     fun `start then insert cpb into directory then compare`() {
 
-        val config: Config = ConfigFactory.parseMap(mapOf(CPX_FILE_FINDER_ROOT_DIR_CONFIG_PATH to cpisLocation.toString()))
+        val config: SmartConfig = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf(CPX_FILE_FINDER_ROOT_DIR_CONFIG_PATH to cpisLocation.toString())))
         val targetCPI = cpisLocation.resolve(cpiPath.fileName)
 
         lateinit var snapshot:  Map<CPI.Identifier, CPI.Metadata>

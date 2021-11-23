@@ -29,7 +29,7 @@ import kotlin.concurrent.withLock
 
 class CPIWriteImplKafka(private val subscriptionFactory: SubscriptionFactory,
                         private val publisherFactory: PublisherFactory,
-                        private val nodeConfig: SmartConfig,
+                        private val vnodeConfig: SmartConfig,
                         private val cpiReadFactory: CPIReadFactory): CPIWrite {
 
     private val rpcConfig = RPCConfig(RPC_CPI_GROUP_NAME,
@@ -54,10 +54,10 @@ class CPIWriteImplKafka(private val subscriptionFactory: SubscriptionFactory,
         lock.withLock {
             if (stopped) {
                 stopped = false
-                cpiRead = cpiReadFactory.createCPIRead(nodeConfig)
-                cpiSegmentReader = cpiReadFactory.createCPIReadSegment(nodeConfig)
-                cpiSegmentProcessor = CPISegmentProcessor(rpcConfig, nodeConfig, cpiSegmentReader, subscriptionFactory)
-                publisher = publisherFactory.createPublisher(publisherConfig, nodeConfig)
+                cpiRead = cpiReadFactory.createCPIRead(vnodeConfig)
+                cpiSegmentReader = cpiReadFactory.createCPIReadSegment(vnodeConfig)
+                cpiSegmentProcessor = CPISegmentProcessor(rpcConfig, vnodeConfig, cpiSegmentReader, subscriptionFactory)
+                publisher = publisherFactory.createPublisher(publisherConfig, vnodeConfig)
                 publisher.start()
                 cpiRead.start()
                 cpiSegmentReader.start()
