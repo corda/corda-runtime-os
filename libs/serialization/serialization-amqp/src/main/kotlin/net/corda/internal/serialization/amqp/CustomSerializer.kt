@@ -177,8 +177,9 @@ abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
         serializer: InternalProxySerializer<T, P>,
         private val factory: SerializerFactory,
     ) : CustomSerializerImpl<T>(serializer) {
-        private val proxySerializer: ObjectSerializer =
+        private val proxySerializer: ObjectSerializer by lazy {
             ObjectSerializer.make(factory.getTypeInformation(serializer.proxyType), factory)
+        }
 
         override fun writeDescribedObject(
             obj: T,

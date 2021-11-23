@@ -8,6 +8,7 @@ import net.corda.sandbox.SandboxGroup;
 public class AMQPTestUtils {
 
     public static SerializerFactory testDefaultFactory() {
-        return SerializerFactoryBuilder.build(AllWhitelist.INSTANCE, (SandboxGroup) TestSerializationContext.getTestSerializationContext());
+        return SerializerFactoryBuilder.build(AllWhitelist.INSTANCE,
+                (SandboxGroup) TestSerializationContext.getTestSerializationContext().getSandboxGroup());
     }
 }
