@@ -6,15 +6,6 @@ import java.time.Instant
  * Request type for creating a User in the permission system.
  */
 data class CreateUserType(
-    /**
-     * ID of the user making the request.
-     */
-    val requestedBy: String,
-
-    /**
-     * The ID of the virtual node in which to create the User.
-     */
-    val virtualNodeId: String?,
 
     /**
      * Full name of the User.

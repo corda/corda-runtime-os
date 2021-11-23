@@ -22,12 +22,14 @@ class UserEndpointImpl(
     private var permissionValidator: PermissionValidator?
 ) : UserEndpoint {
 
+    override val targetInterface: Class<UserEndpoint> = UserEndpoint::class.java
+
     @VisibleForTesting
     internal var running: Boolean = false
 
     override val protocolVersion = 1
 
-    override fun createUser(virtualNodeId: String, createUserType: CreateUserType): UserResponseType {
+    override fun createUser(createUserType: CreateUserType): UserResponseType {
         validatePermissionManager()
 
         val createUserResult = permissionManager!!.createUser(
@@ -38,12 +40,11 @@ class UserEndpointImpl(
             .convertToUserType()
     }
 
-    override fun getUser(virtualNodeId: String, loginName: String): UserResponseType? {
+    override fun getUser(loginName: String): UserResponseType? {
         validatePermissionManager()
         val userResponseDto = permissionManager!!.getUser(
             GetUserRequestDto(
-                "todo",
-                virtualNodeId,
+                "todo", // the endpoint needs more context to get the request user name
                 loginName
             )
         )
@@ -78,8 +79,7 @@ class UserEndpointImpl(
 
     private fun convertFromUserType(createUserType: CreateUserType): CreateUserRequestDto {
         return CreateUserRequestDto(
-            createUserType.requestedBy,
-            createUserType.virtualNodeId,
+            "todo", // the endpoint needs more context to get the request user name
             createUserType.fullName,
             createUserType.loginName,
             createUserType.enabled,

@@ -1,5 +1,6 @@
 package net.corda.permissions.rpcops
 
+import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -35,13 +36,13 @@ class PermissionRpcOpsService @Activate constructor(
     /**
      * Get a list of the Permission endpoints.
      */
-    val rpcOps: List<RpcOps>
+    val rpcOps: List<PluggableRPCOps<out RpcOps>>
         get() {
             check(isRunning) {
-                "Permission RPC Ops Service is not running."
+                "Can only get list of permission endpoints from PermissionRPCOpsService when it is running."
             }
             checkNotNull(handler.userEndpoint) {
-                "Permission RPC Ops Service is running but User endpoint is null."
+                "Can only get list of permission endpoints from PermissionRPCOpsService when the endpoints are running."
             }
             return listOf(handler.userEndpoint!!)
         }

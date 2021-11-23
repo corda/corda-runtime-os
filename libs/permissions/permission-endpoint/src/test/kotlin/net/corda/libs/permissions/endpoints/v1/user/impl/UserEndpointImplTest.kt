@@ -20,12 +20,8 @@ import org.mockito.kotlin.whenever
 
 internal class UserEndpointImplTest {
 
-
-    private val virtualNodeId = "virtualNodeId"
     private val now = Instant.now()
     private val createUserType = CreateUserType(
-        "requestor",
-        virtualNodeId,
         "fullName1",
         "loginName1",
         true,
@@ -69,7 +65,7 @@ internal class UserEndpointImplTest {
         whenever(mockTry.getOrThrow()).thenReturn(userResponseDto)
 
         endpoint.start()
-        val responseType = endpoint.createUser(virtualNodeId, createUserType)
+        val responseType = endpoint.createUser(createUserType)
 
         assertEquals("uuid", responseType.id)
         assertEquals(0, responseType.version)
@@ -87,7 +83,7 @@ internal class UserEndpointImplTest {
         endpoint.setPermissionManager(null)
 
         val e = assertThrows<PermissionEndpointException> {
-            endpoint.createUser(virtualNodeId, createUserType)
+            endpoint.createUser(createUserType)
         }
         assertEquals(500, e.status)
     }
@@ -98,7 +94,7 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.isRunning).thenReturn(false)
 
         val e = assertThrows<PermissionEndpointException> {
-            endpoint.createUser(virtualNodeId, createUserType)
+            endpoint.createUser(createUserType)
         }
         assertEquals(500, e.status)
     }
@@ -106,7 +102,7 @@ internal class UserEndpointImplTest {
     @Test
     fun `create a user throws with status 500 when this service is not running`() {
         val e = assertThrows<PermissionEndpointException> {
-            endpoint.createUser(virtualNodeId, createUserType)
+            endpoint.createUser(createUserType)
         }
         assertEquals(500, e.status)
     }
@@ -118,7 +114,7 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.getUser(getUserRequestDtoCapture.capture())).thenReturn(userResponseDto)
 
         endpoint.start()
-        val responseType = endpoint.getUser(virtualNodeId, "loginName1")
+        val responseType = endpoint.getUser("loginName1")
 
         assertNotNull(responseType)
         assertEquals("uuid", responseType!!.id)
@@ -137,7 +133,7 @@ internal class UserEndpointImplTest {
         endpoint.setPermissionManager(null)
 
         val e = assertThrows<PermissionEndpointException> {
-            endpoint.getUser(virtualNodeId, "abc")
+            endpoint.getUser("abc")
         }
         assertEquals(500, e.status)
     }
@@ -148,7 +144,7 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.isRunning).thenReturn(false)
 
         val e = assertThrows<PermissionEndpointException> {
-            endpoint.getUser(virtualNodeId, "abc")
+            endpoint.getUser("abc")
         }
         assertEquals(500, e.status)
     }
@@ -156,7 +152,7 @@ internal class UserEndpointImplTest {
     @Test
     fun `get a user throws with status 500 when this service is not running`() {
         val e = assertThrows<PermissionEndpointException> {
-            endpoint.getUser(virtualNodeId, "abc")
+            endpoint.getUser("abc")
         }
         assertEquals(500, e.status)
     }
