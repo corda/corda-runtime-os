@@ -166,42 +166,6 @@ subprojects {
             }
         }
 
-        tasks.withType(JavaCompile).configureEach {
-            def compilerArgs = options.compilerArgs
-            compilerArgs << '-parameters'
-
-            options.encoding = 'UTF-8'
-        }
-
-        // TODO: as above, this may not apply to all modules, so maybe should be moved out
-        tasks.withType(Jar).matching { it.name != 'cpk' }.configureEach {
-            manifest {
-                attributes("Corda-Release-Version": archiveVersion.get())
-                attributes("Corda-Revision": revision)
-                attributes("Automatic-Module-Name": "net.corda.${project.name.replace('-', '.')}")
-                // NOTE: this needs to be reverted to a URL with the version once the URL structure has been defined.
-//                attributes("Corda-Docs-Link": "https://docs.corda.net/docs/corda-os/$cordaVersion")
-                attributes("Corda-Docs-Link": "https://docs.r3.com/")
-            }
-        }
-
-        // Added to support junit5 tests
-        tasks.withType(Test).configureEach {
-            useJUnitPlatform()
-
-            doFirst {
-                // Create all temporary files within the build directory.
-                systemProperty 'java.io.tmpdir', buildDir.absolutePath
-            }
-        }
-
-        tasks.register('compileAll') { task ->
-            description = "Compiles all the Kotlin and Java classes, including all of the test classes."
-            group = "verification"
-
-            task.dependsOn tasks.withType(AbstractCompile)
-        }
-
         detekt {
             baseline = file("$projectDir/detekt-baseline.xml")
             config.setFrom(files("$rootProjectDir/detekt-config.yml"))
@@ -241,6 +205,42 @@ subprojects {
             archiveClassifier.set("javadoc")
             from(dokkaHtml.outputDirectory)
         }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        def compilerArgs = options.compilerArgs
+        compilerArgs << '-parameters'
+
+        options.encoding = 'UTF-8'
+    }
+
+    // TODO: as above, this may not apply to all modules, so maybe should be moved out
+    tasks.withType(Jar).matching { it.name != 'cpk' && it.name != 'cpb' }.configureEach {
+        manifest {
+            attributes("Corda-Release-Version": project.version)
+            attributes("Corda-Revision": revision)
+            attributes("Automatic-Module-Name": "net.corda.${project.name.replace('-', '.')}")
+            // NOTE: this needs to be reverted to a URL with the version once the URL structure has been defined.
+//                attributes("Corda-Docs-Link": "https://docs.corda.net/docs/corda-os/$cordaVersion")
+            attributes("Corda-Docs-Link": "https://docs.r3.com/")
+        }
+    }
+
+    // Added to support junit5 tests
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+
+        doFirst {
+            // Create all temporary files within the build directory.
+            systemProperty 'java.io.tmpdir', buildDir.absolutePath
+        }
+    }
+
+    tasks.register('compileAll') { task ->
+        description = "Compiles all the Kotlin and Java classes, including all of the test classes."
+        group = "verification"
+
+        task.dependsOn tasks.withType(AbstractCompile)
     }
 }
 
