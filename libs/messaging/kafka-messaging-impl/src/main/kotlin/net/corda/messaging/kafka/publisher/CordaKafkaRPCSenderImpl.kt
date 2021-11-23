@@ -145,7 +145,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     }
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
-                        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
                         stop()
                     }
                 }
