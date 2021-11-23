@@ -1,6 +1,8 @@
 package net.corda.messaging.emulation.subscription.stateandevent
 
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -15,7 +17,8 @@ class InMemoryStateAndEventSubscription<K : Any, S : Any, E : Any>(
     internal val subscriptionConfig: SubscriptionConfig,
     internal val processor: StateAndEventProcessor<K, S, E>,
     internal val stateAndEventListener: StateAndEventListener<K, S>?,
-    internal val topicService: TopicService
+    internal val topicService: TopicService,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) :
     StateAndEventSubscription<K, S, E> {
 
@@ -31,6 +34,12 @@ class InMemoryStateAndEventSubscription<K : Any, S : Any, E : Any>(
     private val lock = ReentrantLock()
     private val eventSubscription: EventSubscription<K, S, E> = EventSubscription(this)
     internal val stateSubscription: StateSubscription<K, S> = StateSubscription(this)
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "${subscriptionConfig.groupName}-StateAndEventSubscription-${subscriptionConfig.eventTopic}",
+            subscriptionConfig.instanceId.toString()
+        )
+    ) { _, _ -> }
 
     override val isRunning: Boolean
         get() = lock.withLock {
@@ -43,6 +52,8 @@ class InMemoryStateAndEventSubscription<K : Any, S : Any, E : Any>(
         lock.withLock {
             stateSubscription.start()
             eventSubscription.start()
+            lifecycleCoordinator.start()
+            lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         }
     }
 
@@ -50,6 +61,8 @@ class InMemoryStateAndEventSubscription<K : Any, S : Any, E : Any>(
         lock.withLock {
             eventSubscription.stop()
             stateSubscription.stop()
+            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+            lifecycleCoordinator.stop()
         }
     }
 
@@ -59,5 +72,5 @@ class InMemoryStateAndEventSubscription<K : Any, S : Any, E : Any>(
     }
 
     override val subscriptionName: LifecycleCoordinatorName
-        get() = LifecycleCoordinatorName("InMemoryStateAndEventSubscription")
+        get() = lifecycleCoordinator.name
 }

@@ -1,6 +1,8 @@
 package net.corda.messaging.emulation.subscription.durable
 
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
@@ -17,12 +19,19 @@ internal class DurableSubscription<K : Any, V : Any>(
     internal val subscriptionConfig: SubscriptionConfig,
     private val processor: DurableProcessor<K, V>,
     internal val partitionAssignmentListener: PartitionAssignmentListener?,
-    private val topicService: TopicService
+    private val topicService: TopicService,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
     companion object {
         private val log = contextLogger()
     }
 
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "${subscriptionConfig.groupName}-DurableSubscription-${subscriptionConfig.eventTopic}",
+            subscriptionConfig.instanceId.toString()
+        )
+    ) { _, _ -> }
     private val lock = ReentrantLock()
     private var currentConsumer: Consumption? = null
 
@@ -37,6 +46,8 @@ internal class DurableSubscription<K : Any, V : Any>(
             if (currentConsumer == null) {
                 val consumer = DurableConsumer(this)
                 currentConsumer = topicService.createConsumption(consumer)
+                lifecycleCoordinator.start()
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             }
         }
     }
@@ -45,6 +56,8 @@ internal class DurableSubscription<K : Any, V : Any>(
         lock.withLock {
             currentConsumer?.stop()
             currentConsumer = null
+            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+            lifecycleCoordinator.stop()
         }
     }
 
@@ -59,5 +72,5 @@ internal class DurableSubscription<K : Any, V : Any>(
     }
 
     override val subscriptionName: LifecycleCoordinatorName
-        get() = LifecycleCoordinatorName("DurableSubscription")
+        get() = lifecycleCoordinator.name
 }
