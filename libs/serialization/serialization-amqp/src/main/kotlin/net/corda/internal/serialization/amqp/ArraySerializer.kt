@@ -120,7 +120,7 @@ abstract class PrimArraySerializer(type: Type, factory: LocalSerializerFactory) 
     companion object {
         // We don't need to handle the unboxed byte type as that is coercible to a byte array, but
         // the other 7 primitive types we do
-        private val primTypes: Map<Type, (LocalSerializerFactory) -> PrimArraySerializer> = mapOf<Type, (LocalSerializerFactory) -> PrimArraySerializer>(
+        private val primTypes: Map<Type, (LocalSerializerFactory) -> PrimArraySerializer> = mapOf(
                 IntArray::class.java to { f -> PrimIntArraySerializer(f) },
                 CharArray::class.java to { f -> PrimCharArraySerializer(f) },
                 BooleanArray::class.java to { f -> PrimBooleanArraySerializer(f) },
