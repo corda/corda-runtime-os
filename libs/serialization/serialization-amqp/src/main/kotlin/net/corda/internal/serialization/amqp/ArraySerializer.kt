@@ -119,23 +119,22 @@ class CharArraySerializer(factory: LocalSerializerFactory) : ArraySerializer(
 }
 
 // Specialisation of [ArraySerializer] that handles arrays of unboxed java primitive types
-abstract class PrimArraySerializer(type: Type, factory: LocalSerializerFactory) : ArraySerializer(
-    type,
-    factory
-) {
+abstract class PrimArraySerializer(type: Type, factory: LocalSerializerFactory) : ArraySerializer(type, factory) {
     companion object {
+        // We don't need to handle the unboxed byte type as that is coercible to a byte array, but
+        // the other 7 primitive types we do
+        private val primTypes = mapOf<Type, (LocalSerializerFactory) -> PrimArraySerializer>(
+                IntArray::class.java to { f -> PrimIntArraySerializer(f) },
+                CharArray::class.java to { f -> PrimCharArraySerializer(f) },
+                BooleanArray::class.java to { f -> PrimBooleanArraySerializer(f) },
+                FloatArray::class.java to { f -> PrimFloatArraySerializer(f) },
+                ShortArray::class.java to { f -> PrimShortArraySerializer(f) },
+                DoubleArray::class.java to { f -> PrimDoubleArraySerializer(f) },
+                LongArray::class.java to { f -> PrimLongArraySerializer(f) }
+                // ByteArray::class.java <-> NOT NEEDED HERE (see comment above)
+        )
 
-        fun make(type: Type, factory: LocalSerializerFactory) =
-            mapOf<Type, (LocalSerializerFactory) -> PrimArraySerializer>(
-                    IntArray::class.java to { f -> PrimIntArraySerializer(f) },
-                    CharArray::class.java to { f -> PrimCharArraySerializer(f) },
-                    BooleanArray::class.java to { f -> PrimBooleanArraySerializer(f) },
-                    FloatArray::class.java to { f -> PrimFloatArraySerializer(f) },
-                    ShortArray::class.java to { f -> PrimShortArraySerializer(f) },
-                    DoubleArray::class.java to { f -> PrimDoubleArraySerializer(f) },
-                    LongArray::class.java to { f -> PrimLongArraySerializer(f) }
-                    // ByteArray::class.java <-> NOT NEEDED HERE (see comment above)
-            )[type]!!(factory)
+        fun make(type: Type, factory: LocalSerializerFactory) = primTypes[type]!!(factory)
     }
 
     fun localWriteObject(data: Data, func: () -> Unit) {
