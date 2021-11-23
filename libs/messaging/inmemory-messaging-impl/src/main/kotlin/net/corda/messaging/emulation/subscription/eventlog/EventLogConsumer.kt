@@ -19,9 +19,10 @@ class EventLogConsumer<K : Any, V : Any>(
     override val partitionStrategy = PartitionStrategy.DIVIDE_PARTITIONS
 
     override fun handleRecords(records: Collection<RecordMetadata>) {
-        subscription.processor.onNext(
+        val recordsToSend = subscription.processor.onNext(
             records.mapNotNull { it.toRecord() }.toList()
         )
+        subscription.topicService.addRecords(recordsToSend)
     }
 
     private fun RecordMetadata.toRecord(): EventLogRecord<K, V>? {

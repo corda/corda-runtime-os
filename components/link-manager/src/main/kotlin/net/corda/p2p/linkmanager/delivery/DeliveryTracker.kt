@@ -10,6 +10,7 @@ import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -37,6 +38,7 @@ class DeliveryTracker(
     networkMap: LinkManagerNetworkMap,
     cryptoService: LinkManagerCryptoService,
     sessionManager: SessionManager,
+    private val instanceId: Int,
     processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>,
     ): LifecycleWithDominoTile {
 
@@ -44,6 +46,7 @@ class DeliveryTracker(
         coordinatorFactory,
         publisherFactory,
         configuration,
+        instanceId,
         processAuthenticatedMessage
     )
     private val replayScheduler = ReplayScheduler(
@@ -66,7 +69,7 @@ class DeliveryTracker(
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val messageTracker = MessageTracker(replayScheduler)
         val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("message-tracker-group", Schema.P2P_OUT_MARKERS, 1),
+            SubscriptionConfig("message-tracker-group", Schema.P2P_OUT_MARKERS, instanceId),
             messageTracker.processor,
             configuration,
             messageTracker.listener
@@ -81,6 +84,7 @@ class DeliveryTracker(
         coordinatorFactory: LifecycleCoordinatorFactory,
         publisherFactory: PublisherFactory,
         configuration: SmartConfig,
+        instanceId: Int,
         private val processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
     ): LifecycleWithDominoTile {
 
@@ -91,7 +95,7 @@ class DeliveryTracker(
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            MESSAGE_REPLAYER_CLIENT_ID,
+            PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, instanceId),
             configuration
         )
 

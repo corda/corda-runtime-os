@@ -73,8 +73,7 @@ class CryptoServiceKeyCreator @Activate constructor(
                 shutdown()
                 return
             }
-            val keyPairs = readKeys(parameters.keysConfigFile!!)
-
+            val keyPairs = readKeys(parameters.keysConfigFile!!) ?: return
 
             val topic = parameters.topic ?: CRYPTO_KEYS_TOPIC
             val publisherConfig = smartConfigFactory.create(ConfigFactory.empty()
@@ -110,7 +109,7 @@ class CryptoServiceKeyCreator @Activate constructor(
         consoleLogger.error(error)
     }
 
-    private fun readKeys(keysConfigFile: File): List<Pair<String, KeyPairEntry>> {
+    private fun readKeys(keysConfigFile: File): List<Pair<String, KeyPairEntry>>? {
         val keysConfig = ConfigFactory.parseFile(keysConfigFile)
         return keysConfig.getConfigList("keys").map { config ->
             val alias = config.getString("alias")
@@ -128,13 +127,10 @@ class CryptoServiceKeyCreator @Activate constructor(
                 "RSA" -> KeyAlgorithm.RSA
                 "ECDSA" -> KeyAlgorithm.ECDSA
                 else -> {
-                    null
+                    logger.error("Invalid key algorithm value: $algo")
+                    shutdown()
+                    return null
                 }
-            }
-
-            if (keyAlgorithm == null) {
-                logger.error("Invalid key algorithm value: $algo")
-                shutdown()
             }
 
             alias to KeyPairEntry(keyAlgorithm, ByteBuffer.wrap(publicKey.encoded), ByteBuffer.wrap(privateKey.encoded))

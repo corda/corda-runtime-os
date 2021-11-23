@@ -19,6 +19,7 @@ class SessionPartitionMapperImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
+    instanceId: Int,
 ) : SessionPartitionMapper, LifecycleWithDominoTile {
 
     companion object {
@@ -31,7 +32,7 @@ class SessionPartitionMapperImpl(
     private val future = AtomicReference<CompletableFuture<Unit>>()
 
     private val sessionPartitionSubscription = subscriptionFactory.createCompactedSubscription(
-        SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS),
+        SubscriptionConfig(CONSUMER_GROUP_ID, SESSION_OUT_PARTITIONS, instanceId),
         processor,
         nodeConfiguration
     )

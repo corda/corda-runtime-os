@@ -4,11 +4,9 @@ import net.corda.internal.serialization.CordaSerializationEncoding
 import net.corda.internal.serialization.SectionId
 import net.corda.internal.serialization.byteArrayOutput
 import net.corda.internal.serialization.model.TypeIdentifier
-import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SerializedBytes
 import org.apache.qpid.proton.codec.Data
 import java.io.NotSerializableException
@@ -135,17 +133,10 @@ open class SerializationOutput constructor(
      * Attaches information about the CPKs associated with the serialised objects to the metadata
      */
     private fun putTypeToMetadata(type: Type, context: SerializationContext) {
-        try {
-            val classTag = (context.sandboxGroup as? SandboxGroup)?.getEvolvableTag(type.asClass())
-            if (classTag != null && !metadata.containsKey(type.typeName)) {
-                val key = type.asClass().name
-                metadata.putValue(key, classTag)
-            }
-        } catch (ex: SandboxException) {
-            logger.trace {
-                "Class ${type.typeName} not found in any sandbox. " +
-                "The type is either a PlatformClass or is not installed. "
-            }
+        val classTag = (context.sandboxGroup as? SandboxGroup)?.getEvolvableTag(type.asClass())
+        if (classTag != null && !metadata.containsKey(type.typeName)) {
+            val key = type.asClass().name
+            metadata.putValue(key, classTag)
         }
     }
 

@@ -42,7 +42,7 @@ class DominoTile(
     private object StartTile : LifecycleEvent
     private data class StopTile(val dueToError: Boolean) : LifecycleEvent
     private data class ConfigApplied(val configUpdateResult: ConfigUpdateResult) : LifecycleEvent
-    private data class NewConfig(val config: Config): LifecycleEvent
+    private data class NewConfig(val config: Config) : LifecycleEvent
     private object ResourcesCreated : LifecycleEvent
     enum class State {
         Created,
@@ -263,7 +263,7 @@ class DominoTile(
         }
     }
 
-    private fun<C> handleConfigChange(configurationChangeHandler: ConfigurationChangeHandler<C>, config: Config) {
+    private fun <C> handleConfigChange(configurationChangeHandler: ConfigurationChangeHandler<C>, config: Config) {
         val newConfiguration = try {
             configurationChangeHandler.configFactory(config)
         } catch (e: Exception) {
@@ -329,17 +329,17 @@ class DominoTile(
             it.start()
         }
         if (children.all { it.isRunning }) {
-                @Suppress("TooGenericExceptionCaught")
-           try {
+            @Suppress("TooGenericExceptionCaught")
+            try {
                 createResourcesAndStart()
-           } catch (e: Throwable) {
+            } catch (e: Throwable) {
                 gotError(e)
-           }
+            }
         } else {
             logger.info(
                 "Not all child tiles started yet.\n " +
-                "Started Children = ${children.filter{ it.isRunning }}.\n " +
-                "Not Started Children = ${children.filter { !it.isRunning }}."
+                    "Started Children = ${children.filter{ it.isRunning }}.\n " +
+                    "Not Started Children = ${children.filter { !it.isRunning }}."
             )
         }
     }
@@ -389,6 +389,7 @@ class DominoTile(
             configRegistration?.close()
             if (configRegistration != null) logger.info("Unregistered for Config Updates $name.")
             configRegistration = null
+            configurationChangeHandler?.lastConfiguration = null
         }
         configReady = false
 
@@ -405,6 +406,7 @@ class DominoTile(
         }
         configRegistration?.close()
         configRegistration = null
+        configurationChangeHandler?.lastConfiguration = null
         configResources.close()
         withLifecycleWriteLock {
             isOpen.set(false)

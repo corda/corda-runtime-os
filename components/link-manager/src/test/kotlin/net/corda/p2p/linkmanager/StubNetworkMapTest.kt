@@ -52,7 +52,7 @@ class StubNetworkMapTest {
         whenever(mock.isRunning).doReturn(true)
     }
 
-    private val networkMap = StubNetworkMap(mock(), subscriptionFactory)
+    private val networkMap = StubNetworkMap(mock(), subscriptionFactory, 1)
 
     private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
     private val rsaKeyPairGenerator = KeyPairGenerator.getInstance("RSA")

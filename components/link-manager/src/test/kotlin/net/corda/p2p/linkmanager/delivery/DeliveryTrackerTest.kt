@@ -109,6 +109,7 @@ class DeliveryTrackerTest {
             mock(),
             mock(),
             mock(),
+            1,
             ::processAuthenticatedMessage
         )
         val future = createResources(resourcesHolder)

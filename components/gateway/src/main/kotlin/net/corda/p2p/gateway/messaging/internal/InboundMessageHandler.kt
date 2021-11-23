@@ -9,6 +9,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -33,20 +34,32 @@ import java.util.UUID
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
  */
+@Suppress("LongParameterList")
 internal class InboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
-) : HttpServerListener, LifecycleWithDominoTile {
+    instanceId: Int,
+    ) : HttpServerListener, LifecycleWithDominoTile {
 
     companion object {
         private val logger = contextLogger()
     }
 
-    private var p2pInPublisher = PublisherWithDominoLogic(publisherFactory, lifecycleCoordinatorFactory, PUBLISHER_ID, nodeConfiguration)
-    private val sessionPartitionMapper = SessionPartitionMapperImpl(lifecycleCoordinatorFactory, subscriptionFactory, nodeConfiguration)
+    private var p2pInPublisher = PublisherWithDominoLogic(
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        PublisherConfig(PUBLISHER_ID, instanceId),
+        nodeConfiguration
+    )
+    private val sessionPartitionMapper = SessionPartitionMapperImpl(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        nodeConfiguration,
+        instanceId
+    )
     private val server = ReconfigurableHttpServer(lifecycleCoordinatorFactory, configurationReaderService, this)
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
@@ -95,8 +108,12 @@ internal class InboundMessageHandler(
     }
 
     private fun processSessionMessage(p2pMessage: LinkInMessage): HttpResponseStatus {
-        val sessionId = getSessionId(p2pMessage) ?: return HttpResponseStatus.INTERNAL_SERVER_ERROR
+        if (p2pMessage.payload is InitiatorHelloMessage) {
+            p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, UUID.randomUUID().toString(), p2pMessage)))
+            return HttpResponseStatus.OK
+        }
 
+        val sessionId = getSessionId(p2pMessage) ?: return HttpResponseStatus.INTERNAL_SERVER_ERROR
         val partitions = sessionPartitionMapper.getPartitions(sessionId)
         return if (partitions == null) {
             logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
@@ -114,7 +131,6 @@ internal class InboundMessageHandler(
         return when (message.payload) {
             is AuthenticatedDataMessage -> (message.payload as AuthenticatedDataMessage).header.sessionId
             is AuthenticatedEncryptedDataMessage -> (message.payload as AuthenticatedEncryptedDataMessage).header.sessionId
-            is InitiatorHelloMessage -> (message.payload as InitiatorHelloMessage).header.sessionId
             is InitiatorHandshakeMessage -> (message.payload as InitiatorHandshakeMessage).header.sessionId
             is ResponderHelloMessage -> (message.payload as ResponderHelloMessage).header.sessionId
             is ResponderHandshakeMessage -> (message.payload as ResponderHandshakeMessage).header.sessionId

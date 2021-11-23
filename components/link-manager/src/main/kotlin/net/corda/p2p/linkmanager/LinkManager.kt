@@ -8,6 +8,7 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.EventLogProcessor
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -28,6 +29,7 @@ import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
+import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.Session
@@ -66,9 +68,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                   @Reference(service = ConfigurationReadService::class)
                   val configurationReaderService: ConfigurationReadService,
                   private val configuration: SmartConfig,
-                  val linkManagerNetworkMap: LinkManagerNetworkMap,
-                  private val linkManagerHostingMap: LinkManagerHostingMap,
-                  private val linkManagerCryptoService: LinkManagerCryptoService,
+                  private val instanceId: Int,
+                  val linkManagerNetworkMap: LinkManagerNetworkMap
+                      = StubNetworkMap(lifecycleCoordinatorFactory, subscriptionFactory, instanceId),
+                  private val linkManagerHostingMap: LinkManagerHostingMap
+                      = ConfigBasedLinkManagerHostingMap(configurationReaderService, lifecycleCoordinatorFactory),
+                  private val linkManagerCryptoService: LinkManagerCryptoService
+                      = StubCryptoService(lifecycleCoordinatorFactory, subscriptionFactory, instanceId)
 ) : LifecycleWithDominoTile {
 
     companion object {
@@ -84,7 +90,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private val inboundAssigned = AtomicReference<CompletableFuture<Unit>>()
     private var inboundAssignmentListener = InboundAssignmentListener(inboundAssigned)
 
-    private val messagesPendingSession = PendingSessionMessageQueuesImpl(publisherFactory, lifecycleCoordinatorFactory, configuration)
+    private val messagesPendingSession = PendingSessionMessageQueuesImpl(
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        configuration,
+        instanceId
+    )
 
     private val sessionManager = SessionManagerImpl(
         linkManagerNetworkMap,
@@ -93,16 +104,36 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         publisherFactory,
         configurationReaderService,
         lifecycleCoordinatorFactory,
-        configuration
+        configuration,
+        instanceId
     )
+
+    private val outboundMessageProcessor = OutboundMessageProcessor(
+        sessionManager,
+        linkManagerHostingMap,
+        linkManagerNetworkMap,
+        inboundAssignmentListener,
+    )
+
+    private val deliveryTracker = DeliveryTracker(
+        lifecycleCoordinatorFactory,
+        configurationReaderService,
+        publisherFactory,
+        configuration,
+        subscriptionFactory,
+        linkManagerNetworkMap,
+        linkManagerCryptoService,
+        sessionManager,
+        instanceId
+    ) { outboundMessageProcessor.processAuthenticatedMessage(it, true) }
 
     @VisibleForTesting
     internal fun createInboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()
         inboundAssigned.set(future)
         val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, 1),
-            InboundMessageProcessor(sessionManager, linkManagerNetworkMap),
+            SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, instanceId),
+            InboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
             partitionAssignmentListener = inboundAssignmentListener
         )
         inboundMessageSubscription.start()
@@ -113,29 +144,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     @VisibleForTesting
     internal fun createOutboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val outboundMessageProcessor = OutboundMessageProcessor(
-            sessionManager,
-            linkManagerHostingMap,
-            linkManagerNetworkMap,
-            inboundAssignmentListener,
-        )
         val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, 1),
+            SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, instanceId),
             outboundMessageProcessor,
             partitionAssignmentListener = null
         )
-        val deliveryTracker = DeliveryTracker(
-            lifecycleCoordinatorFactory,
-            configurationReaderService,
-            publisherFactory,
-            configuration,
-            subscriptionFactory,
-            linkManagerNetworkMap,
-            linkManagerCryptoService,
-            sessionManager,
-        ) { outboundMessageProcessor.processAuthenticatedMessage(it, true) }
-        deliveryTracker.start()
-        resources.keep(deliveryTracker)
         outboundMessageSubscription.start()
         resources.keep(outboundMessageSubscription)
         val outboundReady = CompletableFuture<Unit>()
@@ -160,7 +173,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        children = setOf(inboundDominoTile, outboundDominoTile))
+        children = setOf(inboundDominoTile, outboundDominoTile, deliveryTracker.dominoTile))
 
     class OutboundMessageProcessor(
         private val sessionManager: SessionManager,
@@ -269,6 +282,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     class InboundMessageProcessor(
         private val sessionManager: SessionManager,
         private val networkMap: LinkManagerNetworkMap,
+        private val inboundAssignmentListener: InboundAssignmentListener
     ) :
         EventLogProcessor<String, LinkInMessage> {
 
@@ -289,7 +303,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                         DataMessage.AuthenticatedAndEncrypted(payload)
                     )
                     is ResponderHelloMessage, is ResponderHandshakeMessage,
-                    is InitiatorHandshakeMessage -> processSessionMessage(message)
+                    is InitiatorHandshakeMessage, is InitiatorHelloMessage -> processSessionMessage(message)
                     is UnauthenticatedMessage -> {
                         listOf(Record(P2P_IN_TOPIC, generateKey(), payload))
                     }
@@ -305,7 +319,18 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private fun processSessionMessage(message: LinkInMessage): List<Record<String, *>> {
             val response = sessionManager.processSessionMessage(message)
             return if (response != null) {
-                listOf(Record(Schema.LINK_OUT_TOPIC, generateKey(), response))
+                when(val payload = message.payload) {
+                    is InitiatorHelloMessage -> {
+                        val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
+                        listOf(
+                            Record(Schema.LINK_OUT_TOPIC, generateKey(), response),
+                            Record(Schema.SESSION_OUT_PARTITIONS, payload.header.sessionId, SessionPartitions(partitionsAssigned))
+                        )
+                    }
+                    else -> {
+                        listOf(Record(Schema.LINK_OUT_TOPIC, generateKey(), response))
+                    }
+                }
             } else {
                 emptyList()
             }
@@ -426,13 +451,14 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     class PendingSessionMessageQueuesImpl(
         publisherFactory: PublisherFactory,
         coordinatorFactory: LifecycleCoordinatorFactory,
-        configuration: SmartConfig
+        configuration: SmartConfig,
+        instanceId: Int
     ): PendingSessionMessageQueues, LifecycleWithDominoTile {
         private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<AuthenticatedMessageAndKey>>()
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            LINK_MANAGER_PUBLISHER_CLIENT_ID,
+            PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, instanceId),
             configuration
         )
         override val dominoTile = publisher.dominoTile
