@@ -48,11 +48,7 @@ interface PropertyWriteStrategy {
         /**
          * Select the correct strategy for writing properties, based on the property information.
          */
-        fun make(
-            name: String,
-            propertyInformation: LocalPropertyInformation,
-            factory: LocalSerializerFactory
-        ): PropertyWriteStrategy {
+        fun make(name: String, propertyInformation: LocalPropertyInformation, factory: LocalSerializerFactory): PropertyWriteStrategy {
             val reader = PropertyReader.make(propertyInformation)
             val type = propertyInformation.type
             return if (isPrimitive(type.typeIdentifier)) {
@@ -111,11 +107,7 @@ class ComposableTypePropertySerializer(
          * @param propertyInformation [LocalPropertyInformation] for the property.
          * @param factory The [LocalSerializerFactory] to use when writing values for this property.
          */
-        fun make(
-            name: String,
-            propertyInformation: LocalPropertyInformation,
-            factory: LocalSerializerFactory
-        ): PropertySerializer =
+        fun make(name: String, propertyInformation: LocalPropertyInformation, factory: LocalSerializerFactory): PropertySerializer =
                 ComposableTypePropertySerializer(
                         name,
                         propertyInformation.isCalculated,
