@@ -1,5 +1,6 @@
 package net.corda.components.rpc
 
+import net.corda.components.rpc.internal.RbacPermissionSystemEventHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
@@ -18,26 +19,41 @@ import net.corda.httprpc.ssl.SslCertReadServiceFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.createCoordinator
+import net.corda.permissions.rpcops.PermissionRpcOpsService
+import net.corda.permissions.service.PermissionServiceComponent
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
-
-class ConfigReceivedEvent(val currentConfigurationSnapshot: Map<String, SmartConfig>) : LifecycleEvent
-class MessagingConfigUpdateEvent(val currentConfigurationSnapshot: Map<String, SmartConfig>) : LifecycleEvent
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality
 
 @Suppress("LongParameterList")
-class HttpRpcGateway(
-    private val lifeCycleCoordinator: LifecycleCoordinator,
+@Component(service = [HttpRpcGateway::class], immediate = true)
+class HttpRpcGateway @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
+    @Reference(service = HttpRpcServerFactory::class)
     private val httpRpcServerFactory: HttpRpcServerFactory,
+    @Reference(service = RPCSecurityManagerFactory::class)
     private val rpcSecurityManagerFactory: RPCSecurityManagerFactory,
+    @Reference(service = SslCertReadServiceFactory::class)
     private val sslCertReadServiceFactory: SslCertReadServiceFactory,
-    private val rpcOps: List<PluggableRPCOps<out RpcOps>>
+    @Reference(service = PermissionServiceComponent::class)
+    private val permissionServiceComponent: PermissionServiceComponent,
+    @Reference(service = PermissionRpcOpsService::class)
+    private val permissionRpcOpsService: PermissionRpcOpsService,
+    @Reference(service = PluggableRPCOps::class, cardinality = ReferenceCardinality.MULTIPLE)
+    private val rpcOps: List<PluggableRPCOps<out RpcOps>>,
 ) : Lifecycle {
 
-    companion object {
-        private val log = contextLogger()
+    private companion object {
+        val log = contextLogger()
         const val MESSAGING_CONFIG = "corda.messaging"
         const val RPC_CONFIG = "corda.rpc"
         const val RPC_ADDRESS_CONFIG = "address"
@@ -48,6 +64,8 @@ class HttpRpcGateway(
         const val AZURE_TENANT_ID_CONFIG = "sso.azureAd.tenantId"
         const val AZURE_CLIENT_SECRET_CONFIG = "sso.azureAd.clientSecret"
     }
+
+    private var rbacLifecycleCoordinator: LifecycleCoordinator? = null
 
     private var receivedSnapshot = false
 
@@ -68,7 +86,13 @@ class HttpRpcGateway(
     }
 
     override fun start() {
-        log.info("Starting from lifecycle event")
+        rbacLifecycleCoordinator = coordinatorFactory.createCoordinator<HttpRpcGateway>(
+            RbacPermissionSystemEventHandler(permissionServiceComponent, permissionRpcOpsService)
+        ).also {
+            log.info("Starting lifecycle coordinator for RBAC permission system.")
+            it.start()
+        }
+
         if (bootstrapConfig == null) {
             val message = "Use the other start method available and pass in the bootstrap configuration"
             log.error(message)
@@ -81,16 +105,12 @@ class HttpRpcGateway(
     }
 
     private fun onConfigurationUpdated(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, SmartConfig>) {
-        log.info("Gateway component received lifecycle event, changedKeys: $changedKeys")
+        log.info("Gateway component received configuration update event, changedKeys: $changedKeys")
         if (MESSAGING_CONFIG in changedKeys) {
             if (receivedSnapshot) {
-                log.info("Config update received")
-                log.info("Config update contains kafka config")
-                lifeCycleCoordinator.postEvent(MessagingConfigUpdateEvent(currentConfigurationSnapshot))
+                handleMessagingConfigUpdate()
             } else {
-                receivedSnapshot = true
-                log.info("Config snapshot received")
-                lifeCycleCoordinator.postEvent(ConfigReceivedEvent(currentConfigurationSnapshot))
+                handleInitialMessagingConfigSnapshot()
             }
         }
         if (RPC_CONFIG in changedKeys) {
@@ -112,8 +132,8 @@ class HttpRpcGateway(
             }
 
             val configSnapshot = currentConfigurationSnapshot[RPC_CONFIG]!!
-                val httpRpcSettings = HttpRpcSettings(
-                    address = NetworkHostAndPort.parse(configSnapshot.getString(RPC_ADDRESS_CONFIG)),
+            val httpRpcSettings = HttpRpcSettings(
+                address = NetworkHostAndPort.parse(configSnapshot.getString(RPC_ADDRESS_CONFIG)),
                 context = HttpRpcContext(
                     version = "1",
                     basePath = "/api",
@@ -134,8 +154,18 @@ class HttpRpcGateway(
         }
     }
 
+    private fun handleInitialMessagingConfigSnapshot() {
+        receivedSnapshot = true
+        log.info("Config snapshot received")
+    }
+
+    private fun handleMessagingConfigUpdate() {
+        log.info("Config update received")
+        log.info("Config update contains kafka config")
+    }
+
     private fun SmartConfig.retrieveSsoOptions(): SsoSettings? {
-        return if(!hasPath(AZURE_CLIENT_ID_CONFIG) || !hasPath(AZURE_TENANT_ID_CONFIG)) {
+        return if (!hasPath(AZURE_CLIENT_ID_CONFIG) || !hasPath(AZURE_TENANT_ID_CONFIG)) {
             null
         } else {
             val clientId = getString(AZURE_CLIENT_ID_CONFIG)
@@ -160,12 +190,11 @@ class HttpRpcGateway(
     override fun stop() {
         sub?.close()
         sub = null
-        server?.close()
-        server = null
         configurationReadService.stop()
         securityManager?.stop()
         securityManager = null
         sslCertReadService?.stop()
         sslCertReadService = null
+        rbacLifecycleCoordinator?.stop()
     }
 }

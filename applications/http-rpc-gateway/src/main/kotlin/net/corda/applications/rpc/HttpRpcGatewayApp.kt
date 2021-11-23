@@ -2,24 +2,12 @@ package net.corda.applications.rpc
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.components.rpc.ConfigReceivedEvent
 import net.corda.components.rpc.HttpRpcGateway
-import net.corda.components.rpc.MessagingConfigUpdateEvent
-import net.corda.configuration.read.ConfigurationReadService
-import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.RpcOps
-import net.corda.httprpc.security.read.RPCSecurityManagerFactory
-import net.corda.httprpc.server.factory.HttpRpcServerFactory
-import net.corda.httprpc.ssl.SslCertReadServiceFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.v5.base.util.contextLogger
@@ -28,7 +16,6 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ReferenceCardinality
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
@@ -37,32 +24,19 @@ import java.io.FileInputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Properties
-
-enum class LifeCycleState {
-    UNINITIALIZED, STARTING, STARTINGMESSAGING, REINITMESSAGING
-}
+import net.corda.applications.rpc.internal.HttpRpcGatewayAppEventHandler
 
 @Component(service = [Application::class], immediate = true)
 @Suppress("LongParameterList")
 class HttpRpcGatewayApp @Activate constructor(
-    @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = Shutdown::class)
-    private val shutDownService: Shutdown,
-    @Reference(service = ConfigurationReadService::class)
-    private val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = HttpRpcServerFactory::class)
-    private val httpRpcServerFactory: HttpRpcServerFactory,
-    @Reference(service = RPCSecurityManagerFactory::class)
-    private val rpcSecurityManagerFactory: RPCSecurityManagerFactory,
-    @Reference(service = SslCertReadServiceFactory::class)
-    private val sslCertReadServiceFactory: SslCertReadServiceFactory,
-    @Reference(service = PluggableRPCOps::class, cardinality = ReferenceCardinality.MULTIPLE)
-    private val rpcOps: List<PluggableRPCOps<out RpcOps>>,
+    @Reference(service = Shutdown::class)
+    private val shutDownService: Shutdown,
     @Reference(service = SmartConfigFactory::class)
     private val smartConfigFactory: SmartConfigFactory,
+    @Reference(service = HttpRpcGateway::class)
+    private val httpRpcGateway: HttpRpcGateway,
 ) : Application {
 
     private companion object {
@@ -92,54 +66,20 @@ class HttpRpcGatewayApp @Activate constructor(
         } else {
             val kafkaProperties = getKafkaPropertiesFromFile(parameters.kafkaProperties)
             val bootstrapConfig = getBootstrapConfig(kafkaProperties)
-            var state: LifeCycleState = LifeCycleState.UNINITIALIZED
-            var httpRpcGateway: HttpRpcGateway? = null
-            log.info("Creating life cycle coordinator")
-            val localLifeCycleCoordinator =
-                coordinatorFactory.createCoordinator<HttpRpcGatewayApp> { event: LifecycleEvent, _: LifecycleCoordinator ->
-                    log.info("LifecycleEvent received: $event")
-                    when (event) {
-                        is StartEvent -> {
-                            consoleLogger.info("Starting HTTP RPC Gateway")
-                            state = LifeCycleState.STARTING
-                            httpRpcGateway?.start(bootstrapConfig)
-                            consoleLogger.info("HTTP RPC Gateway application started")
-                        }
-                        is ConfigReceivedEvent -> {
-                            if (state == LifeCycleState.STARTING) {
-                                state = LifeCycleState.STARTINGMESSAGING
-                                //val config = bootstrapConfig.withFallback(event.currentConfigurationSnapshot[MESSAGING_CONFIG]!!)
-                                consoleLogger.info("Received config from Kafka, started subscriptions")
-                            }
-                        }
-                        is MessagingConfigUpdateEvent -> {
-                            state = LifeCycleState.REINITMESSAGING
-                            //val config = bootstrapConfig.withFallback(event.currentConfigurationSnapshot[MESSAGING_CONFIG]!!)
-                            consoleLogger.info("Received config update from kafka, restarted subscriptions")
-                        }
-                        is StopEvent -> {
-                            consoleLogger.info("Stopping HTTP RPC Gateway")
-                            httpRpcGateway?.stop()
-                        }
-                        else -> {
-                            log.error("$event unexpected!")
-                        }
-                    }
-                }
 
-            httpRpcGateway = HttpRpcGateway(
-                localLifeCycleCoordinator,
-                configurationReadService,
-                httpRpcServerFactory,
-                rpcSecurityManagerFactory,
-                sslCertReadServiceFactory,
-                rpcOps
+            log.info("Creating life cycle coordinator")
+            lifeCycleCoordinator = coordinatorFactory.createCoordinator<HttpRpcGatewayApp>(
+                HttpRpcGatewayAppEventHandler(httpRpcGateway, bootstrapConfig)
             )
 
             log.info("Starting life cycle coordinator")
-            localLifeCycleCoordinator.start()
-            lifeCycleCoordinator = localLifeCycleCoordinator
+            lifeCycleCoordinator!!.start()
         }
+    }
+
+    override fun close() {
+        lifeCycleCoordinator?.stop()
+        super.close()
     }
 
     private fun getKafkaPropertiesFromFile(kafkaPropertiesFile: File?): Properties? {
