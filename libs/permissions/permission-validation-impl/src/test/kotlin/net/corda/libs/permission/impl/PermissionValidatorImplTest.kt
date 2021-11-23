@@ -12,6 +12,8 @@ import org.mockito.kotlin.mock
 import java.time.Instant
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import net.corda.data.permissions.PermissionAssociation
+import net.corda.data.permissions.RoleAssociation
 
 class PermissionValidatorImplTest {
 
@@ -29,7 +31,7 @@ class PermissionValidatorImplTest {
 
         private val permission = Permission(
             "5e0a07a6-c25d-413a-be34-647a792f4f58", 1,
-            ChangeDetails(Instant.now(), "changeUser"),
+            ChangeDetails(Instant.now()),
             virtualNode,
             permissionString,
             PermissionType.ALLOW
@@ -37,7 +39,7 @@ class PermissionValidatorImplTest {
 
         private val permissionDenied = Permission(
             "5e0a07a6-c25d-413a-be34-647a792f4f58", 1,
-            ChangeDetails(Instant.now(), "changeUser"),
+            ChangeDetails(Instant.now()),
             virtualNode,
             permissionString,
             PermissionType.DENY
@@ -45,20 +47,67 @@ class PermissionValidatorImplTest {
 
         private val role = Role(
             "roleId1", 1,
-            ChangeDetails(Instant.now(), "changeUser"), "STARTFLOW-MYFLOW", listOf(permission)
+            ChangeDetails(Instant.now()),
+            "STARTFLOW-MYFLOW",
+            listOf(
+                PermissionAssociation(
+                    ChangeDetails(Instant.now()),
+                    permission
+                )
+            )
         )
         private val roleWithPermDenied = Role(
-            "roleId2", 1,
-            ChangeDetails(Instant.now(), "changeUser"), "STARTFLOW-MYFLOW", listOf(permissionDenied)
+            "roleId2",
+            1,
+            ChangeDetails(Instant.now()),
+            "STARTFLOW-MYFLOW",
+            listOf(PermissionAssociation(ChangeDetails(Instant.now()), permissionDenied))
         )
-        private val user = User("user1", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
-            "hashedPassword", "saltValue", false, null, null, listOf(role).map { it.id })
-        private val userWithPermDenied =
-            User("userWithPermDenied", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", true,
-                "hashedPassword", "saltValue", false, null, null, listOf(roleWithPermDenied).map { it.id })
-        private val disabledUser =
-            User("disabledUser", 1, ChangeDetails(Instant.now(), "changeUser"), "full name", false,
-                "hashedPassword", "saltValue", false, null, null, listOf(role).map { it.id })
+        private val user = User(
+            "user1",
+            1,
+            ChangeDetails(Instant.now()),
+            "user-login1",
+            "full name",
+            true,
+            "hashedPassword",
+            "saltValue",
+            null,
+            false,
+            null,
+            null,
+            listOf(RoleAssociation(ChangeDetails(Instant.now()), role.id))
+        )
+        private val userWithPermDenied = User(
+            "userWithPermDenied",
+            1,
+            ChangeDetails(Instant.now()),
+            "user-login2",
+            "full name",
+            true,
+            "hashedPassword",
+            "saltValue",
+            null,
+            false,
+            null,
+            null,
+            listOf(RoleAssociation(ChangeDetails(Instant.now()), roleWithPermDenied.id))
+        )
+        private val disabledUser = User(
+            "disabledUser",
+            1,
+            ChangeDetails(Instant.now()),
+            "user-login3",
+            "full name",
+            false,
+            "hashedPassword",
+            "saltValue",
+            null,
+            false,
+            null,
+            null,
+            listOf(RoleAssociation(ChangeDetails(Instant.now()), role.id))
+        )
 
         @BeforeAll
         @JvmStatic
@@ -91,6 +140,7 @@ class PermissionValidatorImplTest {
 
         assertFalse(permissionService.authorizeUser("requestId", disabledUser.id, permissionUrlRequest))
     }
+
     @Test
     fun `User with proper permission set to DENY will not be authorized`() {
 

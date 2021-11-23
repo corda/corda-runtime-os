@@ -18,7 +18,7 @@ import net.corda.p2p.HeartbeatMessage
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.app.HoldingIdentity
+import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode

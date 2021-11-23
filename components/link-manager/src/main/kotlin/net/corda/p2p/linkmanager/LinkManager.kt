@@ -29,6 +29,7 @@ import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
+import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.protocol.api.Session
@@ -132,7 +133,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         inboundAssigned.set(future)
         val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, instanceId),
-            InboundMessageProcessor(sessionManager, linkManagerNetworkMap),
+            InboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
             partitionAssignmentListener = inboundAssignmentListener
         )
         inboundMessageSubscription.start()
@@ -281,6 +282,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     class InboundMessageProcessor(
         private val sessionManager: SessionManager,
         private val networkMap: LinkManagerNetworkMap,
+        private val inboundAssignmentListener: InboundAssignmentListener
     ) :
         EventLogProcessor<String, LinkInMessage> {
 
@@ -301,7 +303,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                         DataMessage.AuthenticatedAndEncrypted(payload)
                     )
                     is ResponderHelloMessage, is ResponderHandshakeMessage,
-                    is InitiatorHandshakeMessage -> processSessionMessage(message)
+                    is InitiatorHandshakeMessage, is InitiatorHelloMessage -> processSessionMessage(message)
                     is UnauthenticatedMessage -> {
                         listOf(Record(P2P_IN_TOPIC, generateKey(), payload))
                     }
@@ -317,7 +319,18 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private fun processSessionMessage(message: LinkInMessage): List<Record<String, *>> {
             val response = sessionManager.processSessionMessage(message)
             return if (response != null) {
-                listOf(Record(Schema.LINK_OUT_TOPIC, generateKey(), response))
+                when(val payload = message.payload) {
+                    is InitiatorHelloMessage -> {
+                        val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
+                        listOf(
+                            Record(Schema.LINK_OUT_TOPIC, generateKey(), response),
+                            Record(Schema.SESSION_OUT_PARTITIONS, payload.header.sessionId, SessionPartitions(partitionsAssigned))
+                        )
+                    }
+                    else -> {
+                        listOf(Record(Schema.LINK_OUT_TOPIC, generateKey(), response))
+                    }
+                }
             } else {
                 emptyList()
             }

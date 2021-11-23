@@ -16,7 +16,7 @@ class ReconfigurableConnectionManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     val configurationReaderService: ConfigurationReadService,
     private val managerFactory: (sslConfig: SslConfiguration, connectionConfig: ConnectionConfiguration) -> ConnectionManager =
-    { sslConfig, connectionConfig -> ConnectionManager(sslConfig, connectionConfig) }
+        { sslConfig, connectionConfig -> ConnectionManager(sslConfig, connectionConfig) }
 ) : LifecycleWithDominoTile {
 
     override val dominoTile = DominoTile(
@@ -50,7 +50,7 @@ class ReconfigurableConnectionManager(
     inner class ConnectionManagerConfigChangeHandler : ConfigurationChangeHandler<GatewayConfiguration>(
         configurationReaderService,
         CONFIG_KEY,
-        {it.toGatewayConfiguration()}
+        { it.toGatewayConfiguration() }
     ) {
         override fun applyNewConfiguration(
             newConfiguration: GatewayConfiguration,
@@ -61,7 +61,8 @@ class ReconfigurableConnectionManager(
             @Suppress("TooGenericExceptionCaught")
             try {
                 if (newConfiguration.sslConfig != oldConfiguration?.sslConfig ||
-                    newConfiguration.connectionConfig != oldConfiguration.connectionConfig) {
+                    newConfiguration.connectionConfig != oldConfiguration.connectionConfig
+                ) {
                     logger.info("New configuration, clients for ${dominoTile.name} will be reconnected")
                     latestConnectionConfig = newConfiguration.connectionConfig
                     val newManager = managerFactory(newConfiguration.sslConfig, newConfiguration.connectionConfig)
@@ -70,8 +71,8 @@ class ReconfigurableConnectionManager(
                     manager = null
                     oldManager?.close()
                     manager = newManager
-                    configUpdateResult.complete(Unit)
                 }
+                configUpdateResult.complete(Unit)
             } catch (e: Throwable) {
                 configUpdateResult.completeExceptionally(e)
             }
