@@ -226,6 +226,7 @@ include 'libs:virtual-node:virtual-node-manager:test-resources:crypto-custom-dig
 include 'libs:virtual-node:virtual-node-cache'
 include 'libs:virtual-node:virtual-node-cache-impl'
 include 'libs:virtual-node:virtual-node-context'
+include 'libs:virtual-node:cpi-info-service'
 include 'libs:virtual-node:virtual-node-info-service'
 include 'libs:virtual-node:sandbox-group-service'
 include 'osgi-framework-api'
