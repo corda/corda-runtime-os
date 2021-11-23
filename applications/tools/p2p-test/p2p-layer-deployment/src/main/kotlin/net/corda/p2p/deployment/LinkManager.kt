@@ -12,7 +12,10 @@ class LinkManager(
     override val app = "link-manager-$index"
     override val image = "azul/zulu-openjdk-alpine:11"
     override val command = listOf("java", "/src/RunMe.java")
-    override val environmentVariables = mapOf("KAFKA_SERVERS" to kafkaServers)
+    override val environmentVariables = mapOf(
+        "KAFKA_SERVERS" to kafkaServers,
+        "INSTANCE_ID" to index.toString()
+    )
 
     override val rawData = listOf(
         TextRawData(
@@ -47,5 +50,5 @@ public class RunMe {
             )
         )
     )
-    // override val image = "engineering-docker-dev.software.r3.com/corda-os-p2p-link-manager"
+    // override val image = "corda-os-docker-dev.software.r3.com/corda-os-p2p-link-manager"
 }

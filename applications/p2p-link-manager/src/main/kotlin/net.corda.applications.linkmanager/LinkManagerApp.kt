@@ -63,7 +63,7 @@ class LinkManagerApp @Activate constructor(
 
                 thread(isDaemon = true) {
                     while (!linkmanager.isRunning) {
-                        consoleLogger.info("Waiting for link manager to start... ${linkmanager.dominoTile}")
+                        consoleLogger.info("Waiting for link manager to start...")
                         Thread.sleep(10000)
                     }
                     consoleLogger.info("Link manager is running")

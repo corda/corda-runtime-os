@@ -22,9 +22,7 @@ class InboundAssignmentListener(private val future: AtomicReference<CompletableF
     }
 
     override fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>) {
-        println("QQQ onPartitionsAssigned firstAssignment = $firstAssignment; future = $future")
         lock.write {
-            println("QQQ in lock")
             if (firstAssignment) {
                 firstAssignment = false
                 future.get().complete(Unit)

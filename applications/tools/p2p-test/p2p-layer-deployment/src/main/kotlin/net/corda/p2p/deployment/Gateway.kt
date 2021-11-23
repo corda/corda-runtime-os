@@ -20,7 +20,10 @@ class Gateway(
     override val app = "gateway-$index"
     override val image = "azul/zulu-openjdk-alpine:11"
     override val command = listOf("java", "/src/RunMe.java")
-    override val environmentVariables = mapOf("KAFKA_SERVERS" to kafkaServers)
+    override val environmentVariables = mapOf(
+        "KAFKA_SERVERS" to kafkaServers,
+        "INSTANCE_ID" to index.toString(),
+    )
 
     override val rawData = listOf(
         TextRawData(
@@ -59,7 +62,7 @@ public class RunMe {
     override val ports = listOf(
         Port("p2p-gateway", 80)
     )
-    // override val image = "engineering-docker-dev.software.r3.com/corda-os-p2p-gateway"
+    // override val image = "corda-os-docker-dev.software.r3.com/corda-os-p2p-gateway"
 
     // YIFT: Remove this when can access images
     /*

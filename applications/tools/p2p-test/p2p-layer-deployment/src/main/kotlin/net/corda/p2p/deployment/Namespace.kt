@@ -23,7 +23,7 @@ class Namespace : Runnable {
         names = ["-l", "--link-manager-count"],
         description = ["Number of Link Managers in the cluster"]
     )
-    private var linkManagerCount = 1
+    private var linkManagerCount = 3
 
     @Option(
         names = ["-H", "--hosts"],
