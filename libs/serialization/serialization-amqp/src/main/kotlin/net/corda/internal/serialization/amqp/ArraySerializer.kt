@@ -105,10 +105,7 @@ open class ArraySerializer(override val type: Type, factory: LocalSerializerFact
 
 // Boxed Character arrays required a specialisation to handle the type conversion properly when populating
 // the array since Kotlin won't allow an implicit cast from Int (as they're stored as 16bit ints) to Char
-class CharArraySerializer(factory: LocalSerializerFactory) : ArraySerializer(
-    Array<Char>::class.java,
-    factory
-) {
+class CharArraySerializer(factory: LocalSerializerFactory) : ArraySerializer(Array<Char>::class.java, factory) {
     override fun <T> List<T>.toArrayOfType(type: Type): Any {
         val elementType = type.asClass()
         val list = this
@@ -123,7 +120,7 @@ abstract class PrimArraySerializer(type: Type, factory: LocalSerializerFactory) 
     companion object {
         // We don't need to handle the unboxed byte type as that is coercible to a byte array, but
         // the other 7 primitive types we do
-        private val primTypes = mapOf<Type, (LocalSerializerFactory) -> PrimArraySerializer>(
+        private val primTypes: Map<Type, (LocalSerializerFactory) -> PrimArraySerializer> = mapOf<Type, (LocalSerializerFactory) -> PrimArraySerializer>(
                 IntArray::class.java to { f -> PrimIntArraySerializer(f) },
                 CharArray::class.java to { f -> PrimCharArraySerializer(f) },
                 BooleanArray::class.java to { f -> PrimBooleanArraySerializer(f) },
@@ -142,10 +139,7 @@ abstract class PrimArraySerializer(type: Type, factory: LocalSerializerFactory) 
     }
 }
 
-class PrimIntArraySerializer(factory: LocalSerializerFactory) : PrimArraySerializer(
-    IntArray::class.java,
-    factory
-) {
+class PrimIntArraySerializer(factory: LocalSerializerFactory) : PrimArraySerializer(IntArray::class.java, factory) {
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
                              context: SerializationContext, debugIndent: Int
     ) {
@@ -155,10 +149,7 @@ class PrimIntArraySerializer(factory: LocalSerializerFactory) : PrimArraySeriali
     }
 }
 
-class PrimCharArraySerializer(factory: LocalSerializerFactory) : PrimArraySerializer(
-    CharArray::class.java,
-    factory
-) {
+class PrimCharArraySerializer(factory: LocalSerializerFactory) : PrimArraySerializer(CharArray::class.java, factory) {
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
                              context: SerializationContext, debugIndent: Int
     ) {
@@ -179,10 +170,7 @@ class PrimCharArraySerializer(factory: LocalSerializerFactory) : PrimArraySerial
     }
 }
 
-class PrimBooleanArraySerializer(factory: LocalSerializerFactory) : PrimArraySerializer(
-    BooleanArray::class.java,
-    factory
-) {
+class PrimBooleanArraySerializer(factory: LocalSerializerFactory) : PrimArraySerializer(BooleanArray::class.java, factory) {
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
                              context: SerializationContext, debugIndent: Int
     ) {
