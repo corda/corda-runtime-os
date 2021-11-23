@@ -1,6 +1,5 @@
 package net.corda.cpi.read.impl.file
 
-import com.typesafe.config.Config
 import net.corda.cpi.read.CPIListener
 import net.corda.cpi.read.CPIRead
 import net.corda.cpi.read.CPISegmentReader
@@ -101,7 +100,7 @@ class CPIReadImplFile(private val vnodeConfig: SmartConfig): CPIFileListener, CP
         if (paths.size > 1) {
             throw IllegalStateException("More than one CPI identifier found")
         }
-        return paths.first()
+        return paths.single()
     }
 
     override fun registerCallback(cpiListener: CPIListener): AutoCloseable {
