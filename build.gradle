@@ -41,11 +41,17 @@ allprojects {
         ext.cordaArtifactoryPassword = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
     }
 
+    pluginManager.withPlugin('java') {
+        java {
+            toolchain {
+                languageVersion = of(javaVersion.majorVersion.toInteger())
+            }
+        }
+    }
+
     apply plugin: 'org.jetbrains.kotlin.jvm'
 
     tasks.withType(JavaCompile).configureEach {
-        sourceCompatibility = javaVersion
-        targetCompatibility = javaVersion
         options.encoding = 'UTF-8'
         options.compilerArgs += [ '-XDenableSunApiLintControl', '-parameters' ]
     }
