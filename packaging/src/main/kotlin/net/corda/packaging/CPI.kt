@@ -17,7 +17,7 @@ interface CPI : AutoCloseable {
 
         /**
          * Known file extensions for a CPI file; the only difference between CPI and CPB files is that CPB files
-         * have no [CPI.Metadata.networkPolicy]
+         * have no [CPI.Metadata.groupPolicy]
          */
         val fileExtensions = listOf(".cpb", ".cpi")
 
@@ -107,7 +107,7 @@ interface CPI : AutoCloseable {
         val id : Identifier
         val hash : SecureHash
         val cpks : Collection<CPK.Metadata>
-        val networkPolicy : String?
+        val groupPolicy : String?
 
         /**
          * @return a [CPK.Metadata] instance with containing the information about a single [CPK]
@@ -132,8 +132,8 @@ interface CPI : AutoCloseable {
                 CPILoader.loadMetadata(inputStream, cpiLocation, verifySignature)
 
             @JvmStatic
-            fun newInstance(id : Identifier, hash: SecureHash, cpks: Iterable<CPK.Metadata>, networkPolicy : String?) : Metadata =
-                CPIMetadataImpl(id, hash, cpks, networkPolicy)
+            fun newInstance(id : Identifier, hash: SecureHash, cpks: Iterable<CPK.Metadata>, groupPolicy : String?) : Metadata =
+                CPIMetadataImpl(id, hash, cpks, groupPolicy)
         }
     }
 

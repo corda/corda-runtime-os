@@ -137,13 +137,12 @@ fun CPIMetadata.toCorda() = CPI.Metadata.newInstance(
     id.toCorda(),
     net.corda.v5.crypto.SecureHash(hash.algorithm, hash.serverHash.array()),
     cpks.map(CPKMetadata::toCorda),
-    networkPolicy
+    groupPolicy
 )
 
 fun CPI.Metadata.toAvro() = CPIMetadata.newBuilder().also {
     it.id = id.toAvro()
     it.hash = SecureHash(hash.algorithm, ByteBuffer.wrap(hash.bytes))
     it.cpks = cpks.map(CPK.Metadata::toAvro)
-    it.networkPolicy = networkPolicy
+    it.groupPolicy = groupPolicy
 }.build()
-

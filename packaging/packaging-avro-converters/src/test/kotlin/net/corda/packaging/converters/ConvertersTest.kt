@@ -80,7 +80,7 @@ class ConvertersTest {
             cpiMetadata1.cpks.asSequence().zip(cpiMetadata2.cpks.asSequence()).forEach {
                 Assertions.assertEquals(it.first, it.second)
             }
-            Assertions.assertEquals(cpiMetadata1.networkPolicy, cpiMetadata2.networkPolicy)
+            Assertions.assertEquals(cpiMetadata1.groupPolicy, cpiMetadata2.groupPolicy)
         }
     }
 

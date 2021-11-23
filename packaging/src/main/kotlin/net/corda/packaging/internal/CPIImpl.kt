@@ -27,7 +27,7 @@ internal class CPIMetadataImpl(
     override val id: CPI.Identifier,
     override val hash : SecureHash,
     cpks: Iterable<CPK.Metadata>,
-    override val networkPolicy: String?) : CPI.Metadata {
+    override val groupPolicy: String?) : CPI.Metadata {
     private val cpkMap : NavigableMap<CPK.Identifier, CPK.Metadata>
 
     init {

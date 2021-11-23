@@ -16,7 +16,7 @@
       "type": { "type": "array", "items": "net.corda.data.packaging.CPKMetadata" }
     },
     {
-      "name": "networkPolicy",
+      "name": "groupPolicy",
       "type": ["string", "null"]
     }
   ]

@@ -77,7 +77,7 @@ internal object CPILoader {
                 signatureCollector.certificates.asSequence().certSummaryHash()),
             hash = SecureHash(DigestAlgorithmName.SHA2_256.name, md.digest()),
             cpks = cpkMetadata,
-            networkPolicy = null
+            groupPolicy = null
         ), cpks.takeIf { expansionLocation != null } )
     }
 }
