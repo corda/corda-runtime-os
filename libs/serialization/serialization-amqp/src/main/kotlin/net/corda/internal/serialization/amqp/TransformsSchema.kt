@@ -1,7 +1,6 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.LocalTypeInformation
-import net.corda.serialization.SerializationContext
 import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefault
 import net.corda.v5.serialization.annotations.CordaSerializationTransformRename
 import org.apache.qpid.proton.amqp.DescribedType
