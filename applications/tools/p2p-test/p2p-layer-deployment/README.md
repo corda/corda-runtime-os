@@ -120,6 +120,40 @@ linkmanager \
 --locallyHostedIdentity=O=Alice,L=London,C=GB:group1
 ```
 
+## Starting the simulator
+### Receiver
+To start the receiver run:
+```bash
+./applications/tools/p2p-test/p2p-layer-deployment/build/install/p2p-layer-deployment/bin/p2p-layer-deployment receive [-n <namespace>] 
+```
+
+### DB-Sink
+To start the DB sink:
+```bash
+./applications/tools/p2p-test/p2p-layer-deployment/build/install/p2p-layer-deployment/bin/p2p-layer-deployment sb-sink [-n <namespace>] 
+```
+
+### Sender
+To start the DB sink:
+```bash
+./applications/tools/p2p-test/p2p-layer-deployment/build/install/p2p-layer-deployment/bin/p2p-layer-deployment send [-n <namespace>] 
+```
+where the load generation parameters can be set via the arguments:
+```
+  -b, --batch-size=<batchSize>
+                        size of batch
+  -d, --delay=<delay>   delay in milliseconds
+  -f, --one-off         One off generation type
+  -n, --name=<namespaceName>
+                        The name of the namespace
+  -o, --our=<our>       Our peer X500 name and group ID (<x500name>:<groupId>)
+  -p, --peer=<peer>     The peer X500 name and group ID (<x500name>:<groupId>)
+  -s, --message-size-bytes=<messageSizeBytes>
+                        size message in bytes
+  -t, --total-number-of-messages=<totalNumberOfMessages>
+                        Total number of messages (for one ofe case)
+```
+
 # After you finish
 1. Destroy the cluster.
 2. Stop and uninstall Telepresence:

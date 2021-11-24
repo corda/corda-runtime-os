@@ -26,7 +26,7 @@ class Bash : Runnable {
     @Parameters(
         description = ["The command (with parameters) to run (default to bash)"]
     )
-    var params = listOf("bash")
+    private var params = listOf("bash")
 
     @Suppress("UNCHECKED_CAST")
     override fun run() {

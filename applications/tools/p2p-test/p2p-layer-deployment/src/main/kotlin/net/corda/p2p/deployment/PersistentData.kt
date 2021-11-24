@@ -32,7 +32,7 @@ data class PersistentData(
             "capacity" to mapOf("storage" to size),
             "storageClassName" to namespace.storageClassName,
             "accessModes" to listOf("ReadWriteMany"),
-            "hostPath" to mapOf("path" to "/mnt/data")
+            "hostPath" to mapOf("path" to "/mnt/data/$namespace/$app-$name")
         )
     )
 

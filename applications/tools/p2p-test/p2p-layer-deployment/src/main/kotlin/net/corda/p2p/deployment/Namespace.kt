@@ -113,7 +113,8 @@ class Namespace : Runnable {
         KafkaBroker.kafka(namespaceName, zooKeeperCount, kafkaBrokerCount) +
             PostGreSql(dbUsername, dbPassword, sqlInitFile) +
             Gateway.gateways(gatewayCount, hostsNames, kafkaServers, tag) +
-            LinkManager.linkManagers(linkManagerCount, kafkaServers, tag)
+            LinkManager.linkManagers(linkManagerCount, kafkaServers, tag) +
+            Simulator(kafkaServers, tag, 1024)
     }
 
     private val yamls by lazy {
