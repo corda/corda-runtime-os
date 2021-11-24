@@ -36,7 +36,7 @@ You can configure the image using those environment variables:
 * `KAFKA_SERVERS` - The list of Kafka server (default to `localhost:9092`)
 * `CONFIG_TOPIC` - The  name of the configuration topic (default to `ConfigTopic`)
 * `TOPIC_PREFIX` - The topic prefix (default to empty string)
-* `INSTANCE_ID` - The Gateway instance ID (default to random number)
+* `INSTANCE_ID` - The Link Manager instance ID (default to random number)
 
 ### Example
 1. Before starting the application, run a kafka cluster. See examples in [here](../../../../testing/message-patterns/README.md).
@@ -47,7 +47,7 @@ docker run \
 --rm \
 --network kafka-docker_default \
 -e KAFKA_SERVERS="broker1:9093" \
-engineering-docker-dev.software.r3.com/corda-os-p2p-link-manager:5.0.0.0-SNAPSHOT
+corda-os-docker-dev.software.r3.com/corda-os-p2p-link-manager:5.0.0.0-SNAPSHOT
 ```
 Please note:
 * The image need to be able to talk with the kafka broker, hence the network and `KAFKA_SERVERS` environment variable.
