@@ -127,15 +127,22 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         instanceId
     ) { outboundMessageProcessor.processAuthenticatedMessage(it, true) }
 
+    private val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
+        SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, instanceId),
+        InboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
+        partitionAssignmentListener = inboundAssignmentListener
+    )
+
+    private val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
+        SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, instanceId),
+        outboundMessageProcessor,
+        partitionAssignmentListener = null
+    )
+
     @VisibleForTesting
     internal fun createInboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()
         inboundAssigned.set(future)
-        val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, instanceId),
-            InboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
-            partitionAssignmentListener = inboundAssignmentListener
-        )
         inboundMessageSubscription.start()
         resources.keep(inboundMessageSubscription)
         //We complete the future inside inboundAssignmentListener.
@@ -144,11 +151,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
     @VisibleForTesting
     internal fun createOutboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, instanceId),
-            outboundMessageProcessor,
-            partitionAssignmentListener = null
-        )
         outboundMessageSubscription.start()
         resources.keep(outboundMessageSubscription)
         val outboundReady = CompletableFuture<Unit>()
