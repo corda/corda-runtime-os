@@ -85,6 +85,12 @@ class Namespace : Runnable {
     )
     private var dryRun = false
 
+    @Option(
+        names = ["-t", "--tag"],
+        description = ["The docker name of the tag to pull"]
+    )
+    private var tag = "latest"
+
     private val nameSpaceYaml = listOf(
         mapOf(
             "apiVersion" to "v1",
@@ -95,19 +101,20 @@ class Namespace : Runnable {
                     "namespace-type" to "p2p-layer"
                 )
             )
-        )
+        ),
+        CordaOsDockerDevSecret.secret(namespaceName),
     )
 
     private val kafkaServers by lazy {
-        KafkaBroker.kafkaServers(kafkaBrokerCount)
+        KafkaBroker.kafkaServers(namespaceName, kafkaBrokerCount)
     }
 
     private val pods by lazy {
         KafkaBroker.kafka(namespaceName, zooKeeperCount, kafkaBrokerCount) +
             PostGreSql(dbUsername, dbPassword, sqlInitFile) +
-            Gateway.gateways(gatewayCount, hostsNames, kafkaServers) +
+            Gateway.gateways(gatewayCount, hostsNames, kafkaServers, tag) +
             LinkManager.linkManagers(linkManagerCount, kafkaServers) +
-            ConfiguratorPod(kafkaServers)
+            ConfiguratorPod(tag, kafkaServers)
     }
 
     private val yamls by lazy {

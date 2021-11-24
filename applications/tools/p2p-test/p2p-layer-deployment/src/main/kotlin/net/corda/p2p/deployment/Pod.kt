@@ -9,6 +9,7 @@ abstract class Pod() {
     open val environmentVariables: Map<String, String> = emptyMap()
     open val hosts: Collection<String>? = null
     open val command: Collection<String>? = null
+    open val pullSecrets: Collection<String> = emptyList()
 
     fun yamls(namespace: Namespace): Collection<Yaml> {
         return persistentVolumes.flatMap {
@@ -44,6 +45,9 @@ abstract class Pod() {
             "template" to mapOf(
                 "metadata" to mapOf("labels" to mapOf("app" to app)),
                 "spec" to mapOf(
+                    "imagePullSecrets" to pullSecrets.map {
+                        mapOf("name" to it)
+                    },
                     "containers" to listOf(
                         mapOf(
                             "name" to app,

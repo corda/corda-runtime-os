@@ -6,9 +6,9 @@ class KafkaBroker(
     zookeeperConnectString: String
 ) : Pod() {
     companion object {
-        fun kafkaServers(brokersCount: Int) =
+        fun kafkaServers(namespace: String, brokersCount: Int) =
             (1..brokersCount).map { index ->
-                "kafka-broker-$index:9092"
+                "kafka-broker-$index.$namespace:9093"
             }.joinToString(",")
         fun kafka(
             clusterName: String,
@@ -43,7 +43,7 @@ class KafkaBroker(
         "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP" to "INTERNAL:PLAINTEXT,CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT",
         "KAFKA_INTER_BROKER_LISTENER_NAME" to "INTERNAL",
         "KAFKA_LISTENERS" to "INTERNAL://:9091,CLIENT://:9092,EXTERNAL://:9093",
-        "KAFKA_ADVERTISED_LISTENERS" to "INTERNAL://$app:9091,CLIENT://$app:9092,EXTERNAL://$app:9093",
+        "KAFKA_ADVERTISED_LISTENERS" to "INTERNAL://$app:9091,CLIENT://$app:9092,EXTERNAL://$app.$clusterName:9093",
         "KAFKA_MIN_INSYNC_REPLICAS" to "1",
         "KAFKA_DEFAULT_REPLICATION_FACTOR" to "3",
         "KAFKA_NUM_PARTITIONS" to "5",

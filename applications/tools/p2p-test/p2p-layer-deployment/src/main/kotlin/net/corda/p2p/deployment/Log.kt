@@ -18,10 +18,10 @@ class Log : Runnable {
     private var namespaceName = "p2p-layer"
 
     @Option(
-        names = ["-p", "--pod"],
-        description = ["The name of the pod"]
+        names = ["-p", "--pods"],
+        description = ["regular expression for the pods names"]
     )
-    private var pod: String? = null
+    private var pod: String = ""
 
     @Option(
         names = ["-f", "--follow"],
@@ -30,18 +30,15 @@ class Log : Runnable {
     private var follow: Boolean = false
 
     override fun run() {
-        val allPods = getAllPods()
-
-        if (pod == null) {
-            allPods.map { (displayName, podName) ->
-                thread {
-                    logPod(displayName, podName)
-                }
-            }.forEach {
-                it.join()
+        val filter = Regex(".*$pod.*")
+        getAllPods().filter { (displayName, _) ->
+            filter.matches(displayName)
+        }.map { (displayName, podName) ->
+            thread {
+                logPod(displayName, podName)
             }
-        } else {
-            logPod(pod!!, allPods[pod] ?: throw RuntimeException("Could not find $pod"))
+        }.forEach {
+            it.join()
         }
     }
 

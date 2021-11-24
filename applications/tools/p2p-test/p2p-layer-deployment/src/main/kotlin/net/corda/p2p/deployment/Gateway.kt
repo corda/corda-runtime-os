@@ -3,12 +3,18 @@ package net.corda.p2p.deployment
 class Gateway(
     index: Int,
     kafkaServers: String,
-    override val hosts: Collection<String>?
-) : Pod() {
+    override val hosts: Collection<String>,
+    tag: String,
+) : P2pPod(kafkaServers, tag) {
     companion object {
-        fun gateways(count: Int, hostNames: Collection<String>, kafkaServers: String): Collection<Pod> {
+        fun gateways(
+            count: Int,
+            hostNames: Collection<String>,
+            kafkaServers: String,
+            tag: String,
+        ): Collection<Pod> {
             val gateways = (1..count).map {
-                Gateway(it, kafkaServers, hostNames)
+                Gateway(it, kafkaServers, hostNames, tag)
             }
             val balancer = LoadBalancer(
                 hostNames,
@@ -18,12 +24,15 @@ class Gateway(
         }
     }
     override val app = "gateway-$index"
-    override val image = "azul/zulu-openjdk-alpine:11"
-    override val command = listOf("java", "/src/RunMe.java")
+    override val imageName = "p2p-gateway"
     override val environmentVariables = mapOf(
         "KAFKA_SERVERS" to kafkaServers,
         "INSTANCE_ID" to index.toString(),
     )
+    override val ports = listOf(
+        Port("p2p-gateway", 80)
+    )
+    /*
 
     override val rawData = listOf(
         TextRawData(
@@ -58,10 +67,7 @@ public class RunMe {
             )
         )
     )
-
-    override val ports = listOf(
-        Port("p2p-gateway", 80)
-    )
+*/
     // override val image = "corda-os-docker-dev.software.r3.com/corda-os-p2p-gateway"
 
     // YIFT: Remove this when can access images
