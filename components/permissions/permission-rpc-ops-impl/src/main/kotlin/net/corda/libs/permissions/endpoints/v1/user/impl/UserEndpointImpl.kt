@@ -1,7 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.libs.permissions.PermissionService
 import net.corda.libs.permissions.endpoints.exception.PermissionEndpointException
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
@@ -12,6 +11,7 @@ import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
+import net.corda.permissions.service.PermissionServiceComponent
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -23,8 +23,8 @@ import org.osgi.service.component.annotations.Reference
 class UserEndpointImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = PermissionService::class)
-    private val permissionService: PermissionService
+    @Reference(service = PermissionServiceComponent::class)
+    private val permissionServiceComponent: PermissionServiceComponent
 ) : UserEndpoint, Lifecycle {
 
     override val targetInterface: Class<UserEndpoint> = UserEndpoint::class.java
@@ -36,7 +36,7 @@ class UserEndpointImpl @Activate constructor(
     override fun createUser(createUserType: CreateUserType): UserResponseType {
         validatePermissionManager()
 
-        val createUserResult = permissionService.permissionManager.createUser(
+        val createUserResult = permissionServiceComponent.permissionManager.createUser(
             convertFromUserType(createUserType)
         )
 
@@ -45,7 +45,7 @@ class UserEndpointImpl @Activate constructor(
 
     override fun getUser(loginName: String): UserResponseType? {
         validatePermissionManager()
-        val userResponseDto = permissionService.permissionManager.getUser(
+        val userResponseDto = permissionServiceComponent.permissionManager.getUser(
             GetUserRequestDto(
                 "todo", // the endpoint needs more context to get the request user name
                 loginName
@@ -60,7 +60,7 @@ class UserEndpointImpl @Activate constructor(
             throw PermissionEndpointException("User Endpoint must be started.", 500)
         }
 
-        if (!permissionService.isRunning) {
+        if (!permissionServiceComponent.isRunning) {
             throw PermissionEndpointException("Permission manager must be running.", 500)
         }
     }
