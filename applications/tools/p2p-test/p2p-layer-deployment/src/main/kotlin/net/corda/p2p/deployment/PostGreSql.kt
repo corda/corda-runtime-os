@@ -16,7 +16,7 @@ class PostGreSql(
     )
     override val persistentVolumes: Collection<PersistentData> =
         listOf(PersistentData("db-data", "/var/lib/postgresql/data"),)
-    val textRawData = listOf(
+    override val rawData = listOf(
         TextRawData(
             "initdb",
             "/docker-entrypoint-initdb.d",

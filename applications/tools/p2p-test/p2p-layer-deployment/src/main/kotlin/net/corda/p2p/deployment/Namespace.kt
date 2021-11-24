@@ -89,7 +89,7 @@ class Namespace : Runnable {
         names = ["-t", "--tag"],
         description = ["The docker name of the tag to pull"]
     )
-    private var tag = "latest"
+    private var tag = "5.0.0.0-alpha-1637757042293"
 
     private val nameSpaceYaml = listOf(
         mapOf(
@@ -113,8 +113,7 @@ class Namespace : Runnable {
         KafkaBroker.kafka(namespaceName, zooKeeperCount, kafkaBrokerCount) +
             PostGreSql(dbUsername, dbPassword, sqlInitFile) +
             Gateway.gateways(gatewayCount, hostsNames, kafkaServers, tag) +
-            LinkManager.linkManagers(linkManagerCount, kafkaServers) +
-            ConfiguratorPod(tag, kafkaServers)
+            LinkManager.linkManagers(linkManagerCount, kafkaServers, tag)
     }
 
     private val yamls by lazy {

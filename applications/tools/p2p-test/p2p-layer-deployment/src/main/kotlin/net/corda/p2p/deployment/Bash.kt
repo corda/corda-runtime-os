@@ -21,7 +21,7 @@ class Bash : Runnable {
         names = ["-p", "--pod"],
         description = ["The name of the pod"]
     )
-    private var pod = "gateway-1"
+    private var pod = "p2p-gateway-1"
 
     @Parameters(
         description = ["The command (with parameters) to run (default to bash)"]

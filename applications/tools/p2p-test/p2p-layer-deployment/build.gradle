@@ -17,9 +17,3 @@ dependencies {
 application {
     mainClass = 'net.corda.p2p.deployment.GoKt'
 }
-
-//YIFT: Remove when have access to images
-jar.dependsOn(':applications:p2p-gateway:build')
-jar.dependsOn(':applications:p2p-link-manager:build')
-jar.dependsOn(':applications:tools:p2p-test:configuration-publisher:build')
-jar.dependsOn(':applications:tools:p2p-test:app-simulator:build')

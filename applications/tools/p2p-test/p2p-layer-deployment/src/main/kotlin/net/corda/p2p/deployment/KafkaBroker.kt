@@ -7,9 +7,10 @@ class KafkaBroker(
 ) : Pod() {
     companion object {
         fun kafkaServers(namespace: String, brokersCount: Int) =
-            (1..brokersCount).map { index ->
+            (1..brokersCount).joinToString(",") { index ->
                 "kafka-broker-$index.$namespace:9093"
-            }.joinToString(",")
+            }
+
         fun kafka(
             clusterName: String,
             zookeepersCount: Int,
