@@ -15,7 +15,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:http-rpc:http-rpc")
     implementation project(":libs:permissions:permission-manager")
-    implementation project(":libs:permissions:permission-validation")
     implementation project(":libs:lifecycle:lifecycle")
 
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"

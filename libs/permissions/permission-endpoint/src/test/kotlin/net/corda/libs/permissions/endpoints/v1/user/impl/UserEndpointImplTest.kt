@@ -1,18 +1,21 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
+import net.corda.libs.permissions.PermissionService
 import java.time.Instant
-import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.endpoints.exception.PermissionEndpointException
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.v5.base.util.Try
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 
 import org.mockito.kotlin.mock
@@ -44,14 +47,16 @@ internal class UserEndpointImplTest {
         emptyList()
     )
 
+    private val lifecycleCoordinator: LifecycleCoordinator = mock<LifecycleCoordinator>()
+    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().also {
+        whenever(it.createCoordinator(any(), any())).thenReturn(lifecycleCoordinator)
+    }
     private val permissionManager = mock<PermissionManager>()
-    private val permissionValidator = mock<PermissionValidator>()
+    private val permissionService = mock<PermissionService>().also {
+        whenever(it.permissionManager).thenReturn(permissionManager)
+    }
 
-    private val endpoint = UserEndpointImpl()
-        .also {
-            it.permissionManager = permissionManager
-            it.permissionValidator = permissionValidator
-        }
+    private val endpoint = UserEndpointImpl(lifecycleCoordinatorFactory, permissionService)
 
     @Test
     fun getProtocolVersion() {
@@ -61,7 +66,8 @@ internal class UserEndpointImplTest {
     @Test
     fun `create a user successfully`() {
         val createUserDtoCapture = argumentCaptor<CreateUserRequestDto>()
-        whenever(permissionManager.isRunning).thenReturn(true)
+        whenever(lifecycleCoordinator.isRunning).thenReturn(true)
+        whenever(permissionService.isRunning).thenReturn(true)
         whenever(permissionManager.createUser(createUserDtoCapture.capture())).thenReturn(mockTry)
         whenever(mockTry.getOrThrow()).thenReturn(userResponseDto)
 
@@ -76,17 +82,6 @@ internal class UserEndpointImplTest {
         assertEquals(true, responseType.enabled)
         assertEquals(now, responseType.passwordExpiry)
         assertEquals("parentGroupId", responseType.parentGroup)
-    }
-
-    @Test
-    fun `create a user throws with status 500 when permission manager is null`() {
-        endpoint.start()
-        endpoint.permissionManager = null
-
-        val e = assertThrows<PermissionEndpointException> {
-            endpoint.createUser(createUserType)
-        }
-        assertEquals(500, e.status)
     }
 
     @Test
@@ -111,7 +106,8 @@ internal class UserEndpointImplTest {
     @Test
     fun `get a user successfully`() {
         val getUserRequestDtoCapture = argumentCaptor<GetUserRequestDto>()
-        whenever(permissionManager.isRunning).thenReturn(true)
+        whenever(lifecycleCoordinator.isRunning).thenReturn(true)
+        whenever(permissionService.isRunning).thenReturn(true)
         whenever(permissionManager.getUser(getUserRequestDtoCapture.capture())).thenReturn(userResponseDto)
 
         endpoint.start()
@@ -126,17 +122,6 @@ internal class UserEndpointImplTest {
         assertEquals(true, responseType.enabled)
         assertEquals(now, responseType.passwordExpiry)
         assertEquals("parentGroupId", responseType.parentGroup)
-    }
-
-    @Test
-    fun `get a user throws with status 500 when permission manager is null`() {
-        endpoint.start()
-        endpoint.permissionManager = null
-
-        val e = assertThrows<PermissionEndpointException> {
-            endpoint.getUser("abc")
-        }
-        assertEquals(500, e.status)
     }
 
     @Test
@@ -157,5 +142,4 @@ internal class UserEndpointImplTest {
         }
         assertEquals(500, e.status)
     }
-
 }

@@ -2,7 +2,7 @@ package net.corda.libs.permission.impl
 
 import net.corda.data.permissions.Permission
 import net.corda.data.permissions.PermissionType
-import net.corda.libs.permission.PermissionValidator
+import net.corda.libs.permissions.validation.PermissionValidator
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig

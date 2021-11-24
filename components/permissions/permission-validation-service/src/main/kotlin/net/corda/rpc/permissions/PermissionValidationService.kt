@@ -1,7 +1,7 @@
 package net.corda.rpc.permissions
 
-import net.corda.libs.permission.PermissionValidator
-import net.corda.libs.permission.factory.PermissionValidatorFactory
+import net.corda.libs.permissions.validation.PermissionValidator
+import net.corda.libs.permissions.validation.factory.PermissionValidatorFactory
 import net.corda.lifecycle.Lifecycle
 import org.osgi.service.component.annotations.Reference
 

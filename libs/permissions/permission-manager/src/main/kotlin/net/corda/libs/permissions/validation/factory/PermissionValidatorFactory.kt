@@ -1,6 +1,6 @@
-package net.corda.libs.permission.factory
+package net.corda.libs.permissions.validation.factory
 
-import net.corda.libs.permission.PermissionValidator
+import net.corda.libs.permissions.validation.PermissionValidator
 
 interface PermissionValidatorFactory {
 
