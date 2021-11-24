@@ -17,6 +17,7 @@ dependencies {
     implementation "net.corda:corda-packaging"
     implementation project(":libs:sandbox")
     implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-topic-schema"
 
     implementation project(':libs:flows:dependency-injection')
     implementation project(':libs:flows:flow-manager')

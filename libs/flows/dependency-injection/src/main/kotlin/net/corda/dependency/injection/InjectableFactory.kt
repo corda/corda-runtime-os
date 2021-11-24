@@ -1,6 +1,6 @@
 package net.corda.dependency.injection
 
-import net.corda.flow.statemachine.FlowStateMachine
+import net.corda.flow.statemachine.FlowFiber
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.injection.CordaInject
 
@@ -10,7 +10,7 @@ import net.corda.v5.application.injection.CordaInject
  *
  *  It is expected that each injectable service will provide a proxy implementation of <T> and an implementation
  *  of this factory to create it. The proxy will be used to control how the internal service is called in the context
- *  of a sandbox ([SandboxGroup]) and flow ([FlowStateMachine]).
+ *  of a sandbox ([SandboxGroup]) and flow ([FlowFiber]).
  */
 interface InjectableFactory<T> {
 
@@ -22,10 +22,10 @@ interface InjectableFactory<T> {
     /**
      * Creates the instance of a proxy service of <T>.
      *
-     * @param flowStateMachine used to determine the flow context.
+     * @param flowFiber used to determine the flow context.
      * @param sandboxGroup used to determine the sandbox context.
      *
      * @return an instance of the type injected into the flow using the [CordaInject] annotation.
      */
-    fun create(flowStateMachine: FlowStateMachine<*>, sandboxGroup: SandboxGroup) : T
+    fun create(flowFiber: FlowFiber<*>, sandboxGroup: SandboxGroup) : T
 }
