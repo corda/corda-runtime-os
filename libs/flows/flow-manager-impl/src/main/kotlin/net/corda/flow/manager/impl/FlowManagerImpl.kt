@@ -130,7 +130,7 @@ class FlowManagerImpl @Activate constructor(
             )
         }
 
-        dependencyInjector.injectDependencies(flow.getFlowLogic(), flow)
+        // dependencyInjector.injectDependencies(flow.getFlowLogic(), flow)
     }
 
     private fun getCheckpointSerializer(sandboxGroup: SandboxGroup): CheckpointSerializer {
