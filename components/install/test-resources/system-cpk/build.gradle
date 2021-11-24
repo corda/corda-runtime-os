@@ -1,0 +1,38 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'net.corda.plugins.cordapp-cpk'
+}
+
+cordapp {
+    targetPlatformVersion 1000
+    minimumPlatformVersion 999 as Integer
+
+    workflow {
+        name = 'System CPK to be used for unit tests for the packaging module'
+        versionId = 1
+        licence = 'Test-Licence'
+        vendor = 'R3'
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided 'net.corda:corda-crypto'
+    cordaProvided 'net.corda:corda-ledger'
+}
+
+tasks.named('jar', Jar) {
+    archiveBaseName = 'corda-flows'
+
+    bundle {
+        // The cordapp-cpk plugin prevents Bnd from accessing the Gradle
+        // Project object, for the sake of Gradle's configuration cache.
+        properties.put('project.group', provider { group })
+        bnd '''\
+Bundle-SymbolicName: \${project.group}.flows
+Corda-CPK-Type: corda-api
+'''
+    }
+}
