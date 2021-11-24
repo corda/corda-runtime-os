@@ -175,7 +175,7 @@ abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
     @Suppress("unchecked_cast")
     class Proxy<T : Any, P : Any>(
         serializer: InternalProxySerializer<T, P>,
-        private val factory: SerializerFactory,
+        factory: SerializerFactory
     ) : CustomSerializerImpl<T>(serializer) {
         private val proxySerializer: ObjectSerializer by lazy {
             ObjectSerializer.make(factory.getTypeInformation(serializer.proxyType), factory)
