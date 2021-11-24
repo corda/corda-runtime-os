@@ -29,7 +29,7 @@
     <ID>LongParameterList:LocalTypeModel.kt$BaseLocalTypes$( val collectionClass: Class&lt;*&gt;, val enumSetClass: Class&lt;*&gt;, val exceptionClass: Class&lt;*&gt;, val mapClass: Class&lt;*&gt;, val stringClass: Class&lt;*&gt;, val isEnum: Predicate&lt;Class&lt;*&gt;&gt;, val enumConstants: Function&lt;Class&lt;*&gt;, Array&lt;out Any&gt;&gt;, val enumConstantNames: Function&lt;Class&lt;*&gt;, List&lt;String&gt;&gt; )</ID>
     <ID>LongParameterList:ObjectSerializer.kt$ComposableObjectSerializer$( override val type: Type, override val typeDescriptor: Symbol, override val propertySerializers: Map&lt;PropertyName, PropertySerializer&gt;, override val fields: List&lt;Field&gt;, private val reader: ComposableObjectReader, private val writer: ComposableObjectWriter)</ID>
     <ID>LongParameterList:ObjectSerializer.kt$ComposableObjectWriter$( obj: Any, data: Data, @Suppress("UNUSED_PARAMETER") type: Type, output: SerializationOutput, context: SerializationContext, debugIndent: Int )</ID>
-    <ID>LongParameterList:ObjectSerializer.kt$EvolutionObjectSerializer.Companion$( localTypeInformation: LocalTypeInformation.Composable, remoteTypeInformation: RemoteTypeInformation.Composable, constructor: LocalConstructorInformation, properties: Map&lt;String, LocalPropertyInformation&gt;, mustPreserveData: Boolean, sandboxGroup: SandboxGroup )</ID>
+    <ID>LongParameterList:ObjectSerializer.kt$EvolutionObjectSerializer.Companion$(localTypeInformation: LocalTypeInformation.Composable, remoteTypeInformation: RemoteTypeInformation.Composable, constructor: LocalConstructorInformation, properties: Map&lt;String, LocalPropertyInformation&gt;, mustPreserveData: Boolean, sandboxGroup: SandboxGroup)</ID>
     <ID>MatchingDeclarationName:SupportedTransforms.kt$SupportedTransform</ID>
     <ID>MaxLineLength:AMQPRemoteTypeModel.kt$AMQPRemoteTypeModel$cache.getOrPut(typeDescriptor) { interpretationState.run { typeNotation.name.getTypeIdentifier(sandboxGroup).interpretIdentifier(sandboxGroup) } }</ID>
     <ID>MaxLineLength:AMQPRemoteTypeModel.kt$AMQPRemoteTypeModel.InterpretationState$private</ID>
@@ -49,8 +49,12 @@
     <ID>MaxLineLength:LocalPropertyInformation.kt$LocalPropertyInformation.GetterSetterProperty$data</ID>
     <ID>MaxLineLength:LocalPropertyInformation.kt$LocalPropertyInformation.PrivateConstructorPairedProperty$data</ID>
     <ID>MaxLineLength:LocalPropertyInformation.kt$LocalPropertyInformation.ReadOnlyProperty$data</ID>
+    <ID>MaxLineLength:LocalSerializerFactory.kt$DefaultLocalSerializerFactory$is LocalTypeInformation.ACollection</ID>
+    <ID>MaxLineLength:LocalSerializerFactory.kt$DefaultLocalSerializerFactory$is LocalTypeInformation.AMap</ID>
+    <ID>MaxLineLength:LocalSerializerFactory.kt$DefaultLocalSerializerFactory$private</ID>
     <ID>MaxLineLength:LocalSerializerFactory.kt$DefaultLocalSerializerFactory$private val serializersByActualAndDeclaredType: MutableMap&lt;ActualAndDeclaredType, AMQPSerializer&lt;Any&gt;&gt; = DefaultCacheProvider.createCache()</ID>
     <ID>MaxLineLength:LocalTypeInformation.kt$LocalTypeInformation.ACollection$data</ID>
+    <ID>MaxLineLength:LocalTypeInformation.kt$LocalTypeInformation.AMap$fun</ID>
     <ID>MaxLineLength:LocalTypeInformation.kt$LocalTypeInformation.AnArray$data</ID>
     <ID>MaxLineLength:LocalTypeInformation.kt$LocalTypeInformation.Singleton$data</ID>
     <ID>MaxLineLength:LocalTypeInformationBuilder.kt$LocalTypeInformationBuilder$private</ID>
@@ -58,6 +62,7 @@
     <ID>MaxLineLength:LocalTypeInformationBuilder.kt$LocalTypeInformationBuilder$remedy = "Either ensure that the properties ${nonComposableProperties.keys} are serializable, or provide a custom serializer for this type"</ID>
     <ID>MaxLineLength:LocalTypeModel.kt$ConfigurableLocalTypeModel.BuilderLookup$override</ID>
     <ID>MaxLineLength:MapSerializer.kt$MapSerializer$private val typeNotation: TypeNotation = RestrictedType(AMQPTypeIdentifiers.nameForType(declaredType), null, emptyList(), "map", Descriptor(typeDescriptor), emptyList())</ID>
+    <ID>MaxLineLength:MapSerializer.kt$MapSerializer.Companion$fun</ID>
     <ID>MaxLineLength:ObjectSerializer.kt$AbstractObjectSerializer$override</ID>
     <ID>MaxLineLength:ObjectSerializer.kt$ComposableObjectSerializer$override</ID>
     <ID>MaxLineLength:ObjectSerializer.kt$EvolutionObjectSerializer$override</ID>
@@ -69,7 +74,6 @@
     <ID>MaxLineLength:Schema.kt$Field.Companion$return Field(list[0] as String, list[1] as String, uncheckedCast(list[2]), list[3] as? String, list[4] as? String, list[5] as Boolean, list[6] as Boolean)</ID>
     <ID>MaxLineLength:Schema.kt$RestrictedType.Companion$return RestrictedType(list[0] as String, list[1] as? String, uncheckedCast(list[2]), list[3] as String, list[4] as Descriptor, uncheckedCast(list[5]))</ID>
     <ID>MaxLineLength:Schema.kt$RestrictedType.Companion$return newInstance(listOf(list[0], list[1], list[2], list[3], Descriptor.get(list[4]!!), (list[5] as List&lt;*&gt;).map { Choice.get(it!!) }))</ID>
-    <ID>MaxLineLength:SerializationCompatibilityTests.kt$SerializationCompatibilityTests$assertThat(factory.get(StableFingerprintTest::class.java,).typeDescriptor.toString()).isEqualTo("net.corda:zbvSPLDAvP9+Hlml5i3ZOw==")</ID>
     <ID>MaxLineLength:SerializationEnvironment.kt$SerializationEnvironmentImpl$override val p2pSerialization: P2pSerializationService by lazy { P2pSerializationServiceImpl(SerializationServiceImpl(this, p2pContext)) }</ID>
     <ID>MaxLineLength:SerializationOutput.kt$SerializationOutput$writeObject(obj, data, if (type == TypeIdentifier.UnknownType.getLocalType(context.currentSandboxGroup())) obj.javaClass else type, context, debugIndent)</ID>
     <ID>MaxLineLength:SerializationScheme.kt$SerializationFactoryImpl$private</ID>
