@@ -11,7 +11,7 @@ dependencies {
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(":libs:membership:membership")
+    implementation project(":libs:membership:membership-internal")
     implementation project(":libs:membership:membership-identity-impl")
     implementation "net.corda:corda-membership-identity"
     implementation "net.corda:corda-membership"
