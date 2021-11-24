@@ -17,10 +17,7 @@ import java.util.TreeSet
 /**
  * Serialization / deserialization of predefined set of supported [Collection] types covering mostly [List]s and [Set]s.
  */
-class CollectionSerializer(
-    private val declaredType: ParameterizedType,
-    factory: LocalSerializerFactory
-) : AMQPSerializer<Any> {
+class CollectionSerializer(private val declaredType: ParameterizedType, factory: LocalSerializerFactory) : AMQPSerializer<Any> {
     override val type: Type = declaredType
 
     override val typeDescriptor: Symbol by lazy {
