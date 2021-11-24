@@ -1,15 +1,15 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
-import net.corda.libs.permissions.PermissionService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.LifecycleStatus.DOWN
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.permissions.service.PermissionServiceComponent
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -35,7 +35,7 @@ internal class UserEndpointImplEventHandler : LifecycleEventHandler {
             is StopEvent -> {
                 registration?.close()
                 registration = null
-                coordinator.updateStatus(DOWN)
+                coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }
     }
@@ -45,7 +45,7 @@ internal class UserEndpointImplEventHandler : LifecycleEventHandler {
 
         registration = coordinator.followStatusChangesByName(
             setOf(
-                LifecycleCoordinatorName.forComponent<PermissionService>()
+                LifecycleCoordinatorName.forComponent<PermissionServiceComponent>()
             )
         )
     }

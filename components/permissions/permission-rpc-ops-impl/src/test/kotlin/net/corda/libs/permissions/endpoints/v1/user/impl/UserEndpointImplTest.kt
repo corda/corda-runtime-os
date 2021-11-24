@@ -1,7 +1,5 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
-import net.corda.libs.permissions.PermissionService
-import java.time.Instant
 import net.corda.libs.permissions.endpoints.exception.PermissionEndpointException
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.manager.PermissionManager
@@ -10,16 +8,16 @@ import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.permissions.service.PermissionServiceComponent
 import net.corda.v5.base.util.Try
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 internal class UserEndpointImplTest {
 
@@ -52,7 +50,7 @@ internal class UserEndpointImplTest {
         whenever(it.createCoordinator(any(), any())).thenReturn(lifecycleCoordinator)
     }
     private val permissionManager = mock<PermissionManager>()
-    private val permissionService = mock<PermissionService>().also {
+    private val permissionService = mock<PermissionServiceComponent>().also {
         whenever(it.permissionManager).thenReturn(permissionManager)
     }
 
@@ -60,7 +58,7 @@ internal class UserEndpointImplTest {
 
     @Test
     fun getProtocolVersion() {
-        assertEquals(1, endpoint.protocolVersion)
+        Assertions.assertEquals(1, endpoint.protocolVersion)
     }
 
     @Test
@@ -74,14 +72,14 @@ internal class UserEndpointImplTest {
         endpoint.start()
         val responseType = endpoint.createUser(createUserType)
 
-        assertEquals("uuid", responseType.id)
-        assertEquals(0, responseType.version)
-        assertEquals(now, responseType.updateTimestamp)
-        assertEquals("fullName1", responseType.fullName)
-        assertEquals("loginName1", responseType.loginName)
-        assertEquals(true, responseType.enabled)
-        assertEquals(now, responseType.passwordExpiry)
-        assertEquals("parentGroupId", responseType.parentGroup)
+        Assertions.assertEquals("uuid", responseType.id)
+        Assertions.assertEquals(0, responseType.version)
+        Assertions.assertEquals(now, responseType.updateTimestamp)
+        Assertions.assertEquals("fullName1", responseType.fullName)
+        Assertions.assertEquals("loginName1", responseType.loginName)
+        Assertions.assertEquals(true, responseType.enabled)
+        Assertions.assertEquals(now, responseType.passwordExpiry)
+        Assertions.assertEquals("parentGroupId", responseType.parentGroup)
     }
 
     @Test
@@ -92,7 +90,7 @@ internal class UserEndpointImplTest {
         val e = assertThrows<PermissionEndpointException> {
             endpoint.createUser(createUserType)
         }
-        assertEquals(500, e.status)
+        Assertions.assertEquals(500, e.status)
     }
 
     @Test
@@ -100,7 +98,7 @@ internal class UserEndpointImplTest {
         val e = assertThrows<PermissionEndpointException> {
             endpoint.createUser(createUserType)
         }
-        assertEquals(500, e.status)
+        Assertions.assertEquals(500, e.status)
     }
 
     @Test
@@ -113,15 +111,15 @@ internal class UserEndpointImplTest {
         endpoint.start()
         val responseType = endpoint.getUser("loginName1")
 
-        assertNotNull(responseType)
-        assertEquals("uuid", responseType!!.id)
-        assertEquals(0, responseType.version)
-        assertEquals(now, responseType.updateTimestamp)
-        assertEquals("fullName1", responseType.fullName)
-        assertEquals("loginName1", responseType.loginName)
-        assertEquals(true, responseType.enabled)
-        assertEquals(now, responseType.passwordExpiry)
-        assertEquals("parentGroupId", responseType.parentGroup)
+        Assertions.assertNotNull(responseType)
+        Assertions.assertEquals("uuid", responseType!!.id)
+        Assertions.assertEquals(0, responseType.version)
+        Assertions.assertEquals(now, responseType.updateTimestamp)
+        Assertions.assertEquals("fullName1", responseType.fullName)
+        Assertions.assertEquals("loginName1", responseType.loginName)
+        Assertions.assertEquals(true, responseType.enabled)
+        Assertions.assertEquals(now, responseType.passwordExpiry)
+        Assertions.assertEquals("parentGroupId", responseType.parentGroup)
     }
 
     @Test
@@ -132,7 +130,7 @@ internal class UserEndpointImplTest {
         val e = assertThrows<PermissionEndpointException> {
             endpoint.getUser("abc")
         }
-        assertEquals(500, e.status)
+        Assertions.assertEquals(500, e.status)
     }
 
     @Test
@@ -140,6 +138,6 @@ internal class UserEndpointImplTest {
         val e = assertThrows<PermissionEndpointException> {
             endpoint.getUser("abc")
         }
-        assertEquals(500, e.status)
+        Assertions.assertEquals(500, e.status)
     }
 }

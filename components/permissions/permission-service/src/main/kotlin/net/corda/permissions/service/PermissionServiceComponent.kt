@@ -1,8 +1,8 @@
 package net.corda.permissions.service
 
-import net.corda.libs.permissions.PermissionService
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.validation.PermissionValidator
+import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
@@ -24,9 +24,9 @@ class PermissionServiceComponent @Activate constructor(
     private val permissionValidationService: PermissionValidationService,
     @Reference(service = PermissionCacheService::class)
     private val permissionCacheService: PermissionCacheService,
-) : PermissionService {
+) : Lifecycle {
 
-    private val coordinator = coordinatorFactory.createCoordinator<PermissionService>(
+    private val coordinator = coordinatorFactory.createCoordinator<PermissionServiceComponent>(
         PermissionServiceComponentEventHandler(
             permissionManagementService,
             permissionValidationService,
@@ -38,7 +38,7 @@ class PermissionServiceComponent @Activate constructor(
      * Expose the Permission Manager to components outside the permission service. Checking the permission service is running ensures the
      * permission manager will not be null.
      */
-    override val permissionManager: PermissionManager
+    val permissionManager: PermissionManager
         get() {
             validatePermissionServiceRunning()
             return permissionManagementService.permissionManager
@@ -48,7 +48,7 @@ class PermissionServiceComponent @Activate constructor(
      * Expose the Permission Validator to components outside the permission service. Checking the permission service is running ensures the
      * permission validator will not be null.
      */
-    override val permissionValidator: PermissionValidator
+    val permissionValidator: PermissionValidator
         get() {
             validatePermissionServiceRunning()
             return permissionValidationService.permissionValidator
