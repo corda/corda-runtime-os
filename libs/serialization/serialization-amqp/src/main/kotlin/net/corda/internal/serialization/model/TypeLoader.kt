@@ -16,9 +16,9 @@ interface TypeLoader {
      * @param remoteTypeInformation The type information for the remote types.
      */
     fun load(
-        remoteTypeInformation: Collection<RemoteTypeInformation>,
-        sandboxGroup: SandboxGroup,
-        metadata: Metadata
+            remoteTypeInformation: Collection<RemoteTypeInformation>,
+            sandboxGroup: SandboxGroup,
+            metadata: Metadata
     ): Map<TypeIdentifier, Type>
 }
 
@@ -35,9 +35,9 @@ class ClassTypeLoader: TypeLoader {
     val cache = DefaultCacheProvider.createCache<TypeIdentifier, Type>()
 
     override fun load(
-        remoteTypeInformation: Collection<RemoteTypeInformation>,
-        sandboxGroup: SandboxGroup,
-        metadata: Metadata
+            remoteTypeInformation: Collection<RemoteTypeInformation>,
+            sandboxGroup: SandboxGroup,
+            metadata: Metadata
     ): Map<TypeIdentifier, Type> {
         val remoteInformationByIdentifier = remoteTypeInformation.associateBy { it.typeIdentifier }
 

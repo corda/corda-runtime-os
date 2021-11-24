@@ -30,10 +30,7 @@ class LocalTypeModelTests {
     private val emptyCustomSerializerRegistry = object : CustomSerializerRegistry {
         override val customSerializerNames: List<String> = emptyList()
         override fun register(customSerializer: CustomSerializer<out Any>) {}
-        override fun register(
-            serializer: InternalCustomSerializer<out Any>,
-            factory: SerializerFactory
-        ) {}
+        override fun register(serializer: InternalCustomSerializer<out Any>, factory: SerializerFactory) {}
         override fun registerExternal(serializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {}
         override fun findCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? = null
     }
