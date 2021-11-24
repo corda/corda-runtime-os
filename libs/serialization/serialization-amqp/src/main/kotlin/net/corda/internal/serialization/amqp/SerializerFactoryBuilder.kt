@@ -172,10 +172,7 @@ object SerializerFactoryBuilder {
 }
 
 object NoEvolutionSerializerFactory : EvolutionSerializerFactory {
-    override fun getEvolutionSerializer(
-        remote: RemoteTypeInformation,
-        local: LocalTypeInformation
-    ): AMQPSerializer<Any> {
+    override fun getEvolutionSerializer(remote: RemoteTypeInformation, local: LocalTypeInformation): AMQPSerializer<Any> {
         throw NotSerializableException("""
 Evolution not permitted.
 

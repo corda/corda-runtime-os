@@ -24,10 +24,7 @@ private typealias MapCreationFunction = (Map<*, *>) -> Map<*, *>
 /**
  * Serialization / deserialization of certain supported [Map] types.
  */
-class MapSerializer(
-    private val declaredType: ParameterizedType,
-    factory: LocalSerializerFactory
-) : AMQPSerializer<Any> {
+class MapSerializer(private val declaredType: ParameterizedType, factory: LocalSerializerFactory) : AMQPSerializer<Any> {
     override val type: Type = declaredType
 
     override val typeDescriptor: Symbol = factory.createDescriptor(type)
@@ -64,11 +61,7 @@ class MapSerializer(
                     declaredTypeInformation.prettyPrint(false))
         }
 
-        fun resolveActual(
-            actualClass: Class<*>,
-            declaredTypeInformation: LocalTypeInformation.AMap,
-            sandboxGroup: SandboxGroup
-        ): LocalTypeInformation.AMap {
+        fun resolveActual(actualClass: Class<*>, declaredTypeInformation: LocalTypeInformation.AMap, sandboxGroup: SandboxGroup): LocalTypeInformation.AMap {
             declaredTypeInformation.observedType.asClass().checkSupportedMapType()
             if (supportedTypeIdentifiers.contains(declaredTypeInformation.typeIdentifier.erased)) {
                 return if (!declaredTypeInformation.isErased) declaredTypeInformation
@@ -83,10 +76,9 @@ class MapSerializer(
 
             return when(declaredTypeInformation.typeIdentifier) {
                 is TypeIdentifier.Parameterised -> erasedInformation.withParameters(
-                    declaredTypeInformation.keyType,
-                    declaredTypeInformation.valueType,
-                    sandboxGroup
-                )
+                        declaredTypeInformation.keyType,
+                        declaredTypeInformation.valueType,
+                        sandboxGroup)
                 else -> erasedInformation.withParameters(LocalTypeInformation.Unknown, LocalTypeInformation.Unknown, sandboxGroup)
             }
         }

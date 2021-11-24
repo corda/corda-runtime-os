@@ -10,12 +10,10 @@ import java.lang.reflect.Type
  * Try and infer concrete types for any generics type variables for the actual class encountered,
  * based on the declared type.
  */
-fun inferTypeVariables(
-    actualClass: Class<*>,
-    declaredClass: Class<*>,
-    declaredType: Type,
-    sandboxGroup: SandboxGroup
-): Type? = when (declaredType) {
+fun inferTypeVariables(actualClass: Class<*>,
+                       declaredClass: Class<*>,
+                       declaredType: Type,
+                       sandboxGroup: SandboxGroup): Type? = when (declaredType) {
     is ParameterizedType -> inferTypeVariables(actualClass, declaredClass, declaredType, sandboxGroup)
     is GenericArrayType -> {
         val declaredComponent = declaredType.genericComponentType
@@ -29,12 +27,7 @@ fun inferTypeVariables(
  * Try and infer concrete types for any generics type variables for the actual class encountered, based on the declared
  * type, which must be a [ParameterizedType].
  */
-private fun inferTypeVariables(
-    actualClass: Class<*>,
-    declaredClass: Class<*>,
-    declaredType: ParameterizedType,
-    sandboxGroup: SandboxGroup
-): Type? {
+private fun inferTypeVariables(actualClass: Class<*>, declaredClass: Class<*>, declaredType: ParameterizedType, sandboxGroup: SandboxGroup): Type? {
     if (declaredClass == actualClass) {
         return null
     }
@@ -62,12 +55,7 @@ private fun inferTypeVariables(
 }
 
 // Stop when reach declared type or return null if we don't find it.
-private fun findPathToDeclared(
-    startingType: Type,
-    declaredType: Type,
-    sandboxGroup: SandboxGroup,
-    chain: Sequence<Type> = emptySequence()
-): Sequence<Type>? {
+private fun findPathToDeclared(startingType: Type, declaredType: Type, sandboxGroup: SandboxGroup, chain: Sequence<Type> = emptySequence()): Sequence<Type>? {
     val extendedChain = chain + startingType
     val startingClass = startingType.asClass()
 
@@ -89,25 +77,13 @@ private fun findPathToDeclared(
         ?: findPathViaInterfaces(startingClass, resolver, declaredType, extendedChain, sandboxGroup)
 }
 
-private fun findPathViaInterfaces(
-    startingClass: Class<*>,
-    resolver: (Type) -> Type,
-    declaredType: Type,
-    extendedChain: Sequence<Type>,
-    sandboxGroup: SandboxGroup
-): Sequence<Type>? =
+private fun findPathViaInterfaces(startingClass: Class<*>, resolver: (Type) -> Type, declaredType: Type, extendedChain: Sequence<Type>, sandboxGroup: SandboxGroup): Sequence<Type>? =
     startingClass.genericInterfaces.asSequence().map {
         findPathToDeclared(resolver(it), declaredType, sandboxGroup, extendedChain)
     }.filterNotNull().firstOrNull()
 
 
-private fun findPathViaGenericSuperclass(
-    startingClass: Class<*>,
-    resolver: (Type) -> Type,
-    declaredType: Type,
-    extendedChain: Sequence<Type>,
-    sandboxGroup: SandboxGroup
-): Sequence<Type>? {
+private fun findPathViaGenericSuperclass(startingClass: Class<*>, resolver: (Type) -> Type, declaredType: Type, extendedChain: Sequence<Type>, sandboxGroup: SandboxGroup): Sequence<Type>? {
     val superClass = startingClass.genericSuperclass ?: return null
     return findPathToDeclared(resolver(superClass), declaredType, sandboxGroup, extendedChain)
 }

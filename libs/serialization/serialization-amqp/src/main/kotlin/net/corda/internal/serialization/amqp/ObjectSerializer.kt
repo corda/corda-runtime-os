@@ -59,24 +59,20 @@ interface ObjectSerializer : AMQPSerializer<Any> {
                     "$serializerInformation\n"
         }
 
-        private fun makeForAbstract(
-            typeNotation: CompositeType,
-            typeInformation: LocalTypeInformation,
-            typeDescriptor: Symbol,
-            factory: LocalSerializerFactory
-        ): AbstractObjectSerializer {
+        private fun makeForAbstract(typeNotation: CompositeType,
+                                    typeInformation: LocalTypeInformation,
+                                    typeDescriptor: Symbol,
+                                    factory: LocalSerializerFactory): AbstractObjectSerializer {
             val propertySerializers = makePropertySerializers(typeInformation.propertiesOrEmptyMap, factory)
             val writer = ComposableObjectWriter(typeNotation, typeInformation.interfacesOrEmptyList, propertySerializers)
             return AbstractObjectSerializer(typeInformation.observedType, typeDescriptor, propertySerializers,
                     typeNotation.fields, writer)
         }
 
-        private fun makeForComposable(
-            typeInformation: LocalTypeInformation.Composable,
-            typeNotation: CompositeType,
-            typeDescriptor: Symbol,
-            factory: LocalSerializerFactory
-        ): ComposableObjectSerializer {
+        private fun makeForComposable(typeInformation: LocalTypeInformation.Composable,
+                                      typeNotation: CompositeType,
+                                      typeDescriptor: Symbol,
+                                      factory: LocalSerializerFactory): ComposableObjectSerializer {
             val propertySerializers = makePropertySerializers(typeInformation.properties, factory)
             val reader = ComposableObjectReader(
                     typeInformation.typeIdentifier,
@@ -97,10 +93,8 @@ interface ObjectSerializer : AMQPSerializer<Any> {
                     writer)
         }
 
-        private fun makePropertySerializers(
-            properties: Map<PropertyName, LocalPropertyInformation>,
-            factory: LocalSerializerFactory
-        ): Map<String, PropertySerializer> =
+        private fun makePropertySerializers(properties: Map<PropertyName, LocalPropertyInformation>,
+                                            factory: LocalSerializerFactory): Map<String, PropertySerializer> =
                 properties.mapValues { (name, property) ->
                     ComposableTypePropertySerializer.make(name, property, factory)
                 }
@@ -235,11 +229,9 @@ class EvolutionObjectSerializer(
                     reader)
         }
 
-        private fun makePropertySerializers(
-            localProperties: Map<String, LocalPropertyInformation>,
-            remoteProperties: Map<String, RemotePropertyInformation>,
-            sandboxGroup: SandboxGroup
-        ): Map<String, PropertySerializer> =
+        private fun makePropertySerializers(localProperties: Map<String, LocalPropertyInformation>,
+                                            remoteProperties: Map<String, RemotePropertyInformation>,
+                                            sandboxGroup: SandboxGroup): Map<String, PropertySerializer> =
                 remoteProperties.mapValues { (name, property) ->
                     val localProperty = localProperties[name]
                     val isCalculated = localProperty?.isCalculated ?: false

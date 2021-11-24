@@ -206,29 +206,19 @@ class DefaultLocalSerializerFactory(
             }
         }
 
-    private fun makeDeclaredEnum(
-        localTypeInformation: LocalTypeInformation,
-        declaredType: Type,
-        declaredClass: Class<*>
-    ): AMQPSerializer<Any> =
+    private fun makeDeclaredEnum(localTypeInformation: LocalTypeInformation, declaredType: Type, declaredClass: Class<*>): AMQPSerializer<Any> =
             makeAndCache(localTypeInformation) {
                 whitelist.requireWhitelisted(declaredType)
                 EnumSerializer(declaredType, declaredClass, this)
             }
 
-    private fun makeActualEnum(
-        localTypeInformation: LocalTypeInformation,
-        declaredType: Type,
-        declaredClass: Class<*>
-    ): AMQPSerializer<Any> =
+    private fun makeActualEnum(localTypeInformation: LocalTypeInformation, declaredType: Type, declaredClass: Class<*>): AMQPSerializer<Any> =
             makeAndCache(localTypeInformation) {
                 whitelist.requireWhitelisted(declaredType)
                 EnumSerializer(declaredType, declaredClass, this)
             }
 
-    private fun makeDeclaredCollection(
-        localTypeInformation: LocalTypeInformation.ACollection
-    ): AMQPSerializer<Any> {
+    private fun makeDeclaredCollection(localTypeInformation: LocalTypeInformation.ACollection): AMQPSerializer<Any> {
         val resolved = CollectionSerializer.resolveDeclared(localTypeInformation, sandboxGroup)
         return makeAndCache(resolved) {
             CollectionSerializer(resolved.typeIdentifier.getLocalType(sandboxGroup) as ParameterizedType, this)
@@ -255,27 +245,17 @@ class DefaultLocalSerializerFactory(
             val actualTypeInformation = typeModel.inspect(actualType)
 
             when (actualTypeInformation) {
-                is LocalTypeInformation.ACollection -> makeActualCollection(
-                    actualClass,
-                    declaredTypeInformation as? LocalTypeInformation.ACollection
-                            ?: actualTypeInformation
-                )
-                is LocalTypeInformation.AMap -> makeActualMap(
-                    declaredType, actualClass,
-                    declaredTypeInformation as? LocalTypeInformation.AMap
-                            ?: actualTypeInformation
-                )
+                is LocalTypeInformation.ACollection -> makeActualCollection(actualClass, declaredTypeInformation as? LocalTypeInformation.ACollection
+                        ?: actualTypeInformation)
+                is LocalTypeInformation.AMap -> makeActualMap(declaredType, actualClass, declaredTypeInformation as? LocalTypeInformation.AMap
+                        ?: actualTypeInformation)
                 is LocalTypeInformation.AnEnum -> makeActualEnum(actualTypeInformation, actualType, actualClass)
                 else -> makeClassSerializer(actualClass, actualType, actualTypeInformation)
             }
         }
     }
 
-    private fun makeActualMap(
-        declaredType: Type,
-        actualClass: Class<*>,
-        typeInformation: LocalTypeInformation.AMap
-    ): AMQPSerializer<Any> {
+    private fun makeActualMap(declaredType: Type, actualClass: Class<*>, typeInformation: LocalTypeInformation.AMap): AMQPSerializer<Any> {
         declaredType.asClass().checkSupportedMapType()
         val resolved = MapSerializer.resolveActual(actualClass, typeInformation, sandboxGroup)
         return makeAndCache(resolved) {
@@ -283,10 +263,7 @@ class DefaultLocalSerializerFactory(
         }
     }
 
-    private fun makeActualCollection(
-        actualClass: Class<*>,
-        typeInformation: LocalTypeInformation.ACollection
-    ): AMQPSerializer<Any> {
+    private fun makeActualCollection(actualClass: Class<*>, typeInformation: LocalTypeInformation.ACollection): AMQPSerializer<Any> {
         val resolved = CollectionSerializer.resolveActual(actualClass, typeInformation, sandboxGroup)
 
         return makeAndCache(resolved) {
@@ -295,9 +272,9 @@ class DefaultLocalSerializerFactory(
     }
 
     private fun makeClassSerializer(
-        clazz: Class<*>,
-        type: Type,
-        typeInformation: LocalTypeInformation
+            clazz: Class<*>,
+            type: Type,
+            typeInformation: LocalTypeInformation
     ): AMQPSerializer<Any> = makeAndCache(typeInformation) {
         logger.debug { "class=${clazz.simpleName}, type=$type is a composite type" }
         when {
@@ -311,11 +288,7 @@ class DefaultLocalSerializerFactory(
         }
     }
 
-    private fun makeNonCustomSerializer(
-        type: Type,
-        typeInformation: LocalTypeInformation,
-        clazz: Class<*>
-    ): AMQPSerializer<Any> = when {
+    private fun makeNonCustomSerializer(type: Type, typeInformation: LocalTypeInformation, clazz: Class<*>): AMQPSerializer<Any> = when {
         onlyCustomSerializers -> throw AMQPNotSerializableException(type, "Only allowing custom serializers")
         type.isArray() ->
             if (clazz.componentType.isPrimitive) PrimArraySerializer.make(type, this)

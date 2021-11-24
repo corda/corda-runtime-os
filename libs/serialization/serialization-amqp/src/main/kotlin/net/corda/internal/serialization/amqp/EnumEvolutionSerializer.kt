@@ -32,12 +32,11 @@ import java.lang.reflect.Type
  * @property ordinals Convenience mapping of constant to ordinality
  */
 class EnumEvolutionSerializer(
-    override val type: Type,
-    factory: LocalSerializerFactory,
-    private val baseLocalTypes: BaseLocalTypes,
-    private val conversions: Map<String, String>,
-    private val ordinals: Map<String, Int>
-) : AMQPSerializer<Any> {
+        override val type: Type,
+        factory: LocalSerializerFactory,
+        private val baseLocalTypes: BaseLocalTypes,
+        private val conversions: Map<String, String>,
+        private val ordinals: Map<String, Int>) : AMQPSerializer<Any> {
     override val typeDescriptor = factory.createDescriptor(type)
 
     override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,

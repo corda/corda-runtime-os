@@ -10,11 +10,7 @@ import java.lang.reflect.Type
  * absolutely nothing, or null as a described type) when we have a singleton within the node that we just
  * want converting back to that singleton instance on the receiving JVM.
  */
-class SingletonSerializer(
-    override val type: Class<*>,
-    val singleton: Any,
-    factory: LocalSerializerFactory
-) : AMQPSerializer<Any> {
+class SingletonSerializer(override val type: Class<*>, val singleton: Any, factory: LocalSerializerFactory) : AMQPSerializer<Any> {
     override val typeDescriptor = factory.createDescriptor(type)
 
     private val interfaces = (factory.getTypeInformation(type) as LocalTypeInformation.Singleton).interfaces

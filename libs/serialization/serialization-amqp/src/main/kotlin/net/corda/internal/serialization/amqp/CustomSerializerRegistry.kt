@@ -121,10 +121,7 @@ class CachingCustomSerializerRegistry(
         registerCustomSerializer(customSerializer)
     }
 
-    override fun register(
-        serializer: InternalCustomSerializer<out Any>,
-        factory: SerializerFactory
-    ) {
+    override fun register(serializer: InternalCustomSerializer<out Any>, factory: SerializerFactory) {
         register(when(serializer) {
             is InternalProxySerializer<out Any, out Any> -> CustomSerializer.Proxy(serializer, factory)
             is InternalDirectSerializer<out Any> -> CustomSerializer.Direct(serializer)

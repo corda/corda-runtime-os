@@ -167,16 +167,12 @@ private class FingerPrintingState(
     }
 
     private fun fingerprintOpaque(type: LocalTypeInformation) =
-            fingerprintWithCustomSerializerOrElse(
-                type
-            ) {
+            fingerprintWithCustomSerializerOrElse(type) {
                 fingerprintName(type)
             }
 
     private fun fingerprintInterface(type: LocalTypeInformation.AnInterface) =
-            fingerprintWithCustomSerializerOrElse(
-                type
-            ) {
+            fingerprintWithCustomSerializerOrElse(type) {
                 fingerprintName(type)
                 writer.writeAlreadySeen() // FIXUP: this replicates the behaviour of the old fingerprinter for compatibility reasons.
                 fingerprintInterfaces(type.interfaces)
@@ -184,9 +180,7 @@ private class FingerPrintingState(
             }
 
     private fun fingerprintAbstract(type: LocalTypeInformation.Abstract) =
-            fingerprintWithCustomSerializerOrElse(
-                type
-            ) {
+            fingerprintWithCustomSerializerOrElse(type) {
                 fingerprintName(type)
                 fingerprintProperties(type.properties)
                 fingerprintInterfaces(type.interfaces)
@@ -194,9 +188,7 @@ private class FingerPrintingState(
             }
 
     private fun fingerprintNonComposable(type: LocalTypeInformation.NonComposable) =
-            fingerprintWithCustomSerializerOrElse(
-                type
-            ) {
+            fingerprintWithCustomSerializerOrElse(type) {
                 fingerprintName(type)
                 fingerprintProperties(type.properties)
                 fingerprintInterfaces(type.interfaces)
@@ -204,9 +196,7 @@ private class FingerPrintingState(
             }
 
     private fun fingerprintComposable(type: LocalTypeInformation.Composable) =
-            fingerprintWithCustomSerializerOrElse(
-                type
-            ) {
+            fingerprintWithCustomSerializerOrElse(type) {
                 fingerprintName(type)
                 fingerprintProperties(type.properties)
                 fingerprintInterfaces(type.interfaces)
@@ -245,10 +235,7 @@ private class FingerPrintingState(
     }
 
     // Give any custom serializers loaded into the factory the chance to supply their own type-descriptors
-    private fun fingerprintWithCustomSerializerOrElse(
-        type: LocalTypeInformation,
-        defaultAction: () -> Unit
-    ) {
+    private fun fingerprintWithCustomSerializerOrElse(type: LocalTypeInformation, defaultAction: () -> Unit) {
         val observedType = type.observedType
         val observedClass = observedType.asClass()
 

@@ -322,11 +322,7 @@ sealed class LocalTypeInformation {
                     val keyType: LocalTypeInformation, val valueType: LocalTypeInformation) : LocalTypeInformation() {
         val isErased: Boolean get() = typeIdentifier is TypeIdentifier.Erased
 
-        fun withParameters(
-            keyType: LocalTypeInformation,
-            valueType: LocalTypeInformation,
-            sandboxGroup: SandboxGroup
-        ): AMap = when(typeIdentifier) {
+        fun withParameters(keyType: LocalTypeInformation, valueType: LocalTypeInformation, sandboxGroup: SandboxGroup): AMap = when(typeIdentifier) {
             is TypeIdentifier.Erased -> {
                 val unerasedType = typeIdentifier.toParameterized(listOf(keyType.typeIdentifier, valueType.typeIdentifier))
                 AMap(

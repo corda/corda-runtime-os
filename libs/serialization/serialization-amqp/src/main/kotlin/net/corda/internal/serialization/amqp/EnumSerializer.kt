@@ -8,11 +8,7 @@ import java.lang.reflect.Type
  * Our definition of an enum with the AMQP spec is a list (of two items, a string and an int) that is
  * a restricted type with a number of choices associated with it
  */
-class EnumSerializer(
-    declaredType: Type,
-    declaredClass: Class<*>,
-    factory: LocalSerializerFactory
-) : AMQPSerializer<Any> {
+class EnumSerializer(declaredType: Type, declaredClass: Class<*>, factory: LocalSerializerFactory) : AMQPSerializer<Any> {
     override val type: Type = declaredType
     private val typeNotation: TypeNotation
     override val typeDescriptor = factory.createDescriptor(type)
