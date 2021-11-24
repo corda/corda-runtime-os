@@ -266,7 +266,7 @@ data class TransformsSchema(val types: Map<String, EnumMap<TransformTypes, Mutab
                 val localTypeInformation = if(metadata.containsKey(type.name)) {
                     sf.getTypeInformation(context, metadata, type.name)
                 } else{
-                    sf.getTypeInformation(context, type.name)
+                    sf.getTypeInformation(type.name)
                 }
                 if (localTypeInformation is LocalTypeInformation.AnEnum) {
                     localTypeInformation.transforms.source.let {
