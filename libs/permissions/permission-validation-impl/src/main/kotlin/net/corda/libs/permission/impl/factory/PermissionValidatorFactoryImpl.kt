@@ -3,8 +3,7 @@ import net.corda.libs.permission.impl.GroupTopicProcessor
 import net.corda.libs.permission.impl.PermissionValidatorImpl
 import net.corda.libs.permission.impl.RoleTopicProcessor
 import net.corda.libs.permission.impl.UserTopicProcessor
-import net.corda.libs.permissions.validation.PermissionValidator
-import net.corda.libs.permissions.validation.factory.PermissionValidatorFactory
+import net.corda.libs.permission.factory.PermissionValidatorFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -15,9 +14,8 @@ class PermissionValidatorFactoryImpl @Activate constructor(
         @Reference(service = SubscriptionFactory::class)
         private val subscriptionFactory: SubscriptionFactory
 ): PermissionValidatorFactory {
-    override fun createPermissionValidator(): PermissionValidator {
-        return PermissionValidatorImpl(
-            subscriptionFactory,
+    override fun createPermissionValidator(): PermissionValidatorImpl {
+        return PermissionValidatorImpl(subscriptionFactory,
             UserTopicProcessor(), GroupTopicProcessor(), RoleTopicProcessor()
         )
     }
