@@ -171,10 +171,10 @@ include 'libs:kotlin-reflection:kotlin-reflection-test-example'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
 include 'libs:lifecycle:registry'
-include 'libs:membership:membership'
 include 'libs:membership:membership-application'
 include 'libs:membership:membership-conversion-impl'
 include 'libs:membership:membership-identity-impl'
+include 'libs:membership:membership-internal'
 include 'libs:messaging:messaging'
 include 'libs:messaging:db-messaging-impl'
 include 'libs:messaging:kafka-messaging-impl'
@@ -254,6 +254,7 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-api') using project(':corda-api')
             substitute module('net.corda:corda-crypto') using project(':crypto')
             substitute module('net.corda:corda-avro-schema') using project(':data:avro-schema')
+            substitute module('net.corda:corda-db-schema') using project(':data:db-schema')
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
             substitute module('net.corda:corda-ledger') using project(':ledger')
             substitute module('net.corda:corda-membership') using project(':membership')
