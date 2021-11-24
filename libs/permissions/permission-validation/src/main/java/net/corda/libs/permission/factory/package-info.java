@@ -1,4 +1,4 @@
 @Export
-package net.corda.libs.permissions.validation;
+package net.corda.libs.permission.factory;
 
 import org.osgi.annotation.bundle.Export;

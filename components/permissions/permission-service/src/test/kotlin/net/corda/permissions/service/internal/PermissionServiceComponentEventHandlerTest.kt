@@ -1,8 +1,8 @@
 package net.corda.permissions.service.internal
 
+import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.manager.PermissionManager
-import net.corda.libs.permissions.validation.PermissionValidator
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
