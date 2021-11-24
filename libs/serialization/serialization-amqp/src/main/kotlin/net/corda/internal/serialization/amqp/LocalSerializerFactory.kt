@@ -81,7 +81,7 @@ interface LocalSerializerFactory {
      *
      * @return null if the type with the given name does not exist in the [ClassLoader] for this factory.
      */
-    fun getTypeInformation(context: SerializationContext, metadata: Metadata, typeName: String): LocalTypeInformation?
+    fun getTypeInformation(metadata: Metadata, typeName: String): LocalTypeInformation?
 
     /**
      * Use the [FingerPrinter] to create a type descriptor for the given [type].
@@ -147,11 +147,11 @@ class DefaultLocalSerializerFactory(
         }.orElse(null)
     }
 
-    override fun getTypeInformation(context: SerializationContext, metadata: Metadata, typeName: String): LocalTypeInformation? {
+    override fun getTypeInformation(metadata: Metadata, typeName: String): LocalTypeInformation? {
         return typesByName.getOrPut(typeName) {
             val localType = try {
                 val serializedClassTag = metadata.getValue(typeName) as String
-                context.currentSandboxGroup().getClass(typeName, serializedClassTag)
+                sandboxGroup.getClass(typeName, serializedClassTag)
             } catch (_: SandboxException) {
                 logger.trace { "Failed to load class $typeName from any sandboxes" }
                 null

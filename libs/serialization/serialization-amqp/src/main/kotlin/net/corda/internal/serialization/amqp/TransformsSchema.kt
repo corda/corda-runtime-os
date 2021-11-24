@@ -264,7 +264,7 @@ data class TransformsSchema(val types: Map<String, EnumMap<TransformTypes, Mutab
         fun build(schema: Schema, sf: LocalSerializerFactory, context: SerializationContext, metadata: Metadata): TransformsSchema {
             val transformsMap = schema.types.asSequence().mapNotNull { type ->
                 val localTypeInformation = if(metadata.containsKey(type.name)) {
-                    sf.getTypeInformation(context, metadata, type.name)
+                    sf.getTypeInformation(metadata, type.name)
                 } else{
                     sf.getTypeInformation(type.name)
                 }
