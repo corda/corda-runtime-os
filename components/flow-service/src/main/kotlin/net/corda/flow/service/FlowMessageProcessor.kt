@@ -48,7 +48,7 @@ class FlowMessageProcessor(
                     )
                 }
             }
-            is Wakeup -> {
+            is Wakeup, is FlowAsyncResponse -> {
                 val checkpoint = state ?: throw FlowHospitalException("State for wakeup FlowEvent was null")
                 flowManager.wakeFlow(
                     checkpoint,
@@ -67,4 +67,9 @@ class FlowMessageProcessor(
     override val keyClass = FlowKey::class.java
     override val stateValueClass = Checkpoint::class.java
     override val eventValueClass = FlowEvent::class.java
+
+    // avro object
+    // response represents a union type in the FlowAsyncResponse.avsc file for the different type of async requests
+    // copied in [FlowAsyncRequest] so that i don't have to fix dependencies or define a real avro object
+    class FlowAsyncResponse(val response: Any)
 }

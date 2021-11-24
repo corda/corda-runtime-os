@@ -8,7 +8,7 @@ import java.time.Instant
 /**
  * A [FlowIORequest] represents an IO request of a flow when it suspends. It is persisted in checkpoints.
  */
-sealed class FlowIORequest<out R> {
+interface FlowIORequest<out R : Any?> {
     /**
      * Send messages to sessions.
      *
@@ -16,7 +16,7 @@ sealed class FlowIORequest<out R> {
      */
     data class Send(
             val sessionToMessage: Map<FlowSession, SerializedBytes<Any>>
-    ) : FlowIORequest<Unit>() {
+    ) : FlowIORequest<Unit> {
         override fun toString() = "Send(sessionToMessage=${sessionToMessage.mapValues { it.value }})"
     }
 
@@ -28,7 +28,7 @@ sealed class FlowIORequest<out R> {
      */
     data class Receive(
             val sessions: Set<FlowSession>
-    ) : FlowIORequest<Map<FlowSession, SerializedBytes<Any>>>()
+    ) : FlowIORequest<Map<FlowSession, SerializedBytes<Any>>>
 
     /**
      * Send and receive messages from the specified sessions.
@@ -40,7 +40,7 @@ sealed class FlowIORequest<out R> {
     //net.corda.core.internal.FlowIORequest.SendAndReceive
     data class SendAndReceive(
         val sessionToMessage: Map<FlowSession, SerializedBytes<Any>>
-    ) : FlowIORequest<Map<FlowSession, SerializedBytes<Any>>>() {
+    ) : FlowIORequest<Map<FlowSession, SerializedBytes<Any>>> {
         override fun toString() = "SendAndReceive(${sessionToMessage.mapValues { (key, value) -> "$key=$value" }})"
     }
 
@@ -49,7 +49,7 @@ sealed class FlowIORequest<out R> {
      *
      * @property sessions the sessions to be closed.
      */
-    data class CloseSessions(val sessions: Set<FlowSession>): FlowIORequest<Unit>()
+    data class CloseSessions(val sessions: Set<FlowSession>): FlowIORequest<Unit>
 
     /**
      * Get the FlowInfo of the specified sessions.
@@ -57,19 +57,19 @@ sealed class FlowIORequest<out R> {
      * @property sessions the sessions to get the FlowInfo of.
      * @return a map from session to FlowInfo.
      */
-    data class GetFlowInfo(val sessions: Set<FlowSession>) : FlowIORequest<Map<FlowSession, FlowInfo>>()
+    data class GetFlowInfo(val sessions: Set<FlowSession>) : FlowIORequest<Map<FlowSession, FlowInfo>>
 
     /**
      * Suspend the flow until the specified time.
      *
      * @property wakeUpAfter the time to sleep until.
      */
-    data class Sleep(val wakeUpAfter: Instant) : FlowIORequest<Unit>()
+    data class Sleep(val wakeUpAfter: Instant) : FlowIORequest<Unit>
 
     /**
      * Suspend the flow until all Initiating sessions are confirmed.
      */
-    class WaitForSessionConfirmations : FlowIORequest<Unit>() {
+    class WaitForSessionConfirmations : FlowIORequest<Unit> {
         override fun equals(other: Any?): Boolean {
             return this === other
         }
@@ -84,5 +84,5 @@ sealed class FlowIORequest<out R> {
      * This is used for performing explicit checkpointing anywhere in a flow.
      */
     // TODOs: consider using an empty FlowAsyncOperation instead
-    object ForceCheckpoint : FlowIORequest<Unit>()
+    object ForceCheckpoint : FlowIORequest<Unit>
 }

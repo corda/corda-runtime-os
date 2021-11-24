@@ -14,6 +14,9 @@ import net.corda.flow.statemachine.FlowIORequest
 import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.flow.statemachine.HousekeepingState
 import net.corda.flow.statemachine.NonSerializableState
+import net.corda.flow.statemachine.requests.FlowAsyncRequest
+import net.corda.flow.statemachine.requests.FlowAsyncResponse
+import net.corda.flow.statemachine.requests.OutputEvent
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowSession
@@ -27,6 +30,7 @@ import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import org.slf4j.MDC
 import java.nio.ByteBuffer
+import java.util.UUID
 
 class TransientReference<out A>(@Transient val value: A)
 
@@ -116,15 +120,19 @@ class FlowStateMachineImpl<R>(
 
     private fun handleSuccess(resultOrError: Try.Success<R>) {
         if (clientId != null) {
-            nonSerializableState.eventsOut += FlowEvent(
-                id,
-                cpiId,
-                RPCFlowResult(
-                    clientId,
-                    logic.javaClass.name,
-                    resultOrError.value.toString(),
-                    SecureHash(),
-                    null
+            nonSerializableState.eventsOut += OutputEvent(
+                key = id,
+                to = nonSerializableState.flowEventTopic,
+                FlowEvent(
+                    id,
+                    cpiId,
+                    RPCFlowResult(
+                        clientId,
+                        logic.javaClass.name,
+                        resultOrError.value.toString(),
+                        SecureHash(),
+                        null
+                    )
                 )
             )
         }
@@ -132,17 +140,21 @@ class FlowStateMachineImpl<R>(
 
     private fun handleFailure(resultOrError: Try.Failure<R>) {
         if (clientId != null) {
-            nonSerializableState.eventsOut += FlowEvent(
-                id,
-                cpiId,
-                RPCFlowResult(
-                    clientId,
-                    logic.javaClass.name,
-                    null,
-                    SecureHash(),
-                    ExceptionEnvelope(
-                        resultOrError.exception.cause.toString(),
-                        resultOrError.exception.message
+            nonSerializableState.eventsOut += OutputEvent(
+                key = id,
+                to = nonSerializableState.flowEventTopic,
+                FlowEvent(
+                    id,
+                    cpiId,
+                    RPCFlowResult(
+                        clientId,
+                        logic.javaClass.name,
+                        null,
+                        SecureHash(),
+                        ExceptionEnvelope(
+                            resultOrError.exception.cause.toString(),
+                            resultOrError.exception.message
+                        )
                     )
                 )
             )
@@ -160,7 +172,7 @@ class FlowStateMachineImpl<R>(
     }
 
     @Suspendable
-    override fun <SUSPENDRETURN : Any> suspend(ioRequest: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
+    override fun <SUSPENDRETURN> suspend(ioRequest: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
         log.info("suspend $ioRequest")
         sendEvents(ioRequest)
         while (true) {
@@ -181,10 +193,12 @@ class FlowStateMachineImpl<R>(
         log.info("sendEvents $ioRequest")
         when (ioRequest) {
             FlowIORequest.ForceCheckpoint -> {
-                nonSerializableState.eventsOut += FlowEvent(
-                    id,
-                    cpiId,
-                    Wakeup(flowName)
+                nonSerializableState.eventsOut += OutputEvent(
+                    key = id, to = nonSerializableState.flowEventTopic, FlowEvent(
+                        id,
+                        cpiId,
+                        Wakeup(flowName)
+                    )
                 )
             }
             is FlowIORequest.CloseSessions -> TODO()
@@ -194,6 +208,13 @@ class FlowStateMachineImpl<R>(
             is FlowIORequest.SendAndReceive -> TODO()
             is FlowIORequest.Sleep -> TODO()
             is FlowIORequest.WaitForSessionConfirmations -> TODO()
+            is FlowAsyncRequest<*, *> -> {
+                // this payload is an avro object defined in the service that made this suspending request
+                // don't think the partition that these events go to matters, but we could set the key based on the flow id is we wanted
+                // the key depends on the key type of the topic the event is being sent to
+                nonSerializableState.eventsOut +=  OutputEvent(key = UUID.randomUUID(), to = ioRequest.to, ioRequest.payload)
+            }
+            else -> throw IllegalArgumentException("Unrecognised request type ${ioRequest.javaClass.name}")
         }
     }
 
@@ -214,7 +235,16 @@ class FlowStateMachineImpl<R>(
             is FlowIORequest.SendAndReceive -> TODO()
             is FlowIORequest.Sleep -> TODO()
             is FlowIORequest.WaitForSessionConfirmations -> TODO()
-            else -> throw IllegalArgumentException("unrecognised IOREQUEST type ${ioRequest.javaClass.name}")
+            is FlowAsyncRequest<*, *> -> {
+                val response = housekeepingState.eventsIn.firstOrNull { it.payload is FlowAsyncResponse }
+                if (response != null) {
+                    housekeepingState.eventsIn.remove(response)
+                    ioRequest.response((response.payload as FlowAsyncResponse).response) to true
+                } else {
+                    Unit to false
+                }
+            }
+            else -> throw IllegalArgumentException("Unrecognised request type ${ioRequest.javaClass.name}")
         }
     }
 
@@ -230,7 +260,7 @@ class FlowStateMachineImpl<R>(
         TODO("Not yet implemented")
     }
 
-    override fun waitForCheckpoint(): Pair<Checkpoint?, List<FlowEvent>> {
+    override fun waitForCheckpoint(): Pair<Checkpoint?, List<OutputEvent>> {
         val fibreState = nonSerializableState.suspended.getOrThrow() ?: return Pair(null, emptyList())
 
         return Pair(

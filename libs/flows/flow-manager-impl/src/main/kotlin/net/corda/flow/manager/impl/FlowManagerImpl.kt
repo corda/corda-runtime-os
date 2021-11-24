@@ -4,7 +4,6 @@ import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberExecutorScheduler
 import net.corda.data.flow.Checkpoint
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.FlowSessionMessage
 import net.corda.dependency.injection.DependencyInjectionService
@@ -16,6 +15,7 @@ import net.corda.flow.statemachine.HousekeepingState
 import net.corda.flow.statemachine.NonSerializableState
 import net.corda.flow.statemachine.factory.FlowStateMachineFactory
 import net.corda.flow.statemachine.impl.FlowStateMachineImpl
+import net.corda.flow.statemachine.requests.OutputEvent
 import net.corda.messaging.api.records.Record
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.CheckpointSerializer
@@ -70,13 +70,13 @@ class FlowManagerImpl @Activate constructor(
                 mutableListOf()
             )
         )
-        setupFlow(stateMachine, sandboxGroup)
+        setupFlow(stateMachine, sandboxGroup, flowMetaData.flowEventTopic)
         stateMachine.startFlow()
         val (checkpoint, events) = stateMachine.waitForCheckpoint()
 
         return FlowResult(
             checkpoint,
-            events.toRecordsWithKey(flowMetaData.flowEventTopic)
+            events.toRecordsWithKey()
         )
     }
 
@@ -104,10 +104,10 @@ class FlowManagerImpl @Activate constructor(
         val housekeepingState = HousekeepingState(flowState.suspendCount, flowState.isKilled, flowEvents)
         flowStateMachine.housekeepingState(housekeepingState)
 
-        setupFlow(flowStateMachine, sandboxGroup)
+        setupFlow(flowStateMachine, sandboxGroup, flowEventTopic)
         Fiber.unparkDeserialized(flowStateMachine, scheduler)
         val (checkpoint, events) = flowStateMachine.waitForCheckpoint()
-        return FlowResult(checkpoint, events.toRecordsWithKey(flowEventTopic))
+        return FlowResult(checkpoint, events.toRecordsWithKey())
     }
 
     @Suppress("SpreadOperator")
@@ -118,14 +118,15 @@ class FlowManagerImpl @Activate constructor(
         return constructor.newInstance(jsonArg)
     }
 
-    private fun setupFlow(flow: FlowStateMachine<*>, sandboxGroup: SandboxGroup) {
+    private fun setupFlow(flow: FlowStateMachine<*>, sandboxGroup: SandboxGroup, flowEventTopic: String) {
         val checkpointSerializer = getCheckpointSerializer(sandboxGroup)
 
         with(flow) {
             nonSerializableState(
                 NonSerializableState(
                     checkpointSerializer,
-                    Clock.systemUTC()
+                    Clock.systemUTC(),
+                    flowEventTopic
                 )
             )
         }
@@ -139,12 +140,13 @@ class FlowManagerImpl @Activate constructor(
         }
     }
 
-    private fun List<FlowEvent>.toRecordsWithKey(flowEventTopic: String): List<Record<FlowKey, FlowEvent>> {
+    // map request type to topic
+    private fun List<OutputEvent>.toRecordsWithKey(): List<Record<Any, Any>> {
         return this.map { event ->
             Record(
-                flowEventTopic,
-                event.flowKey,
-                event
+                event.to,
+                event.key,
+                event.payload
             )
         }
     }
