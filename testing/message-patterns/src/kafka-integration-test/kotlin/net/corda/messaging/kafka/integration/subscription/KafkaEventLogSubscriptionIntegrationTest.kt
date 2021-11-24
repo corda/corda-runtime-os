@@ -67,7 +67,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
         )
         eventLogSub.start()
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS))
+        assertTrue(latch.await(40, TimeUnit.SECONDS))
         eventLogSub.stop()
     }
 
@@ -104,7 +104,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
         eventLogSub1.start()
         eventLogSub2.start()
-        assertTrue(latch.await(20, TimeUnit.SECONDS))
+        assertTrue(latch.await(40, TimeUnit.SECONDS))
         eventLogSub1.stop()
         eventLogSub2.stop()
         publisher.close()

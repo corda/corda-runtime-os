@@ -15,8 +15,8 @@ import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion
 import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.DURABLE_TOPIC1
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
-import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.getDemoRecords
+import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
 import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.MESSAGING_KAFKA
@@ -84,14 +84,14 @@ class DurableSubscriptionIntegrationTest {
         //long delay to not allow sub to to try rejoin group after rebalance
         val durableSub2 = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC1-group", DURABLE_TOPIC1, 2),
-            TestDurableProcessor(latch),
+            TestDurableProcessor(latch, "", 70000),
             triggerRebalanceQuicklyConfig,
             null
         )
         durableSub1.start()
         durableSub2.start()
 
-        assertTrue(latch.await(70, TimeUnit.SECONDS))
+        assertTrue(latch.await(60, TimeUnit.SECONDS))
         durableSub1.stop()
         durableSub2.stop()
     }
@@ -114,7 +114,7 @@ class DurableSubscriptionIntegrationTest {
         )
         durableSub.start()
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS))
+        assertTrue(latch.await(50, TimeUnit.SECONDS))
         durableSub.stop()
     }
 
@@ -150,7 +150,7 @@ class DurableSubscriptionIntegrationTest {
 
         durableSub1.start()
         durableSub2.start()
-        assertTrue(latch.await(20, TimeUnit.SECONDS))
+        assertTrue(latch.await(60, TimeUnit.SECONDS))
         durableSub1.stop()
         durableSub2.stop()
         publisher.close()
