@@ -279,6 +279,7 @@ class DBMessagingIntegrationTest {
             InMemoryDurableProcessor(topic1ProcessedRecords, String::class.java, String::class.java, topic2)
         val processor2 = InMemoryDurableProcessor(topic2ProcessedRecords, String::class.java, String::class.java, null)
         val subscriptionsForTopic1 = (1..3).map {
+            val subscriptionConfigTopic1 = SubscriptionConfig("group-1", topic1, it)
             DBDurableSubscription(
                 subscriptionConfigTopic1,
                 processor1,
