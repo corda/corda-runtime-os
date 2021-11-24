@@ -1,48 +1,51 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.libs.permission.PermissionValidator
+import net.corda.libs.permissions.PermissionService
 import net.corda.libs.permissions.endpoints.exception.PermissionEndpointException
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
-import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.createCoordinator
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 
 /**
  * An RPC Ops endpoint for User operations.
  */
-@Component(service = [UserEndpoint::class, PluggableRPCOps::class])
-class UserEndpointImpl : UserEndpoint {
+@Component(service = [PluggableRPCOps::class])
+class UserEndpointImpl @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = PermissionService::class)
+    private val permissionService: PermissionService
+) : UserEndpoint, Lifecycle {
 
     override val targetInterface: Class<UserEndpoint> = UserEndpoint::class.java
 
-    override var permissionManager: PermissionManager? = null
-    override var permissionValidator: PermissionValidator? = null
-
-    @VisibleForTesting
-    internal var running: Boolean = false
-
     override val protocolVersion = 1
+
+    private val coordinator = coordinatorFactory.createCoordinator<UserEndpoint>(UserEndpointImplEventHandler())
 
     override fun createUser(createUserType: CreateUserType): UserResponseType {
         validatePermissionManager()
 
-        val createUserResult = permissionManager!!.createUser(
+        val createUserResult = permissionService.permissionManager.createUser(
             convertFromUserType(createUserType)
         )
 
-        return createUserResult.getOrThrow()
-            .convertToUserType()
+        return createUserResult.getOrThrow().convertToUserType()
     }
 
     override fun getUser(loginName: String): UserResponseType? {
         validatePermissionManager()
-        val userResponseDto = permissionManager!!.getUser(
+        val userResponseDto = permissionService.permissionManager.getUser(
             GetUserRequestDto(
                 "todo", // the endpoint needs more context to get the request user name
                 loginName
@@ -53,13 +56,11 @@ class UserEndpointImpl : UserEndpoint {
 
     @Suppress("ThrowsCount")
     private fun validatePermissionManager() {
-        if (!running) {
+        if (!isRunning) {
             throw PermissionEndpointException("User Endpoint must be started.", 500)
         }
-        if (permissionManager == null) {
-            throw PermissionEndpointException("Permission manager must be initialized.", 500)
-        }
-        if (!permissionManager!!.isRunning) {
+
+        if (!permissionService.isRunning) {
             throw PermissionEndpointException("Permission manager must be running.", 500)
         }
     }
@@ -90,15 +91,13 @@ class UserEndpointImpl : UserEndpoint {
     }
 
     override val isRunning: Boolean
-        get() = running
+        get() = coordinator.isRunning
 
     override fun start() {
-        running = true
+        coordinator.start()
     }
 
     override fun stop() {
-        running = false
-        permissionManager = null
-        permissionValidator = null
+        coordinator.close()
     }
 }

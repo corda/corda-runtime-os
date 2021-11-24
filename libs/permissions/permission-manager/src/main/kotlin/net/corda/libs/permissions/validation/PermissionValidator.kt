@@ -1,4 +1,4 @@
-package net.corda.libs.permission
+package net.corda.libs.permissions.validation
 
 import net.corda.lifecycle.Lifecycle
 

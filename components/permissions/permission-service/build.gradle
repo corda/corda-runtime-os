@@ -15,7 +15,6 @@ dependencies {
     implementation "net.corda:corda-base"
 
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(':libs:permissions:permission-validation')
     implementation project(':libs:permissions:permission-cache')
     implementation project(':libs:permissions:permission-manager')
     implementation project(':components:permissions:permission-cache-service')
