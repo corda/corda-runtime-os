@@ -261,7 +261,7 @@ data class TransformsSchema(val types: Map<String, EnumMap<TransformTypes, Mutab
          * @param schema should be a [Schema] generated for a serialised data structure
          * @param sf should be provided by the same serialization context that generated the schema
          */
-        fun build(schema: Schema, sf: LocalSerializerFactory, context: SerializationContext, metadata: Metadata): TransformsSchema {
+        fun build(schema: Schema, sf: LocalSerializerFactory, metadata: Metadata): TransformsSchema {
             val transformsMap = schema.types.asSequence().mapNotNull { type ->
                 val localTypeInformation = if(metadata.containsKey(type.name)) {
                     sf.getTypeInformation(metadata, type.name)

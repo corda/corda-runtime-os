@@ -62,7 +62,7 @@ open class SerializationOutput constructor(
         try {
             val blob = _serialize(obj, context)
             val schema = Schema(schemaHistory.toList())
-            return BytesAndSchemas(blob, schema, TransformsSchema.build(schema, serializerFactory, context, metadata), Metadata())
+            return BytesAndSchemas(blob, schema, TransformsSchema.build(schema, serializerFactory, metadata), Metadata())
         } finally {
             andFinally()
         }
@@ -82,7 +82,7 @@ open class SerializationOutput constructor(
                 writeObject(obj, this, context)
                 val schema = Schema(schemaHistory.toList())
                 writeSchema(schema, this)
-                writeTransformSchema(TransformsSchema.build(schema, serializerFactory, context, metadata), this)
+                writeTransformSchema(TransformsSchema.build(schema, serializerFactory, metadata), this)
                 writeMetadata(metadata, this)
             }
         }
