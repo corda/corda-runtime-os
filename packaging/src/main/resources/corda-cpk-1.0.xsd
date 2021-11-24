@@ -29,10 +29,15 @@
     </xs:complexType>
 
     <xs:complexType name="signersType">
-        <xs:sequence>
-            <xs:element maxOccurs="unbounded" minOccurs="0" name="signer" type="cpk:hashType"/>
-        </xs:sequence>
+        <xs:choice minOccurs="0">
+            <xs:sequence maxOccurs="unbounded">
+                <xs:element name="signer" type="cpk:hashType"/>
+            </xs:sequence>
+            <xs:element name="sameAsMe" type="cpk:sameAsMeType"/>
+        </xs:choice>
     </xs:complexType>
+
+    <xs:complexType name="sameAsMeType"/>
 
     <xs:complexType name="dependencyConstraintsType">
         <xs:sequence>

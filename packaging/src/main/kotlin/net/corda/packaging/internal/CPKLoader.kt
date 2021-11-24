@@ -51,6 +51,8 @@ import javax.xml.validation.SchemaFactory
 internal object CPKLoader {
     private val logger = loggerFor<CPKLoader>()
 
+    private val SAME_SIGNER_PLACEHOLDER = SecureHash("NONE", byteArrayOf(0))
+
     // The tags used in the XML of the file specifying a CPK's dependencies.
     private const val DEPENDENCY_TAG = "cpkDependency"
     private const val DEPENDENCY_NAME_TAG = "name"
@@ -58,6 +60,7 @@ internal object CPKLoader {
     private const val DEPENDENCY_SIGNERS_TAG = "signers"
     private const val DEPENDENCY_TYPE_TAG = "type"
     private const val DEPENDENCY_SIGNER_TAG = "signer"
+    private const val DEPENDENCY_SAME_SIGNER_TAG = "sameAsMe"
     private const val CORDA_CPK_V1 = "corda-cpk-1.0.xsd"
 
     // The tags used in the XML of the file specifying library constraints.
@@ -239,6 +242,17 @@ internal object CPKLoader {
             manifest.mainAttributes.getValue(CPKManifestImpl.CPK_TYPE)?.let(CPK.Type::parse)?.also { ctx.cpkType = it }
             CordappManifest.fromManifest(manifest) to signatureCollector.certificates
         }
+
+        // Replace any "same as me" placeholders with this CPK's actual summary hash.
+        val cpkSummaryHash = certificates.asSequence().certSummaryHash()
+        ctx.cpkDependencies = ctx.cpkDependencies.mapTo(TreeSet()) { cpk ->
+            if (cpk.signerSummaryHash === SAME_SIGNER_PLACEHOLDER) {
+                CPKIdentifierImpl(cpk.name, cpk.version, cpkSummaryHash)
+            } else {
+                cpk
+            }
+        }
+
         consumeStream(cordappDigestInputStream, ctx.buffer)
         ctx.cordappManifest = manifest
         ctx.cordappCertificates = certificates
@@ -461,7 +475,13 @@ internal object CPKLoader {
                     }
                     val hashData = Base64.getDecoder().decode(signer.textContent)
                     SecureHash(algorithm, hashData)
-                }.summaryHash()
+                }.summaryHash() ?:
+                    if (signers.getElementsByTagName(DEPENDENCY_SAME_SIGNER_TAG).length == 1) {
+                        // Use this until we can determine this CPK's own certificates.
+                        SAME_SIGNER_PLACEHOLDER
+                    } else {
+                        null
+                    }
             CPKIdentifierImpl(
                 dependencyNameElements.item(0).textContent,
                 dependencyVersionElements.item(0).textContent,

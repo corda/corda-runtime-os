@@ -3,16 +3,12 @@ package net.corda.packaging.internal
 import net.corda.packaging.CPK
 import net.corda.packaging.DependencyResolutionException
 import net.corda.packaging.VersionComparator
-import net.corda.v5.crypto.SecureHash
 import java.util.Collections
 import java.util.NavigableMap
 import java.util.NavigableSet
 import java.util.TreeSet
 
 internal object CPKDependencyResolver {
-
-    //We need an SecureHash instance that compares lower against with all other
-    private val zerothHash = SecureHash("", ByteArray(1))
 
     @Suppress("NestedBlockDepth", "ComplexMethod", "ThrowsCount")
     fun resolveDependencies(roots: Iterable<CPK.Identifier>,

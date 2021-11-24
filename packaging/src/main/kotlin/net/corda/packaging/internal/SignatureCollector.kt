@@ -2,7 +2,8 @@ package net.corda.packaging.internal
 
 import java.security.CodeSigner
 import java.security.cert.Certificate
-import java.util.*
+import java.util.Arrays
+import java.util.Collections
 import java.util.jar.JarEntry
 
 /**
