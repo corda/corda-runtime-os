@@ -250,7 +250,7 @@ class DominoTile(
                             updateState(State.StoppedDueToBadConfig)
                         }
                         ConfigUpdateResult.NoUpdate -> {
-                            logger.info("Config applies with no update for $name.")
+                            logger.info("Config applied with no update for $name.")
                         }
                     }
                 }
@@ -281,7 +281,7 @@ class DominoTile(
         }
         logger.info("Got new configuration for $name")
         if (newConfiguration == configurationChangeHandler.lastConfiguration) {
-            logger.info("Configuration same with previous for $name, so not applying.")
+            logger.info("Configuration same with previous for $name, so not applying it.")
             configApplied(ConfigUpdateResult.NoUpdate)
         } else {
             logger.info("Applying new configuration for $name")

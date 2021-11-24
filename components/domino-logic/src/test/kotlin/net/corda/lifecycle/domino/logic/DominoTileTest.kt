@@ -7,6 +7,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
@@ -1082,19 +1083,30 @@ class DominoTileTest {
                 val children = listOf(
                     mock {
                         on { state } doReturn DominoTile.State.StoppedDueToError
+                        on { name } doReturn LifecycleCoordinatorName("component", "1")
                     },
                     mock {
                         on { state } doReturn DominoTile.State.StoppedDueToBadConfig
+                        on { name } doReturn LifecycleCoordinatorName("component", "2")
                     },
                     mock<DominoTile> {
                         on { state } doReturn DominoTile.State.StoppedByParent
+                        on { name } doReturn LifecycleCoordinatorName("component", "3")
                     }
                 )
+                val childrenToHandles = children.map { it.name to mock<RegistrationHandle>() }.toMap()
+                children.forEach {
+                    whenever(coordinator.followStatusChangesByName(any())).thenAnswer {
+                        @Suppress("UNCHECKED_CAST")
+                        childrenToHandles[(it.arguments[0] as Set<LifecycleCoordinatorName>).first()]
+                    }
+                }
 
                 val tile = tile(children)
+                tile.start()
                 handler.lastValue.processEvent(
                     RegistrationStatusChangeEvent(
-                        mock(),
+                        childrenToHandles[children[0].name]!!,
                         LifecycleStatus.ERROR
                     ),
                     coordinator
@@ -1361,7 +1373,7 @@ class DominoTileTest {
             outerConfigUpdateResult.completeExceptionally(IOException())
             resourceFuture.completeExceptionally(IOException())
 
-            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToBadConfig)
+            assertThat(tile.state).isEqualTo(DominoTile.State.StoppedDueToError)
         }
     }
 }
