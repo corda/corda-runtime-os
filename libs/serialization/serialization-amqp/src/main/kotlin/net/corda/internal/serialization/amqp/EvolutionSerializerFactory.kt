@@ -90,9 +90,7 @@ class DefaultEvolutionSerializerFactory(
     private fun RemoteTypeInformation.Composable.propertyNamesMatch(localTypeInformation: LocalTypeInformation.Composable): Boolean =
             properties.keys == localTypeInformation.properties.keys
 
-    private fun RemoteTypeInformation.Composable.validateCompatibility(
-        localTypeInformation: LocalTypeInformation.Composable
-    ) {
+    private fun RemoteTypeInformation.Composable.validateCompatibility(localTypeInformation: LocalTypeInformation.Composable) {
         properties.asSequence().zip(localTypeInformation.properties.values.asSequence()).forEach { (remote, localProperty) ->
             val (name, remoteProperty) = remote
             val localClass = localProperty.type.observedType.asClass()
