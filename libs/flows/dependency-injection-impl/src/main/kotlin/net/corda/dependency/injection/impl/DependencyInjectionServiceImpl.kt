@@ -5,7 +5,7 @@ import net.corda.dependency.injection.CordaInjectableException
 import net.corda.dependency.injection.DependencyInjectionService
 import net.corda.dependency.injection.DependencyInjector
 import net.corda.dependency.injection.DynamicPropertyInjectable
-import net.corda.dependency.injection.FlowStateMachineInjectable
+import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.injection.CordaFlowInjectable
 import net.corda.v5.application.injection.CordaInject
@@ -83,24 +83,24 @@ class DependencyInjectionServiceImpl : DependencyInjectionService {
 
     private fun getDynamicService(
         injectableInterface: KClass<*>,
-        flowStateMachineInjectable: FlowStateMachineInjectable?,
+        flowStateMachine: FlowStateMachine<*>?,
         currentFlow: Flow<*>?,
         currentService: SingletonSerializeAsToken?
     ): Any? =
-        getDynamicServiceInjector(injectableInterface)?.inject(flowStateMachineInjectable, currentFlow, currentService)
+        getDynamicServiceInjector(injectableInterface)?.inject(flowStateMachine, currentFlow, currentService)
 
     private fun getSingletonService(injectableInterface: KClass<*>): Any? =
         singletonServices.getInstance(injectableInterface.java)
 
     private inline fun <reified T : Any> getInjectableImplementation(
         field: Field,
-        flowStateMachineInjectable: FlowStateMachineInjectable?,
+        flowStateMachine: FlowStateMachine<*>?,
         currentFlow: Flow<*>?,
         currentService: SingletonSerializeAsToken?
     ): Any {
         val injectableInterface: KClass<*> = uncheckedCast(field.type.kotlin)
         val impl =
-            (getDynamicService(injectableInterface, flowStateMachineInjectable, currentFlow, currentService)
+            (getDynamicService(injectableInterface, flowStateMachine, currentFlow, currentService)
                 ?: getSingletonService(injectableInterface))
                 ?.filterByType<T>()
 
@@ -121,18 +121,18 @@ class DependencyInjectionServiceImpl : DependencyInjectionService {
      * Inject instances of all [CordaInject] annotated properties for the FlowLogic instance.
      * The list of allowed interfaces to be injected is controlled by [DependencyInjectionService].
      */
-    override fun injectDependencies(flow: Flow<*>, flowStateMachineInjectable: FlowStateMachineInjectable) {
+    override fun injectDependencies(flow: Flow<*>, flowStateMachine: FlowStateMachine<*>) {
         flow::class.getFieldsForInjection()
             .forEach { field ->
                 field.isAccessible = true
                 when (val implementation = getStateMachineInjectableOrNull(field.get(flow))) {
                     null -> field.set(
                         flow,
-                        getInjectableImplementation<CordaFlowInjectable>(field, flowStateMachineInjectable, flow, null)
+                        getInjectableImplementation<CordaFlowInjectable>(field, flowStateMachine, flow, null)
                     )
                     // Update the stateMachine reference if it is not valid
                     // This may happen after restarting a flow from an unstarted state.
-                    else -> implementation.injectableProperty = flowStateMachineInjectable
+                    else -> implementation.injectableProperty = flowStateMachine
                 }
             }
     }
@@ -144,13 +144,13 @@ class DependencyInjectionServiceImpl : DependencyInjectionService {
     }
 
     /**
-     * Safe-cast an object as a [DynamicPropertyInjectable] of type [FlowStateMachineInjectable].
+     * Safe-cast an object as a [DynamicPropertyInjectable] of type [FlowStateMachine].
      * Return null if the object is not a [DynamicPropertyInjectable], or if it is a [DynamicPropertyInjectable] but
-     * not of type [FlowStateMachineInjectable].
+     * not of type [FlowStateMachine].
      */
     @Suppress("UNCHECKED_CAST")
     private fun getStateMachineInjectableOrNull(obj: Any?) =
-        obj as? DynamicPropertyInjectable<FlowStateMachineInjectable>
+        obj as? DynamicPropertyInjectable<FlowStateMachine<*>>
 
     override fun injectDependencies(service: SingletonSerializeAsToken) {
         service::class.getFieldsForInjection()

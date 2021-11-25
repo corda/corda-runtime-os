@@ -1,13 +1,11 @@
 package net.corda.dependency.injection.impl
 
 import net.corda.dependency.injection.DependencyInjectionBuilder
-import net.corda.dependency.injection.DependencyInjectionBuilderFactory
 import net.corda.dependency.injection.FlowDependencyInjector
 import net.corda.dependency.injection.InjectableFactory
 import net.corda.virtual.node.sandboxgroup.SandboxGroupContext
 
 class DependencyInjectionBuilderImpl(
-    private val dependencyInjectionBuilderFactory: DependencyInjectionBuilderFactory,
     private val injectableFactories: List<InjectableFactory<*>>
 ) : DependencyInjectionBuilder {
     private var sandboxGroupContext: SandboxGroupContext? = null

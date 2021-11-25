@@ -47,6 +47,10 @@ class FlowDependencyInjectorImpl(
     }
 
     override fun getRegisteredAsTokenSingletons(): Set<SingletonSerializeAsToken> {
+        /**
+         * Now we have everything as a factory, what singletons will we have to register
+         * in the serializer?
+         */
         TODO("Not yet implemented")
     }
 

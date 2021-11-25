@@ -11,24 +11,26 @@ import net.corda.virtual.node.sandboxgroup.MutableSandboxGroupContext
 import net.corda.virtual.node.sandboxgroup.SandboxGroupContext
 import net.corda.virtual.node.sandboxgroup.SandboxGroupService
 import net.corda.virtual.node.sandboxgroup.SandboxGroupType
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [FlowSandboxService::class])
-class FlowSandboxServiceImpl(
+class FlowSandboxServiceImpl @Activate constructor(
     @Reference(service = SandboxGroupService::class)
     private val sandboxGroupService: SandboxGroupService,
     @Reference(service = DependencyInjectionBuilderFactory::class)
     private val dependencyInjectionBuilderFactory: DependencyInjectionBuilderFactory,
     @Reference(service = CheckpointSerializerBuilderFactory::class)
     private val checkpointSerializerBuilderFactory: CheckpointSerializerBuilderFactory
-) {
+):FlowSandboxService {
 
-    fun get(
+    override fun get(
         holdingIdentity: HoldingIdentity,
         cpi: CPI.Identifier,
     ): SandboxGroupContext {
 
+        // create the builder in the non sandbox context
         val diBuilder = dependencyInjectionBuilderFactory.create()
 
         return sandboxGroupService.get(
@@ -38,7 +40,7 @@ class FlowSandboxServiceImpl(
         ) { _, sandboxGroupContext -> initialiseSandbox(diBuilder, sandboxGroupContext) }
     }
 
-    fun initialiseSandbox(
+    private fun initialiseSandbox(
         dependencyInjectionBuilder: DependencyInjectionBuilder,
         sandboxGroupContext: MutableSandboxGroupContext
     ): AutoCloseable {
@@ -50,8 +52,9 @@ class FlowSandboxServiceImpl(
         sandboxGroupContext.put(FlowSandboxContextTypes.DEPENDENCY_INJECTOR, injectionService)
 
         // Create and configure the checkpoint serializer
-        val builder = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxGroupContext.sandboxGroup)
-        builder.addSingletonSerializableInstances(injectionService.getRegisteredAsTokenSingletons()) // ?? See comments in the InjectionService class
+        val builder = checkpointSerializerBuilderFactory
+            .createCheckpointSerializerBuilder(sandboxGroupContext.sandboxGroup)
+        builder.addSingletonSerializableInstances(injectionService.getRegisteredAsTokenSingletons())
         sandboxGroupContext.put(FlowSandboxContextTypes.CHECKPOINT_SERIALIZER, injectionService)
 
         return AutoCloseable { TODO("clean up if required?") }

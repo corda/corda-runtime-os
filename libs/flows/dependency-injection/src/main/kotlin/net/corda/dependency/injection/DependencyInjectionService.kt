@@ -1,5 +1,6 @@
 package net.corda.dependency.injection
 
+import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.injection.CordaInjectPreStart
 import net.corda.v5.application.services.CordaService
@@ -57,7 +58,7 @@ interface DependencyInjectionService {
     /**
      * Inject all available dependencies into a given flow.
      */
-    fun injectDependencies(flow: Flow<*>, flowStateMachineInjectable: FlowStateMachineInjectable)
+    fun injectDependencies(flow: Flow<*>, flowStateMachine: FlowStateMachine<*>)
 
     fun getRegisteredAsTokenSingletons(): Set<SingletonSerializeAsToken>
 }
@@ -78,7 +79,7 @@ fun interface DependencyInjector<T> {
      * @return A new instance of type T
      */
     fun inject(
-        flowStateMachineInjectable: FlowStateMachineInjectable?,
+        flowStateMachine: FlowStateMachine<*>?,
         currentFlow: Flow<*>?,
         currentService: SingletonSerializeAsToken?
     ): T
