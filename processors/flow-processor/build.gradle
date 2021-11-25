@@ -1,0 +1,19 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Flow Processor'
+
+dependencies {
+    implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:flow-service')
+    implementation project(':components:sandbox:sandbox-service')
+
+    implementation project(':libs:lifecycle:lifecycle')
+
+    implementation 'org.slf4j:slf4j-api'
+    implementation 'net.corda:corda-base'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+}

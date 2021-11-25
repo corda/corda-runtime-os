@@ -14,4 +14,13 @@ dependencies {
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+
+    implementation "info.picocli:picocli:$picocliVersion"
+
+    implementation project(':applications:common')
+
+    // TODO - Including this dependency breaks the startup of the FlowWorker application.
+    implementation project(':processors:flow-processor')
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
 }
