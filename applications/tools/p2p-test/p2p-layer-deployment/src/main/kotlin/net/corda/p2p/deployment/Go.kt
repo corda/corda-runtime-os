@@ -1,6 +1,7 @@
 package net.corda.p2p.deployment
 
 import net.corda.p2p.deployment.commands.Bash
+import net.corda.p2p.deployment.commands.CreateStores
 import net.corda.p2p.deployment.commands.DbSink
 import net.corda.p2p.deployment.commands.Destroy
 import net.corda.p2p.deployment.commands.Jdbc
@@ -23,6 +24,7 @@ import kotlin.system.exitProcess
         Receive::class,
         DbSink::class,
         Send::class,
+        CreateStores::class,
     ],
     header = ["Deployer for p2p layer"],
     name = "deployer",

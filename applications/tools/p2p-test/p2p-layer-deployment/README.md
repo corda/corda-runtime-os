@@ -17,6 +17,10 @@ telepresence connect
 ```bash
 ./gradlew :applications:tools:p2p-test:p2p-layer-deployment:install
 ```
+8. Login into [TinyCert](https://www.tinycert.org/login) and make sure you have those Make sure that you have those environment variables:
+  * `TINYCERT_API_KEY` the API key (You can get it [here](https://www.tinycert.org/docs/api))
+  * `TINYCERT_PASS_PHRASE` Your pass phrase.
+  * `TINYCERT_EMAIL` Your email address as it's registered in TinyCert.
 
 # Using the application
 ## Deploying a new cluster
@@ -38,6 +42,7 @@ Some additional options are:
                              The database username
   -g, --gateway-count=<gatewayCount>
                              Number of Gateways in the cluster
+      --group-id=<groupId>   The group ID
   -H, --hosts=<hostsNames>   The hosts names
   -k, --kafka-brokers=<kafkaBrokerCount>
                              Number of kafka brokers in the cluster
@@ -48,6 +53,7 @@ Some additional options are:
       --storage-class=<storageClassName>
                              The storage class name
   -t, --tag=<tag>            The docker name of the tag to pull
+  -x, --x500-name=<x500Name> The X 500 name
   -z, --zoo-keepers-count=<zooKeeperCount>
                              Number of Zoo Keepers in the cluster
 ```
@@ -84,6 +90,32 @@ To view logs of pods in the cluster use:
 To forward the DB port and access it from the local host use:
 ```bash
 ./applications/tools/p2p-test/p2p-layer-deployment/build/install/p2p-layer-deployment/bin/p2p-layer-deployment jdbc [-n <namespace>]
+```
+
+## Create custom key store
+To create custom key store (that can be used for the gateway configuration) use the `create-stores` command. That is, something like:
+```bash
+./applications/tools/p2p-test/p2p-layer-deployment/build/install/p2p-layer-deployment/bin/p2p-layer-deployment \
+create-stores \
+-h <host-name> -h <another-host-name>
+```
+This will generate a key store and a trust store file. Additional arguments:
+```
+  -e, --tinycert-email=<email>
+                       The TinyCert email
+  -h, --host=<hosts>   The host names
+  -k, --tinycert-api-key=<apiKey>
+                       The TinyCert API Key
+      --key-store-password=<keyStorePassword>
+                       The key store password
+  -p, --tinycert-passphrase=<passPhrase>
+                       The TinyCert Pass phrase
+  -s, --ssl-store=<sslStoreFile>
+                       The SSL store file
+  -t, --trust-store=<trustStoreFile>
+                       The trust store file
+      --trust-store-password=<trustStorePassword>
+                       The trust store password
 ```
 
 ## Configuring

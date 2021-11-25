@@ -38,6 +38,18 @@ class Namespace : Runnable {
     var hostsNames: List<String> = listOf("www.alice.net")
 
     @Option(
+        names = ["-x", "--x500-name"],
+        description = ["The X 500 name"]
+    )
+    private var x500Name = "O=Alice, L=London, C=GB"
+
+    @Option(
+        names = ["--group-id"],
+        description = ["The group ID"]
+    )
+    private var groupId = "group-1"
+
+    @Option(
         names = ["-k", "--kafka-brokers"],
         description = ["Number of kafka brokers in the cluster"]
     )
@@ -97,19 +109,27 @@ class Namespace : Runnable {
     )
     private var tag = "5.0.0.0-alpha-1637757042293"
 
-    private val nameSpaceYaml = listOf(
-        mapOf(
-            "apiVersion" to "v1",
-            "kind" to "Namespace",
-            "metadata" to mapOf(
-                "name" to namespaceName,
-                "labels" to mapOf(
-                    "namespace-type" to "p2p-layer"
+    private val nameSpaceYaml by lazy {
+        listOf(
+            mapOf(
+                "apiVersion" to "v1",
+                "kind" to "Namespace",
+                "metadata" to mapOf(
+                    "name" to namespaceName,
+                    "labels" to mapOf(
+                        "namespace-type" to "p2p-deployment",
+                    ),
+                    "annotations" to mapOf(
+                        "type" to "p2p",
+                        "x500-name" to x500Name,
+                        "group-id" to groupId,
+                        "host" to hostsNames.first(),
+                    )
                 )
-            )
-        ),
-        CordaOsDockerDevSecret.secret(namespaceName),
-    )
+            ),
+            CordaOsDockerDevSecret.secret(namespaceName),
+        )
+    }
 
     private val kafkaServers by lazy {
         KafkaBroker.kafkaServers(namespaceName, kafkaBrokerCount)
@@ -156,7 +176,7 @@ class Namespace : Runnable {
             thread(isDaemon = true) {
                 create.errorStream.reader().useLines {
                     it.forEach { line ->
-                        System.err.println("err: $line")
+                        System.err.println(line)
                     }
                 }
             }
@@ -165,6 +185,44 @@ class Namespace : Runnable {
             if (create.waitFor() != 0) {
                 throw Exception("Could not create $namespaceName")
             }
+            waitForCluster()
+            println("Cluster $namespaceName is deployed")
         }
+    }
+
+    private fun waitForCluster() {
+        repeat(300) {
+            Thread.sleep(1000)
+            val listPods = ProcessBuilder().command(
+                "kubectl",
+                "get",
+                "pod",
+                "-n",
+                namespaceName
+            ).start()
+            if (listPods.waitFor() != 0) {
+                throw Exception("Could not get the pods in $namespaceName")
+            }
+            val waitingFor = listPods.inputStream
+                .reader()
+                .readLines()
+                .drop(1)
+                .map {
+                    it.split("\\s+".toRegex())
+                }.map {
+                    it[0] to it[2]
+                }.filter {
+                    it.second != "Running"
+                }.toMap()
+            if (waitingFor.isEmpty()) {
+                return
+            } else {
+                println("Waiting for:")
+                waitingFor.forEach { (name, status) ->
+                    println("\t $name ($status)")
+                }
+            }
+        }
+        throw Exception("Waiting too long for $namespaceName")
     }
 }

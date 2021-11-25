@@ -24,7 +24,7 @@ data class PersistentData(
         "kind" to "PersistentVolume",
         "apiVersion" to "v1",
         "metadata" to mapOf(
-            "name" to "$app-$name",
+            "name" to "${namespace.namespaceName}-$app-$name",
             "namespace" to namespace.namespaceName,
             "labels" to mapOf(
                 "type" to "local",
@@ -35,7 +35,7 @@ data class PersistentData(
             "capacity" to mapOf("storage" to size),
             "storageClassName" to namespace.storageClassName,
             "accessModes" to listOf("ReadWriteMany"),
-            "hostPath" to mapOf("path" to "/mnt/data/$namespace/$app-$name")
+            "hostPath" to mapOf("path" to "/mnt/data/${namespace.namespaceName}/$app-$name")
         )
     )
 
