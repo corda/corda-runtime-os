@@ -70,11 +70,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                   private val configuration: SmartConfig,
                   private val instanceId: Int,
                   val linkManagerNetworkMap: LinkManagerNetworkMap
-                      = StubNetworkMap(lifecycleCoordinatorFactory, subscriptionFactory, instanceId),
+                      = StubNetworkMap(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration),
                   private val linkManagerHostingMap: LinkManagerHostingMap
                       = ConfigBasedLinkManagerHostingMap(configurationReaderService, lifecycleCoordinatorFactory),
                   private val linkManagerCryptoService: LinkManagerCryptoService
-                      = StubCryptoService(lifecycleCoordinatorFactory, subscriptionFactory, instanceId)
+                      = StubCryptoService(lifecycleCoordinatorFactory, subscriptionFactory, instanceId, configuration)
 ) : LifecycleWithDominoTile {
 
     companion object {
@@ -130,12 +130,14 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, instanceId),
         InboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
+        configuration,
         partitionAssignmentListener = inboundAssignmentListener
     )
 
     private val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
         SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, instanceId),
         outboundMessageProcessor,
+        configuration,
         partitionAssignmentListener = null
     )
 

@@ -383,6 +383,7 @@ class DominoTile(
         if (stopConfigListener) {
             configRegistration?.close()
             if (configRegistration != null) logger.info("Unregistered for Config Updates $name.")
+            configurationChangeHandler?.lastConfiguration = null
             configRegistration = null
             configurationChangeHandler?.lastConfiguration = null
         }
