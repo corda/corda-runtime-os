@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference
 class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                         subscriptionFactory: SubscriptionFactory,
                         instanceId: Int,
-                        configuration: SmartConfig,): LinkManagerCryptoService {
+                        configuration: SmartConfig): LinkManagerCryptoService {
 
     companion object {
         val logger = contextLogger()

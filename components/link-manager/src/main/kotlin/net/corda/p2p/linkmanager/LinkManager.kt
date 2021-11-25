@@ -134,8 +134,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, instanceId),
             InboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
-            partitionAssignmentListener = inboundAssignmentListener,
-            nodeConfig = configuration
+            configuration,
+            inboundAssignmentListener
         )
         inboundMessageSubscription.start()
         resources.keep(inboundMessageSubscription)
@@ -148,8 +148,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, instanceId),
             outboundMessageProcessor,
-            partitionAssignmentListener = null,
-            nodeConfig = configuration
+            configuration,
+            null
         )
         outboundMessageSubscription.start()
         resources.keep(outboundMessageSubscription)

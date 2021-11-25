@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference
 class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                      subscriptionFactory: SubscriptionFactory,
                      instanceId: Int,
-                     configuration: SmartConfig,): LinkManagerNetworkMap {
+                     configuration: SmartConfig): LinkManagerNetworkMap {
 
     private val processor = NetworkMapEntryProcessor()
     private val subscriptionConfig = SubscriptionConfig("network-map", TestSchema.NETWORK_MAP_TOPIC, instanceId)
