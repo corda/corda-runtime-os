@@ -2,9 +2,6 @@ package net.corda.messaging.api.subscription
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.records.Record
 
 /**
  * A subscription that can be used to manage the life cycle of consumption of event records from a topic.
@@ -115,24 +112,6 @@ interface CompactedSubscription<K : Any, V : Any> : Subscription<K, V> {
      *  @return the current value for the given key, or null if it's not available
      */
     fun getValue(key: K): V?
-}
-
-/**
- * A subscription that can be used to retrieve records at a specific (partition, offset) location.
- */
-interface RandomAccessSubscription<K : Any, V : Any> : Subscription<K, V> {
-
-    /**
-     * Get the record at the provided partition and offset.
-     * @return the record if there is one at the specified location, null otherwise.
-     *
-     * @throws CordaMessageAPIFatalException if there was an fatal/unrecoverable error while trying to retrieve the
-     * record.
-     * @throws CordaMessageAPIIntermittentException if there was a recoverable/transient error while trying to retrieve
-     * the record.
-     */
-    fun getRecord(partition: Int, offset: Long): Record<K, V>?
-
 }
 
 /**
