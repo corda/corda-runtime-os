@@ -14,7 +14,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
-import net.corda.p2p.gateway.Gateway.Companion.CONSUMER_GROUP_ID
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
@@ -59,7 +58,7 @@ internal class OutboundMessageHandler(
     )
 
     private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC, instanceId),
+        SubscriptionConfig("outbound-message-handler", Schema.LINK_OUT_TOPIC, instanceId),
         this,
         nodeConfiguration,
         null
