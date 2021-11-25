@@ -76,7 +76,7 @@ class DeliveryTracker(
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         messageTrackerSubscription.start()
-        resources.keep(messageTrackerSubscription)
+        resources.keep { messageTrackerSubscription.stop() }
         val future = CompletableFuture<Unit>()
         future.complete(Unit)
         return future

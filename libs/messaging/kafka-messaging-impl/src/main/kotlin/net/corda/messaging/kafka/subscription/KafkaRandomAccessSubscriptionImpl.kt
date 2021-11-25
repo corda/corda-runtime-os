@@ -74,13 +74,22 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
     }
 
     override fun stop() {
+        stopConsumeLoop()
+        lifecycleCoordinator.stop()
+    }
+
+    override fun close() {
+        stopConsumeLoop()
+        lifecycleCoordinator.close()
+    }
+
+    private fun stopConsumeLoop() {
         startStopLock.write {
             if (running) {
                 consumer!!.close()
                 running = false
             }
         }
-        lifecycleCoordinator.stop()
     }
 
     @Synchronized

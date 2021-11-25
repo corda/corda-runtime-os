@@ -65,6 +65,10 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
         subscription.stop()
     }
 
+    override fun close() {
+        subscription.close()
+    }
+
     /**
      * A simple processor that forwards events to the underlying durable processor.
      */

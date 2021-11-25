@@ -41,20 +41,20 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutFro
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAck
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAuthenticatedMessageAndKey
 import net.corda.p2p.linkmanager.sessions.SessionManager
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.markers.AppMessageMarker
-import net.corda.p2p.schema.Schema
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.schema.Schema
 import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
 import net.corda.v5.base.annotations.VisibleForTesting
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.util.*
 import java.time.Instant
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
 
@@ -146,7 +146,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         val future = CompletableFuture<Unit>()
         inboundAssigned.set(future)
         inboundMessageSubscription.start()
-        resources.keep(inboundMessageSubscription)
+        resources.keep { inboundMessageSubscription.stop() }
         //We complete the future inside inboundAssignmentListener.
         return future
     }
@@ -154,7 +154,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     @VisibleForTesting
     internal fun createOutboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         outboundMessageSubscription.start()
-        resources.keep(outboundMessageSubscription)
+        resources.keep { outboundMessageSubscription.stop() }
         val outboundReady = CompletableFuture<Unit>()
         outboundReady.complete(Unit)
         return outboundReady

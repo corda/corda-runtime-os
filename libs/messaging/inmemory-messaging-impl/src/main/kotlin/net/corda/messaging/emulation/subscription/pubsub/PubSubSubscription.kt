@@ -78,11 +78,22 @@ class PubSubSubscription<K : Any, V : Any>(
      * Join the thread
      */
     override fun stop() {
+        log.debug { "Stopping pubsub subscription with config: $subscriptionConfig" }
+        stopConsumer()
+        lifecycleCoordinator.stop()
+    }
+
+    override fun close() {
+        log.debug { "Closing pubsub subscription with config: $subscriptionConfig" }
+        stopConsumer()
+        lifecycleCoordinator.close()
+    }
+
+    private fun stopConsumer() {
         lock.withLock {
             currentConsumer?.stop()
             currentConsumer = null
             lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
-            lifecycleCoordinator.stop()
         }
     }
 

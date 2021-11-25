@@ -59,10 +59,22 @@ class DBRandomAccessSubscription<K: Any, V: Any>(private val subscriptionConfig:
         startStopLock.withLock {
             if (running) {
                 running = false
-                lifecycleCoordinator.stop()
                 lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+                lifecycleCoordinator.stop()
                 log.debug { "Random access subscription for topic ${subscriptionConfig.eventTopic} " +
                         "and group ${subscriptionConfig.groupName} stopped." }
+            }
+        }
+    }
+
+    override fun close() {
+        startStopLock.withLock {
+            if (running) {
+                running = false
+                lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+                lifecycleCoordinator.close()
+                log.debug { "Random access subscription for topic ${subscriptionConfig.eventTopic} " +
+                        "and group ${subscriptionConfig.groupName} closed." }
             }
         }
     }

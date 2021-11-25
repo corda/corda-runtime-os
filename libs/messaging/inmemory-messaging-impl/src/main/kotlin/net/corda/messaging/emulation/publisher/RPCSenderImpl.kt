@@ -37,6 +37,11 @@ class RPCSenderImpl<REQUEST, RESPONSE>(
         lifecycleCoordinator.stop()
     }
 
+    override fun close() {
+        running = false
+        lifecycleCoordinator.close()
+    }
+
     override fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE> {
         if (!running) {
             throw CordaRPCAPISenderException("The sender has not been started")

@@ -85,11 +85,21 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
 
     override fun stop() {
         logger.debug { "Stopping compacted subscription with config: $subscriptionConfig" }
+        stopConsumer()
+        lifecycleCoordinator.stop()
+    }
+
+    override fun close() {
+        logger.debug { "Closing compacted subscription with config: $subscriptionConfig" }
+        stopConsumer()
+        lifecycleCoordinator.close()
+    }
+
+    private fun stopConsumer() {
         startStopLock.withLock {
             currentConsumption?.stop()
             currentConsumption = null
             lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
-            lifecycleCoordinator.stop()
         }
     }
 

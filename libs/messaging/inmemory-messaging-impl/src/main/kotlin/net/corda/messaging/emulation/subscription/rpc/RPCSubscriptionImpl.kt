@@ -37,9 +37,18 @@ class RPCSubscriptionImpl<REQUEST, RESPONSE>(
     }
 
     override fun stop() {
+        unsubscribe()
+        lifecycleCoordinator.stop()
+    }
+
+    override fun close() {
+        unsubscribe()
+        lifecycleCoordinator.close()
+    }
+
+    private fun unsubscribe() {
         rpcTopicService.unsubscribe(rpcConfig.requestTopic,responderProcessor)
         running = false
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
-        lifecycleCoordinator.stop()
     }
 }

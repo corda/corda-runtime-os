@@ -114,12 +114,26 @@ class DBEventLogSubscription<K : Any, V : Any>(
     override fun stop() {
         startStopLock.withLock {
             if (running) {
-                eventLoopThread!!.join(pollingTimeout.toMillis() * 2)
-                running = false
+                stopConsumer()
                 lifecycleCoordinator.stop()
                 log.info("Subscription stopped for group ${subscriptionConfig.groupName} on topic ${subscriptionConfig.eventTopic}")
             }
         }
+    }
+
+    override fun close() {
+        startStopLock.withLock {
+            if (running) {
+                stopConsumer()
+                lifecycleCoordinator.close()
+                log.info("Subscription closed for group ${subscriptionConfig.groupName} on topic ${subscriptionConfig.eventTopic}")
+            }
+        }
+    }
+
+    private fun stopConsumer() {
+        eventLoopThread!!.join(pollingTimeout.toMillis() * 2)
+        running = false
     }
 
     private fun processingLoop() {

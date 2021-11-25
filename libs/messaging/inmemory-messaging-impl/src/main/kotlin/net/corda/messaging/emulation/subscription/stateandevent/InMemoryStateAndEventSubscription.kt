@@ -58,14 +58,22 @@ class InMemoryStateAndEventSubscription<K : Any, S : Any, E : Any>(
     }
 
     override fun stop() {
+        stopSubscriptions()
+        lifecycleCoordinator.stop()
+    }
+
+    override fun close() {
+        stopSubscriptions()
+        lifecycleCoordinator.close()
+    }
+
+    private fun stopSubscriptions() {
         lock.withLock {
             eventSubscription.stop()
             stateSubscription.stop()
             lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
-            lifecycleCoordinator.stop()
         }
     }
-
 
     internal fun setValue(key: K, updatedState: S?, partition: Int) {
         stateSubscription.setValue(key, updatedState, partition)
