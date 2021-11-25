@@ -1,6 +1,7 @@
 package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.Yaml
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
@@ -253,7 +254,7 @@ class CreateStores : Runnable {
             .start()
         if (process.waitFor() != 0) {
             System.err.println(process.errorStream.reader().readText())
-            throw RuntimeException("Could not run command ${commands.joinToString(" ")}")
+            throw DeploymentException("Could not run command ${commands.joinToString(" ")}")
         }
     }
 

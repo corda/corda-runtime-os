@@ -2,6 +2,7 @@ package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.Yaml
 import picocli.CommandLine.Option
 import java.io.File
@@ -27,7 +28,7 @@ abstract class RunSimulator : Runnable {
         ).start()
         if (getPods.waitFor() != 0) {
             System.err.println(getPods.errorStream.reader().readText())
-            throw RuntimeException("Could not get pods")
+            throw DeploymentException("Could not get pods")
         }
 
         val reader = ObjectMapper(YAMLFactory()).reader()
@@ -62,7 +63,7 @@ abstract class RunSimulator : Runnable {
                 "host" to "db.$namespaceName",
                 "db" to username
             )
-        } ?: throw RuntimeException("Could not find database parameters")
+        } ?: throw DeploymentException("Could not find database parameters")
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -74,7 +75,7 @@ abstract class RunSimulator : Runnable {
         }?.let {
             val metadata = it["metadata"] as Yaml
             metadata["name"] as? String
-        } ?: throw RuntimeException("Could not find simulator")
+        } ?: throw DeploymentException("Could not find simulator")
 
         val file = File.createTempFile(filePrefix, ".conf")
         file.deleteOnExit()
@@ -89,7 +90,7 @@ abstract class RunSimulator : Runnable {
             .start()
         if (cp.waitFor() != 0) {
             System.err.println(cp.errorStream.reader().readText())
-            throw RuntimeException("Could not copy configuration file")
+            throw DeploymentException("Could not copy configuration file")
         }
 
         val command = listOf(

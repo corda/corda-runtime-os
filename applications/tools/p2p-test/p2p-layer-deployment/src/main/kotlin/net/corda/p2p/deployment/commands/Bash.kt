@@ -2,6 +2,7 @@ package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.Yaml
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
@@ -40,7 +41,7 @@ class Bash : Runnable {
         ).start()
         if (getPods.waitFor() != 0) {
             System.err.println(getPods.errorStream.reader().readText())
-            throw RuntimeException("Could not get pods")
+            throw DeploymentException("Could not get pods")
         }
 
         val reader = ObjectMapper(YAMLFactory()).reader()
@@ -53,7 +54,7 @@ class Bash : Runnable {
         }?.let {
             val metadata = it["metadata"] as Yaml
             metadata["name"] as? String
-        } ?: throw RuntimeException("Could not find $pod")
+        } ?: throw DeploymentException("Could not find $pod")
 
         val command = listOf(
             "kubectl",

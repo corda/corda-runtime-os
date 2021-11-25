@@ -1,5 +1,6 @@
 package net.corda.p2p.deployment.commands
 
+import net.corda.p2p.deployment.DeploymentException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
@@ -64,11 +65,11 @@ class Send : RunSimulator() {
     private val loadGenerationParams by lazy {
         val peerSplit = peer.split(":")
         if (peerSplit.size != 2) {
-            throw RuntimeException("$peer should be in the format <x500name>:<groupId>")
+            throw DeploymentException("$peer should be in the format <x500name>:<groupId>")
         }
         val ourSplit = our.split(":")
         if (ourSplit.size != 2) {
-            throw RuntimeException("$our should be in the format <x500name>:<groupId>")
+            throw DeploymentException("$our should be in the format <x500name>:<groupId>")
         }
         val loadGenerationType = if (oneOff) {
             "ONE_OFF"

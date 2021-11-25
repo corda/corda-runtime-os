@@ -2,6 +2,7 @@ package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.Yaml
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
@@ -67,7 +68,7 @@ class Log : Runnable {
         logPod.waitFor()
     }
 
-    @Suppress("UNCHECKED_CAST")
+    @Suppress("UNCHECKED_CAST", "ThrowsCount")
     private fun getAllPods(): Map<String, String> {
         val getPods = ProcessBuilder().command(
             "kubectl",
@@ -78,7 +79,7 @@ class Log : Runnable {
         ).start()
         if (getPods.waitFor() != 0) {
             System.err.println(getPods.errorStream.reader().readText())
-            throw RuntimeException("Could not get pods")
+            throw DeploymentException("Could not get pods")
         }
 
         val reader = ObjectMapper(YAMLFactory()).reader()
@@ -88,9 +89,9 @@ class Log : Runnable {
             val spec = it["spec"] as Yaml
             val containers = spec["containers"] as List<Yaml>
             val displayName =
-                containers.firstOrNull()?.get("name") as? String ?: throw RuntimeException("Can not get pod name")
+                containers.firstOrNull()?.get("name") as? String ?: throw DeploymentException("Can not get pod name")
             val metadata = it["metadata"] as Yaml
-            val podName = metadata["name"] as? String ?: throw RuntimeException("Could not find $displayName")
+            val podName = metadata["name"] as? String ?: throw DeploymentException("Could not find $displayName")
             displayName to podName
         }
     }

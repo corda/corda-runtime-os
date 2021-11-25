@@ -42,6 +42,7 @@ Some additional options are:
                              The database username
   -g, --gateway-count=<gatewayCount>
                              Number of Gateways in the cluster
+                             Number of Gateways in the cluster
       --group-id=<groupId>   The group ID
   -H, --hosts=<hostsNames>   The hosts names
   -k, --kafka-brokers=<kafkaBrokerCount>
@@ -63,7 +64,7 @@ To delete a cluster run the command:
 ```bash
 ./applications/tools/p2p-test/p2p-layer-deployment/build/install/p2p-layer-deployment/bin/p2p-layer-deployment destroy
 ```
-With the `-n` option to change the name of the cluster to destroy (default to `p2p-layer`).
+With the `-n` option to change the name of the cluster to destroy (default to `p2p-layer`). Use `--all` to destroy all the p2p clusters
 
 ## Accessing bash of a pod in a running cluster
 To access one of the pods, use the command:

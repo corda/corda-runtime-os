@@ -107,7 +107,7 @@ class Namespace : Runnable {
         names = ["-t", "--tag"],
         description = ["The docker name of the tag to pull"]
     )
-    private var tag = "5.0.0.0-alpha-1637757042293"
+    private var tag = "5.0.0.0-alpha-1637835488501"
 
     private val nameSpaceYaml by lazy {
         listOf(
@@ -183,7 +183,7 @@ class Namespace : Runnable {
             create.outputStream.write(rawYaml.toByteArray())
             create.outputStream.close()
             if (create.waitFor() != 0) {
-                throw Exception("Could not create $namespaceName")
+                throw DeploymentException("Could not create $namespaceName")
             }
             waitForCluster()
             println("Cluster $namespaceName is deployed")
@@ -201,7 +201,7 @@ class Namespace : Runnable {
                 namespaceName
             ).start()
             if (listPods.waitFor() != 0) {
-                throw Exception("Could not get the pods in $namespaceName")
+                throw DeploymentException("Could not get the pods in $namespaceName")
             }
             val waitingFor = listPods.inputStream
                 .reader()
@@ -223,6 +223,6 @@ class Namespace : Runnable {
                 }
             }
         }
-        throw Exception("Waiting too long for $namespaceName")
+        throw DeploymentException("Waiting too long for $namespaceName")
     }
 }

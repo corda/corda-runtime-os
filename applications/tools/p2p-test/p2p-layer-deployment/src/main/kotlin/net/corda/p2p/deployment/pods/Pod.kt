@@ -3,7 +3,7 @@ package net.corda.p2p.deployment.pods
 import net.corda.p2p.deployment.Namespace
 import net.corda.p2p.deployment.Yaml
 
-abstract class Pod() {
+abstract class Pod {
     abstract val app: String
     abstract val image: String
     open val ports: Collection<Port> = emptyList()
