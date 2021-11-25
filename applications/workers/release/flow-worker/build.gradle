@@ -9,18 +9,13 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':applications:common')
     implementation project(':osgi-framework-api')
+    implementation project(':processors:flow-processor')
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "info.picocli:picocli:$picocliVersion"
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-
-    implementation "info.picocli:picocli:$picocliVersion"
-
-    implementation project(':applications:common')
-
-    // TODO - Including this dependency breaks the startup of the FlowWorker application.
-    implementation project(':processors:flow-processor')
-
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
 }

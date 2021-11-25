@@ -6,14 +6,10 @@ plugins {
 description 'Flow Processor'
 
 dependencies {
-    implementation project(':components:configuration:configuration-read-service')
-    implementation project(':components:flow-service')
-    implementation project(':components:sandbox:sandbox-service')
-
-    implementation project(':libs:lifecycle:lifecycle')
-
-    implementation 'org.slf4j:slf4j-api'
-    implementation 'net.corda:corda-base'
+    compileOnly "org.osgi:osgi.annotation"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation 'net.corda:corda-base'
+    implementation 'org.slf4j:slf4j-api'
 }

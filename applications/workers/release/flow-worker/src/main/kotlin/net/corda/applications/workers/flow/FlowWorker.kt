@@ -12,18 +12,14 @@ class FlowWorker: Application {
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
-        println("jjj Flow worker started up.")
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
+        // TODO - Is this just a debug method? Where is this config coming from?
         val bootstrapConfig = getBootstrapConfig(parameters.instanceId.toInt())
-        println("jjj hello from flow worker")
-        println(bootstrapConfig)
         FlowProcessor().startup(bootstrapConfig)
     }
 
-    override fun shutdown() {
-        println("jjj Flow worker shut down.")
-    }
+    override fun shutdown() = Unit
 }
 
 // TODO - Define this in a common library.
@@ -31,3 +27,7 @@ class CliParameters {
     @CommandLine.Option(names = ["--instanceId"], description = ["InstanceId for this worker"])
     lateinit var instanceId: String
 }
+
+// TODO - Override logging.
+
+// TODO - Provide health monitoring.

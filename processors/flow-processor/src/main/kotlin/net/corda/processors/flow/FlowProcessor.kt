@@ -9,14 +9,14 @@ import org.slf4j.LoggerFactory
 class FlowProcessor {
 
     private companion object {
-        // TODO - Sort out logging.
-        val log: Logger = contextLogger()
+        // TODO - This doesn't work. Only logging directly to console works.
+        val logger: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
     }
 
     fun startup(config: Config) {
-        consoleLogger.info("Starting Flow Worker application...")
-        println(config)
+        logger.info(config.toString())
+        consoleLogger.info(config.toString())
     }
 
     fun shutdown() {
