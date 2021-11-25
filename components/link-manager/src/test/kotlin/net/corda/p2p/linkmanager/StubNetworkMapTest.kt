@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.data.identity.HoldingIdentity
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -52,7 +53,7 @@ class StubNetworkMapTest {
         whenever(mock.isRunning).doReturn(true)
     }
 
-    private val networkMap = StubNetworkMap(mock(), subscriptionFactory, 1)
+    private val networkMap = StubNetworkMap(mock(), subscriptionFactory, 1, SmartConfigImpl.empty())
 
     private val messageDigest = MessageDigest.getInstance(ProtocolConstants.HASH_ALGO, BouncyCastleProvider())
     private val rsaKeyPairGenerator = KeyPairGenerator.getInstance("RSA")

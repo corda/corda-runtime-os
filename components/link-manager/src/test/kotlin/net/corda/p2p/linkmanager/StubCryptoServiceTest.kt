@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -50,7 +51,7 @@ class StubCryptoServiceTest {
         whenever(mock.isRunning).doReturn(true)
     }
 
-    private val cryptoService = StubCryptoService(coordinatorFactory, subscriptionFactory, 0).apply {
+    private val cryptoService = StubCryptoService(coordinatorFactory, subscriptionFactory, 0, SmartConfigImpl.empty()).apply {
         start()
     }
 
