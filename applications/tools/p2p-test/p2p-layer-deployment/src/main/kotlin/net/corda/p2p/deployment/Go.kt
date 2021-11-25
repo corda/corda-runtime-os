@@ -1,5 +1,13 @@
 package net.corda.p2p.deployment
 
+import net.corda.p2p.deployment.commands.Bash
+import net.corda.p2p.deployment.commands.DbSink
+import net.corda.p2p.deployment.commands.Destroy
+import net.corda.p2p.deployment.commands.Jdbc
+import net.corda.p2p.deployment.commands.Log
+import net.corda.p2p.deployment.commands.Psql
+import net.corda.p2p.deployment.commands.Receive
+import net.corda.p2p.deployment.commands.Send
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import kotlin.system.exitProcess

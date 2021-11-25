@@ -1,11 +1,11 @@
-package net.corda.p2p.deployment
+package net.corda.p2p.deployment.commands
 
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.util.concurrent.atomic.AtomicInteger
 
-class PortDetector{
+class PortDetector {
     private val port = AtomicInteger(3000)
 
     fun next(): Int {
@@ -15,7 +15,7 @@ class PortDetector{
         return port.getAndIncrement()
     }
 
-    fun testPort(): Boolean {
+    private fun testPort(): Boolean {
         return try {
             ServerSocket().use {
                 it.bind(InetSocketAddress(port.get()))

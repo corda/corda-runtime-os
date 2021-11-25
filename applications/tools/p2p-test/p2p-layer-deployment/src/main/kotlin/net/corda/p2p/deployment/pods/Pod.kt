@@ -1,4 +1,7 @@
-package net.corda.p2p.deployment
+package net.corda.p2p.deployment.pods
+
+import net.corda.p2p.deployment.Namespace
+import net.corda.p2p.deployment.Yaml
 
 abstract class Pod() {
     abstract val app: String

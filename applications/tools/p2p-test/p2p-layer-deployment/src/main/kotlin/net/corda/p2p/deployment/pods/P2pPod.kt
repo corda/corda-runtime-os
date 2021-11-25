@@ -1,4 +1,6 @@
-package net.corda.p2p.deployment
+package net.corda.p2p.deployment.pods
+
+import net.corda.p2p.deployment.CordaOsDockerDevSecret
 
 abstract class P2pPod(kafkaServers: String, tag: String, index: Int) : Pod() {
     override val pullSecrets = listOf(CordaOsDockerDevSecret.name)

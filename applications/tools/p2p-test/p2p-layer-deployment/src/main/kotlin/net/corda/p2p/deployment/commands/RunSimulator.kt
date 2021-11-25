@@ -1,7 +1,8 @@
-package net.corda.p2p.deployment
+package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import net.corda.p2p.deployment.Yaml
 import picocli.CommandLine.Option
 import java.io.File
 

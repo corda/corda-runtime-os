@@ -1,4 +1,4 @@
-package net.corda.p2p.deployment
+package net.corda.p2p.deployment.pods
 data class TextFile(val fileName: String, val content: String) : RawFile
 
 class TextRawData(

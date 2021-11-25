@@ -1,4 +1,4 @@
-package net.corda.p2p.deployment
+package net.corda.p2p.deployment.pods
 interface RawFile
 
 abstract class RawData<T : RawFile>(

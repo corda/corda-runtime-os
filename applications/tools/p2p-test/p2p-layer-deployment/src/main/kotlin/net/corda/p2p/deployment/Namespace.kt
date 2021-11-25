@@ -2,6 +2,12 @@ package net.corda.p2p.deployment
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import net.corda.p2p.deployment.commands.Destroy
+import net.corda.p2p.deployment.pods.Gateway
+import net.corda.p2p.deployment.pods.KafkaBroker
+import net.corda.p2p.deployment.pods.LinkManager
+import net.corda.p2p.deployment.pods.PostGreSql
+import net.corda.p2p.deployment.pods.Simulator
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
