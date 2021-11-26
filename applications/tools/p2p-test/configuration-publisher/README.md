@@ -79,11 +79,11 @@ To run the application use:
                          Local hosted identity (in the form of <x500Name>:
                            <groupId>)
       --maxMessageSize=<maxMessageSize>
-                         The maximal message size
-                           Default: 500
-      --messageReplayPeriodSecs=<messageReplayPeriodSecs>
-                         message replay period in seconds
-                           Default: 2
+                         The maximal message size in bytes
+                           Default: 1_000_000
+      --messageReplayPeriodMilliSecs=<messageReplayPeriodMilliSecs>
+                         message replay period in milliseconds
+                           Default: 2000
       --protocolMode=<protocolModes>
                          Supported protocol mode (out of: AUTHENTICATION_ONLY,
                            AUTHENTICATED_ENCRYPTION)

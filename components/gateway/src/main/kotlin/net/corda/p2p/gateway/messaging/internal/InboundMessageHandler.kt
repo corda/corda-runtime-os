@@ -21,7 +21,6 @@ import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
-import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
@@ -51,7 +50,7 @@ internal class InboundMessageHandler(
     private var p2pInPublisher = PublisherWithDominoLogic(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        PublisherConfig(PUBLISHER_ID, instanceId),
+        PublisherConfig("inbound-message-handler", instanceId),
         nodeConfiguration
     )
     private val sessionPartitionMapper = SessionPartitionMapperImpl(
