@@ -107,7 +107,7 @@ internal class SandboxGroupImpl(
      * Returns the serialised `ClassTag` for a given [klass].
      *
      * If [isStaticTag] is true, a serialised [StaticTag] is returned. Otherwise, a serialised [EvolvableTag] is
-     * returned. For classed defined in CPKs, [EvolvableTag]s are only available iff [klass] is defined in CPK's
+     * returned. For classed defined in CPKs, [EvolvableTag]s are only available if [klass] is defined in CPK's
      * main bundle.
      *
      * @throws [SandboxException] if the class is not contained in any bundle, if the class is contained in a bundle
