@@ -49,6 +49,10 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                 throw IllegalStateException("getMemberInfo operation invoked while component was stopped.")
             }
 
+            println("QQQ in getMemberInfo")
+            println("QQQ holdingIdentity -> $holdingIdentity")
+            println("QQQ known so far -> ${processor.netmapEntriesByHoldingIdentity.keys()}")
+
             processor.netmapEntriesByHoldingIdentity[holdingIdentity]?.toMemberInfo()
         }
     }
