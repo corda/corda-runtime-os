@@ -79,6 +79,9 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
         )
     ) { _, _ -> }
 
+    private val errorMsg = "Failed to read and process records from topic $topic, group $groupName, producerClientId " +
+            "$producerClientId."
+
 
     /**
      * Is the subscription running.
@@ -185,16 +188,14 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
                         log.warn(
-                            "Failed to read and process records from topic $topic, group $groupName, producerClientId $producerClientId. " +
-                                    "Attempts: $attempts. Recreating consumer/producer and Retrying.", ex
+                            "$errorMsg Attempts: $attempts. Recreating consumer/producer and Retrying.", ex
                         )
                     }
                     else -> {
                         log.error(
-                            "Failed to read and process records from topic $topic, group $groupName, producerClientId $producerClientId. " +
-                                    "Attempts: $attempts. Closing subscription.", ex
+                            "$errorMsg Attempts: $attempts. Closing subscription.", ex
                         )
-                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR)
+                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
                         stop()
                     }
                 }

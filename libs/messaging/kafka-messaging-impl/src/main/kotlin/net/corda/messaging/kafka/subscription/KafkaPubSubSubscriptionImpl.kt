@@ -69,6 +69,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
             config.getString(ConfigProperties.INSTANCE_ID)
         )
     ) { _, _ -> }
+    private val errorMsg = "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic."
 
     /**
      * Is the subscription running.
@@ -156,23 +157,19 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
                 attempts = 0
             } catch (ex: CordaMessageAPIIntermittentException) {
                 log.warn(
-                    "PubSubConsumer from group $groupName failed to read and process records from topic $topic, " +
-                            "attempts: $attempts. Retrying.", ex
+                    "$errorMsg Attempts: $attempts. Retrying.", ex
                 )
             } catch (ex: CordaMessageAPIFatalException) {
                 log.error(
-                    "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic. " +
-                            "Fatal error occurred. Closing subscription.", ex
+                    "$errorMsg Fatal error occurred. Closing subscription.", ex
                 )
-                lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR)
+                lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
                 stop()
             } catch (ex: Exception) {
                 log.error(
-                    "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, " +
-                            "attempts: $attempts. " +
-                            "Unexpected error occurred. Closing subscription.", ex
+                    "$errorMsg Attempts: $attempts. Unexpected error occurred. Closing subscription.", ex
                 )
-                lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR)
+                lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
                 stop()
             }
         }

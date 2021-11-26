@@ -13,6 +13,7 @@ import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.RPCSubscription
@@ -34,7 +35,6 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_R
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_STATEANDEVENT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
-import net.corda.messaging.kafka.publisher.factory.CordaKafkaPublisherFactory
 import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
 import net.corda.messaging.kafka.subscription.KafkaCompactedSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaDurableSubscriptionImpl
@@ -64,6 +64,8 @@ import java.util.concurrent.atomic.AtomicInteger
 class KafkaSubscriptionFactory @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
     private val avroSchemaRegistry: AvroSchemaRegistry,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : SubscriptionFactory {
@@ -273,7 +275,6 @@ class KafkaSubscriptionFactory @Activate constructor(
 
         val cordaAvroSerializer = CordaAvroSerializer<RESPONSE>(avroSchemaRegistry)
         val cordaAvroDeserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, rpcConfig.requestType)
-        val publisherFactory = CordaKafkaPublisherFactory(avroSchemaRegistry, lifecycleCoordinatorFactory)
         val publisher = publisherFactory.createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig)
 
         return KafkaRPCSubscriptionImpl(

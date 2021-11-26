@@ -6,6 +6,7 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.junit.jupiter.api.BeforeEach
@@ -18,6 +19,7 @@ import org.mockito.kotlin.mock
 class KafkaSubscriptionFactoryTest {
 
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
+    private val publisherFactory: PublisherFactory = mock()
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private lateinit var factory: KafkaSubscriptionFactory
@@ -27,7 +29,7 @@ class KafkaSubscriptionFactoryTest {
     @BeforeEach
     fun setup() {
         config = ConfigFactory.load()
-        factory = KafkaSubscriptionFactory(avroSchemaRegistry, lifecycleCoordinatorFactory)
+        factory = KafkaSubscriptionFactory(avroSchemaRegistry, publisherFactory, lifecycleCoordinatorFactory)
         doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
     }
 
