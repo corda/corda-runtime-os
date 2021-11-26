@@ -2,11 +2,9 @@ package net.corda.virtualnode.impl
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.virtualnode.VirtualNodeInfo
-import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.virtualnode.VirtualNodeInfoWriterService
 
-class VirtualNodeInfoWriterServiceImpl(subscriptionFactory: SubscriptionFactory, config: SmartConfig) :
+class VirtualNodeInfoWriterServiceImpl /*(subscriptionFactory: SubscriptionFactory, config: SmartConfig)*/ :
     VirtualNodeInfoWriterService {
     override fun put(holdingIdentity: HoldingIdentity, virtualNodeInfo: VirtualNodeInfo) {
         TODO("Not yet implemented")

@@ -5,10 +5,10 @@ import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtual.node.manager.api.RuntimeRegistration
-import net.corda.virtual.node.manager.test.Constants.BASE_DIRECTORY_KEY
-import net.corda.virtual.node.manager.test.Constants.BLACKLISTED_KEYS_KEY
-import net.corda.virtual.node.manager.test.Constants.PLATFORM_VERSION_KEY
+import net.corda.virtualnode.manager.api.RuntimeRegistration
+import net.corda.virtualnode.manager.test.Constants.BASE_DIRECTORY_KEY
+import net.corda.virtualnode.manager.test.Constants.BLACKLISTED_KEYS_KEY
+import net.corda.virtualnode.manager.test.Constants.PLATFORM_VERSION_KEY
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test

@@ -5,8 +5,8 @@ import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
-import net.corda.virtual.node.manager.api.RuntimeRegistration
-import net.corda.virtual.node.manager.test.Constants.PLATFORM_PUBLIC_BUNDLE_NAMES
+import net.corda.virtualnode.manager.api.RuntimeRegistration
+import net.corda.virtualnode.manager.test.Constants.PLATFORM_PUBLIC_BUNDLE_NAMES
 import org.junit.jupiter.api.fail
 import org.osgi.framework.FrameworkUtil
 import java.io.InputStream

@@ -1,7 +1,6 @@
 package net.corda.virtualnode.sandboxgroup
 
 import net.corda.sandbox.SandboxGroup
-import net.corda.virtual.node.info.VirtualNodeInfo
 
 /**
  * A context object that is essentially a decorated [SandboxGroup]

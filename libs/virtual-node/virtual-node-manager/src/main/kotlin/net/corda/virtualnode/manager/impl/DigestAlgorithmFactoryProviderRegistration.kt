@@ -2,10 +2,10 @@ package net.corda.virtualnode.manager.impl
 
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
-import net.corda.virtual.node.manager.api.RuntimeRegistration
+import net.corda.virtualnode.manager.api.RuntimeRegistration
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestAlgorithmFactory
-import net.corda.virtual.node.manager.service.api.DigestAlgorithmFactoryProviderMediator
+import net.corda.virtualnode.manager.service.api.DigestAlgorithmFactoryProviderMediator
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

@@ -1,7 +1,7 @@
 package net.corda.virtualnode.sandboxgroup
 
 import net.corda.packaging.CPI
-import net.corda.virtual.node.info.HoldingIdentity
+import net.corda.virtualnode.HoldingIdentity
 
 interface SandboxGroupService {
     /**
