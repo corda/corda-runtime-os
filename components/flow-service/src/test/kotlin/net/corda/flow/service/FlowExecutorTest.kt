@@ -2,9 +2,9 @@ package net.corda.flow.service
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.data.flow.Checkpoint
-import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowInfo
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.service.stubs.StateAndEventSubscriptionStub
 import net.corda.libs.configuration.SmartConfig
@@ -51,10 +51,10 @@ class FlowExecutorTest {
     fun testFlowExecutor() {
         val startLatch = CountDownLatch(1)
         val stopLatch = CountDownLatch(1)
-        val messageSubscription: StateAndEventSubscription<FlowKey, Checkpoint, FlowEvent> =
+        val messageSubscription: StateAndEventSubscription<FlowInfo, Checkpoint, FlowEvent> =
             StateAndEventSubscriptionStub(startLatch, stopLatch)
 
-        doReturn(messageSubscription).whenever(subscriptionFactory).createStateAndEventSubscription<FlowKey, Checkpoint, FlowEvent>(
+        doReturn(messageSubscription).whenever(subscriptionFactory).createStateAndEventSubscription<FlowInfo, Checkpoint, FlowEvent>(
             any(),
             any(),
             any(),
@@ -69,7 +69,7 @@ class FlowExecutorTest {
         flowExecutor.stop()
         assertTrue(stopLatch.await(5, TimeUnit.SECONDS))
 
-        verify(subscriptionFactory, times(1)).createStateAndEventSubscription<FlowKey, Checkpoint, FlowEvent>(
+        verify(subscriptionFactory, times(1)).createStateAndEventSubscription<FlowInfo, Checkpoint, FlowEvent>(
             any(),
             any(),
             any(),

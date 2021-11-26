@@ -1,8 +1,8 @@
 package net.corda.flow.service
 
-import net.corda.data.flow.Checkpoint
-import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowInfo
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.manager.FlowManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
@@ -36,7 +36,7 @@ class FlowExecutor(
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
 
-    private var messagingSubscription: StateAndEventSubscription<FlowKey, Checkpoint, FlowEvent>? = null
+    private var messagingSubscription: StateAndEventSubscription<FlowInfo, Checkpoint, FlowEvent>? = null
 
     private fun eventHandler(event: LifecycleEvent) {
         when (event) {

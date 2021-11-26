@@ -4,12 +4,12 @@ import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
-import net.corda.data.flow.Checkpoint
-import net.corda.data.flow.FlowKey
-import net.corda.data.flow.RPCFlowResult
-import net.corda.data.flow.StateMachineState
+import net.corda.data.flow.FlowInfo
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.RPCFlowResult
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.StateMachineState
 import net.corda.flow.statemachine.FlowIORequest
 import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.flow.statemachine.HousekeepingState
@@ -33,9 +33,8 @@ class TransientReference<out A>(@Transient val value: A)
 @Suppress("TooManyFunctions", "ComplexMethod", "LongParameterList")
 class FlowStateMachineImpl<R>(
     private val clientId: String?,
-    private val id: FlowKey,
+    private val id: FlowInfo,
     private val logic: Flow<R>,
-    private val cpiId: String,
     private val flowName: String,
     scheduler: FiberScheduler
 ) : Fiber<Unit>(id.toString(), scheduler), FlowStateMachine<R> {
@@ -118,7 +117,6 @@ class FlowStateMachineImpl<R>(
         if (clientId != null) {
             nonSerializableState.eventsOut += FlowEvent(
                 id,
-                cpiId,
                 RPCFlowResult(
                     clientId,
                     logic.javaClass.name,
@@ -134,7 +132,6 @@ class FlowStateMachineImpl<R>(
         if (clientId != null) {
             nonSerializableState.eventsOut += FlowEvent(
                 id,
-                cpiId,
                 RPCFlowResult(
                     clientId,
                     logic.javaClass.name,
@@ -183,7 +180,6 @@ class FlowStateMachineImpl<R>(
             FlowIORequest.ForceCheckpoint -> {
                 nonSerializableState.eventsOut += FlowEvent(
                     id,
-                    cpiId,
                     Wakeup(flowName)
                 )
             }
@@ -237,9 +233,12 @@ class FlowStateMachineImpl<R>(
             Checkpoint(
                 id,
                 ByteBuffer.wrap(fibreState),
-                buildStateMachineState()
+                buildStateMachineState(),
+                null,
+                listOf()
             ),
-            nonSerializableState.eventsOut
+            nonSerializableState.eventsOut,
+
         )
     }
 

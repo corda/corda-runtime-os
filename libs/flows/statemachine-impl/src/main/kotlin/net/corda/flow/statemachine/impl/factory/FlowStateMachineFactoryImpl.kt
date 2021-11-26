@@ -1,7 +1,7 @@
 package net.corda.flow.statemachine.impl.factory
 
 import co.paralleluniverse.fibers.FiberScheduler
-import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowInfo
 import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.flow.statemachine.factory.FlowStateMachineFactory
 import net.corda.flow.statemachine.impl.FlowStateMachineImpl
@@ -13,9 +13,8 @@ class FlowStateMachineFactoryImpl : FlowStateMachineFactory {
 
     override fun createStateMachine(
         clientId: String?,
-        id: FlowKey,
+        id: FlowInfo,
         logic: Flow<*>,
-        cpiId: String,
         flowName: String,
         scheduler: FiberScheduler
     ): FlowStateMachine<Any?> {
@@ -23,7 +22,6 @@ class FlowStateMachineFactoryImpl : FlowStateMachineFactory {
             clientId,
             id,
             logic,
-            cpiId,
             flowName,
             scheduler
         )

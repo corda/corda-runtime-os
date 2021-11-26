@@ -1,8 +1,8 @@
 package net.corda.flow.manager
 
-import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.FlowSessionMessage
+import net.corda.data.flow.state.Checkpoint
 import net.corda.sandbox.SandboxGroup
 
 interface FlowManager {

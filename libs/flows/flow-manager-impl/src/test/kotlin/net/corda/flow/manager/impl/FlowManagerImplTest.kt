@@ -2,11 +2,11 @@ package net.corda.flow.manager.impl
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
-import net.corda.data.flow.Checkpoint
-import net.corda.data.flow.FlowKey
-import net.corda.data.flow.RPCFlowResult
-import net.corda.data.flow.StateMachineState
+import net.corda.data.flow.FlowInfo
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.RPCFlowResult
+import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.StateMachineState
 import net.corda.data.identity.HoldingIdentity
 import net.corda.dependency.injection.DependencyInjectionService
 import net.corda.flow.manager.FlowMetaData
@@ -44,7 +44,7 @@ class FlowManagerImplTest {
         val stateMachine: FlowStateMachine<*> = mock()
 
         val identity = HoldingIdentity("Alice", "group")
-        val flowKey = FlowKey("some-id", identity)
+        val flowKey = FlowInfo("some-id", "cpiID", identity)
         val flowName = "flow"
         val rpcFlowResult = RPCFlowResult(
             "",
@@ -60,14 +60,14 @@ class FlowManagerImplTest {
             ByteBuffer.allocate(1),
             emptyList()
         )
-        val checkpoint = Checkpoint(flowKey, ByteBuffer.allocate(1), stateMachineState)
+        val checkpoint = Checkpoint(flowKey, ByteBuffer.allocate(1), stateMachineState, null, emptyList())
         val cpiId = "cpidId"
-        val eventsOut = listOf(FlowEvent(flowKey, cpiId, rpcFlowResult))
+        val eventsOut = listOf(FlowEvent(flowKey, rpcFlowResult))
         val serialized = "Test".toByteArray()
         val topic = "Topic1"
 
         doReturn(TestFlow::class.java).`when`(sandboxGroup).loadClassFromMainBundles(any(), eq(Flow::class.java))
-        doReturn(stateMachine).`when`(flowStateMachineFactory).createStateMachine(any(), any(), any(), any(), any(), any())
+        doReturn(stateMachine).`when`(flowStateMachineFactory).createStateMachine(any(), any(), any(), any(), any())
         doReturn(Pair(checkpoint, eventsOut)).`when`(stateMachine).waitForCheckpoint()
         doReturn(checkpointSerializerBuilder).`when`(checkpointSerializerBuilderFactory).createCheckpointSerializerBuilder(any())
         doReturn(checkpointSerializer).`when`(checkpointSerializerBuilder).build()
@@ -89,7 +89,7 @@ class FlowManagerImplTest {
         assertThat(result.events.size).isEqualTo(1)
         assertThat(result.events.first().key).isEqualTo(flowKey)
         assertThat(result.events.first().topic).isEqualTo(topic)
-        assertThat(result.events.first().value?.flowKey).isEqualTo(flowKey)
+        assertThat(result.events.first().value?.flowInfo).isEqualTo(flowKey)
         assertThat(result.events.first().value?.payload).isEqualTo(rpcFlowResult)
     }
 }

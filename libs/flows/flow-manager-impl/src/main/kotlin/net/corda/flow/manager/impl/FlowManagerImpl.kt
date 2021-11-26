@@ -3,10 +3,9 @@ package net.corda.flow.manager.impl
 import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberExecutorScheduler
-import net.corda.data.flow.Checkpoint
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.FlowSessionMessage
+import net.corda.data.flow.state.Checkpoint
 import net.corda.dependency.injection.DependencyInjectionService
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowMetaData
@@ -56,9 +55,8 @@ class FlowManagerImpl @Activate constructor(
         val flow =  getOrCreate(sandboxGroup, flowName, jsonArg)
         val stateMachine = flowStateMachineFactory.createStateMachine(
             clientId,
-            flowMetaData.flowKey,
+            flowMetaData.flowInfo,
             flow,
-            flowMetaData.cpiId,
             flowName,
             scheduler,
         )
@@ -139,11 +137,11 @@ class FlowManagerImpl @Activate constructor(
         }
     }
 
-    private fun List<FlowEvent>.toRecordsWithKey(flowEventTopic: String): List<Record<FlowKey, FlowEvent>> {
+    private fun List<FlowEvent>.toRecordsWithKey(flowEventTopic: String): List<Record<net.corda.data.flow.FlowInfo, FlowEvent>> {
         return this.map { event ->
             Record(
                 flowEventTopic,
-                event.flowKey,
+                event.flowInfo,
                 event
             )
         }

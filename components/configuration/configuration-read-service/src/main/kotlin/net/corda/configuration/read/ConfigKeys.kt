@@ -6,5 +6,6 @@ class ConfigKeys {
         const val FLOW_KEY = "corda.flow"
         //tmp solution until new boot config logic added
         const val BOOTSTRAP_KEY = "corda.boot"
+        const val FLOW_MAPPER_KEY = "corda.flowmapper"
     }
 }

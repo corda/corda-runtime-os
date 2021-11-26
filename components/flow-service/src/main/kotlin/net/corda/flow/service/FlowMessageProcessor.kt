@@ -1,10 +1,10 @@
 package net.corda.flow.service
 
-import net.corda.data.flow.Checkpoint
-import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowInfo
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.manager.FlowManager
 import net.corda.flow.manager.FlowMetaData
 import net.corda.flow.manager.FlowResult
@@ -18,7 +18,7 @@ import net.corda.v5.base.util.contextLogger
 class FlowMessageProcessor(
     private val flowManager: FlowManager,
     private val sandboxService: SandboxService
-) : StateAndEventProcessor<FlowKey, Checkpoint, FlowEvent> {
+) : StateAndEventProcessor<FlowInfo, Checkpoint, FlowEvent> {
 
     companion object {
         private val logger = contextLogger()
@@ -26,13 +26,13 @@ class FlowMessageProcessor(
 
     override fun onNext(
         state: Checkpoint?,
-        event: Record<FlowKey, FlowEvent>
+        event: Record<FlowInfo, FlowEvent>
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEventTopic = event.topic
         val flowEvent = event.value ?: throw FlowHospitalException("FlowEvent was null")
-        val flowKey = event.key
-        val cpiId = flowEvent.cpiId
-        val identity = flowKey.identity.x500Name
+        val flowInfo = event.key
+        val cpiId = flowInfo.cpiId
+        val identity = flowInfo.identity.x500Name
         val result = when (val payload = flowEvent.payload) {
             is StartRPCFlow -> {
                 val flowName = payload.flowName
@@ -42,7 +42,7 @@ class FlowMessageProcessor(
                 } else {
                     val sandboxGroup = sandboxService.getSandboxGroupFor(cpiId, identity, SandboxType.FLOW)
                     flowManager.startInitiatingFlow(
-                        FlowMetaData(flowName, flowKey, payload.jsonArgs, cpiId, flowEventTopic),
+                        FlowMetaData(flowName, flowInfo, payload.jsonArgs, cpiId, flowEventTopic),
                         payload.clientId,
                         sandboxGroup
                     )
@@ -64,7 +64,7 @@ class FlowMessageProcessor(
         return StateAndEventProcessor.Response(result.checkpoint, result.events)
     }
 
-    override val keyClass = FlowKey::class.java
+    override val keyClass = FlowInfo::class.java
     override val stateValueClass = Checkpoint::class.java
     override val eventValueClass = FlowEvent::class.java
 }
