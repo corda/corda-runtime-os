@@ -25,6 +25,8 @@ import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
@@ -91,6 +93,7 @@ class DeliveryTracker(
 
         companion object {
             const val MESSAGE_REPLAYER_CLIENT_ID = "message-replayer-client"
+            private val logger = contextLogger()
         }
 
         private val publisher = PublisherWithDominoLogic(
@@ -109,6 +112,7 @@ class DeliveryTracker(
                 }
 
                 val records = processAuthenticatedMessage(message)
+                logger.debug { "Replaying data message ${message.message.header.messageId}." }
                 publisher.publish(records)
             }
         }

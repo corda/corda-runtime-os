@@ -18,29 +18,7 @@ services:
       - 2181:2181
     environment:
       ZOO_MY_ID: 1
-      ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181 server.2=cluster1-zoo2:2888:3888;2181 server.3=cluster1-zoo3:2888:3888;2181
-
-  cluster1-zoo2:
-    image: zookeeper
-    restart: "no"
-    hostname: cluster1-zoo2
-    container_name: cluster1-zoo2
-    ports:
-      - 2182:2181
-    environment:
-      ZOO_MY_ID: 2
-      ZOO_SERVERS: server.1=cluster1-zoo1:2888:3888;2181 server.2=0.0.0.0:2888:3888;2181 server.3=cluster1-zoo3:2888:3888;2181
-
-  cluster1-zoo3:
-    image: zookeeper
-    restart: "no"
-    hostname: cluster1-zoo3
-    container_name: cluster1-zoo3
-    ports:
-      - 2183:2181
-    environment:
-      ZOO_MY_ID: 3
-      ZOO_SERVERS: server.1=cluster1-zoo1:2888:3888;2181 server.2=cluster1-zoo2:2888:3888;2181 server.3=0.0.0.0:2888:3888;2181
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181
 
   ## Zookeeper cluster 2
 
@@ -53,29 +31,7 @@ services:
       - 2184:2181
     environment:
       ZOO_MY_ID: 1
-      ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181 server.2=cluster2-zoo2:2888:3888;2181 server.3=cluster2-zoo3:2888:3888;2181
-
-  cluster2-zoo2:
-    image: zookeeper
-    restart: "no"
-    hostname: cluster2-zoo2
-    container_name: cluster2-zoo2
-    ports:
-      - 2185:2181
-    environment:
-      ZOO_MY_ID: 2
-      ZOO_SERVERS: server.1=cluster2-zoo1:2888:3888;2181 server.2=0.0.0.0:2888:3888;2181 server.3=cluster2-zoo3:2888:3888;2181
-
-  cluster2-zoo3:
-    image: zookeeper
-    restart: "no"
-    hostname: cluster2-zoo3
-    container_name: cluster2-zoo3
-    ports:
-      - 2186:2181
-    environment:
-      ZOO_MY_ID: 3
-      ZOO_SERVERS: server.1=cluster2-zoo1:2888:3888;2181 server.2=cluster2-zoo2:2888:3888;2181 server.3=0.0.0.0:2888:3888;2181
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181
 
   ## Kafka cluster 1
 
@@ -86,15 +42,13 @@ services:
     container_name: cluster1-broker1
     depends_on:
       - cluster1-zoo1
-      - cluster1-zoo2
-      - cluster1-zoo3
     ports:
       - "9092:9092"
     environment:
       <<: *kafka-common-variables
       KAFKA_CLUSTER_ID: test-kafka-cluster-1
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'cluster1-zoo1:2181,cluster1-zoo2:2181,cluster1-zoo3:2181'
+      KAFKA_ZOOKEEPER_CONNECT: 'cluster1-zoo1:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,INTER_BROKER:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: CLIENT://localhost:9092,INTER_BROKER://cluster1-broker1:9093
       KAFKA_INTER_BROKER_LISTENER_NAME: INTER_BROKER
@@ -106,15 +60,13 @@ services:
     container_name: cluster1-broker2
     depends_on:
       - cluster1-zoo1
-      - cluster1-zoo2
-      - cluster1-zoo3
     ports:
       - "9094:9094"
     environment:
       <<: *kafka-common-variables
       KAFKA_CLUSTER_ID: test-kafka-cluster-1
       KAFKA_BROKER_ID: 2
-      KAFKA_ZOOKEEPER_CONNECT: 'cluster1-zoo1:2181,cluster1-zoo2:2181,cluster1-zoo3:2181'
+      KAFKA_ZOOKEEPER_CONNECT: 'cluster1-zoo1:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,INTER_BROKER:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: CLIENT://localhost:9094,INTER_BROKER://cluster1-broker2:9095
       KAFKA_INTER_BROKER_LISTENER_NAME: INTER_BROKER
@@ -126,15 +78,13 @@ services:
     container_name: cluster1-broker3
     depends_on:
       - cluster1-zoo1
-      - cluster1-zoo2
-      - cluster1-zoo3
     ports:
       - "9096:9096"
     environment:
       <<: *kafka-common-variables
       KAFKA_CLUSTER_ID: test-kafka-cluster-1
       KAFKA_BROKER_ID: 3
-      KAFKA_ZOOKEEPER_CONNECT: 'cluster1-zoo1:2181,cluster1-zoo2:2181,cluster1-zoo3:2181'
+      KAFKA_ZOOKEEPER_CONNECT: 'cluster1-zoo1:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,INTER_BROKER:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: CLIENT://localhost:9096,INTER_BROKER://cluster1-broker3:9097
       KAFKA_INTER_BROKER_LISTENER_NAME: INTER_BROKER
@@ -149,15 +99,13 @@ services:
     container_name: cluster2-broker1
     depends_on:
       - cluster2-zoo1
-      - cluster2-zoo2
-      - cluster2-zoo3
     ports:
       - "10002:10002"
     environment:
       <<: *kafka-common-variables
       KAFKA_CLUSTER_ID: test-kafka-cluster-2
       KAFKA_BROKER_ID: 4
-      KAFKA_ZOOKEEPER_CONNECT: 'cluster2-zoo1:2181,cluster2-zoo2:2181,cluster2-zoo3:2181'
+      KAFKA_ZOOKEEPER_CONNECT: 'cluster2-zoo1:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,INTER_BROKER:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: CLIENT://localhost:10002,INTER_BROKER://cluster2-broker1:10003
       KAFKA_INTER_BROKER_LISTENER_NAME: INTER_BROKER
@@ -169,15 +117,13 @@ services:
     container_name: cluster2-broker2
     depends_on:
       - cluster2-zoo1
-      - cluster2-zoo2
-      - cluster2-zoo3
     ports:
       - "10004:10004"
     environment:
       <<: *kafka-common-variables
       KAFKA_CLUSTER_ID: test-kafka-cluster-2
       KAFKA_BROKER_ID: 5
-      KAFKA_ZOOKEEPER_CONNECT: 'cluster2-zoo1:2181,cluster2-zoo2:2181,cluster2-zoo3:2181'
+      KAFKA_ZOOKEEPER_CONNECT: 'cluster2-zoo1:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,INTER_BROKER:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: CLIENT://localhost:10004,INTER_BROKER://cluster2-broker2:10005
       KAFKA_INTER_BROKER_LISTENER_NAME: INTER_BROKER
@@ -189,15 +135,13 @@ services:
     container_name: cluster2-broker3
     depends_on:
       - cluster2-zoo1
-      - cluster2-zoo2
-      - cluster2-zoo3
     ports:
       - "10006:10006"
     environment:
       <<: *kafka-common-variables
       KAFKA_CLUSTER_ID: test-kafka-cluster-2
       KAFKA_BROKER_ID: 6
-      KAFKA_ZOOKEEPER_CONNECT: 'cluster2-zoo1:2181,cluster2-zoo2:2181,cluster2-zoo3:2181'
+      KAFKA_ZOOKEEPER_CONNECT: 'cluster2-zoo1:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,INTER_BROKER:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: CLIENT://localhost:10006,INTER_BROKER://cluster2-broker3:10007
       KAFKA_INTER_BROKER_LISTENER_NAME: INTER_BROKER
