@@ -109,6 +109,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
             get() = NetworkMapEntry::class.java
 
         override fun onSnapshot(currentData: Map<String, NetworkMapEntry>) {
+            println("QQQ onSnapshot: ${currentData.size}...")
             currentData.forEach { (_, networkMapEntry) -> addEntry(networkMapEntry) }
             readyFuture.get().complete(Unit)
         }
@@ -118,6 +119,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
             oldValue: NetworkMapEntry?,
             currentData: Map<String, NetworkMapEntry>
         ) {
+            println("QQQ onNext...")
             if (newRecord.value == null) {
                 if (oldValue != null) {
                     val publicKeyHash = calculateHash(oldValue.publicKey.array())
@@ -130,6 +132,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
         }
 
         private fun addEntry(networkMapEntry: NetworkMapEntry) {
+            println("QQQ Got entry: ${networkMapEntry.holdingIdentity.groupId}:${networkMapEntry.holdingIdentity.x500Name}")
             if (!netMapEntriesByGroupIdPublicKeyHash.containsKey(networkMapEntry.holdingIdentity.groupId)) {
                 netMapEntriesByGroupIdPublicKeyHash[networkMapEntry.holdingIdentity.groupId] = ConcurrentHashMap()
             }
