@@ -276,7 +276,6 @@ class DominoTile(
             )
             future.whenComplete { _, exception ->
                 if (exception != null) {
-                    exception.printStackTrace()
                     configApplied(ConfigUpdateResult.Error(exception))
                 } else {
                     configApplied(ConfigUpdateResult.Success)
