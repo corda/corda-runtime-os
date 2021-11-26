@@ -1,6 +1,9 @@
 package net.corda.p2p.deployment.commands
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.DeploymentException
+import net.corda.p2p.deployment.Yaml
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
@@ -13,15 +16,9 @@ class Send : RunSimulator() {
 
     @Option(
         names = ["-p", "--peer"],
-        description = ["The peer X500 name and group ID (<x500name>:<groupId>)"]
+        description = ["The name of the peer namespace"]
     )
-    private var peer = "O=Alice,L=London,C=GB:group-1"
-
-    @Option(
-        names = ["-o", "--our"],
-        description = ["Our peer X500 name and group ID (<x500name>:<groupId>)"]
-    )
-    private var our = "O=Bob,L=London,C=GB:group-1"
+    private var peer = "two"
 
     @Option(
         names = ["-f", "--one-off"],
@@ -62,25 +59,44 @@ class Send : RunSimulator() {
         )
     }
 
+    private val yamlReader = ObjectMapper(YAMLFactory()).reader()
+
+    @Suppress("UNCHECKED_CAST")
+    private val namespaces by lazy {
+        val getAll = ProcessBuilder().command(
+            "kubectl",
+            "get",
+            "namespace",
+            "-o",
+            "yaml"
+        ).start()
+        if (getAll.waitFor() != 0) {
+            System.err.println(getAll.errorStream.reader().readText())
+            throw DeploymentException("Could not get namespaces")
+        }
+        val rawData = yamlReader.readValue(getAll.inputStream, Map::class.java)
+        val items = rawData["items"] as List<Yaml>
+        items.map {
+            it["metadata"] as Yaml
+        }.filter {
+            val annotations = it["annotations"] as? Yaml
+            annotations?.get("type") == "p2p"
+        }.associate {
+            it["name"] as String to it["annotations"] as Yaml
+        }
+    }
+
     private val loadGenerationParams by lazy {
-        val peerSplit = peer.split(":")
-        if (peerSplit.size != 2) {
-            throw DeploymentException("$peer should be in the format <x500name>:<groupId>")
-        }
-        val ourSplit = our.split(":")
-        if (ourSplit.size != 2) {
-            throw DeploymentException("$our should be in the format <x500name>:<groupId>")
-        }
         val loadGenerationType = if (oneOff) {
             "ONE_OFF"
         } else {
             "CONTINUOUS"
         }
         mapOf(
-            "peerX500Name" to peerSplit[0],
-            "peerGroupId" to peerSplit[1],
-            "ourX500Name" to ourSplit[0],
-            "ourGroupId" to ourSplit[1],
+            "peerX500Name" to namespaces[peer]?.get("x500-name"),
+            "peerGroupId" to namespaces[peer]?.get("group-id"),
+            "ourX500Name" to namespaces[namespaceName]?.get("x500-name"),
+            "ourGroupId" to namespaces[namespaceName]?.get("group-id"),
             "loadGenerationType" to loadGenerationType,
             "batchSize" to batchSize,
             "interBatchDelay" to "${delay}ms",

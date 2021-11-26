@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.commands.ConfigureAll
 import net.corda.p2p.deployment.commands.Destroy
+import net.corda.p2p.deployment.commands.UpdateIps
 import net.corda.p2p.deployment.pods.Gateway
 import net.corda.p2p.deployment.pods.KafkaBroker
 import net.corda.p2p.deployment.pods.LinkManager
@@ -33,10 +34,10 @@ class Namespace : Runnable {
     private var linkManagerCount = 3
 
     @Option(
-        names = ["-H", "--hosts"],
-        description = ["The hosts names"]
+        names = ["-H", "--host"],
+        description = ["The host name"]
     )
-    var hostsNames: List<String> = listOf("www.alice.net")
+    var hostsName: String = "www.alice.net"
 
     @Option(
         names = ["-x", "--x500-name"],
@@ -136,7 +137,7 @@ class Namespace : Runnable {
                         "type" to "p2p",
                         "x500-name" to x500Name,
                         "group-id" to groupId,
-                        "host" to hostsNames.first(),
+                        "host" to hostsName,
                     )
                 )
             ),
@@ -151,7 +152,7 @@ class Namespace : Runnable {
     private val pods by lazy {
         KafkaBroker.kafka(namespaceName, zooKeeperCount, kafkaBrokerCount) +
             PostGreSql(dbUsername, dbPassword, sqlInitFile) +
-            Gateway.gateways(gatewayCount, hostsNames, kafkaServers, tag) +
+            Gateway.gateways(gatewayCount, listOf(hostsName), kafkaServers, tag) +
             LinkManager.linkManagers(linkManagerCount, kafkaServers, tag) +
             Simulator(kafkaServers, tag, 1024)
     }
@@ -238,10 +239,10 @@ class Namespace : Runnable {
             }
         }
         throw DeploymentException("Waiting too long for $namespaceName")
-
     }
 
     private fun configureNamespace() {
+        UpdateIps().run()
         val config = ConfigureAll()
         config.namespaceName = namespaceName
         config.linkManagerExtraArguments = linkManagerExtraArguments

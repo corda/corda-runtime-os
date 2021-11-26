@@ -12,7 +12,7 @@ abstract class RunSimulator : Runnable {
         names = ["-n", "--name"],
         description = ["The name of the namespace"]
     )
-    private var namespaceName = "p2p-layer"
+    var namespaceName = "p2p-layer"
 
     abstract val parameters: Yaml
     abstract val filePrefix: String

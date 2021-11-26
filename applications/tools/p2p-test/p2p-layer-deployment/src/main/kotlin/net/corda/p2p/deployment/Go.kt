@@ -10,6 +10,7 @@ import net.corda.p2p.deployment.commands.Log
 import net.corda.p2p.deployment.commands.Psql
 import net.corda.p2p.deployment.commands.Receive
 import net.corda.p2p.deployment.commands.Send
+import net.corda.p2p.deployment.commands.UpdateIps
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import kotlin.system.exitProcess
@@ -27,6 +28,7 @@ import kotlin.system.exitProcess
         Send::class,
         CreateStores::class,
         ConfigureAll::class,
+        UpdateIps::class,
     ],
     header = ["Deployer for p2p layer"],
     name = "deployer",
