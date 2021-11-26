@@ -13,7 +13,34 @@ dependencies {
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
 
 }
-
 application {
     mainClass = 'net.corda.p2p.deployment.GoKt'
+}
+
+def binaryProjects = [
+        'network-map-creator',
+        'configuration-publisher',
+        'cryptoservice-key-creator',
+]
+
+binaryProjects.forEach {name->
+    def copyJars = tasks.register("copyJars$name", Copy) {
+        def project = ":applications:tools:p2p-test:$name"
+        def task = rootProject.findProject(project).tasks.getByName('appJar')
+        dependsOn(task)
+        from task.outputs.files.first()
+        into "$buildDir/jars/"
+        rename {
+            "${name}.jar"
+        }
+    }
+    processResources.dependsOn(copyJars)
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDirs "$buildDir/jars"
+        }
+    }
 }

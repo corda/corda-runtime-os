@@ -2,6 +2,7 @@ package net.corda.p2p.deployment
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import net.corda.p2p.deployment.commands.ConfigureAll
 import net.corda.p2p.deployment.commands.Destroy
 import net.corda.p2p.deployment.pods.Gateway
 import net.corda.p2p.deployment.pods.KafkaBroker
@@ -109,6 +110,18 @@ class Namespace : Runnable {
     )
     private var tag = "5.0.0.0-alpha-1637835488501"
 
+    @Option(
+        names = ["--lm-conf", "--link-manager-config"],
+        description = ["Link manager extra configuration arguments"]
+    )
+    var linkManagerExtraArguments = emptyList<String>()
+
+    @Option(
+        names = ["--gateway-config", "--gateway-conf"],
+        description = ["Gateway extra configuration arguments"]
+    )
+    var gatewayArguments = emptyList<String>()
+
     private val nameSpaceYaml by lazy {
         listOf(
             mapOf(
@@ -215,6 +228,7 @@ class Namespace : Runnable {
                     it.second != "Running"
                 }.toMap()
             if (waitingFor.isEmpty()) {
+                configureNamespace()
                 return
             } else {
                 println("Waiting for:")
@@ -224,5 +238,14 @@ class Namespace : Runnable {
             }
         }
         throw DeploymentException("Waiting too long for $namespaceName")
+
+    }
+
+    private fun configureNamespace() {
+        val config = ConfigureAll()
+        config.namespaceName = namespaceName
+        config.linkManagerExtraArguments = linkManagerExtraArguments
+        config.gatewayArguments = gatewayArguments
+        config.run()
     }
 }

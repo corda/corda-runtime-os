@@ -29,6 +29,7 @@ class CreateStores : Runnable {
         description = ["The TinyCert API Key"]
     )
     private var apiKey = System.getenv("TINYCERT_API_KEY")
+
     @Option(
         names = ["-p", "--tinycert-passphrase"],
         description = ["The TinyCert Pass phrase"]
@@ -45,19 +46,19 @@ class CreateStores : Runnable {
         names = ["-h", "--host"],
         description = ["The host names"]
     )
-    private var hosts = listOf("corda.net", "www.corda.net", "dev.corda.net")
+    var hosts = listOf("corda.net", "www.corda.net", "dev.corda.net")
 
     @Option(
         names = ["-t", "--trust-store"],
         description = ["The trust store file"]
     )
-    private var trustStoreFile = File("truststore.jks")
+    var trustStoreFile: File? = File("truststore.jks")
 
     @Option(
         names = ["-s", "--ssl-store"],
         description = ["The SSL store file"]
     )
-    private var sslStoreFile = File("keystore.jks")
+    var sslStoreFile = File("keystore.jks")
 
     @Option(
         names = ["--key-store-password"],
@@ -258,7 +259,7 @@ class CreateStores : Runnable {
         }
     }
 
-    private fun createTrustStore() {
+    private fun createTrustStore(trustStoreFile: File) {
         runCommand(
             "keytool",
             "-genkey",
@@ -370,7 +371,9 @@ class CreateStores : Runnable {
 
     override fun run() {
         try {
-            createTrustStore()
+            trustStoreFile?.let {
+                createTrustStore(it)
+            }
             createSslStore()
         } finally {
             disconnect()

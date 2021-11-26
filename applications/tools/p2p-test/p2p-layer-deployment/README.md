@@ -29,6 +29,7 @@ To deploy a new cluster run:
 ./applications/tools/p2p-test/p2p-layer-deployment/build/install/p2p-layer-deployment/bin/p2p-layer-deployment deploy [-n <namespace>]
 ```
 This will deploy a cluster named `p2p-layer` on you minikube (it will destroy any running cluster with that name). 
+It will also configure the gateway and link manager
 Some additional options are:
 ```
   -d, --dry-run              Just output the yaml the stdout, do not interact
@@ -42,13 +43,16 @@ Some additional options are:
                              The database username
   -g, --gateway-count=<gatewayCount>
                              Number of Gateways in the cluster
-                             Number of Gateways in the cluster
+      --gateway-conf, --gateway-config=<gatewayArguments>
+                             Gateway extra configuration arguments
       --group-id=<groupId>   The group ID
   -H, --hosts=<hostsNames>   The hosts names
   -k, --kafka-brokers=<kafkaBrokerCount>
                              Number of kafka brokers in the cluster
   -l, --link-manager-count=<linkManagerCount>
                              Number of Link Managers in the cluster
+      --lm-conf, --link-manager-config=<linkManagerExtraArguments>
+                             Link manager extra configuration arguments
   -n, --name=<namespaceName> The name of the namespace
       --no-volume-creation   Avoid creating any volumes
       --storage-class=<storageClassName>
