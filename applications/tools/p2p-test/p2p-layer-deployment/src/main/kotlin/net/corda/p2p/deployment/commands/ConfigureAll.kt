@@ -72,10 +72,42 @@ class ConfigureAll : Runnable {
     private val groupId by lazy {
         annotations["group-id"] as? String ?: throw DeploymentException("Missing group ID for $namespaceName")
     }
-
     private val keyStoreDir = File("p2p-deployment/keystores/")
-    private fun keyStoreFile(host: String): File {
-        return File(keyStoreDir.absolutePath, "$host.keystore.jks").also { keyStoreFile ->
+    private fun keyStoreFile(name: String): File {
+        return File(keyStoreDir.absolutePath, "$name.keystore.jks").also { keyStoreFile ->
+            if (!keyStoreFile.exists()) {
+                keyStoreDir.mkdirs()
+                val createKetstore = ProcessBuilder().command(
+                    "keytool",
+                    "-genkeypair",
+                    "-alias",
+                    "1",
+                    "-keyalg",
+                    "EC",
+                    "-storetype",
+                    "JKS",
+                    "-keystore",
+                    keyStoreFile.absolutePath,
+                    "-storepass",
+                    "password",
+                    "-dname",
+                    "CN=GB",
+                    "-keypass",
+                    "password"
+                ).inheritIO()
+                    .start()
+                if (createKetstore.waitFor() != 0) {
+                    throw DeploymentException("Could not create key store for $name")
+                }
+            }
+        }
+    }
+    private val keyStoreFile by lazy {
+        keyStoreFile(host)
+    }
+
+    private val sslKeyStore by lazy {
+        File(keyStoreDir.absolutePath, "$host.ssl.keystore.jks").also { keyStoreFile ->
             if (!keyStoreFile.exists()) {
                 keyStoreDir.mkdirs()
                 val creator = CreateStores()
@@ -91,9 +123,6 @@ class ConfigureAll : Runnable {
                 creator.run()
             }
         }
-    }
-    private val keyStoreFile by lazy {
-        keyStoreFile(host)
     }
 
     private val trustStoreFile = File(keyStoreDir.absolutePath, "truststore.jks")
@@ -189,8 +218,9 @@ class ConfigureAll : Runnable {
                 "groupId" to groupId,
                 "data" to mapOf(
                     "publicKeyStoreFile" to keyStoreFile.absolutePath,
-                    "publicKeyAlias" to "ec",
+                    "publicKeyAlias" to "1",
                     "keystorePassword" to "password",
+                    "publicKeyAlgo" to "ECDSA",
                     "address" to "http://$host:80",
                     "networkType" to "CORDA_5"
                 )
@@ -308,7 +338,7 @@ class ConfigureAll : Runnable {
                 "gateway",
                 "--host=$host",
                 "--port=80",
-                "--keyStore=${keyStoreFile.absolutePath}",
+                "--keyStore=${sslKeyStore.absolutePath}",
                 "--keyStorePassword=password",
                 "--trustStore=${trustStoreFile.absolutePath}",
                 "--trustStorePassword=password",
