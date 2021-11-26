@@ -505,7 +505,8 @@ open class SessionManagerImpl(
             SessionKey(ourMemberInfo.holdingIdentity, peer.holdingIdentity),
             session.getSession()
         )
-        logger.info("Inbound session ${message.header.sessionId} established (local=${ourMemberInfo.holdingIdentity}, remote=${peer.holdingIdentity}).")
+        logger.info("Inbound session ${message.header.sessionId} established " +
+                "(local=${ourMemberInfo.holdingIdentity}, remote=${peer.holdingIdentity}).")
         /**
          * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
          * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.

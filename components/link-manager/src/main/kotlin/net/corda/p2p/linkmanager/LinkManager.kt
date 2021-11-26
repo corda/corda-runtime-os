@@ -55,7 +55,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.time.Instant
@@ -255,8 +254,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                         recordsForNewSession(state)
                     }
                     is SessionState.SessionEstablished -> {
-                        logger.trace { "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
-                                "Using this to send outbound message." }
+                        logger.trace { "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
+                                " Using this to send outbound message." }
                         recordsForSessionEstablished(state, messageAndKey)
                     }
                     is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> {
