@@ -107,10 +107,12 @@ internal class SandboxGroupImpl(
      * Returns the serialised `ClassTag` for a given [klass].
      *
      * If [isStaticTag] is true, a serialised [StaticTag] is returned. Otherwise, a serialised [EvolvableTag] is
-     * returned.
+     * returned. For classed defined in CPKs, [EvolvableTag]s are only available iff [klass] is defined in CPK's
+     * main bundle.
      *
-     * Throws [SandboxException] if the class is not contained in any bundle, or if the class is contained in a bundle
-     * that does not have a symbolic name.
+     * @throws [SandboxException] if the class is not contained in any bundle, if the class is contained in a bundle
+     * that does not have a symbolic name, or if an [EvolvableTag] is requested for class defined in a CPK's private
+     * bundle.
      */
     private fun getClassTag(klass: Class<*>, isStaticTag: Boolean): String {
         val bundle = bundleUtils.getBundle(klass)
