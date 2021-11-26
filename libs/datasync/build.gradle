@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Bloom Filter Implementation'
+description 'Data Sync Implementation'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
