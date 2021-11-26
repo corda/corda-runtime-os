@@ -222,7 +222,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
-            logger.debug { "Processing outbound ${message.javaClass} with to ${message.header.destination.toHoldingIdentity()}." }
+            logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination.toHoldingIdentity()}." }
             return if (linkManagerHostingMap.isHostedLocally(message.header.destination.toHoldingIdentity())) {
                 listOf(Record(P2P_IN_TOPIC, generateKey(), AppMessage(message)))
             } else {
@@ -241,7 +241,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             messageAndKey: AuthenticatedMessageAndKey,
             isReplay: Boolean = false
         ): List<Record<String, *>> {
-            logger.trace{ "Processing outbound ${messageAndKey.javaClass} with ID (${messageAndKey.message.header.messageId}) " +
+            logger.trace{ "Processing outbound ${messageAndKey.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                     "to ${messageAndKey.message.header.destination.toHoldingIdentity()}." }
             val isHostedLocally = linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toHoldingIdentity())
             return if (isHostedLocally) {
