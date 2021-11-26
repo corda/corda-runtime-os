@@ -9,10 +9,10 @@ import java.io.File
 @Component(service = [Application::class])
 @Suppress("unused")
 class FlowWorker: Application {
-    private val healthMonitor = HealthMonitor()
+    private val healthProvider = HealthProvider()
 
     init {
-        healthMonitor.setIsHealthy()
+        healthProvider.setIsHealthy()
     }
 
     @Suppress("SpreadOperator")
@@ -33,7 +33,7 @@ class FlowWorker: Application {
             println(x)
             x++
             if (x > 30) {
-                healthMonitor.setIsUnhealthy()
+                healthProvider.setIsUnhealthy()
             }
             continue
         }
@@ -62,7 +62,7 @@ class CliParameters {
  * Since this file does not exist initially, the worker starts in an unhealthy state. Health checks should therefore be
  * delayed until an initial call to [setIsHealthy].
  */
-class HealthMonitor {
+class HealthProvider {
     companion object {
         // TODO - Move to constants file.
         private const val healthCheckFileName = "/tmp/worker_is_healthy"
