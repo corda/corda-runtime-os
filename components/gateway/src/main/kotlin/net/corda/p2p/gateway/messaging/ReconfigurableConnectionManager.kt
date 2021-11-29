@@ -28,12 +28,6 @@ class ReconfigurableConnectionManager(
     @Volatile
     private var manager: ConnectionManager? = null
 
-    // When the updated domino logic (supporting internal tile with configuration) is in place, this will be updated. See: CORE-2876.
-    @Volatile
-    var latestConnectionConfig = ConnectionConfiguration()
-
-    fun latestConnectionConfig() = latestConnectionConfig
-
     companion object {
         private val logger = contextLogger()
     }
@@ -64,7 +58,6 @@ class ReconfigurableConnectionManager(
                     newConfiguration.connectionConfig != oldConfiguration.connectionConfig
                 ) {
                     logger.info("New configuration, clients for ${dominoTile.name} will be reconnected")
-                    latestConnectionConfig = newConfiguration.connectionConfig
                     val newManager = managerFactory(newConfiguration.sslConfig, newConfiguration.connectionConfig)
                     resources.keep(newManager)
                     val oldManager = manager
