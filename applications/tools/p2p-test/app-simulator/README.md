@@ -185,7 +185,7 @@ To build a docker image of the tool run:
 ./gradlew :applications:tools:p2p-test:app-simulator:publishOSGiImage
 ```
 
-The created image will be `engineering-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT`
+The created image will be `corda-os-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT`
 
 ### Example of using the image
 1. Start the kafka cluster([see](../../../../testing/message-patterns/README.md))
@@ -203,7 +203,7 @@ docker run \
   --rm \
   -e KAFKA_SERVERS="broker1:9093" \
  --network kafka-docker_default \
-  engineering-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
+  corda-os-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
 ```
   * Sender without database:
 ```bash
@@ -212,7 +212,7 @@ docker run \
   --rm \
   -e KAFKA_SERVERS="broker1:9093" \
  --network kafka-docker_default \
-  engineering-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
+  corda-os-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
 ```
   * Receiver:
 ```bash
@@ -221,7 +221,7 @@ docker run \
   --rm \
   -e KAFKA_SERVERS="broker1:9093" \
  --network kafka-docker_default \
-  engineering-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
+  corda-os-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
 ```
   * Sink:
 ```bash
@@ -230,5 +230,5 @@ docker run \
   --rm \
   -e KAFKA_SERVERS="broker1:9093" \
  --network kafka-docker_default \
-  engineering-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
+  corda-os-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
 ```
