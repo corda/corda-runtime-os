@@ -140,6 +140,9 @@ class CordaKafkaPublisherImpl(
             cordaKafkaProducer.commitTransaction()
             future.complete(Unit)
         } catch (ex: Exception) {
+            println("QQQ <---")
+            ex.printStackTrace()
+            println("QQQ ->>>")
             when (ex) {
                 is CordaMessageAPIIntermittentException -> {
                     logErrorAndSetFuture(

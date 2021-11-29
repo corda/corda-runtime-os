@@ -37,13 +37,17 @@ class Namespace : Runnable {
         names = ["-H", "--host"],
         description = ["The host name"]
     )
-    var hostsName: String = "www.alice.net"
+    var hostName: String? = null
+
+    val actualHostName : String
+        get() =
+            hostName ?: "www.$namespaceName.com"
 
     @Option(
         names = ["-x", "--x500-name"],
         description = ["The X 500 name"]
     )
-    private var x500Name = "O=Alice, L=London, C=GB"
+    private var x500Name : String? = null
 
     @Option(
         names = ["--group-id"],
@@ -135,9 +139,9 @@ class Namespace : Runnable {
                     ),
                     "annotations" to mapOf(
                         "type" to "p2p",
-                        "x500-name" to x500Name,
+                        "x500-name" to (x500Name?:"O=$namespaceName, L=London, C=GB"),
                         "group-id" to groupId,
-                        "host" to hostsName,
+                        "host" to actualHostName,
                     )
                 )
             ),
@@ -152,7 +156,7 @@ class Namespace : Runnable {
     private val pods by lazy {
         KafkaBroker.kafka(namespaceName, zooKeeperCount, kafkaBrokerCount) +
             PostGreSql(dbUsername, dbPassword, sqlInitFile) +
-            Gateway.gateways(gatewayCount, listOf(hostsName), kafkaServers, tag) +
+            Gateway.gateways(gatewayCount, listOf(actualHostName), kafkaServers, tag) +
             LinkManager.linkManagers(linkManagerCount, kafkaServers, tag) +
             Simulator(kafkaServers, tag, 1024)
     }

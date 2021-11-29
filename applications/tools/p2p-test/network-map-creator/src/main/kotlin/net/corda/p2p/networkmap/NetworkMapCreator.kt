@@ -48,6 +48,14 @@ class NetworkMapCreator @Activate constructor(
     }
 
     override fun startup(args: Array<String>) {
+        try {
+            go(args)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        shutdown()
+    }
+    fun go(args: Array<String>) {
         consoleLogger.info("Starting network map creation tool")
 
         val parameters = CliParameters()
@@ -70,6 +78,7 @@ class NetworkMapCreator @Activate constructor(
                 return
             }
 
+            println("QQQ - ${kafkaProperties.getProperty(KAFKA_BOOTSTRAP_SERVER)}")
             if (parameters.networkMapFile == null) {
                 logError("No value passed for --netmap-file.")
                 shutdown()
@@ -116,7 +125,6 @@ class NetworkMapCreator @Activate constructor(
             publisher.publish(totalRecords).forEach { it.get() }
 
             consoleLogger.info("Produced ${totalRecords.size} entries on topic $topic.")
-            shutdown()
         }
     }
 

@@ -221,7 +221,7 @@ class ConfigureAll : Runnable {
                     "publicKeyAlias" to "1",
                     "keystorePassword" to "password",
                     "publicKeyAlgo" to "ECDSA",
-                    "address" to "http://$host:80",
+                    "address" to "http://$host:433",
                     "networkType" to "CORDA_5"
                 )
             )
@@ -261,9 +261,10 @@ class ConfigureAll : Runnable {
                     "groupId" to annotations["group-id"],
                     "data" to mapOf(
                         "publicKeyStoreFile" to keyStoreFile(host).absolutePath,
-                        "publicKeyAlias" to "ec",
+                        "publicKeyAlias" to "1",
                         "keystorePassword" to "password",
-                        "address" to "http://$host:80",
+                        "publicKeyAlgo" to "ECDSA",
+                        "address" to "http://$host:433",
                         "networkType" to "CORDA_5"
                     )
                 )
@@ -289,7 +290,6 @@ class ConfigureAll : Runnable {
     }
 
     private fun publishKeys() {
-        startTelepresence()
         val configurationFile = File.createTempFile("keys.", ".conf").also {
             it.deleteOnExit()
         }
@@ -328,7 +328,6 @@ class ConfigureAll : Runnable {
     }
 
     private fun configureGateway() {
-        startTelepresence()
         println("Configure gateway of $namespaceName")
         runJar(
             "configuration-publisher",
@@ -337,11 +336,12 @@ class ConfigureAll : Runnable {
                 kafkaServers(namespaceName),
                 "gateway",
                 "--host=$host",
-                "--port=80",
+                "--port=433",
                 "--keyStore=${sslKeyStore.absolutePath}",
                 "--keyStorePassword=password",
                 "--trustStore=${trustStoreFile.absolutePath}",
                 "--trustStorePassword=password",
+                "--responseTimeoutMilliSecs=300000"
             ) + gatewayArguments
         )
     }
@@ -368,6 +368,7 @@ class ConfigureAll : Runnable {
     }
 
     override fun run() {
+        startTelepresence()
         kafkaSetup()
         publishNetworkMap()
         publishKeys()

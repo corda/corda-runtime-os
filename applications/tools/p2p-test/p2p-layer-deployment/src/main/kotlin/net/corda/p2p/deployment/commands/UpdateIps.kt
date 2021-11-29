@@ -39,7 +39,8 @@ class UpdateIps : Runnable {
             val items = rawData["items"] as List<Yaml>
             val spec = items.first {
                 val metadata = it["metadata"] as Yaml
-                metadata["name"] == "load-balancer"
+                // metadata["name"] == "load-balancer"
+                metadata["name"] == "p2p-gateway-2"
             }["spec"] as Yaml
             spec["clusterIP"] as String
         }

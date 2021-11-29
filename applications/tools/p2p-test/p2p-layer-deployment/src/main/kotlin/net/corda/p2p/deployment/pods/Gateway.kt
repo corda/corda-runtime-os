@@ -25,6 +25,6 @@ class Gateway(
     }
     override val imageName = "p2p-gateway"
     override val ports = listOf(
-        Port("p2p-gateway", 80)
+        Port("p2p-gateway", 433)
     )
 }

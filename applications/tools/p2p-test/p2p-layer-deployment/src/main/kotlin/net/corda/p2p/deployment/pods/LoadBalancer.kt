@@ -7,7 +7,7 @@ class LoadBalancer(
     override val app = "load-balancer"
     override val image = "nginx"
     override val ports: Collection<Port> = listOf(
-        Port("http", 80)
+        Port("http", 433)
     )
     override val rawData = listOf(
         TextRawData(
@@ -18,7 +18,7 @@ class LoadBalancer(
                     """
                         upstream loadbalancer {
                           ${servers.map {
-                        "server $it:80;"
+                        "server $it:433;"
                     }.joinToString("\n")}
                         }
                         server {
