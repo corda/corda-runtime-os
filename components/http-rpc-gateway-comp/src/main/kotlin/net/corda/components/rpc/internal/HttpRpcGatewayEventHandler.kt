@@ -1,6 +1,6 @@
 package net.corda.components.rpc.internal
 
-import net.corda.httprpc.server.HttpRpcServer
+import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -10,16 +10,15 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.permissions.rpcops.PermissionRpcOpsService
 import net.corda.permissions.service.PermissionServiceComponent
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
 @Suppress("LongParameterList")
-internal class RbacPermissionSystemEventHandler(
+internal class HttpRpcGatewayEventHandler(
     private val permissionServiceComponent: PermissionServiceComponent,
-    private val permissionRpcOpsService: PermissionRpcOpsService,
+    private val endpoints: List<Lifecycle>,
 ) : LifecycleEventHandler {
 
     private companion object {
@@ -36,13 +35,12 @@ internal class RbacPermissionSystemEventHandler(
                 registration?.close()
                 registration = coordinator.followStatusChangesByName(
                     setOf(
-                        LifecycleCoordinatorName.forComponent<PermissionServiceComponent>(),
-                        LifecycleCoordinatorName.forComponent<PermissionRpcOpsService>()
+                        LifecycleCoordinatorName.forComponent<PermissionServiceComponent>()
                     )
                 )
 
                 permissionServiceComponent.start()
-                permissionRpcOpsService.start()
+                endpoints.forEach { it.start() }
             }
             is RegistrationStatusChangeEvent -> {
                 log.debug { "HTTP RPC Gateway Component received status change: ${event.status}" }
@@ -64,7 +62,7 @@ internal class RbacPermissionSystemEventHandler(
                 registration?.close()
                 registration = null
                 permissionServiceComponent.stop()
-                permissionRpcOpsService.stop()
+                endpoints.forEach { it.stop() }
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }

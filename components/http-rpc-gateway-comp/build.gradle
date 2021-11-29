@@ -23,7 +23,6 @@ dependencies {
     implementation project(':libs:http-rpc:ssl-cert-read')
     implementation project(':libs:http-rpc:http-rpc-server')
     implementation project(':components:permissions:permission-service')
-    implementation project(':components:permissions:permission-rpcops-service')
 
     implementation project(":osgi-framework-api")
 

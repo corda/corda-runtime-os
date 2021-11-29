@@ -1,12 +1,12 @@
 package net.corda.components.rpc.internal
 
+import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.permissions.rpcops.PermissionRpcOpsService
 import net.corda.permissions.service.PermissionServiceComponent
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -17,15 +17,16 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-internal class RbacPermissionSystemEventHandlerTest {
+internal class HttpRpcGatewayEventHandlerTest {
 
     private val permissionServiceComponent = mock<PermissionServiceComponent>()
-    private val permissionRpcOpsService = mock<PermissionRpcOpsService>()
+    private val endpoint1 = mock<Lifecycle>()
+    private val endpoint2 = mock<Lifecycle>()
 
     private val registrationHandle = mock<RegistrationHandle>()
     private val coordinator = mock<LifecycleCoordinator>()
 
-    private val handler = RbacPermissionSystemEventHandler(permissionServiceComponent, permissionRpcOpsService)
+    private val handler = HttpRpcGatewayEventHandler(permissionServiceComponent, listOf(endpoint1, endpoint2))
 
     @BeforeEach
     fun setUp() {
@@ -33,15 +34,16 @@ internal class RbacPermissionSystemEventHandlerTest {
     }
 
     @Test
-    fun `processing a start event starts the permission service and permission rpcops service`() {
+    fun `processing a start event starts the permission service and endpoints`() {
         handler.processEvent(StartEvent(), coordinator)
 
         verify(permissionServiceComponent).start()
-        verify(permissionRpcOpsService).start()
+        verify(endpoint1).start()
+        verify(endpoint2).start()
     }
 
     @Test
-    fun `processing a start event causes service to follow status changes for permission service and permission rpcops`() {
+    fun `processing a start event causes service to follow status changes for permission service`() {
         assertNull(handler.registration)
 
         handler.processEvent(StartEvent(), coordinator)
@@ -81,7 +83,6 @@ internal class RbacPermissionSystemEventHandlerTest {
 
         verify(registrationHandle).close()
         verify(permissionServiceComponent).stop()
-        verify(permissionRpcOpsService).stop()
         assertNull(handler.registration)
     }
 }

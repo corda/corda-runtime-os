@@ -1,6 +1,6 @@
 package net.corda.components.rpc
 
-import net.corda.components.rpc.internal.RbacPermissionSystemEventHandler
+import net.corda.components.rpc.internal.HttpRpcGatewayEventHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
@@ -21,7 +21,6 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.permissions.rpcops.PermissionRpcOpsService
 import net.corda.permissions.service.PermissionServiceComponent
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.NetworkHostAndPort
@@ -46,8 +45,6 @@ class HttpRpcGateway @Activate constructor(
     private val sslCertReadServiceFactory: SslCertReadServiceFactory,
     @Reference(service = PermissionServiceComponent::class)
     private val permissionServiceComponent: PermissionServiceComponent,
-    @Reference(service = PermissionRpcOpsService::class)
-    private val permissionRpcOpsService: PermissionRpcOpsService,
     @Reference(service = PluggableRPCOps::class, cardinality = ReferenceCardinality.MULTIPLE)
     private val rpcOps: List<PluggableRPCOps<out RpcOps>>,
 ) : Lifecycle {
@@ -87,7 +84,7 @@ class HttpRpcGateway @Activate constructor(
 
     override fun start() {
         rbacLifecycleCoordinator = coordinatorFactory.createCoordinator<HttpRpcGateway>(
-            RbacPermissionSystemEventHandler(permissionServiceComponent, permissionRpcOpsService)
+            HttpRpcGatewayEventHandler(permissionServiceComponent, rpcOps.filterIsInstance<Lifecycle>())
         ).also {
             log.info("Starting lifecycle coordinator for RBAC permission system.")
             it.start()
