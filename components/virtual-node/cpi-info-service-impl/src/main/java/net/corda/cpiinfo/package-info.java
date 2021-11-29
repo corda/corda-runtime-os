@@ -1,4 +1,4 @@
 @Export
-package net.corda.cpi.info.service;
+package net.corda.cpiinfo;
 
 import org.osgi.annotation.bundle.Export;
