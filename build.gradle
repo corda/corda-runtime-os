@@ -319,4 +319,7 @@ subprojects {
             "javax.persistence.MappedSuperclass"
         )
     }
+    test {
+        exclude '**/*'
+    }
 }
