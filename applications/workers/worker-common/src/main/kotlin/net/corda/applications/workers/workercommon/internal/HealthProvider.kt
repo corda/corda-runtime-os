@@ -1,6 +1,5 @@
 package net.corda.applications.workers.workercommon.internal
 
-import net.corda.applications.workers.workercommon.HealthProvider
 import java.io.File
 
 /**
@@ -11,20 +10,20 @@ import java.io.File
  * worker using the command `cat /tmp/worker_is_healthy`, which will return 0 if the file exists, and 1 otherwise.
  *
  * Since this file does not exist initially, the worker starts in an unhealthy state. Health checks should therefore be
- * delayed until an initial call to [setIsHealthy].
+ * delayed until an initial call to [setHealthy].
  */
-class HealthProviderImpl: HealthProvider {
+class HealthProvider {
     companion object {
         private val healthCheckFile = File(HEALTH_CHECK_FILE_NAME)
     }
 
     /** Marks the worker as healthy. */
-    override fun setIsHealthy() {
+    fun setHealthy() {
         healthCheckFile.createNewFile()
     }
 
     /** Marks the worker as unhealthy. */
-    override fun setIsUnhealthy() {
+    fun setUnhealthy() {
         healthCheckFile.delete()
     }
 }

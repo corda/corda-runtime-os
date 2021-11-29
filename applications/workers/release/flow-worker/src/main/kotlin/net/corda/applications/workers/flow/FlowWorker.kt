@@ -18,6 +18,11 @@ class FlowWorker: Worker() {
     @Suppress("SpreadOperator")
     override fun startup(bootstrapConfig: Config) {
         logger.info("flow worker starting")
+        bootstrapConfig.entrySet().forEach { entry ->
+            logger.info(entry.key)
+            logger.info(entry.value.toString())
+            logger.info("")
+        }
 
         FlowProcessor().startup(bootstrapConfig)
 

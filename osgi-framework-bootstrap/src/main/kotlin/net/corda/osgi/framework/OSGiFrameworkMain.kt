@@ -163,7 +163,7 @@ class OSGiFrameworkMain {
             // We add the appender at the same level as the App appender.
             val level = loggerContext.configuration.rootLogger.appenderRefs.find { appenderRef ->
                 appenderRef.ref == APP_APPENDER
-            }?.level
+            }?.level ?: throw IllegalStateException("Root logger does not have an appender named \"$APP_APPENDER\".")
             loggerContext.configuration.rootLogger.addAppender(consoleAppender, level, null)
             loggerContext.updateLoggers()
         }
