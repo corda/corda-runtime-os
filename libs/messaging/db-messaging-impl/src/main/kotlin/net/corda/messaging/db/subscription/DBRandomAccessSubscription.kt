@@ -1,6 +1,9 @@
 package net.corda.messaging.db.subscription
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.records.Record
@@ -12,7 +15,6 @@ import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
-import java.lang.Exception
 import java.nio.ByteBuffer
 import java.sql.SQLClientInfoException
 import java.sql.SQLNonTransientException
@@ -24,6 +26,7 @@ class DBRandomAccessSubscription<K: Any, V: Any>(private val subscriptionConfig:
                                                  private val avroSchemaRegistry: AvroSchemaRegistry,
                                                  private val offsetTrackersManager: OffsetTrackersManager,
                                                  private val dbAccessProvider: DBAccessProvider,
+                                                 private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                                                  private val keyClass: Class<K>,
                                                  private val valueClass: Class<V>): RandomAccessSubscription<K, V>, Lifecycle {
 
@@ -33,11 +36,19 @@ class DBRandomAccessSubscription<K: Any, V: Any>(private val subscriptionConfig:
 
     private var running = false
     private val startStopLock = ReentrantLock()
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "${subscriptionConfig.groupName}-DBRandomAccessSubscription-${subscriptionConfig.eventTopic}",
+            subscriptionConfig.instanceId.toString()
+        )
+    ) { _, _ -> }
 
     override fun start() {
         startStopLock.withLock {
             if (!running) {
                 running = true
+                lifecycleCoordinator.start()
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                 log.debug { "Random access subscription for topic ${subscriptionConfig.eventTopic} " +
                         "and group ${subscriptionConfig.groupName} started." }
             }
@@ -48,8 +59,22 @@ class DBRandomAccessSubscription<K: Any, V: Any>(private val subscriptionConfig:
         startStopLock.withLock {
             if (running) {
                 running = false
+                lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+                lifecycleCoordinator.stop()
                 log.debug { "Random access subscription for topic ${subscriptionConfig.eventTopic} " +
                         "and group ${subscriptionConfig.groupName} stopped." }
+            }
+        }
+    }
+
+    override fun close() {
+        startStopLock.withLock {
+            if (running) {
+                running = false
+                lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+                lifecycleCoordinator.close()
+                log.debug { "Random access subscription for topic ${subscriptionConfig.eventTopic} " +
+                        "and group ${subscriptionConfig.groupName} closed." }
             }
         }
     }
@@ -92,5 +117,8 @@ class DBRandomAccessSubscription<K: Any, V: Any>(private val subscriptionConfig:
             }
         }
     }
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
 
 }

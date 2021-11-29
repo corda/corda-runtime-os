@@ -1,5 +1,8 @@
 package net.corda.messaging.emulation.subscription.compacted
 
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -17,6 +20,7 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
     private val subscriptionConfig: SubscriptionConfig,
     internal val processor: CompactedProcessor<K, V>,
     private val topicService: TopicService,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : CompactedSubscription<K, V> {
 
     private val knownValues = ConcurrentHashMap<K, V>()
@@ -39,6 +43,12 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
                 .keys
         )
     }
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "${subscriptionConfig.groupName}-CompactedSubscription-${subscriptionConfig.eventTopic}",
+            subscriptionConfig.instanceId.toString()
+        )
+    ) { _, _ -> }
 
     private var currentConsumption: Consumption? = null
     private val startStopLock = ReentrantLock()
@@ -74,15 +84,27 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
     }
 
     override fun stop() {
-        logger.debug { "Stopping event log subscription with config: $subscriptionConfig" }
+        logger.debug { "Stopping compacted subscription with config: $subscriptionConfig" }
+        stopConsumer()
+        lifecycleCoordinator.stop()
+    }
+
+    override fun close() {
+        logger.debug { "Closing compacted subscription with config: $subscriptionConfig" }
+        stopConsumer()
+        lifecycleCoordinator.close()
+    }
+
+    private fun stopConsumer() {
         startStopLock.withLock {
             currentConsumption?.stop()
             currentConsumption = null
+            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         }
     }
 
     override fun start() {
-        logger.debug { "Starting event log subscription with config: $subscriptionConfig" }
+        logger.debug { "Starting compacted subscription with config: $subscriptionConfig" }
         startStopLock.withLock {
             if (currentConsumption == null) {
                 val consumer = CompactedConsumer(this)
@@ -90,6 +112,8 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
                     processor.onSnapshot(knownValues)
                 }
                 currentConsumption = topicService.createConsumption(consumer)
+                lifecycleCoordinator.start()
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             }
         }
     }
@@ -103,4 +127,7 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
         }
         return knownValues[key]
     }
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
 }

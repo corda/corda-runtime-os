@@ -28,7 +28,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
-import java.util.UUID
+import java.util.*
 
 class InMemorySessionReplayerTest {
 

@@ -4,6 +4,12 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.data.demo.DemoRecord
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -12,7 +18,11 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.integration.IntegrationTestProperties
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
+import net.corda.test.util.eventually
+import net.corda.v5.base.util.millis
+import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -29,6 +39,7 @@ class KafkaRandomAccessSubscriptionIntegrationTest {
 
     private companion object {
         const val CLIENT_ID = "publisherId"
+
         //automatically created topics
         const val TOPIC = "test.topic"
     }
@@ -39,10 +50,16 @@ class KafkaRandomAccessSubscriptionIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
 
+    @InjectService(timeout = 4000)
+    lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+
     @BeforeEach
     fun beforeEach() {
         kafkaConfig = SmartConfigImpl.empty()
-            .withValue(IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE))
+            .withValue(
+                IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER,
+                ConfigValueFactory.fromAnyRef(IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE)
+            )
             .withValue(IntegrationTestProperties.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }
 
@@ -51,13 +68,34 @@ class KafkaRandomAccessSubscriptionIntegrationTest {
         val partition = 4
         publisherConfig = PublisherConfig(CLIENT_ID + TOPIC)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+
+        val coordinator =
+            lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName("randomAccessTest"))
+            { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
+                when (event) {
+                    is RegistrationStatusChangeEvent -> {
+                        if (event.status == LifecycleStatus.UP) {
+                            coordinator.updateStatus(LifecycleStatus.UP)
+                        } else {
+                            coordinator.updateStatus(LifecycleStatus.DOWN)
+                        }
+                    }
+                }
+            }
+        coordinator.start()
+
         val randomAccessSub = subscriptionFactory.createRandomAccessSubscription(
             SubscriptionConfig("group-1", TOPIC, 1),
             kafkaConfig,
             String::class.java,
             DemoRecord::class.java
         )
+        coordinator.followStatusChangesByName(setOf(randomAccessSub.subscriptionName))
         randomAccessSub.start()
+
+        eventually(duration = 5.seconds, waitBetween = 200.millis) {
+            Assertions.assertEquals(LifecycleStatus.UP, coordinator.status)
+        }
 
         val records = (1..10).map { partition to Record(TOPIC, "key-$it", DemoRecord(it)) }
         val futures = publisher.publishToPartition(records)
@@ -71,6 +109,10 @@ class KafkaRandomAccessSubscriptionIntegrationTest {
 
             assertThat(it.getRecord(4, 100)).isNull()
         }
-    }
+        randomAccessSub.stop()
 
+        eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
+            Assertions.assertEquals(LifecycleStatus.DOWN, coordinator.status)
+        }
+    }
 }

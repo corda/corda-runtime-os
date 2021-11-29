@@ -1,5 +1,7 @@
 package net.corda.messaging.db.subscription
 
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -28,11 +30,14 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
+import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 import java.sql.SQLTransientException
-import java.util.Collections
+import java.util.*
 import java.util.concurrent.atomic.AtomicLong
 
 class DBEventLogSubscriptionTest {
@@ -46,7 +51,8 @@ class DBEventLogSubscriptionTest {
         it to (1..topicPartitions).map { it to Collections.synchronizedList<RecordDbEntry>(mutableListOf()) }.toMap()
     }.toMap()
     private val dbCommittedOffsets = listOf(topic1, topic2)
-        .map { it to (1..topicPartitions).map { it to Collections.synchronizedList<Long>(mutableListOf()) }.toMap() }.toMap()
+        .map { it to (1..topicPartitions).map { it to Collections.synchronizedList<Long>(mutableListOf()) }.toMap() }
+        .toMap()
 
     private val offsetsPerTopicPartition = listOf(topic1, topic2).map {
         it to (1..topicPartitions).map { it to AtomicLong(1) }.toMap()
@@ -65,7 +71,8 @@ class DBEventLogSubscriptionTest {
         `when`(writeRecords(anyList(), anyOrNull()))
             .thenAnswer { invocation ->
                 val records = (invocation.arguments.first() as List<RecordDbEntry>)
-                val postTxFn = invocation.arguments[1] as ((records: List<RecordDbEntry>, txResult: TransactionResult) -> Unit)
+                val postTxFn =
+                    invocation.arguments[1] as ((records: List<RecordDbEntry>, txResult: TransactionResult) -> Unit)
 
                 var transactionResult: TransactionResult? = null
                 try {
@@ -111,7 +118,8 @@ class DBEventLogSubscriptionTest {
                 val consumerGroup = invocation.arguments[1] as String
                 val offsets = invocation.arguments[2] as Map<Int, Long>
                 val records = invocation.arguments[3] as List<RecordDbEntry>
-                val postTxFn = invocation.arguments[4] as ((records: List<RecordDbEntry>, txResult: TransactionResult) -> Unit)
+                val postTxFn =
+                    invocation.arguments[4] as ((records: List<RecordDbEntry>, txResult: TransactionResult) -> Unit)
 
                 if (failuresToSimulateForAtomicDbWrite > 0) {
                     postTxFn(records, TransactionResult.ROLLED_BACK)
@@ -177,6 +185,11 @@ class DBEventLogSubscriptionTest {
         `when`(assign(anyOrNull(), anyInt())).thenReturn(2)
     }
 
+    private val lifecycleCoordinator: LifecycleCoordinator = mock()
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
+        on { createCoordinator(any(), any()) } doReturn lifecycleCoordinator
+    }
+
     private val transactionalConfig = SubscriptionConfig("consumer-group-1", topic1, 1)
     private val nonTransactionalConfig = SubscriptionConfig("consumer-group-1", topic1)
 
@@ -189,8 +202,16 @@ class DBEventLogSubscriptionTest {
         dbRecords[topic1]!![1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
         val subscription = DBEventLogSubscription(
-            nonTransactionalConfig, processor,
-            null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout
+            nonTransactionalConfig,
+            processor,
+            null,
+            avroSchemaRegistry,
+            offsetTrackersManager,
+            partitionAllocator,
+            partitionAssignor,
+            dbAccessProvider,
+            lifecycleCoordinatorFactory,
+            pollingTimeout
         )
 
         subscription.start()
@@ -220,8 +241,15 @@ class DBEventLogSubscriptionTest {
         val subscription =
             DBEventLogSubscription(
                 transactionalConfig,
-                processor, null,
-                avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout
+                processor,
+                null,
+                avroSchemaRegistry,
+                offsetTrackersManager,
+                partitionAllocator,
+                partitionAssignor,
+                dbAccessProvider,
+                lifecycleCoordinatorFactory,
+                pollingTimeout
             )
 
         subscription.start()
@@ -249,8 +277,16 @@ class DBEventLogSubscriptionTest {
         dbRecords[topic1]!![1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
         val subscription = DBEventLogSubscription(
-            transactionalConfig, processor, null,
-            avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout
+            transactionalConfig,
+            processor,
+            null,
+            avroSchemaRegistry,
+            offsetTrackersManager,
+            partitionAllocator,
+            partitionAssignor,
+            dbAccessProvider,
+            lifecycleCoordinatorFactory,
+            pollingTimeout
         )
 
         subscription.start()
@@ -280,7 +316,18 @@ class DBEventLogSubscriptionTest {
         val expectedRecordsToProcess = topic1Records.size * (failuresToSimulateForAtomicDbWrite + 1)
         dbRecords[topic1]!![1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
-        val subscription = DBEventLogSubscription(transactionalConfig, processor, null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout)
+        val subscription = DBEventLogSubscription(
+            transactionalConfig,
+            processor,
+            null,
+            avroSchemaRegistry,
+            offsetTrackersManager,
+            partitionAllocator,
+            partitionAssignor,
+            dbAccessProvider,
+            lifecycleCoordinatorFactory,
+            pollingTimeout
+        )
 
         subscription.start()
 
@@ -309,7 +356,18 @@ class DBEventLogSubscriptionTest {
         val expectedRecordsToProcess = topic1Records.size * (failuresToSimulateForDbRecordsWrite + 1)
         dbRecords[topic1]!![1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
-        val subscription = DBEventLogSubscription(nonTransactionalConfig, processor, null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout)
+        val subscription = DBEventLogSubscription(
+            nonTransactionalConfig,
+            processor,
+            null,
+            avroSchemaRegistry,
+            offsetTrackersManager,
+            partitionAllocator,
+            partitionAssignor,
+            dbAccessProvider,
+            lifecycleCoordinatorFactory,
+            pollingTimeout
+        )
 
         subscription.start()
 
@@ -338,7 +396,18 @@ class DBEventLogSubscriptionTest {
         val expectedRecordsToProcess = topic1Records.size * (failuresToSimulateForDbOffsetWrite + 1)
         dbRecords[topic1]!![1]!!.addAll(topic1Records)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic2)
-        val subscription = DBEventLogSubscription(nonTransactionalConfig, processor, null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout)
+        val subscription = DBEventLogSubscription(
+            nonTransactionalConfig,
+            processor,
+            null,
+            avroSchemaRegistry,
+            offsetTrackersManager,
+            partitionAllocator,
+            partitionAssignor,
+            dbAccessProvider,
+            lifecycleCoordinatorFactory,
+            pollingTimeout
+        )
 
         subscription.start()
 
@@ -367,10 +436,16 @@ class DBEventLogSubscriptionTest {
         val partitionListener = mock(PartitionAssignmentListener::class.java)
         val processor = InMemoryProcessor(processedRecords, String::class.java, String::class.java, topic1)
         val subscription = DBEventLogSubscription(
-            nonTransactionalConfig, processor,
-            partitionListener, avroSchemaRegistry,
-            offsetTrackersManager, partitionAllocator, partitionAssignor,
-            dbAccessProvider, pollingTimeout
+            nonTransactionalConfig,
+            processor,
+            partitionListener,
+            avroSchemaRegistry,
+            offsetTrackersManager,
+            partitionAllocator,
+            partitionAssignor,
+            dbAccessProvider,
+            lifecycleCoordinatorFactory,
+            pollingTimeout
         )
 
         subscription.start()
