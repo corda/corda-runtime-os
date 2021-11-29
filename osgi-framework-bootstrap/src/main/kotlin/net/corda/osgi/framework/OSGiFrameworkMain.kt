@@ -95,6 +95,8 @@ class OSGiFrameworkMain {
         @JvmStatic
         fun main(args: Array<String>) {
             if (!args.contains("--noStdoutLogging")) {
+                // It is recommended to log to stdout by default in a containerised environment. However, this may
+                // have a strongly negative impact on performance.
                 alsoLogToStdout()
             }
 
