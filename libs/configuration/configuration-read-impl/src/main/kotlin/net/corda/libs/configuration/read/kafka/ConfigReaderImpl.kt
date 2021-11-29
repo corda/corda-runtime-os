@@ -49,7 +49,8 @@ class ConfigReaderImpl(
                     subscriptionFactory.createCompactedSubscription(
                         SubscriptionConfig(
                             CONFIGURATION_READER,
-                            boostrapConfig.getString(CONFIG_TOPIC_PATH)
+                            boostrapConfig.getString(CONFIG_TOPIC_PATH),
+                            1
                         ),
                         this,
                         boostrapConfig
