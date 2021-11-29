@@ -6,7 +6,7 @@ import java.security.MessageDigest
 
 data class HoldingIdentity(val x500Name: String, val groupId: String) {
     /**
-     * Returns the holding identity as the first 8 characters of a SHA-256 hash of the x500 name and group id.
+     * Returns the holding identity as the first 12 characters of a SHA-256 hash of the x500 name and group id.
      *
      * To be used as a short look-up code that may be passed back to a customer as part of a URL etc.
      */
