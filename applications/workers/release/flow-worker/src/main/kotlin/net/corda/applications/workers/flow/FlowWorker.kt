@@ -7,24 +7,19 @@ import net.corda.processors.flow.FlowProcessor
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 
-// TODO - Joel - Document.
-@Component(service = [Application::class])
+/** The [Worker] for handling flows. */
 @Suppress("unused")
+@Component(service = [Application::class])
 class FlowWorker: Worker() {
     private companion object {
         private val logger = contextLogger()
     }
 
+    /** Starts the [FlowProcessor], passing in the [busConfig]. */
     @Suppress("SpreadOperator")
-    override fun startup(bootstrapConfig: Config) {
-        logger.info("flow worker starting")
-        bootstrapConfig.entrySet().forEach { entry ->
-            logger.info(entry.key)
-            logger.info(entry.value.toString())
-            logger.info("")
-        }
-
-        FlowProcessor().startup(bootstrapConfig)
+    override fun startup(busConfig: Config) {
+        logger.info("Flow worker starting")
+        FlowProcessor().startup(busConfig)
 
         // Sets the worker to unhealthy after 30 seconds.
 //        var x = 0

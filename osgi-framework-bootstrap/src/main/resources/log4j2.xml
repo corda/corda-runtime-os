@@ -21,6 +21,7 @@
             <AppenderRef ref="Console" level="info"/>
         </logger>
         <root level="debug">
+            <appender-ref ref="App" level="info"/>
         </root>
     </Loggers>
 </Configuration>
