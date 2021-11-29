@@ -25,15 +25,20 @@ import net.corda.libs.configuration.write.kafka.ConfigWriterImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
+import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
 import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
+import net.corda.messaging.kafka.publisher.factory.CordaKafkaPublisherFactory
+import net.corda.messaging.kafka.subscription.factory.KafkaSubscriptionFactory
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
@@ -51,6 +56,7 @@ import net.corda.p2p.schema.TestSchema
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.NetworkMapEntry
+import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
@@ -154,6 +160,138 @@ class P2PLayerEndToEndTest {
         hostAGateway.close()
         hostBLinkManager.close()
         hostBGateway.close()
+    }
+
+    @Test
+    @Timeout(60)
+    fun `test Kafka compacted topics - write entries in compacted topics`() {
+        val publisherFactory = CordaKafkaPublisherFactory(AvroSchemaRegistryImpl())
+        val kafkaBoostrapConfig = bootstrapConfig.withValue(
+            "messaging.kafka.common.bootstrap.servers",
+            ConfigValueFactory.fromAnyRef("localhost:9092")
+        )
+        val publisher = publisherFactory.createPublisher(PublisherConfig("test-publisher", 1), kafkaBoostrapConfig)
+
+        val baseNumber = 5000
+        val numberOfRecords = 5000
+
+        val initialRecords = (baseNumber..baseNumber+numberOfRecords).map { Record("p2p.out.markers.state", "key-$it", "value-$it") }
+        publisher.publish(initialRecords).forEach { it.join() }
+
+        val tombstoneRecords = (baseNumber..baseNumber+numberOfRecords).map { Record("p2p.out.markers.state", "key-$it", null) }
+        publisher.publish(tombstoneRecords).forEach { it.join() }
+    }
+
+    @Test
+    fun `test Kafka compacted topics - read entries from compacted topic`() {
+        val subscriptionFactory = KafkaSubscriptionFactory(AvroSchemaRegistryImpl())
+        val kafkaBoostrapConfig = bootstrapConfig.withValue(
+            "messaging.kafka.common.bootstrap.servers",
+            ConfigValueFactory.fromAnyRef("localhost:9092")
+        )
+
+        val processor = object: CompactedProcessor<String, String> {
+            override val keyClass: Class<String>
+                get() = String::class.java
+            override val valueClass: Class<String>
+                get() = String::class.java
+
+            override fun onSnapshot(currentData: Map<String, String>) {
+                logger.info("Received snapshot: $currentData")
+            }
+
+            override fun onNext(newRecord: Record<String, String>, oldValue: String?, currentData: Map<String, String>) {
+                logger.info("Received new record: key = ${newRecord.key}, value = ${newRecord.value}")
+            }
+
+        }
+
+        val subscription = subscriptionFactory.createCompactedSubscription(SubscriptionConfig("test-group", "p2p.out.markers.state", 1), processor, kafkaBoostrapConfig)
+        logger.info("Starting subscription")
+        subscription.start()
+
+        Thread.sleep(360_000)
+        logger.info("Stopping subscription")
+        subscription.stop()
+    }
+
+    @Test
+    fun `test Kafka state and event topic - read state snapshot and process new events`() {
+        val subscriptionFactory = KafkaSubscriptionFactory(AvroSchemaRegistryImpl())
+        val kafkaBoostrapConfig = bootstrapConfig.withValue(
+            "messaging.kafka.common.bootstrap.servers",
+            ConfigValueFactory.fromAnyRef("localhost:9092")
+        )
+
+        val processor = object: StateAndEventProcessor<String, String, String> {
+            override val keyClass: Class<String>
+                get() = String::class.java
+
+            override fun onNext(state: String?, event: Record<String, String>): StateAndEventProcessor.Response<String> {
+                logger.info("Processing event: key=${event.key}, value=${event.value}")
+                return if (event.value != null) {
+                    return if (event.value == "add") {
+                        StateAndEventProcessor.Response(event.key, emptyList())
+                    } else if (event.value == "remove") {
+                        StateAndEventProcessor.Response(null, emptyList())
+                    } else {
+                        logger.info("Unexpected value: ${event.value}")
+                        StateAndEventProcessor.Response(null, emptyList())
+                    }
+                } else {
+                    logger.info("Unexpected null value for event")
+                    StateAndEventProcessor.Response(null, emptyList())
+                }
+            }
+
+            override val stateValueClass: Class<String>
+                get() = String::class.java
+            override val eventValueClass: Class<String>
+                get() = String::class.java
+
+        }
+        val listener = object: StateAndEventListener<String, String> {
+            override fun onPartitionSynced(states: Map<String, String>) {
+                logger.info("onPartitionsSynced: $states")
+            }
+
+            override fun onPartitionLost(states: Map<String, String>) {
+                logger.info("onPartitionsLost: $states")
+            }
+
+            override fun onPostCommit(updatedStates: Map<String, String?>) {
+                logger.info("onPostCommit: $updatedStates")
+            }
+
+        }
+
+        val subscription = subscriptionFactory.createStateAndEventSubscription(SubscriptionConfig("test-group", "p2p.out.markers", 1), processor, kafkaBoostrapConfig, listener)
+        logger.info("Starting subscription")
+        subscription.start()
+
+        Thread.sleep(360_000)
+        logger.info("Stopping subscription")
+        subscription.stop()
+    }
+
+    @Test
+    @Timeout(60)
+    fun `test Kafka state and event topic - write events`() {
+        val publisherFactory = CordaKafkaPublisherFactory(AvroSchemaRegistryImpl())
+        val kafkaBoostrapConfig = bootstrapConfig.withValue(
+            "messaging.kafka.common.bootstrap.servers",
+            ConfigValueFactory.fromAnyRef("localhost:9092")
+        )
+        val publisher = publisherFactory.createPublisher(PublisherConfig("test-publisher", 1), kafkaBoostrapConfig)
+
+        val baseNumber = 0
+        val numberOfRecords = 500
+
+        val initialRecords = (baseNumber..baseNumber+numberOfRecords).map { Record("p2p.out.markers", "key-$it", "add") }
+        publisher.publish(initialRecords).forEach { it.join() }
+
+        val tombstoneRecords = (baseNumber..baseNumber+numberOfRecords).map { Record("p2p.out.markers", "key-$it", "remove") }
+        publisher.publish(tombstoneRecords).forEach { it.join() }
     }
 
     private fun createLinkManager(subscriptionFactory: InMemSubscriptionFactory, publisherFactory: PublisherFactory, coordinatorFactory: LifecycleCoordinatorFactory, configReadService: ConfigurationReadService): LinkManager {

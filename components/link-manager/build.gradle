@@ -39,6 +39,10 @@ dependencies {
 
     integrationTestImplementation project(":components:gateway")
     integrationTestImplementation project(":libs:messaging:inmemory-messaging-impl")
+    integrationTestImplementation project(":libs:messaging:kafka-messaging-impl")
+    integrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
+    integrationTestImplementation project(":libs:schema-registry:schema-registry")
+    integrationTestImplementation platform("net.corda:corda-api:$cordaApiVersion")
     integrationTestImplementation platform("net.corda:corda-api:$cordaApiVersion")
     integrationTestImplementation project(":libs:configuration:configuration-schema:p2p")
     integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
@@ -50,6 +54,7 @@ dependencies {
     integrationTestImplementation project(":libs:configuration:configuration-write")
     integrationTestImplementation project(":libs:configuration:configuration-write-impl")
     integrationTestRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
+    testRuntimeOnly 'org.osgi:osgi.core'
 }
 
 sourceSets {
