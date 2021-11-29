@@ -115,6 +115,10 @@ open class TestBase {
                         "config.topic.name",
                         ConfigValueFactory.fromAnyRef(topicName)
                     )
+                    .withValue(
+                        "instance-id",
+                        ConfigValueFactory.fromAnyRef(1)
+                    )
                 it.bootstrapConfig(smartConfigFactory.create(bootstrapper))
             }
         }
