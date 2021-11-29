@@ -94,7 +94,7 @@ class InMemorySessionReplayer(
         }
 
         val message = MessageConverter.createLinkOutMessage(messageReplay.message, memberInfo, networkType)
-        logger.debug { "Replaying session message ${message.payload.javaClass} to session ${messageReplay.sessionId}." }
+        logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
         publisher.publish(listOf(Record(Schema.LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
         messageReplay.sentSessionMessageCallback(
             SessionManager.SessionKey(messageReplay.source, messageReplay.dest),
