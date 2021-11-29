@@ -148,7 +148,7 @@ docker run \
  -v "$(pwd)/applications/tools/p2p-test/configuration-publisher/docker-args-example.txt:/args.txt" \
  -v "$(pwd)/components/gateway/src/integration-test/resources/sslkeystore_alice.jks:/keystore.jks" \
  -v "$(pwd)/components/gateway/src/integration-test/resources/truststore.jks:/truststore.jks" \
- engineering-docker-dev.software.r3.com/corda-os-configuration-publisher:5.0.0.0-SNAPSHOT \
+ corda-os-docker-dev.software.r3.com/corda-os-configuration-publisher:5.0.0.0-SNAPSHOT \
  @/args.txt
 ```
 Please note:
@@ -168,7 +168,7 @@ docker run \
  --hostname www.alice.net \
  -v "$(pwd)/components/gateway/src/integration-test/resources/sslkeystore_alice.jks:/keystore.jks" \
  -v "$(pwd)/components/gateway/src/integration-test/resources/truststore.jks:/truststore.jks" \
- engineering-docker-dev.software.r3.com/corda-os-configuration-publisher:5.0.0.0-SNAPSHOT \
+ corda-os-docker-dev.software.r3.com/corda-os-configuration-publisher:5.0.0.0-SNAPSHOT \
  gateway \
  --port 24123
 ```
