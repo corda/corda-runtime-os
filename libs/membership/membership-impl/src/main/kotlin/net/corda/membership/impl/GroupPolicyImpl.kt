@@ -1,7 +1,7 @@
-package net.corda.membership.staticmemberlist
+package net.corda.membership.impl
 
 import net.corda.membership.GroupPolicy
-import net.corda.membership.staticmemberlist.GroupPolicyExtension.Companion.GROUP_ID
+import net.corda.membership.impl.GroupPolicyExtension.Companion.GROUP_ID
 
 class GroupPolicyImpl(private val map: Map<String, Any>) : GroupPolicy {
     override val groupId: String

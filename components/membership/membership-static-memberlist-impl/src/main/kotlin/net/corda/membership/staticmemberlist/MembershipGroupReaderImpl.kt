@@ -20,7 +20,16 @@ import net.corda.membership.identity.MemberInfoImpl
 import net.corda.membership.identity.converter.EndpointInfoConverter
 import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.membership.read.MembershipGroupReader
-import net.corda.membership.staticmemberlist.GroupPolicyExtension.Companion.staticMemberTemplate
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.ENDPOINT_PROTOCOL
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.ENDPOINT_URL
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.MEMBER_STATUS
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.ROTATED_KEY_ALIAS
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.STATIC_MODIFIED_TIME
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.STATIC_PLATFORM_VERSION
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.STATIC_SERIAL
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.STATIC_SOFTWARE_VERSION
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.X500NAME
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.staticMemberTemplate
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.identity.EndpointInfo
@@ -52,10 +61,6 @@ class MembershipGroupReaderImpl(
 
     override fun lookup(name: MemberX500Name): MemberInfo? = memberInfoList.find { it.name == name }
 
-    override fun getHistoricGroupParameters(version: String): GroupParameters? {
-        TODO("Not yet implemented")
-    }
-
     private fun parseMemberTemplate(): List<MemberInfo> {
         val members = mutableListOf<MemberInfo>()
         val converter = PropertyConverterImpl(
@@ -71,21 +76,21 @@ class MembershipGroupReaderImpl(
                 MemberInfoImpl(
                     memberProvidedContext = MemberContextImpl(
                         sortedMapOf(
-                            PARTY_NAME to member["x500Name"].toString(),
+                            PARTY_NAME to member[X500NAME].toString(),
                             PARTY_OWNING_KEY to keyEncodingService.encodeAsString(owningKey),
                             GROUP_ID to policy.groupId,
                             *convertPublicKeys(keyEncodingService, member, owningKey).toTypedArray(),
                             *convertEndpoints(member).toTypedArray(),
-                            SOFTWARE_VERSION to "5.0.0",
-                            PLATFORM_VERSION to "10",
-                            SERIAL to "1",
+                            SOFTWARE_VERSION to (member[STATIC_SOFTWARE_VERSION] ?: "5.0.0"),
+                            PLATFORM_VERSION to (member[STATIC_PLATFORM_VERSION] ?: "10"),
+                            SERIAL to (member[STATIC_SERIAL] ?: "1"),
                         ),
                         converter
                     ),
                     mgmProvidedContext = MGMContextImpl(
                         sortedMapOf(
-                            STATUS to member["memberStatus"].toString(),
-                            MODIFIED_TIME to Instant.now().toString(),
+                            STATUS to member[MEMBER_STATUS].toString(),
+                            MODIFIED_TIME to (member[STATIC_MODIFIED_TIME] ?: Instant.now().toString()),
                         ),
                         converter
                     )
@@ -97,19 +102,24 @@ class MembershipGroupReaderImpl(
 
     private fun convertEndpoints(member: Map<String, String>): List<Pair<String, String>> {
         val endpoints = mutableListOf<EndpointInfo>()
-        member.keys.filter { it.startsWith("endpointUrl") }.size.apply {
+        val endpointUrlIdentifier = ENDPOINT_URL.substringBefore("-")
+        member.keys.filter { it.startsWith(endpointUrlIdentifier) }.size.apply {
             for (index in 1..this) {
                 endpoints.add(
                     EndpointInfoImpl(
-                        member["endpointUrl-$index"].toString(),
-                        member["endpointProtocol-$index"]!!.toInt()
+                        member[String.format(ENDPOINT_URL, index)].toString(),
+                        member[String.format(ENDPOINT_PROTOCOL, index)]!!.toInt()
                     )
                 )
             }
         }
         val result = mutableListOf<Pair<String, String>>()
         for (index in endpoints.indices) {
-            result.add(Pair(String.format(MemberInfoExtension.URL_KEY, index), endpoints[index].url))
+            result.add(
+                Pair(
+                    String.format(MemberInfoExtension.URL_KEY, index),
+                    endpoints[index].url)
+            )
             result.add(
                 Pair(
                     String.format(MemberInfoExtension.PROTOCOL_VERSION, index),
@@ -126,7 +136,8 @@ class MembershipGroupReaderImpl(
         owningKey: PublicKey
     ): List<Pair<String, String>> {
         val identityKeys = mutableListOf(owningKey)
-        member.keys.filter { it.startsWith("rotatedKeyAlias") }.forEach { key ->
+        val historicKeyIdentifier = ROTATED_KEY_ALIAS.substringBefore("-")
+        member.keys.filter { it.startsWith(historicKeyIdentifier) }.forEach { key ->
             identityKeys.add(signingService.generateKeyPair(member[key].toString()))
         }
         return identityKeys.mapIndexed { index, identityKey ->

@@ -2,8 +2,17 @@ package net.corda.membership.staticmemberlist
 
 import net.corda.crypto.SigningService
 import net.corda.crypto.SigningService.Companion.EMPTY_CONTEXT
-import net.corda.membership.staticmemberlist.GroupPolicyExtension.Companion.GROUP_ID
-import net.corda.membership.staticmemberlist.GroupPolicyExtension.Companion.STATIC_MEMBER_TEMPLATE
+import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.impl.GroupPolicyExtension.Companion.GROUP_ID
+import net.corda.membership.impl.GroupPolicyImpl
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.ENDPOINT_PROTOCOL
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.ENDPOINT_URL
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.KEY_ALIAS
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.MEMBER_STATUS
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.ROTATED_KEY_ALIAS
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.STATIC_MEMBER_TEMPLATE
+import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.X500NAME
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.identity.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -21,37 +30,38 @@ class MembershipGroupReaderTest {
         private lateinit var membershipGroupReader: MembershipGroupReaderImpl
         private val keyEncodingService = Mockito.mock(KeyEncodingService::class.java)
         private val knownKey = Mockito.mock(PublicKey::class.java)
-        val signingService: SigningService = Mockito.mock(SigningService::class.java)
+        private const val knownKeyAsString = "1234"
+        private val signingService: SigningService = Mockito.mock(SigningService::class.java)
         private val staticMemberTemplate: List<Map<String, String>> =
             listOf(
                 mapOf(
-                    "x500Name" to "C=GB, L=London, O=Alice",
-                    "keyAlias" to "alice-alias",
-                    "rotatedKeyAlias-1" to "alice-historic-alias-1",
-                    "memberStatus" to "ACTIVE",
-                    "endpointUrl-1" to "https://alice.corda5.r3.com:10000",
-                    "endpointProtocol-1" to "1"
+                    X500NAME to "C=GB, L=London, O=Alice",
+                    KEY_ALIAS to "alice-alias",
+                    String.format(ROTATED_KEY_ALIAS, 1) to "alice-historic-alias-1",
+                    MEMBER_STATUS to MEMBER_STATUS_ACTIVE,
+                    String.format(ENDPOINT_URL, 1) to "https://alice.corda5.r3.com:10000",
+                    String.format(ENDPOINT_PROTOCOL, 1) to "1"
                 ),
                 mapOf(
-                    "x500Name" to "C=GB, L=London, O=Bob",
-                    "keyAlias" to "bob-alias",
-                    "rotatedKeyAlias-1" to "bob-historic-alias-1",
-                    "rotatedKeyAlias-2" to "bob-historic-alias-2",
-                    "memberStatus" to "ACTIVE",
-                    "endpointUrl-1" to "https://bob.corda5.r3.com:10000",
-                    "endpointProtocol-1" to "1"
+                    X500NAME to "C=GB, L=London, O=Bob",
+                    KEY_ALIAS to "bob-alias",
+                    String.format(ROTATED_KEY_ALIAS, 1) to "bob-historic-alias-1",
+                    String.format(ROTATED_KEY_ALIAS, 2) to "bob-historic-alias-2",
+                    MEMBER_STATUS to MEMBER_STATUS_ACTIVE,
+                    String.format(ENDPOINT_URL, 1) to "https://bob.corda5.r3.com:10000",
+                    String.format(ENDPOINT_PROTOCOL, 1) to "1"
                 ),
                 mapOf(
-                    "x500Name" to "C=GB, L=London, O=Charlie",
-                    "keyAlias" to "charlie-alias",
-                    "memberStatus" to "SUSPENDED",
-                    "endpointUrl-1" to "https://charlie.corda5.r3.com:10000",
-                    "endpointProtocol-1" to "1",
-                    "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
-                    "endpointProtocol-2" to "1"
+                    X500NAME to "C=GB, L=London, O=Charlie",
+                    KEY_ALIAS to "charlie-alias",
+                    MEMBER_STATUS to MEMBER_STATUS_SUSPENDED,
+                    String.format(ENDPOINT_URL, 1) to "https://charlie.corda5.r3.com:10000",
+                    String.format(ENDPOINT_PROTOCOL, 1) to "1",
+                    String.format(ENDPOINT_URL, 2) to "https://charlie-dr.corda5.r3.com:10001",
+                    String.format(ENDPOINT_PROTOCOL, 2) to "1"
                 )
             )
-        val groupPolicy = GroupPolicyImpl(
+        private val groupPolicy = GroupPolicyImpl(
             mapOf(
                 GROUP_ID to "8bede5ed-257e-4f6b-bfd7-26bb3b4f7715",
                 STATIC_MEMBER_TEMPLATE to staticMemberTemplate
@@ -65,20 +75,20 @@ class MembershipGroupReaderTest {
                 keyEncodingService.decodePublicKey(any<ByteArray>())
             ).thenReturn(Mockito.mock(PublicKey::class.java))
             whenever(
-                keyEncodingService.decodePublicKey(eq("1234".toByteArray()))
+                keyEncodingService.decodePublicKey(eq(knownKeyAsString.toByteArray()))
             ).thenReturn(knownKey)
             whenever(
                 keyEncodingService.decodePublicKey(any<String>())
             ).thenReturn(Mockito.mock(PublicKey::class.java))
             whenever(
-                keyEncodingService.decodePublicKey(eq("1234"))
+                keyEncodingService.decodePublicKey(eq(knownKeyAsString))
             ).thenReturn(knownKey)
             whenever(
                 keyEncodingService.encodeAsString(any())
             ).thenReturn("1")
             whenever(
                 keyEncodingService.encodeAsString(knownKey)
-            ).thenReturn("1234")
+            ).thenReturn(knownKeyAsString)
             whenever(
                 signingService.generateKeyPair(any(), eq(EMPTY_CONTEXT))
             ).thenReturn(Mockito.mock(PublicKey::class.java))
@@ -98,8 +108,9 @@ class MembershipGroupReaderTest {
 
     @Test
     fun `lookup using valid member name successfully returns memberinfo`() {
-        membershipGroupReader.lookup(MemberX500Name("Bob", "London", "GB")).apply {
-            assertEquals((MemberX500Name("Bob", "London", "GB")), this?.name)
+        val bob = MemberX500Name("Bob", "London", "GB")
+        membershipGroupReader.lookup(bob).apply {
+            assertEquals(bob, this?.name)
         }
     }
 
@@ -112,7 +123,7 @@ class MembershipGroupReaderTest {
 
     @Test
     fun `lookup using valid public key hash successfully returns memberinfo`() {
-        membershipGroupReader.lookup("1234".toByteArray()).apply {
+        membershipGroupReader.lookup(knownKeyAsString.toByteArray()).apply {
             assertEquals(MemberX500Name("Alice", "London", "GB"), this?.name)
         }
     }
