@@ -20,6 +20,7 @@ import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.schema.Schema
+import net.corda.v5.base.util.debug
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
@@ -170,6 +171,7 @@ internal class OutboundMessageHandler(
     }
 
     private fun sendMessage(destinationInfo: DestinationInfo, gatewayMessage: GatewayMessage): CompletableFuture<HttpResponse> {
+        logger.debug { "Sending message ${gatewayMessage.payload.javaClass} (${gatewayMessage.id}) to $destinationInfo." }
         return connectionManager.acquire(destinationInfo).write(gatewayMessage.toByteBuffer().array())
     }
 
