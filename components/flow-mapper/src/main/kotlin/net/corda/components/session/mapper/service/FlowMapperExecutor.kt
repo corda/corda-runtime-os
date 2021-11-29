@@ -7,7 +7,6 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.ScheduleCleanup
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -97,7 +96,6 @@ class FlowMapperExecutor(
 
         val outputTopic = getOutputTopic(messageDirection)
 
-
         when (sessionEventPayload) {
             is SessionInit -> {
                 if (state == null) {
@@ -112,9 +110,6 @@ class FlowMapperExecutor(
                         FlowMapperStateType.OPEN
                     )
                     outputEvents.add(Record(outputTopic, outputRecordKey, outputRecordValue))
-                    if (messageDirection == MessageDirection.INBOUND) {
-                        outputEvents.add(Record(p2pOutTopic, counterpartySessionId, FlowEvent(null, SessionAck(sessionEvent.sequenceNum))))
-                    }
                 } else {
                     //duplicate
                 }
@@ -137,9 +132,6 @@ class FlowMapperExecutor(
                 } else {
                     val recordKey = getRecordKey(state, messageDirection)
                     outputEvents.add(Record(outputTopic, recordKey, message))
-                    if (messageDirection == MessageDirection.INBOUND) {
-                        outputEvents.add(Record(p2pOutTopic, state.counterpartySessionId, FlowEvent(null, SessionAck(sessionEvent.sequenceNum))))
-                    }
                 }
             }
         }
