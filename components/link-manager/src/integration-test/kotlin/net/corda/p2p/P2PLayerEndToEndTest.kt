@@ -78,6 +78,9 @@ class P2PLayerEndToEndTest {
         .withValue(
             "config.topic.name",
             ConfigValueFactory.fromAnyRef(CONFIG_TOPIC_NAME)
+        ).withValue(
+            "instance-id",
+            ConfigValueFactory.fromAnyRef(2)
         ))
 
     private val hostA = Host("www.alice.net", 10500, "O=Alice, L=London, C=GB", "sslkeystore_alice", "truststore")
