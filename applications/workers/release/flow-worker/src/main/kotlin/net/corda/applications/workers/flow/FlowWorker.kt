@@ -1,6 +1,7 @@
 package net.corda.applications.workers.flow
 
 import net.corda.osgi.api.Application
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 import picocli.CommandLine
 import java.io.File
@@ -9,6 +10,10 @@ import java.io.File
 @Component(service = [Application::class])
 @Suppress("unused")
 class FlowWorker: Application {
+    private companion object {
+        private val logger = contextLogger()
+    }
+
     private val healthProvider = HealthProvider()
 
     init {
@@ -17,7 +22,7 @@ class FlowWorker: Application {
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
-        println("flow worker starting")
+        logger.info("flow worker starting")
 
         // We comment this out for now, to avoid having to pass in any config.
 //        val parameters = CliParameters()
@@ -48,8 +53,8 @@ class CliParameters {
     lateinit var instanceId: String
 }
 
-// TODO - Implement Docker-friendly logging.
-    // TODO - Allow default Docker-friendly logging to be overridden.
+// TODO - Allow logging to be redirected away from console.
+// TODO - Allow setting of logging levels.
 
 // TODO - Make this part of the common worker libraries.
 /**

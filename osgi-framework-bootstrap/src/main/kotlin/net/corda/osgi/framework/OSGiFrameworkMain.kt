@@ -2,6 +2,10 @@ package net.corda.osgi.framework
 
 import org.slf4j.bridge.SLF4JBridgeHandler
 import net.corda.osgi.framework.OSGiFrameworkMain.Companion.main
+import net.corda.v5.base.util.contextLogger
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.core.LoggerContext
+import org.apache.logging.log4j.core.appender.ConsoleAppender
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 
@@ -34,12 +38,12 @@ class OSGiFrameworkMain {
         /**
          * Full qualified name of the OSGi framework factory should be part of the class path.
          */
-        const val FRAMEWORK_FACTORY_FQN = "org.apache.felix.framework.FrameworkFactory"
+        private const val FRAMEWORK_FACTORY_FQN = "org.apache.felix.framework.FrameworkFactory"
 
         /**
          * Prefix of the temporary directory used as bundle cache.
          */
-        const val FRAMEWORK_STORAGE_PREFIX = "osgi-cache"
+        private const val FRAMEWORK_STORAGE_PREFIX = "osgi-cache"
 
         /**
          * Wait for stop of the OSGi framework, without timeout.
@@ -88,6 +92,11 @@ class OSGiFrameworkMain {
          */
         @JvmStatic
         fun main(args: Array<String>) {
+            // TODO - Need to allow this to be disabled using a config flag.
+            alsoLogToStdout()
+
+            contextLogger().info("good omens only jjj")
+
             /**
              * `java.util.logging` logs directly to the console for Apache Aries and Liquibase (at least),
              *  but we can intercept and redirect that here to use our logger.
@@ -147,4 +156,12 @@ class OSGiFrameworkMain {
         }
 
     } //~ companion object
+}
+
+/** Adds stdout as the destination for the root logger's output. */
+private fun alsoLogToStdout() {
+    val loggerContext = LogManager.getContext(false) as LoggerContext
+    val appender = loggerContext.configuration.getAppender<ConsoleAppender>("Console")
+    loggerContext.configuration.rootLogger.addAppender(appender, null, null)
+    loggerContext.updateLoggers()
 }
