@@ -38,7 +38,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
         val future = CompletableFuture<Unit>()
         readyFuture.set(future)
         subscription.start()
-        resources.keep (subscription)
+        resources.keep { subscription.stop() }
         return future
     }
 

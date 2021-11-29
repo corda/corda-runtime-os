@@ -41,20 +41,23 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutFro
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAck
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAuthenticatedMessageAndKey
 import net.corda.p2p.linkmanager.sessions.SessionManager
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.markers.AppMessageMarker
-import net.corda.p2p.schema.Schema
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.schema.Schema
 import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.util.*
 import java.time.Instant
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
 
@@ -127,32 +130,34 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         instanceId
     ) { outboundMessageProcessor.processAuthenticatedMessage(it, true) }
 
+    private val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
+        SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, instanceId),
+        InboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
+        configuration,
+        partitionAssignmentListener = inboundAssignmentListener
+    )
+
+    private val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
+        SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, instanceId),
+        outboundMessageProcessor,
+        configuration,
+        partitionAssignmentListener = null
+    )
+
     @VisibleForTesting
     internal fun createInboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()
         inboundAssigned.set(future)
-        val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, instanceId),
-            InboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
-            configuration,
-            inboundAssignmentListener
-        )
         inboundMessageSubscription.start()
-        resources.keep(inboundMessageSubscription)
+        resources.keep { inboundMessageSubscription.stop() }
         //We complete the future inside inboundAssignmentListener.
         return future
     }
 
     @VisibleForTesting
     internal fun createOutboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, instanceId),
-            outboundMessageProcessor,
-            configuration,
-            null
-        )
         outboundMessageSubscription.start()
-        resources.keep(outboundMessageSubscription)
+        resources.keep { outboundMessageSubscription.stop() }
         val outboundReady = CompletableFuture<Unit>()
         outboundReady.complete(Unit)
         return outboundReady
@@ -219,6 +224,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
+            logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination.toHoldingIdentity()}." }
             return if (linkManagerHostingMap.isHostedLocally(message.header.destination.toHoldingIdentity())) {
                 listOf(Record(P2P_IN_TOPIC, generateKey(), AppMessage(message)))
             } else {
@@ -237,14 +243,28 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             messageAndKey: AuthenticatedMessageAndKey,
             isReplay: Boolean = false
         ): List<Record<String, *>> {
+            logger.trace{ "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
+                    "to ${messageAndKey.message.header.destination.toHoldingIdentity()}." }
             val isHostedLocally = linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toHoldingIdentity())
             return if (isHostedLocally) {
                 mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
             } else {
                 when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
-                    is SessionState.NewSessionNeeded -> recordsForNewSession(state)
-                    is SessionState.SessionEstablished -> recordsForSessionEstablished(state, messageAndKey)
-                    is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> emptyList()
+                    is SessionState.NewSessionNeeded -> {
+                        logger.trace { "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
+                                "Initiating a new one.." }
+                        recordsForNewSession(state)
+                    }
+                    is SessionState.SessionEstablished -> {
+                        logger.trace { "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
+                                " Using this to send outbound message." }
+                        recordsForSessionEstablished(state, messageAndKey)
+                    }
+                    is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> {
+                        logger.trace { "Session already pending with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
+                                "Message queued until session is established." }
+                        emptyList()
+                    }
                 }
             } + if (!isReplay) recordsForMarkers(messageAndKey, isHostedLocally) else emptyList()
         }
@@ -348,10 +368,14 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     extractPayload(sessionDirection.session, sessionId, message, MessageAck::fromByteBuffer)?.let {
                         when (val ack = it.ack) {
                             is AuthenticatedMessageAck -> {
+                                logger.debug { "Processing ack for message ${ack.messageId} from session $sessionId." }
                                 sessionManager.messageAcknowledged(sessionId)
                                 messages.add(makeMarkerForAckMessage(ack))
                             }
-                            is HeartbeatMessageAck -> sessionManager.messageAcknowledged(sessionId)
+                            is HeartbeatMessageAck -> {
+                                logger.debug { "Processing heartbeat ack from session $sessionId." }
+                                sessionManager.messageAcknowledged(sessionId)
+                            }
                             else -> logger.warn("Received an inbound message with unexpected type for SessionId = $sessionId.")
                         }
                     }
@@ -374,14 +398,17 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             extractPayload(session, sessionId, message, DataMessagePayload::fromByteBuffer)?.let {
                 when (val innerMessage = it.message) {
                     is HeartbeatMessage -> {
+                        logger.debug { "Processing heartbeat message from session ${session.sessionId}" }
                         makeAckMessageForHeartbeatMessage(sessionKey, session)?.let { ack -> messages.add(ack) }
                     }
                     is AuthenticatedMessageAndKey -> {
+                        logger.debug { "Processing message ${innerMessage.message.header.messageId} " +
+                                "of type ${innerMessage.message.javaClass} from session ${session.sessionId}" }
                         messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
                         makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
                         sessionManager.inboundSessionEstablished(sessionId)
                     }
-                    else -> logger.warn("The message was discarded.")
+                    else -> logger.warn("Unknown incoming message type: ${innerMessage.javaClass}. The message was discarded.")
                 }
             }
             return messages
@@ -456,6 +483,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         configuration: SmartConfig,
         instanceId: Int
     ): PendingSessionMessageQueues, LifecycleWithDominoTile {
+
+        companion object {
+            private val logger = contextLogger()
+        }
+
         private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<AuthenticatedMessageAndKey>>()
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
@@ -495,6 +527,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 val records = mutableListOf<Record<String, *>>()
                 while (queuedMessages.isNotEmpty()) {
                     val message = queuedMessages.poll()
+                    logger.debug { "Sending queued message ${message.message.header.messageId} " +
+                            "to newly established session ${session.sessionId} with ${key.responderId}" }
                     records.addAll(recordsForSessionEstablished(sessionManager, networkMap, session, message))
                 }
                 publisher.publish(records)
