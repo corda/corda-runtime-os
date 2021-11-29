@@ -2,8 +2,14 @@ package net.corda.membership.staticmemberlist
 
 import net.corda.crypto.SigningService
 import net.corda.crypto.SigningService.Companion.EMPTY_CONTEXT
+import net.corda.membership.identity.EndpointInfoImpl
 import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.identity.MemberInfoExtension.Companion.endpoints
+import net.corda.membership.identity.MemberInfoExtension.Companion.groupId
+import net.corda.membership.identity.MemberInfoExtension.Companion.modifiedTime
+import net.corda.membership.identity.MemberInfoExtension.Companion.softwareVersion
+import net.corda.membership.identity.MemberInfoExtension.Companion.status
 import net.corda.membership.impl.GroupPolicyExtension.Companion.GROUP_ID
 import net.corda.membership.impl.GroupPolicyImpl
 import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.ENDPOINT_PROTOCOL
@@ -16,6 +22,7 @@ import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Compa
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.identity.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -103,6 +110,51 @@ class MembershipGroupReaderTest {
                 signingService
             )
 
+        }
+    }
+
+    @Test
+    fun `static member list is parsed correctly into memberinfo list`() {
+        listOf(
+            MemberX500Name("Alice", "London", "GB"),
+            MemberX500Name("Bob", "London", "GB"),
+            MemberX500Name("Charlie", "London", "GB")
+        ).forEach { name ->
+            val member = membershipGroupReader.lookup(name)!!
+            when (member.name.organisation) {
+                "Alice" -> {
+                    assertEquals(2, member.identityKeys.size)
+                    assertEquals(MEMBER_STATUS_ACTIVE, member.status)
+                    assertEquals(
+                        listOf(EndpointInfoImpl("https://alice.corda5.r3.com:10000", 1)),
+                        member.endpoints
+                    )
+                }
+                "Bob" -> {
+                    assertEquals(3, member.identityKeys.size)
+                    assertEquals(MEMBER_STATUS_ACTIVE, member.status)
+                    assertEquals(
+                        listOf(EndpointInfoImpl("https://bob.corda5.r3.com:10000", 1)),
+                        member.endpoints
+                    )
+                }
+                "Charlie" -> {
+                    assertEquals(1, member.identityKeys.size)
+                    assertEquals(MEMBER_STATUS_SUSPENDED, member.status)
+                    assertEquals(
+                        listOf(
+                            EndpointInfoImpl("https://charlie.corda5.r3.com:10000", 1),
+                            EndpointInfoImpl("https://charlie-dr.corda5.r3.com:10001", 1)
+                        ),
+                        member.endpoints
+                    )
+                }
+            }
+            assertEquals("8bede5ed-257e-4f6b-bfd7-26bb3b4f7715", member.groupId)
+            assertEquals("5.0.0", member.softwareVersion)
+            assertEquals(10, member.platformVersion)
+            assertEquals(1, member.serial)
+            assertNotNull(member.modifiedTime)
         }
     }
 

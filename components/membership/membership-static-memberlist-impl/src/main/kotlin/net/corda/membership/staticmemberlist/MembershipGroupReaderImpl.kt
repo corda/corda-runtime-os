@@ -9,6 +9,7 @@ import net.corda.membership.identity.MGMContextImpl
 import net.corda.membership.identity.MemberContextImpl
 import net.corda.membership.identity.MemberInfoExtension
 import net.corda.membership.identity.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.identity.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.identity.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.identity.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.identity.MemberInfoExtension.Companion.PARTY_OWNING_KEY
@@ -89,7 +90,7 @@ class MembershipGroupReaderImpl(
                     ),
                     mgmProvidedContext = MGMContextImpl(
                         sortedMapOf(
-                            STATUS to member[MEMBER_STATUS].toString(),
+                            STATUS to (member[MEMBER_STATUS] ?: MEMBER_STATUS_ACTIVE),
                             MODIFIED_TIME to (member[STATIC_MODIFIED_TIME] ?: Instant.now().toString()),
                         ),
                         converter
