@@ -20,7 +20,7 @@ The Gradle task `publishOSGiImage` publishes a Docker Image which can be run loc
 
 ### Running the container
 ```
-docker run -it -p 8888:8888 -e "JAVA_TOOL_OPTIONS=-DinstanceId=1" engineering-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
+docker run -it -p 8888:8888 -e "JAVA_TOOL_OPTIONS=-DinstanceId=1" corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
 ```
 
 Then Swagger UI can be accessed using: https://localhost:8888/api/v1/swagger
@@ -29,7 +29,7 @@ Then Swagger UI can be accessed using: https://localhost:8888/api/v1/swagger
 To debug a running container we can use the `JAVA_TOOL_OPTIONS` environment variable to pass arguments at runtime e.g.
 
 ```
-docker run -it -p 8888:8888 -p 5005:5005 -e "JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005 -DinstanceId=1" engineering-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
+docker run -it -p 8888:8888 -p 5005:5005 -e "JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005 -DinstanceId=1" corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
 ```
 
 Execution will suspend and wait for the remote debugger to be connected to port 5005. The developers can also put breakpoints
