@@ -7,6 +7,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -40,7 +41,7 @@ class FlowMapperExecutor(
     override fun onNext(state: FlowMapperState?, event: Record<String, FlowEvent>): StateAndEventProcessor
     .Response<FlowMapperState> {
         log.debug { "FlowMapperProcessor processor: $event" }
-        val message = event.value ?: return StateAndEventProcessor.Response(null, emptyList())
+        val message = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
 
         return when (val flowEvent = message.payload) {
             is SessionEvent -> {
@@ -84,22 +85,24 @@ class FlowMapperExecutor(
     }
 
     private fun processSessionEvent(
-        flowEvent: SessionEvent,
+        sessionEvent: SessionEvent,
         state: FlowMapperState?,
         message: FlowEvent,
         key: String
     ): Pair<FlowMapperState?, MutableList<Record<*, *>>> {
         var flowMapperState = state
         val outputEvents = mutableListOf<Record<*, *>>()
-        val messageDirection = flowEvent.messageDirection
-        val sessionEventPayload = flowEvent.payload
+        val messageDirection = sessionEvent.messageDirection
+        val sessionEventPayload = sessionEvent.payload
 
         val outputTopic = getOutputTopic(messageDirection)
+
+
         when (sessionEventPayload) {
             is SessionInit -> {
                 if (state == null) {
                     val (ourSessionId, counterpartySessionId, flowKey, outputRecordKey, outputRecordValue) =
-                        getSessionInitState(messageDirection, sessionEventPayload, flowEvent.initiatedIdentity)
+                        getSessionInitState(messageDirection, sessionEventPayload, sessionEvent.initiatedIdentity)
 
                     flowMapperState = FlowMapperState(
                         ourSessionId,
@@ -109,6 +112,9 @@ class FlowMapperExecutor(
                         FlowMapperStateType.OPEN
                     )
                     outputEvents.add(Record(outputTopic, outputRecordKey, outputRecordValue))
+                    if (messageDirection == MessageDirection.INBOUND) {
+                        outputEvents.add(Record(p2pOutTopic, counterpartySessionId, FlowEvent(null, SessionAck(sessionEvent.sequenceNum))))
+                    }
                 } else {
                     //duplicate
                 }
@@ -131,6 +137,9 @@ class FlowMapperExecutor(
                 } else {
                     val recordKey = getRecordKey(state, messageDirection)
                     outputEvents.add(Record(outputTopic, recordKey, message))
+                    if (messageDirection == MessageDirection.INBOUND) {
+                        outputEvents.add(Record(p2pOutTopic, state.counterpartySessionId, FlowEvent(null, SessionAck(sessionEvent.sequenceNum))))
+                    }
                 }
             }
         }
@@ -187,7 +196,7 @@ class FlowMapperExecutor(
                 )
             }
             else -> {
-                throw IllegalArgumentException()
+                throw IllegalArgumentException("TODO replace with new exceptions")
             }
         }
     }
@@ -206,7 +215,7 @@ class FlowMapperExecutor(
                 state.counterpartySessionId
             }
             else -> {
-                throw IllegalArgumentException()
+                throw IllegalArgumentException("TODO replace with new exceptions")
             }
         }
     }
@@ -225,7 +234,7 @@ class FlowMapperExecutor(
                 p2pOutTopic
             }
             else -> {
-                throw IllegalArgumentException()
+                throw IllegalArgumentException("TODO replace with new exceptions")
             }
         }
 
