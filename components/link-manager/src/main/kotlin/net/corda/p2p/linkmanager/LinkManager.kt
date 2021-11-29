@@ -41,20 +41,20 @@ import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutFro
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAck
 import net.corda.p2p.linkmanager.messaging.MessageConverter.Companion.linkOutMessageFromAuthenticatedMessageAndKey
 import net.corda.p2p.linkmanager.sessions.SessionManager
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
-import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.markers.AppMessageMarker
-import net.corda.p2p.schema.Schema
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import net.corda.p2p.schema.Schema
 import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
 import net.corda.v5.base.annotations.VisibleForTesting
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.util.*
 import java.time.Instant
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
 
@@ -127,32 +127,34 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         instanceId
     ) { outboundMessageProcessor.processAuthenticatedMessage(it, true) }
 
+    private val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
+        SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, instanceId),
+        InboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
+        configuration,
+        partitionAssignmentListener = inboundAssignmentListener
+    )
+
+    private val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
+        SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, instanceId),
+        outboundMessageProcessor,
+        configuration,
+        partitionAssignmentListener = null
+    )
+
     @VisibleForTesting
     internal fun createInboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()
         inboundAssigned.set(future)
-        val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, instanceId),
-            InboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
-            configuration,
-            inboundAssignmentListener
-        )
         inboundMessageSubscription.start()
-        resources.keep(inboundMessageSubscription)
+        resources.keep { inboundMessageSubscription.stop() }
         //We complete the future inside inboundAssignmentListener.
         return future
     }
 
     @VisibleForTesting
     internal fun createOutboundResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-            SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, instanceId),
-            outboundMessageProcessor,
-            configuration,
-            null
-        )
         outboundMessageSubscription.start()
-        resources.keep(outboundMessageSubscription)
+        resources.keep { outboundMessageSubscription.stop() }
         val outboundReady = CompletableFuture<Unit>()
         outboundReady.complete(Unit)
         return outboundReady

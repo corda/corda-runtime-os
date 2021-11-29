@@ -28,7 +28,7 @@ import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.v5.base.util.contextLogger
 import java.nio.ByteBuffer
-import java.util.UUID
+import java.util.*
 
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
