@@ -10,7 +10,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':applications:common')
-    implementation project(':osgi-framework-api')
+    implementation project(':applications:workers:worker-common')
     implementation project(':processors:flow-processor')
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
