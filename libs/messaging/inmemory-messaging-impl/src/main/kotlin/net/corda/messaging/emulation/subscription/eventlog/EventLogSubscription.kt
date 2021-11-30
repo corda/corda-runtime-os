@@ -1,5 +1,8 @@
 package net.corda.messaging.emulation.subscription.eventlog
 
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
@@ -19,12 +22,14 @@ import kotlin.concurrent.withLock
  * @property processor - The processor to feed the event record to.
  * @property partitionAssignmentListener - Optional listener to partition assignments.
  * @property topicService - A topic service to supply events records.
+ * @property lifecycleCoordinatorFactory used to create the lifecycleCoordinator object that external users can follow for updates
  */
 class EventLogSubscription<K : Any, V : Any>(
     internal val subscriptionConfig: SubscriptionConfig,
     internal val processor: EventLogProcessor<K, V>,
     internal val partitionAssignmentListener: PartitionAssignmentListener?,
     internal val topicService: TopicService,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
     companion object {
@@ -33,12 +38,30 @@ class EventLogSubscription<K : Any, V : Any>(
 
     private var currentConsumer: Consumption? = null
     private val lock = ReentrantLock()
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "${subscriptionConfig.groupName}-EventLogSubscription-${subscriptionConfig.eventTopic}",
+            subscriptionConfig.instanceId.toString()
+        )
+    ) { _, _ -> }
 
     override fun stop() {
         logger.debug { "Stopping event log subscription with config: $subscriptionConfig" }
+        stopConsumer()
+        lifecycleCoordinator.stop()
+    }
+
+    override fun close() {
+        logger.debug { "Closing event log subscription with config: $subscriptionConfig" }
+        stopConsumer()
+        lifecycleCoordinator.close()
+    }
+
+    private fun stopConsumer() {
         lock.withLock {
             currentConsumer?.stop()
             currentConsumer = null
+            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         }
     }
 
@@ -47,6 +70,8 @@ class EventLogSubscription<K : Any, V : Any>(
         lock.withLock {
             if (currentConsumer == null) {
                 val consumer = EventLogConsumer(this)
+                lifecycleCoordinator.start()
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                 currentConsumer = topicService.createConsumption(consumer)
             }
         }
@@ -54,4 +79,6 @@ class EventLogSubscription<K : Any, V : Any>(
 
     override val isRunning: Boolean
         get() = currentConsumer?.isRunning ?: false
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
 }

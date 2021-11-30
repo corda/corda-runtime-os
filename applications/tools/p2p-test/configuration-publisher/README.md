@@ -79,11 +79,11 @@ To run the application use:
                          Local hosted identity (in the form of <x500Name>:
                            <groupId>)
       --maxMessageSize=<maxMessageSize>
-                         The maximal message size
-                           Default: 500
-      --messageReplayPeriodSecs=<messageReplayPeriodSecs>
-                         message replay period in seconds
-                           Default: 2
+                         The maximal message size in bytes
+                           Default: 1_000_000
+      --messageReplayPeriodMilliSecs=<messageReplayPeriodMilliSecs>
+                         message replay period in milliseconds
+                           Default: 2000
       --protocolMode=<protocolModes>
                          Supported protocol mode (out of: AUTHENTICATION_ONLY,
                            AUTHENTICATED_ENCRYPTION)
@@ -148,7 +148,7 @@ docker run \
  -v "$(pwd)/applications/tools/p2p-test/configuration-publisher/docker-args-example.txt:/args.txt" \
  -v "$(pwd)/components/gateway/src/integration-test/resources/sslkeystore_alice.jks:/keystore.jks" \
  -v "$(pwd)/components/gateway/src/integration-test/resources/truststore.jks:/truststore.jks" \
- engineering-docker-dev.software.r3.com/corda-os-configuration-publisher:5.0.0.0-SNAPSHOT \
+ corda-os-docker-dev.software.r3.com/corda-os-configuration-publisher:5.0.0.0-SNAPSHOT \
  @/args.txt
 ```
 Please note:
@@ -168,7 +168,7 @@ docker run \
  --hostname www.alice.net \
  -v "$(pwd)/components/gateway/src/integration-test/resources/sslkeystore_alice.jks:/keystore.jks" \
  -v "$(pwd)/components/gateway/src/integration-test/resources/truststore.jks:/truststore.jks" \
- engineering-docker-dev.software.r3.com/corda-os-configuration-publisher:5.0.0.0-SNAPSHOT \
+ corda-os-docker-dev.software.r3.com/corda-os-configuration-publisher:5.0.0.0-SNAPSHOT \
  gateway \
  --port 24123
 ```

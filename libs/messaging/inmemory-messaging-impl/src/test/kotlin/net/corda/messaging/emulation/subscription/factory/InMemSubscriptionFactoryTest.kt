@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 
 class InMemSubscriptionFactoryTest {
-    private val factory = InMemSubscriptionFactory(mock(),mock())
+    private val factory = InMemSubscriptionFactory(mock(), mock(), mock())
     private val subscriptionConfig = SubscriptionConfig("topic", "group")
 
     @Test

@@ -62,7 +62,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 class P2PLayerEndToEndTest {
@@ -158,8 +158,8 @@ class P2PLayerEndToEndTest {
 
     private fun createLinkManager(subscriptionFactory: InMemSubscriptionFactory, publisherFactory: PublisherFactory, coordinatorFactory: LifecycleCoordinatorFactory, configReadService: ConfigurationReadService): LinkManager {
         return LinkManager(subscriptionFactory, publisherFactory, coordinatorFactory, configReadService,
-            SmartConfigImpl.empty(), 1, StubNetworkMap(coordinatorFactory, subscriptionFactory, 1),
-            ConfigBasedLinkManagerHostingMap(configReadService, coordinatorFactory), StubCryptoService(coordinatorFactory, subscriptionFactory, 1)
+            SmartConfigImpl.empty(), 1, StubNetworkMap(coordinatorFactory, subscriptionFactory, 1, bootstrapConfig),
+            ConfigBasedLinkManagerHostingMap(configReadService, coordinatorFactory), StubCryptoService(coordinatorFactory, subscriptionFactory, 1, bootstrapConfig)
         )
     }
 
@@ -284,9 +284,9 @@ class P2PLayerEndToEndTest {
         )
         val keyPair = KeyPairGenerator.getInstance("EC").genKeyPair()
         val topicService = TopicServiceImpl()
-        val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl())
-        val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl())
         val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
+        val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
+        val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, ConfigReaderFactoryImpl(subscriptionFactory, SmartConfigFactoryImpl()))
         val configWriter = publisherFactory.createPublisher(PublisherConfig("config-writer")).let {
             ConfigWriterImpl(CONFIG_TOPIC_NAME, it)

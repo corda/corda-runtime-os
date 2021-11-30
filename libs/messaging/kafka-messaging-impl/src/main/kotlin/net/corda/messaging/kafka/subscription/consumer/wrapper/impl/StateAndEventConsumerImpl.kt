@@ -17,6 +17,7 @@ import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 
+@Suppress("LongParameterList")
 class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val config: StateAndEventConfig,
     override val eventConsumer: CordaKafkaConsumer<K, E>,

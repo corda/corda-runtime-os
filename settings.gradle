@@ -119,6 +119,7 @@ include 'components:install:install-legacy:split-packages-two'
 include 'components:install:install-legacy:split-packages-two:library-two'
 include 'components:install:test-resources:contract-cpk'
 include 'components:install:test-resources:workflow-cpk'
+include 'components:install:test-resources:system-cpk'
 include 'components:kafka-topic-admin'
 include 'components:link-manager'
 include 'components:membership:membership-impl'
@@ -128,6 +129,7 @@ include 'components:permissions:permission-service'
 include 'components:permissions:permission-storage-reader-service'
 include 'components:permissions:permission-storage-writer-service'
 include 'components:permissions:permission-validation-service'
+include 'components:permissions:permission-rpc-ops-impl'
 include 'components:sandbox:sandbox-service'
 include 'libs:configuration:configuration-core'
 include 'libs:configuration:configuration-read'
@@ -171,16 +173,17 @@ include 'libs:kotlin-reflection:kotlin-reflection-test-example'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
 include 'libs:lifecycle:registry'
-include 'libs:membership:membership'
 include 'libs:membership:membership-application'
 include 'libs:membership:membership-conversion-impl'
 include 'libs:membership:membership-identity-impl'
+include 'libs:membership:membership-internal'
 include 'libs:messaging:messaging'
 include 'libs:messaging:db-messaging-impl'
 include 'libs:messaging:kafka-messaging-impl'
 include 'libs:messaging:inmemory-messaging-impl'
 include 'libs:permissions:permission-cache'
 include 'libs:permissions:permission-cache-impl'
+include 'libs:permissions:permission-endpoint'
 include 'libs:permissions:permission-manager'
 include 'libs:permissions:permission-manager-impl'
 include 'libs:permissions:permission-storage-reader'
@@ -255,6 +258,7 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-api') using project(':corda-api')
             substitute module('net.corda:corda-crypto') using project(':crypto')
             substitute module('net.corda:corda-avro-schema') using project(':data:avro-schema')
+            substitute module('net.corda:corda-db-schema') using project(':data:db-schema')
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
             substitute module('net.corda:corda-ledger') using project(':ledger')
             substitute module('net.corda:corda-membership') using project(':membership')

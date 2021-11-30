@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -22,7 +23,6 @@ import net.corda.p2p.SessionPartitions
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.crypto.AuthenticatedDataMessage
@@ -357,7 +357,8 @@ class LinkManagerTest {
         val resourcesHolder = mock<ResourcesHolder>()
         linkManager.createInboundResources(resourcesHolder)
         verify(subscription).start()
-        verify(resourcesHolder).keep(subscription)
+        //TODOs : this will be refactored as part of CORE-3147
+        //verify(resourcesHolder).keep(subscription)
     }
 
     @Test
@@ -375,7 +376,8 @@ class LinkManagerTest {
         linkManager.createInboundResources(mock())
         linkManager.createOutboundResources(resourcesHolder)
         verify(subscription).start()
-        verify(resourcesHolder).keep(subscription)
+        //TODOs : this will be refactored as part of CORE-3147
+        //verify(resourcesHolder).keep(subscription)
     }
 
     @Test
