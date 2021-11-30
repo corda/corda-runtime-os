@@ -91,6 +91,11 @@ class Schemas {
         const val RPC_PERM_GROUP_TOPIC = "rpc.permissions.group"
         const val RPC_PERM_ROLE_TOPIC = "rpc.permissions.role"
 
+        /**
+         * Virtual Node schema
+         */
+        const val VIRTUAL_NODE_INFO_TOPIC = "virtual.node.info"
+
         fun getRPCResponseTopic(topic: String) = "$topic.resp"
     }
 }
