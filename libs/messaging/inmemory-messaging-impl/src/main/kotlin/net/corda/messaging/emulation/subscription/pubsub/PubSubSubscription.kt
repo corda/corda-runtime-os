@@ -42,6 +42,7 @@ class PubSubSubscription<K : Any, V : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "${subscriptionConfig.groupName}-PubSubSubscription-${subscriptionConfig.eventTopic}",
+            //we use clientIdCounter here instead of instanceId as this subscription is readOnly
             clientIdCounter
         )
     ) { _, _ -> }
