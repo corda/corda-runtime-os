@@ -7,11 +7,16 @@ import net.corda.applications.workers.workercommon.internal.CONFIG_NAME_EXTRA_PA
 import net.corda.applications.workers.workercommon.internal.CONFIG_NAME_INSTANCE_ID
 import net.corda.applications.workers.workercommon.internal.FileBasedHealthProvider
 import net.corda.applications.workers.workercommon.internal.WorkerParams
+import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Application
 import picocli.CommandLine
 
-/** The superclass of all Corda workers. */
-abstract class Worker: Application {
+/**
+ * The superclass of all Corda workers.
+ *
+ * @param smartConfigFactory The factory for creating a `SmartConfig` object from the worker's configuration.
+ */
+abstract class Worker(private val smartConfigFactory: SmartConfigFactory) : Application {
     private val healthProvider = FileBasedHealthProvider()
 
     /** Sets up the worker's health-check and parses any [args] per [WorkerParams] before starting the worker. */
@@ -53,10 +58,11 @@ abstract class Worker: Application {
             throw IllegalArgumentException(e.message)
         }
 
-        // TODO - Joel - Use SmartConfigFactory. Needs to be injected.
-        return ConfigFactory
-            .empty()
-            .withValue(CONFIG_NAME_INSTANCE_ID, ConfigValueFactory.fromAnyRef(params.instanceId))
-            .withValue(CONFIG_NAME_EXTRA_PARAMS, ConfigValueFactory.fromAnyRef(params.additionalParams))
+        return smartConfigFactory.create(
+            ConfigFactory
+                .empty()
+                .withValue(CONFIG_NAME_INSTANCE_ID, ConfigValueFactory.fromAnyRef(params.instanceId))
+                .withValue(CONFIG_NAME_EXTRA_PARAMS, ConfigValueFactory.fromAnyRef(params.additionalParams))
+        )
     }
 }

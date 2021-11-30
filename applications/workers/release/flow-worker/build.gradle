@@ -10,6 +10,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':applications:workers:worker-common')
+    implementation project(':libs:configuration:configuration-core')
     implementation project(':processors:flow-processor')
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 

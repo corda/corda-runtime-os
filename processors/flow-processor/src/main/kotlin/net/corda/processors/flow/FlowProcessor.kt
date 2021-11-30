@@ -20,7 +20,7 @@ class FlowProcessor {
     fun startup(healthProvider: HealthProvider, workerConfig: Config) {
         logger.info("Flow processor starting. Config:")
         workerConfig.entrySet().forEach { entry ->
-            logger.info("${entry.key} - ${entry.value}")
+            logger.info("${entry.key} - ${entry.value.unwrapped()}")
         }
     }
 }
