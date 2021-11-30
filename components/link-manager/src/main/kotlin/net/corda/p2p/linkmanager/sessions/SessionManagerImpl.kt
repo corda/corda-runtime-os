@@ -163,16 +163,20 @@ open class SessionManagerImpl(
         return dominoTile.withLifecycleLock {
             sessionNegotiationLock.read {
                 val key = getSessionKeyFromMessage(message.message)
+                println("QQQ in processOutboundMessage key = $key")
 
                 val activeSession = activeOutboundSessions[key]
+                println("QQQ in processOutboundMessage activeSession = $activeSession")
                 if (activeSession != null) {
                     return@read SessionState.SessionEstablished(activeSession)
                 }
                 pendingOutboundSessionMessageQueues.queueMessage(message, key)
                 if (pendingOutboundSessionKeys.contains(key)) {
+                    println("QQQ in processOutboundMessage pendingOutboundSessionKeys exists")
                     return@read SessionState.SessionAlreadyPending
                 } else {
                     val (sessionId, initMessage) = getSessionInitMessage(key) ?: return@read SessionState.CannotEstablishSession
+                    println("QQQ in processOutboundMessage pendingOutboundSessionKeys not there?")
                     return@read SessionState.NewSessionNeeded(sessionId, initMessage)
                 }
             }
@@ -243,9 +247,11 @@ open class SessionManagerImpl(
     }
 
     private fun getSessionInitMessage(sessionKey: SessionKey): Pair<String, LinkOutMessage>? {
+        println("QQQ getSessionInitMessage 1 - $sessionKey")
         val sessionId = UUID.randomUUID().toString()
 
         val networkType = networkMap.getNetworkType(sessionKey.ourId.groupId)
+        println("QQQ getSessionInitMessage networkType - $networkType")
         if (networkType == null) {
             logger.warn(
                 "Could not find the network type in the NetworkMap for groupId ${sessionKey.ourId.groupId}." +
@@ -255,6 +261,7 @@ open class SessionManagerImpl(
         }
 
         val ourMemberInfo = networkMap.getMemberInfo(sessionKey.ourId)
+        println("QQQ getSessionInitMessage ourMemberInfo - $ourMemberInfo")
         if (ourMemberInfo == null) {
             logger.warn(
                 "Attempted to start session negotiation with peer ${sessionKey.responderId} but our identity ${sessionKey.ourId}" +
@@ -271,8 +278,10 @@ open class SessionManagerImpl(
             ourMemberInfo.publicKey,
             ourMemberInfo.holdingIdentity.groupId
         )
+        println("QQQ getSessionInitMessage session - $session")
 
         pendingOutboundSessionKeys.add(sessionKey)
+        println("QQQ getSessionInitMessage - pendingOutboundSessionKeys contains key $sessionKey")
         pendingOutboundSessions[sessionId] = Pair(sessionKey, session)
         logger.info("Local identity (${sessionKey.ourId}) initiating new session $sessionId with remote identity ${sessionKey.responderId}")
 
@@ -372,16 +381,19 @@ open class SessionManagerImpl(
     }
 
     private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
+        println("QQQ processResponderHandshake 1")
         val (sessionInfo, session) = pendingOutboundSessions[message.header.sessionId] ?: run {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
             return null
         }
+        println("QQQ processResponderHandshake 2")
 
         val memberInfo = networkMap.getMemberInfo(sessionInfo.responderId)
         if (memberInfo == null) {
             logger.peerNotInTheNetworkMapWarning(message::class.java.simpleName, message.header.sessionId, sessionInfo.responderId)
             return null
         }
+        println("QQQ processResponderHandshake 3")
 
         try {
             session.validatePeerHandshakeMessage(message, memberInfo.publicKey, memberInfo.publicKeyAlgorithm)
@@ -396,11 +408,13 @@ open class SessionManagerImpl(
         val initiatorHandshakeUniqueId = message.header.sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName
         sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId)
         heartbeatManager.messageAcknowledged(message.header.sessionId)
+        println("QQQ processResponderHandshake 4")
         sessionNegotiationLock.write {
             activeOutboundSessions[sessionInfo] = authenticatedSession
             activeOutboundSessionsById[message.header.sessionId] = Pair(sessionInfo, authenticatedSession)
             pendingOutboundSessions.remove(message.header.sessionId)
             pendingOutboundSessionKeys.remove(sessionInfo)
+            println("QQQ processResponderHandshake 5 pendingOutboundSessionKeys no longer holds $sessionInfo")
             pendingOutboundSessionMessageQueues.sessionNegotiatedCallback(this, sessionInfo, authenticatedSession, networkMap)
         }
         logger.info("Outbound session ${authenticatedSession.sessionId} established " +
