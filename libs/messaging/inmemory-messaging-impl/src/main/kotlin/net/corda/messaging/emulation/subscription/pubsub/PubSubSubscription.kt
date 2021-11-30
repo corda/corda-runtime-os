@@ -1,5 +1,8 @@
 package net.corda.messaging.emulation.subscription.pubsub
 
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -20,20 +23,30 @@ import kotlin.concurrent.withLock
  * @property processor processor to execute upon retrieved records from topic
  * @property executor processor is executed using this if it is not null
  * @property topicService retrieve records and commit offsets back to topics with this service
+ * @property lifecycleCoordinatorFactory used to create the lifecycleCoordinator object that external users can follow for updates
  */
 class PubSubSubscription<K : Any, V : Any>(
     internal val subscriptionConfig: SubscriptionConfig,
     private val processor: PubSubProcessor<K, V>,
     private val executor: ExecutorService?,
     private val topicService: TopicService,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
     companion object {
         private val log: Logger = contextLogger()
     }
 
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "${subscriptionConfig.groupName}-PubSubSubscription-${subscriptionConfig.eventTopic}",
+            subscriptionConfig.instanceId.toString()
+        )
+    ) { _, _ -> }
+
     private var currentConsumer: Consumption? = null
     private val lock = ReentrantLock()
+
     /**
      * Is the subscription running.
      */
@@ -51,6 +64,8 @@ class PubSubSubscription<K : Any, V : Any>(
         lock.withLock {
             if (currentConsumer == null) {
                 val consumer = PubSubConsumer(this)
+                lifecycleCoordinator.start()
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                 currentConsumer = topicService.createConsumption(consumer)
             }
         }
@@ -63,9 +78,22 @@ class PubSubSubscription<K : Any, V : Any>(
      * Join the thread
      */
     override fun stop() {
+        log.debug { "Stopping pubsub subscription with config: $subscriptionConfig" }
+        stopConsumer()
+        lifecycleCoordinator.stop()
+    }
+
+    override fun close() {
+        log.debug { "Closing pubsub subscription with config: $subscriptionConfig" }
+        stopConsumer()
+        lifecycleCoordinator.close()
+    }
+
+    private fun stopConsumer() {
         lock.withLock {
             currentConsumer?.stop()
             currentConsumer = null
+            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         }
     }
 
@@ -84,4 +112,7 @@ class PubSubSubscription<K : Any, V : Any>(
             }
         }
     }
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
 }

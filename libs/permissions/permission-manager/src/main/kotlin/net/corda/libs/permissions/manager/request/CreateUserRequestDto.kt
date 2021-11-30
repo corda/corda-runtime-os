@@ -11,10 +11,6 @@ data class CreateUserRequestDto(
      */
     val requestedBy: String,
     /**
-     * The ID of the virtual node in which to create the User.
-     */
-    val virtualNodeId: String?,
-    /**
      * Full name of the User.
      */
     val fullName: String,

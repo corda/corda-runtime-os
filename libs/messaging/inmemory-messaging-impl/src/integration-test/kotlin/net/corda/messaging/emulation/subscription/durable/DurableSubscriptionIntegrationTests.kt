@@ -37,18 +37,17 @@ class DurableSubscriptionIntegrationTests {
     private val index = AtomicInteger(0)
     private val receivedValues = ConcurrentHashMap.newKeySet<Int?>()
 
-    private val otherConfig = SubscriptionConfig(
-        eventTopic = "durable.integration.test.other.topic",
-        groupName = "durable.integration.test.other.group"
-    )
-    private val config = SubscriptionConfig(
-        eventTopic = "durable.integration.test.topic",
-        groupName = "durable.integration.test.group",
-    )
+    private lateinit var otherConfig :SubscriptionConfig
+    private lateinit var config :SubscriptionConfig
 
     private val counter = CountDownLatch(numberOfMessagesToSend * numberOfMessagesToReplyForEachMessage)
 
-    private fun subscription(): Subscription<Key, Value> {
+    private fun subscription(instanceId: Int): Subscription<Key, Value> {
+        config = SubscriptionConfig(
+            eventTopic = "durable.integration.test.topic",
+            groupName = "durable.integration.test.group",
+            instanceId = instanceId
+        )
         return subscriptionFactory.createDurableSubscription(
             subscriptionConfig = config,
             processor = object : DurableProcessor<Key, Value> {
@@ -71,7 +70,12 @@ class DurableSubscriptionIntegrationTests {
         )
     }
 
-    private fun otherSubscription(): Subscription<Key, Value> {
+    private fun otherSubscription(instanceId: Int): Subscription<Key, Value> {
+        otherConfig = SubscriptionConfig(
+            eventTopic = "durable.integration.test.other.topic",
+            groupName = "durable.integration.test.other.group",
+            instanceId = instanceId
+        )
         return subscriptionFactory.createDurableSubscription(
             subscriptionConfig = otherConfig,
             processor = object : DurableProcessor<Key, Value> {
@@ -93,7 +97,7 @@ class DurableSubscriptionIntegrationTests {
     @Test
     fun `test durable subscription`() {
         val subscriptions = (1..numberOfSubscribers).flatMap {
-            listOf(subscription(), otherSubscription())
+            listOf(otherSubscription(it), subscription(it))
         }.onEach {
             it.start()
         }
