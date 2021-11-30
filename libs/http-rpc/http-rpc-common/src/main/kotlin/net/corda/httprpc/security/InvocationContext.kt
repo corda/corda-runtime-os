@@ -11,7 +11,6 @@ import java.security.Principal
  * correlate clients' IDs.
  *
  */
-@CordaSerializable
 sealed class InvocationContext {
 
     abstract val arguments: List<Any?>
