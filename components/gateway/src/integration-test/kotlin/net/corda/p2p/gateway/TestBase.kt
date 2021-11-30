@@ -29,6 +29,7 @@ import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
 import java.util.UUID
+import kotlin.random.Random
 
 open class TestBase {
     private fun readKeyStore(fileName: String): ByteArray {
@@ -109,7 +110,7 @@ open class TestBase {
                     )
                     .withValue(
                         "instance-id",
-                        ConfigValueFactory.fromAnyRef(1)
+                        ConfigValueFactory.fromAnyRef(Random.nextInt())
                     )
                 it.bootstrapConfig(smartConfigFactory.create(bootstrapper))
             }
