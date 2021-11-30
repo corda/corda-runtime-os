@@ -23,7 +23,7 @@ data class ConsumerRecord<K, V>(
     val key: K,
 
     /**
-     * The value.
+     * The value (or null if the value should be deleted).
      */
     val value: V,
 
