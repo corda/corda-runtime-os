@@ -9,7 +9,6 @@ import java.security.Principal
  * Models the information needed to trace an invocation in Corda.
  * Includes initiating actor, origin, trace information, and optional external trace information to
  * correlate clients' IDs.
- *
  */
 sealed class InvocationContext {
 
@@ -43,7 +42,6 @@ sealed class InvocationContext {
 /**
  * Models an initiator in Corda, can be a user, a service, etc.
  */
-@CordaSerializable
 data class Actor(val id: Id, val serviceId: AuthServiceId, val owningLegalIdentity: CordaX500Name) {
 
     companion object {
@@ -56,6 +54,5 @@ data class Actor(val id: Id, val serviceId: AuthServiceId, val owningLegalIdenti
     /**
      * Actor id.
      */
-    @CordaSerializable
     data class Id(val value: String)
 }
