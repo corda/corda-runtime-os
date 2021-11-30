@@ -51,7 +51,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaCompactedSubscription-$topic",
-            config.getString(ConfigProperties.INSTANCE_ID)
+            config.getString(ConfigProperties.CLIENT_ID_COUNTER)
         )
     ) { _, _ -> }
 

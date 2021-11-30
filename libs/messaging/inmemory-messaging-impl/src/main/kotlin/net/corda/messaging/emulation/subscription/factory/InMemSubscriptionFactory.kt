@@ -30,6 +30,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * In memory implementation of the Subscription Factory.
@@ -44,6 +45,9 @@ class InMemSubscriptionFactory @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : SubscriptionFactory {
 
+    // Used to ensure that each subscription has a unique client.id
+    private val clientIdCounter = AtomicInteger()
+
     override fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
@@ -55,7 +59,8 @@ class InMemSubscriptionFactory @Activate constructor(
             processor,
             executor,
             topicService,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            clientIdCounter.getAndIncrement().toString()
         )
     }
 
@@ -83,7 +88,8 @@ class InMemSubscriptionFactory @Activate constructor(
             subscriptionConfig,
             processor,
             topicService,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            clientIdCounter.getAndIncrement().toString()
         )
     }
 
