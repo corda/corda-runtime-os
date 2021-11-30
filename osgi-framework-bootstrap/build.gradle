@@ -9,7 +9,6 @@ dependencies {
     implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     implementation project(":osgi-framework-api")
     implementation 'net.corda:corda-base'
-    implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
     implementation 'org.slf4j:slf4j-api'
     implementation "org.slf4j:jul-to-slf4j:$slf4jVersion"
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"

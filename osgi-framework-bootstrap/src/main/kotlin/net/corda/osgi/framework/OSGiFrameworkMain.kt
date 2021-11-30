@@ -1,9 +1,6 @@
 package net.corda.osgi.framework
 
 import net.corda.osgi.framework.OSGiFrameworkMain.Companion.main
-import org.apache.logging.log4j.LogManager
-import org.apache.logging.log4j.core.LoggerContext
-import org.apache.logging.log4j.core.appender.ConsoleAppender
 import org.slf4j.LoggerFactory
 import org.slf4j.bridge.SLF4JBridgeHandler
 import java.nio.file.Files
@@ -94,12 +91,6 @@ class OSGiFrameworkMain {
          */
         @JvmStatic
         fun main(args: Array<String>) {
-            if (!args.contains("--noStdoutLogging")) {
-                // It is recommended to log to stdout by default in a containerised environment. However, this may
-                // have a strongly negative impact on performance.
-                redirectLogsToStdout()
-            }
-
             /**
              * `java.util.logging` logs directly to the console for Apache Aries and Liquibase (at least),
              *  but we can intercept and redirect that here to use our logger.
@@ -157,24 +148,5 @@ class OSGiFrameworkMain {
                 logger.error("Error: ${e.message}!", e)
             }
         }
-
-        /** Redirects the root logger's output to stdout. */
-        private fun redirectLogsToStdout() {
-            val loggerContext = LogManager.getContext(false) as LoggerContext
-            val rootLogger = loggerContext.configuration.rootLogger
-            val consoleAppender = loggerContext.configuration.getAppender<ConsoleAppender>(CONSOLE_APPENDER)
-
-            // We add the appender at the same level as the App appender.
-            val level = rootLogger.appenderRefs.find { appenderRef ->
-                appenderRef.ref == APP_APPENDER
-            }?.level ?: throw IllegalStateException("Root logger does not have an appender named \"$APP_APPENDER\".")
-            rootLogger.addAppender(consoleAppender, level, null)
-
-            // We remove the App appender so that there is no output to the logs.
-            rootLogger.removeAppender(APP_APPENDER)
-
-            loggerContext.updateLoggers()
-        }
-
     } //~ companion object
 }
