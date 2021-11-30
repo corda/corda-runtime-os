@@ -28,7 +28,6 @@ import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toBase64
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
-import java.io.File
 import java.util.UUID
 import kotlin.random.Random
 
@@ -52,13 +51,6 @@ open class TestBase {
         rawKeyStore = readKeyStore("sslkeystore_alice"),
         trustStorePassword = truststorePass,
         rawTrustStore = readKeyStore("truststore"),
-        revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
-    )
-    protected val twoSslConfig = SslConfiguration(
-        keyStorePassword = keystorePass,
-        rawKeyStore = File("/home/yift/corda-runtime-os/p2p-deployment/keystores/www.two.com.ssl.keystore.jks").readBytes(),
-        trustStorePassword = truststorePass,
-        rawTrustStore = File("/home/yift/corda-runtime-os/p2p-deployment/keystores/truststore.jks").readBytes(),
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF)
     )
     protected val bobSslConfig = SslConfiguration(

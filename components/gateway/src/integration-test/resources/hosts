@@ -4,7 +4,6 @@
 # localhost is used to configure the loopback interface
 # when the system is booting.  Do not change this entry.
 ##
-127.0.0.1   www.two.com
 127.0.0.1	localhost
 127.0.0.1   alice.net
 127.0.0.1   www.alice.net

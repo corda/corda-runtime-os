@@ -128,6 +128,7 @@ class GatewayTest : TestBase() {
     @Nested
     inner class ClientToGatewayTests {
         @Test
+        @Timeout(30)
         fun `http client to gateway`() {
             alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val serverAddress = URI.create("http://www.alice.net:10000")
@@ -176,45 +177,6 @@ class GatewayTest : TestBase() {
                     }
                 }
         }
-
-        @Test
-        fun stam() {
-            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
-            val serverAddress = URI.create("http://www.two.com:20000")
-            val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
-            val gatewayMessage = GatewayMessage("msg-id", linkInMessage.payload)
-            Gateway(
-                createConfigurationServiceFor(GatewayConfiguration(serverAddress.host, serverAddress.port, twoSslConfig),),
-                alice.subscriptionFactory,
-                alice.publisherFactory,
-                lifecycleCoordinatorFactory,
-                nodeConfig,
-                instanceId.incrementAndGet(),
-            ).use {
-                it.startAndWaitForStarted()
-                val serverInfo = DestinationInfo(serverAddress, "www.two.com", null)
-                HttpClient(serverInfo, twoSslConfig, NioEventLoopGroup(1), NioEventLoopGroup(1), 2.seconds).use { client ->
-                    client.start()
-                    val httpResponse = client.write(gatewayMessage.toByteBuffer().array()).get()
-                    assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
-                    assertThat(httpResponse.payload).isNotNull
-                    val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
-                    assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
-                }
-            }
-
-            // Verify Gateway has successfully forwarded the message to the P2P_IN topic
-            val publishedRecords = alice.getRecords(LINK_IN_TOPIC, 1)
-            assertThat(publishedRecords)
-                .hasSize(1).allSatisfy {
-                    assertThat(it.value).isInstanceOfSatisfying(LinkInMessage::class.java) {
-                        assertThat(it.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
-                            assertThat(it).isEqualTo(linkInMessage.payload)
-                        }
-                    }
-                }
-        }
-
     }
 
     @Nested
