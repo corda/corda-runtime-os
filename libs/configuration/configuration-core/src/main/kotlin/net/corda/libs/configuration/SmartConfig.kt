@@ -29,7 +29,7 @@ interface SmartConfig : Config {
     fun convert(config: Config): SmartConfig
 
     /**
-     * Returns an instance of [SmartConfig] that never reveals secrets.
+     * Returns an instance of [Config] that never reveals secrets.
      */
     fun toSafeConfig(): Config
 

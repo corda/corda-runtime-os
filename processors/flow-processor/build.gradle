@@ -9,6 +9,7 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':applications:workers:worker-common')
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'net.corda:corda-base'
 }

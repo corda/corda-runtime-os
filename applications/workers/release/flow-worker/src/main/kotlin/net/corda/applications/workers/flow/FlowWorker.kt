@@ -1,6 +1,7 @@
 package net.corda.applications.workers.flow
 
 import com.typesafe.config.Config
+import net.corda.applications.workers.workercommon.HealthProvider
 import net.corda.applications.workers.workercommon.Worker
 import net.corda.osgi.api.Application
 import net.corda.processors.flow.FlowProcessor
@@ -15,20 +16,10 @@ class FlowWorker: Worker() {
         private val logger = contextLogger()
     }
 
-    /** Starts the [FlowProcessor], passing in the [busConfig]. */
+    /** Starts the [FlowProcessor], passing in the [healthProvider] and [busConfig]. */
     @Suppress("SpreadOperator")
-    override fun startup(busConfig: Config) {
+    override fun startup(healthProvider: HealthProvider, busConfig: Config) {
         logger.info("Flow worker starting")
-        FlowProcessor().startup(busConfig)
-
-        // Sets the worker to unhealthy after 30 seconds.
-//        var x = 0
-//        while (true) {
-//            Thread.sleep(1000)
-//            println(x++)
-//            if (x > 30) {
-//                healthProvider.setIsUnhealthy()
-//            }
-//        }
+        FlowProcessor().startup(healthProvider, busConfig)
     }
 }

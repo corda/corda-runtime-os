@@ -2,7 +2,7 @@ package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.Config
 import net.corda.applications.common.ConfigHelper
-import net.corda.applications.workers.workercommon.internal.HealthProvider
+import net.corda.applications.workers.workercommon.internal.FileBasedHealthProvider
 import net.corda.osgi.api.Application
 import picocli.CommandLine
 import picocli.CommandLine.MissingParameterException
@@ -11,7 +11,7 @@ import kotlin.random.Random
 
 /** The superclass of all Corda workers. */
 abstract class Worker: Application {
-    private val healthProvider = HealthProvider()
+    private val healthProvider = FileBasedHealthProvider()
 
     /**
      * Sets up the worker's health-check and parses any [args] before starting the worker.
@@ -20,8 +20,8 @@ abstract class Worker: Application {
      */
     override fun startup(args: Array<String>) {
         healthProvider.setHealthy()
-        val bootstrapConfig = getBusConfig(args)
-        startup(bootstrapConfig)
+        val busConfig = getBusConfig(args)
+        startup(healthProvider, busConfig)
     }
 
     /** A no-op shutdown. */
@@ -32,7 +32,7 @@ abstract class Worker: Application {
      *
      * @param busConfig The [Config] required to connect to the bus.
      */
-    abstract fun startup(busConfig: Config)
+    abstract fun startup(healthProvider: HealthProvider, busConfig: Config)
 
     /** Marks the worker as healthy. */
     protected fun setHealthy() = healthProvider.setHealthy()
@@ -63,6 +63,9 @@ abstract class Worker: Application {
         } catch (e: UninitializedPropertyAccessException) {
             Random.nextInt().absoluteValue
         }
+
+        // TODO - The worker params are for the worker itself, while the bootstrap config is for the processor. Both
+        //  should be passed down. Only the worker params are hardcoded/pre-known.
 
         // TODO - Joel - Need to update the parsed config based on discussion with Dries.
         return ConfigHelper.getBootstrapConfig(instanceId)
