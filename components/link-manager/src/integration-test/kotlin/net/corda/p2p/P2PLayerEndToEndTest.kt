@@ -73,11 +73,15 @@ class P2PLayerEndToEndTest {
         private val logger = contextLogger()
         private const val CONFIG_TOPIC_NAME = "config"
         private const val GROUP_ID = "group-1"
+        private const val INSTANCE_ID = 1
     }
     private val bootstrapConfig = SmartConfigFactoryImpl().create(ConfigFactory.empty()
         .withValue(
             "config.topic.name",
             ConfigValueFactory.fromAnyRef(CONFIG_TOPIC_NAME)
+        ).withValue(
+            "instance-id",
+            ConfigValueFactory.fromAnyRef(INSTANCE_ID)
         ))
 
     private val hostA = Host("www.alice.net", 10500, "O=Alice, L=London, C=GB", "sslkeystore_alice", "truststore")
@@ -95,9 +99,9 @@ class P2PLayerEndToEndTest {
     @Timeout(60)
     fun `two hosts can exchange data messages over the p2p layer successfully`() {
         val hostALinkManager = createLinkManager(hostA.subscriptionFactory, hostA.publisherFactory, hostA.lifecycleCoordinatorFactory, hostA.configReadService)
-        val hostAGateway = Gateway(hostA.configReadService, hostA.subscriptionFactory, hostA.publisherFactory, hostA.lifecycleCoordinatorFactory, SmartConfigImpl.empty(), 1)
+        val hostAGateway = Gateway(hostA.configReadService, hostA.subscriptionFactory, hostA.publisherFactory, hostA.lifecycleCoordinatorFactory, SmartConfigImpl.empty(), INSTANCE_ID)
         val hostBLinkManager = createLinkManager(hostB.subscriptionFactory, hostB.publisherFactory, hostB.lifecycleCoordinatorFactory, hostB.configReadService)
-        val hostBGateway = Gateway(hostB.configReadService, hostB.subscriptionFactory, hostB.publisherFactory, hostB.lifecycleCoordinatorFactory, SmartConfigImpl.empty(), 1)
+        val hostBGateway = Gateway(hostB.configReadService, hostB.subscriptionFactory, hostB.publisherFactory, hostB.lifecycleCoordinatorFactory, SmartConfigImpl.empty(), INSTANCE_ID)
 
         hostALinkManager.start()
         hostAGateway.start()
@@ -116,19 +120,19 @@ class P2PLayerEndToEndTest {
 
         val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
         val hostAApplicationReader = hostA.subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("app-layer", Schema.P2P_IN_TOPIC, 1), InitiatorProcessor(hostAReceivedMessages),
+            SubscriptionConfig("app-layer", Schema.P2P_IN_TOPIC, INSTANCE_ID), InitiatorProcessor(hostAReceivedMessages),
             bootstrapConfig,
             null
         )
         val hostBApplicationReaderWriter = hostB.subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("app-layer", Schema.P2P_IN_TOPIC, 1), ResponderProcessor(),
+            SubscriptionConfig("app-layer", Schema.P2P_IN_TOPIC, INSTANCE_ID), ResponderProcessor(),
             bootstrapConfig,
             null
         )
         hostAApplicationReader.start()
         hostBApplicationReaderWriter.start()
 
-        val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", 1), bootstrapConfig)
+        val hostAApplicationWriter = hostA.publisherFactory.createPublisher(PublisherConfig("app-layer", INSTANCE_ID), bootstrapConfig)
         val initialMessages = (1..10).map { index ->
             val randomId = UUID.randomUUID().toString()
             val messageHeader = AuthenticatedMessageHeader(HoldingIdentity(hostB.x500Name, GROUP_ID), HoldingIdentity(hostA.x500Name, GROUP_ID), TTL, randomId, randomId, SUBSYSTEM)
@@ -158,14 +162,14 @@ class P2PLayerEndToEndTest {
 
     private fun createLinkManager(subscriptionFactory: InMemSubscriptionFactory, publisherFactory: PublisherFactory, coordinatorFactory: LifecycleCoordinatorFactory, configReadService: ConfigurationReadService): LinkManager {
         return LinkManager(subscriptionFactory, publisherFactory, coordinatorFactory, configReadService,
-            SmartConfigImpl.empty(), 1, StubNetworkMap(coordinatorFactory, subscriptionFactory, 1, bootstrapConfig),
-            ConfigBasedLinkManagerHostingMap(configReadService, coordinatorFactory), StubCryptoService(coordinatorFactory, subscriptionFactory, 1, bootstrapConfig)
+            SmartConfigImpl.empty(), INSTANCE_ID, StubNetworkMap(coordinatorFactory, subscriptionFactory, INSTANCE_ID, bootstrapConfig),
+            ConfigBasedLinkManagerHostingMap(configReadService, coordinatorFactory), StubCryptoService(coordinatorFactory, subscriptionFactory, INSTANCE_ID, bootstrapConfig)
         )
     }
 
     private fun publishNetworkMapAndKeys() {
-        val publisherForHostA = hostA.publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", 1), bootstrapConfig)
-        val publisherForHostB = hostB.publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", 1), bootstrapConfig)
+        val publisherForHostA = hostA.publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", INSTANCE_ID), bootstrapConfig)
+        val publisherForHostB = hostB.publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", INSTANCE_ID), bootstrapConfig)
         val networkMapEntries = mapOf(
             "${hostA.x500Name}-$GROUP_ID" to NetworkMapEntry(net.corda.data.identity.HoldingIdentity(hostA.x500Name, GROUP_ID), ByteBuffer.wrap(hostA.keyPair.public.encoded), KeyAlgorithm.ECDSA, "http://${hostA.p2pAddress}:${hostA.p2pPort}", NetworkType.CORDA_5),
             "${hostB.x500Name}-$GROUP_ID" to NetworkMapEntry(net.corda.data.identity.HoldingIdentity(hostB.x500Name, GROUP_ID), ByteBuffer.wrap(hostB.keyPair.public.encoded), KeyAlgorithm.ECDSA, "http://${hostB.p2pAddress}:${hostB.p2pPort}", NetworkType.CORDA_5)
