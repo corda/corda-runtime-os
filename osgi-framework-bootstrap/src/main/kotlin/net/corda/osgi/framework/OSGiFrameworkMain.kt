@@ -158,19 +158,21 @@ class OSGiFrameworkMain {
             }
         }
 
-        // TODO - Joel - See if we can just reload all config from a new user-provided file if needed.
-        // TODO - Joel - See if there's any way to modify the logging level (e.g. via system property).
         /** Redirects the root logger's output to stdout. */
         private fun redirectLogsToStdout() {
             val loggerContext = LogManager.getContext(false) as LoggerContext
-            val consoleAppender = loggerContext.configuration.getAppender<ConsoleAppender>(CONSOLE_APPENDER)
             val rootLogger = loggerContext.configuration.rootLogger
+            val consoleAppender = loggerContext.configuration.getAppender<ConsoleAppender>(CONSOLE_APPENDER)
+
             // We add the appender at the same level as the App appender.
             val level = rootLogger.appenderRefs.find { appenderRef ->
                 appenderRef.ref == APP_APPENDER
             }?.level ?: throw IllegalStateException("Root logger does not have an appender named \"$APP_APPENDER\".")
             rootLogger.addAppender(consoleAppender, level, null)
+
+            // We remove the App appender so that there is no output to the logs.
             rootLogger.removeAppender(APP_APPENDER)
+
             loggerContext.updateLoggers()
         }
 

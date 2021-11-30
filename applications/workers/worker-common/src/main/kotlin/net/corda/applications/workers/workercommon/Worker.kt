@@ -36,24 +36,17 @@ abstract class Worker(private val smartConfigFactory: SmartConfigFactory) : Appl
      */
     protected abstract fun startup(healthProvider: HealthProvider, workerConfig: Config)
 
-    /** Marks the worker as healthy. */
-    @Suppress("Unused")
-    protected fun setHealthy() = healthProvider.setHealthy()
-
-    @Suppress("Unused")
-    /** Marks the worker as unhealthy. */
-    protected fun setUnhealthy() = healthProvider.setUnhealthy()
-
     /**
      * Retrieves the [Config] to connect to the bus
      *
      * @throws IllegalArgumentException If the `--instanceId` argument is missing, or does not have an int parameter.
      */
-    @Suppress("SpreadOperator")
     private fun getWorkerConfig(args: Array<String>): Config {
         val params = WorkerParams()
+        val commandLine = CommandLine(params)
+
         try {
-            CommandLine(params).parseArgs(*args)
+            commandLine.parseArgs(*args)
         } catch (e: CommandLine.ParameterException) {
             throw IllegalArgumentException(e.message)
         }
