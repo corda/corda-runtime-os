@@ -2,6 +2,7 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
@@ -14,13 +15,12 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
-import net.corda.p2p.gateway.Gateway.Companion.CONSUMER_GROUP_ID
-import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
 import net.corda.p2p.schema.Schema
+import net.corda.v5.base.util.debug
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
@@ -59,7 +59,7 @@ internal class OutboundMessageHandler(
     )
 
     private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(CONSUMER_GROUP_ID, Schema.LINK_OUT_TOPIC, instanceId),
+        SubscriptionConfig("outbound-message-handler", Schema.LINK_OUT_TOPIC, instanceId),
         this,
         nodeConfiguration,
         null
@@ -171,6 +171,7 @@ internal class OutboundMessageHandler(
     }
 
     private fun sendMessage(destinationInfo: DestinationInfo, gatewayMessage: GatewayMessage): CompletableFuture<HttpResponse> {
+        logger.debug { "Sending message ${gatewayMessage.payload.javaClass} (${gatewayMessage.id}) to $destinationInfo." }
         return connectionManager.acquire(destinationInfo).write(gatewayMessage.toByteBuffer().array())
     }
 
@@ -182,7 +183,7 @@ internal class OutboundMessageHandler(
 
     private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()
-        resources.keep(p2pMessageSubscription)
+        resources.keep { p2pMessageSubscription.stop() }
         p2pMessageSubscription.start()
         future.complete(Unit)
         return future

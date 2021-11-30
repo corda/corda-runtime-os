@@ -1,5 +1,7 @@
 package net.corda.messaging.emulation.subscription.compacted
 
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -37,11 +39,18 @@ class InMemoryCompactedSubscriptionTest {
         )
     }
 
+    private val lifecycleCoordinator: LifecycleCoordinator = mock()
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
+        on { createCoordinator(any(), any()) } doReturn lifecycleCoordinator
+    }
+
     private val subscription = InMemoryCompactedSubscription(
         subscriptionConfig,
         processor,
-        topic
+        topic,
+        lifecycleCoordinatorFactory
     )
+
 
     @Test
     fun `getValue throws exception if we are waiting for the snapshot`() {
@@ -192,7 +201,8 @@ class InMemoryCompactedSubscriptionTest {
         val subscription = InMemoryCompactedSubscription(
             subscriptionConfig,
             processor,
-            topic
+            topic,
+            lifecycleCoordinatorFactory
         )
         subscription.start()
 
