@@ -79,8 +79,10 @@ class CordaKafkaProducerImpl(
 
     override fun beginTransaction() {
         try {
+            println("QQQ beginTransaction - $transactionalId")
             producer.beginTransaction()
         } catch (ex: Exception) {
+            ex.printStackTrace()
             when (ex) {
                 is IllegalStateException,
                 is ProducerFencedException,
