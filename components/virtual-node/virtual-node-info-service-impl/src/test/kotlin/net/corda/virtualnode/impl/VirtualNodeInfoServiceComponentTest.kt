@@ -167,7 +167,7 @@ internal class VirtualNodeInfoServiceComponentTest {
 
         assertThat(listener.update).isTrue
         assertThat(component.getById(holdingIdentity.id)).isNotNull
-        assertThat(component.getById(holdingIdentity.id)?.first()?.holdingIdentity).isEqualTo(holdingIdentity)
+        assertThat(component.getById(holdingIdentity.id)?.holdingIdentity).isEqualTo(holdingIdentity)
 
 
         component.stop()

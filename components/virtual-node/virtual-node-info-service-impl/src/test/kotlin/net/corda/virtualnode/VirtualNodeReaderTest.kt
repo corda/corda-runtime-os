@@ -260,8 +260,7 @@ class VirtualNodeReaderTest {
         // Get by short hash
         val shortHash = holdingIdentity.id
         val actualVirtualNodeInfo = processor.getById(shortHash)
-        assertEquals(1, actualVirtualNodeInfo?.size)
-        assertEquals(holdingIdentity, actualVirtualNodeInfo!!.first().holdingIdentity)
+        assertEquals(holdingIdentity, actualVirtualNodeInfo!!.holdingIdentity)
 
         val newHoldingIdentity = sendOnNextRandomMessage()
         val newShortHash = newHoldingIdentity.id
@@ -269,8 +268,7 @@ class VirtualNodeReaderTest {
 
         // Get by short hash again
         val actualNewVirtualNodeInfo = processor.getById(newShortHash)
-        assertEquals(1, actualNewVirtualNodeInfo?.size)
-        assertEquals(newHoldingIdentity, actualNewVirtualNodeInfo!!.first().holdingIdentity)
+        assertEquals(newHoldingIdentity, actualNewVirtualNodeInfo!!.holdingIdentity)
 
         val anotherHoldingIdentity = sendOnNextRandomMessage()
         val anotherShortHash = anotherHoldingIdentity.id
@@ -278,7 +276,6 @@ class VirtualNodeReaderTest {
 
         // Get by short hash again
         val actualAnotherHoldingIdentity = processor.getById(anotherShortHash)
-        assertEquals(1, actualAnotherHoldingIdentity?.size)
-        assertEquals(anotherHoldingIdentity, actualAnotherHoldingIdentity!!.first().holdingIdentity)
+        assertEquals(anotherHoldingIdentity, actualAnotherHoldingIdentity!!.holdingIdentity)
     }
 }

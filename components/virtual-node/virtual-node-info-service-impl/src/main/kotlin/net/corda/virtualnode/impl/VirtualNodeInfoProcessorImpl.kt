@@ -164,10 +164,10 @@ class VirtualNodeInfoProcessorImpl @Activate constructor(
     /**
      * May throw if the service component is has not started up yet.
      */
-    override fun getById(id: String): List<VirtualNodeInfo>? {
+    override fun getById(id: String): VirtualNodeInfo? {
         if (config == null) throw ServiceException(exceptionMessage)
 
-        return virtualNodeInfoMap.getById(id)?.map { it.toCorda() }
+        return virtualNodeInfoMap.getById(id)?.toCorda()
     }
 
     /**

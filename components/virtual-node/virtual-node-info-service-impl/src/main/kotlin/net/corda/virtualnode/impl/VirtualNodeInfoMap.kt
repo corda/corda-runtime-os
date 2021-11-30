@@ -13,7 +13,7 @@ import java.util.Collections
 internal class VirtualNodeInfoMap {
     private val virtualNodeInfoByHoldingIdentity: MutableMap<HoldingIdentity, VirtualNodeInfo> =
         Collections.synchronizedMap(mutableMapOf())
-    private val virtualNodeInfoById: MutableMap<String, MutableSet<VirtualNodeInfo>> =
+    private val virtualNodeInfoById: MutableMap<String, VirtualNodeInfo> =
         Collections.synchronizedMap(mutableMapOf())
 
     /**
@@ -39,7 +39,10 @@ internal class VirtualNodeInfoMap {
      * Put [VirtualNodeInfo] into internal maps.
      */
     private fun putValue(key: Key, value: VirtualNodeInfo) {
-        virtualNodeInfoById.getOrPut(key.id) { mutableSetOf() }.add(value)
+        if (virtualNodeInfoById.containsKey(key.id) && virtualNodeInfoById[key.id]?.holdingIdentity != value.holdingIdentity) {
+            throw IllegalArgumentException("Cannot put different VirtualNodeInfo for same short hash value.")
+        }
+        virtualNodeInfoById[key.id] = value
         virtualNodeInfoByHoldingIdentity[key.holdingIdentity] = value
     }
 
@@ -67,7 +70,7 @@ internal class VirtualNodeInfoMap {
      *
      * Usually a list of 1, but there's always a tiny chance of collisions.
      */
-    fun getById(id: String): List<VirtualNodeInfo>? = virtualNodeInfoById[id]?.toList()
+    fun getById(id: String): VirtualNodeInfo? = virtualNodeInfoById[id]
 
     /**
      * Remove the [VirtualNodeInfo] for a given key, specifically from the 'by id' map, in this method.
@@ -78,14 +81,7 @@ internal class VirtualNodeInfoMap {
             throw IllegalArgumentException("Keys should be present or missing in both maps - found key in only one map")
         }
 
-        val virtualNodeInfo = virtualNodeInfoByHoldingIdentity[key.holdingIdentity] ?: return
-        val values = virtualNodeInfoById[key.id] ?: return
-
-        // remove the set entry for the specific VirtualNodeInfo for this holding id
-        values.remove(virtualNodeInfo)
-
-        // remove the map entry if there are no VirtualNodeInfo objects left for this id.
-        if (values.isEmpty()) virtualNodeInfoById.remove(key.id)
+        virtualNodeInfoById.remove(key.id)
     }
 
     /**
