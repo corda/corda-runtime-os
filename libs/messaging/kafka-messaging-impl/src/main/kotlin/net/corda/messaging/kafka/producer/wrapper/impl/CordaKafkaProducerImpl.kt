@@ -49,6 +49,7 @@ class CordaKafkaProducerImpl(
     private val transactionalId = config.getStringOrNull(ProducerConfig.TRANSACTIONAL_ID_CONFIG)
 
     init {
+        println("QQQ Creating CordaKafkaProducerImpl with transactionalId $transactionalId")
         if (transactionalId != null) {
             initTransactionForProducer()
         }
@@ -142,8 +143,10 @@ class CordaKafkaProducerImpl(
 
     override fun commitTransaction() {
         try {
+            println("QQQ commitTransaction transactionalId - $transactionalId")
             producer.commitTransaction()
         } catch (ex: Exception) {
+            ex.printStackTrace()
             when (ex) {
                 is IllegalStateException,
                 is ProducerFencedException,
