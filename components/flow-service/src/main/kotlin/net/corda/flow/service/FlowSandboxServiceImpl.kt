@@ -1,4 +1,4 @@
-package net.corda.flow.manager.impl
+package net.corda.flow.service
 
 import net.corda.dependency.injection.DependencyInjectionBuilder
 import net.corda.dependency.injection.DependencyInjectionBuilderFactory
@@ -30,7 +30,7 @@ class FlowSandboxServiceImpl @Activate constructor(
         cpi: CPI.Identifier,
     ): SandboxGroupContext {
 
-        // create the builder in the non sandbox context
+        // build the builder in the non sandbox context
         val diBuilder = dependencyInjectionBuilderFactory.create()
 
         return sandboxGroupService.get(
@@ -48,15 +48,18 @@ class FlowSandboxServiceImpl @Activate constructor(
         // Register the user defined injectable services from the CPK/CPB and
         // store the injection service in the sandbox context.
         dependencyInjectionBuilder.addSandboxDependencies(sandboxGroupContext)
-        val injectionService = dependencyInjectionBuilder.create()
+        val injectionService = dependencyInjectionBuilder.build()
         sandboxGroupContext.put(FlowSandboxContextTypes.DEPENDENCY_INJECTOR, injectionService)
 
         // Create and configure the checkpoint serializer
         val builder = checkpointSerializerBuilderFactory
             .createCheckpointSerializerBuilder(sandboxGroupContext.sandboxGroup)
         builder.addSingletonSerializableInstances(injectionService.getRegisteredAsTokenSingletons())
-        sandboxGroupContext.put(FlowSandboxContextTypes.CHECKPOINT_SERIALIZER, injectionService)
+        builder.addSingletonSerializableInstances(setOf(sandboxGroupContext.sandboxGroup))
 
-        return AutoCloseable { TODO("clean up if required?") }
+        sandboxGroupContext.put(FlowSandboxContextTypes.CHECKPOINT_SERIALIZER, builder.build())
+
+        return AutoCloseable { /*TODOs: clean up if required?*/}
     }
 }
+

@@ -12,6 +12,7 @@ import org.osgi.service.component.annotations.ReferenceCardinality
 class DependencyInjectionBuilderFactoryImpl @Activate constructor(
     @Reference(service = InjectableFactory::class, cardinality = ReferenceCardinality.MULTIPLE)
     private val injectableFactories: List<InjectableFactory<*>>
+
 ) : DependencyInjectionBuilderFactory {
 
     override fun create(): DependencyInjectionBuilder {

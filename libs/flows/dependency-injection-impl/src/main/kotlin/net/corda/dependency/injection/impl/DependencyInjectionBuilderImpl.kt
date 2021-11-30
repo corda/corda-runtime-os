@@ -13,17 +13,15 @@ class DependencyInjectionBuilderImpl(
     override fun addSandboxDependencies(sandboxGroupContext: SandboxGroupContext) {
         this.sandboxGroupContext = sandboxGroupContext
 
-        TODO("Add code to load user injectable services.")
         /**
          *  This method should be called from the sandbox initialisation, at that point we
          *  will have access to the bundles containing user defined types that can be injected.
-         *  we will need to enumerate these types, create instances of them and then wrap them
+         *  we will need to enumerate these types, build instances of them and then wrap them
          *  in with an instance of InjectableFactory and add them to the injectableFactories list.
          */
     }
 
-    override fun create(): FlowDependencyInjector {
-        return FlowDependencyInjectorImpl(sandboxGroupContext!!, injectableFactories)
+    override fun build(): FlowDependencyInjector {
+        return FlowDependencyInjectorImpl(sandboxGroupContext!!.sandboxGroup, injectableFactories)
     }
-
 }

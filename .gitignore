@@ -112,3 +112,4 @@ build
 
 
 kafka-docker/data/
+applications/flow-worker/extracted/

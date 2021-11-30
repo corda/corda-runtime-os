@@ -58,6 +58,9 @@ class FlowWorkerApp @Activate constructor(
                     configurationReadService.start()
                     configurationReadService.bootstrapConfig(smartConfigFactory.create(bootstrapConfig))
                     flowService.start()
+                    // HACK: This needs to change when we have the proper sandbox group service
+                    // for now we need to start this version of the service as it hosts the new
+                    // api we use elsewhere
                     sandboxService.start()
                 }
                 is StopEvent -> {

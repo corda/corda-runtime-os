@@ -17,6 +17,13 @@ import net.corda.sandbox.service.helper.initPublicSandboxes
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.uncheckedCast
+import net.corda.virtual.node.context.HoldingIdentity
+import net.corda.virtual.node.context.VirtualNodeContext
+import net.corda.virtual.node.sandboxgroup.MutableSandboxGroupContext
+import net.corda.virtual.node.sandboxgroup.SandboxGroupContext
+import net.corda.virtual.node.sandboxgroup.SandboxGroupService
+import net.corda.virtual.node.sandboxgroup.SandboxGroupType
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -24,9 +31,10 @@ import org.osgi.service.component.annotations.Reference
 import java.io.File
 import java.net.URI
 import java.nio.file.Paths
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
-@Component(service = [SandboxService::class])
+@Component(service = [SandboxService::class, SandboxGroupService::class])
 class SandboxServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -36,7 +44,7 @@ class SandboxServiceImpl @Activate constructor(
     private val sandboxCreationService: SandboxCreationService,
     @Reference(service = ConfigurationAdmin::class)
     private val configurationAdmin: ConfigurationAdmin
-) : SandboxService {
+) : SandboxService, SandboxGroupService {
 
     companion object {
         private val logger = contextLogger()
@@ -119,4 +127,48 @@ class SandboxServiceImpl @Activate constructor(
     }
 
     data class SandboxCacheKey(val identity: String, val cpiId: String)
+
+    override fun get(
+        holdingIdentity: HoldingIdentity,
+        cpi: CPI.Identifier,
+        sandboxGroupType: SandboxGroupType,
+        initializer: (holdingIdentity: HoldingIdentity, sandboxGroupContext: MutableSandboxGroupContext) -> AutoCloseable
+    ): SandboxGroupContext {
+
+        var context =  SimpleSandboxGroupContext(
+            SimpleVirtualNodeContext(
+                "",
+                cpi,
+                holdingIdentity),
+            getSandboxGroupFor(cpi.name, holdingIdentity.x500Name, SandboxType.FLOW))
+
+        initializer(holdingIdentity,context)
+
+        return context
+    }
+
+    class SimpleVirtualNodeContext(
+        override val id: String,
+        override val cpi: CPI.Identifier,
+        override val holdingIdentity: HoldingIdentity
+    ) : VirtualNodeContext
+
+    class SimpleSandboxGroupContext(
+        override val context: VirtualNodeContext,
+        override val sandboxGroup: SandboxGroup
+    ) : MutableSandboxGroupContext {
+
+        private val contextState = Collections.synchronizedMap(mutableMapOf<String, Any>())
+
+        override fun <T> put(key: String, value: T) {
+            contextState[key] = value
+        }
+
+        override fun <T> get(key: String): T? {
+            return uncheckedCast(contextState[key])
+        }
+
+        override fun close() {
+        }
+    }
 }

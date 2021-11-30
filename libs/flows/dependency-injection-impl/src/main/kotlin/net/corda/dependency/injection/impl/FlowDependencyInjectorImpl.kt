@@ -3,27 +3,33 @@ package net.corda.dependency.injection.impl
 import net.corda.dependency.injection.FlowDependencyInjector
 import net.corda.dependency.injection.InjectableFactory
 import net.corda.flow.statemachine.FlowStateMachine
+import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.injection.CordaInject
 import net.corda.v5.serialization.SingletonSerializeAsToken
-import net.corda.virtual.node.sandboxgroup.SandboxGroupContext
 import java.lang.reflect.Field
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.full.allSuperclasses
 
 class FlowDependencyInjectorImpl(
-    private val sandboxGroupContext: SandboxGroupContext
+    private val sandboxGroup: SandboxGroup
 ) : FlowDependencyInjector {
 
-    constructor(sandboxGroupContext: SandboxGroupContext, services: List<InjectableFactory<*>>) : this(
-        sandboxGroupContext
-    ) {
-        services.forEach { registerServiceFactory(it) }
+    constructor(
+        sandboxGroup: SandboxGroup,
+        services: List<InjectableFactory<*>>
+    ) : this(sandboxGroup) {
+        services.forEach {
+            registerServiceFactory(it)
+            singletonList.addAll(it.getSingletons())
+        }
     }
 
     private val serviceTypeMap: MutableMap<Class<*>, InjectableFactory<*>> =
         Collections.synchronizedMap(mutableMapOf<Class<*>, InjectableFactory<*>>())
+
+    private val singletonList = mutableSetOf<SingletonSerializeAsToken>()
 
     override fun injectServices(flow: Flow<*>, flowStateMachine: FlowStateMachine<*>) {
         val requiredFields = flow::class.getFieldsForInjection()
@@ -40,18 +46,14 @@ class FlowDependencyInjectorImpl(
             if (field.get(flow) == null) {
                 field.set(
                     flow,
-                    serviceTypeMap[field.type]!!.create(flowStateMachine, sandboxGroupContext)
+                    serviceTypeMap[field.type]!!.create(flowStateMachine, sandboxGroup)
                 )
             }
         }
     }
 
     override fun getRegisteredAsTokenSingletons(): Set<SingletonSerializeAsToken> {
-        /**
-         * Now we have everything as a factory, what singletons will we have to register
-         * in the serializer?
-         */
-        TODO("Not yet implemented")
+        return singletonList
     }
 
     private fun registerServiceFactory(serviceFactory: InjectableFactory<*>) {

@@ -4,9 +4,8 @@ import net.corda.configuration.read.ConfigKeys.Companion.BOOTSTRAP_KEY
 import net.corda.configuration.read.ConfigKeys.Companion.FLOW_KEY
 import net.corda.configuration.read.ConfigKeys.Companion.MESSAGING_KEY
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.dependency.injection.DependencyInjectionService
-import net.corda.dependency.injection.FlowDependencies
-import net.corda.flow.manager.FlowManager
+import net.corda.flow.manager.FlowEventExecutorFactory
+import net.corda.flow.manager.FlowMetaDataFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -30,7 +29,7 @@ import org.osgi.service.component.annotations.Reference
 /**
  * This component is a sketch of how the flow service might be structured using the configuration service and the flow
  * libraries to put together a component that reacts to config changes. It should be read as not a finished component,
- * but rather a suggestion of how to put together the pieces to create components.
+ * but rather a suggestion of how to put together the pieces to build components.
  */
 @Suppress("LongParameterList")
 @Component(service = [FlowService::class])
@@ -41,14 +40,10 @@ class FlowService @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = FlowManager::class)
-    private val flowManager: FlowManager,
-    @Reference(service = SandboxService::class)
-    private val sandboxService: SandboxService,
-    @Reference(service = DependencyInjectionService::class)
-    private val dependencyInjector: DependencyInjectionService,
-    @Reference(service = FlowDependencies::class)
-    private val flowDependencies: FlowDependencies
+    @Reference(service = FlowMetaDataFactory::class)
+    private val flowMetaDataFactory: FlowMetaDataFactory,
+    @Reference(service = FlowEventExecutorFactory::class)
+    private val flowEventExecutorFactory: FlowEventExecutorFactory
 ) : Lifecycle {
 
     companion object {
@@ -66,12 +61,14 @@ class FlowService @Activate constructor(
         when (event) {
             is StartEvent -> {
                 logger.debug { "Starting flow runner component." }
-                flowDependencies.configureInjectionService(dependencyInjector)
                 registration?.close()
                 registration =
                     coordinator.followStatusChangesByName(
                         setOf(
                             LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                            // HACK: This needs to change when we have the proper sandbox group service
+                            // for now we need to start this version of the service as it hosts the new
+                            // api we use elsewhere
                             LifecycleCoordinatorName.forComponent<SandboxService>()
                         )
                     )
@@ -85,7 +82,12 @@ class FlowService @Activate constructor(
             }
             is NewConfigurationReceived -> {
                 executor?.stop()
-                val newExecutor = FlowExecutor(coordinatorFactory, event.config, subscriptionFactory, flowManager, sandboxService)
+                val newExecutor = FlowExecutor(
+                    coordinatorFactory,
+                    event.config,
+                    subscriptionFactory,
+                    flowMetaDataFactory,
+                    flowEventExecutorFactory)
                 newExecutor.start()
                 executor = newExecutor
             }

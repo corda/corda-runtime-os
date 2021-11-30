@@ -1,13 +1,14 @@
 package net.corda.sandbox
 
 import net.corda.packaging.CPK
+import net.corda.v5.serialization.SingletonSerializeAsToken
 
 /**
  * A group of sandboxes with visibility of one another.
  *
  * @property cpks The CPKs this sandbox group is constructed from.
  */
-interface SandboxGroup {
+interface SandboxGroup: SingletonSerializeAsToken {
     val cpks: Collection<CPK>
 
     /**

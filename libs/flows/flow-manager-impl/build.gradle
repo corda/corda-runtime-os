@@ -9,6 +9,8 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
+    runtimeOnly project(":libs:services")
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
@@ -26,6 +28,8 @@ dependencies {
     implementation project(':libs:serialization:checkpoint-serialization-api')
     implementation project(':libs:virtual-node:virtual-node-cache')
     implementation project(':libs:virtual-node:sandbox-group-service')
+    implementation project(':libs:services')
+
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
