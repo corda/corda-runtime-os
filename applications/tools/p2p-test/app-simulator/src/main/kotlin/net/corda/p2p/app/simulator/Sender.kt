@@ -46,7 +46,10 @@ class Sender(private val publisherFactory: PublisherFactory,
 
     fun start() {
         val senderId = UUID.randomUUID().toString()
+        println("QQQ senderId = $senderId")
         logger.info("Using sender ID: $senderId")
+        println("QQQ loadGenParams = $loadGenParams")
+        println("QQQ clients = $clients")
 
         val threads = (1..clients).map { client ->
             thread(isDaemon = true) {

@@ -20,6 +20,7 @@ import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 import java.time.Duration
 import java.time.Instant
+import kotlin.concurrent.thread
 
 class Receiver(private val subscriptionFactory: SubscriptionFactory,
                private val receiveTopic: String,
@@ -35,6 +36,7 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
     private val subscriptions = mutableListOf<Subscription<*, *>>()
 
     fun start() {
+        println("QQQ in receiver $receiveTopic clients = $clients")
         (1..clients).forEach { client ->
             val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", receiveTopic, client)
             val kafkaConfig = SmartConfigImpl.empty()
@@ -46,9 +48,17 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
             subscriptions.add(subscription)
         }
         logger.info("Started consuming messages fom $receiveTopic. When you want to stop the consumption, you can do so using Ctrl+C.")
+        thread {
+            Thread.sleep(1000)
+            println("QQQ slept")
+            subscriptions.forEach {
+                println("QQQ \t subscription ${it.isRunning}")
+            }
+        }
     }
 
     override fun close() {
+        println("QQQ closing down receivers!")
         subscriptions.forEach { it.stop() }
     }
 
@@ -60,6 +70,7 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
             get() = AppMessage::class.java
 
         override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<*, *>> {
+            println("QQQ got messages: ${events.size}")
             val now = Instant.now()
             return events.map {
                 val authenticatedMessage = it.value!!.message as AuthenticatedMessage
