@@ -221,7 +221,7 @@ class ConfigureAll : Runnable {
                     "publicKeyAlias" to "1",
                     "keystorePassword" to "password",
                     "publicKeyAlgo" to "ECDSA",
-                    "address" to "http://$host:433",
+                    "address" to "http://$host:1433",
                     "networkType" to "CORDA_5"
                 )
             )
@@ -264,7 +264,7 @@ class ConfigureAll : Runnable {
                         "publicKeyAlias" to "1",
                         "keystorePassword" to "password",
                         "publicKeyAlgo" to "ECDSA",
-                        "address" to "http://$host:433",
+                        "address" to "http://$host:1433",
                         "networkType" to "CORDA_5"
                     )
                 )
@@ -336,7 +336,7 @@ class ConfigureAll : Runnable {
                 kafkaServers(namespaceName),
                 "gateway",
                 "--host=$host",
-                "--port=433",
+                "--port=1433",
                 "--keyStore=${sslKeyStore.absolutePath}",
                 "--keyStorePassword=password",
                 "--trustStore=${trustStoreFile.absolutePath}",

@@ -133,22 +133,19 @@ class CordaKafkaPublisherImpl(
         }
     }
 
-    private val lock = ReentrantLock()
+    private val transactionLock = ReentrantLock()
 
     private fun executeInTransaction(block: (CordaKafkaProducer) -> Unit): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()
 
         try {
-            lock.withLock {
+            transactionLock.withLock {
                 cordaKafkaProducer.beginTransaction()
                 block(cordaKafkaProducer)
                 cordaKafkaProducer.commitTransaction()
             }
             future.complete(Unit)
         } catch (ex: Exception) {
-            println("QQQ <---")
-            ex.printStackTrace()
-            println("QQQ ->>>")
             when (ex) {
                 is CordaMessageAPIIntermittentException -> {
                     logErrorAndSetFuture(

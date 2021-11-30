@@ -5,26 +5,28 @@ class LoadBalancer(
     servers: Collection<String>,
 ) : Pod() {
     override val app = "load-balancer"
-    override val image = "nginx"
+    override val image = "tekn0ir/nginx-stream"
     override val ports: Collection<Port> = listOf(
-        Port("http", 433)
+        Port("http", 1433)
     )
     override val rawData = listOf(
         TextRawData(
-            "balancer-config", "/etc/nginx/conf.d/",
+            "balancer-config", "/opt/nginx/stream.conf.d",
             listOf(
                 TextFile(
                     "default.conf",
                     """
-                        upstream loadbalancer {
-                          ${servers.map {
-                        "server $it:433;"
-                    }.joinToString("\n")}
+                    upstream loadbalancer {
+                          ${
+                        servers.joinToString("\n") {
+                            "server $it:1433;"
                         }
-                        server {
-                          location / {
-                          proxy_pass http://loadbalancer;
-                        }}
+                    }
+                    }
+                    server {
+                        listen 1433;
+                        proxy_pass loadbalancer;
+                    }
                     """.trimIndent()
                 )
             )
