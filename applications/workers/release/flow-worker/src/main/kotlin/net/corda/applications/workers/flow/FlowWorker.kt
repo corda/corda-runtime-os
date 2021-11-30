@@ -1,8 +1,8 @@
 package net.corda.applications.workers.flow
 
-import com.typesafe.config.Config
 import net.corda.applications.workers.workercommon.HealthProvider
 import net.corda.applications.workers.workercommon.Worker
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Application
 import net.corda.processors.flow.FlowProcessor
@@ -27,7 +27,7 @@ class FlowWorker @Activate constructor(
     }
 
     /** Starts the [FlowProcessor], passing in the [healthProvider] and [workerConfig]. */
-    override fun startup(healthProvider: HealthProvider, workerConfig: Config) {
+    override fun startup(healthProvider: HealthProvider, workerConfig: SmartConfig) {
         logger.info("Flow worker starting")
         FlowProcessor().startup(healthProvider, workerConfig)
     }

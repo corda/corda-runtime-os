@@ -15,4 +15,6 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

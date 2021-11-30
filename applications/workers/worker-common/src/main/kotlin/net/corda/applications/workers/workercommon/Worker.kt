@@ -7,6 +7,7 @@ import net.corda.applications.workers.workercommon.internal.CONFIG_NAME_EXTRA_PA
 import net.corda.applications.workers.workercommon.internal.CONFIG_NAME_INSTANCE_ID
 import net.corda.applications.workers.workercommon.internal.FileBasedHealthProvider
 import net.corda.applications.workers.workercommon.internal.WorkerParams
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Application
 import picocli.CommandLine
@@ -32,16 +33,16 @@ abstract class Worker(private val smartConfigFactory: SmartConfigFactory) : Appl
     /**
      * Starts the worker, passing in the [workerConfig].
      *
-     * @param workerConfig The [Config] required by the worker.
+     * @param workerConfig The [SmartConfig] required by the worker.
      */
-    protected abstract fun startup(healthProvider: HealthProvider, workerConfig: Config)
+    protected abstract fun startup(healthProvider: HealthProvider, workerConfig: SmartConfig)
 
     /**
      * Retrieves the [Config] to connect to the bus
      *
      * @throws IllegalArgumentException If the `--instanceId` argument is missing, or does not have an int parameter.
      */
-    private fun getWorkerConfig(args: Array<String>): Config {
+    private fun getWorkerConfig(args: Array<String>): SmartConfig {
         val params = WorkerParams()
         val commandLine = CommandLine(params)
 
