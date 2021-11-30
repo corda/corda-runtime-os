@@ -21,7 +21,9 @@ class ReorderHandler {
     /**
      * Process an [event] and [state]. Checks the [state] for buffered events and returns a list of events in a contiguous sequence that
      * have not been marked as delivered by the client.
-     * Updates the [state] to store the sequence number of the last event ready to be delivered to the client library.
+     * [state] contains events not signalled as delivered by the client, as well as recording the sequence number of the last event in
+     * the sequence of all contiguous events (delivered and undelivered)
+     * @return the updated [state] and the next events available to be consumed by the client.
      */
     fun processEvent(state: SessionProcessState?, event: SessionEvent): Pair<SessionProcessState?, List<SessionEvent>> {
         log.trace { "Received event $event with state $state" }
