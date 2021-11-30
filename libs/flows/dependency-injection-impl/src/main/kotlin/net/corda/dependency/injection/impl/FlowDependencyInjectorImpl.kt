@@ -37,7 +37,7 @@ class FlowDependencyInjectorImpl(
         if (mismatchedFields.any()) {
             val fields = mismatchedFields.joinToString(separator = ", ") { it.name }
             throw IllegalArgumentException(
-                "No registered types could be found for the following field(s) '$fields'."
+                "No registered types could be found for the following field(s) '$fields'"
             )
         }
 

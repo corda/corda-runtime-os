@@ -6,6 +6,7 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.injection.CordaInject
 import net.corda.v5.serialization.SingletonSerializeAsToken
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -48,8 +49,26 @@ class FlowDependencyInjectorImplTest {
         assertThat(service1.sandboxGroup).isSameAs(sandboxGroup)
         assertThat(service2.sandboxGroup).isSameAs(sandboxGroup)
     }
+
+    @Test
+    fun `an exception is thrown if the flow request a type that is unregistered`(){
+        var flow = ExampleInvalidFlow()
+        Assertions.assertThatIllegalArgumentException()
+            .isThrownBy { flowDependencyInjector.injectServices(flow, flowStateMachine)}
+            .withMessage("No registered types could be found for the following field(s) 'service'")
+    }
+
+    @Test
+    fun `an exception is thrown if the same service is registered more than once`(){
+        Assertions.assertThatIllegalArgumentException()
+            .isThrownBy { FlowDependencyInjectorImpl(sandboxGroup, listOf(fac1, fac1))}
+            .withMessage("An instance of type 'net.corda.dependency.injection.impl.Service1' has been already been registered.")
+    }
 }
 
+/**
+ * Example Service 1
+ */
 interface Service1
 class Service1Impl(val flowStateMachine: FlowStateMachine<*>, val sandboxGroup: SandboxGroup) : Service1
 class Service1Factory(
@@ -66,6 +85,9 @@ class Service1Factory(
     }
 }
 
+/**
+ * Example Service 2
+ */
 interface Service2
 class Service2Impl(val flowStateMachine: FlowStateMachine<*>, val sandboxGroup: SandboxGroup) : Service2
 class Service2Factory(
@@ -82,12 +104,25 @@ class Service2Factory(
     }
 }
 
+/**
+ * Example Flows
+ */
 class ExampleFlow : Flow<String> {
     @CordaInject
     lateinit var service1: Service1
 
     @CordaInject
     lateinit var service2: Service2
+
+    override fun call(): String {
+        return ""
+    }
+}
+
+interface UnavailableService
+class ExampleInvalidFlow : Flow<String> {
+    @CordaInject
+    lateinit var service: UnavailableService
 
     override fun call(): String {
         return ""
