@@ -22,6 +22,11 @@ class DependencyInjectionBuilderImpl(
     }
 
     override fun build(): FlowDependencyInjector {
+        if (sandboxGroupContext == null) {
+            throw IllegalStateException(
+                "build can't be called before the sandbox has been set via addSandboxDependencies()")
+        }
+
         return FlowDependencyInjectorImpl(sandboxGroupContext!!.sandboxGroup, injectableFactories)
     }
 }

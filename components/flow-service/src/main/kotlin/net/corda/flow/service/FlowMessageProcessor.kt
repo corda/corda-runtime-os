@@ -26,6 +26,7 @@ class FlowMessageProcessor(
         val metaData = flowMetaDataFactory.createFromEvent(state, event)
         val executor = flowEventExecutorFactory.create(metaData)
         val result = executor.execute()
+
         return StateAndEventProcessor.Response(result.checkpoint, result.events)
     }
 
