@@ -14,9 +14,9 @@ fi
 echo "(Re)create topics"
 $create_kafka_topics --create --topic $topic_prefix.management
 $create_kafka_topics --create --topic $topic_prefix.management.resp
-$create_kafka_topics --create --topic $topic_prefix.user
-$create_kafka_topics --create --topic $topic_prefix.group
-$create_kafka_topics --create --topic $topic_prefix.role
+$create_kafka_topics --create --topic $topic_prefix.user --config "cleanup.policy=compact"
+$create_kafka_topics --create --topic $topic_prefix.group --config "cleanup.policy=compact"
+$create_kafka_topics --create --topic $topic_prefix.role --config "cleanup.policy=compact"
 
 echo "Topics Created:"
 $kafka_topics --list
