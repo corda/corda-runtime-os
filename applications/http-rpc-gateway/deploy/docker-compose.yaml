@@ -58,5 +58,7 @@ services:
     image: "corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest"
     ports:
       - "8888:8888"
+      - "5005:5005"
     environment:
-      JAVA_TOOL_OPTIONS: "-DinstanceId=1"
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -DinstanceId=1 \
+        -Dbootstrap.servers=kafka:9092 -Dconfig.topic.name=ConfigTopic -Dmessaging.topic.prefix=http-rpc-gateway"
