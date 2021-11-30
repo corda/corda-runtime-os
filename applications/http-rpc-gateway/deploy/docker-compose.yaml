@@ -50,7 +50,7 @@ services:
     ports:
       - "5434:5432"
     environment:
-      POSTGRES_DB: "pets"
+      POSTGRES_DB: "db_worker"
       POSTGRES_USER: "user"
       POSTGRES_PASSWORD: "password"
   http-rpc-gw:
