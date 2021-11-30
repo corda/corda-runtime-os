@@ -311,8 +311,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private var logger = LoggerFactory.getLogger(this::class.java.name)
 
         override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
+            println("QQQ InboundMessageProcessor::onNext 1")
             val records = mutableListOf<Record<*, *>>()
             for (event in events) {
+                println("QQQ InboundMessageProcessor::onNext \t 2")
                 val message = event.value
                 if (message == null) {
                     logger.error("Received null message. The message was discarded.")
@@ -327,6 +329,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     is ResponderHelloMessage, is ResponderHandshakeMessage,
                     is InitiatorHandshakeMessage, is InitiatorHelloMessage -> processSessionMessage(message)
                     is UnauthenticatedMessage -> {
+                        println("QQQ InboundMessageProcessor::onNext \t 3")
                         listOf(Record(P2P_IN_TOPIC, generateKey(), payload))
                     }
                     else -> {
@@ -335,6 +338,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     }
                 }
             }
+            println("QQQ InboundMessageProcessor::onNext 4 ${records.size} - ${records.map { it.topic }}")
             return records
         }
 
@@ -360,8 +364,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         private fun processDataMessage(sessionId: String, message: DataMessage): List<Record<*, *>> {
             val messages = mutableListOf<Record<*, *>>()
+            println("QQQ in processLinkManagerPayload 1 - $sessionId")
             when (val sessionDirection = sessionManager.getSessionById(sessionId)) {
                 is SessionDirection.Inbound -> {
+                    println("QQQ in processLinkManagerPayload 2")
                     messages.addAll(processLinkManagerPayload(sessionDirection.key, sessionDirection.session, sessionId, message))
                 }
                 is SessionDirection.Outbound -> {
@@ -385,6 +391,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                             " The message was discarded.")
                 }
             }
+            println("QQQ in processLinkManagerPayload 3 - ${messages.size} : ${messages.map { it.topic }}")
             return messages
         }
 
