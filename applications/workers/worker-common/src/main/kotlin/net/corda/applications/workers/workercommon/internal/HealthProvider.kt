@@ -14,7 +14,10 @@ import java.io.File
  */
 class HealthProvider {
     companion object {
-        private val healthCheckFile = File(HEALTH_CHECK_FILE_NAME)
+        // TODO - Joel - This filename is bad. Won't necessarily be a unix system.
+        private val healthCheckFile = File(HEALTH_CHECK_FILE_NAME).apply {
+            deleteOnExit()
+        }
     }
 
     /** Marks the worker as healthy. */
