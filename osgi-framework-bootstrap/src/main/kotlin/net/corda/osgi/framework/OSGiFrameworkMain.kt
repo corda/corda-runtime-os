@@ -97,7 +97,7 @@ class OSGiFrameworkMain {
             if (!args.contains("--noStdoutLogging")) {
                 // It is recommended to log to stdout by default in a containerised environment. However, this may
                 // have a strongly negative impact on performance.
-                alsoLogToStdout()
+                redirectLogsToStdout()
             }
 
             /**
@@ -158,15 +158,19 @@ class OSGiFrameworkMain {
             }
         }
 
-        /** Adds stdout as the destination for the root logger's output. */
-        private fun alsoLogToStdout() {
+        // TODO - Joel - See if we can just reload all config from a new user-provided file if needed.
+        // TODO - Joel - See if there's any way to modify the logging level (e.g. via system property).
+        /** Redirects the root logger's output to stdout. */
+        private fun redirectLogsToStdout() {
             val loggerContext = LogManager.getContext(false) as LoggerContext
             val consoleAppender = loggerContext.configuration.getAppender<ConsoleAppender>(CONSOLE_APPENDER)
+            val rootLogger = loggerContext.configuration.rootLogger
             // We add the appender at the same level as the App appender.
-            val level = loggerContext.configuration.rootLogger.appenderRefs.find { appenderRef ->
+            val level = rootLogger.appenderRefs.find { appenderRef ->
                 appenderRef.ref == APP_APPENDER
             }?.level ?: throw IllegalStateException("Root logger does not have an appender named \"$APP_APPENDER\".")
-            loggerContext.configuration.rootLogger.addAppender(consoleAppender, level, null)
+            rootLogger.addAppender(consoleAppender, level, null)
+            rootLogger.removeAppender(APP_APPENDER)
             loggerContext.updateLoggers()
         }
 
