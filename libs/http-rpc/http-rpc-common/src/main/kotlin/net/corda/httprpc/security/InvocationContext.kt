@@ -2,41 +2,24 @@ package net.corda.httprpc.security
 
 import net.corda.httprpc.durablestream.DurableStreamContext
 import net.corda.v5.application.identity.CordaX500Name
-import net.corda.v5.base.annotations.CordaSerializable
 import java.security.Principal
 
 /**
  * Models the information needed to trace an invocation in Corda.
- * Includes initiating actor, origin, trace information, and optional external trace information to
- * correlate clients' IDs.
+ * Includes initiating actor, origin, trace information, and optional external trace information to correlate clients' IDs.
+ *
+ * @property actor Acting agent of the invocation, used to derive the security principal.
  */
-sealed class InvocationContext {
-
-    abstract val arguments: List<Any?>
-    abstract val clientId: String?
-
+data class InvocationContext(
+    val actor: Actor,
+    val arguments: List<Any?> = emptyList(),
+    val durableStreamContext: DurableStreamContext? = null,
+    val clientId: String? = null
+) {
     /**
      * Returns the [Principal] for a given [Actor].
      */
-    abstract val principal: Principal
-
-    abstract fun setArguments(arguments: List<Any?>): InvocationContext
-
-    /**
-     * Origin was an RPC call.
-     *
-     * @property actor Acting agent of the invocation, used to derive the security principal.
-     */
-    // Field `actor` needs to stay public for AMQP / JSON serialization to work.
-    data class Rpc(
-            val actor: Actor,
-            override val arguments: List<Any?> = emptyList(),
-            val durableStreamContext: DurableStreamContext? = null,
-            override val clientId: String? = null
-    ) : InvocationContext() {
-        override val principal = Principal { actor.id.value }
-        override fun setArguments(arguments: List<Any?>): InvocationContext = copy(arguments = arguments)
-    }
+    val principal: Principal = Principal { actor.id.value }
 }
 
 /**
