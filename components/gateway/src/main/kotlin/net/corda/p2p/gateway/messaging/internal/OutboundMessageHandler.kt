@@ -201,7 +201,7 @@ internal class OutboundMessageHandler(
                                       val destinationInfo: DestinationInfo,
                                       val future: CompletableFuture<HttpResponse>)
 
-    inner class ConfigChangeHandler: ConfigurationChangeHandler<GatewayConfiguration>(
+    private inner class ConfigChangeHandler: ConfigurationChangeHandler<GatewayConfiguration>(
         configurationReaderService,
         Gateway.CONFIG_KEY,
         { it.toGatewayConfiguration() }
@@ -211,13 +211,11 @@ internal class OutboundMessageHandler(
             oldConfiguration: GatewayConfiguration?,
             resources: ResourcesHolder
         ): CompletableFuture<Unit> {
-            val configUpdateResult = CompletableFuture<Unit>()
             if (newConfiguration.connectionConfig != oldConfiguration?.connectionConfig) {
                 logger.info("New configuration, connection settings updated to ${newConfiguration.connectionConfig}.")
                 connectionConfig = newConfiguration.connectionConfig
             }
-            configUpdateResult.complete(Unit)
-            return configUpdateResult
+            return CompletableFuture.completedFuture(Unit)
         }
 
     }

@@ -10,6 +10,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -93,14 +94,14 @@ class OutboundMessageHandlerTest {
     }
 
     private lateinit var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
-    private lateinit var configHandler: OutboundMessageHandler.ConfigChangeHandler
+    private lateinit var configHandler: ConfigurationChangeHandler<GatewayConfiguration>
     private val dominoTile = mockConstruction(DominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")
         createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
         @Suppress("UNCHECKED_CAST")
-        configHandler = (context.arguments()[4] as OutboundMessageHandler.ConfigChangeHandler)
+        configHandler = (context.arguments()[4] as ConfigurationChangeHandler<GatewayConfiguration>)
     }
 
     private val handler = OutboundMessageHandler(
