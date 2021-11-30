@@ -143,10 +143,10 @@ java \
 gateway \
 --keyStore ./components/gateway/src/integration-test/resources/sslkeystore_alice.jks \
 --trustStore ./components/gateway/src/integration-test/resources/truststore.jks \
---port 80 \
+--port 433 \
 --host www.alice.net
 ```
-Please note, the port number need to be 80, the host name should be one of the host names from the deploy (default to www.alice.net).
+Please note, the port number need to be 433, the host name should be one of the host names from the deploy (default to www.alice.net).
 
 ### Link Manager Example:
 ```bash
