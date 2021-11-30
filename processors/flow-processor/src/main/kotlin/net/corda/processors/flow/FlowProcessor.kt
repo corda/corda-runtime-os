@@ -14,14 +14,13 @@ class FlowProcessor {
      * Starts the processor.
      *
      * @param healthProvider The [HealthProvider] used to control the worker's healthiness.
-     * @param busConfig The [Config] required to connect to the bus.
+     * @param workerConfig The [Config] required to connect to the bus.
      */
-    fun startup(healthProvider: HealthProvider, busConfig: Config) {
-        logger.info("Flow processor starting")
-        busConfig.entrySet().forEach { entry ->
-            logger.info(entry.key)
-            logger.info(entry.value.toString())
-            logger.info("")
+    @Suppress("Unused_Parameter")
+    fun startup(healthProvider: HealthProvider, workerConfig: Config) {
+        logger.info("Flow processor starting. Config:")
+        workerConfig.entrySet().forEach { entry ->
+            logger.info("${entry.key} - ${entry.value}")
         }
     }
 }

@@ -9,17 +9,16 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 
 /** The [Worker] for handling flows. */
-@Suppress("unused")
+@Suppress("Unused")
 @Component(service = [Application::class])
 class FlowWorker: Worker() {
     private companion object {
         private val logger = contextLogger()
     }
 
-    /** Starts the [FlowProcessor], passing in the [healthProvider] and [busConfig]. */
-    @Suppress("SpreadOperator")
-    override fun startup(healthProvider: HealthProvider, busConfig: Config) {
+    /** Starts the [FlowProcessor], passing in the [healthProvider] and [workerConfig]. */
+    override fun startup(healthProvider: HealthProvider, workerConfig: Config) {
         logger.info("Flow worker starting")
-        FlowProcessor().startup(healthProvider, busConfig)
+        FlowProcessor().startup(healthProvider, workerConfig)
     }
 }

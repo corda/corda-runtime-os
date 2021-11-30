@@ -11,7 +11,7 @@ import java.io.File
  * Since this file does not exist initially, the worker starts in an unhealthy state. Health checks should therefore be
  * delayed until an initial call to [setHealthy].
  */
-class FileBasedHealthProvider : HealthProvider {
+internal class FileBasedHealthProvider : HealthProvider {
     private val healthCheckFile = File(HEALTH_CHECK_PATH_NAME).apply {
         deleteOnExit()
     }
