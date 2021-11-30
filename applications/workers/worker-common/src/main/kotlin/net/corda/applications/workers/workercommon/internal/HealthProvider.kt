@@ -1,7 +1,6 @@
 package net.corda.applications.workers.workercommon.internal
 
 import java.io.File
-import java.io.IOException
 
 /**
  * Allows the health of the worker to be monitored by external processes.
@@ -22,8 +21,8 @@ class HealthProvider {
 
     /** Marks the worker as healthy, by creating the health-check file. */
     fun setHealthy() {
-        // We are not running on a Unix-like operating system. This means that we are running outside of a container,
-        // and thus a health-check isn't required.
+        // We are not running on a Unix-like operating system. This means that we are running outside a container, and
+        // thus a health-check isn't required.
         if (!File("/tmp/").exists()) return
         healthCheckFile.createNewFile()
     }
