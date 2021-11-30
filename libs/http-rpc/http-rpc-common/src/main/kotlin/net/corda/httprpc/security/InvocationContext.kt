@@ -37,32 +37,6 @@ sealed class InvocationContext {
     ) : InvocationContext() {
         override val principal = Principal { actor.id.value }
         override fun setArguments(arguments: List<Any?>): InvocationContext = copy(arguments = arguments)
-        fun setClientId(clientId: String) = copy(clientId = clientId)
-    }
-
-    /**
-     * Origin was a message sent by a [Peer].
-     */
-    data class Peer(
-        val party: CordaX500Name,
-        override val arguments: List<Any?> = emptyList(),
-        override val clientId: String? = null
-    ) : InvocationContext() {
-        override val principal = Principal { party.toString() }
-        override fun setArguments(arguments: List<Any?>): InvocationContext = copy(arguments = arguments)
-    }
-
-    /**
-     * Origin was a Corda Service.
-     */
-    data class Service(
-        val serviceClassName: String,
-
-        override val arguments: List<Any?> = emptyList(),
-        override val clientId: String? = null
-    ) : InvocationContext() {
-        override val principal = Principal { serviceClassName }
-        override fun setArguments(arguments: List<Any?>): InvocationContext = copy(arguments = arguments)
     }
 }
 
