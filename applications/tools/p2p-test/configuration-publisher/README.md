@@ -37,18 +37,14 @@ To run the application use:
                             Default: 60
   -h, --help              display this help message
       --host=<hostname>   The name of the HTTP host
-                            Default: yift-XPS-15-7590
       --keyStore=<keyStoreFile>
-                          The key store file
-                            Default: keystore.jks
+                          The path to the key store file
       --keyStorePassword=<keyStorePassword>
                           The key store password
-                            Default: password
       --maxClientConnections=<maxClientConnections>
                           The maximal number of client connections
                             Default: 100
       --port=<port>       The HTTP port
-                            Default: 80
       --responseTimeoutMilliSecs=<responseTimeoutMilliSecs>
                           Time after which a message delivery is considered
                             failed in milliseconds
@@ -62,11 +58,9 @@ To run the application use:
                             OFF)
                             Default: OFF
       --trustStore=<trustStoreFile>
-                          The trust store file
-                            Default: truststore.jks
+                          The path to the trust store file
       --trustStorePassword=<trustStorePassword>
                           The trust store password
-                            Default: password
 ```
 #### Link manager Arguments:
 ```
