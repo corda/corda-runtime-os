@@ -23,19 +23,17 @@ internal class HttpBasedHealthProvider : HealthProvider {
     private var isReady = false
 
     init {
-        val app = Javalin.create()
-
-        startServer(app)
-
-        app.get(HTTP_HEALTH_ROUTE) { context ->
-            val status = if (isHealthy) HTTP_OK_CODE else HTTP_INTERNAL_SERVER_ERROR_CODE
-            context.status(status)
-        }
-
-        app.get(HTTP_READINESS_ROUTE) { context ->
-            val status = if (isReady) HTTP_OK_CODE else HTTP_INTERNAL_SERVER_ERROR_CODE
-            context.status(status)
-        }
+        Javalin
+            .create()
+            .apply { startServer(this) }
+            .get(HTTP_HEALTH_ROUTE) { context ->
+                val status = if (isHealthy) HTTP_OK_CODE else HTTP_INTERNAL_SERVER_ERROR_CODE
+                context.status(status)
+            }
+            .get(HTTP_READINESS_ROUTE) { context ->
+                val status = if (isReady) HTTP_OK_CODE else HTTP_INTERNAL_SERVER_ERROR_CODE
+                context.status(status)
+            }
     }
 
     override fun setHealthy() {
