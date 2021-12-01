@@ -75,6 +75,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaDurableSubscription-$topic",
+            //we use instanceId here as transactionality is a concern in this subscription
             config.getString(INSTANCE_ID)
         )
     ) { _, _ -> }

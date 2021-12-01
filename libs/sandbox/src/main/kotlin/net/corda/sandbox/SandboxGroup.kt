@@ -11,11 +11,20 @@ interface SandboxGroup {
     val cpks: Collection<CPK>
 
     /**
-     * Attempts to load the [Class] with [className] from the main bundle of each sandbox in the sandbox group in
-     * turn. Casts the first match to type [T] and returns it.
+     * Attempts to load the [Class] with [className] from the main bundle of each sandbox in the
+     * sandbox group in turn. Can only find classes belonging to exported packages.
      *
-     * @throws [SandboxException] if no sandbox contains the named class, if any of the sandboxes' main bundles are
-     * uninstalled, or if the named class is not of the correct type.
+     * @throws [SandboxException] if no sandbox contains the named class, multiple sandboxes contain the named class,
+     * or if any of the sandboxes' main bundles are uninstalled.
+     */
+    fun loadClassFromMainBundles(className: String): Class<*>
+
+    /**
+     * Attempts to load the [Class] with [className] from the main bundle of each sandbox in the sandbox group in
+     * turn. Casts the first match to type [T] and returns it. Can only find classes belonging to exported packages.
+     *
+     * @throws [SandboxException] if no sandbox contains the named class, multiple sandboxes contain the named class,
+     * if any of the sandboxes' main bundles are uninstalled, or if the named class is not of the correct type.
      */
     fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T>
 
