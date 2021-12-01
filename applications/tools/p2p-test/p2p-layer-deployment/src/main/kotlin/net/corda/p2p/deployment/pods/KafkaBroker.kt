@@ -14,7 +14,8 @@ class KafkaBroker(
         fun kafka(
             clusterName: String,
             zookeepersCount: Int,
-            brokersCount: Int
+            brokersCount: Int,
+            kafkaUi: Boolean
         ): Collection<Pod> {
             val zookeepers = ZooKeeper.zookeepers(zookeepersCount)
             val zookeeperConnectString = zookeepers.map {
@@ -23,8 +24,16 @@ class KafkaBroker(
             val brokers = (1..brokersCount).map {
                 KafkaBroker(it, clusterName, zookeeperConnectString)
             }
+            val ui = if(kafkaUi) {
+                listOf(KafkaUi(clusterName,
+                    zookeepers.map { "${it.app}:2181" }.first(),
+                    brokers.map { "${it.app}:9092" }.first(),
+                ))
+            } else {
+                emptyList()
+            }
 
-            return zookeepers + brokers
+            return zookeepers + brokers + ui
         }
     }
     override val app = "kafka-broker-$index"

@@ -23,6 +23,12 @@ typealias Yaml = Map<String, Any?>
 )
 class Namespace : Runnable {
     @Option(
+        names = ["--debug"],
+        description = ["Enable Debug"]
+    )
+    private var debug = false
+
+    @Option(
         names = ["-g", "--gateway-count"],
         description = ["Number of Gateways in the cluster"]
     )
@@ -60,6 +66,12 @@ class Namespace : Runnable {
         description = ["Number of kafka brokers in the cluster"]
     )
     private var kafkaBrokerCount = 3
+
+    @Option(
+        names = ["--kafka-ui"],
+        description = ["Enable Kafka UI"]
+    )
+    private var kafkaUi = false
 
     @Option(
         names = ["-z", "--zoo-keepers-count"],
@@ -154,11 +166,11 @@ class Namespace : Runnable {
     }
 
     private val pods by lazy {
-        KafkaBroker.kafka(namespaceName, zooKeeperCount, kafkaBrokerCount) +
+        KafkaBroker.kafka(namespaceName, zooKeeperCount, kafkaBrokerCount, kafkaUi) +
             PostGreSql(dbUsername, dbPassword, sqlInitFile) +
-            Gateway.gateways(gatewayCount, listOf(actualHostName), kafkaServers, tag) +
-            LinkManager.linkManagers(linkManagerCount, kafkaServers, tag) +
-            Simulator(kafkaServers, tag, 1024)
+            Gateway.gateways(gatewayCount, listOf(actualHostName), kafkaServers, tag, debug) +
+            LinkManager.linkManagers(linkManagerCount, kafkaServers, tag, debug) +
+            Simulator(kafkaServers, tag, 1024, debug)
     }
 
     private val yamls by lazy {
@@ -232,6 +244,25 @@ class Namespace : Runnable {
                 }.filter {
                     it.second != "Running"
                 }.toMap()
+            val badContainers = waitingFor.filterValues {
+                it == "Error" || it == "CrashLoopBackOff"
+            }
+            if (badContainers.isNotEmpty()) {
+               println("Error in ${badContainers.keys}")
+               badContainers.keys.forEach {
+                   ProcessBuilder().command(
+                       "kubectl",
+                       "describe",
+                       "pod",
+                       "-n",
+                       namespaceName,
+                       it
+                   ).inheritIO()
+                       .start()
+                       .waitFor()
+                   throw DeploymentException("Error in pods")
+               }
+            }
             if (waitingFor.isEmpty()) {
                 configureNamespace()
                 return

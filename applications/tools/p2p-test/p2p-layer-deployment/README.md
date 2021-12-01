@@ -41,14 +41,16 @@ Some additional options are:
                              The database password
       --db-username=<dbUsername>
                              The database username
+      --debug                Enable Debug
   -g, --gateway-count=<gatewayCount>
                              Number of Gateways in the cluster
       --gateway-conf, --gateway-config=<gatewayArguments>
                              Gateway extra configuration arguments
       --group-id=<groupId>   The group ID
-  -H, --hosts=<hostsNames>   The hosts names
+  -H, --host=<hostName>      The host name
   -k, --kafka-brokers=<kafkaBrokerCount>
                              Number of kafka brokers in the cluster
+      --kafka-ui             Enable Kafka UI
   -l, --link-manager-count=<linkManagerCount>
                              Number of Link Managers in the cluster
       --lm-conf, --link-manager-config=<linkManagerExtraArguments>
@@ -84,6 +86,12 @@ To access to the database client use:
 ```bash
 ./applications/tools/p2p-test/p2p-layer-deployment/build/install/p2p-layer-deployment/bin/p2p-layer-deployment psql [-n <namespace>] 
 ```
+
+## Accessing to Kafka UI
+If the `--kafka-ui` flag was set, one can access the kafka UI using http://kafka-ui.<namespace>/ from the browser
+
+## Debugging a process
+If the `--debug` flag was set, one can debug the gateway/simulator/link manager with port 8002. The hos name is the format `app.namespace`, for example, to debug the first gateway in namespace `sender` use host `p2p-gateway-1.sender`
 
 ## View logs 
 To view logs of pods in the cluster use:
