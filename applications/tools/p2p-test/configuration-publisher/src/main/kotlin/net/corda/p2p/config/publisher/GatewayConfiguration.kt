@@ -19,11 +19,10 @@ import java.time.Duration
 )
 class GatewayConfiguration : ConfigProducer() {
     @Option(
-        names = ["--host"],
-        description = ["The name of the HTTP host"],
-        required = true
+        names = ["--hostAddress"],
+        description = ["The host name or IP address where the HTTP server will bind"]
     )
-    lateinit var hostname: String
+    var hostAddress: String = "0.0.0.0"
 
     @Option(
         names = ["--port"],
@@ -100,7 +99,7 @@ class GatewayConfiguration : ConfigProducer() {
         ConfigFactory.empty()
             .withValue(
                 "hostAddress",
-                ConfigValueFactory.fromAnyRef(hostname)
+                ConfigValueFactory.fromAnyRef(hostAddress)
             )
             .withValue(
                 "hostPort",
