@@ -20,7 +20,7 @@ In order to get started it is necessary to:
 In `applications/http-rpc-gateway/deploy`:
 
 ```shell
-docker compose up
+docker compose -p "http-rpc" up
 ```
 
 ### Create Kafka topics:
