@@ -9,6 +9,6 @@ internal class WorkerParams {
     @CommandLine.Option(names = [PARAM_INSTANCE_ID], description = ["The Kafka instance ID for this worker."])
     var instanceId = Random.nextInt().absoluteValue
 
-    @CommandLine.Option(names = [PARAM_EXTRA_PARAM], description = ["Additional parameters for the processor."])
+    @CommandLine.Option(names = [PARAM_EXTRA], description = ["Additional parameters for the processor."])
     var additionalParams = emptyMap<String, String>()
 }
