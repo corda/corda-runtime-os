@@ -1,6 +1,7 @@
 package net.corda.applications.workers.db
 
-import net.corda.applications.workers.workercommon.HealthProvider
+import net.corda.applications.workers.healthprovider.HTTP_HEALTH_PROVIDER
+import net.corda.applications.workers.healthprovider.HealthProvider
 import net.corda.applications.workers.workercommon.Worker
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -11,17 +12,15 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-/**
- * The [Worker] for interacting with the database.
- *
- * @param smartConfigFactory The factory for creating a `SmartConfig` object from the worker's configuration.
- */
+/** The [Worker] for interacting with the database. */
 @Suppress("Unused")
 @Component(service = [Application::class])
 class DBWorker @Activate constructor(
     @Reference(service = SmartConfigFactory::class)
-    smartConfigFactory: SmartConfigFactory
-) : Worker(smartConfigFactory) {
+    smartConfigFactory: SmartConfigFactory,
+    @Reference(service = HealthProvider::class, target = "($HTTP_HEALTH_PROVIDER)")
+    healthProvider: HealthProvider
+) : Worker(smartConfigFactory, healthProvider) {
     private companion object {
         private val logger = contextLogger()
     }

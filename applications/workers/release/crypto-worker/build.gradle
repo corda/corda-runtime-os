@@ -9,7 +9,8 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(':applications:workers:worker-common')
+    implementation project(':applications:workers:worker-common:worker-common')
+    implementation project(':applications:workers:worker-common:health-provider')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':processors:crypto-processor')
     implementation "com.typesafe:config:$typeSafeConfigVersion"

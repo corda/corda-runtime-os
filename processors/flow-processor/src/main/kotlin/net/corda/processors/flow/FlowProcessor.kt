@@ -1,6 +1,6 @@
 package net.corda.processors.flow
 
-import net.corda.applications.workers.workercommon.HealthProvider
+import net.corda.applications.workers.healthprovider.HealthProvider
 import net.corda.libs.configuration.SmartConfig
 import net.corda.v5.base.util.contextLogger
 

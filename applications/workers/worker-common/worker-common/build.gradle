@@ -10,6 +10,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':applications:common')
+    implementation project(':applications:workers:worker-common:health-provider')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':osgi-framework-api')
     implementation "com.typesafe:config:$typeSafeConfigVersion"

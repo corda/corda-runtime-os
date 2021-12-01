@@ -3,9 +3,9 @@ package net.corda.applications.workers.workercommon
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.applications.workers.healthprovider.HealthProvider
 import net.corda.applications.workers.workercommon.internal.CONFIG_NAME_EXTRA_PARAMS
 import net.corda.applications.workers.workercommon.internal.CONFIG_NAME_INSTANCE_ID
-import net.corda.applications.workers.workercommon.internal.FileBasedHealthProvider
 import net.corda.applications.workers.workercommon.internal.WorkerParams
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -16,15 +16,24 @@ import picocli.CommandLine
  * The superclass of all Corda workers.
  *
  * @param smartConfigFactory The factory for creating a `SmartConfig` object from the worker's configuration.
+ * @param healthProvider The health provider to track the worker's health.
  */
-abstract class Worker(private val smartConfigFactory: SmartConfigFactory) : Application {
-    private val healthProvider = FileBasedHealthProvider()
+abstract class Worker(
+    private val smartConfigFactory: SmartConfigFactory,
+    private val healthProvider: HealthProvider
+) : Application {
 
     /** Sets up the worker's health-check and parses any [args] per [WorkerParams] before starting the worker. */
     override fun startup(args: Array<String>) {
         healthProvider.setHealthy()
         val workerConfig = getWorkerConfig(args)
-        startup(healthProvider, workerConfig)
+        try {
+            startup(healthProvider, workerConfig)
+        } catch (e: Exception) {
+            // TODO - Joel - Create test to check this behaviour.
+            healthProvider.setNotHealthy()
+            healthProvider.setNotReady()
+        }
     }
 
     /** A no-op shutdown. */
