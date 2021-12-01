@@ -30,7 +30,6 @@ abstract class Worker(
         try {
             startup(healthProvider, workerConfig)
         } catch (e: Exception) {
-            // TODO - Joel - Create test to check this behaviour.
             healthProvider.setNotHealthy()
             healthProvider.setNotReady()
         }
