@@ -10,6 +10,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -22,6 +23,7 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
+import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
@@ -73,9 +75,10 @@ class OutboundMessageHandlerTest {
         } doReturn subscription
     }
     private var connectionConfig = ConnectionConfiguration()
-    private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java) { mock, _ ->
-        whenever(mock.latestConnectionConfig()).thenAnswer { connectionConfig }
+    private val gatewayConfig = mock<GatewayConfiguration> {
+        on { connectionConfig } doAnswer { connectionConfig }
     }
+    private val connectionManager = mockConstruction(ReconfigurableConnectionManager::class.java)
 
     private val sentMessages = mutableListOf<GatewayMessage>()
     private val client = mock<HttpClient> {
@@ -91,11 +94,14 @@ class OutboundMessageHandlerTest {
     }
 
     private lateinit var createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
+    private lateinit var configHandler: ConfigurationChangeHandler<GatewayConfiguration>
     private val dominoTile = mockConstruction(DominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
         @Suppress("UNCHECKED_CAST")
         createResources = context.arguments()[2] as ((resources: ResourcesHolder) -> CompletableFuture<Unit>)
+        @Suppress("UNCHECKED_CAST")
+        configHandler = (context.arguments()[4] as ConfigurationChangeHandler<GatewayConfiguration>)
     }
 
     private val handler = OutboundMessageHandler(
@@ -286,6 +292,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `when message times out, it is retried once`() {
+        connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = 10.millis)
         startHandler()
         val messagesLatch = CountDownLatch(2)
         val client = mock<HttpClient> {
@@ -297,7 +304,6 @@ class OutboundMessageHandlerTest {
                 // simulate scenario where no response is received.
             }
         }
-        connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = 10.millis)
         val msgPayload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -329,6 +335,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `when message fails, it is retried once`() {
+        connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = 10.millis)
         startHandler()
         val messagesLatch = CountDownLatch(2)
         val client = mock<HttpClient> {
@@ -339,7 +346,6 @@ class OutboundMessageHandlerTest {
                 CompletableFuture.failedFuture(RuntimeException("some error happened"))
             }
         }
-        connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = 10.millis)
         val msgPayload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -371,6 +377,7 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `when 5xx error code is received, it is retried once`() {
+        connectionConfig = ConnectionConfiguration().copy(retryDelay = 10.millis)
         startHandler()
         val messagesLatch = CountDownLatch(2)
         val client = mock<HttpClient> {
@@ -384,7 +391,6 @@ class OutboundMessageHandlerTest {
                 CompletableFuture.completedFuture(response)
             }
         }
-        connectionConfig = ConnectionConfiguration().copy(retryDelay = 10.millis)
         val msgPayload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -416,6 +422,8 @@ class OutboundMessageHandlerTest {
 
     @Test
     fun `when 4xx error code is received, it is not retried`() {
+        val retryDelay = 10.millis
+        connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = retryDelay)
         startHandler()
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
@@ -427,8 +435,6 @@ class OutboundMessageHandlerTest {
                 CompletableFuture.completedFuture(response)
             }
         }
-        val retryDelay = 10.millis
-        connectionConfig = ConnectionConfiguration().copy(responseTimeout = 10.millis, retryDelay = retryDelay)
         val msgPayload = UnauthenticatedMessage.newBuilder().apply {
             header = UnauthenticatedMessageHeader(
                 HoldingIdentity("A", "B"),
@@ -457,5 +463,6 @@ class OutboundMessageHandlerTest {
         whenever(connectionManager.constructed().first().isRunning).doReturn(true)
         whenever(dominoTile.constructed().first().isRunning).doReturn(true)
         handler.start()
+        configHandler.applyNewConfiguration(gatewayConfig, null, ResourcesHolder())
     }
 }
