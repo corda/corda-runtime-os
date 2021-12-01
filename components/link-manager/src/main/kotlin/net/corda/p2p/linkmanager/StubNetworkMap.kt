@@ -48,8 +48,10 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
             if (!isRunning) {
                 throw IllegalStateException("getMemberInfo operation invoked while component was stopped.")
             }
-
-            processor.netmapEntriesByHoldingIdentity[holdingIdentity]?.toMemberInfo()
+            println("QQQ getting member info for $holdingIdentity")
+            processor.netmapEntriesByHoldingIdentity[holdingIdentity]?.toMemberInfo().also {
+                println("QQQ got $it")
+            }
         }
     }
 
@@ -69,7 +71,10 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                 throw IllegalStateException("getNetworkType operation invoked while component was stopped.")
             }
 
-            processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.first()?.networkType?.toLMNetworkType()
+            println("QQQ getting network ID for $groupId")
+            processor.netMapEntriesByGroupIdPublicKeyHash[groupId]?.values?.first()?.networkType?.toLMNetworkType()?.also {
+                println("QQQ got $it")
+            }
         }
     }
 
