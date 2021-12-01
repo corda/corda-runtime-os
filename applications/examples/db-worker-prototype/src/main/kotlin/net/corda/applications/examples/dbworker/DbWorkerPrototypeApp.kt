@@ -47,7 +47,7 @@ class DbWorkerPrototypeApp @Activate constructor(
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
-        consoleLogger.info("DB Worker prototype application...")
+        consoleLogger.info("DB Worker prototype application starting")
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
 
@@ -118,12 +118,12 @@ class DbWorkerPrototypeApp @Activate constructor(
                 }
             log.info("Starting life cycle coordinator")
             lifeCycleCoordinator?.start()
-            consoleLogger.info("Demo application started")
+            consoleLogger.info("DB Worker prototype application started")
         }
     }
 
     override fun shutdown() {
-        consoleLogger.info("Shutting down persistence demo application...")
+        consoleLogger.info("Shutting down DB Worker prototype application")
         lifeCycleCoordinator?.stop()
     }
 }
