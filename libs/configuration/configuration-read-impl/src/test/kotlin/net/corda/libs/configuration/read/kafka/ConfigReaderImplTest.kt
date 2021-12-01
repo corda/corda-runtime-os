@@ -41,7 +41,7 @@ class ConfigReaderImplTest {
         configReader = ConfigReaderImpl(configRepository, subscriptionFactory, config, smartConfigFactory)
         Mockito.`when`(
             subscriptionFactory.createCompactedSubscription(
-                SubscriptionConfig(CONFIGURATION_READER, "default-topic", 1),
+                SubscriptionConfig(CONFIGURATION_READER, "default-topic"),
                 configReader,
                 config
             )
