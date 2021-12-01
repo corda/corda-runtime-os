@@ -159,7 +159,7 @@ class Main @Activate constructor(
         val inputB = DeserializationInput(serializationB)
 
         consoleLogger.info("Check custom serialisers work in environment A")
-        val objA = sandboxA.sandboxGroup.loadClassFromMainBundles("net.corda.applications.examples.amqp.customserializer.examplea.NeedsCustomSerializerExampleA", Any::class.java).getConstructor(Integer.TYPE).newInstance(1)
+        val objA = sandboxA.sandboxGroup.loadClassFromMainBundles("net.corda.applications.examples.amqp.customserializer.examplea.NeedsCustomSerializerExampleA").getConstructor(Integer.TYPE).newInstance(1)
         val contextA = AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxA)
         val serializedBytesA = outputA.serialize(objA, contextA)
         consoleLogger.info("SUCCESS - Serialise successful in environment A")
@@ -170,7 +170,7 @@ class Main @Activate constructor(
 
 
         consoleLogger.info("Check custom serialisers work in environment B")
-        val objB = sandboxB.sandboxGroup.loadClassFromMainBundles("net.corda.applications.examples.amqp.customserializer.exampleb.NeedsCustomSerializerExampleB", Any::class.java).getConstructor(Int::class.java).newInstance(2)
+        val objB = sandboxB.sandboxGroup.loadClassFromMainBundles("net.corda.applications.examples.amqp.customserializer.exampleb.NeedsCustomSerializerExampleB").getConstructor(Int::class.java).newInstance(2)
         val contextB = AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxB)
         val serializedBytesB = outputB.serialize(objB, contextB)
         consoleLogger.info("SUCCESS - Serialise successful in environment B")
@@ -229,8 +229,7 @@ class Main @Activate constructor(
 
         // Build test object
         val obj = sandboxA.sandboxGroup.loadClassFromMainBundles(
-            "net.corda.applications.examples.amqp.customserializer.examplea.NeedsCustomSerializerExampleA",
-            Any::class.java
+            "net.corda.applications.examples.amqp.customserializer.examplea.NeedsCustomSerializerExampleA"
         ).getConstructor(Integer.TYPE).newInstance(5)
 
         // Run object through serialization

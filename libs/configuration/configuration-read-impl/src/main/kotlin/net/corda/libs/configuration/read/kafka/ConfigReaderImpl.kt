@@ -24,7 +24,6 @@ class ConfigReaderImpl(
 
     companion object {
         private const val CONFIG_TOPIC_PATH = "config.topic.name"
-        private const val INSTANCE_ID = "instance-id"
         internal const val CONFIGURATION_READER = "CONFIGURATION_READER"
     }
 
@@ -50,8 +49,7 @@ class ConfigReaderImpl(
                     subscriptionFactory.createCompactedSubscription(
                         SubscriptionConfig(
                             CONFIGURATION_READER,
-                            boostrapConfig.getString(CONFIG_TOPIC_PATH),
-                            boostrapConfig.getInt(INSTANCE_ID),
+                            boostrapConfig.getString(CONFIG_TOPIC_PATH)
                         ),
                         this,
                         boostrapConfig

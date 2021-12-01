@@ -16,9 +16,15 @@ Command line args/system properties can be used instead of a kafka properties fi
 - `java -jar -Dbootstrap.servers=localhost:9092 -Dconfig.topic.name=ConfigTopic -Dmessaging.topic.prefix=http-rpc-gateway corda-demo-app-5.0.0-SNAPSHOT.jar --instanceId 4`
 
 ## Working with Docker image
-The Gradle task `publishOSGiImage` publishes a Docker Image which can be run locally. Once available the image can be run as follows:
+
+### Building the Docker image
+The Gradle task `publishOSGiImage` publishes a Docker Image which can be run locally.
+```
+gradlew :applications:http-rpc-gateway:clean :applications:http-rpc-gateway:publishOSGiImage
+```
 
 ### Running the container
+Once available the image can be run as follows:
 ```
 docker run -it -p 8888:8888 -e "JAVA_TOOL_OPTIONS=-DinstanceId=1" corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
 ```

@@ -66,9 +66,6 @@ internal class CliArguments {
             ).withValue(
                 "messaging.topic.prefix",
                 ConfigValueFactory.fromAnyRef(topicPrefix)
-            ).withValue(
-                "instance-id",
-                ConfigValueFactory.fromAnyRef(instanceId)
             )
     }
 }

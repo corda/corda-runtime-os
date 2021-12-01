@@ -15,10 +15,15 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.NetworkType
+import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
+import net.corda.p2p.gateway.Gateway
+import net.corda.p2p.gateway.messaging.ConnectionConfiguration
+import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
+import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.p2p.schema.Schema
 import net.corda.v5.base.util.debug
 import org.bouncycastle.asn1.x500.X500Name
@@ -36,7 +41,7 @@ import java.util.concurrent.TimeUnit
  */
 internal class OutboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    configurationReaderService: ConfigurationReadService,
+    private val configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
     instanceId: Int,
@@ -45,6 +50,8 @@ internal class OutboundMessageHandler(
         private val logger = LoggerFactory.getLogger(OutboundMessageHandler::class.java)
         const val MAX_RETRIES = 1
     }
+
+    private var connectionConfig = ConnectionConfiguration()
 
     private val connectionManager = ReconfigurableConnectionManager(
         lifecycleCoordinatorFactory,
@@ -55,7 +62,8 @@ internal class OutboundMessageHandler(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         children = listOf(connectionManager.dominoTile),
-        createResources = ::createResources
+        createResources = ::createResources,
+        configurationChangeHandler = ConfigChangeHandler()
     )
 
     private val p2pMessageSubscription = subscriptionFactory.createEventLogSubscription(
@@ -116,7 +124,7 @@ internal class OutboundMessageHandler(
     private fun waitUntilComplete(pendingRequests: List<PendingRequest>) {
         try {
             CompletableFuture.allOf( *pendingRequests.map{ it.future }.toTypedArray() )
-                .get(connectionManager.latestConnectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
+                .get(connectionConfig.responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
         } catch (e: Exception) {
             // Do nothing - results/errors will be processed individually.
         }
@@ -138,11 +146,11 @@ internal class OutboundMessageHandler(
         retryThreadPool.schedule({
             val future = sendMessage(destinationInfo, gatewayMessage)
             val pendingRequest = PendingRequest(gatewayMessage, destinationInfo, future)
-            future.orTimeout(connectionManager.latestConnectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
+            future.orTimeout(connectionConfig.responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
                   .whenCompleteAsync { response, error ->
                         handleResponse(pendingRequest, response, error, remainingAttempts - 1)
                   }
-        }, connectionManager.latestConnectionConfig().retryDelay.toMillis(), TimeUnit.MILLISECONDS)
+        }, connectionConfig.retryDelay.toMillis(), TimeUnit.MILLISECONDS)
     }
 
     private fun handleResponse(pendingRequest: PendingRequest, response: HttpResponse?, error: Throwable?, remainingAttempts: Int) {
@@ -192,4 +200,23 @@ internal class OutboundMessageHandler(
     private data class PendingRequest(val gatewayMessage: GatewayMessage,
                                       val destinationInfo: DestinationInfo,
                                       val future: CompletableFuture<HttpResponse>)
+
+    private inner class ConfigChangeHandler: ConfigurationChangeHandler<GatewayConfiguration>(
+        configurationReaderService,
+        Gateway.CONFIG_KEY,
+        { it.toGatewayConfiguration() }
+    ) {
+        override fun applyNewConfiguration(
+            newConfiguration: GatewayConfiguration,
+            oldConfiguration: GatewayConfiguration?,
+            resources: ResourcesHolder
+        ): CompletableFuture<Unit> {
+            if (newConfiguration.connectionConfig != oldConfiguration?.connectionConfig) {
+                logger.info("New configuration, connection settings updated to ${newConfiguration.connectionConfig}.")
+                connectionConfig = newConfiguration.connectionConfig
+            }
+            return CompletableFuture.completedFuture(Unit)
+        }
+
+    }
 }
