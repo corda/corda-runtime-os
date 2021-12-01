@@ -25,12 +25,14 @@ import kotlin.concurrent.withLock
  * @property topicService retrieve records and commit offsets back to topics with this service
  * @property lifecycleCoordinatorFactory used to create the lifecycleCoordinator object that external users can follow for updates
  */
+@Suppress("LongParameterList")
 class PubSubSubscription<K : Any, V : Any>(
     internal val subscriptionConfig: SubscriptionConfig,
     private val processor: PubSubProcessor<K, V>,
     private val executor: ExecutorService?,
     private val topicService: TopicService,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val clientIdCounter: String
 ) : Subscription<K, V> {
 
     companion object {
@@ -40,7 +42,8 @@ class PubSubSubscription<K : Any, V : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "${subscriptionConfig.groupName}-PubSubSubscription-${subscriptionConfig.eventTopic}",
-            subscriptionConfig.instanceId.toString()
+            //we use clientIdCounter here instead of instanceId as this subscription is readOnly
+            clientIdCounter
         )
     ) { _, _ -> }
 
