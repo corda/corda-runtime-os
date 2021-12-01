@@ -66,6 +66,9 @@ internal class CliArguments {
             ).withValue(
                 "messaging.topic.prefix",
                 ConfigValueFactory.fromAnyRef(topicPrefix)
+            ).withValue(
+                "messaging.subscription.consumer.poll.timeout",
+                ConfigValueFactory.fromAnyRef(100)
             )
     }
 }
