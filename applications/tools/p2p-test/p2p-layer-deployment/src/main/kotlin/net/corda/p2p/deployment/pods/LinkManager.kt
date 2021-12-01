@@ -4,10 +4,11 @@ class LinkManager(
     index: Int,
     tag: String,
     kafkaServers: String,
-) : P2pPod(kafkaServers, tag, index) {
+    debug: Boolean,
+) : P2pPod(kafkaServers, tag, index, debug) {
     companion object {
-        fun linkManagers(count: Int, kafkaServers: String, tag: String) = (1..count).map {
-            LinkManager(it, tag, kafkaServers)
+        fun linkManagers(count: Int, kafkaServers: String, tag: String, debug: Boolean) = (1..count).map {
+            LinkManager(it, tag, kafkaServers, debug)
         }
     }
 

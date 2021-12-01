@@ -345,31 +345,15 @@ class ConfigureAll : Runnable {
             ) + gatewayArguments
         )
     }
+
     private fun kafkaSetup() {
-        println("Setting kafka compacted topics...")
-        File.createTempFile("topics.", ".conf").also { configFile ->
-            configFile.deleteOnExit()
-            configFile.delete()
-            ClassLoader.getSystemClassLoader()
-                .getResource("topics.conf")
-                ?.openStream()?.use { input ->
-                    Files.copy(input, configFile.toPath())
-                }
-            runJar(
-                "kafka-setup",
-                listOf(
-                    "--kafka",
-                    kafkaFile(namespaceName).absolutePath,
-                    "--topic",
-                    configFile.absolutePath
-                )
-            )
-        }
+        println("Creating/alerting kafka topics...")
+        KafkaSetup(namespaceName).run()
     }
 
     override fun run() {
-        startTelepresence()
         kafkaSetup()
+        startTelepresence()
         publishNetworkMap()
         publishKeys()
         configureLinkManager()

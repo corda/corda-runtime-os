@@ -2,9 +2,15 @@ package net.corda.p2p.deployment.pods
 
 import net.corda.p2p.deployment.CordaOsDockerDevSecret
 
-abstract class P2pPod(kafkaServers: String, tag: String, index: Int) : Pod() {
+abstract class P2pPod(
+    kafkaServers: String,
+    tag: String,
+    index: Int,
+    debug: Boolean,
+) : Pod() {
     override val pullSecrets = listOf(CordaOsDockerDevSecret.name)
     open val autoStart = true
+    open val otherPorts: Collection<Port> = emptyList()
     abstract val imageName: String
     override val image by lazy {
         "${CordaOsDockerDevSecret.host}/corda-os-$imageName:$tag"
@@ -19,8 +25,27 @@ abstract class P2pPod(kafkaServers: String, tag: String, index: Int) : Pod() {
             listOf("sleep", "infinity")
         }
     }
-    override val environmentVariables = mapOf(
-        "KAFKA_SERVERS" to kafkaServers,
-        "INSTANCE_ID" to index.toString(),
-    )
+    override val environmentVariables by lazy {
+        mapOf(
+            "KAFKA_SERVERS" to kafkaServers,
+            "INSTANCE_ID" to index.toString(),
+        ) + if(debug) {
+            mapOf("JAVA_TOOL_OPTIONS" to "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8002")
+        } else {
+            emptyMap()
+        }
+    }
+
+    override val ports by lazy {
+        otherPorts + if(debug) {
+            listOf(
+                Port(
+                    "debug",
+                    8002
+                )
+            )
+        } else {
+            emptyList()
+        }
+    }
 }
