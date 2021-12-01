@@ -220,6 +220,7 @@ class Namespace : Runnable {
         }
     }
 
+    @Suppress("ThrowsCount")
     private fun waitForCluster() {
         repeat(300) {
             Thread.sleep(1000)
