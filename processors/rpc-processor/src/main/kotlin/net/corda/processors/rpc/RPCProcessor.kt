@@ -1,11 +1,11 @@
-package net.corda.processors.flow
+package net.corda.processors.rpc
 
 import net.corda.applications.workers.workercommon.HealthProvider
 import net.corda.libs.configuration.SmartConfig
 import net.corda.v5.base.util.contextLogger
 
-/** The processor for a `FlowWorker`. */
-class FlowProcessor {
+/** The processor for an `RPCWorker`. */
+class RPCProcessor {
     private companion object {
         val logger = contextLogger()
     }
@@ -18,6 +18,6 @@ class FlowProcessor {
      */
     @Suppress("Unused_Parameter")
     fun startup(healthProvider: HealthProvider, workerConfig: SmartConfig) {
-        logger.info("Flow processor starting.")
+        logger.info("RPC processor starting.")
     }
 }

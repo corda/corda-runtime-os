@@ -1,0 +1,16 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'DB Processor'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':applications:workers:worker-common')
+    implementation project(':libs:configuration:configuration-core')
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation 'net.corda:corda-base'
+}
