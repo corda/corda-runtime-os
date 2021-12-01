@@ -1,9 +1,6 @@
 package net.corda.p2p.deployment.commands
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.DeploymentException
-import net.corda.p2p.deployment.Yaml
 
 class KafkaSetup(
     private val namespaceName: String
@@ -104,24 +101,14 @@ class KafkaSetup(
             "get",
             "pod",
             "-n", namespaceName,
-            "-o", "yaml",
+            "-l", "app=kafka-broker-1",
+            "-o","jsonpath={.items[*].metadata.name}"
         ).start()
         if (getPods.waitFor() != 0) {
             System.err.println(getPods.errorStream.reader().readText())
             throw DeploymentException("Could not get pods")
         }
 
-        val reader = ObjectMapper(YAMLFactory()).reader()
-        val rawData = reader.readValue(getPods.inputStream, Map::class.java)
-        val items = rawData["items"] as List<Yaml>
-        items.firstOrNull {
-            val spec = it["spec"] as Yaml
-            val containers = spec["containers"] as List<Yaml>
-            containers.firstOrNull()?.get("name").toString().startsWith("kafka-broker-")
-        }?.let {
-            val metadata = it["metadata"] as Yaml
-            metadata["name"] as? String
-        } ?: throw DeploymentException("Could not find kafka broker")
-
+        getPods.inputStream.reader().readText().trim()
     }
 }

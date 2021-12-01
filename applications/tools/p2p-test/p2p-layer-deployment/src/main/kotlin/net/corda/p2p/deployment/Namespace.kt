@@ -245,7 +245,7 @@ class Namespace : Runnable {
                     it.second != "Running"
                 }.toMap()
             val badContainers = waitingFor.filterValues {
-                it == "Error" || it == "CrashLoopBackOff"
+                it == "Error" || it == "CrashLoopBackOff" || it == "ErrImagePull" || it == "ImagePullBackOff"
             }
             if (badContainers.isNotEmpty()) {
                println("Error in ${badContainers.keys}")

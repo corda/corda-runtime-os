@@ -352,8 +352,8 @@ class ConfigureAll : Runnable {
     }
 
     override fun run() {
-        startTelepresence()
         kafkaSetup()
+        startTelepresence()
         publishNetworkMap()
         publishKeys()
         configureLinkManager()
