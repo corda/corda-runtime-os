@@ -13,7 +13,8 @@ locally to be able to demonstrate HTTP RPC functionality built to date including
 In order to get started it is necessary to:
 - Start Docker Desktop.
 - Build an image of HTTP RPC Gateway, please see [here](../README.md#building-the-docker-image).
-- TODO: Explain how to build DBWorker prototype.
+- Build an image of DB Worker prototype, please see 
+  [here](../../examples/db-worker-prototype/README.md#building-the-docker-image).
 
 ## Start the network
 

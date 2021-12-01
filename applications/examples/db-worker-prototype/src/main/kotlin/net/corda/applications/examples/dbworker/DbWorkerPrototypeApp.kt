@@ -47,7 +47,7 @@ class DbWorkerPrototypeApp @Activate constructor(
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
-        consoleLogger.info("Starting persistence demo application...")
+        consoleLogger.info("DB Worker prototype application...")
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
 
