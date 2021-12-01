@@ -5,7 +5,7 @@ import net.corda.v5.application.identity.CordaX500Name
 import java.security.Principal
 
 /**
- * Models the information needed to trace an invocation in Corda.
+ * Models the information needed to trace an HTTP RPC invocation in Corda.
  * Includes initiating actor, origin, trace information, and optional external trace information to correlate clients' IDs.
  *
  * @property actor Acting agent of the invocation, used to derive the security principal.
