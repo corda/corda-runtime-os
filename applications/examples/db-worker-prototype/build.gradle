@@ -22,6 +22,8 @@ dependencies {
 
     implementation project(":osgi-framework-api")
 
+    implementation project(":components:permissions:permission-storage-writer-service")
+
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-admin")
@@ -30,11 +32,13 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(':libs:permissions:permission-datamodel')
     implementation project(":libs:db:db-admin-impl")
+    implementation project(":libs:permissions:permission-storage-writer")
 
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:db:db-orm-impl")
+    runtimeOnly project(":libs:permissions:permission-storage-writer-impl")
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
