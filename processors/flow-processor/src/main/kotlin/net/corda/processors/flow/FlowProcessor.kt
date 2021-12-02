@@ -5,10 +5,15 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 
+// TODO - Joel - Consider providing a common interface for processors.
+
 /**
  * The processor for a `FlowWorker`.
  *
  * @property config The configuration for the processor.
+ * @property onStatusUpCallback Callback to set the processor's status to `LifecycleStatus.UP`.
+ * @property onStatusDownCallback Callback to set the processor's status to `LifecycleStatus.DOWN`.
+ * @property onStatusErrorCallback Callback to set the processor's status to `LifecycleStatus.ERROR`.
  */
 @Component(service = [FlowProcessor::class])
 class FlowProcessor : Lifecycle {
@@ -18,7 +23,6 @@ class FlowProcessor : Lifecycle {
 
     override var isRunning = false
     var config: SmartConfig? = null
-    // TODO - Joel - Describe these callbacks.
     var onStatusUpCallback: (() -> Unit)? = null
     var onStatusDownCallback: (() -> Unit)? = null
     var onStatusErrorCallback: (() -> Unit)? = null

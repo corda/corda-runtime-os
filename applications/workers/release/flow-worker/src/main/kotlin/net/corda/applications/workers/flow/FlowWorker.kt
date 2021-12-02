@@ -1,11 +1,9 @@
 package net.corda.applications.workers.flow
 
-import net.corda.applications.workers.healthprovider.HealthProvider
-import net.corda.applications.workers.workercommon.Worker
+import net.corda.applications.workers.workercommon.WorkerParams
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -17,53 +15,48 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-/** The [Worker] for handling flows. */
+// TODO - Joel - Create all-in-one worker - a worker that bootstraps multiple processors.
+
+/** The worker for handling flows. */
 @Suppress("Unused")
 @Component(service = [Application::class])
 class FlowWorker @Activate constructor(
     @Reference(service = SmartConfigFactory::class)
-    smartConfigFactory: SmartConfigFactory,
-    @Reference(service = HealthProvider::class)
-    healthProvider: HealthProvider,
-    @Reference(service = FlowProcessor::class)
-    private val flowProcessor: FlowProcessor,
+    private val smartConfigFactory: SmartConfigFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-) : Worker(smartConfigFactory, healthProvider) {
+    @Reference(service = FlowProcessor::class)
+    private val processor: FlowProcessor
+) : Application {
 
     private companion object {
         private val logger = contextLogger()
     }
 
     // Passes start and stop events through to the flow processor.
-    private val eventHandler = LifecycleEventHandler { event, _ ->
+    private val coordinator = coordinatorFactory.createCoordinator<FlowProcessor> { event, _ ->
         when (event) {
-            is StartEvent -> flowProcessor.start()
-            is StopEvent -> flowProcessor.stop()
+            is StartEvent -> processor.start()
+            is StopEvent -> processor.stop()
         }
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<FlowProcessor>(eventHandler)
-
-    // TODO - Joel - Compare this to VirtualNodeInfoServiceComponentImpl for correctness.
-
-    // TODO - Joel - Create all-in-one processor - a worker that bootstraps multiple processors.
-
-    /** Starts the [FlowProcessor]. */
-    override fun startup(config: SmartConfig) {
+    /** Parses the arguments, then initialises and starts the [FlowProcessor]. */
+    override fun startup(args: Array<String>) {
         logger.info("Flow worker starting.")
-        initialiseFlowProcessor(config)
+        val config = WorkerParams().parseArgs(args, smartConfigFactory)
+        initialiseProcessor(config)
         coordinator.start()
     }
 
-    // TODO - Joel - Create method to stop processor and coordinator.
+    override fun shutdown() = coordinator.stop()
 
-    /** Initialises the [flowProcessor]. */
-    private fun initialiseFlowProcessor(config: SmartConfig) {
-        flowProcessor.config = config
-        flowProcessor.onStatusUpCallback = ::setStatusToUp
-        flowProcessor.onStatusDownCallback = ::setStatusToDown
-        flowProcessor.onStatusErrorCallback = ::setStatusToError
+    /** Initialises the [processor]. */
+    private fun initialiseProcessor(config: SmartConfig) {
+        processor.config = config
+        processor.onStatusUpCallback = ::setStatusToUp
+        processor.onStatusDownCallback = ::setStatusToDown
+        processor.onStatusErrorCallback = ::setStatusToError
     }
 
     /** Sets the coordinator's status to [LifecycleStatus.UP]. */

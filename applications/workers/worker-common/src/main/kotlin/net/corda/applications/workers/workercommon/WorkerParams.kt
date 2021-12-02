@@ -1,6 +1,8 @@
 package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.ConfigFactory
+import net.corda.applications.workers.workercommon.internal.PARAM_EXTRA
+import net.corda.applications.workers.workercommon.internal.PARAM_INSTANCE_ID
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import picocli.CommandLine
@@ -29,7 +31,7 @@ open class WorkerParams {
      *
      * @throws IllegalArgumentException If parsing the arguments using [CommandLine] fails.
      */
-    internal fun parseArgs(args: Array<String>, smartConfigFactory: SmartConfigFactory): SmartConfig {
+    fun parseArgs(args: Array<String>, smartConfigFactory: SmartConfigFactory): SmartConfig {
         val commandLine = CommandLine(this)
         try {
             commandLine.parseArgs(*args)
@@ -67,7 +69,7 @@ open class WorkerParams {
 
         return (subclasses + WorkerParams::class.java).flatMapTo(LinkedHashSet()) { klass ->
             klass.declaredFields.filter { field ->
-                field.annotations.any { annotation -> annotation.annotationClass == CommandLine.Option::class }
+                field.annotations.any { annotation -> annotation.annotationClass == Option::class }
             }
         }
     }

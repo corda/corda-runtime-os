@@ -3,23 +3,37 @@ package net.corda.processors.db
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
+import org.osgi.service.component.annotations.Component
 
-/** The processor for a `DBWorker`. */
+/**
+ * The processor for a `DBWorker`.
+ *
+ * @property config The configuration for the processor.
+ * @property onStatusUpCallback Callback to set the processor's status to `LifecycleStatus.UP`.
+ * @property onStatusDownCallback Callback to set the processor's status to `LifecycleStatus.DOWN`.
+ * @property onStatusErrorCallback Callback to set the processor's status to `LifecycleStatus.ERROR`.
+ */
+@Component(service = [DBProcessor::class])
 class DBProcessor : Lifecycle {
     private companion object {
         val logger = contextLogger()
     }
 
-    /** Starts the processor with the provided [config]. */
-    @Suppress("Unused_Parameter")
-    fun startup(config: SmartConfig) {
+    override var isRunning = false
+    var config: SmartConfig? = null
+    var onStatusUpCallback: (() -> Unit)? = null
+    var onStatusDownCallback: (() -> Unit)? = null
+    var onStatusErrorCallback: (() -> Unit)? = null
+
+    override fun start() {
         logger.info("DB processor starting.")
+        onStatusUpCallback?.invoke()
         isRunning = true
     }
 
-    override var isRunning = false
-
-    override fun start() = Unit
-
-    override fun stop() = Unit
+    override fun stop() {
+        logger.info("DB processor stopping.")
+        onStatusDownCallback?.invoke()
+        isRunning = false
+    }
 }

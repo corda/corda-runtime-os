@@ -6,6 +6,18 @@ plugins {
 description 'Worker Common'
 
 dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':applications:common')
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':osgi-framework-api')
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "info.picocli:picocli:$picocliVersion"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
