@@ -95,6 +95,7 @@ class Schemas {
          * Virtual Node schema
          */
         const val VIRTUAL_NODE_INFO_TOPIC = "virtual.node.info"
+        const val CPI_INFO_TOPIC = "cpi.info"
 
         fun getRPCResponseTopic(topic: String) = "$topic.resp"
     }
