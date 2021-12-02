@@ -4,7 +4,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toCorda
 import java.util.Collections
-import kotlin.jvm.Throws
 
 /**
  * Map of [HoldingIdentity] to [VirtualNodeInfo] AVRO data objects
