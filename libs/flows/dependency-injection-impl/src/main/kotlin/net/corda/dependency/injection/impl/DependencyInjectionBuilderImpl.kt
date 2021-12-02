@@ -3,10 +3,12 @@ package net.corda.dependency.injection.impl
 import net.corda.dependency.injection.DependencyInjectionBuilder
 import net.corda.dependency.injection.FlowDependencyInjector
 import net.corda.dependency.injection.InjectableFactory
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtual.node.sandboxgroup.SandboxGroupContext
 
 class DependencyInjectionBuilderImpl(
-    private val injectableFactories: List<InjectableFactory<*>>
+    private val injectableFactories: List<InjectableFactory<*>>,
+    private val singletons: List<SingletonSerializeAsToken>
 ) : DependencyInjectionBuilder {
     private var sandboxGroupContext: SandboxGroupContext? = null
 
@@ -22,11 +24,10 @@ class DependencyInjectionBuilderImpl(
     }
 
     override fun build(): FlowDependencyInjector {
-        if (sandboxGroupContext == null) {
-            throw IllegalStateException(
-                "build can't be called before the sandbox has been set via addSandboxDependencies()")
+        check(sandboxGroupContext != null) {
+            "build can't be called before the sandbox has been set via addSandboxDependencies()"
         }
 
-        return FlowDependencyInjectorImpl(sandboxGroupContext!!.sandboxGroup, injectableFactories)
+        return FlowDependencyInjectorImpl(sandboxGroupContext!!.sandboxGroup, injectableFactories,singletons)
     }
 }

@@ -18,11 +18,12 @@ class FlowDependencyInjectorImpl(
 
     constructor(
         sandboxGroup: SandboxGroup,
-        services: List<InjectableFactory<*>>
+        services: List<InjectableFactory<*>>,
+        singletons: List<SingletonSerializeAsToken>
     ) : this(sandboxGroup) {
         services.forEach {
             registerServiceFactory(it)
-            singletonList.addAll(it.getSingletons())
+            singletonList.addAll(singletons)
         }
     }
 

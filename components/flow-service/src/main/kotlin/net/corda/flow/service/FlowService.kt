@@ -87,7 +87,8 @@ class FlowService @Activate constructor(
                     event.config,
                     subscriptionFactory,
                     flowMetaDataFactory,
-                    flowEventExecutorFactory)
+                    flowEventExecutorFactory
+                )
                 newExecutor.start()
                 executor = newExecutor
             }

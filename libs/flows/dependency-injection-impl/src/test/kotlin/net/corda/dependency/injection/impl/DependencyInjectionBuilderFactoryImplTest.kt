@@ -9,7 +9,7 @@ class DependencyInjectionBuilderFactoryImplTest {
 
     @Test
     fun `create returns instance of builder`(){
-        val builder  = DependencyInjectionBuilderFactoryImpl(listOf())
+        val builder  = DependencyInjectionBuilderFactoryImpl(listOf(), listOf())
         assertThat(builder.create()).isInstanceOf(DependencyInjectionBuilder::class.java)
     }
 }

@@ -14,30 +14,29 @@ import org.mockito.kotlin.mock
 class FlowDependencyInjectorImplTest {
     private val s1: SingletonSerializeAsToken = mock()
     private val s2: SingletonSerializeAsToken = mock()
-    private val s3: SingletonSerializeAsToken = mock()
 
-    private val fac1 = Service1Factory(Service1::class.java, setOf(s1, s2))
-    private val fac2 = Service2Factory(Service2::class.java, setOf(s3))
+    private val fac1 = Service1Factory(Service1::class.java)
+    private val fac2 = Service2Factory(Service2::class.java)
 
     private val sandboxGroup: SandboxGroup = mock()
     private val flowStateMachine: FlowStateMachine<ExampleFlow> = mock()
 
-    private var flowDependencyInjector= FlowDependencyInjectorImpl(sandboxGroup, listOf(fac1, fac2))
+    private var flowDependencyInjector = FlowDependencyInjectorImpl(sandboxGroup, listOf(fac1, fac2), listOf(s1, s2))
 
     @Test
-    fun `get singletons returns all singletons from all factories`() {
-        var results = flowDependencyInjector.getRegisteredAsTokenSingletons()
+    fun `get singletons returns all singletons`() {
+        val results = flowDependencyInjector.getRegisteredAsTokenSingletons()
 
-        assertThat(results).containsExactly(s1, s2, s3)
+        assertThat(results).containsExactly(s1, s2)
     }
 
     @Test
     fun `inject services uses factories to inject services into flows`() {
-        var flow = ExampleFlow()
+        val flow = ExampleFlow()
         flowDependencyInjector.injectServices(flow, flowStateMachine)
 
-        var service1 = flow.service1 as Service1Impl
-        var service2 = flow.service2 as Service2Impl
+        val service1 = flow.service1 as Service1Impl
+        val service2 = flow.service2 as Service2Impl
 
         assertThat(service1).isNotNull
         assertThat(service2).isNotNull
@@ -51,17 +50,17 @@ class FlowDependencyInjectorImplTest {
     }
 
     @Test
-    fun `an exception is thrown if the flow request a type that is unregistered`(){
-        var flow = ExampleInvalidFlow()
+    fun `an exception is thrown if the flow request a type that is unregistered`() {
+        val flow = ExampleInvalidFlow()
         Assertions.assertThatIllegalArgumentException()
-            .isThrownBy { flowDependencyInjector.injectServices(flow, flowStateMachine)}
+            .isThrownBy { flowDependencyInjector.injectServices(flow, flowStateMachine) }
             .withMessage("No registered types could be found for the following field(s) 'service'")
     }
 
     @Test
-    fun `an exception is thrown if the same service is registered more than once`(){
+    fun `an exception is thrown if the same service is registered more than once`() {
         Assertions.assertThatIllegalArgumentException()
-            .isThrownBy { FlowDependencyInjectorImpl(sandboxGroup, listOf(fac1, fac1))}
+            .isThrownBy { FlowDependencyInjectorImpl(sandboxGroup, listOf(fac1, fac1), listOf(s1, s2)) }
             .withMessage("An instance of type 'net.corda.dependency.injection.impl.Service1' has been already been registered.")
     }
 }
@@ -72,13 +71,8 @@ class FlowDependencyInjectorImplTest {
 interface Service1
 class Service1Impl(val flowStateMachine: FlowStateMachine<*>, val sandboxGroup: SandboxGroup) : Service1
 class Service1Factory(
-    override val target: Class<Service1>,
-    private val singletonSet: Set<SingletonSerializeAsToken>
+    override val target: Class<Service1>
 ) : InjectableFactory<Service1> {
-
-    override fun getSingletons(): Set<SingletonSerializeAsToken> {
-        return singletonSet
-    }
 
     override fun create(flowStateMachine: FlowStateMachine<*>, sandboxGroup: SandboxGroup): Service1 {
         return Service1Impl(flowStateMachine, sandboxGroup)
@@ -92,12 +86,7 @@ interface Service2
 class Service2Impl(val flowStateMachine: FlowStateMachine<*>, val sandboxGroup: SandboxGroup) : Service2
 class Service2Factory(
     override val target: Class<Service2>,
-    private val singletonSet: Set<SingletonSerializeAsToken>
 ) : InjectableFactory<Service2> {
-
-    override fun getSingletons(): Set<SingletonSerializeAsToken> {
-        return singletonSet
-    }
 
     override fun create(flowStateMachine: FlowStateMachine<*>, sandboxGroup: SandboxGroup): Service2 {
         return Service2Impl(flowStateMachine, sandboxGroup)

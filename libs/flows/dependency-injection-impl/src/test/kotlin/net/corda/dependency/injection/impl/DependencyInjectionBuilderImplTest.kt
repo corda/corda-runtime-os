@@ -14,11 +14,11 @@ class DependencyInjectionBuilderImplTest {
 
     @Test
     fun `create returns configured injector`(){
-        var sandboxGroup: SandboxGroup = mock()
-        var sandboxGroupContext:SandboxGroupContext = mock()
+        val sandboxGroup: SandboxGroup = mock()
+        val sandboxGroupContext:SandboxGroupContext = mock()
         doReturn(sandboxGroup).whenever(sandboxGroupContext).sandboxGroup
 
-        val dependencyInjectionBuilder = DependencyInjectionBuilderImpl(listOf())
+        val dependencyInjectionBuilder = DependencyInjectionBuilderImpl(listOf(), listOf())
         dependencyInjectionBuilder.addSandboxDependencies(sandboxGroupContext)
 
         assertThat(dependencyInjectionBuilder.build()).isInstanceOf(FlowDependencyInjector::class.java)
@@ -26,7 +26,7 @@ class DependencyInjectionBuilderImplTest {
 
     @Test
     fun `create throws exception if called without setting a sandbox`(){
-        val dependencyInjectionBuilder = DependencyInjectionBuilderImpl(listOf())
+        val dependencyInjectionBuilder = DependencyInjectionBuilderImpl(listOf(), listOf())
 
          assertThatIllegalStateException().isThrownBy { dependencyInjectionBuilder.build()}
     }
