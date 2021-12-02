@@ -7,31 +7,41 @@ class KafkaSetup(
 ) : Runnable {
     override fun run() {
         println("Setting up kafka topics...")
-        println("\t p2p.out.markers...")
-        createOrAlterTopic("p2p.out.markers")
         listOf("ConfigTopic", "session.out.partitions", "p2p.out.markers.state").forEach {
             println("\t $it...")
             createOrAlterTopic(it)
             makeCompactTopic(it)
         }
+        println("\t p2p.out.markers...")
+        createOrAlterTopic("p2p.out.markers")
     }
 
-    private fun makeCompactTopic(topicName: String) {
-        execute(
-            "--alter",
-            "--topic",
-            topicName,
-            "--config",
-            "cleanup.policy=compact",
-            "--config",
-            "segment.ms=300000",
-            "--config",
-            "delete.retention.ms=300000",
-            "--config",
-            "min.compaction.lag.ms=300000",
-            "--config",
-            "min.cleanable.dirty.ratio=0.8",
-        )
+    private fun makeCompactTopic(topicName: String, retries: Int = 3) {
+        try {
+            execute(
+                "--alter",
+                "--topic",
+                topicName,
+                "--config",
+                "cleanup.policy=compact",
+                "--config",
+                "segment.ms=300000",
+                "--config",
+                "delete.retention.ms=300000",
+                "--config",
+                "min.compaction.lag.ms=300000",
+                "--config",
+                "min.cleanable.dirty.ratio=0.8",
+            )
+        } catch (e: DeploymentException) {
+            if (retries == 0) {
+                throw e
+            }
+            println("Something went wrong... retrying in a few seconds")
+            Thread.sleep(5000)
+            createOrAlterTopic(topicName)
+            makeCompactTopic(topicName, retries - 1)
+        }
     }
 
     private fun createOrAlterTopic(name: String) {
