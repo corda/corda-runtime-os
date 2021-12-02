@@ -62,11 +62,25 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -DinstanceId=1 \
         -Dbootstrap.servers=kafka:9092 -Dconfig.topic.name=ConfigTopic -Dmessaging.topic.prefix=http-rpc-gateway"
+    depends_on:
+      - kafka
   db-worker-proto:
     container_name: db-worker-proto
     image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker-prototype:latest"
+    depends_on:
+      - kafka
+      - cluster-db
     ports:
       - "5006:5006"
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006 -DinstanceId=1 \
         -Dbootstrap.servers=kafka:9092 -Dconfig.topic.name=ConfigTopic -Dmessaging.topic.prefix=http-rpc-gateway"
+    command:
+      - --kafka
+      - kafka:9092
+      - --jdbc-url
+      - jdbc:postgresql://cluster-db:5432/cordacluster
+      - --db-user
+      - user
+      - --db-password
+      - password

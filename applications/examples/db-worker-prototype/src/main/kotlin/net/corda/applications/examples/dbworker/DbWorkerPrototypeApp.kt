@@ -55,6 +55,7 @@ class DbWorkerPrototypeApp @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
+            consoleLogger.info("DB to be used: ${parameters.dbUrl}")
             //var clusterAdminEventSub: RunClusterAdminEventSubscription? = null
             //var configAdminEventSub: ConfigAdminSubscription? = null
 
@@ -134,7 +135,7 @@ class CliParameters {
         paramLabel = "KAKFA",
         description = ["Kafka broker"]
     )
-    var kafka: String = "kafka:9092"
+    var kafka: String = ""
 
     @Suppress("ForbiddenComment")
     @CommandLine.Option(
@@ -142,19 +143,19 @@ class CliParameters {
         paramLabel = "JDBC URL",
         description = ["JDBC URL for cluster db"]
     )
-    var dbUrl: String = "jdbc:postgresql://cluster-db:5432/cordacluster"
+    var dbUrl: String = ""
     @CommandLine.Option(
         names = ["-u", "--db-user"],
         paramLabel = "DB USER",
         description = ["Cluster DB username"]
     )
-    var dbUser: String = "user"
+    var dbUser: String = ""
     @CommandLine.Option(
         names = ["-p", "--db-password"],
         paramLabel = "DB PASSWORD",
         description = ["Cluster DB password"]
     )
-    var dbPass: String = "password"
+    var dbPass: String = ""
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false
