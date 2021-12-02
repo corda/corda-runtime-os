@@ -335,7 +335,7 @@ class ConfigureAll : Runnable {
                 "-k",
                 kafkaServers(namespaceName),
                 "gateway",
-                "--host=$host",
+                "--hostAddress=$host",
                 "--port=1433",
                 "--keyStore=${sslKeyStore.absolutePath}",
                 "--keyStorePassword=password",
