@@ -1,4 +1,4 @@
-package net.corda.httprpc.client.impl
+package net.corda.httprpc.client.connect
 
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
@@ -7,8 +7,8 @@ import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.annotations.RPCSinceVersion
 import net.corda.httprpc.client.auth.RequestContext
 import net.corda.httprpc.client.config.AuthenticationConfig
-import net.corda.httprpc.client.impl.remote.RemoteClient
-import net.corda.httprpc.client.impl.stream.HttpRpcFiniteDurableCursorClientBuilderImpl
+import net.corda.httprpc.client.connect.remote.RemoteClient
+import net.corda.httprpc.client.connect.stream.HttpRpcFiniteDurableCursorClientBuilderImpl
 import net.corda.httprpc.client.processing.endpointHttpVerb
 import net.corda.httprpc.client.processing.parametersFrom
 import net.corda.httprpc.client.processing.toWebRequest
