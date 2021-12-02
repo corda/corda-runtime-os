@@ -318,7 +318,7 @@ class LinkManagerTest {
 
         val sessionManager = Mockito.mock(SessionManager::class.java)
 
-        val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, mock(), mock(), 1)
+        val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, mock(), mock())
         queue.start()
         createResources!!(mock())
 
