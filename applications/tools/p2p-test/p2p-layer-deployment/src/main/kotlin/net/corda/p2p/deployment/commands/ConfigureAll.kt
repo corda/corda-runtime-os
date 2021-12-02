@@ -30,7 +30,7 @@ class ConfigureAll : Runnable {
         names = ["-g", "--gateway"],
         description = ["Gateway extra configuration arguments"]
     )
-    var gatewayArguments = emptyList<String>()
+    var gatewayArguments = listOf("--responseTimeoutMilliSecs", "1800000")
 
     private val yamlReader = ObjectMapper(YAMLFactory()).reader()
     private val jsonWriter = ObjectMapper().writer()
@@ -185,7 +185,6 @@ class ConfigureAll : Runnable {
     }
 
     private fun runJar(jarName: String, arguments: Collection<String>) {
-        println("QQQ arguments = $arguments")
         val jarFile = jarToRun(jarName)
         val java = "${System.getProperty("java.home")}/bin/java"
         val commands = listOf(java, "-jar", jarFile.absolutePath) + arguments
@@ -342,7 +341,6 @@ class ConfigureAll : Runnable {
                 "--keyStorePassword=password",
                 "--trustStore=${trustStoreFile.absolutePath}",
                 "--trustStorePassword=password",
-                "--responseTimeoutMilliSecs=300000"
             ) + gatewayArguments
         )
     }

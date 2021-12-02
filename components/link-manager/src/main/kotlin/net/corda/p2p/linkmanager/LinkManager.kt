@@ -311,15 +311,14 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private var logger = LoggerFactory.getLogger(this::class.java.name)
 
         override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
-            println("QQQ InboundMessageProcessor::onNext 1")
             val records = mutableListOf<Record<*, *>>()
             for (event in events) {
-                println("QQQ InboundMessageProcessor::onNext \t 2")
                 val message = event.value
                 if (message == null) {
                     logger.error("Received null message. The message was discarded.")
                     continue
                 }
+                println("QQQ InboundMessageProcessor::onNext got event ${message.payload.javaClass.simpleName}")
                 records += when (val payload = message.payload) {
                     is AuthenticatedDataMessage -> processDataMessage(payload.header.sessionId, DataMessage.Authenticated(payload))
                     is AuthenticatedEncryptedDataMessage -> processDataMessage(
@@ -329,7 +328,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     is ResponderHelloMessage, is ResponderHandshakeMessage,
                     is InitiatorHandshakeMessage, is InitiatorHelloMessage -> processSessionMessage(message)
                     is UnauthenticatedMessage -> {
-                        println("QQQ InboundMessageProcessor::onNext \t 3")
                         listOf(Record(P2P_IN_TOPIC, generateKey(), payload))
                     }
                     else -> {
@@ -338,7 +336,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     }
                 }
             }
-            println("QQQ InboundMessageProcessor::onNext 4 ${records.size} - ${records.map { it.topic }}")
+            println("QQQ InboundMessageProcessor::onNext sending - ${records.map { "${it.topic} -> ${it.value}"}}")
             return records
         }
 

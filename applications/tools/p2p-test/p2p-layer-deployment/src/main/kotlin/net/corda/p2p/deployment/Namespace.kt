@@ -137,7 +137,7 @@ class Namespace : Runnable {
         names = ["--gateway-config", "--gateway-conf"],
         description = ["Gateway extra configuration arguments"]
     )
-    var gatewayArguments = emptyList<String>()
+    var gatewayArguments = listOf("--responseTimeoutMilliSecs", "1800000")
 
     private val nameSpaceYaml by lazy {
         listOf(
