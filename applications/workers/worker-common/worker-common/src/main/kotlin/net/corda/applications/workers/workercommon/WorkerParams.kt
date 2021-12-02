@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import picocli.CommandLine
+import picocli.CommandLine.Option
 import java.lang.reflect.Field
 import kotlin.math.absoluteValue
 import kotlin.random.Random
@@ -15,11 +16,11 @@ import kotlin.random.Random
  */
 open class WorkerParams {
     @Suppress("Unused")
-    @CommandLine.Option(names = [PARAM_INSTANCE_ID], description = ["The Kafka instance ID for this worker."])
+    @Option(names = [PARAM_INSTANCE_ID], description = ["The Kafka instance ID for this worker."])
     var instanceId = Random.nextInt().absoluteValue
 
     @Suppress("Unused")
-    @CommandLine.Option(names = [PARAM_EXTRA], description = ["Additional parameters for the processor."])
+    @Option(names = [PARAM_EXTRA], description = ["Additional parameters for the processor."])
     var additionalParams = emptyMap<String, String>()
 
     /**
@@ -36,12 +37,17 @@ open class WorkerParams {
             throw IllegalArgumentException(e.message)
         }
 
+        // TODO - Joel - Just use SmartConfig for additional params.
+        // TODO - Joel - Define additional params on worker directly.
+        // TODO - Joel - Split standard config and extra config.
+        // TODO - Joel - Can I use mixins here?
+
         val config = ConfigFactory.parseMap(getParams())
         return smartConfigFactory.create(config)
     }
 
     /**
-     * Creates a map of the names and values of any [CommandLine.Option] fields on this object.
+     * Creates a map of the names and values of any [Option] fields on this object.
      *
      * Cannot be hardcoded because child classes may add additional fields.
      */
@@ -50,7 +56,7 @@ open class WorkerParams {
         field.name to field.get(this)
     }
 
-    /** Returns any [CommandLine.Option] fields on this class and any superclasses up to [WorkerParams], inclusive. */
+    /** Returns any [Option] fields on this class and any superclasses up to [WorkerParams], inclusive. */
     private fun getCommandLineOptionFields(): Set<Field> {
         val subclasses = mutableSetOf<Class<*>>()
         var currentSubclass: Class<*> = this::class.java

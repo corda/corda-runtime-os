@@ -1,23 +1,37 @@
 package net.corda.processors.flow
 
-import net.corda.applications.workers.healthprovider.HealthProvider
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
+import org.osgi.service.component.annotations.Component
 
-/** The processor for a `FlowWorker`. */
-class FlowProcessor {
+/**
+ * The processor for a `FlowWorker`.
+ *
+ * @property config The configuration for the processor.
+ */
+@Component(service = [FlowProcessor::class])
+class FlowProcessor : Lifecycle {
     private companion object {
         val logger = contextLogger()
     }
 
-    /**
-     * Starts the processor.
-     *
-     * @param healthProvider The [HealthProvider] used to control the worker's healthiness.
-     * @param workerConfig The [SmartConfig] required to connect to the bus.
-     */
-    @Suppress("Unused_Parameter")
-    fun startup(healthProvider: HealthProvider, workerConfig: SmartConfig) {
+    override var isRunning = false
+    var config: SmartConfig? = null
+    // TODO - Joel - Describe these callbacks.
+    var onStatusUpCallback: (() -> Unit)? = null
+    var onStatusDownCallback: (() -> Unit)? = null
+    var onStatusErrorCallback: (() -> Unit)? = null
+
+    override fun start() {
         logger.info("Flow processor starting.")
+        onStatusUpCallback?.invoke()
+        isRunning = true
+    }
+
+    override fun stop() {
+        logger.info("Flow processor stopping.")
+        onStatusDownCallback?.invoke()
+        isRunning = false
     }
 }

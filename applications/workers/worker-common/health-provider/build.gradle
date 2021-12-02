@@ -11,9 +11,12 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:lifecycle:registry')
     implementation "io.javalin:javalin-osgi:$javalinVersion"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.eclipse.jetty.websocket:websocket-server:$jettyVersion"
 
+    runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"
 }

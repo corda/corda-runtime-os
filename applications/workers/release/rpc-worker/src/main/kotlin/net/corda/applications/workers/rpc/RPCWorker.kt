@@ -1,6 +1,5 @@
 package net.corda.applications.workers.rpc
 
-import net.corda.applications.workers.healthprovider.HTTP_HEALTH_PROVIDER
 import net.corda.applications.workers.healthprovider.HealthProvider
 import net.corda.applications.workers.workercommon.Worker
 import net.corda.libs.configuration.SmartConfig
@@ -18,16 +17,16 @@ import org.osgi.service.component.annotations.Reference
 class RPCWorker @Activate constructor(
     @Reference(service = SmartConfigFactory::class)
     smartConfigFactory: SmartConfigFactory,
-    @Reference(service = HealthProvider::class, target = "($HTTP_HEALTH_PROVIDER)")
+    @Reference(service = HealthProvider::class)
     healthProvider: HealthProvider
 ) : Worker(smartConfigFactory, healthProvider) {
     private companion object {
         private val logger = contextLogger()
     }
 
-    /** Starts the [RPCProcessor], passing in the [healthProvider] and [workerConfig]. */
-    override fun startup(healthProvider: HealthProvider, workerConfig: SmartConfig) {
+    /** Starts the [RPCProcessor]. */
+    override fun startup(config: SmartConfig) {
         logger.info("RPC worker starting.")
-        RPCProcessor().startup(healthProvider, workerConfig)
+        RPCProcessor().startup(config)
     }
 }

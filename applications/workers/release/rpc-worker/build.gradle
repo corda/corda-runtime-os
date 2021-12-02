@@ -12,6 +12,7 @@ dependencies {
     implementation project(':applications:workers:worker-common:worker-common')
     implementation project(':applications:workers:worker-common:health-provider')
     implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:lifecycle:lifecycle')
     implementation project(':processors:rpc-processor')
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
