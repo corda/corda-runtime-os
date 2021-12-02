@@ -81,7 +81,7 @@ class ConfigureAll : Runnable {
                     "keytool",
                     "-genkeypair",
                     "-alias",
-                    "1",
+                    "ec",
                     "-keyalg",
                     "EC",
                     "-storetype",
@@ -218,7 +218,7 @@ class ConfigureAll : Runnable {
                 "groupId" to groupId,
                 "data" to mapOf(
                     "publicKeyStoreFile" to keyStoreFile.absolutePath,
-                    "publicKeyAlias" to "1",
+                    "publicKeyAlias" to "ec",
                     "keystorePassword" to "password",
                     "publicKeyAlgo" to "ECDSA",
                     "address" to "http://$host:1433",
@@ -261,7 +261,7 @@ class ConfigureAll : Runnable {
                     "groupId" to annotations["group-id"],
                     "data" to mapOf(
                         "publicKeyStoreFile" to keyStoreFile(host).absolutePath,
-                        "publicKeyAlias" to "1",
+                        "publicKeyAlias" to "ec",
                         "keystorePassword" to "password",
                         "publicKeyAlgo" to "ECDSA",
                         "address" to "http://$host:1433",

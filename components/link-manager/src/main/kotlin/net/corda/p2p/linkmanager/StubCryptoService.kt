@@ -45,6 +45,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
         readyFuture.set(future)
         subscription.start()
         resources.keep { subscription.stop() }
+        println("QQQ RRR StubCryptoService started subscription")
         return future
     }
 
@@ -88,6 +89,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
         fun getPrivateKey(publicKey: PublicKey): Pair<PrivateKey, KeyAlgorithm>? {
             val matchedKeys = keys.filterValues { it.publicKey == publicKey }
+            println("QQQ RRR matchedKeys = ${matchedKeys.size} (keys = ${keys.size})")
 
             if (matchedKeys.isEmpty()) {
                 logger.warn("No private key found for public key: ${publicKey.encoded}")
@@ -103,17 +105,20 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
         }
 
         override fun onSnapshot(currentData: Map<String, KeyPairEntry>) {
+            println("QQQ RRR StubCryptoService onSnapshot")
             currentData.forEach { (alias, keyPairEntry) ->
                 val privateKey = keyDeserialiser.toPrivateKey(keyPairEntry.privateKey.array(), keyPairEntry.keyAlgo)
                 val publicKey = keyDeserialiser.toPublicKey(keyPairEntry.publicKey.array(), keyPairEntry.keyAlgo)
                 keys[alias] = KeyPair(keyPairEntry.keyAlgo, privateKey, publicKey)
             }
+            println("QQQ RRR keys = ${keys.size}")
             readyFuture.get().complete(Unit)
         }
 
         override fun onNext(newRecord: Record<String, KeyPairEntry>,
                             oldValue: KeyPairEntry?,
                             currentData: Map<String, KeyPairEntry>) {
+            println("QQQ RRR StubCryptoService got something: newRecord = ${newRecord.value}")
             if (newRecord.value == null) {
                 keys.remove(newRecord.key)
             } else {
@@ -121,6 +126,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
                 val privateKey = keyDeserialiser.toPrivateKey(keyPairEntry.privateKey.array(), keyPairEntry.keyAlgo)
                 val publicKey = keyDeserialiser.toPublicKey(keyPairEntry.publicKey.array(), keyPairEntry.keyAlgo)
                 keys[newRecord.key] = KeyPair(keyPairEntry.keyAlgo, privateKey, publicKey)
+                println("QQQ RRR keys = ${keys.size}")
             }
         }
 
