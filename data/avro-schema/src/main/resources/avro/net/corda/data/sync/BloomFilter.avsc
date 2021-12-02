@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "BloomFilter",
+  "namespace": "net.corda.data.sync",
+  "fields": [
+    {
+      "name": "numberOfHashFunctions",
+      "doc": "The number of the hash functions.",
+      "type": "int"
+    },
+    {
+      "name": "hashSeed",
+      "doc": "The seed of the filter used for calculating the hashes, must change after each round.",
+      "type": "int"
+    },
+    {
+      "name": "filterLength",
+      "doc": "The length of the filter and size of the filterBits.",
+      "type": "int"
+    },
+    {
+      "name": "filterBits",
+      "doc": "ByteArray representation of the members present in the filter.",
+      "type": "bytes"
+    }
+  ]
+}
