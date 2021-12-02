@@ -4,6 +4,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toCorda
 import java.util.Collections
+import kotlin.jvm.Throws
 
 /**
  * Map of [HoldingIdentity] to [VirtualNodeInfo] AVRO data objects
@@ -27,25 +28,29 @@ internal class VirtualNodeInfoMap {
             .mapKeys { it.key.toCorda() }
             .mapValues { it.value.toCorda() }
 
-    /** Put (store/merge) the incoming map */
+    /** Put (store/merge) the incoming map.  May throw [IllegalArgumentException] */
     fun putAll(incoming: Map<Key, VirtualNodeInfo>) =
         incoming.forEach { (key, value) -> put(key, value) }
 
-    /** Put [VirtualNodeInfo] into internal maps. */
+    /** Put [VirtualNodeInfo] into internal maps. May throw [IllegalArgumentException] */
     private fun putValue(key: Key, value: VirtualNodeInfo) {
+        // The following are checks that "should never occur in production", i.e.
+        // that the holding identity 'key' matches the holding identity in the 'value'.
+        // Whoever posts (HoldingIdentity, VirtualNodeInfo) on to Kakfa, should have used:
+        // (virtualNodeInfo.holdingIdentity, virtualNodeInfo).
+        if (key.holdingIdentity != value.holdingIdentity) {
+            throw IllegalArgumentException("Trying to add a VirtualNodeInfo with a mismatched HoldingIdentity: ($key , $value)")
+        }
         if (virtualNodeInfoById.containsKey(key.id) && virtualNodeInfoById[key.id]?.holdingIdentity != value.holdingIdentity) {
-            throw IllegalArgumentException("Cannot put different VirtualNodeInfo for same short hash value.")
+            throw IllegalArgumentException("Cannot put different VirtualNodeInfo for same short hash value: (${key.id}, $key , $value)")
         }
         virtualNodeInfoById[key.id] = value
         virtualNodeInfoByHoldingIdentity[key.holdingIdentity] = value
     }
 
-    /** Putting a null value removes the [VirtualNodeInfo] from the maps. */
+    /** Putting a null value removes the [VirtualNodeInfo] from the maps. May throw [IllegalArgumentException] */
     fun put(key: Key, value: VirtualNodeInfo?) {
         if (value != null) {
-            if (key.holdingIdentity != value.holdingIdentity) {
-                throw IllegalArgumentException("Trying to add a VirtualNodeInfo for an incorrect HoldingIdentity")
-            }
             putValue(key, value)
         } else {
             remove(key)

@@ -25,7 +25,7 @@ class VirtualNodeInfoProcessorTest {
     @BeforeEach
     fun beforeEach() {
         listener = ListenerForTest()
-        processor = VirtualNodeInfoProcessor { /* don't care about the callback */ }
+        processor = VirtualNodeInfoProcessor({ /* don't care about the callback */ }, { /* don't care about callback */ })
     }
 
     private fun sendOnNextRandomMessage(processor: VirtualNodeInfoProcessor): HoldingIdentity {
@@ -250,7 +250,7 @@ class VirtualNodeInfoProcessorTest {
 
     @Test
     fun `clear message processor`() {
-        val processor = VirtualNodeInfoProcessor { /* don't care about callback */ }
+        val processor = VirtualNodeInfoProcessor({ /* don't care about callback */ }, { /* don't care about callback */ })
         val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
         val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, CPI.Identifier.newInstance("ghi", "hjk", secureHash))
         processor.registerCallback(listener)
@@ -267,7 +267,7 @@ class VirtualNodeInfoProcessorTest {
     @Test
     fun `internal onSnapshot callback is called`() {
         var onSnapshot = false
-        val processor = VirtualNodeInfoProcessor { onSnapshot = true }
+        val processor = VirtualNodeInfoProcessor({ onSnapshot = true }, { /* don't care about callback */ })
         val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
         val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, CPI.Identifier.newInstance("ghi", "hjk", secureHash))
 
@@ -276,5 +276,20 @@ class VirtualNodeInfoProcessorTest {
         assertThat(onSnapshot).isFalse
         processor.onSnapshot(mapOf(holdingIdentity.toAvro() to virtualNodeInfo.toAvro()))
         assertThat(onSnapshot).isTrue
+    }
+
+    @Test
+    fun `internal onError callback is called`() {
+        var onError = false
+        val processor = VirtualNodeInfoProcessor({ /* don't care */ }, { onError = true })
+        val holdingIdentity = HoldingIdentity("abc", UUID.randomUUID().toString())
+        val holdingIdentityOther = HoldingIdentity("def", UUID.randomUUID().toString())
+        val virtualNodeInfo = VirtualNodeInfo(holdingIdentity, CPI.Identifier.newInstance("ghi", "hjk", secureHash))
+
+        processor.registerCallback(listener)
+
+        assertThat(onError).isFalse
+        processor.onSnapshot(mapOf(holdingIdentityOther.toAvro() to virtualNodeInfo.toAvro()))
+        assertThat(onError).isTrue
     }
 }

@@ -38,7 +38,7 @@ class VirtualNodeInfoServiceComponentImpl @Activate constructor(
     }
 
     /** The processor calls the call back when it receives a snapshot. */
-    private val virtualNodeInfoProcessor: VirtualNodeInfoProcessor = VirtualNodeInfoProcessor(::setStatusToUp)
+    private val virtualNodeInfoProcessor: VirtualNodeInfoProcessor = VirtualNodeInfoProcessor(::setStatusToUp, ::setStatusToError)
 
     /**
      * The event handler needs to call back to here and use this coordinator, we do NOT want to pass around
@@ -58,6 +58,9 @@ class VirtualNodeInfoServiceComponentImpl @Activate constructor(
 
     /** The processor calls this method on snapshot, and it updates the status of the coordinator. */
     private fun setStatusToUp() = coordinator.updateStatus(LifecycleStatus.UP)
+
+    /** The processor calls this method on snapshot, and it updates the status of the coordinator. */
+    private fun setStatusToError() = coordinator.updateStatus(LifecycleStatus.ERROR)
 
     override val isRunning: Boolean
         get() = coordinator.isRunning

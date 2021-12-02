@@ -26,7 +26,8 @@ import kotlin.concurrent.withLock
  *
  * We use callback to indicate that we've received a snapshot and are 'ready'.
  */
-class VirtualNodeInfoProcessor(private val onSnapshotCallback: () -> Unit) : VirtualNodeInfoService, AutoCloseable,
+class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, private val onErrorCallback: () -> Unit) :
+    VirtualNodeInfoService, AutoCloseable,
     CompactedProcessor<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo> {
 
     companion object {
@@ -63,9 +64,19 @@ class VirtualNodeInfoProcessor(private val onSnapshotCallback: () -> Unit) : Vir
 
     override fun onSnapshot(currentData: Map<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>) {
         log.trace { "Virtual Node Info Processor received snapshot" }
-        virtualNodeInfoMap.putAll(
-            currentData.mapKeys { VirtualNodeInfoMap.Key(it.key, it.key.toCorda().id) }
-        )
+
+        try {
+            virtualNodeInfoMap.putAll(currentData.mapKeys { VirtualNodeInfoMap.Key(it.key, it.key.toCorda().id) })
+        } catch (exception: IllegalArgumentException) {
+            // We only expect this code path if someone has posted to Kafka,
+            // a VirtualNodeInfo with a different HoldingIdentity to the key.
+            log.error(
+                "Virtual Node Info service could not handle onSnapshot, may be corrupt or invalid",
+                exception
+            )
+            onErrorCallback()
+            return
+        }
 
         snapshotReceived = true
 
@@ -73,7 +84,7 @@ class VirtualNodeInfoProcessor(private val onSnapshotCallback: () -> Unit) : Vir
         listeners.forEach { it.value.onUpdate(currentSnapshot.keys, currentSnapshot) }
 
         // Callback to whoever called us, that we're 'up'
-        onSnapshotCallback()
+        onStatusUpCallback()
     }
 
     override fun onNext(
@@ -84,7 +95,18 @@ class VirtualNodeInfoProcessor(private val onSnapshotCallback: () -> Unit) : Vir
         log.trace { "Virtual Node Info Processor received onNext" }
         val key = VirtualNodeInfoMap.Key(newRecord.key, newRecord.key.toCorda().id)
         if (newRecord.value != null) {
-            virtualNodeInfoMap.put(key, newRecord.value!!)
+            try {
+                virtualNodeInfoMap.put(key, newRecord.value!!)
+            } catch (exception: IllegalArgumentException) {
+                // We only expect this code path if someone has posted to Kafka,
+                // a VirtualNodeInfo with a different HoldingIdentity to the key.
+                log.error(
+                    "Virtual Node Info service could not handle onNext, key/value is invalid for $newRecord",
+                    exception
+                )
+                onErrorCallback()
+                return
+            }
         } else {
             virtualNodeInfoMap.remove(key)
         }
