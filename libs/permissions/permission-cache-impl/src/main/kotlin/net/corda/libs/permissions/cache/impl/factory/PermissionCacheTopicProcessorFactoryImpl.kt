@@ -9,7 +9,7 @@ import net.corda.libs.permissions.cache.impl.processor.PermissionTopicProcessor
 import net.corda.libs.permissions.cache.processor.PermissionCacheTopicProcessor
 import org.osgi.service.component.annotations.Component
 
-@Component(service = [PermissionCacheTopicProcessorFactory::class], immediate = true)
+@Component(service = [PermissionCacheTopicProcessorFactory::class])
 class PermissionCacheTopicProcessorFactoryImpl : PermissionCacheTopicProcessorFactory {
     override fun createUserTopicProcessor(
         userData: ConcurrentHashMap<String, User>,

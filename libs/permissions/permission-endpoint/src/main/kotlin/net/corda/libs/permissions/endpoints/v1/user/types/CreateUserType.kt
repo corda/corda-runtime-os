@@ -1,10 +1,12 @@
 package net.corda.libs.permissions.endpoints.v1.user.types
 
 import java.time.Instant
+import net.corda.v5.base.annotations.CordaSerializable
 
 /**
  * Request type for creating a User in the permission system.
  */
+@CordaSerializable
 data class CreateUserType(
 
     /**

@@ -13,4 +13,5 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:permissions:permission-cache")
 }

@@ -1,9 +1,11 @@
 package net.corda.permissions.cache
 
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.Group
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.cache.events.GroupTopicSnapshotReceived
 import net.corda.libs.permissions.cache.events.RoleTopicSnapshotReceived
@@ -25,6 +27,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+private data class NewConfigurationReceivedEvent(val config: SmartConfig): LifecycleEvent
+
 @Component(service = [PermissionCacheService::class])
 class PermissionCacheService @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
@@ -35,12 +39,15 @@ class PermissionCacheService @Activate constructor(
     private val permissionCacheFactory: PermissionCacheFactory,
     @Reference(service = PermissionCacheTopicProcessorFactory::class)
     private val permissionCacheTopicProcessorFactory: PermissionCacheTopicProcessorFactory,
+    @Reference(service = ConfigurationReadService::class)
+    private val configurationReadService: ConfigurationReadService,
 ) : Lifecycle {
 
     private val coordinator = coordinatorFactory.createCoordinator<PermissionCacheService> { event, _ -> eventHandler(event) }
 
     private companion object {
         const val CONSUMER_GROUP = "PERMISSION_SERVICE"
+        const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
     val permissionCache: PermissionCache?
@@ -61,17 +68,10 @@ class PermissionCacheService @Activate constructor(
     private fun eventHandler(event: LifecycleEvent) {
         when (event) {
             is StartEvent -> {
-                val userData = ConcurrentHashMap<String, User>()
-                val groupData = ConcurrentHashMap<String, Group>()
-                val roleData = ConcurrentHashMap<String, Role>()
-                userSubscription = createUserSubscription(userData)
-                    .also { it.start() }
-                groupSubscription = createGroupSubscription(groupData)
-                    .also { it.start() }
-                roleSubscription = createRoleSubscription(roleData)
-                    .also { it.start() }
-                _permissionCache = permissionCacheFactory.createPermissionCache(userData, groupData, roleData)
-                    .also { it.start() }
+                configurationReadService.registerForUpdates(::onConfigChange)
+            }
+            is NewConfigurationReceivedEvent -> {
+                handleNewConfigReceived(event.config)
             }
             // Let's set the component as UP when it has received all the snapshots it needs
             is UserTopicSnapshotReceived -> {
@@ -103,29 +103,64 @@ class PermissionCacheService @Activate constructor(
         }
     }
 
-    private fun createUserSubscription(userData: ConcurrentHashMap<String, User>) =
-        subscriptionFactory.createCompactedSubscription(
+    private fun handleNewConfigReceived(config: SmartConfig) {
+        val userData = ConcurrentHashMap<String, User>()
+        val groupData = ConcurrentHashMap<String, Group>()
+        val roleData = ConcurrentHashMap<String, Role>()
+        userSubscription = createUserSubscription(userData, config)
+            .also { it.start() }
+        groupSubscription = createGroupSubscription(groupData, config)
+            .also { it.start() }
+        roleSubscription = createRoleSubscription(roleData, config)
+            .also { it.start() }
+        _permissionCache = permissionCacheFactory.createPermissionCache(userData, groupData, roleData)
+            .also { it.start() }
+    }
+
+    private fun onConfigChange(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
+        if (KAFKA_COMMON_BOOTSTRAP_SERVER in changedKeys){
+            coordinator.postEvent(NewConfigurationReceivedEvent(config[KAFKA_COMMON_BOOTSTRAP_SERVER]!!))
+        }
+    }
+
+    private fun createUserSubscription(
+        userData: ConcurrentHashMap<String, User>,
+        kafkaConfig: SmartConfig
+    ): CompactedSubscription<String, User> {
+        return subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_USER_TOPIC),
             permissionCacheTopicProcessorFactory.createUserTopicProcessor(userData) {
                 coordinator.postEvent(UserTopicSnapshotReceived())
-            }
+            },
+            kafkaConfig
         )
+    }
 
-    private fun createGroupSubscription(groupData: ConcurrentHashMap<String, Group>) =
-        subscriptionFactory.createCompactedSubscription(
+    private fun createGroupSubscription(
+        groupData: ConcurrentHashMap<String, Group>,
+        config: SmartConfig
+    ): CompactedSubscription<String, Group> {
+        return subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_GROUP_TOPIC),
             permissionCacheTopicProcessorFactory.createGroupTopicProcessor(groupData) {
                 coordinator.postEvent(GroupTopicSnapshotReceived())
-            }
+            },
+            config
         )
+    }
 
-    private fun createRoleSubscription(roleData: ConcurrentHashMap<String, Role>) =
-        subscriptionFactory.createCompactedSubscription(
+    private fun createRoleSubscription(
+        roleData: ConcurrentHashMap<String, Role>,
+        config: SmartConfig
+    ): CompactedSubscription<String, Role> {
+        return subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_ROLE_TOPIC),
             permissionCacheTopicProcessorFactory.createRoleTopicProcessor(roleData) {
                 coordinator.postEvent(RoleTopicSnapshotReceived())
-            }
+            },
+            config
         )
+    }
 
     override val isRunning: Boolean
         get() = coordinator.isRunning

@@ -9,7 +9,7 @@ import net.corda.libs.permissions.cache.factory.PermissionCacheFactory
 import net.corda.libs.permissions.cache.impl.PermissionCacheImpl
 import org.osgi.service.component.annotations.Component
 
-@Component(service = [PermissionCacheFactory::class], immediate = true)
+@Component(service = [PermissionCacheFactory::class])
 class PermissionCacheFactoryImpl : PermissionCacheFactory {
     override fun createPermissionCache(
         userData: ConcurrentHashMap<String, User>,

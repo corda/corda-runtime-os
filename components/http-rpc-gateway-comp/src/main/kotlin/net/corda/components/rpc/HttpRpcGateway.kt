@@ -62,7 +62,9 @@ class HttpRpcGateway @Activate constructor(
         const val AZURE_CLIENT_SECRET_CONFIG = "sso.azureAd.clientSecret"
     }
 
-    private var rbacLifecycleCoordinator: LifecycleCoordinator? = null
+    private var coordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<HttpRpcGateway>(
+        HttpRpcGatewayEventHandler(permissionServiceComponent, rpcOps.filterIsInstance<Lifecycle>())
+    )
 
     private var receivedSnapshot = false
 
@@ -83,19 +85,16 @@ class HttpRpcGateway @Activate constructor(
     }
 
     override fun start() {
-        rbacLifecycleCoordinator = coordinatorFactory.createCoordinator<HttpRpcGateway>(
-            HttpRpcGatewayEventHandler(permissionServiceComponent, rpcOps.filterIsInstance<Lifecycle>())
-        ).also {
-            log.info("Starting lifecycle coordinator for RBAC permission system.")
-            it.start()
-        }
-
         if (bootstrapConfig == null) {
             val message = "Use the other start method available and pass in the bootstrap configuration"
             log.error(message)
             throw CordaRuntimeException(message)
         }
 
+        log.info("Starting lifecycle coordinator for RBAC permission system.")
+        coordinator.start()
+
+        log.info("Starting configuration read service.")
         sub = configurationReadService.registerForUpdates(::onConfigurationUpdated)
         configurationReadService.start()
         configurationReadService.bootstrapConfig(bootstrapConfig!!)
@@ -192,6 +191,6 @@ class HttpRpcGateway @Activate constructor(
         securityManager = null
         sslCertReadService?.stop()
         sslCertReadService = null
-        rbacLifecycleCoordinator?.stop()
+        coordinator.stop()
     }
 }

@@ -15,7 +15,7 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 @HttpRpcResource(
     name = "UserEndpoint",
     description = "User Management APIs",
-    path = "/v1/user"
+    path = "user"
 )
 interface UserEndpoint : PluggableRPCOps<UserEndpoint> {
 

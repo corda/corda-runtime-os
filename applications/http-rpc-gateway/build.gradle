@@ -34,6 +34,13 @@ dependencies {
 
     // Implementations (needs revision!)
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
+    runtimeOnly project(":libs:permissions:permission-validation-impl")
+    runtimeOnly project(":libs:permissions:permission-manager-impl")
+    runtimeOnly project(":libs:permissions:permission-cache-impl")
+    runtimeOnly project(":components:permissions:permission-cache-service")
+    runtimeOnly project(":components:permissions:permission-validation-service")
+    runtimeOnly project(":components:permissions:permission-management-service")
+    runtimeOnly project(":components:permissions:permission-rpc-ops-impl")
 
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly project(":libs:configuration:configuration-write-impl")
