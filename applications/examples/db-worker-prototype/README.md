@@ -5,6 +5,8 @@ This is a crude prototype of the DB Worker application which:
 - Upon start-up run Liquibase update as necessary to create RBAC schema;
 - Launch a component (`PermissionStorageWriterService`) that listens on the user creation Kafka topic.
 
+Once proper DB Worker is in operation this prototype can possibly be deleted.
+
 ### Building the Docker image
 The Gradle task `publishOSGiImage` publishes a Docker Image which can be run locally.
 ```

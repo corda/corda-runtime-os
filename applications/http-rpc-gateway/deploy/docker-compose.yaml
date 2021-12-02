@@ -35,22 +35,13 @@ services:
       JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
     depends_on:
       - kafka
-  cluster-db:
-    container_name: cluster-db
-    image: postgres
-    ports:
-      - "5433:5432"
-    environment:
-      POSTGRES_DB: "cordacluster"
-      POSTGRES_USER: "user"
-      POSTGRES_PASSWORD: "password"
   app-db:
     container_name: app-db
     image: postgres
     ports:
-      - "5434:5432"
+      - "5432:5432"
     environment:
-      POSTGRES_DB: "db_worker"
+      POSTGRES_DB: "dbworker"
       POSTGRES_USER: "user"
       POSTGRES_PASSWORD: "password"
   http-rpc-gw:
@@ -69,7 +60,7 @@ services:
     image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker-prototype:latest"
     depends_on:
       - kafka
-      - cluster-db
+      - app-db
     ports:
       - "5006:5006"
     environment:
@@ -79,7 +70,7 @@ services:
       - --kafka
       - kafka:9092
       - --jdbc-url
-      - jdbc:postgresql://cluster-db:5432/cordacluster
+      - jdbc:postgresql://app-db:5432/dbworker
       - --db-user
       - user
       - --db-password

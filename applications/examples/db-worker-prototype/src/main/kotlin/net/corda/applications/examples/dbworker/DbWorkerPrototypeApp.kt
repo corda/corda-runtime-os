@@ -1,6 +1,9 @@
 package net.corda.applications.examples.dbworker
 
 import net.corda.db.admin.LiquibaseSchemaMigrator
+import net.corda.db.admin.impl.ClassloaderChangeLog
+import net.corda.db.core.PostgresDataSourceFactory
+import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -9,9 +12,20 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.permissions.model.ChangeAudit
+import net.corda.permissions.model.Group
+import net.corda.permissions.model.GroupProperty
+import net.corda.permissions.model.Permission
+import net.corda.permissions.model.Role
+import net.corda.permissions.model.RoleGroupAssociation
+import net.corda.permissions.model.RolePermissionAssociation
+import net.corda.permissions.model.RoleUserAssociation
+import net.corda.permissions.model.User
+import net.corda.permissions.model.UserProperty
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -20,6 +34,9 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
+import java.io.StringWriter
+import javax.persistence.EntityManagerFactory
+import javax.sql.DataSource
 
 @Component
 @Suppress("LongParameterList")
@@ -35,7 +52,7 @@ class DbWorkerPrototypeApp @Activate constructor(
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
     @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory,
+    private val smartConfigFactory: SmartConfigFactory
 ) : Application {
 
     companion object {
@@ -55,7 +72,7 @@ class DbWorkerPrototypeApp @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
-            consoleLogger.info("DB to be used: ${parameters.dbUrl}")
+
             //var clusterAdminEventSub: RunClusterAdminEventSubscription? = null
             //var configAdminEventSub: ConfigAdminSubscription? = null
 
@@ -66,18 +83,16 @@ class DbWorkerPrototypeApp @Activate constructor(
                     ConfigConstants.TOPIC_PREFIX_CONFIG_KEY to ConfigConstants.TOPIC_PREFIX
                 )
             ))
+            */
+
+            consoleLogger.info("DB to be used: ${parameters.dbUrl}")
             val dbSource = PostgresDataSourceFactory().create(
                 parameters.dbUrl,
                 parameters.dbUser,
-                parameters.dbPass)
-
-            // NOTE: "for real", this would probably be pushed into the component rather than getting an EMF here,
-            //  as the component knows what needs to/can be persisted
-            val entityManagerFactory = entityManagerFactoryFactory.create(
-                "cluster-config",
-                listOf(ConfigState::class.java),
-                DbEntityManagerConfiguration(dbSource),
-            )*/
+                parameters.dbPass
+            )
+            applyLiquibaseSchema(dbSource)
+            /*val emf = */obtainEntityManagerFactory(dbSource)
 
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
@@ -121,6 +136,54 @@ class DbWorkerPrototypeApp @Activate constructor(
             lifeCycleCoordinator?.start()
             consoleLogger.info("DB Worker prototype application started")
         }
+    }
+
+    private fun applyLiquibaseSchema(dbSource: DataSource) {
+        val schemaClass = DbSchema::class.java
+        val bundle = FrameworkUtil.getBundle(schemaClass)
+        log.info("RBAC schema bundle $bundle")
+
+        val fullName = schemaClass.packageName + ".rbac"
+        val resourcePrefix = fullName.replace('.', '/')
+        val cl = ClassloaderChangeLog(
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    fullName,
+                    listOf("$resourcePrefix/db.changelog-master.xml"),
+                    classLoader = schemaClass.classLoader
+                )
+            )
+        )
+        StringWriter().use {
+            // Cannot use DbSchema.RPC_RBAC schema for LB here as this schema needs to be created ahead of change
+            // set being applied
+            schemaMigrator.createUpdateSql(dbSource.connection, cl, it, LiquibaseSchemaMigrator.PUBLIC_SCHEMA)
+            log.info("Schema creation SQL: $it")
+        }
+        schemaMigrator.updateDb(dbSource.connection, cl, LiquibaseSchemaMigrator.PUBLIC_SCHEMA)
+
+        log.info("Liquibase schema applied")
+    }
+
+    private fun obtainEntityManagerFactory(dbSource: DataSource) : EntityManagerFactory {
+        // NOTE: "for real", this would probably be pushed into the component rather than getting an EMF here,
+        //  as the component knows what needs to/can be persisted
+        return entityManagerFactoryFactory.create(
+            "RPC RBAC",
+            listOf(
+                User::class.java,
+                Group::class.java,
+                Role::class.java,
+                Permission::class.java,
+                UserProperty::class.java,
+                GroupProperty::class.java,
+                ChangeAudit::class.java,
+                RoleUserAssociation::class.java,
+                RoleGroupAssociation::class.java,
+                RolePermissionAssociation::class.java
+            ),
+            DbEntityManagerConfiguration(dbSource),
+        )
     }
 
     override fun shutdown() {
