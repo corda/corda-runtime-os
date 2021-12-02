@@ -4,12 +4,15 @@ import net.corda.messagebus.api.consumer.ConsumerRecord
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messaging.api.records.Record
 import java.time.Duration
-import javax.security.auth.callback.Callback
 
 /**
  * A Corda client that publishes messages to the underlying message bus.
  */
 interface CordaProducer : AutoCloseable {
+
+    fun interface Callback {
+        fun onCompletion(exception: Exception?)
+    }
 
     /**
      * Asynchronously send a record to a topic and invoke the provided callback when the record has been acknowledged.

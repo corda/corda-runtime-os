@@ -38,5 +38,5 @@ interface ConsumerRebalanceListener {
      *                   previously assigned partitions, but this may change in future protocols (ie there would still
      *                   be some partitions left)
      */
-    fun onPartitionsLost(partitions: Collection<TopicPartition>)
+    fun onPartitionsLost(partitions: Collection<TopicPartition>) = onPartitionsRevoked(partitions)
 }

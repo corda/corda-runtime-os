@@ -25,7 +25,7 @@ data class ConsumerRecord<K, V>(
     /**
      * The value (or null if the value should be deleted).
      */
-    val value: V,
+    val value: V?,
 
     /**
      * The position of this record in the corresponding partition.
