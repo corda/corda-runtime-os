@@ -274,6 +274,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage))
             val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
             records.add(Record(Schema.SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions)))
+            println("QQQ recordsForNewSession SESSION_OUT_PARTITIONS, ${state.sessionId}, $partitions")
             return records
         }
 
@@ -346,6 +347,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 when(val payload = message.payload) {
                     is InitiatorHelloMessage -> {
                         val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
+                        println("QQQ processSessionMessage SESSION_OUT_PARTITIONS, ${payload.header.sessionId}, $partitionsAssigned")
                         listOf(
                             Record(Schema.LINK_OUT_TOPIC, generateKey(), response),
                             Record(Schema.SESSION_OUT_PARTITIONS, payload.header.sessionId, SessionPartitions(partitionsAssigned))

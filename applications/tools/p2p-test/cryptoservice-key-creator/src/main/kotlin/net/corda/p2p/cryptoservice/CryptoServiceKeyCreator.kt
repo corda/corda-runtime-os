@@ -46,6 +46,16 @@ class CryptoServiceKeyCreator @Activate constructor(
     }
 
     override fun startup(args: Array<String>) {
+        try {
+            println("QQQ Strating...")
+            go(args)
+            println("QQQ Done...")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            shutdown()
+        }
+    }
+    fun go(args: Array<String>) {
         consoleLogger.info("Starting crypto service key creation tool")
 
         val parameters = CliParameters()

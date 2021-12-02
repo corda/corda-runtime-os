@@ -308,7 +308,7 @@ class ConfigureAll : Runnable {
         runJar(
             "cryptoservice-key-creator",
             listOf(
-                "--netmap-file", configurationFile.absolutePath, "--kafka",
+                "--keys-config", configurationFile.absolutePath, "--kafka",
                 kafkaFile(namespaceName).absolutePath
             )
         )

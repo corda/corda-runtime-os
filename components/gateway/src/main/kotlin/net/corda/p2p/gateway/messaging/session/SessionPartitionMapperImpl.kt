@@ -53,6 +53,7 @@ class SessionPartitionMapperImpl(
             get() = SessionPartitions::class.java
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
+            println("QQQ onSnapshot SESSION_OUT_PARTITIONS, $currentData")
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
             future.get().complete(Unit)
         }
@@ -62,6 +63,7 @@ class SessionPartitionMapperImpl(
             oldValue: SessionPartitions?,
             currentData: Map<String, SessionPartitions>
         ) {
+            println("QQQ onNext SESSION_OUT_PARTITIONS, $currentData")
             if (newRecord.value == null) {
                 sessionPartitionsMapping.remove(newRecord.key)
             } else {
