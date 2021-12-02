@@ -1,4 +1,4 @@
-package net.corda.datasync.utils;
+package net.corda.datasync;
 
 /**
  * The MurmurHash3 algorithm was created by Austin Appleby and placed in the public domain.

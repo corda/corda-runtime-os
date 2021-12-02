@@ -1,6 +1,6 @@
-package net.corda.datasync.utils
+package net.corda.datasync
 
-import net.corda.datasync.utils.MurmurHash3.LongPair
+import net.corda.datasync.MurmurHash3.LongPair
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.experimental.and
@@ -245,7 +245,7 @@ class MurmurHash3Test {
     }
 
     private fun testString(str: String, seed: Int, expected: Int) {
-        val hash = net.corda.datasync.utils.MurmurHash3.hash32(str, 0, str.length, seed)
+        val hash = MurmurHash3.hash32(str, 0, str.length, seed)
         assertEquals(expected, hash)
     }
 
@@ -267,9 +267,9 @@ class MurmurHash3Test {
             val result = LongPair()
             for (len in bytes.indices) {
                 seed *= -0x61c8864f
-                val h: Int = net.corda.datasync.utils.MurmurHash3.hash32(arr, offset, len, seed)
+                val h: Int = MurmurHash3.hash32(arr, offset, len, seed)
                 assertEquals(answers32[len], h)
-                net.corda.datasync.utils.MurmurHash3.hash128(arr, offset, len, seed, result)
+                MurmurHash3.hash128(arr, offset, len, seed, result)
                 assertEquals(answers128[len * 2], result.val1)
                 assertEquals(answers128[len * 2 + 1], result.val2)
             }

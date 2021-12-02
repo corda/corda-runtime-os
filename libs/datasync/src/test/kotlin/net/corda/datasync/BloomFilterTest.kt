@@ -110,7 +110,6 @@ class BloomFilterTest {
         }
         for(m in 0 until falsePositives.last()) {
             if(m % 2 != 0 && !falsePositives.contains(m)) {
-                println(m)
                 assertFalse(bloomFilter.possiblyContains(m.toByteArray()))
             }
         }

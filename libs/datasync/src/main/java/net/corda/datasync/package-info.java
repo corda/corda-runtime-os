@@ -1,4 +1,4 @@
 @Export
-package net.corda.datasync.utils;
+package net.corda.datasync;
 
 import org.osgi.annotation.bundle.Export;

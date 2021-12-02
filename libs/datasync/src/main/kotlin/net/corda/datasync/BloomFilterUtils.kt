@@ -1,7 +1,6 @@
 package net.corda.datasync
 
 import net.corda.data.sync.BloomFilter
-import net.corda.datasync.utils.MurmurHash3
 import java.nio.ByteBuffer
 import java.util.BitSet
 
