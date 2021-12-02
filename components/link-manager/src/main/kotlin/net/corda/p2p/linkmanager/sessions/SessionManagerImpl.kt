@@ -74,15 +74,13 @@ open class SessionManagerImpl(
     private val configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
-    instanceId: Int,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
     private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
         publisherFactory,
         configurationReaderService,
         coordinatorFactory,
         configuration,
-        networkMap,
-        instanceId
+        networkMap
     )
 ) : SessionManager {
 
@@ -114,8 +112,7 @@ open class SessionManagerImpl(
         coordinatorFactory,
         configuration,
         networkMap,
-        ::destroyOutboundSession,
-        instanceId
+        ::destroyOutboundSession
     )
 
     override val dominoTile = DominoTile(
@@ -534,8 +531,7 @@ open class SessionManagerImpl(
         coordinatorFactory: LifecycleCoordinatorFactory,
         configuration: SmartConfig,
         private val networkMap: LinkManagerNetworkMap,
-        private val destroySession: (key: SessionKey, sessionId: String) -> Any,
-        instanceId: Int
+        private val destroySession: (key: SessionKey, sessionId: String) -> Any
     ) : LifecycleWithDominoTile {
 
         companion object {
@@ -593,7 +589,7 @@ open class SessionManagerImpl(
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID, instanceId),
+            PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID),
             configuration
         )
 
