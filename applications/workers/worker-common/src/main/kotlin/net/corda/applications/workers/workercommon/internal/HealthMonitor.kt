@@ -9,19 +9,21 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-// TODO - Joel - Force re-inclusion of this provider by workers. Currently, the component isn't loaded.
+// TODO - Joel - Force workers to load this component. Currently, the component isn't loaded.
+// TODO - Joel - Handle spew about log4j on server startup.
 
 /**
- * A worker is considered healthy if and only if an HTTP request to [HTTP_HEALTH_ROUTE] returns a 200 code.
+ * Monitors the health of a worker.
  *
- * In the same way, an HTTP request to [HTTP_READINESS_ROUTE] is used to ascertain worker readiness.
+ * A worker indicates its healthiness/readiness by returning a 200 code for HTTP requests to
+ * [HTTP_HEALTH_ROUTE]/[HTTP_READINESS_ROUTE].
  *
- * // TODO - Joel - Explain how health/readiness is ascertained (i.e. based on components).
+ * A worker is considered healthy if no component has a [LifecycleStatus] of [LifecycleStatus.ERROR]. A worker is
+ * considered ready if no component has a [LifecycleStatus] of either [LifecycleStatus.DOWN] or [LifecycleStatus.ERROR].
  */
-// TODO - Joel - Handle spew regarding log4j.
-@Component(service = [HealthProvider::class])
+@Component(service = [HealthMonitor::class])
 @Suppress("Unused")
-internal class HealthProvider @Activate constructor(
+internal class HealthMonitor @Activate constructor(
     @Reference(service = LifecycleRegistry::class)
     private val lifecycleRegistry: LifecycleRegistry
 ) {
