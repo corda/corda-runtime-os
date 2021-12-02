@@ -1,6 +1,7 @@
 package net.corda.applications.workers.workercommon.internal
 
 import io.javalin.Javalin
+import net.corda.applications.workers.workercommon.HealthMonitor
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
@@ -9,12 +10,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-// TODO - Joel - Force workers to load this component. Currently, the component isn't loaded.
 // TODO - Joel - Handle spew about log4j on server startup.
 
 /**
- * Monitors the health of a worker.
- *
  * A worker indicates its healthiness/readiness by returning a 200 code for HTTP requests to
  * [HTTP_HEALTH_ROUTE]/[HTTP_READINESS_ROUTE].
  *
@@ -23,10 +21,10 @@ import org.osgi.service.component.annotations.Reference
  */
 @Component(service = [HealthMonitor::class])
 @Suppress("Unused")
-internal class HealthMonitor @Activate constructor(
+internal class HealthMonitorImpl @Activate constructor(
     @Reference(service = LifecycleRegistry::class)
     private val lifecycleRegistry: LifecycleRegistry
-) {
+) : HealthMonitor {
 
     init {
         Javalin

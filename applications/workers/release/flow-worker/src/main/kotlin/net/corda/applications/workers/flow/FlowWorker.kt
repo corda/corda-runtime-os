@@ -1,5 +1,6 @@
 package net.corda.applications.workers.flow
 
+import net.corda.applications.workers.workercommon.HealthMonitor
 import net.corda.applications.workers.workercommon.WorkerParams
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -25,9 +26,17 @@ class FlowWorker @Activate constructor(
     private val smartConfigFactory: SmartConfigFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = HealthMonitor::class)
+    healthMonitor: HealthMonitor,
     @Reference(service = FlowProcessor::class)
     private val processor: FlowProcessor
 ) : Application {
+
+    init {
+        // TODO - Joel - Temporarily used to force loading of health monitor. Problem will go away once we allow health
+        //  monitor to be switched on/off.
+        println(healthMonitor)
+    }
 
     private companion object {
         private val logger = contextLogger()
