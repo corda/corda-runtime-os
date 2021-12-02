@@ -66,6 +66,12 @@ internal class CliArguments {
             ).withValue(
                 "messaging.topic.prefix",
                 ConfigValueFactory.fromAnyRef(topicPrefix)
+            ).withValue(
+                // The default value of poll timeout is quite high (6 seconds), so setting it to something lower.
+                // Specifically, state & event subscriptions have an issue where they are polling with high timeout on events topic,
+                // leading to slow syncing upon startup. See: https://r3-cev.atlassian.net/browse/CORE-3163
+                "messaging.subscription.consumer.poll.timeout",
+                ConfigValueFactory.fromAnyRef(100)
             )
     }
 }
