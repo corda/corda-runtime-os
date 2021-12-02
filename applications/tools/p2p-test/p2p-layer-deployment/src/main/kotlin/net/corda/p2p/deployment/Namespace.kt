@@ -45,7 +45,7 @@ class Namespace : Runnable {
     )
     var hostName: String? = null
 
-    val actualHostName : String
+    val actualHostName: String
         get() =
             hostName ?: "www.$namespaceName.com"
 
@@ -53,7 +53,7 @@ class Namespace : Runnable {
         names = ["-x", "--x500-name"],
         description = ["The X 500 name"]
     )
-    private var x500Name : String? = null
+    private var x500Name: String? = null
 
     @Option(
         names = ["--group-id"],
@@ -151,7 +151,7 @@ class Namespace : Runnable {
                     ),
                     "annotations" to mapOf(
                         "type" to "p2p",
-                        "x500-name" to (x500Name?:"O=$namespaceName, L=London, C=GB"),
+                        "x500-name" to (x500Name ?: "O=$namespaceName, L=London, C=GB"),
                         "group-id" to groupId,
                         "host" to actualHostName,
                     )
@@ -249,20 +249,20 @@ class Namespace : Runnable {
                 it == "Error" || it == "CrashLoopBackOff" || it == "ErrImagePull" || it == "ImagePullBackOff"
             }
             if (badContainers.isNotEmpty()) {
-               println("Error in ${badContainers.keys}")
-               badContainers.keys.forEach {
-                   ProcessBuilder().command(
-                       "kubectl",
-                       "describe",
-                       "pod",
-                       "-n",
-                       namespaceName,
-                       it
-                   ).inheritIO()
-                       .start()
-                       .waitFor()
-                   throw DeploymentException("Error in pods")
-               }
+                println("Error in ${badContainers.keys}")
+                badContainers.keys.forEach {
+                    ProcessBuilder().command(
+                        "kubectl",
+                        "describe",
+                        "pod",
+                        "-n",
+                        namespaceName,
+                        it
+                    ).inheritIO()
+                        .start()
+                        .waitFor()
+                    throw DeploymentException("Error in pods")
+                }
             }
             if (waitingFor.isEmpty()) {
                 configureNamespace()

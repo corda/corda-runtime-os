@@ -24,7 +24,7 @@ class ConfigureAll : Runnable {
         names = ["-l", "--lm", "--link-manager"],
         description = ["Link manager extra configuration arguments"]
     )
-    var linkManagerExtraArguments = emptyList<String>()
+    var linkManagerExtraArguments = listOf("--sessionTimeoutMilliSecs", "1800000")
 
     @Option(
         names = ["-g", "--gateway"],

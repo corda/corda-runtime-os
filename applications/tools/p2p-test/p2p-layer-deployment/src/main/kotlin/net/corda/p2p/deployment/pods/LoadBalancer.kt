@@ -18,9 +18,9 @@ class LoadBalancer(
                     """
                     upstream loadbalancer {
                           ${
-                        servers.joinToString("\n") {
-                            "server $it:1433;"
-                        }
+                    servers.joinToString("\n") {
+                        "server $it:1433;"
+                    }
                     }
                     }
                     server {
