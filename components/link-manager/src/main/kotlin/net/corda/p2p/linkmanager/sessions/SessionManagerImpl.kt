@@ -145,7 +145,6 @@ open class SessionManagerImpl(
             resources: ResourcesHolder,
         ): CompletableFuture<Unit> {
             val configUpdateResult = CompletableFuture<Unit>()
-            println("QQQ got new configuration $newConfiguration")
             dominoTile.withLifecycleWriteLock {
                 config.set(newConfiguration)
                 destroyAllSessions()
@@ -573,7 +572,9 @@ open class SessionManagerImpl(
 
         private fun fromConfig(config: Config): HeartbeatManagerConfig {
             return HeartbeatManagerConfig(Duration.ofMillis(config.getLong(LinkManagerConfiguration.HEARTBEAT_MESSAGE_PERIOD_KEY)),
-            Duration.ofMillis(config.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY)))
+            Duration.ofMillis(config.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY))).also {
+                println("QQQ reading config: $config -> $it")
+            }
         }
 
         private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {

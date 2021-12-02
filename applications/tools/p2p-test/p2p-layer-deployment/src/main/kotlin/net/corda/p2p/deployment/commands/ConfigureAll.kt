@@ -185,6 +185,7 @@ class ConfigureAll : Runnable {
     }
 
     private fun runJar(jarName: String, arguments: Collection<String>) {
+        println("QQQ arguments = $arguments")
         val jarFile = jarToRun(jarName)
         val java = "${System.getProperty("java.home")}/bin/java"
         val commands = listOf(java, "-jar", jarFile.absolutePath) + arguments

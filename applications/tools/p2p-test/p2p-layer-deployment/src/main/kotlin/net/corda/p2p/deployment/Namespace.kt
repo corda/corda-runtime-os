@@ -131,7 +131,7 @@ class Namespace : Runnable {
         names = ["--lm-conf", "--link-manager-config"],
         description = ["Link manager extra configuration arguments"]
     )
-    var linkManagerExtraArguments = emptyList<String>()
+    var linkManagerExtraArguments = listOf("--sessionTimeoutMilliSecs", "1800000")
 
     @Option(
         names = ["--gateway-config", "--gateway-conf"],
