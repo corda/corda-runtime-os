@@ -24,11 +24,14 @@ class KafkaBroker(
             val brokers = (1..brokersCount).map {
                 KafkaBroker(it, clusterName, zookeeperConnectString)
             }
-            val ui = if(kafkaUi) {
-                listOf(KafkaUi(clusterName,
-                    zookeepers.map { "${it.app}:2181" }.first(),
-                    brokers.map { "${it.app}:9092" }.first(),
-                ))
+            val ui = if (kafkaUi) {
+                listOf(
+                    KafkaUi(
+                        clusterName,
+                        zookeepers.map { "${it.app}:2181" }.first(),
+                        brokers.map { "${it.app}:9092" }.first(),
+                    )
+                )
             } else {
                 emptyList()
             }

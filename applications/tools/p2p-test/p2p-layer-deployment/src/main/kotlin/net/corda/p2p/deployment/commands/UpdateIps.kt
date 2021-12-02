@@ -73,7 +73,7 @@ class UpdateIps : Runnable {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun namespaces() : Collection<Namespace> {
+    private fun namespaces(): Collection<Namespace> {
         val getAll = ProcessBuilder().command(
             "kubectl",
             "get",

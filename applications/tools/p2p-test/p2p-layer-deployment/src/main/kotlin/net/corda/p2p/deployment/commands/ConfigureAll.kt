@@ -24,13 +24,13 @@ class ConfigureAll : Runnable {
         names = ["-l", "--lm", "--link-manager"],
         description = ["Link manager extra configuration arguments"]
     )
-    var linkManagerExtraArguments = emptyList<String>()
+    var linkManagerExtraArguments = listOf("--sessionTimeoutMilliSecs", "1800000")
 
     @Option(
         names = ["-g", "--gateway"],
         description = ["Gateway extra configuration arguments"]
     )
-    var gatewayArguments = emptyList<String>()
+    var gatewayArguments = listOf("--responseTimeoutMilliSecs", "1800000")
 
     private val yamlReader = ObjectMapper(YAMLFactory()).reader()
     private val jsonWriter = ObjectMapper().writer()
@@ -341,7 +341,6 @@ class ConfigureAll : Runnable {
                 "--keyStorePassword=password",
                 "--trustStore=${trustStoreFile.absolutePath}",
                 "--trustStorePassword=password",
-                "--responseTimeoutMilliSecs=300000"
             ) + gatewayArguments
         )
     }

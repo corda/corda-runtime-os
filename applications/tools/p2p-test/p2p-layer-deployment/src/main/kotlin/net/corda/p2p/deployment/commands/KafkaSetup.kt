@@ -4,7 +4,7 @@ import net.corda.p2p.deployment.DeploymentException
 
 class KafkaSetup(
     private val namespaceName: String
-) : Runnable{
+) : Runnable {
     override fun run() {
         println("Setting up kafka topics...")
         println("\t p2p.out.markers...")
@@ -49,13 +49,12 @@ class KafkaSetup(
 
     private fun alterTopic(name: String) {
         execute(
-                "--alter",
-                "--topic",
-                name,
-                "--partitions",
-                "10",
-            )
-
+            "--alter",
+            "--topic",
+            name,
+            "--partitions",
+            "10",
+        )
     }
     private fun createTopic(name: String) {
         execute(
@@ -69,7 +68,7 @@ class KafkaSetup(
         )
     }
 
-    private fun execute(vararg args: String) : Collection<String> {
+    private fun execute(vararg args: String): Collection<String> {
         val commandInPod = "\$KAFKA_HOME/bin/kafka-topics.sh --zookeeper=\$KAFKA_ZOOKEEPER_CONNECT ${args.joinToString(" ")}"
 
         val bash = ProcessBuilder().command(
@@ -87,7 +86,7 @@ class KafkaSetup(
         )
             .start()
 
-        if(bash.waitFor() != 0) {
+        if (bash.waitFor() != 0) {
             val error = bash.errorStream.reader().readText()
             throw DeploymentException("Can not run $commandInPod: $error")
         }
@@ -102,7 +101,7 @@ class KafkaSetup(
             "pod",
             "-n", namespaceName,
             "-l", "app=kafka-broker-1",
-            "-o","jsonpath={.items[*].metadata.name}"
+            "-o", "jsonpath={.items[*].metadata.name}"
         ).start()
         if (getPods.waitFor() != 0) {
             System.err.println(getPods.errorStream.reader().readText())
