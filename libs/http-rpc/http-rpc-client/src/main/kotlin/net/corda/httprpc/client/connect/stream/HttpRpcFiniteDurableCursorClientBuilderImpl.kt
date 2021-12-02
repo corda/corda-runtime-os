@@ -1,8 +1,8 @@
-package net.corda.httprpc.client.impl.stream
+package net.corda.httprpc.client.connect.stream
 
 import net.corda.httprpc.client.auth.RequestContext
 import net.corda.httprpc.client.config.AuthenticationConfig
-import net.corda.httprpc.client.impl.remote.RemoteClient
+import net.corda.httprpc.client.connect.remote.RemoteClient
 import net.corda.httprpc.client.processing.endpointHttpVerb
 import net.corda.httprpc.client.processing.parametersFrom
 import net.corda.httprpc.client.processing.toWebRequest

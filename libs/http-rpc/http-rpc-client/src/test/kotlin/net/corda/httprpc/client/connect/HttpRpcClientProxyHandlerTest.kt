@@ -1,8 +1,8 @@
-package net.corda.httprpc.client.impl
+package net.corda.httprpc.client.connect
 
 import net.corda.httprpc.client.config.EmptyAuthenticationConfig
-import net.corda.httprpc.client.impl.remote.RemoteUnirestClient
-import net.corda.httprpc.client.impl.stream.HttpRpcFiniteDurableCursorClientBuilderImpl
+import net.corda.httprpc.client.connect.remote.RemoteUnirestClient
+import net.corda.httprpc.client.connect.stream.HttpRpcFiniteDurableCursorClientBuilderImpl
 import net.corda.httprpc.client.processing.WebRequest
 import net.corda.httprpc.client.processing.WebResponse
 import net.corda.httprpc.client.processing.encodeParam

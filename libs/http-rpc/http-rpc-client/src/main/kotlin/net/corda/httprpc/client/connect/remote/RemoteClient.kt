@@ -1,4 +1,4 @@
-package net.corda.httprpc.client.impl.remote
+package net.corda.httprpc.client.connect.remote
 
 import kong.unirest.GenericType
 import kong.unirest.HttpRequest

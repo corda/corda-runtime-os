@@ -1,4 +1,4 @@
-package net.corda.httprpc.client.impl
+package net.corda.httprpc.client.connect
 
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.HttpRpcConnectionListener
