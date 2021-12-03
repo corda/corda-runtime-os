@@ -1,11 +1,11 @@
 package net.corda.processors.flow
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 
 // TODO - Joel - Consider providing a common interface for processors.
+// TODO - Joel - Reflect changes here in other processors.
 
 /**
  * The processor for a `FlowWorker`.
@@ -16,26 +16,23 @@ import org.osgi.service.component.annotations.Component
  * @property onStatusErrorCallback Callback to set the processor's status to `LifecycleStatus.ERROR`.
  */
 @Component(service = [FlowProcessor::class])
-class FlowProcessor : Lifecycle {
+class FlowProcessor {
     private companion object {
         val logger = contextLogger()
     }
 
-    override var isRunning = false
     var config: SmartConfig? = null
     var onStatusUpCallback: (() -> Unit)? = null
     var onStatusDownCallback: (() -> Unit)? = null
     var onStatusErrorCallback: (() -> Unit)? = null
 
-    override fun start() {
+    fun start() {
         logger.info("Flow processor starting.")
         onStatusUpCallback?.invoke()
-        isRunning = true
     }
 
-    override fun stop() {
+    fun stop() {
         logger.info("Flow processor stopping.")
         onStatusDownCallback?.invoke()
-        isRunning = false
     }
 }

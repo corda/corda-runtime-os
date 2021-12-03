@@ -17,6 +17,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 // TODO - Joel - Create all-in-one worker - a worker that bootstraps multiple processors.
+// TODO - Joel - Provide config option to disable healthcheck.
+// TODO - Joel - Provide config option to change healthcheck port.
 
 /** The worker for handling flows. */
 @Suppress("Unused")
