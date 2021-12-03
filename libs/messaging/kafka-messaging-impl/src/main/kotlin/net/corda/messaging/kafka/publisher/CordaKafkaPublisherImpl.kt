@@ -23,8 +23,6 @@ import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 /**
  * Kafka publisher will create a new Kafka instance of Publisher.
@@ -133,17 +131,13 @@ class CordaKafkaPublisherImpl(
         }
     }
 
-    private val transactionLock = ReentrantLock()
-
     private fun executeInTransaction(block: (CordaKafkaProducer) -> Unit): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()
 
         try {
-            transactionLock.withLock {
-                cordaKafkaProducer.beginTransaction()
-                block(cordaKafkaProducer)
-                cordaKafkaProducer.commitTransaction()
-            }
+            cordaKafkaProducer.beginTransaction()
+            block(cordaKafkaProducer)
+            cordaKafkaProducer.commitTransaction()
             future.complete(Unit)
         } catch (ex: Exception) {
             when (ex) {

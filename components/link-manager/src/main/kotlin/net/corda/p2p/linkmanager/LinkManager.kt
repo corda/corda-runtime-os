@@ -272,7 +272,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage))
             val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
             records.add(Record(Schema.SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions)))
-            println("QQQ recordsForNewSession SESSION_OUT_PARTITIONS, ${state.sessionId}, $partitions")
             return records
         }
 
@@ -317,7 +316,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     logger.error("Received null message. The message was discarded.")
                     continue
                 }
-                println("QQQ InboundMessageProcessor::onNext got event ${message.payload.javaClass.simpleName}")
                 records += when (val payload = message.payload) {
                     is AuthenticatedDataMessage -> processDataMessage(payload.header.sessionId, DataMessage.Authenticated(payload))
                     is AuthenticatedEncryptedDataMessage -> processDataMessage(
@@ -335,7 +333,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     }
                 }
             }
-            println("QQQ InboundMessageProcessor::onNext sending - ${records.map { "${it.topic} -> ${it.value}"}}")
             return records
         }
 
@@ -345,7 +342,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 when(val payload = message.payload) {
                     is InitiatorHelloMessage -> {
                         val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
-                        println("QQQ processSessionMessage SESSION_OUT_PARTITIONS, ${payload.header.sessionId}, $partitionsAssigned")
                         listOf(
                             Record(Schema.LINK_OUT_TOPIC, generateKey(), response),
                             Record(Schema.SESSION_OUT_PARTITIONS, payload.header.sessionId, SessionPartitions(partitionsAssigned))
@@ -362,10 +358,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         private fun processDataMessage(sessionId: String, message: DataMessage): List<Record<*, *>> {
             val messages = mutableListOf<Record<*, *>>()
-            println("QQQ in processLinkManagerPayload 1 - $sessionId")
             when (val sessionDirection = sessionManager.getSessionById(sessionId)) {
                 is SessionDirection.Inbound -> {
-                    println("QQQ in processLinkManagerPayload 2")
                     messages.addAll(processLinkManagerPayload(sessionDirection.key, sessionDirection.session, sessionId, message))
                 }
                 is SessionDirection.Outbound -> {
@@ -389,7 +383,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                             " The message was discarded.")
                 }
             }
-            println("QQQ in processLinkManagerPayload 3 - ${messages.size} : ${messages.map { it.topic }}")
             return messages
         }
 

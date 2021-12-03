@@ -93,9 +93,7 @@ class LinkManagerConfiguration : ConfigProducer() {
             .withValue(
                 "sessionTimeout",
                 ConfigValueFactory.fromAnyRef(sessionTimeoutMilliSecs)
-            ).also {
-                println("QQQ sessionTimeout = $sessionTimeoutMilliSecs")
-            }
+            )
     }
 
     override val key = CordaConfigurationKey(
