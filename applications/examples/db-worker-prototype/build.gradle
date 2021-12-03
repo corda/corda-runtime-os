@@ -55,7 +55,6 @@ dependencies {
     }
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
-    // runtimeOnly "javax.interceptor:javax.interceptor-api:1.2"
 }
 
 tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
