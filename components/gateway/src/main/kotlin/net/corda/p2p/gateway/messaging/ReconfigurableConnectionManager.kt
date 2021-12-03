@@ -16,7 +16,7 @@ class ReconfigurableConnectionManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     val configurationReaderService: ConfigurationReadService,
     private val managerFactory: (sslConfig: SslConfiguration, connectionConfig: ConnectionConfiguration) -> ConnectionManager =
-    { sslConfig, connectionConfig -> ConnectionManager(sslConfig, connectionConfig) }
+        { sslConfig, connectionConfig -> ConnectionManager(sslConfig, connectionConfig) }
 ) : LifecycleWithDominoTile {
 
     override val dominoTile = DominoTile(
@@ -27,12 +27,6 @@ class ReconfigurableConnectionManager(
 
     @Volatile
     private var manager: ConnectionManager? = null
-
-    // When the updated domino logic (supporting internal tile with configuration) is in place, this will be updated. See: CORE-2876.
-    @Volatile
-    var latestConnectionConfig = ConnectionConfiguration()
-
-    fun latestConnectionConfig() = latestConnectionConfig
 
     companion object {
         private val logger = contextLogger()
@@ -50,7 +44,7 @@ class ReconfigurableConnectionManager(
     inner class ConnectionManagerConfigChangeHandler : ConfigurationChangeHandler<GatewayConfiguration>(
         configurationReaderService,
         CONFIG_KEY,
-        {it.toGatewayConfiguration()}
+        { it.toGatewayConfiguration() }
     ) {
         override fun applyNewConfiguration(
             newConfiguration: GatewayConfiguration,
@@ -61,17 +55,17 @@ class ReconfigurableConnectionManager(
             @Suppress("TooGenericExceptionCaught")
             try {
                 if (newConfiguration.sslConfig != oldConfiguration?.sslConfig ||
-                    newConfiguration.connectionConfig != oldConfiguration.connectionConfig) {
+                    newConfiguration.connectionConfig != oldConfiguration.connectionConfig
+                ) {
                     logger.info("New configuration, clients for ${dominoTile.name} will be reconnected")
-                    latestConnectionConfig = newConfiguration.connectionConfig
                     val newManager = managerFactory(newConfiguration.sslConfig, newConfiguration.connectionConfig)
                     resources.keep(newManager)
                     val oldManager = manager
                     manager = null
                     oldManager?.close()
                     manager = newManager
-                    configUpdateResult.complete(Unit)
                 }
+                configUpdateResult.complete(Unit)
             } catch (e: Throwable) {
                 configUpdateResult.completeExceptionally(e)
             }

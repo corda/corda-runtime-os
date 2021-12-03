@@ -179,7 +179,6 @@ class SessionManagerTest {
         mock(),
         mock(),
         mock(),
-        1,
         protocolFactory,
         sessionReplayer
     ).apply {
@@ -804,7 +803,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            1,
             protocolFactory,
             sessionReplayer
         ).apply {
@@ -846,7 +844,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            1,
             protocolFactory,
             sessionReplayer
         ).apply {
@@ -903,7 +900,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            1,
             protocolFactory,
             sessionReplayer
         ).apply {
@@ -972,7 +968,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            1,
             protocolFactory,
             sessionReplayer
         ).apply {
@@ -1062,7 +1057,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            1,
             protocolFactory,
             sessionReplayer
         ).apply {
@@ -1128,7 +1122,6 @@ class SessionManagerTest {
             mock(),
             mock(),
             mock(),
-            1,
             protocolFactory,
             sessionReplayer
         ).apply {

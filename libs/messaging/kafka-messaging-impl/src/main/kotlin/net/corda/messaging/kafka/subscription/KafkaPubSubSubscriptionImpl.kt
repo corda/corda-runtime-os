@@ -1,10 +1,14 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
@@ -30,7 +34,6 @@ import kotlin.concurrent.withLock
  * After connection is successful subscription will attempt to poll and process records until subscription is stopped.
  * Records are processed using the [executor] if it is not null. Otherwise they are processed on the same thread.
  * [executor] will be shutdown when the subscription is stopped.
- * @property subscriptionConfig Describes what topic to poll from and what the consumer group name should be.
  * @property config kafka configuration
  * @property consumerBuilder builder to generate a kafka consumer.
  * @property processor processes records from kafka topic. Does not produce any outputs.
@@ -42,7 +45,8 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
     private val config: Config,
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val processor: PubSubProcessor<K, V>,
-    private val executor: ExecutorService?
+    private val executor: ExecutorService?,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
@@ -58,6 +62,14 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
     private var consumeLoopThread: Thread? = null
     private val topic = config.getString(TOPIC_NAME)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "$groupName-KafkaPubSubSubscription-$topic",
+            //we use clientIdCounter here instead of instanceId as this subscription is readOnly
+            config.getString(ConfigProperties.CLIENT_ID_COUNTER)
+        )
+    ) { _, _ -> }
+    private val errorMsg = "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic."
 
     /**
      * Is the subscription running.
@@ -66,6 +78,9 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
         get() {
             return !stopped
         }
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
 
     /**
      * Begin consuming events from the configured topic and process them
@@ -77,6 +92,7 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
+                lifecycleCoordinator.start()
                 consumeLoopThread = thread(
                     true,
                     isDaemon = true,
@@ -94,15 +110,27 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
      */
     override fun stop() {
         if (!stopped) {
-            val thread = lock.withLock {
-                stopped = true
-                val threadTmp = consumeLoopThread
-                consumeLoopThread = null
-                threadTmp
-            }
-            executor?.shutdown()
-            thread?.join(consumerThreadStopTimeout)
+            stopConsumeLoop()
+            lifecycleCoordinator.stop()
         }
+    }
+
+    override fun close() {
+        if (!stopped) {
+            stopConsumeLoop()
+            lifecycleCoordinator.close()
+        }
+    }
+
+    private fun stopConsumeLoop() {
+        val thread = lock.withLock {
+            stopped = true
+            val threadTmp = consumeLoopThread
+            consumeLoopThread = null
+            threadTmp
+        }
+        executor?.shutdown()
+        thread?.join(consumerThreadStopTimeout)
     }
 
     /**
@@ -123,29 +151,29 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
                     config.getConfig(KAFKA_CONSUMER), processor.keyClass, processor.valueClass,::logFailedDeserialize
                 ).use {
                     it.subscribeToTopic()
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
             } catch (ex: CordaMessageAPIIntermittentException) {
                 log.warn(
-                    "PubSubConsumer from group $groupName failed to read and process records from topic $topic, " +
-                            "attempts: $attempts. Retrying.", ex
+                    "$errorMsg Attempts: $attempts. Retrying.", ex
                 )
             } catch (ex: CordaMessageAPIFatalException) {
                 log.error(
-                    "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic. " +
-                            "Fatal error occurred. Closing subscription.", ex
+                    "$errorMsg Fatal error occurred. Closing subscription.", ex
                 )
+                lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
                 stop()
             } catch (ex: Exception) {
                 log.error(
-                    "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic, " +
-                            "attempts: $attempts. " +
-                            "Unexpected error occurred. Closing subscription.", ex
+                    "$errorMsg Attempts: $attempts. Unexpected error occurred. Closing subscription.", ex
                 )
+                lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
                 stop()
             }
         }
+        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     /**
