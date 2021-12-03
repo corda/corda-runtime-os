@@ -29,6 +29,25 @@ services:
       interval: 2s
       timeout: 2s
       retries: 15
+  init-kafka:
+    container_name: init-kafka
+    image: "bitnami/kafka:latest"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      echo -e 'Creating kafka topics'
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.management
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.management.resp
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.user --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.group --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.role --config "cleanup.policy=compact"
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics.sh --bootstrap-server kafka:9092 --list
+      "
   kafdrop:
     container_name: kafdrop
     image: obsidiandynamics/kafdrop
@@ -65,14 +84,14 @@ services:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -DinstanceId=1 \
         -Dbootstrap.servers=kafka:9092 -Dconfig.topic.name=ConfigTopic -Dmessaging.topic.prefix=http-rpc-gateway"
     depends_on:
-      kafka:
-        condition: service_healthy
+      init-kafka:
+        condition: service_completed_successfully
   db-worker-proto:
     container_name: db-worker-proto
     image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker-prototype:latest"
     depends_on:
-      kafka:
-        condition: service_healthy
+      init-kafka:
+        condition: service_completed_successfully
       app-db:
         condition: service_healthy
     ports:

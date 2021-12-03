@@ -24,20 +24,6 @@ In `applications/http-rpc-gateway/deploy`:
 docker compose -p "http-rpc" up
 ```
 
-### Create Kafka topics:
-
-When network is running, create topics:
-
-```shell
-./create-topics.sh
-```
-
-or to first delete existing persistence-demo topics:
-
-```shell
-./create-topics.sh delete
-```
-
 ### Kafdrop
 
 To launch the [Kafdrop](https://github.com/HomeAdvisor/Kafdrop) UI, browse to: http://localhost:9000/
@@ -45,3 +31,20 @@ To launch the [Kafdrop](https://github.com/HomeAdvisor/Kafdrop) UI, browse to: h
 ### Swagger UI
 
 To launch Swagger UI and execute HTTP RPC calls please browse to: https://localhost:8888/api/v1/swagger
+
+### Manipulate Kafka topics
+
+Kafka topics are created automatically by Docker Compose.
+
+If you do, however, need to manipulate them, there is a dedicated script for that.
+
+To create topics:
+```shell
+./create-topics.sh
+```
+
+or to first delete existing topics and re-create them:
+
+```shell
+./create-topics.sh delete
+```
