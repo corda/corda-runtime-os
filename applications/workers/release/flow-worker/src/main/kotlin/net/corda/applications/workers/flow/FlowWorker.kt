@@ -2,13 +2,12 @@ package net.corda.applications.workers.flow
 
 import net.corda.applications.workers.workercommon.HealthMonitor
 import net.corda.applications.workers.workercommon.WorkerParams
-import net.corda.libs.configuration.SmartConfig
+import net.corda.applications.workers.workercommon.createProcessorCoordinator
+import net.corda.applications.workers.workercommon.statusToDown
+import net.corda.applications.workers.workercommon.statusToError
+import net.corda.applications.workers.workercommon.statusToUp
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
-import net.corda.lifecycle.createCoordinator
 import net.corda.osgi.api.Application
 import net.corda.processors.flow.FlowProcessor
 import net.corda.v5.base.util.contextLogger
@@ -27,7 +26,7 @@ class FlowWorker @Activate constructor(
     @Reference(service = SmartConfigFactory::class)
     private val smartConfigFactory: SmartConfigFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = HealthMonitor::class)
     healthMonitor: HealthMonitor,
     @Reference(service = FlowProcessor::class)
@@ -45,37 +44,15 @@ class FlowWorker @Activate constructor(
     }
 
     // Passes start and stop events through to the flow processor.
-    private val coordinator = coordinatorFactory.createCoordinator<FlowProcessor> { event, _ ->
-        when (event) {
-            is StartEvent -> processor.start()
-            is StopEvent -> processor.stop()
-        }
-    }
+    private val coordinator = createProcessorCoordinator<FlowProcessor>(coordinatorFactory, processor)
 
     /** Parses the arguments, then initialises and starts the [FlowProcessor]. */
     override fun startup(args: Array<String>) {
         logger.info("Flow worker starting.")
         val config = WorkerParams().parseArgs(args, smartConfigFactory)
-        initialiseProcessor(config)
+        processor.initialise(config, statusToUp(coordinator), statusToDown(coordinator), statusToError(coordinator))
         coordinator.start()
     }
 
     override fun shutdown() = coordinator.stop()
-
-    /** Initialises the [processor]. */
-    private fun initialiseProcessor(config: SmartConfig) {
-        processor.config = config
-        processor.onStatusUpCallback = ::setStatusToUp
-        processor.onStatusDownCallback = ::setStatusToDown
-        processor.onStatusErrorCallback = ::setStatusToError
-    }
-
-    /** Sets the coordinator's status to [LifecycleStatus.UP]. */
-    private fun setStatusToUp() = coordinator.updateStatus(LifecycleStatus.UP)
-
-    /** Sets the coordinator's status to [LifecycleStatus.DOWN]. */
-    private fun setStatusToDown() = coordinator.updateStatus(LifecycleStatus.DOWN)
-
-    /** Sets the coordinator's status to [LifecycleStatus.ERROR]. */
-    private fun setStatusToError() = coordinator.updateStatus(LifecycleStatus.ERROR)
 }

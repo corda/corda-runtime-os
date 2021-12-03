@@ -12,6 +12,7 @@ dependencies {
     implementation project(':applications:common')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':osgi-framework-api')
+    implementation project(':processors:processor-common')
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'

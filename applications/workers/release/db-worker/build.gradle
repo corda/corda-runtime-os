@@ -12,7 +12,8 @@ dependencies {
     implementation project(':applications:workers:worker-common')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:lifecycle:lifecycle')
-    implementation project(':processors:db-processor')
+    implementation project(':processors:processor-common')
+    implementation project(':processors:release:db-processor')
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
