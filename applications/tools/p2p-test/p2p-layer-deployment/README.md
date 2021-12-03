@@ -56,9 +56,6 @@ Some additional options are:
       --lm-conf, --link-manager-config=<linkManagerExtraArguments>
                              Link manager extra configuration arguments
   -n, --name=<namespaceName> The name of the namespace
-      --no-volume-creation   Avoid creating any volumes
-      --storage-class=<storageClassName>
-                             The storage class name
   -t, --tag=<tag>            The docker name of the tag to pull
   -x, --x500-name=<x500Name> The X 500 name
   -z, --zoo-keepers-count=<zooKeeperCount>
@@ -208,4 +205,23 @@ telepresence quit && telepresence uninstall --everything
 3. Stop and delete minikube:
 ```
 minikube stop && minikube delete
+```
+
+# Using AWS
+## Before you begin
+1. Install AWS CLI (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html))
+2. Make sure you have access to AWS. (see [here](https://engineering.r3.com/engineering-central/how-we-work/build-logistics-and-tooling/build-and-test/test/eks-cluster-getting-started/#obtaining-sso-access-to-aws))
+2.1 After using minikube, make sure to run:
+```bash
+aws eks update-kubeconfig --name eks-e2e-03
+```
+To switch back to minikube use:
+```bash
+kubectl config use-context minikube
+```
+
+## Deploying a cluster
+For AWS there is no need to create storage, we can use the `corda-sc` storage class. Hence, a deployment command can look like:
+```bash
+--no-volume-creation --storage-class=corda-sc
 ```

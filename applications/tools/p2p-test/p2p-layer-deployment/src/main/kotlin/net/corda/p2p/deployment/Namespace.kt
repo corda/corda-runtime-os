@@ -45,7 +45,7 @@ class Namespace : Runnable {
     )
     var hostName: String? = null
 
-    val actualHostName: String
+    private val actualHostName: String
         get() =
             hostName ?: "www.$namespaceName.com"
 
@@ -104,18 +104,6 @@ class Namespace : Runnable {
     private var dbPassword: String = "corda-p2p-masters"
 
     @Option(
-        names = ["--storage-class"],
-        description = ["The storage class name"]
-    )
-    var storageClassName: String = "standard"
-
-    @Option(
-        names = ["--no-volume-creation"],
-        description = ["Avoid creating any volumes"]
-    )
-    var noVolumes = false
-
-    @Option(
         names = ["-d", "--dry-run"],
         description = ["Just output the yaml the stdout, do not interact with K8s"]
     )
@@ -125,7 +113,7 @@ class Namespace : Runnable {
         names = ["-t", "--tag"],
         description = ["The docker name of the tag to pull"]
     )
-    private var tag = "5.0.0.0-alpha-1637835488501"
+    private var tag = "5.0.0.0-beta-1638524084494"
 
     @Option(
         names = ["--lm-conf", "--link-manager-config"],
