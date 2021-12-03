@@ -14,19 +14,17 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.p2p.app.simulator.AppSimulator.Companion.KAFKA_BOOTSTRAP_SERVER
 import net.corda.p2p.app.simulator.AppSimulator.Companion.KAFKA_BOOTSTRAP_SERVER_KEY
 import net.corda.p2p.app.simulator.AppSimulator.Companion.PRODUCER_CLIENT_ID
 import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 import java.time.Duration
 import java.time.Instant
-import java.util.Properties
 
 class Receiver(private val subscriptionFactory: SubscriptionFactory,
                private val receiveTopic: String,
                private val metadataTopic: String,
-               private val kafkaProperties: Properties,
+               private val kafkaServers: String,
                private val clients: Int): Closeable {
 
     companion object {
@@ -40,7 +38,7 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
         (1..clients).forEach { client ->
             val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", receiveTopic, client)
             val kafkaConfig = SmartConfigImpl.empty()
-                .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaProperties[KAFKA_BOOTSTRAP_SERVER].toString()))
+                .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaServers))
                 .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-receiver-$client"))
             val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
                 InboundMessageProcessor(metadataTopic), kafkaConfig, null)

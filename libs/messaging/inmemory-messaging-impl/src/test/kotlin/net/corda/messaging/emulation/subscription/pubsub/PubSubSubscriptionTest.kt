@@ -1,5 +1,7 @@
 package net.corda.messaging.emulation.subscription.pubsub
 
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -30,8 +32,13 @@ class PubSubSubscriptionTest {
     private val topicService = mock<TopicService> {
         on { createConsumption(any()) } doReturn consumeLifeCycle
     }
+    private val lifecycleCoordinator: LifecycleCoordinator = mock()
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
+        on { createCoordinator(any(), any()) } doReturn lifecycleCoordinator
+    }
 
-    private val pubSubSubscription = PubSubSubscription(config, processor, executor, topicService)
+    private val pubSubSubscription =
+        PubSubSubscription(config, processor, executor, topicService, lifecycleCoordinatorFactory, "0")
 
     @Test
     fun `isRunning return false if was not started`() {
@@ -109,7 +116,7 @@ class PubSubSubscriptionTest {
 
     @Test
     fun `processRecords send to processor in no executor`() {
-        val subscription = PubSubSubscription(config, processor, null, topicService)
+        val subscription = PubSubSubscription(config, processor, null, topicService, lifecycleCoordinatorFactory, "0")
         val record = Record<String, Number>("topic", "key6", 3)
         val records = listOf(
             RecordMetadata(
@@ -126,7 +133,7 @@ class PubSubSubscriptionTest {
 
     @Test
     fun `processRecords ignore invalid keys and values`() {
-        val subscription = PubSubSubscription(config, processor, null, topicService)
+        val subscription = PubSubSubscription(config, processor, null, topicService, lifecycleCoordinatorFactory, "0")
         val record1 = Record("topic", "key6", "3")
         val record2 = Record<Int, Number>("topic", 4, 4)
         val record3 = Record<String, Number>("topic", "key6", null)

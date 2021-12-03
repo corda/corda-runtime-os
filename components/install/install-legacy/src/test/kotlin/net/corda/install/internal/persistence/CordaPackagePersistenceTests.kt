@@ -166,10 +166,10 @@ class CordaPackagePersistenceTests {
         val modifiedWorkflowCpk = testCpbLocation.resolveSibling( "workflow-without-bundle-symbolic-name.cpk")
         val cordappJarTweaker = object : ZipTweaker() {
             override fun tweakEntry(
-                    inputStream: ZipInputStream,
-                    outputStream: ZipOutputStream,
-                    currentEntry: ZipEntry,
-                    buffer: ByteArray): AfterTweakAction {
+                inputStream: ZipInputStream,
+                outputStream: ZipOutputStream,
+                currentEntry: ZipEntry,
+                buffer: ByteArray): AfterTweakAction {
                 return when (currentEntry.name) {
                     JarFile.MANIFEST_NAME -> {
                         val manifest = Manifest().apply { read(UncloseableInputStream(inputStream)) }

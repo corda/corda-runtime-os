@@ -4,11 +4,19 @@ import java.util.UUID
 
 class TopicTemplates {
     companion object {
-        private val testRunID = UUID.randomUUID().toString()
-        val TEST_TOPIC_PREFIX = "$testRunID-"
-        const val DLQ_SUFFIX = ".DLQ"
-        const val COMPACTED_TOPIC1 = "CompactedTopic1"
-        val COMPACTED_TOPIC1_TEMPLATE = """topics = [ 
+        const val TEST_TOPIC_PREFIX  = "testPrefix"
+        const val DLQ_SUFFIX  = ".DLQ"
+        const val RANDOM_ACCESS_TOPIC1  = "RandomAccessTopic1"
+        const val RANDOM_ACCESS_TOPIC1_TEMPLATE = """topics = [ 
+                    { 
+                        topicName = "$TEST_TOPIC_PREFIX$RANDOM_ACCESS_TOPIC1" 
+                        numPartitions = 1 
+                        replicationFactor = 3 
+                    } 
+                ]"""
+
+        const val COMPACTED_TOPIC1  = "CompactedTopic1"
+        const val COMPACTED_TOPIC1_TEMPLATE = """topics = [ 
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$COMPACTED_TOPIC1" 
                         numPartitions = 1 
@@ -28,8 +36,17 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val EVENT_TOPIC1 = "EventTopic1"
-        val EVENT_TOPIC1_TEMPLATE = """topics = [ 
+        const val PUBLISHER_TEST_DURABLE_TOPIC1  = "PublisherTestDurableTopic1"
+        const val PUBLISHER_TEST_DURABLE_TOPIC1_TEMPLATE = """topics = [ 
+                    { 
+                        topicName = "$TEST_TOPIC_PREFIX$DURABLE_TOPIC1" 
+                        numPartitions = 2 
+                        replicationFactor = 3 
+                    } 
+                ]"""
+
+        const val EVENT_TOPIC1  = "EventTopic1"
+        const val EVENT_TOPIC1_TEMPLATE = """topics = [ 
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$EVENT_TOPIC1" 
                         numPartitions = 2 

@@ -4,11 +4,12 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.InternalTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.messaging.internal.InboundMessageHandler
 import net.corda.p2p.gateway.messaging.internal.OutboundMessageHandler
+import net.corda.v5.base.annotations.VisibleForTesting
 
 /**
  * The Gateway is a light component which facilitates the sending and receiving of P2P messages.
@@ -29,15 +30,7 @@ class Gateway(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     nodeConfiguration: SmartConfig,
     instanceId: Int,
-) : InternalTile(
-    lifecycleCoordinatorFactory,
-) {
-
-    companion object {
-        const val CONSUMER_GROUP_ID = "gateway"
-        const val PUBLISHER_ID = "gateway"
-        const val CONFIG_KEY = "p2p.gateway"
-    }
+) : LifecycleWithDominoTile {
 
     private val inboundMessageHandler = InboundMessageHandler(
         lifecycleCoordinatorFactory,
@@ -45,6 +38,7 @@ class Gateway(
         publisherFactory,
         subscriptionFactory,
         nodeConfiguration,
+        instanceId
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
@@ -54,5 +48,11 @@ class Gateway(
         instanceId,
     )
 
-    override val children: Collection<DominoTile> = listOf(inboundMessageHandler, outboundMessageProcessor)
+    @VisibleForTesting
+    internal val children: Collection<DominoTile> = listOf(inboundMessageHandler.dominoTile, outboundMessageProcessor.dominoTile)
+    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, children = children)
+
+    companion object {
+        const val CONFIG_KEY = "p2p.gateway"
+    }
 }

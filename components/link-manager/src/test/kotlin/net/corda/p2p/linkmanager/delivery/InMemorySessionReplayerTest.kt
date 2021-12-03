@@ -1,12 +1,8 @@
 package net.corda.p2p.linkmanager.delivery
 
-import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.RPCSender
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
@@ -19,20 +15,20 @@ import net.corda.p2p.schema.Schema
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertSame
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.fail
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
-import java.time.Duration
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CountDownLatch
+import java.util.*
 
 class InMemorySessionReplayerTest {
 
@@ -53,55 +49,31 @@ class InMemorySessionReplayerTest {
     }
 
     @AfterEach
-    fun resetLogging() {
+    fun cleanUp() {
+        dominoTile.close()
+        publisherWithDominoLogic.close()
+        replayScheduler.close()
         loggingInterceptor.reset()
+    }
+
+    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, _ ->
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
+    }
+    private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java)
+
+    private lateinit var replayCallback: (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
+    private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java) { _, context ->
+        @Suppress("UNCHECKED_CAST")
+        replayCallback = context.arguments()[3] as (message: InMemorySessionReplayer.SessionMessageReplay) -> Unit
     }
 
     val netMap = MockNetworkMap(listOf(US, COUNTER_PARTY)).getSessionNetworkMapForNode(US)
 
-    class SinglePhaseTestListBasedPublisher(private val totalInvocations: Int): Publisher {
-
-        var list = mutableListOf<Record<*, *>>()
-        var testWaitLatch = CountDownLatch(1)
-        var publisherWaitLatch = CountDownLatch(1)
-        private var invocations = 0
-
-        override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-            throw fail("publishToPartition should never be called in this test.")
-        }
-
-        override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-            if (invocations == totalInvocations) {
-                testWaitLatch.countDown()
-                publisherWaitLatch.await()
-            }
-            invocations++
-            list.addAll(records)
-            return emptyList()
-        }
-
-        override fun close() {
-            throw fail("close should never be called in this test.")
-        }
-    }
-
     @Test
-    fun `InMemorySessionReplacer replays added session message repeatedly`() {
-        val totalReplays = 5
-        val publisher = SinglePhaseTestListBasedPublisher(totalReplays)
-        val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, kafkaConfig: SmartConfig): Publisher {
-                return publisher
-            }
+    fun `The InMemorySessionReplacer adds a message to be replayed (by the replayScheduler) when addMessageForReplay`() {
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), netMap)
 
-            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
-                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-                kafkaConfig: SmartConfig
-            ): RPCSender<REQUEST, RESPONSE> {
-                fail("createRPCSender should not be used in this test.")
-            }
-        }
-        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, netMap)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -111,158 +83,64 @@ class InMemorySessionReplayerTest {
             GROUP_ID
         ).generateInitiatorHello()
 
-        var invocations = 0
-        fun callback(key: SessionManager.SessionKey, sessionId: String)  {
-            assertEquals(US, key.ourId)
-            assertEquals(COUNTER_PARTY, key.responderId)
-            assertEquals(id, sessionId)
-            invocations++
-        }
-
-        replayer.start()
-        replayer.addMessageForReplay(id, InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY, ::callback))
-
-        publisher.testWaitLatch.await()
-        assertEquals(totalReplays, invocations)
-        assertEquals(totalReplays, publisher.list.size)
-        for (record in publisher.list) {
-            assertEquals(Schema.LINK_OUT_TOPIC, record.topic)
-            assertTrue(record.value is LinkOutMessage)
-            assertSame(helloMessage, (record.value as LinkOutMessage).payload)
-        }
-
-        publisher.publisherWaitLatch.countDown()
-        replayer.stop()
-    }
-
-    class TwoPhaseTestListBasedPublisher(
-        private val firstPhaseInvocations: Int,
-        private val secondPhaseInvocations: Int
-    ): Publisher {
-
-        var list = mutableListOf<Record<*, *>>()
-        var testWaitLatch = CountDownLatch(1)
-        var publisherWaitLatch = CountDownLatch(1)
-        var testWaitLatch1 = CountDownLatch(1)
-        var publisherWaitLatch1 = CountDownLatch(1)
-
-        private var invocations = 0
-
-        override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-            throw fail("publishToPartition should never be called in this test.")
-        }
-
-        override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-            if (invocations == firstPhaseInvocations) {
-                testWaitLatch.countDown()
-                publisherWaitLatch.await()
-            }
-            if (invocations == firstPhaseInvocations + secondPhaseInvocations) {
-                testWaitLatch1.countDown()
-                publisherWaitLatch1.await()
-            }
-            invocations++
-            list.addAll(records)
-            return emptyList()
-        }
-
-        override fun close() {
-            throw fail("close should never be called in this test.")
-        }
+        setRunning()
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) { _,_ -> }
+        replayer.addMessageForReplay(id, messageReplay)
+        @Suppress("UNCHECKED_CAST")
+        verify(replayScheduler.constructed().last() as ReplayScheduler<InMemorySessionReplayer.SessionMessageReplay>)
+            .addForReplay(any(), eq(id), eq(messageReplay))
     }
 
     @Test
-    fun `InMemorySessionReplayer stops replaying when a message is removed`() {
-        val initialReplays = 6
-        val furtherReplays = 4
-        val publisher = TwoPhaseTestListBasedPublisher(initialReplays, furtherReplays)
-        val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, kafkaConfig: SmartConfig): Publisher {
-                return publisher
-            }
+    fun `The InMemorySessionReplacer removes a message from the replayScheduler when removeMessageFromReplay`() {
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), netMap)
 
-            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
-                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-                kafkaConfig: SmartConfig
-            ): RPCSender<REQUEST, RESPONSE> {
-                fail("createRPCSender should not be used in this test.")
-            }
-        }
-        val replayer = InMemorySessionReplayer(Duration.ofMillis(50), publisherFactory, netMap)
-        val firstId = UUID.randomUUID().toString()
+        val id = UUID.randomUUID().toString()
+        setRunning()
+        replayer.removeMessageFromReplay(id)
+        @Suppress("UNCHECKED_CAST")
+        verify(replayScheduler.constructed().last() as ReplayScheduler<InMemorySessionReplayer.SessionMessageReplay>)
+            .removeFromReplay(id)
+    }
+
+    @Test
+    fun `The replaySchedular callback publishes the session message`() {
+        InMemorySessionReplayer(mock(), mock(), mock(), mock(), netMap)
+        val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
-            firstId,
+            id,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
             GROUP_ID
         ).generateInitiatorHello()
 
-        val secondId = UUID.randomUUID().toString()
-        val secondHelloMessage = AuthenticationProtocolInitiator(
-            secondId,
-            setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            MAX_MESSAGE_SIZE,
-            KEY_PAIR.public,
-            GROUP_ID
-        ).generateInitiatorHello()
-
-        replayer.start()
-
-        replayer.addMessageForReplay(
-            firstId,
-            InMemorySessionReplayer.SessionMessageReplay(helloMessage, firstId, US, COUNTER_PARTY) {_, _ ->}
-        )
-        replayer.addMessageForReplay(
-            secondId,
-            InMemorySessionReplayer.SessionMessageReplay(secondHelloMessage, secondId, US, COUNTER_PARTY) {_, _ ->}
-        )
-
-        publisher.testWaitLatch.await()
-        assertEquals(initialReplays, publisher.list.size)
-        assertThat(publisher.list).extracting<String> { it.topic }.containsOnly(Schema.LINK_OUT_TOPIC)
-        assertThat(publisher.list.filter { (it.value as? LinkOutMessage)?.payload == helloMessage } ).hasSize(initialReplays / 2)
-        assertThat(publisher.list.filter { (it.value as? LinkOutMessage)?.payload == secondHelloMessage } ).hasSize(initialReplays / 2)
-
-        replayer.removeMessageFromReplay(firstId)
-        publisher.publisherWaitLatch.countDown()
-        publisher.testWaitLatch1.await()
-
-        assertEquals(initialReplays + furtherReplays, publisher.list.size)
-
-        for (i in initialReplays until furtherReplays) {
-            val record = publisher.list[i]
-            assertEquals(Schema.LINK_OUT_TOPIC, record.topic)
-            assertTrue(record.value is LinkOutMessage)
-            assertSame(secondHelloMessage, (record.value as LinkOutMessage).payload)
+        setRunning()
+        var sessionId: String? = null
+        var sessionKey: SessionManager.SessionKey? = null
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) { key, callbackId  ->
+            sessionKey = key
+            sessionId = callbackId
         }
+        replayCallback(messageReplay)
 
-        publisher.publisherWaitLatch1.countDown()
-        replayer.stop()
+        val recordsCapture = argumentCaptor<List<Record<*, *>>>()
+        verify(publisherWithDominoLogic.constructed().last()).publish(recordsCapture.capture())
+        val record = recordsCapture.allValues.single().single()
+        assertThat(record.topic).isEqualTo(Schema.LINK_OUT_TOPIC)
+        assertThat((record.value as? LinkOutMessage)?.payload).isEqualTo(helloMessage)
+        assertThat(sessionKey!!.ourId).isEqualTo(US)
+        assertThat(sessionKey!!.responderId).isEqualTo(COUNTER_PARTY)
+        assertThat(sessionId).isEqualTo(id)
     }
 
     @Test
-    fun `InMemorySessionReplayer logs a warning when our network type is not in the network map`() {
-        val totalReplays = 1
-        val publisher = SinglePhaseTestListBasedPublisher(totalReplays)
-        val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, kafkaConfig: SmartConfig): Publisher {
-                return publisher
-            }
-
-            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
-                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-                kafkaConfig: SmartConfig
-            ): RPCSender<REQUEST, RESPONSE> {
-                fail("createRPCSender should not be used in this test.")
-            }
-        }
-
+    fun `The replaySchedular callback logs a warning when our network type is not in the network map`() {
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(null).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(mockNetworkMap.getMemberInfo(COUNTER_PARTY)).thenReturn(netMap.getMemberInfo(COUNTER_PARTY))
 
-        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, mockNetworkMap)
+        InMemorySessionReplayer(mock(), mock(), mock(), mock(), mockNetworkMap)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -272,16 +150,9 @@ class InMemorySessionReplayerTest {
             GROUP_ID
         ).generateInitiatorHello()
 
-        replayer.start()
-        replayer.addMessageForReplay(id, InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) {_, _ ->})
-        publisher.testWaitLatch.await()
-        assertEquals(1, publisher.list.size)
-        val record = publisher.list.single()
-        assertEquals(Schema.LINK_OUT_TOPIC, record.topic)
-        assertTrue(record.value is LinkOutMessage)
-
-        publisher.publisherWaitLatch.countDown()
-        replayer.stop()
+        setRunning()
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) { _,_ -> }
+        replayCallback(messageReplay)
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
             "${InitiatorHelloMessage::class.java.simpleName}) but could not find the network type in the NetworkMap for group" +
@@ -289,27 +160,12 @@ class InMemorySessionReplayerTest {
     }
 
     @Test
-    fun `InMemorySessionReplayer logs a warning when the responder is not in the network map`() {
-        val totalReplays = 1
-        val publisher = SinglePhaseTestListBasedPublisher(totalReplays)
-        val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, kafkaConfig: SmartConfig): Publisher {
-                return publisher
-            }
-
-            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
-                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-                kafkaConfig: SmartConfig
-            ): RPCSender<REQUEST, RESPONSE> {
-                fail("createRPCSender should not be used in this test.")
-            }
-        }
-
+    fun `The replaySchedular callback logs a warning when the responder is not in the network map`() {
         val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         Mockito.`when`(mockNetworkMap.getNetworkType(any())).thenReturn(LinkManagerNetworkMap.NetworkType.CORDA_5)
         Mockito.`when`(mockNetworkMap.getMemberInfo(COUNTER_PARTY)).thenReturn(null).thenReturn(netMap.getMemberInfo(COUNTER_PARTY))
 
-        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, mockNetworkMap)
+        InMemorySessionReplayer(mock(), mock(), mock(), mock(), mockNetworkMap)
         val id = UUID.randomUUID().toString()
         val helloMessage = AuthenticationProtocolInitiator(
             id,
@@ -317,18 +173,11 @@ class InMemorySessionReplayerTest {
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
             GROUP_ID
-            ).generateInitiatorHello()
+        ).generateInitiatorHello()
 
-        replayer.start()
-        replayer.addMessageForReplay(id, InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) {_,_ ->})
-        publisher.testWaitLatch.await()
-        assertEquals(1, publisher.list.size)
-        val record = publisher.list.single()
-        assertEquals(Schema.LINK_OUT_TOPIC, record.topic)
-        assertTrue(record.value is LinkOutMessage)
-
-        publisher.publisherWaitLatch.countDown()
-        replayer.stop()
+        setRunning()
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, US, COUNTER_PARTY) { _,_ -> }
+        replayCallback(messageReplay)
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
             "${InitiatorHelloMessage::class.java.simpleName}) with peer $COUNTER_PARTY which is not in the network" +
@@ -337,20 +186,6 @@ class InMemorySessionReplayerTest {
 
     @Test
     fun `The InMemorySessionReplayer will not replay before start`() {
-        val publisher = Mockito.mock(Publisher::class.java)
-        val publisherFactory = object : PublisherFactory {
-            override fun createPublisher(publisherConfig: PublisherConfig, kafkaConfig: SmartConfig): Publisher {
-                return publisher
-            }
-
-            override fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
-                rpcConfig: RPCConfig<REQUEST, RESPONSE>,
-                kafkaConfig: SmartConfig
-            ): RPCSender<REQUEST, RESPONSE> {
-                fail("createRPCSender should not be used in this test.")
-            }
-        }
-        val mockNetworkMap = Mockito.mock(LinkManagerNetworkMap::class.java)
         val helloMessage = AuthenticationProtocolInitiator(
             "",
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
@@ -358,12 +193,16 @@ class InMemorySessionReplayerTest {
             KEY_PAIR.public,
             GROUP_ID
         ).generateInitiatorHello()
-        val replayer = InMemorySessionReplayer(Duration.ofMillis(1), publisherFactory, mockNetworkMap)
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), mock())
         assertThrows<IllegalStateException> {
             replayer.addMessageForReplay(
                 "",
                 InMemorySessionReplayer.SessionMessageReplay(helloMessage, "", US, COUNTER_PARTY) {_, _->}
             )
         }
+    }
+
+    private fun setRunning() {
+        whenever(dominoTile.constructed().first().isRunning).doReturn(true)
     }
 }

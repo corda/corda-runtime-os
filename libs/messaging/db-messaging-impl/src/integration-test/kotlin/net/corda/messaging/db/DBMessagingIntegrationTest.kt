@@ -1,6 +1,7 @@
 package net.corda.messaging.db
 
-import org.mockito.kotlin.anyOrNull
+import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -33,11 +34,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mockito
 import org.mockito.Mockito.mock
+import org.mockito.kotlin.anyOrNull
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import java.sql.DriverManager
-import java.util.Collections
+import java.util.*
 
 /**
  * Testing the integration of all the components by producing and consuming messages to/from topics.
@@ -73,6 +75,7 @@ class DBMessagingIntegrationTest {
             StandardCharsets.UTF_8.decode(bytes).toString()
         }
     }
+    private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
 
     private val publisherConfig = PublisherConfig("client-id")
 
@@ -81,7 +84,14 @@ class DBMessagingIntegrationTest {
 
     @BeforeEach
     fun setup() {
-        server = Server.createTcpServer("-tcpPort", h2Port.toString(), "-tcpAllowOthers", "-ifNotExists", "-baseDir", tempFolder.toAbsolutePath().toString())
+        server = Server.createTcpServer(
+            "-tcpPort",
+            h2Port.toString(),
+            "-tcpAllowOthers",
+            "-ifNotExists",
+            "-baseDir",
+            tempFolder.toAbsolutePath().toString()
+        )
         server.start()
 
         val connection = DriverManager.getConnection(jdbcUrl, username, password)
@@ -117,11 +127,35 @@ class DBMessagingIntegrationTest {
     fun `test messages are published and consumed via a durable subscription successfully`() {
         val topic1ProcessedRecords = Collections.synchronizedList<Record<String, String>>(mutableListOf())
         val topic2ProcessedRecords = Collections.synchronizedList<Record<String, String>>(mutableListOf())
-        val processor1 = InMemoryDurableProcessor(topic1ProcessedRecords, String::class.java, String::class.java, topic2)
+        val processor1 =
+            InMemoryDurableProcessor(topic1ProcessedRecords, String::class.java, String::class.java, topic2)
         val processor2 = InMemoryDurableProcessor(topic2ProcessedRecords, String::class.java, String::class.java, null)
-        val subscriptionTopic1 = DBDurableSubscription(subscriptionConfigTopic1, processor1, null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout)
-        val subscriptionTopic2 = DBDurableSubscription(subscriptionConfigTopic2, processor2, null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout)
-        val publisher =  DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
+        val subscriptionTopic1 = DBDurableSubscription(
+            subscriptionConfigTopic1,
+            processor1,
+            null,
+            avroSchemaRegistry,
+            offsetTrackersManager,
+            partitionAllocator,
+            partitionAssignor,
+            dbAccessProvider,
+            lifecycleCoordinatorFactory,
+            pollingTimeout
+        )
+        val subscriptionTopic2 = DBDurableSubscription(
+            subscriptionConfigTopic2,
+            processor2,
+            null,
+            avroSchemaRegistry,
+            offsetTrackersManager,
+            partitionAllocator,
+            partitionAssignor,
+            dbAccessProvider,
+            lifecycleCoordinatorFactory,
+            pollingTimeout
+        )
+        val publisher =
+            DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
 
         publisher.start()
         subscriptionTopic1.start()
@@ -133,11 +167,13 @@ class DBMessagingIntegrationTest {
 
         eventually(5.seconds, 5.millis) {
             synchronized(topic1ProcessedRecords) {
-                assertThat(topic1ProcessedRecords.size).`as`("not enough records read from topic 1").isGreaterThanOrEqualTo(topic1Records.size)
+                assertThat(topic1ProcessedRecords.size).`as`("not enough records read from topic 1")
+                    .isGreaterThanOrEqualTo(topic1Records.size)
                 assertThat(topic1ProcessedRecords).containsAll(topic1Records)
             }
             synchronized(topic2ProcessedRecords) {
-                assertThat(topic2ProcessedRecords.size).`as`("not enough records read from topic 2").isGreaterThanOrEqualTo(topic1Records.size)
+                assertThat(topic2ProcessedRecords.size).`as`("not enough records read from topic 2")
+                    .isGreaterThanOrEqualTo(topic1Records.size)
                 assertThat(topic2ProcessedRecords).containsAll(topic2ExpectedRecords)
             }
         }
@@ -151,11 +187,35 @@ class DBMessagingIntegrationTest {
     fun `test messages are published and consumed via a log event subscription successfully`() {
         val topic1ProcessedRecords = Collections.synchronizedList<Record<String, String>>(mutableListOf())
         val topic2ProcessedRecords = Collections.synchronizedList<Record<String, String>>(mutableListOf())
-        val processor1 = InMemoryEventLogProcessor(topic1ProcessedRecords, String::class.java, String::class.java, topic2)
+        val processor1 =
+            InMemoryEventLogProcessor(topic1ProcessedRecords, String::class.java, String::class.java, topic2)
         val processor2 = InMemoryEventLogProcessor(topic2ProcessedRecords, String::class.java, String::class.java, null)
-        val subscriptionTopic1 = DBEventLogSubscription(subscriptionConfigTopic1, processor1, null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout)
-        val subscriptionTopic2 = DBEventLogSubscription(subscriptionConfigTopic2, processor2, null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout)
-        val publisher =  DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
+        val subscriptionTopic1 = DBEventLogSubscription(
+            subscriptionConfigTopic1,
+            processor1,
+            null,
+            avroSchemaRegistry,
+            offsetTrackersManager,
+            partitionAllocator,
+            partitionAssignor,
+            dbAccessProvider,
+            lifecycleCoordinatorFactory,
+            pollingTimeout
+        )
+        val subscriptionTopic2 = DBEventLogSubscription(
+            subscriptionConfigTopic2,
+            processor2,
+            null,
+            avroSchemaRegistry,
+            offsetTrackersManager,
+            partitionAllocator,
+            partitionAssignor,
+            dbAccessProvider,
+            lifecycleCoordinatorFactory,
+            pollingTimeout
+        )
+        val publisher =
+            DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
 
         publisher.start()
         subscriptionTopic1.start()
@@ -167,11 +227,13 @@ class DBMessagingIntegrationTest {
 
         eventually(5.seconds, 5.millis) {
             synchronized(topic1ProcessedRecords) {
-                assertThat(topic1ProcessedRecords.size).`as`("not enough records read from topic 1").isGreaterThanOrEqualTo(topic1Records.size)
+                assertThat(topic1ProcessedRecords.size).`as`("not enough records read from topic 1")
+                    .isGreaterThanOrEqualTo(topic1Records.size)
                 assertThat(topic1ProcessedRecords).containsAll(topic1Records)
             }
             synchronized(topic2ProcessedRecords) {
-                assertThat(topic2ProcessedRecords.size).`as`("not enough records read from topic 2").isGreaterThanOrEqualTo(topic1Records.size)
+                assertThat(topic2ProcessedRecords.size).`as`("not enough records read from topic 2")
+                    .isGreaterThanOrEqualTo(topic1Records.size)
                 assertThat(topic2ProcessedRecords).containsAll(topic2ExpectedRecords)
             }
         }
@@ -183,9 +245,17 @@ class DBMessagingIntegrationTest {
 
     @Test
     fun `published messages can be retrieved individually using a random access subscription`() {
-        val randomAccessSubscription = DBRandomAccessSubscription(subscriptionConfigTopic1, avroSchemaRegistry,
-                                                            offsetTrackersManager, dbAccessProvider, String::class.java, String::class.java)
-        val publisher =  DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
+        val randomAccessSubscription = DBRandomAccessSubscription(
+            subscriptionConfigTopic1,
+            avroSchemaRegistry,
+            offsetTrackersManager,
+            dbAccessProvider,
+            lifecycleCoordinatorFactory,
+            String::class.java,
+            String::class.java
+        )
+        val publisher =
+            DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
         publisher.start()
         randomAccessSubscription.start()
 
@@ -205,13 +275,38 @@ class DBMessagingIntegrationTest {
     fun `messages can be consumed in parallel by multiple subscriptions`() {
         val topic1ProcessedRecords = Collections.synchronizedList<Record<String, String>>(mutableListOf())
         val topic2ProcessedRecords = Collections.synchronizedList<Record<String, String>>(mutableListOf())
-        val processor1 = InMemoryDurableProcessor(topic1ProcessedRecords, String::class.java, String::class.java, topic2)
+        val processor1 =
+            InMemoryDurableProcessor(topic1ProcessedRecords, String::class.java, String::class.java, topic2)
         val processor2 = InMemoryDurableProcessor(topic2ProcessedRecords, String::class.java, String::class.java, null)
         val subscriptionsForTopic1 = (1..3).map {
-            DBDurableSubscription(subscriptionConfigTopic1, processor1, null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout)
+            val subscriptionConfigTopic1 = SubscriptionConfig("group-1", topic1, it)
+            DBDurableSubscription(
+                subscriptionConfigTopic1,
+                processor1,
+                null,
+                avroSchemaRegistry,
+                offsetTrackersManager,
+                partitionAllocator,
+                partitionAssignor,
+                dbAccessProvider,
+                lifecycleCoordinatorFactory,
+                pollingTimeout
+            )
         }
-        val subscriptionTopic2 = DBDurableSubscription(subscriptionConfigTopic2, processor2, null, avroSchemaRegistry, offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout)
-        val publisher =  DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
+        val subscriptionTopic2 = DBDurableSubscription(
+            subscriptionConfigTopic2,
+            processor2,
+            null,
+            avroSchemaRegistry,
+            offsetTrackersManager,
+            partitionAllocator,
+            partitionAssignor,
+            dbAccessProvider,
+            lifecycleCoordinatorFactory,
+            pollingTimeout
+        )
+        val publisher =
+            DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
 
         publisher.start()
         subscriptionsForTopic1.forEach { it.start() }
@@ -223,11 +318,13 @@ class DBMessagingIntegrationTest {
 
         eventually(5.seconds, 5.millis) {
             synchronized(topic1ProcessedRecords) {
-                assertThat(topic1ProcessedRecords.size).`as`("not enough records read from topic 1").isGreaterThanOrEqualTo(topic1Records.size)
+                assertThat(topic1ProcessedRecords.size).`as`("not enough records read from topic 1")
+                    .isGreaterThanOrEqualTo(topic1Records.size)
                 assertThat(topic1ProcessedRecords).containsAll(topic1Records)
             }
             synchronized(topic2ProcessedRecords) {
-                assertThat(topic2ProcessedRecords.size).`as`("not enough records read from topic 2").isGreaterThanOrEqualTo(topic1Records.size)
+                assertThat(topic2ProcessedRecords.size).`as`("not enough records read from topic 2")
+                    .isGreaterThanOrEqualTo(topic1Records.size)
                 assertThat(topic2ProcessedRecords).containsAll(topic2ExpectedRecords)
             }
         }
@@ -237,10 +334,12 @@ class DBMessagingIntegrationTest {
         publisher.stop()
     }
 
-    class InMemoryEventLogProcessor<K: Any, V: Any>(private val processedRecords: MutableList<Record<K, V>>,
-                                                    override val keyClass: Class<K>,
-                                                    override val valueClass: Class<V>,
-                                                    private val topicToWriteTo: String?): EventLogProcessor<K, V> {
+    class InMemoryEventLogProcessor<K : Any, V : Any>(
+        private val processedRecords: MutableList<Record<K, V>>,
+        override val keyClass: Class<K>,
+        override val valueClass: Class<V>,
+        private val topicToWriteTo: String?
+    ) : EventLogProcessor<K, V> {
 
         override fun onNext(events: List<EventLogRecord<K, V>>): List<Record<*, *>> {
             processedRecords.addAll(events.map { Record(it.topic, it.key, it.value) })
@@ -252,10 +351,12 @@ class DBMessagingIntegrationTest {
         }
     }
 
-    class InMemoryDurableProcessor<K: Any, V: Any>(private val processedRecords: MutableList<Record<K, V>>,
-                                                    override val keyClass: Class<K>,
-                                                    override val valueClass: Class<V>,
-                                                    private val topicToWriteTo: String?): DurableProcessor<K, V> {
+    class InMemoryDurableProcessor<K : Any, V : Any>(
+        private val processedRecords: MutableList<Record<K, V>>,
+        override val keyClass: Class<K>,
+        override val valueClass: Class<V>,
+        private val topicToWriteTo: String?
+    ) : DurableProcessor<K, V> {
 
         override fun onNext(events: List<Record<K, V>>): List<Record<*, *>> {
             processedRecords.addAll(events)

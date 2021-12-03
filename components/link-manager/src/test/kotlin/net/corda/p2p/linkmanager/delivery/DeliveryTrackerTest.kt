@@ -1,7 +1,9 @@
 package net.corda.p2p.linkmanager.delivery
 
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -13,30 +15,31 @@ import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.fail
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
-import java.time.Duration
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CountDownLatch
 
 class DeliveryTrackerTest {
 
     companion object {
         const val timeStamp = 2635L
-        private val replayPeriod = Duration.ofMillis(10)
 
         lateinit var loggingInterceptor: LoggingInterceptor
 
@@ -48,7 +51,9 @@ class DeliveryTrackerTest {
     }
 
     @AfterEach
-    fun resetLogging() {
+    fun cleanUp() {
+        dominoTile.close()
+        replayScheduler.close()
         loggingInterceptor.reset()
     }
 
@@ -56,25 +61,16 @@ class DeliveryTrackerTest {
         return listOf(Record("TOPIC", "Key", messageAndKey))
     }
 
-    class TestListBasedPublisher(private val publishLatch: CountDownLatch? = null, val waitLatch: CountDownLatch? = null): Publisher {
-
-        var list: MutableList<Record<*, *>> = Collections.synchronizedList(mutableListOf<Record<*, *>>())
-
-        override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-            fail("publishToPartition should never be called in this test.")
-        }
-
-        override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-            list.addAll(records)
-            publishLatch?.countDown()
-            publishLatch?.let {
-                if (it.count == 0L) waitLatch?.await()
-            }
-            return emptyList()
-        }
-
-        override fun close() {}
+    private val resourcesHolder = mock<ResourcesHolder>()
+    private lateinit var createResources: ((ResourcesHolder) -> CompletableFuture<Unit>)
+    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
+        @Suppress("UNCHECKED_CAST")
+        createResources = context.arguments()[2] as ((ResourcesHolder) -> CompletableFuture<Unit>)
     }
+
+    private val replayScheduler = Mockito.mockConstruction(ReplayScheduler::class.java)
 
     class MockStateAndEventSubscription<K : Any, S: Any, E: Any>: StateAndEventSubscription<K, S, E> {
         @Volatile
@@ -89,18 +85,19 @@ class DeliveryTrackerTest {
             isRunning = true
             return
         }
-        
+
+        override val subscriptionName: LifecycleCoordinatorName
+            get() = LifecycleCoordinatorName("MockStateAndEventSubscription")
+
     }
 
     private fun createTracker(
-        publisher: TestListBasedPublisher,
     ): Triple<
         DeliveryTracker,
         StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker>,
         StateAndEventListener<String, AuthenticatedMessageDeliveryState>
     > {
         val publisherFactory = Mockito.mock(PublisherFactory::class.java)
-        Mockito.`when`(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
 
         val subscriptionFactory = Mockito.mock(SubscriptionFactory::class.java)
         val mockSubscription = MockStateAndEventSubscription<String, AuthenticatedMessageDeliveryState, AppMessageMarker>()
@@ -109,11 +106,20 @@ class DeliveryTrackerTest {
             .thenReturn(mockSubscription)
 
         val tracker = DeliveryTracker(
-            replayPeriod,
+            mock(),
+            mock(),
             publisherFactory,
+            mock(),
             subscriptionFactory,
+            mock(),
+            mock(),
+            mock(),
+            1,
             ::processAuthenticatedMessage
         )
+        val future = createResources(resourcesHolder)
+        assertThat(future.isDone).isTrue
+        assertThat(future.isCompletedExceptionally).isFalse()
 
         val processorCaptor = argumentCaptor<StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker>>()
         val listenerCaptor = argumentCaptor<StateAndEventListener<String, AuthenticatedMessageDeliveryState>>()
@@ -125,8 +131,7 @@ class DeliveryTrackerTest {
 
     @Test
     fun `The DeliveryTracker updates the markers state topic after observing a LinkManagerSentMarker`() {
-
-        val (tracker, processor) = createTracker(TestListBasedPublisher())
+        val (tracker, processor) = createTracker()
         tracker.start()
         val messageId = UUID.randomUUID().toString()
         val messageAndKey = Mockito.mock(AuthenticatedMessageAndKey::class.java)
@@ -142,8 +147,7 @@ class DeliveryTrackerTest {
 
     @Test
     fun `The DeliveryTracker deletes the markers state after observing a LinkManagerReceivedMarker`() {
-        val (tracker, processor) = createTracker(TestListBasedPublisher())
-        tracker.start()
+        val (tracker, processor) = createTracker()
 
         val messageId = UUID.randomUUID().toString()
         val event = Record("topic", messageId, AppMessageMarker(LinkManagerReceivedMarker(), timeStamp))
@@ -155,13 +159,8 @@ class DeliveryTrackerTest {
     }
 
     @Test
-    fun `The DeliveryTracker replays messages after the markers state topic is committed`() {
-        val replays = 2
-
-        val latch = CountDownLatch(replays)
-
-        val publisher = TestListBasedPublisher(latch)
-        val (tracker, _, listener) = createTracker(publisher)
+    fun `The DeliveryTracker adds a message to be replayed (by the replayScheduler) after the markers state topic is committed`() {
+        val (tracker, _, listener) = createTracker()
 
         tracker.start()
 
@@ -169,23 +168,15 @@ class DeliveryTrackerTest {
         val messageAndKey = Mockito.mock(AuthenticatedMessageAndKey::class.java)
         val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPostCommit(mapOf(messageId to state))
-        latch.await()
-
-        assertTrue(publisher.list.size >= replays)
-        assertEquals(publisher.list[0], publisher.list[1])
-        assertSame(messageAndKey, publisher.list[0].value)
-
+        @Suppress("UNCHECKED_CAST")
+        verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
+            .addForReplay(any(), eq(messageId), eq(messageAndKey))
         tracker.stop()
     }
 
     @Test
-    fun `The DeliveryTracker replays messages when their is state in the markers state topic (on assignment)`() {
-        val replays = 2
-
-        val latch = CountDownLatch(replays)
-        val publisher = TestListBasedPublisher(latch)
-
-        val (tracker, _, listener) = createTracker(publisher)
+    fun `The DeliveryTracker adds a message to be replayed when their is state in the markers state topic (on assignment)`() {
+        val (tracker, _, listener) = createTracker()
 
         tracker.start()
 
@@ -193,75 +184,49 @@ class DeliveryTrackerTest {
         val messageAndKey = Mockito.mock(AuthenticatedMessageAndKey::class.java)
         val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPartitionSynced(mapOf(messageId to state))
-        latch.await()
-
-        assertTrue(publisher.list.size >= replays)
-        assertEquals(publisher.list[0], publisher.list[1])
-        assertSame(messageAndKey, publisher.list[0].value)
-
+        @Suppress("UNCHECKED_CAST")
+        verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
+            .addForReplay(any(), eq(messageId), eq(messageAndKey))
         tracker.stop()
     }
 
     @Test
     fun `The DeliverTracker stops replaying a message after observing a LinkManagerReceivedMarker`() {
-        val replays = 2
-
-        val testWaitLatch = CountDownLatch(replays)
-        val publisherWaitLatch = CountDownLatch(1)
-        val publisher = TestListBasedPublisher(testWaitLatch, publisherWaitLatch)
-
-        val (tracker, _, listener) = createTracker(publisher)
+        val (tracker, _, listener) = createTracker()
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
         val messageAndKey = Mockito.mock(AuthenticatedMessageAndKey::class.java)
         val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPartitionSynced(mapOf(messageId to state))
-        testWaitLatch.await()
+        @Suppress("UNCHECKED_CAST")
+        verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
+            .addForReplay(any(), eq(messageId), eq(messageAndKey))
 
-        assertEquals(replays, publisher.list.size)
-        assertEquals(publisher.list[0], publisher.list[1])
-        assertSame(messageAndKey, publisher.list[0].value)
         listener.onPostCommit(mapOf(messageId to null))
-
-        publisherWaitLatch.countDown()
-
-        Thread.sleep(5 * replayPeriod.toMillis())
-
-        assertEquals(replays, publisher.list.size)
-
+        @Suppress("UNCHECKED_CAST")
+        verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
+            .removeFromReplay(messageId)
         tracker.stop()
     }
 
     @Test
     fun `The DeliverTracker stops replaying a message if the state is reassigned`() {
-        val replays = 2
-
-        val testWaitLatch = CountDownLatch(replays)
-        val publisherWaitLatch = CountDownLatch(1)
-
-        val publisher = TestListBasedPublisher(testWaitLatch, publisherWaitLatch)
-
-        val (tracker, _, listener) = createTracker(publisher)
+        val (tracker, _, listener) = createTracker()
         tracker.start()
 
         val messageId = UUID.randomUUID().toString()
         val messageAndKey = Mockito.mock(AuthenticatedMessageAndKey::class.java)
         val state = AuthenticatedMessageDeliveryState(messageAndKey, Instant.now().toEpochMilli())
         listener.onPartitionSynced(mapOf(messageId to state))
-        testWaitLatch.await()
+        @Suppress("UNCHECKED_CAST")
+        verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
+            .addForReplay(any(), eq(messageId), eq(messageAndKey))
 
-        assertEquals(replays, publisher.list.size)
-        assertEquals(publisher.list[0], publisher.list[1])
-        assertSame(messageAndKey, publisher.list[0].value)
         listener.onPartitionLost(mapOf(messageId to state))
-
-        publisherWaitLatch.countDown()
-
-        Thread.sleep(5 * replayPeriod.toMillis())
-
-        assertEquals(replays, publisher.list.size)
-
+        @Suppress("UNCHECKED_CAST")
+        verify(replayScheduler.constructed().last() as ReplayScheduler<AuthenticatedMessageAndKey>)
+            .removeFromReplay(messageId)
         tracker.stop()
     }
 }

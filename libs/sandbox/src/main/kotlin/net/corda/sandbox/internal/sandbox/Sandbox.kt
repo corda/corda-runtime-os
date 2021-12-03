@@ -6,11 +6,11 @@ import java.util.UUID
 
 /** A container for isolating a set of bundles. */
 internal interface Sandbox {
-    // The sandbox's unique identifier.
+    /** The sandbox's unique identifier. */
     val id: UUID
 
-    // The sandbox's public bundles. The public bundles are the bundles that another sandbox with visibility of this
-    // sandbox can see.
+    /** The sandbox's public bundles. The public bundles are the bundles that another sandbox with visibility of this
+     *  sandbox can see. */
     val publicBundles: Set<Bundle>
 
     /** Indicates whether any public or private bundle in the sandbox contains the given [bundle]. */

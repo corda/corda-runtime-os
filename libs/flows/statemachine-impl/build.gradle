@@ -18,4 +18,5 @@ dependencies {
 
     implementation project(':libs:flows:statemachine')
     implementation project(':libs:flows:dependency-injection')
+    implementation project(':libs:serialization:checkpoint-serialization-api')
 }

@@ -1,0 +1,148 @@
+package net.corda.libs.permission.impl
+
+import net.corda.data.permissions.Permission
+import net.corda.data.permissions.PermissionType
+import net.corda.libs.permission.PermissionValidator
+import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.rpc.schema.Schema
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
+
+class PermissionValidatorImpl(
+    private val subscriptionFactory: SubscriptionFactory,
+    private val userTopicProcessor: UserTopicProcessor,
+    private val groupTopicProcessor: GroupTopicProcessor,
+    private val roleTopicProcessor: RoleTopicProcessor
+) : PermissionValidator {
+
+    companion object {
+
+        private val logger = contextLogger()
+
+        internal const val CONSUMER_GROUP = "PERMISSION_SERVICE"
+    }
+
+    @Volatile
+    private var running = false
+
+    private val lock = ReentrantLock()
+
+    private var subscriptions: List<CompactedSubscription<String, *>>? = null
+
+
+    override val isRunning: Boolean
+        get() = running
+
+    override fun start() {
+        lock.withLock {
+            if (subscriptions == null) {
+                val userSubscription =
+                    subscriptionFactory.createCompactedSubscription(
+                        SubscriptionConfig(
+                            CONSUMER_GROUP,
+                            Schema.RPC_PERM_USER_TOPIC
+                        ),
+                        userTopicProcessor
+                    ).also { it.start() }
+                val groupSubscription =
+                    subscriptionFactory.createCompactedSubscription(
+                        SubscriptionConfig(
+                            CONSUMER_GROUP,
+                            Schema.RPC_PERM_GROUP_TOPIC
+                        ),
+                        groupTopicProcessor
+                    ).also { it.start() }
+                val roleSubscription =
+                    subscriptionFactory.createCompactedSubscription(
+                        SubscriptionConfig(
+                            CONSUMER_GROUP,
+                            Schema.RPC_PERM_ROLE_TOPIC
+                        ),
+                        roleTopicProcessor
+                    ).also { it.start() }
+                subscriptions = listOf(userSubscription, groupSubscription, roleSubscription)
+                running = true
+            }
+        }
+    }
+
+    override fun stop() {
+        lock.withLock {
+            if (running) {
+                subscriptions?.forEach { it.stop() }
+                subscriptions = null
+                running = false
+            }
+        }
+    }
+
+    override fun authorizeUser(requestId: String, loginName: String, permission: String): Boolean {
+
+        logger.debug { "Checking permissions for $permission for user $loginName" }
+
+        val user = userTopicProcessor.getUser(loginName) ?: return false
+
+        if (!user.enabled) {
+            logger.debug { "User $loginName is disabled" }
+            return false
+        }
+
+        return performCheckRec(
+            user.roleAssociations.map { it.roleId },
+            user.parentGroupId,
+            PermissionUrl.fromUrl(permission)
+        )
+    }
+
+    private tailrec fun performCheckRec(
+        roleIds: Collection<String>,
+        parentGroupId: String?,
+        permissionUrl: PermissionUrl
+    ): Boolean {
+
+        logger.debug { "Checking permissions for: $permissionUrl - $roleIds - $parentGroupId" }
+
+        if (roleIds.isEmpty() && parentGroupId == null) {
+            logger.debug { "Roles are empty and no parent group left" }
+            return false
+        }
+
+        // Should we report roles that cannot be found?
+        val roles = roleIds.mapNotNull { roleTopicProcessor.getRole(it) }
+
+        val permissionRequested: String = permissionUrl.permissionRequested
+        val allPermissions = roles.flatMap { it.permissions.map { permissionAssociation -> permissionAssociation.permission } }
+
+        // Perform checks, with deny taking priority over allow
+        val (denies, allows) = allPermissions.partition { it.type == PermissionType.DENY }
+        if (denies.any { wildcardMatch(it, permissionRequested) }) {
+            logger.debug { "Explicitly denied by: '${denies.first { wildcardMatch(it, permissionRequested) }}'" }
+            return false
+        }
+        if (allows.any { wildcardMatch(it, permissionRequested) }) {
+            logger.debug { "Explicitly allowed by: '${allows.first { wildcardMatch(it, permissionRequested) }}'" }
+            return true
+        }
+
+        // If we could not reach decision yet, try referring to the parent
+        if (parentGroupId == null) {
+            logger.debug { "No parent group left" }
+            return false
+        }
+        val parentGroup = groupTopicProcessor.getGroup(parentGroupId)
+        if (parentGroup == null) {
+            logger.warn("Group with id: '$parentGroupId' cannot be found")
+            return false
+        }
+        val rolesIdsForGroup = parentGroup.roleAssociations.map { it.roleId }
+        return performCheckRec(rolesIdsForGroup, parentGroup.parentGroupId, permissionUrl)
+    }
+
+    private fun wildcardMatch(existingPermission: Permission, permissionRequested: String): Boolean {
+        return permissionRequested.matches(existingPermission.permissionString.toRegex())
+    }
+}

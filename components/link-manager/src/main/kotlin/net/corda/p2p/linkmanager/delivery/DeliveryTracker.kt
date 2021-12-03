@@ -1,6 +1,13 @@
 package net.corda.p2p.linkmanager.delivery
 
-import net.corda.lifecycle.Lifecycle
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -11,108 +18,100 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.AuthenticatedMessageDeliveryState
+import net.corda.p2p.linkmanager.LinkManagerCryptoService
+import net.corda.p2p.linkmanager.LinkManagerNetworkMap
+import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.util.concurrent.locks.ReentrantLock
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.withLock
-import kotlin.concurrent.write
+import java.util.concurrent.CompletableFuture
 
+@Suppress("LongParameterList")
 class DeliveryTracker(
-    flowMessageReplayPeriod: Duration,
+    coordinatorFactory: LifecycleCoordinatorFactory,
+    configReadService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
-    subscriptionFactory: SubscriptionFactory,
-    processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
-): Lifecycle {
+    private val configuration: SmartConfig,
+    private val subscriptionFactory: SubscriptionFactory,
+    networkMap: LinkManagerNetworkMap,
+    cryptoService: LinkManagerCryptoService,
+    sessionManager: SessionManager,
+    private val instanceId: Int,
+    processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>,
+    ): LifecycleWithDominoTile {
 
-    @Volatile
-    private var running = false
-    private val startStopLock = ReentrantLock()
-
-    private val appMessageReplayer = AppMessageReplayer(publisherFactory, processAuthenticatedMessage)
-    private val replayScheduler = ReplayScheduler(flowMessageReplayPeriod, appMessageReplayer::replayMessage)
-
-    private val messageTracker = MessageTracker(replayScheduler)
-
-    private val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
-        SubscriptionConfig("message-tracker-group", Schema.P2P_OUT_MARKERS, 1),
-        processor = messageTracker.processor,
-        stateAndEventListener = messageTracker.listener
+    private val appMessageReplayer = AppMessageReplayer(
+        coordinatorFactory,
+        publisherFactory,
+        configuration,
+        processAuthenticatedMessage
+    )
+    private val replayScheduler = ReplayScheduler(
+        coordinatorFactory,
+        configReadService,
+        MESSAGE_REPLAY_PERIOD_KEY,
+        appMessageReplayer::replayMessage,
     )
 
-    override val isRunning: Boolean
-        get() = running
+    override val dominoTile = DominoTile(this::class.java.simpleName, coordinatorFactory, ::createResources,
+        setOf(
+            replayScheduler.dominoTile,
+            networkMap.dominoTile,
+            cryptoService.dominoTile,
+            sessionManager.dominoTile,
+            appMessageReplayer.dominoTile
+        )
+    )
 
-    override fun start() {
-        startStopLock.withLock {
-            if (!isRunning) {
-                appMessageReplayer.start()
-                replayScheduler.start()
-                messageTrackerSubscription.start()
-                running = true
-            }
-        }
-    }
+    private val messageTracker = MessageTracker(replayScheduler)
+    private val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
+        SubscriptionConfig("message-tracker-group", Schema.P2P_OUT_MARKERS, instanceId),
+        messageTracker.processor,
+        configuration,
+        messageTracker.listener
+    )
 
-    override fun stop() {
-        startStopLock.withLock {
-            if (isRunning) {
-                appMessageReplayer.stop()
-                replayScheduler.stop()
-                messageTrackerSubscription.stop()
-                running = false
-            }
-        }
+    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+        messageTrackerSubscription.start()
+        resources.keep { messageTrackerSubscription.stop() }
+        val future = CompletableFuture<Unit>()
+        future.complete(Unit)
+        return future
     }
 
     private class AppMessageReplayer(
+        coordinatorFactory: LifecycleCoordinatorFactory,
         publisherFactory: PublisherFactory,
+        configuration: SmartConfig,
         private val processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
-    ): Lifecycle {
+    ): LifecycleWithDominoTile {
 
         companion object {
             const val MESSAGE_REPLAYER_CLIENT_ID = "message-replayer-client"
+            private val logger = contextLogger()
         }
 
-        private val config = PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, 1)
-        private val publisher = publisherFactory.createPublisher(config)
+        private val publisher = PublisherWithDominoLogic(
+            publisherFactory,
+            coordinatorFactory,
+            PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID),
+            configuration
+        )
 
-        @Volatile
-        private var running = false
-        private val startStopLock = ReentrantReadWriteLock()
-        override val isRunning: Boolean
-            get() = running
-
-        override fun start() {
-            startStopLock.write {
-                if (!isRunning) {
-                    publisher.start()
-                }
-                running = true
-            }
-        }
-
-        override fun stop() {
-            startStopLock.write {
-              if (running) {
-                publisher.close()
-                running = false
-              }
-            }
-        }
+        override val dominoTile = publisher.dominoTile
 
         fun replayMessage(message: AuthenticatedMessageAndKey) {
-            startStopLock.read {
-                if (!running) {
+            dominoTile.withLifecycleLock {
+                if (!isRunning) {
                     throw IllegalStateException("A message was added for replay before the DeliveryTracker was started.")
                 }
 
                 val records = processAuthenticatedMessage(message)
+                logger.debug { "Replaying data message ${message.message.header.messageId}." }
                 publisher.publish(records)
             }
         }

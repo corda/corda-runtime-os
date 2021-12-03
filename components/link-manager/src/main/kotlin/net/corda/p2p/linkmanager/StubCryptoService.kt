@@ -1,6 +1,9 @@
 package net.corda.p2p.linkmanager
 
-import net.corda.lifecycle.Lifecycle
+import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -11,59 +14,50 @@ import net.corda.p2p.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.v5.base.util.contextLogger
-import java.lang.IllegalStateException
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicReference
 
-class StubCryptoService(subscriptionFactory: SubscriptionFactory): LinkManagerCryptoService, Lifecycle {
+class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+                        subscriptionFactory: SubscriptionFactory,
+                        instanceId: Int,
+                        configuration: SmartConfig): LinkManagerCryptoService {
+
+    companion object {
+        val logger = contextLogger()
+    }
 
     private val keyPairEntryProcessor = KeyPairEntryProcessor()
-    private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC)
+    private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC, instanceId)
     private val subscription =
-        subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor)
+        subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor, configuration)
 
     private val rsaSignature = Signature.getInstance(RSA_SIGNATURE_ALGO)
     private val ecdsaSignature = Signature.getInstance(ECDSA_SIGNATURE_ALGO)
 
-    private val lock = ReentrantReadWriteLock()
-    @Volatile
-    private var running: Boolean = false
+    private var readyFuture = AtomicReference<CompletableFuture<Unit>>()
+    override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, ::createResources)
 
-    override val isRunning: Boolean
-        get() = running
-
-    override fun start() {
-        lock.write {
-            if (!running) {
-                subscription.start()
-                running = true
-            }
-        }
-    }
-
-    override fun stop() {
-        lock.write {
-            if (running) {
-                subscription.stop()
-                running = false
-            }
-        }
+    private fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
+        val future = CompletableFuture<Unit>()
+        readyFuture.set(future)
+        subscription.start()
+        resources.keep { subscription.stop() }
+        return future
     }
 
     override fun signData(publicKey: PublicKey, data: ByteArray): ByteArray {
-        lock.read {
-            if (!running) {
+        return dominoTile.withLifecycleLock {
+            if (!isRunning) {
                 throw IllegalStateException("signData operation invoked while component was stopped.")
             }
 
             val (privateKey, keyAlgo) = keyPairEntryProcessor.getPrivateKey(publicKey)
                 ?: throw LinkManagerCryptoService.NoPrivateKeyForGroupException(publicKey)
 
-            return when (keyAlgo) {
+            return@withLifecycleLock when (keyAlgo) {
                 KeyAlgorithm.RSA -> {
                     synchronized(rsaSignature) {
                         rsaSignature.initSign(privateKey)
@@ -82,11 +76,7 @@ class StubCryptoService(subscriptionFactory: SubscriptionFactory): LinkManagerCr
         }
     }
 
-    private class KeyPairEntryProcessor: CompactedProcessor<String, KeyPairEntry> {
-
-        companion object {
-            val logger = contextLogger()
-        }
+    private inner class KeyPairEntryProcessor: CompactedProcessor<String, KeyPairEntry> {
 
         private val keys = mutableMapOf<String, KeyPair>()
         private val keyDeserialiser = KeyDeserialiser()
@@ -118,6 +108,7 @@ class StubCryptoService(subscriptionFactory: SubscriptionFactory): LinkManagerCr
                 val publicKey = keyDeserialiser.toPublicKey(keyPairEntry.publicKey.array(), keyPairEntry.keyAlgo)
                 keys[alias] = KeyPair(keyPairEntry.keyAlgo, privateKey, publicKey)
             }
+            readyFuture.get().complete(Unit)
         }
 
         override fun onNext(newRecord: Record<String, KeyPairEntry>,

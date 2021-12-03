@@ -61,15 +61,6 @@ class CordaKafkaPublisherImpl(
      * If publish is a transaction, sends are executed synchronously and will return a future of size 1.
      */
     override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-        //Only allow keys as string for now. see CORE-1367
-        records.forEach {
-            if (it.key.javaClass != String::class.java) {
-                val future = CompletableFuture.failedFuture<Unit>(CordaMessageAPIFatalException("Unsupported Key type, use a String."))
-                log.error("Unsupported Key type, use a String")
-                return listOf(future)
-            }
-        }
-
         val futures = mutableListOf<CompletableFuture<Unit>>()
         if (transactionalId != null) {
             futures.add(publishTransaction(records))
@@ -81,14 +72,6 @@ class CordaKafkaPublisherImpl(
     }
 
     override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-        //Only allow keys as string for now. see CORE-1367
-        records.forEach { (_, record) ->
-            if (record.key.javaClass != String::class.java) {
-                val future = CompletableFuture.failedFuture<Unit>(CordaMessageAPIFatalException("Unsupported Key type, use a String."))
-                log.error("Unsupported Key type, use a String.")
-                return listOf(future)
-            }
-        }
 
         val futures = mutableListOf<CompletableFuture<Unit>>()
         if (transactionalId != null) {
@@ -99,7 +82,6 @@ class CordaKafkaPublisherImpl(
 
         return futures
     }
-
     /**
      * Publish list of [records] asynchronously with results stored in [futures]
      */

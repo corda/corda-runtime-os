@@ -23,6 +23,8 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
 
+    testImplementation project(":libs:lifecycle:registry")
+    integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
     integrationTestImplementation project(":libs:utilities")
     integrationTestImplementation "com.h2database:h2:$h2Version"
     integrationTestImplementation "org.postgresql:postgresql:$postgresDriverVersion"
@@ -52,4 +54,9 @@ tasks.register('integrationTest', Test) {
 
     testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
     classpath = project.sourceSets["integrationTest"].runtimeClasspath
+    systemProperty "postgresHost", project.getProperty("postgresHost")
+    systemProperty "postgresDb", project.getProperty("postgresDb")
+    systemProperty "postgresPort", project.getProperty("postgresPort")
+    systemProperty "postgresUser", project.getProperty("postgresUser")
+    systemProperty "postgresPassword", project.getProperty("postgresPassword")
 }

@@ -1,5 +1,6 @@
 package net.corda.permissions.model
 
+import net.corda.db.schema.DbSchema
 import java.time.Instant
 import javax.persistence.CascadeType
 import javax.persistence.Column
@@ -13,7 +14,7 @@ import javax.persistence.Table
 import javax.persistence.Version
 
 @Entity
-@Table(name = "rpc_group")
+@Table(name = "rpc_group", schema = DbSchema.RPC_RBAC)
 class Group(
     @Id
     @Column(name = "id", nullable = false)

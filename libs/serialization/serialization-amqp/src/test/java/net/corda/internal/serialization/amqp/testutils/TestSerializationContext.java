@@ -1,19 +1,20 @@
 package net.corda.internal.serialization.amqp.testutils;
 
-import net.corda.v5.base.types.ByteSequence;
-import net.corda.v5.serialization.SerializationContext;
 import net.corda.internal.serialization.AllWhitelist;
 import net.corda.internal.serialization.SerializationContextImpl;
+import net.corda.serialization.SerializationContext;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import static net.corda.internal.serialization.amqp.SchemaKt.amqpMagic;
+
 public class TestSerializationContext {
 
-    private static Map<Object, Object> serializationProperties = new HashMap<>();
+    private static final Map<Object, Object> serializationProperties = new HashMap<>();
 
     public static SerializationContext testSerializationContext = new SerializationContextImpl(
-        ByteSequence.of(new byte[] { 'c', 'o', 'r', 'd', 'a', (byte)0, (byte)0, (byte)1}),
+        amqpMagic,
         AllWhitelist.INSTANCE,
         serializationProperties,
         false,

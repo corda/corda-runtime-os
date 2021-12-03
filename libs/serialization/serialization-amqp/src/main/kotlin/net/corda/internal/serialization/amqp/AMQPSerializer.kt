@@ -1,6 +1,6 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.v5.serialization.SerializationContext
+import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
 import java.lang.reflect.Type
@@ -31,7 +31,6 @@ interface AMQPSerializer<out T> {
     /**
      * Write the given object, with declared type, to the output.
      */
-    @JvmDefault
     fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
                     context: SerializationContext, debugIndent: Int = 0)
 

@@ -11,9 +11,18 @@ object ConfigUtil {
 
         configMap["corda.database"] = databaseConfig(5.4)
         configMap["corda.security"] = securityConfig(5.4)
+        configMap["corda.boot"] = bootConfig(5.4)
 
         return configMap
     }
+
+    fun bootConfig(version: Double): SmartConfig = SmartConfigImpl(ConfigFactory.parseString(
+        """
+            instanceId = 1
+            bootstrap.servers = localhost":"9092
+            componentVersion="$version"
+        """.trimIndent()
+    ))
 
     fun databaseConfig(version: Double): SmartConfig = SmartConfigImpl(ConfigFactory.parseString(
         """

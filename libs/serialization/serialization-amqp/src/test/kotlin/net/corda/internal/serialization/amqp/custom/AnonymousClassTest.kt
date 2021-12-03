@@ -3,8 +3,10 @@ package net.corda.internal.serialization.amqp.custom
 import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.Companion.serializeDeserializeAssert
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.registerCustomSerializers
+import net.corda.serialization.BaseDirectSerializer
+import net.corda.serialization.BaseProxySerializer
+import net.corda.serialization.InternalDirectSerializer
 import net.corda.v5.serialization.MissingSerializerException
-import net.corda.v5.serialization.SerializationCustomSerializer
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
@@ -60,11 +62,11 @@ class AnonymousClassTest {
 
     private val factoryWithSerializersRegistered = testDefaultFactory().also {
         registerCustomSerializers(it)
-        it.register(SerializerForInterface(), true)
-        it.register(SerializerForAbstractClass(), true)
+        it.register(SerializerForInterface(), it)
+        it.register(SerializerForAbstractClass(), it)
     }
 
-    class ProxyClass
+    class ProxyClass(val value: Boolean)
 
     interface TestInterface {
         val booleanProperty: Boolean
@@ -76,20 +78,30 @@ class AnonymousClassTest {
         abstract fun somethingToImplement(): Boolean
     }
 
-    class SerializerForInterface : SerializationCustomSerializer<TestInterface, ProxyClass> {
-        override fun fromProxy(proxy: ProxyClass): TestInterface {
+    class SerializerForInterface : BaseDirectSerializer<TestInterface>() {
+        override val type: Class<TestInterface> get() = TestInterface::class.java
+        override val withInheritance: Boolean get() = true
+
+
+        override fun readObject(reader: InternalDirectSerializer.ReadObject): TestInterface {
             return testAnonymousClassFromInterface
         }
-        override fun toProxy(obj: TestInterface): ProxyClass {
-            return ProxyClass()
+
+        override fun writeObject(obj: TestInterface, writer: InternalDirectSerializer.WriteObject) {
+            writer.putAsObject(obj.booleanProperty)
         }
     }
-    class SerializerForAbstractClass : SerializationCustomSerializer<TestAbstractClass, ProxyClass> {
+
+    class SerializerForAbstractClass : BaseProxySerializer<TestAbstractClass, ProxyClass>() {
+        override val type: Class<TestAbstractClass> get() = TestAbstractClass::class.java
+        override val proxyType: Class<ProxyClass> get() = ProxyClass::class.java
+        override val withInheritance: Boolean get() = true
+
         override fun fromProxy(proxy: ProxyClass): TestAbstractClass {
             return testAnonymousClassFromAbstractClass
         }
         override fun toProxy(obj: TestAbstractClass): ProxyClass {
-            return ProxyClass()
+            return ProxyClass(obj.booleanProperty)
         }
     }
 }

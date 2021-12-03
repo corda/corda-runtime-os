@@ -5,16 +5,23 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.domino.logic.DominoTile
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.net.URI
 
 class ReconfigurableConnectionManagerTest {
@@ -35,8 +42,26 @@ class ReconfigurableConnectionManagerTest {
         on { sslConfig } doReturn mock()
         on { connectionConfig } doReturn mock()
     }
+    private val badConfigurationException = RuntimeException("Bad Config")
+    private val badConfiguration = mock<GatewayConfiguration> {
+        on { sslConfig } doThrow(badConfigurationException)
+    }
+
+    private val resourcesHolder = mock<ResourcesHolder>()
+    private lateinit var configHandler: ReconfigurableConnectionManager.ConnectionManagerConfigChangeHandler
+    private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
+        @Suppress("UNCHECKED_CAST")
+        whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }
+        @Suppress("UNCHECKED_CAST")
+        configHandler = (context.arguments()[4] as ReconfigurableConnectionManager.ConnectionManagerConfigChangeHandler)
+    }
 
     private val connectionManager = ReconfigurableConnectionManager(factory, service) { _, _ -> manager }
+
+    @AfterEach
+    fun cleanUp() {
+        dominoTile.close()
+    }
 
     @Test
     fun `acquire will throw an exception if configuration is not ready`() {
@@ -47,8 +72,9 @@ class ReconfigurableConnectionManagerTest {
 
     @Test
     fun `acquire will call the manager`() {
+        val resources = ResourcesHolder()
         connectionManager.start()
-        connectionManager.applyNewConfiguration(configuration, null)
+        configHandler.applyNewConfiguration(configuration, null, resources)
         val info = DestinationInfo(
             URI("http://www.r3.com:3000"),
             "",
@@ -66,15 +92,31 @@ class ReconfigurableConnectionManagerTest {
     @Test
     fun `applyNewConfiguration will close manager`() {
         connectionManager.start()
-        connectionManager.applyNewConfiguration(configuration, null)
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
 
         val secondConfiguration = mock<GatewayConfiguration> {
             on { sslConfig } doReturn mock()
             on { connectionConfig } doReturn mock()
         }
-        connectionManager.applyNewConfiguration(secondConfiguration, configuration)
+        configHandler.applyNewConfiguration(secondConfiguration, configuration, resourcesHolder)
 
         verify(manager).close()
+    }
+
+    @Test
+    fun `applyNewConfiguration completes configUpdateResult`() {
+        val future = configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
+
+        assertThat(future.isDone).isTrue
+        assertThat(future.isCompletedExceptionally).isFalse
+    }
+
+    @Test
+    fun `applyNewConfiguration applyNewConfiguration completes configUpdateResult exceptionally if bad config`() {
+        val future = configHandler.applyNewConfiguration(badConfiguration, null, resourcesHolder)
+
+        assertThat(future.isDone).isTrue
+        assertThat(future.isCompletedExceptionally).isTrue
     }
 
     @Test
@@ -90,20 +132,17 @@ class ReconfigurableConnectionManagerTest {
             on { connectionConfig } doReturn connectionConfiguration
         }
         connectionManager.start()
-        connectionManager.applyNewConfiguration(firstConfiguration, null)
+        configHandler.applyNewConfiguration(firstConfiguration, null, resourcesHolder)
 
-        connectionManager.applyNewConfiguration(secondConfiguration, secondConfiguration)
+        configHandler.applyNewConfiguration(secondConfiguration, secondConfiguration, resourcesHolder)
 
         verify(manager, never()).close()
     }
 
     @Test
-    fun `close will close the manager`() {
-        connectionManager.start()
-        connectionManager.applyNewConfiguration(configuration, null)
+    fun `applyNewConfiguration keeps the manager in the resource holder`() {
+        configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
 
-        connectionManager.close()
-
-        verify(manager).close()
+        verify(resourcesHolder).keep(manager)
     }
 }

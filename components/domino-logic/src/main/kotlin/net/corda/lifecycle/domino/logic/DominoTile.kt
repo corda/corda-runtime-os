@@ -1,5 +1,8 @@
 package net.corda.lifecycle.domino.logic
 
+import com.typesafe.config.Config
+import net.corda.configuration.read.ConfigurationHandler
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -9,9 +12,13 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.v5.base.util.contextLogger
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -19,25 +26,35 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-abstract class DominoTile(
+@Suppress("TooManyFunctions")
+class DominoTile(
+    componentName: String,
     coordinatorFactory: LifecycleCoordinatorFactory,
+    private val createResources: ((resources: ResourcesHolder) -> CompletableFuture<Unit>)? = null,
+    private val children: Collection<DominoTile> = emptySet(),
+    private val configurationChangeHandler: ConfigurationChangeHandler<*>? = null,
 ) : Lifecycle {
+
     companion object {
         private val logger = contextLogger()
         private val instancesIndex = ConcurrentHashMap<String, Int>()
     }
     private object StartTile : LifecycleEvent
     private data class StopTile(val dueToError: Boolean) : LifecycleEvent
-    private class CallFromCoordinator(val callback: () -> Unit) : LifecycleEvent
+    private data class ConfigApplied(val configUpdateResult: ConfigUpdateResult) : LifecycleEvent
+    private data class NewConfig(val config: Config) : LifecycleEvent
+    private object ResourcesCreated : LifecycleEvent
     enum class State {
         Created,
         Started,
         StoppedDueToError,
+        StoppedDueToBadConfig,
         StoppedByParent
     }
+
     val name = LifecycleCoordinatorName(
-        javaClass.simpleName,
-        instancesIndex.compute(javaClass.simpleName) { _, last ->
+        componentName,
+        instancesIndex.compute(componentName) { _, last ->
             if (last == null) {
                 1
             } else {
@@ -50,27 +67,12 @@ abstract class DominoTile(
 
     override fun start() {
         logger.info("Starting $name")
-        when (state) {
-            State.Created -> {
-                coordinator.start()
-                coordinator.postEvent(StartTile)
-            }
-            State.Started -> {
-                // Do nothing
-            }
-            State.StoppedByParent -> {
-                coordinator.postEvent(StartTile)
-            }
-            State.StoppedDueToError -> {
-                logger.warn("Can not start $name, it was stopped due to an error")
-            }
-        }
+        coordinator.start()
+        coordinator.postEvent(StartTile)
     }
 
     override fun stop() {
-        if (state != State.StoppedByParent) {
-            coordinator.postEvent(StopTile(false))
-        }
+        coordinator.postEvent(StopTile(false))
     }
 
     fun <T> withLifecycleLock(access: () -> T): T {
@@ -79,11 +81,58 @@ abstract class DominoTile(
         }
     }
 
-    protected val coordinator = coordinatorFactory.createCoordinator(name, EventHandler())
+    fun <T> withLifecycleWriteLock(access: () -> T): T {
+        return controlLock.write {
+            access.invoke()
+        }
+    }
+
+    private val coordinator = coordinatorFactory.createCoordinator(name, EventHandler())
+    private val resources = ResourcesHolder()
+    private val configResources = ResourcesHolder()
+
+    @Volatile
+    private var registrations: Collection<RegistrationHandle>? = null
 
     private val currentState = AtomicReference(State.Created)
 
     private val isOpen = AtomicBoolean(true)
+
+    @Volatile
+    private var configReady = false
+    @Volatile
+    private var resourcesReady = false
+    @Volatile
+    private var configRegistration: AutoCloseable? = null
+
+    private sealed class ConfigUpdateResult {
+        object Success : ConfigUpdateResult()
+        object NoUpdate : ConfigUpdateResult()
+        data class Error(val e: Throwable) : ConfigUpdateResult()
+    }
+
+    private fun configApplied(configUpdateResult: ConfigUpdateResult) {
+        coordinator.postEvent(ConfigApplied(configUpdateResult))
+    }
+
+    private fun resourcesStarted(error: Throwable? = null) {
+        if (error != null) {
+            gotError(error)
+        } else {
+            coordinator.postEvent(ResourcesCreated)
+        }
+    }
+
+    private inner class Handler(private val configurationChangeHandler: ConfigurationChangeHandler<*>) : ConfigurationHandler {
+        override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
+            if (changedKeys.contains(configurationChangeHandler.key)) {
+                val newConfiguration = config[configurationChangeHandler.key]
+                if (newConfiguration != null) {
+                    newConfig(newConfiguration)
+                }
+            }
+        }
+    }
 
     val state: State
         get() = currentState.get()
@@ -91,28 +140,24 @@ abstract class DominoTile(
     override val isRunning: Boolean
         get() = state == State.Started
 
-    protected open fun started() {
-        updateState(State.Started)
+    private fun newConfig(config: Config) {
+        coordinator.postEvent(NewConfig(config))
     }
+
     private fun updateState(newState: State) {
         val oldState = currentState.getAndSet(newState)
         if (newState != oldState) {
             val status = when (newState) {
                 State.Started -> LifecycleStatus.UP
-                State.Created, State.StoppedByParent -> LifecycleStatus.DOWN
+                State.StoppedByParent, State.StoppedDueToBadConfig -> LifecycleStatus.DOWN
                 State.StoppedDueToError -> LifecycleStatus.ERROR
+                State.Created -> null
             }
-            controlLock.write {
-                coordinator.updateStatus(status)
+            withLifecycleWriteLock {
+                status?.let { coordinator.updateStatus(it) }
             }
             logger.info("State of $name is $newState")
         }
-    }
-
-    open fun handleEvent(event: LifecycleEvent): Boolean = false
-
-    fun callFromCoordinator(callback: () -> Unit) {
-        coordinator.postEvent(CallFromCoordinator(callback))
     }
 
     private inner class EventHandler : LifecycleEventHandler {
@@ -121,31 +166,83 @@ abstract class DominoTile(
                 is ErrorEvent -> {
                     gotError(event.cause)
                 }
-                is StartEvent -> {
-                    // Do Nothing
-                }
-                is StopEvent -> {
-                    // Do nothing
+                is StartEvent, is StopEvent -> {
+                    // We don't do anything when the starting/stopping the coordinator
                 }
                 is StopTile -> {
-                    stopTile(event.dueToError)
-                    if (event.dueToError) {
-                        updateState(State.StoppedDueToError)
-                    } else {
-                        updateState(State.StoppedByParent)
+                    when (state) {
+                        State.StoppedByParent, State.StoppedDueToBadConfig, State.StoppedDueToError -> {}
+                        else -> {
+                            stopTile()
+                            if (event.dueToError) {
+                                updateState(State.StoppedDueToError)
+                            } else {
+                                updateState(State.StoppedByParent)
+                            }
+                        }
                     }
                 }
                 is StartTile -> {
-                    startTile()
-                }
-                is CallFromCoordinator -> {
-                    event.callback.invoke()
-                }
-                else -> {
-                    if (!handleEvent(event)) {
-                        logger.warn("Unexpected event $event")
+                    when (state) {
+                        State.Created, State.StoppedByParent -> readyOrStartTile()
+                        State.Started -> {} // Do nothing
+                        State.StoppedDueToError -> logger.warn("Can not start $name, it was stopped due to an error")
+                        State.StoppedDueToBadConfig -> logger.warn("Can not start $name, it was stopped due to bad config")
                     }
                 }
+                is RegistrationStatusChangeEvent -> {
+                    if (event.status == LifecycleStatus.UP) {
+                        logger.info("RegistrationStatusChangeEvent $name going up.")
+                        handleLifecycleUp()
+                    } else {
+                        val errorKids = children.filter { it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig }
+                        if (errorKids.isEmpty()) {
+                            stop()
+                        } else {
+                            gotError(Exception("$name Had error in ${errorKids.map { it.name }}"))
+                        }
+                    }
+                }
+                is ResourcesCreated -> {
+                    resourcesReady = true
+                    when (state) {
+                        State.StoppedDueToBadConfig, State.Created, State.StoppedByParent -> {
+                            logger.info("Resources ready for $name.")
+                            setStartedIfCan()
+                        }
+                        State.StoppedDueToError, State.Started -> {} // Do nothing
+                    }
+                }
+                is ConfigApplied -> {
+                    when (event.configUpdateResult) {
+                        ConfigUpdateResult.Success -> {
+                            configReady = true
+                            when (state) {
+                                State.StoppedDueToBadConfig -> {
+                                    logger.info("Config ready for $name.")
+                                    startDependenciesIfNeeded()
+                                }
+                                State.Created, State.StoppedByParent -> {
+                                    logger.info("Config ready for $name.")
+                                    setStartedIfCan()
+                                }
+                                State.StoppedDueToError, State.Started -> {} // Do nothing
+                            }
+                        }
+                        is ConfigUpdateResult.Error -> {
+                            logger.warn("Config error for $name. ${event.configUpdateResult.e}")
+                            stopTile(false)
+                            updateState(State.StoppedDueToBadConfig)
+                        }
+                        ConfigUpdateResult.NoUpdate -> {
+                            logger.info("No Config update for $name.")
+                        }
+                    }
+                }
+                is NewConfig -> {
+                    configurationChangeHandler?.let { handleConfigChange(it, event.config) }
+                }
+                else -> logger.warn("Unexpected event $event")
             }
         }
 
@@ -154,27 +251,163 @@ abstract class DominoTile(
                 return
             }
 
-            controlLock.write {
+            withLifecycleWriteLock {
                 handleControlEvent(event)
             }
         }
     }
 
-    protected open fun gotError(cause: Throwable) {
-        logger.warn("Got error in $name", cause)
-        if (state != State.StoppedDueToError) {
-            coordinator.postEvent(StopTile(true))
+    private fun <C> handleConfigChange(configurationChangeHandler: ConfigurationChangeHandler<C>, config: Config) {
+        val newConfiguration = try {
+            configurationChangeHandler.configFactory(config)
+        } catch (e: Exception) {
+            configApplied(ConfigUpdateResult.Error(e))
+            return
+        }
+        logger.info("Got configuration $name")
+        if (newConfiguration == configurationChangeHandler.lastConfiguration) {
+            logger.info("Configuration had not changed $name")
+            configApplied(ConfigUpdateResult.NoUpdate)
+        } else {
+            val future = configurationChangeHandler.applyNewConfiguration(
+                newConfiguration,
+                configurationChangeHandler.lastConfiguration,
+                configResources
+            )
+            future.whenComplete { _, exception ->
+                if (exception != null) {
+                    configApplied(ConfigUpdateResult.Error(exception))
+                } else {
+                    configApplied(ConfigUpdateResult.Success)
+                }
+            }
+            configurationChangeHandler.lastConfiguration = newConfiguration
+            logger.info("Reconfigured $name")
         }
     }
 
-    protected abstract fun startTile()
-    protected abstract fun stopTile(dueToError: Boolean)
+    private fun gotError(cause: Throwable) {
+        logger.warn("Got error in $name", cause)
+        coordinator.postEvent(StopTile(true))
+    }
+
+    private fun handleLifecycleUp() {
+        if (!isRunning) {
+            when {
+                children.all { it.isRunning } -> {
+                    createResourcesAndStart()
+                }
+                children.any { it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig } -> {
+                    children.filter { it.isRunning || it.state == State.Created }.forEach { it.stop() }
+                }
+                else -> { // any children that are not running have been stopped by the parent
+                    startDependenciesIfNeeded()
+                }
+            }
+        }
+    }
+
+    private fun readyOrStartTile() {
+        if (registrations == null && children.isNotEmpty()) {
+            registrations = children.map {
+                it.name
+            }.map {
+                coordinator.followStatusChangesByName(setOf(it))
+            }
+            logger.info("Created $name with ${children.map { it.name }}")
+        }
+        startDependenciesIfNeeded()
+    }
+
+    private fun startDependenciesIfNeeded() {
+        children.forEach {
+            it.start()
+        }
+        if (children.all { it.isRunning }) {
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                createResourcesAndStart()
+            } catch (e: Throwable) {
+                gotError(e)
+            }
+        } else {
+            logger.info(
+                "Not all child tiles started yet.\n " +
+                    "Started Children = ${children.filter{ it.isRunning }}.\n " +
+                    "Not Started Children = ${children.filter { !it.isRunning }}."
+            )
+        }
+    }
+
+    private fun shouldNotWaitForConfig(): Boolean {
+        return configurationChangeHandler == null || configReady
+    }
+
+    private fun shouldNotWaitForResource(): Boolean {
+        return createResources == null || resourcesReady
+    }
+
+    private fun createResourcesAndStart() {
+        resources.close()
+
+        val future = createResources?.invoke(resources)
+        future?.whenComplete { _, exception ->
+            if (exception != null) {
+                resourcesStarted(exception)
+            } else {
+                resourcesStarted()
+            }
+        }
+        if (configRegistration == null && configurationChangeHandler != null) {
+            logger.info("Registering for Config Updates $name.")
+            configRegistration =
+                configurationChangeHandler.configurationReaderService
+                    .registerForUpdates(
+                        Handler(configurationChangeHandler)
+                    )
+        }
+        setStartedIfCan()
+    }
+
+    private fun setStartedIfCan() {
+        if (shouldNotWaitForResource() && shouldNotWaitForConfig()) {
+            updateState(State.Started)
+        }
+    }
+
+    private fun stopTile(stopConfigListener: Boolean = true) {
+        resources.close()
+        resourcesReady = false
+        configResources.close()
+
+        if (stopConfigListener) {
+            configRegistration?.close()
+            if (configRegistration != null) logger.info("Unregistered for Config Updates $name.")
+            configurationChangeHandler?.lastConfiguration = null
+            configRegistration = null
+            configurationChangeHandler?.lastConfiguration = null
+        }
+        configReady = false
+
+        children.forEach {
+            if (!(it.state == State.StoppedDueToError || it.state == State.StoppedDueToBadConfig)) {
+                it.stop()
+            }
+        }
+    }
 
     override fun close() {
-        controlLock.write {
+        registrations?.forEach {
+            it.close()
+        }
+        configRegistration?.close()
+        configRegistration = null
+        configurationChangeHandler?.lastConfiguration = null
+        configResources.close()
+        withLifecycleWriteLock {
             isOpen.set(false)
 
-            stopTile(false)
+            stopTile()
 
             try {
                 coordinator.close()
@@ -183,9 +416,17 @@ abstract class DominoTile(
                 logger.debug("Could not close coordinator", e)
             }
         }
+        children.reversed().forEach {
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                it.close()
+            } catch (e: Throwable) {
+                logger.warn("Could not close $it", e)
+            }
+        }
     }
 
     override fun toString(): String {
-        return "$name: $state"
+        return "$name: $state: $children"
     }
 }

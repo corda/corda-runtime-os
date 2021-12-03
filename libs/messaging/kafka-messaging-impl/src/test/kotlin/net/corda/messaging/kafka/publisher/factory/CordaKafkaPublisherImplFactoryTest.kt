@@ -14,7 +14,7 @@ class CordaKafkaPublisherImplFactoryTest {
 
     @BeforeEach
     fun beforeEach() {
-        cordaKafkaPublisherFactory = CordaKafkaPublisherFactory(mock())
+        cordaKafkaPublisherFactory = CordaKafkaPublisherFactory(mock(), mock())
     }
 
     @Test

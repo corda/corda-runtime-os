@@ -7,8 +7,9 @@ import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
-import net.corda.lifecycle.domino.logic.InternalTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -20,7 +21,6 @@ import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
-import net.corda.p2p.gateway.Gateway.Companion.PUBLISHER_ID
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
@@ -28,34 +28,50 @@ import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
 import net.corda.v5.base.util.contextLogger
 import java.nio.ByteBuffer
-import java.util.UUID
+import java.util.*
 
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
  */
+@Suppress("LongParameterList")
 internal class InboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
     publisherFactory: PublisherFactory,
     subscriptionFactory: SubscriptionFactory,
     nodeConfiguration: SmartConfig,
-) : HttpServerListener,
-    InternalTile(lifecycleCoordinatorFactory) {
+    instanceId: Int,
+    ) : HttpServerListener, LifecycleWithDominoTile {
 
     companion object {
         private val logger = contextLogger()
     }
 
-    private var p2pInPublisher = PublisherWithDominoLogic(publisherFactory, lifecycleCoordinatorFactory, PUBLISHER_ID, nodeConfiguration)
-    private val sessionPartitionMapper = SessionPartitionMapperImpl(lifecycleCoordinatorFactory, subscriptionFactory, nodeConfiguration)
+    private var p2pInPublisher = PublisherWithDominoLogic(
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        PublisherConfig("inbound-message-handler"),
+        nodeConfiguration
+    )
+    private val sessionPartitionMapper = SessionPartitionMapperImpl(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        nodeConfiguration,
+        instanceId
+    )
     private val server = ReconfigurableHttpServer(lifecycleCoordinatorFactory, configurationReaderService, this)
+    override val dominoTile = DominoTile(
+        this::class.java.simpleName,
+        lifecycleCoordinatorFactory,
+        children = listOf(sessionPartitionMapper.dominoTile, p2pInPublisher.dominoTile, server.dominoTile)
+    )
 
     /**
      * Handler for direct P2P messages. The payload is deserialized and then published to the ingress topic.
      * A session init request has additional handling as the Gateway needs to generate a secret and share it
      */
     override fun onRequest(request: HttpRequest) {
-        withLifecycleLock { handleRequest(request) }
+        dominoTile.withLifecycleLock { handleRequest(request) }
     }
 
     private fun handleRequest(request: HttpRequest) {
@@ -65,7 +81,6 @@ internal class InboundMessageHandler(
             return
         }
 
-        logger.debug("Processing request message from ${request.source}")
         val (gatewayMessage, p2pMessage) = try {
             val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(request.payload))
             gatewayMessage to LinkInMessage(gatewayMessage.payload)
@@ -76,7 +91,7 @@ internal class InboundMessageHandler(
             return
         }
 
-        logger.debug("Received message of type ${p2pMessage.schema.name}")
+        logger.debug("Received and processing message ${gatewayMessage.id} of type ${p2pMessage.payload.javaClass} from ${request.source}")
         val response = GatewayResponse(gatewayMessage.id)
         when (p2pMessage.payload) {
             is UnauthenticatedMessage -> {
@@ -91,8 +106,12 @@ internal class InboundMessageHandler(
     }
 
     private fun processSessionMessage(p2pMessage: LinkInMessage): HttpResponseStatus {
-        val sessionId = getSessionId(p2pMessage) ?: return HttpResponseStatus.INTERNAL_SERVER_ERROR
+        if (p2pMessage.payload is InitiatorHelloMessage) {
+            p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, UUID.randomUUID().toString(), p2pMessage)))
+            return HttpResponseStatus.OK
+        }
 
+        val sessionId = getSessionId(p2pMessage) ?: return HttpResponseStatus.INTERNAL_SERVER_ERROR
         val partitions = sessionPartitionMapper.getPartitions(sessionId)
         return if (partitions == null) {
             logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
@@ -110,7 +129,6 @@ internal class InboundMessageHandler(
         return when (message.payload) {
             is AuthenticatedDataMessage -> (message.payload as AuthenticatedDataMessage).header.sessionId
             is AuthenticatedEncryptedDataMessage -> (message.payload as AuthenticatedEncryptedDataMessage).header.sessionId
-            is InitiatorHelloMessage -> (message.payload as InitiatorHelloMessage).header.sessionId
             is InitiatorHandshakeMessage -> (message.payload as InitiatorHandshakeMessage).header.sessionId
             is ResponderHelloMessage -> (message.payload as ResponderHelloMessage).header.sessionId
             is ResponderHandshakeMessage -> (message.payload as ResponderHandshakeMessage).header.sessionId
@@ -124,6 +142,4 @@ internal class InboundMessageHandler(
     private fun generateKey(): String {
         return UUID.randomUUID().toString()
     }
-
-    override val children: Collection<DominoTile> = listOf(sessionPartitionMapper, p2pInPublisher, server)
 }

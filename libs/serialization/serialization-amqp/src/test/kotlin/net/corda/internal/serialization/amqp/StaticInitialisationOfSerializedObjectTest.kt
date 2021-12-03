@@ -1,9 +1,9 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.v5.serialization.ClassWhitelist
-import net.corda.v5.serialization.SerializedBytes
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.testutils.deserialize
+import net.corda.serialization.ClassWhitelist
+import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -76,7 +76,7 @@ class StaticInitialisationOfSerializedObjectTest {
         data class D(val c: C2)
 
         val resource = "StaticInitialisationOfSerializedObjectTest.deserializeTest"
-        val url = EvolvabilityTests::class.java.getResource(resource)
+        val url = EvolvabilityTests::class.java.getResource(resource)!!
 
         // Original version of the class for the serialised version of this class
         //

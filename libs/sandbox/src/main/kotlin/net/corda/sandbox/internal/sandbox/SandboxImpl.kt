@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 internal open class SandboxImpl(
     override val id: UUID,
     final override val publicBundles: Set<Bundle>,
-    private val privateBundles: Set<Bundle>
+    val privateBundles: Set<Bundle>
 ) : Sandbox {
     private val logger = loggerFor<SandboxImpl>()
 
