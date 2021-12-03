@@ -9,6 +9,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.integration.IntegrationTestProperties
+import net.corda.messaging.kafka.integration.TopicTemplates.Companion.PUBLISHER_TEST_DURABLE_TOPIC1
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
@@ -31,8 +32,6 @@ class PublisherIntegrationTest {
 
     private companion object {
         const val CLIENT_ID = "durableTestDurablePublisher"
-        //automatically created topics
-        const val DURABLE_TOPIC1 = "DurableTopic1"
     }
 
     @InjectService(timeout = 4000)
@@ -44,7 +43,10 @@ class PublisherIntegrationTest {
     @BeforeEach
     fun beforeEach() {
         kafkaConfig = SmartConfigImpl.empty()
-            .withValue(IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE))
+            .withValue(
+                IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER,
+                ConfigValueFactory.fromAnyRef(IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE)
+            )
             .withValue(IntegrationTestProperties.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }
 
@@ -53,14 +55,14 @@ class PublisherIntegrationTest {
         publisherConfig = PublisherConfig(CLIENT_ID)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
 
-        val recordsWithPartitions = getDemoRecords(DURABLE_TOPIC1, 5, 2).map { 1 to it }
+        val recordsWithPartitions = getDemoRecords(PUBLISHER_TEST_DURABLE_TOPIC1, 5, 2).map { 1 to it }
         val futures = publisher.publishToPartition(recordsWithPartitions)
         futures.map { it.getOrThrow() }
         publisher.close()
 
         val latch = CountDownLatch(recordsWithPartitions.size)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$DURABLE_TOPIC1-group", DURABLE_TOPIC1, 1),
+            SubscriptionConfig("$PUBLISHER_TEST_DURABLE_TOPIC1-group", PUBLISHER_TEST_DURABLE_TOPIC1, 1),
             TestDurableProcessor(latch),
             kafkaConfig,
             null
@@ -76,14 +78,14 @@ class PublisherIntegrationTest {
         publisherConfig = PublisherConfig(CLIENT_ID, 1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
 
-        val recordsWithPartitions = getDemoRecords(DURABLE_TOPIC1, 5, 2).map { 1 to it }
+        val recordsWithPartitions = getDemoRecords(PUBLISHER_TEST_DURABLE_TOPIC1, 5, 2).map { 1 to it }
         val futures = publisher.publishToPartition(recordsWithPartitions)
         futures.map { it.getOrThrow() }
         publisher.close()
 
         val latch = CountDownLatch(recordsWithPartitions.size)
         val durableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$DURABLE_TOPIC1-group", DURABLE_TOPIC1, 1),
+            SubscriptionConfig("$PUBLISHER_TEST_DURABLE_TOPIC1-group", PUBLISHER_TEST_DURABLE_TOPIC1, 2),
             TestDurableProcessor(latch),
             kafkaConfig,
             null

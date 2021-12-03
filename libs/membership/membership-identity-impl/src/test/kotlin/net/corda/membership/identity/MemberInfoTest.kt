@@ -179,7 +179,7 @@ class MemberInfoTest {
             memberInfo?.mgmProvidedContext?.toWireKeyValuePairList()
         )
 
-        dataFileWriter.create(wireMemberInfo.schema, File("avro-member-info.avro"))
+        dataFileWriter.create(wireMemberInfo.schema, avroMemberInfo)
         dataFileWriter.append(wireMemberInfo)
         dataFileWriter.close()
 
