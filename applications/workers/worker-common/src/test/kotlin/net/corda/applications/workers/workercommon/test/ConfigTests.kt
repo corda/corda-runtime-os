@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import picocli.CommandLine.Option
 
-// TODO - Joel - Make tests generic so we don't have to test every param in order.
+// TODO - Joel - Make tests generic so we don't have to test every param.
 
 /** Tests of worker config parsing. */
 class ConfigTests {

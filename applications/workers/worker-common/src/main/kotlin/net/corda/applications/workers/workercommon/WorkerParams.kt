@@ -2,6 +2,7 @@ package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.ConfigFactory
 import net.corda.applications.workers.workercommon.internal.HEALTH_MONITOR_PORT
+import net.corda.applications.workers.workercommon.internal.PARAM_DISABLE_HEALTH_MONITOR
 import net.corda.applications.workers.workercommon.internal.PARAM_EXTRA
 import net.corda.applications.workers.workercommon.internal.PARAM_HEALTH_MONITOR_PORT
 import net.corda.applications.workers.workercommon.internal.PARAM_INSTANCE_ID
@@ -22,6 +23,10 @@ open class WorkerParams {
     @Suppress("Unused")
     @Option(names = [PARAM_INSTANCE_ID], description = ["The Kafka instance ID for this worker."])
     var instanceId = Random.nextInt().absoluteValue
+
+    @Suppress("Unused")
+    @Option(names = [PARAM_DISABLE_HEALTH_MONITOR], description = ["Disables the health monitor."])
+    var disableHealthMonitor = false
 
     @Suppress("Unused")
     @Option(names = [PARAM_HEALTH_MONITOR_PORT], description = ["The port for the health monitor."])
@@ -45,10 +50,8 @@ open class WorkerParams {
             throw IllegalArgumentException(e.message)
         }
 
-        // TODO - Joel - Just use SmartConfig for additional params.
-        // TODO - Joel - Define additional params on worker directly.
-        // TODO - Joel - Split standard config and extra config.
-        // TODO - Joel - Can I use mixins here?
+        // TODO - Joel - Split standard config and extra config. Only use SmartConfig for additional params.
+        // TODO - Joel - Can I use mixins for additional configuration options?
 
         val config = ConfigFactory.parseMap(getParams())
         return smartConfigFactory.create(config)

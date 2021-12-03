@@ -1,5 +1,6 @@
 package net.corda.applications.workers.db
 
+import net.corda.applications.workers.workercommon.CONFIG_DISABLE_HEALTH_MONITOR
 import net.corda.applications.workers.workercommon.CONFIG_HEALTH_MONITOR_PORT
 import net.corda.applications.workers.workercommon.HealthMonitor
 import net.corda.applications.workers.workercommon.WorkerParams
@@ -30,9 +31,13 @@ class DBWorker @Activate constructor(
     /** Parses the arguments, then initialises and starts the [DBProcessor]. */
     override fun startup(args: Array<String>) {
         logger.info("DB worker starting.")
+        
         val config = WorkerParams().parseArgs(args, smartConfigFactory)
-        healthMonitor.listen(config.getInt(CONFIG_HEALTH_MONITOR_PORT))
+        if (!config.getBoolean(CONFIG_DISABLE_HEALTH_MONITOR)) {
+            healthMonitor.listen(config.getInt(CONFIG_HEALTH_MONITOR_PORT))
+        }
         processor.config = config
+
         processor.start()
     }
 
