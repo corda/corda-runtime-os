@@ -14,7 +14,8 @@ private class MockSandboxGroup : SandboxGroup {
         override val cpks: Collection<CPK> = emptyList()
 
         override fun loadClassFromMainBundles(className: String): Class<*> =  uncheckedCast(Class.forName(className))
-        override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> = uncheckedCast(Class.forName(className))
+        override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> =
+                uncheckedCast(Class.forName(className))
         override fun getClass(className: String, serialisedClassTag: String) = Class.forName(className)
         override fun getStaticTag(klass: Class<*>): String = "S;bundle;sandbox"
         override fun getEvolvableTag(klass: Class<*>) = "E;bundle;sandbox"
