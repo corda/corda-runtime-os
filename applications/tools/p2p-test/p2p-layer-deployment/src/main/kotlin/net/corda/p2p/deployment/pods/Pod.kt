@@ -8,16 +8,13 @@ abstract class Pod {
     abstract val image: String
     open val ports: Collection<Port> = emptyList()
     open val rawData: Collection<RawData<*>> = emptyList()
-    open val persistentVolumes: Collection<PersistentData> = emptyList()
     open val environmentVariables: Map<String, String> = emptyMap()
     open val hosts: Collection<String>? = null
     open val command: Collection<String>? = null
     open val pullSecrets: Collection<String> = emptyList()
 
     fun yamls(namespace: Namespace): Collection<Yaml> {
-        return persistentVolumes.flatMap {
-            it.createClaim(namespace, app)
-        } + rawData.map {
+        return rawData.map {
             it.createConfig(namespace.namespaceName, app)
         } +
             createPod(namespace.namespaceName) +
@@ -70,14 +67,12 @@ abstract class Pod {
                                 )
                             },
                             "volumeMounts" to
-                                persistentVolumes.map {
-                                it.createVolumeMount(app)
-                            } + rawData.map {
-                                it.createVolumeMount(app)
-                            }
+                                rawData.map {
+                                    it.createVolumeMount(app)
+                                }
                         ),
                     ),
-                    "volumes" to persistentVolumes.map { it.createVolume(app) } +
+                    "volumes" to
                         rawData.map { it.createVolume(app) },
                     "hostAliases" to hostAliases()
                 )
@@ -85,7 +80,7 @@ abstract class Pod {
         )
     )
 
-    fun createService(namespace: String) = if (ports.isEmpty()) {
+    private fun createService(namespace: String) = if (ports.isEmpty()) {
         emptyList()
     } else {
         listOf(

@@ -14,8 +14,6 @@ class PostGreSql(
         "POSTGRES_USER" to username,
         "POSTGRES_PASSWORD" to password,
     )
-    override val persistentVolumes: Collection<PersistentData> =
-        listOf(PersistentData("db-data", "/var/lib/postgresql/data"),)
     override val rawData = listOf(
         TextRawData(
             "initdb",
