@@ -6,11 +6,12 @@ import net.corda.flow.manager.FlowSandboxContextTypes
 import net.corda.flow.manager.FlowSandboxService
 import net.corda.packaging.CPI
 import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
-import net.corda.virtual.node.context.HoldingIdentity
-import net.corda.virtual.node.sandboxgroup.MutableSandboxGroupContext
-import net.corda.virtual.node.sandboxgroup.SandboxGroupContext
-import net.corda.virtual.node.sandboxgroup.SandboxGroupService
-import net.corda.virtual.node.sandboxgroup.SandboxGroupType
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.sandboxgroup.MutableSandboxGroupContext
+import net.corda.virtualnode.sandboxgroup.SandboxGroupContext
+import net.corda.virtualnode.sandboxgroup.SandboxGroupService
+import net.corda.virtualnode.sandboxgroup.SandboxGroupType
+import net.corda.virtualnode.sandboxgroup.VirtualNodeContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -34,9 +35,7 @@ class FlowSandboxServiceImpl @Activate constructor(
         val diBuilder = dependencyInjectionBuilderFactory.create()
 
         return sandboxGroupService.get(
-            holdingIdentity,
-            cpi,
-            SandboxGroupType.FLOW
+            VirtualNodeContext(holdingIdentity,cpi,SandboxGroupType.FLOW)
         ) { _, sandboxGroupContext -> initialiseSandbox(diBuilder, sandboxGroupContext) }
     }
 

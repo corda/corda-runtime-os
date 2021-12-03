@@ -18,12 +18,11 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
-import net.corda.virtual.node.context.HoldingIdentity
-import net.corda.virtual.node.context.VirtualNodeContext
-import net.corda.virtual.node.sandboxgroup.MutableSandboxGroupContext
-import net.corda.virtual.node.sandboxgroup.SandboxGroupContext
-import net.corda.virtual.node.sandboxgroup.SandboxGroupService
-import net.corda.virtual.node.sandboxgroup.SandboxGroupType
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.sandboxgroup.MutableSandboxGroupContext
+import net.corda.virtualnode.sandboxgroup.SandboxGroupContext
+import net.corda.virtualnode.sandboxgroup.SandboxGroupService
+import net.corda.virtualnode.sandboxgroup.VirtualNodeContext
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -66,7 +65,7 @@ class SandboxServiceImpl @Activate constructor(
 
     override fun getSandboxGroupFor(cpiId: String, identity: String, sandboxType: SandboxType): SandboxGroup {
         return cache.computeIfAbsent(SandboxCacheKey(identity, cpiId)) {
-            //hacky stuff until cpi service component is available. e.g dummy load logic doesnt handle multiple groups
+            //hacky stuff until cpi service component is available. e.g dummy load logic doesn't handle multiple groups
             val cpiIdentifier = cpiIdentifierById[cpiId]
                 ?: throw CordaRuntimeException("Could not get cpi identifier")
             val cpb = installService.getCpb(cpiIdentifier)
@@ -129,17 +128,14 @@ class SandboxServiceImpl @Activate constructor(
     data class SandboxCacheKey(val identity: String, val cpiId: String)
 
     override fun get(
-        holdingIdentity: HoldingIdentity,
-        cpi: CPI.Identifier,
-        sandboxGroupType: SandboxGroupType,
+        key: VirtualNodeContext,
         initializer: (holdingIdentity: HoldingIdentity, sandboxGroupContext: MutableSandboxGroupContext) -> AutoCloseable
     ): SandboxGroupContext {
 
+        var cpi  = key.cpiIdentifier
+        var holdingIdentity = key.holdingIdentity
         var context =  SimpleSandboxGroupContext(
-            SimpleVirtualNodeContext(
-                "",
-                cpi,
-                holdingIdentity),
+            key,
             getSandboxGroupFor(cpi.name, holdingIdentity.x500Name, SandboxType.FLOW))
 
         initializer(holdingIdentity,context)
@@ -147,11 +143,6 @@ class SandboxServiceImpl @Activate constructor(
         return context
     }
 
-    class SimpleVirtualNodeContext(
-        override val id: String,
-        override val cpi: CPI.Identifier,
-        override val holdingIdentity: HoldingIdentity
-    ) : VirtualNodeContext
 
     class SimpleSandboxGroupContext(
         override val context: VirtualNodeContext,

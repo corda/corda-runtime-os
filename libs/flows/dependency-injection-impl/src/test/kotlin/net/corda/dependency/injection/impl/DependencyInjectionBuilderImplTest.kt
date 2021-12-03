@@ -2,7 +2,7 @@ package net.corda.dependency.injection.impl
 
 import net.corda.dependency.injection.FlowDependencyInjector
 import net.corda.sandbox.SandboxGroup
-import net.corda.virtual.node.sandboxgroup.SandboxGroupContext
+import net.corda.virtualnode.sandboxgroup.SandboxGroupContext
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIllegalStateException
 import org.junit.jupiter.api.Test

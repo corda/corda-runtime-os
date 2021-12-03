@@ -1,5 +1,6 @@
 package net.corda.flow.service
 
+
 import net.corda.dependency.injection.DependencyInjectionBuilder
 import net.corda.dependency.injection.DependencyInjectionBuilderFactory
 import net.corda.dependency.injection.FlowDependencyInjector
@@ -10,9 +11,9 @@ import net.corda.serialization.CheckpointSerializer
 import net.corda.serialization.CheckpointSerializerBuilder
 import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.serialization.SingletonSerializeAsToken
-import net.corda.virtual.node.context.HoldingIdentity
-import net.corda.virtual.node.sandboxgroup.MutableSandboxGroupContext
-import net.corda.virtual.node.sandboxgroup.SandboxGroupService
+import net.corda.virtualnode.sandboxgroup.MutableSandboxGroupContext
+import net.corda.virtualnode.sandboxgroup.SandboxGroupService
+import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -54,7 +55,7 @@ class FlowSandboxServiceImplTest {
     @BeforeEach
     fun setup() {
         doReturn(sandboxGroupContext).whenever(sandboxGroupService)
-            .get(any(), any(), any(), initCallbackCaptor.capture())
+            .get(any(),  initCallbackCaptor.capture())
         doReturn(sandboxGroup).whenever(sandboxGroupContext).sandboxGroup
 
         doReturn(dependencyInjectionBuilder).whenever(dependencyInjectionBuilderFactory).create()

@@ -4,7 +4,7 @@ import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.packaging.CPI
-import net.corda.virtual.node.context.HoldingIdentity
+import net.corda.virtualnode.HoldingIdentity
 
 interface FlowMetaData {
     val flowEvent: FlowEvent

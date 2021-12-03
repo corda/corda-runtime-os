@@ -5,7 +5,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.manager.FlowMetaData
 import net.corda.packaging.CPI
-import net.corda.virtual.node.context.HoldingIdentity
+import net.corda.virtualnode.HoldingIdentity
 
 data class FlowMetaDataImpl(
     override val flowEvent: FlowEvent,

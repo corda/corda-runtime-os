@@ -1,8 +1,8 @@
 package net.corda.flow.manager
 
 import net.corda.packaging.CPI
-import net.corda.virtual.node.context.HoldingIdentity
-import net.corda.virtual.node.sandboxgroup.SandboxGroupContext
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.sandboxgroup.SandboxGroupContext
 
 interface FlowSandboxService{
     fun get(

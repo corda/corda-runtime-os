@@ -4,7 +4,7 @@ import net.corda.dependency.injection.DependencyInjectionBuilder
 import net.corda.dependency.injection.FlowDependencyInjector
 import net.corda.dependency.injection.InjectableFactory
 import net.corda.v5.serialization.SingletonSerializeAsToken
-import net.corda.virtual.node.sandboxgroup.SandboxGroupContext
+import net.corda.virtualnode.sandboxgroup.SandboxGroupContext
 
 class DependencyInjectionBuilderImpl(
     private val injectableFactories: List<InjectableFactory<*>>,

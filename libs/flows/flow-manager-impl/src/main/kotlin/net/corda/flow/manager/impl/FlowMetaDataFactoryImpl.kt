@@ -5,11 +5,11 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.Wakeup
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.flow.manager.FlowMetaData
 import net.corda.flow.manager.FlowMetaDataFactory
 import net.corda.messaging.api.records.Record
 import net.corda.packaging.CPI
-import net.corda.virtual.node.context.HoldingIdentity
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [FlowMetaDataFactory::class])

@@ -1,6 +1,7 @@
 package net.corda.dependency.injection
 
-import net.corda.virtual.node.sandboxgroup.SandboxGroupContext
+import net.corda.virtualnode.sandboxgroup.SandboxGroupContext
+
 
 /**
  * The DependencyInjectionBuilder is responsible for configuring and creating and instance of a
