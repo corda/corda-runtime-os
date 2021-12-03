@@ -17,6 +17,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.integration.IntegrationTestProperties
+import net.corda.messaging.kafka.integration.TopicTemplates.Companion.RANDOM_ACCESS_TOPIC1
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
@@ -39,9 +40,6 @@ class KafkaRandomAccessSubscriptionIntegrationTest {
 
     private companion object {
         const val CLIENT_ID = "publisherId"
-
-        //automatically created topics
-        const val TOPIC = "test.topic"
     }
 
     @InjectService(timeout = 4000)
@@ -66,7 +64,7 @@ class KafkaRandomAccessSubscriptionIntegrationTest {
     @Test
     fun `random access subscription can successfully retrieve records at specific partition and offset`() {
         val partition = 4
-        publisherConfig = PublisherConfig(CLIENT_ID + TOPIC)
+        publisherConfig = PublisherConfig(CLIENT_ID + RANDOM_ACCESS_TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
 
         val coordinator =
@@ -85,7 +83,7 @@ class KafkaRandomAccessSubscriptionIntegrationTest {
         coordinator.start()
 
         val randomAccessSub = subscriptionFactory.createRandomAccessSubscription(
-            SubscriptionConfig("group-1", TOPIC, 1),
+            SubscriptionConfig("group-1", RANDOM_ACCESS_TOPIC1, 1),
             kafkaConfig,
             String::class.java,
             DemoRecord::class.java
@@ -97,7 +95,7 @@ class KafkaRandomAccessSubscriptionIntegrationTest {
             Assertions.assertEquals(LifecycleStatus.UP, coordinator.status)
         }
 
-        val records = (1..10).map { partition to Record(TOPIC, "key-$it", DemoRecord(it)) }
+        val records = (1..10).map { partition to Record(RANDOM_ACCESS_TOPIC1, "key-$it", DemoRecord(it)) }
         val futures = publisher.publishToPartition(records)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
         publisher.close()
@@ -109,7 +107,6 @@ class KafkaRandomAccessSubscriptionIntegrationTest {
 
             assertThat(it.getRecord(4, 100)).isNull()
         }
-        randomAccessSub.stop()
 
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             Assertions.assertEquals(LifecycleStatus.DOWN, coordinator.status)
