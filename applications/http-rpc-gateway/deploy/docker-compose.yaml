@@ -50,6 +50,11 @@ services:
       POSTGRES_DB: "dbworker"
       POSTGRES_USER: "user"
       POSTGRES_PASSWORD: "password"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user -d dbworker" ]
+      interval: 2s
+      timeout: 2s
+      retries: 15
   http-rpc-gw:
     container_name: http-rpc-gw
     image: "corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest"
@@ -69,7 +74,7 @@ services:
       kafka:
         condition: service_healthy
       app-db:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "5006:5006"
     environment:
