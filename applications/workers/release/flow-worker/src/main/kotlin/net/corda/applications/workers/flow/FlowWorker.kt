@@ -1,9 +1,10 @@
 package net.corda.applications.workers.flow
 
-import net.corda.applications.workers.workercommon.CONFIG_DISABLE_HEALTH_MONITOR
-import net.corda.applications.workers.workercommon.CONFIG_HEALTH_MONITOR_PORT
 import net.corda.applications.workers.workercommon.HealthMonitor
-import net.corda.applications.workers.workercommon.WorkerParams
+import net.corda.applications.workers.workercommon.StandardWorkerParams
+import net.corda.applications.workers.workercommon.getAdditionalConfig
+import net.corda.applications.workers.workercommon.getParams
+import net.corda.applications.workers.workercommon.setUpHealthMonitor
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Application
 import net.corda.processors.flow.FlowProcessor
@@ -11,6 +12,7 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import picocli.CommandLine.Mixin
 
 // TODO - Joel - Create all-in-one worker - a worker that bootstraps multiple processors.
 
@@ -18,7 +20,6 @@ import org.osgi.service.component.annotations.Reference
 @Suppress("Unused")
 @Component(service = [Application::class])
 class FlowWorker @Activate constructor(
-    // TODO - Joel - Inject this directly into some WorkerParamsService?
     @Reference(service = SmartConfigFactory::class)
     private val smartConfigFactory: SmartConfigFactory,
     @Reference(service = HealthMonitor::class)
@@ -35,14 +36,11 @@ class FlowWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("Flow worker starting.")
 
-        val config = WorkerParams().parseArgs(args, smartConfigFactory)
-        if (!config.getBoolean(CONFIG_DISABLE_HEALTH_MONITOR)) {
-            healthMonitor.listen(config.getInt(CONFIG_HEALTH_MONITOR_PORT))
-        }
-        // TODO - Joel - Only extra config should be passed to the processor.
-        processor.config = config
+        val params = getParams(args, FlowWorkerParams())
+        setUpHealthMonitor(healthMonitor, params.standardWorkerParams)
 
-        processor.start()
+        val config = getAdditionalConfig(params.standardWorkerParams, smartConfigFactory)
+        processor.start(params.standardWorkerParams.instanceId, config)
     }
 
     override fun shutdown() {
@@ -50,4 +48,10 @@ class FlowWorker @Activate constructor(
         processor.stop()
         healthMonitor.stop()
     }
+}
+
+/** Additional parameters for the flow worker are added here. */
+private class FlowWorkerParams {
+    @Mixin
+    var standardWorkerParams = StandardWorkerParams()
 }

@@ -1,9 +1,10 @@
 package net.corda.applications.workers.db
 
-import net.corda.applications.workers.workercommon.CONFIG_DISABLE_HEALTH_MONITOR
-import net.corda.applications.workers.workercommon.CONFIG_HEALTH_MONITOR_PORT
 import net.corda.applications.workers.workercommon.HealthMonitor
-import net.corda.applications.workers.workercommon.WorkerParams
+import net.corda.applications.workers.workercommon.StandardWorkerParams
+import net.corda.applications.workers.workercommon.getAdditionalConfig
+import net.corda.applications.workers.workercommon.getParams
+import net.corda.applications.workers.workercommon.setUpHealthMonitor
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Application
 import net.corda.processors.db.DBProcessor
@@ -11,6 +12,7 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import picocli.CommandLine.Mixin
 
 /** The worker for interacting with the database. */
 @Suppress("Unused")
@@ -31,14 +33,12 @@ class DBWorker @Activate constructor(
     /** Parses the arguments, then initialises and starts the [DBProcessor]. */
     override fun startup(args: Array<String>) {
         logger.info("DB worker starting.")
-        
-        val config = WorkerParams().parseArgs(args, smartConfigFactory)
-        if (!config.getBoolean(CONFIG_DISABLE_HEALTH_MONITOR)) {
-            healthMonitor.listen(config.getInt(CONFIG_HEALTH_MONITOR_PORT))
-        }
-        processor.config = config
 
-        processor.start()
+        val params = getParams(args, RPCWorkerParams())
+        setUpHealthMonitor(healthMonitor, params.standardWorkerParams)
+
+        val config = getAdditionalConfig(params.standardWorkerParams, smartConfigFactory)
+        processor.start(params.standardWorkerParams.instanceId, config)
     }
 
     override fun shutdown() {
@@ -46,4 +46,10 @@ class DBWorker @Activate constructor(
         processor.stop()
         healthMonitor.stop()
     }
+}
+
+/** Additional parameters for the DB worker are added here. */
+private class RPCWorkerParams {
+    @Mixin
+    var standardWorkerParams = StandardWorkerParams()
 }

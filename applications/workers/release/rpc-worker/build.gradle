@@ -11,10 +11,10 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':applications:workers:worker-common')
     implementation project(':libs:configuration:configuration-core')
-    implementation project(':libs:lifecycle:lifecycle')
     implementation project(':processors:rpc-processor')
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "info.picocli:picocli:$picocliVersion"
 
+    runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"

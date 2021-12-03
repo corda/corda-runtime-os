@@ -11,9 +11,8 @@ class FlowProcessor {
         val logger = contextLogger()
     }
 
-    var config: SmartConfig? = null
-
-    fun start() {
+    @Suppress("unused_parameter")
+    fun start(instanceId: Int, config: SmartConfig) {
         logger.info("Flow processor starting.")
     }
 
