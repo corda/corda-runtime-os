@@ -39,9 +39,11 @@ class WorkerHelpers {
         }
 
         /**
-         * Prints help or version if requested.
+         * Prints help if `params.helpRequested` is true. Else prints version if `params.versionRequested` is true.
          *
-         * If help or version are printed, the application is shut down.
+         * If help or version are printed, the application is shut down using [shutdownService].
+         * 
+         * The version printed is the specification version and implementation of the JAR containing [applicationClass].
          *
          * @return `true` if help or version has been printed, `false` otherwise.
          */
