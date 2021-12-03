@@ -13,11 +13,9 @@ import org.osgi.service.component.annotations.Reference
 // TODO - Joel - Handle spew about log4j on server startup.
 
 /**
- * A worker indicates its healthiness/readiness by returning a 200 code for HTTP requests to
- * [HTTP_HEALTH_ROUTE]/[HTTP_READINESS_ROUTE].
+ * An implementation of [HealthMonitor].
  *
- * A worker is considered healthy if no component has a [LifecycleStatus] of [LifecycleStatus.ERROR]. A worker is
- * considered ready if no component has a [LifecycleStatus] of either [LifecycleStatus.DOWN] or [LifecycleStatus.ERROR].
+ * @property server The server that serves worker health and readiness.
  */
 @Component(service = [HealthMonitor::class])
 @Suppress("Unused")
@@ -25,11 +23,12 @@ internal class HealthMonitorImpl @Activate constructor(
     @Reference(service = LifecycleRegistry::class)
     private val lifecycleRegistry: LifecycleRegistry
 ) : HealthMonitor {
+    private var server: Javalin? = null
 
-    init {
-        Javalin
+    override fun listen(port: Int) {
+        server = Javalin
             .create()
-            .apply { startServer(this) }
+            .apply { startServer(this, port) }
             .get(HTTP_HEALTH_ROUTE) { context ->
                 val anyComponentsUnhealthy = existsComponentWithAnyOf(setOf(LifecycleStatus.ERROR))
                 val status = if (anyComponentsUnhealthy) HTTP_INTERNAL_SERVER_ERROR_CODE else HTTP_OK_CODE
@@ -42,19 +41,23 @@ internal class HealthMonitorImpl @Activate constructor(
             }
     }
 
-    /** Starts a Javalin server on port [HTTP_HEALTH_PROVIDER_PORT]. */
-    private fun startServer(server: Javalin) {
+    override fun stop() {
+        server?.stop()
+    }
+
+    /** Starts a Javalin server on [port]. */
+    private fun startServer(server: Javalin, port: Int) {
         val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
 
         if (bundle == null) {
-            server.start(HTTP_HEALTH_PROVIDER_PORT)
+            server.start(port)
         } else {
             // We temporarily switch the context class loader to allow Javalin to find `WebSocketServletFactory`.
             val factoryClassLoader = bundle.loadClass(WebSocketServletFactory::class.java.name).classLoader
             val threadClassLoader = Thread.currentThread().contextClassLoader
             try {
                 Thread.currentThread().contextClassLoader = factoryClassLoader
-                server.start(HTTP_HEALTH_PROVIDER_PORT)
+                server.start(port)
             } finally {
                 Thread.currentThread().contextClassLoader = threadClassLoader
             }

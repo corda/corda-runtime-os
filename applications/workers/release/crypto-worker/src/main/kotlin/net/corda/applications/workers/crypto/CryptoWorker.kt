@@ -1,5 +1,7 @@
 package net.corda.applications.workers.crypto
 
+import net.corda.applications.workers.workercommon.CONFIG_HEALTH_MONITOR_PORT
+import net.corda.applications.workers.workercommon.HealthMonitor
 import net.corda.applications.workers.workercommon.WorkerParams
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Application
@@ -15,6 +17,8 @@ import org.osgi.service.component.annotations.Reference
 class CryptoWorker @Activate constructor(
     @Reference(service = SmartConfigFactory::class)
     private val smartConfigFactory: SmartConfigFactory,
+    @Reference(service = HealthMonitor::class)
+    private val healthMonitor: HealthMonitor,
     @Reference(service = CryptoProcessor::class)
     private val processor: CryptoProcessor
 ) : Application {
@@ -26,12 +30,15 @@ class CryptoWorker @Activate constructor(
     /** Parses the arguments, then initialises and starts the [CryptoProcessor]. */
     override fun startup(args: Array<String>) {
         logger.info("Crypto worker starting.")
-        processor.config = WorkerParams().parseArgs(args, smartConfigFactory)
+        val config = WorkerParams().parseArgs(args, smartConfigFactory)
+        healthMonitor.listen(config.getInt(CONFIG_HEALTH_MONITOR_PORT))
+        processor.config = config
         processor.start()
     }
 
     override fun shutdown() {
         logger.info("Crypto worker stopping.")
         processor.stop()
+        healthMonitor.stop()
     }
 }

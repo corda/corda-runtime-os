@@ -1,7 +1,9 @@
 package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.ConfigFactory
+import net.corda.applications.workers.workercommon.internal.HEALTH_MONITOR_PORT
 import net.corda.applications.workers.workercommon.internal.PARAM_EXTRA
+import net.corda.applications.workers.workercommon.internal.PARAM_HEALTH_MONITOR_PORT
 import net.corda.applications.workers.workercommon.internal.PARAM_INSTANCE_ID
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -20,6 +22,10 @@ open class WorkerParams {
     @Suppress("Unused")
     @Option(names = [PARAM_INSTANCE_ID], description = ["The Kafka instance ID for this worker."])
     var instanceId = Random.nextInt().absoluteValue
+
+    @Suppress("Unused")
+    @Option(names = [PARAM_HEALTH_MONITOR_PORT], description = ["The port for the health monitor."])
+    var healthMonitorPort = HEALTH_MONITOR_PORT
 
     @Suppress("Unused")
     @Option(names = [PARAM_EXTRA], description = ["Additional parameters for the processor."])
