@@ -273,6 +273,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
             records.add(Record(Schema.SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions))).also {
                 println("QQQ publish partition II for ${state.sessionId}")
+                logger.info("QQQ publish partition II for ${state.sessionId}", Exception("QQQ"))
             }
             return records
         }
