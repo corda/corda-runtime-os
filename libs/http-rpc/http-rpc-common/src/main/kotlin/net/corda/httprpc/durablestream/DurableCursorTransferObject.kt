@@ -1,6 +1,5 @@
 package net.corda.httprpc.durablestream
 
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.stream.Cursor
 import net.corda.v5.base.stream.FiniteDurableCursor
 import net.corda.v5.base.stream.FiniteDurableCursorBuilder
@@ -11,7 +10,6 @@ import java.util.function.Supplier
  * Implementation of [FiniteDurableCursorBuilder] which is created on the server side to be marshalled back to the client.
  * Methods of [FiniteDurableCursorBuilder] are not meant to be used, it is just a data container that wraps [Cursor.PollResult].
  */
-@CordaSerializable
 class DurableCursorTransferObject<T>
 (private val pollResult: Cursor.PollResult<T>) : FiniteDurableCursorBuilder<T>, Supplier<Cursor.PollResult<T>> {
 

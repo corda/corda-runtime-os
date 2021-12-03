@@ -48,7 +48,6 @@ class DeliveryTracker(
         coordinatorFactory,
         publisherFactory,
         configuration,
-        instanceId,
         processAuthenticatedMessage
     )
     private val replayScheduler = ReplayScheduler(
@@ -88,7 +87,6 @@ class DeliveryTracker(
         coordinatorFactory: LifecycleCoordinatorFactory,
         publisherFactory: PublisherFactory,
         configuration: SmartConfig,
-        instanceId: Int,
         private val processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
     ): LifecycleWithDominoTile {
 
@@ -100,7 +98,7 @@ class DeliveryTracker(
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, instanceId),
+            PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID),
             configuration
         )
 

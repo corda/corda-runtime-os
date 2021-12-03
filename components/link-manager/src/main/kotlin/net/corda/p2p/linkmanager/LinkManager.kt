@@ -96,8 +96,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        configuration,
-        instanceId
+        configuration
     )
 
     private val sessionManager = SessionManagerImpl(
@@ -107,8 +106,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         publisherFactory,
         configurationReaderService,
         lifecycleCoordinatorFactory,
-        configuration,
-        instanceId
+        configuration
     )
 
     private val outboundMessageProcessor = OutboundMessageProcessor(
@@ -480,8 +478,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     class PendingSessionMessageQueuesImpl(
         publisherFactory: PublisherFactory,
         coordinatorFactory: LifecycleCoordinatorFactory,
-        configuration: SmartConfig,
-        instanceId: Int
+        configuration: SmartConfig
     ): PendingSessionMessageQueues, LifecycleWithDominoTile {
 
         companion object {
@@ -492,7 +489,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, instanceId),
+            PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID),
             configuration
         )
         override val dominoTile = publisher.dominoTile

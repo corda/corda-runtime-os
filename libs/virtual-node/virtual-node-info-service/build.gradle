@@ -3,13 +3,20 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Virtual Node Cache Interface"
+description "Virtual Node Info Service Interface"
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-application"
-    implementation "net.corda:corda-base"
-    api project(":libs:virtual-node:virtual-node-context")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+//    api "net.corda:corda-avro-schema"
+
+    api project(":libs:configuration:configuration-core")
+    api project(":libs:virtual-node:virtual-node-info")
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
