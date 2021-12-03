@@ -1,12 +1,14 @@
 package net.corda.applications.workers.db
 
-import net.corda.applications.workers.workercommon.HealthMonitor
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
-import net.corda.applications.workers.workercommon.getAdditionalConfig
-import net.corda.applications.workers.workercommon.getParams
-import net.corda.applications.workers.workercommon.setUpHealthMonitor
+import net.corda.applications.workers.workercommon.HealthMonitor
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getAdditionalConfig
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Application
+import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -18,12 +20,14 @@ import picocli.CommandLine.Mixin
 @Suppress("Unused")
 @Component(service = [Application::class])
 class DBWorker @Activate constructor(
+    @Reference(service = DBProcessor::class)
+    private val processor: DBProcessor,
+    @Reference(service = Shutdown::class)
+    private val shutDownService: Shutdown,
     @Reference(service = SmartConfigFactory::class)
     private val smartConfigFactory: SmartConfigFactory,
     @Reference(service = HealthMonitor::class)
-    private val healthMonitor: HealthMonitor,
-    @Reference(service = DBProcessor::class)
-    private val processor: DBProcessor
+    private val healthMonitor: HealthMonitor
 ) : Application {
 
     private companion object {
@@ -34,7 +38,8 @@ class DBWorker @Activate constructor(
     override fun startup(args: Array<String>) {
         logger.info("DB worker starting.")
 
-        val params = getParams(args, RPCWorkerParams())
+        val params = getParams(args, DBWorkerParams())
+        if (printHelpOrVersion(params.defaultParams, DBWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
         val config = getAdditionalConfig(params.defaultParams, smartConfigFactory)
@@ -49,7 +54,7 @@ class DBWorker @Activate constructor(
 }
 
 /** Additional parameters for the DB worker are added here. */
-private class RPCWorkerParams {
+private class DBWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
 }
