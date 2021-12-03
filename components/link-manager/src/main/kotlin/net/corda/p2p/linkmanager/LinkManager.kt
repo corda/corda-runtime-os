@@ -1,5 +1,7 @@
 package net.corda.p2p.linkmanager
 
+
+
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -45,6 +47,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionKey
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionDirection
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
+import net.corda.p2p.linkmanager.utilities.SourceCalculator
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.schema.Schema
 import net.corda.p2p.markers.LinkManagerReceivedMarker
@@ -375,9 +378,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                         makeAckMessageForHeartbeatMessage(sessionKey, session)?.let { ack -> messages.add(ack) }
                     }
                     is AuthenticatedMessageAndKey -> {
-                        messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
-                        makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
-                        sessionManager.inboundSessionEstablished(sessionId)
+                        val responderName = SourceCalculator.calculateSource(sessionKey.responderId.x500Name)
+                        val msgName = SourceCalculator.calculateSource((innerMessage.message.header.source).toString())
+                        if(responderName == msgName) {
+                            messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
+                            makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
+                            sessionManager.inboundSessionEstablished(sessionId)
+                        } else {
+                            logger.warn("Received message with message source = ${innerMessage.message.header.source} which does not match " +
+                                    "$responderName.", "The message was discarded.")
+                        }
                     }
                     else -> logger.warn("The message was discarded.")
                 }

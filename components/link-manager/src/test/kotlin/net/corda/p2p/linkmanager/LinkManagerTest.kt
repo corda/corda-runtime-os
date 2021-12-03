@@ -89,6 +89,7 @@ class LinkManagerTest {
 
     companion object {
         private val FIRST_SOURCE = HoldingIdentity("PartyA", "Group")
+        private val FAKE_SOURCE = HoldingIdentity("FakeParty", "FakeGroup")
         private val SECOND_SOURCE = HoldingIdentity("PartyA", "AnotherGroup")
         private val FIRST_DEST = HoldingIdentity("PartyB", "Group")
         private val SECOND_DEST = HoldingIdentity("PartyC", "Group")
@@ -951,9 +952,77 @@ class LinkManagerTest {
         loggingInterceptor.assertErrorContains("The message was discarded.")
     }
 
-    @Test
-    fun `SOMETHING discards MESSAGETYPE with invalid source or destination`() {
 
+
+    @Test
+    fun `DRAFT InboundMessageProcessor authenticates AuthenticatedDataMessages producing a FlowMessage and an ACK`() {
+        val session = createSessionPair()
+        DRAFTtestDataMessagesWithInboundMessageProcessor(session)
     }
 
+    @Test
+    fun `DRAFT InboundMessageProcessor authenticates and decrypts AuthenticatedEncryptedDataMessages producing a FlowMessage and an ACK`() {
+        val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
+
+        DRAFTtestDataMessagesWithInboundMessageProcessor(session)
+    }
+
+    private fun DRAFTtestDataMessagesWithInboundMessageProcessor(session: SessionPair) {
+        val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
+        val messageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
+
+        val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session.initiatorSession, netMap)
+        val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
+
+        val messages = listOf(
+            EventLogRecord(TOPIC, KEY, linkInMessage, 0, 0),
+            EventLogRecord(TOPIC, KEY, linkInMessage, 0, 0)
+        )
+
+
+
+        val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
+        Mockito.`when`(mockSessionManager.getSessionById(any())).thenReturn(
+            SessionManager.SessionDirection.Inbound(SessionManager.SessionKey(
+                FIRST_DEST.toHoldingIdentity(),
+                FIRST_SOURCE.toHoldingIdentity()),
+                session.responderSession
+            )
+        )
+
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
+
+        val records = processor.onNext(messages)
+        assertThat(records).filteredOn { it.value is AppMessage }.hasSize(messages.size)
+        assertThat(records).filteredOn { it.value is LinkOutMessage }.hasSize(messages.size)
+        for (record in records) {
+            when (val value = record.value) {
+                is AppMessage -> {
+                    assertEquals(P2P_IN_TOPIC, record.topic)
+                    assertTrue(value.message is AuthenticatedMessage)
+                    assertArrayEquals(messageAndKey.message.payload.array(), (value.message as AuthenticatedMessage).payload.array())
+                    assertEquals(messageAndKey.key, record.key)
+                }
+                is LinkOutMessage -> {
+                    assertEquals(LINK_OUT_TOPIC, record.topic)
+                    val messageAck = MessageConverter.extractPayload(
+                        session.initiatorSession,
+                        SESSION_ID,
+                        createDataMessage(value),
+                        MessageAck::fromByteBuffer
+                    )
+                    assertNotNull(messageAck)
+                    assertThat(messageAck!!.ack).isInstanceOf(AuthenticatedMessageAck::class.java)
+                    assertEquals(MESSAGE_ID, (messageAck.ack as AuthenticatedMessageAck).messageId)
+                }
+                else -> {
+                    fail(
+                        "Inbound message processor should only produce records with ${AuthenticatedMessage::class.java} and " +
+                                "${LinkOutMessage::class.java}"
+                    )
+                }
+            }
+        }
+
+    }
 }
