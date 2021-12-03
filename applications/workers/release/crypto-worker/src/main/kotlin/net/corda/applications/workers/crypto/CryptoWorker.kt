@@ -30,7 +30,7 @@ class CryptoWorker @Activate constructor(
         private val logger = contextLogger()
     }
 
-    /** Parses the arguments, then initialises and starts the [CryptoProcessor]. */
+    /** Parses the arguments, then initialises and starts the [processor]. */
     override fun startup(args: Array<String>) {
         logger.info("Crypto worker starting.")
 

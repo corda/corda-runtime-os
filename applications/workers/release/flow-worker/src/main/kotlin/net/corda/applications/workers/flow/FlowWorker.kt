@@ -14,8 +14,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine.Mixin
 
-// TODO - Joel - Create all-in-one worker - a worker that bootstraps multiple processors.
-
 /** The worker for handling flows. */
 @Suppress("Unused")
 @Component(service = [Application::class])
@@ -32,7 +30,7 @@ class FlowWorker @Activate constructor(
         private val logger = contextLogger()
     }
 
-    /** Parses the arguments, then initialises and starts the [FlowProcessor]. */
+    /** Parses the arguments, then initialises and starts the [processor]. */
     override fun startup(args: Array<String>) {
         logger.info("Flow worker starting.")
 

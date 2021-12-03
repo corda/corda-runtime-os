@@ -30,7 +30,7 @@ class RPCWorker @Activate constructor(
         private val logger = contextLogger()
     }
 
-    /** Parses the arguments, then initialises and starts the [RPCProcessor]. */
+    /** Parses the arguments, then initialises and starts the [processor]. */
     override fun startup(args: Array<String>) {
         logger.info("RPC worker starting.")
 
