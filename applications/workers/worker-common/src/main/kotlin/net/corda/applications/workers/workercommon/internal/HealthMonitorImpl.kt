@@ -10,8 +10,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-// TODO - Joel - Handle spew about log4j on server startup.
-
 /**
  * An implementation of [HealthMonitor].
  *
@@ -23,6 +21,7 @@ internal class HealthMonitorImpl @Activate constructor(
     @Reference(service = LifecycleRegistry::class)
     private val lifecycleRegistry: LifecycleRegistry
 ) : HealthMonitor {
+    // The use of Javalin is temporary, and will be replaced in the future.
     private var server: Javalin? = null
 
     override fun listen(port: Int) {
