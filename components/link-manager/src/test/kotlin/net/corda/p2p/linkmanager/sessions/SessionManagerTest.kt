@@ -122,6 +122,7 @@ class SessionManagerTest {
     @AfterEach
     fun cleanUp() {
         dominoTile.close()
+        publisherWithDominoLogic.close()
         sessionManager.stop()
         loggingInterceptor.reset()
         resources.close()
@@ -130,6 +131,7 @@ class SessionManagerTest {
     private lateinit var configHandler: SessionManagerImpl.SessionManagerConfigChangeHandler
     private lateinit var heartbeatConfigHandler: SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfigChangeHandler
     private var createResourcesCallbacks = mutableMapOf<String, ((resources: ResourcesHolder) -> CompletableFuture<Unit>)>()
+    private val publisherWithDominoLogic = Mockito.mockConstruction(PublisherWithDominoLogic::class.java)
     private val dominoTile = Mockito.mockConstruction(DominoTile::class.java) { mock, context ->
         @Suppress("UNCHECKED_CAST")
         whenever(mock.withLifecycleLock(any<() -> Any>())).doAnswer { (it.arguments.first() as () -> Any).invoke() }

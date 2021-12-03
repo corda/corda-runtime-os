@@ -90,6 +90,7 @@ open class SessionManagerImpl(
             val us = message.header.source.toHoldingIdentity()
             return SessionKey(us, peer)
         }
+        private const val SESSION_MANAGER_CLIENT_ID = "session-manager-client"
     }
 
     private val pendingOutboundSessions = ConcurrentHashMap<String, Pair<SessionKey, AuthenticationProtocolInitiator>>()
@@ -115,12 +116,19 @@ open class SessionManagerImpl(
         ::destroyOutboundSession
     )
 
+    private val publisher = PublisherWithDominoLogic(
+        publisherFactory,
+        coordinatorFactory,
+        PublisherConfig(SESSION_MANAGER_CLIENT_ID),
+        configuration
+    )
+
     override val dominoTile = DominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         children = setOf(
             heartbeatManager.dominoTile, sessionReplayer.dominoTile, networkMap.dominoTile, cryptoService.dominoTile,
-            pendingOutboundSessionMessageQueues.dominoTile
+            pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile
         ),
         configurationChangeHandler = SessionManagerConfigChangeHandler()
     )
@@ -223,19 +231,33 @@ open class SessionManagerImpl(
     }
 
     private fun destroyAllSessions() {
+        sessionReplayer.removeAllMessagesFromReplay()
+        val tombstoneRecords = (activeOutboundSessionsById.keys + pendingOutboundSessions.keys + activeInboundSessions.keys
+                + pendingInboundSessions.keys).map { Record(Schema.SESSION_OUT_PARTITIONS, it, null) }
         activeOutboundSessions.clear()
+        activeOutboundSessionsById.clear()
         pendingOutboundSessions.clear()
         pendingOutboundSessionKeys.clear()
+
+        activeInboundSessions.clear()
+        pendingInboundSessions.clear()
         //This is suboptimal we could instead restart session negotiation
         pendingOutboundSessionMessageQueues.destroyAllQueues()
+        publisher.publish(tombstoneRecords)
     }
 
     private fun destroyOutboundSession(sessionKey: SessionKey, sessionId: String) {
         sessionNegotiationLock.write {
+            val initiatorHandshakeUniqueId = sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName
+            sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId)
+            val initiatorHelloUniqueId = "${sessionId}_${InitiatorHelloMessage::class.java.simpleName}"
+            sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId)
             activeOutboundSessions.remove(sessionKey)
+            activeOutboundSessionsById.remove(sessionId)
             pendingOutboundSessions.remove(sessionId)
             pendingOutboundSessionKeys.remove(sessionKey)
             pendingOutboundSessionMessageQueues.destroyQueue(sessionKey)
+            publisher.publish(listOf(Record(Schema.SESSION_OUT_PARTITIONS, sessionId, null)))
         }
     }
 

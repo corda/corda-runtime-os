@@ -98,6 +98,15 @@ class ReplayScheduler<M>(
         removedFuture?.cancel(false)
     }
 
+    fun removeAllMessagesFromReplay() {
+        val futures = replayFutures.iterator()
+        while (futures.hasNext()) {
+            val future = futures.next()
+            futures.remove()
+            future.value.cancel(false)
+        }
+    }
+
     private fun replay(message: M, uniqueId: String) {
         try {
             replayMessage(message)
