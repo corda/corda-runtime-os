@@ -1,7 +1,7 @@
 package net.corda.applications.workers.flow
 
 import net.corda.applications.workers.workercommon.HealthMonitor
-import net.corda.applications.workers.workercommon.StandardWorkerParams
+import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.getAdditionalConfig
 import net.corda.applications.workers.workercommon.getParams
 import net.corda.applications.workers.workercommon.setUpHealthMonitor
@@ -35,10 +35,10 @@ class FlowWorker @Activate constructor(
         logger.info("Flow worker starting.")
 
         val params = getParams(args, FlowWorkerParams())
-        setUpHealthMonitor(healthMonitor, params.standardWorkerParams)
+        setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val config = getAdditionalConfig(params.standardWorkerParams, smartConfigFactory)
-        processor.start(params.standardWorkerParams.instanceId, config)
+        val config = getAdditionalConfig(params.defaultParams, smartConfigFactory)
+        processor.start(params.defaultParams.instanceId, config)
     }
 
     override fun shutdown() {
@@ -51,5 +51,5 @@ class FlowWorker @Activate constructor(
 /** Additional parameters for the flow worker are added here. */
 private class FlowWorkerParams {
     @Mixin
-    var standardWorkerParams = StandardWorkerParams()
+    var defaultParams = DefaultWorkerParams()
 }

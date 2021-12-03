@@ -20,11 +20,11 @@ fun <T> getParams(args: Array<String>, params: T): T {
 }
 
 /** Uses [smartConfigFactory] to create a `SmartConfig` wrapping the worker's additional parameters in [params]. */
-fun getAdditionalConfig(params: StandardWorkerParams, smartConfigFactory: SmartConfigFactory) =
+fun getAdditionalConfig(params: DefaultWorkerParams, smartConfigFactory: SmartConfigFactory) =
     smartConfigFactory.create(ConfigFactory.parseMap(params.additionalParams))
 
 /** Sets up the [healthMonitor] based on the [params]. */
-fun setUpHealthMonitor(healthMonitor: HealthMonitor, params: StandardWorkerParams) {
+fun setUpHealthMonitor(healthMonitor: HealthMonitor, params: DefaultWorkerParams) {
     if (!params.disableHealthMonitor) {
         healthMonitor.listen(params.healthMonitorPort)
     }

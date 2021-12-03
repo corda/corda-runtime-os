@@ -1,7 +1,7 @@
 package net.corda.applications.workers.db
 
 import net.corda.applications.workers.workercommon.HealthMonitor
-import net.corda.applications.workers.workercommon.StandardWorkerParams
+import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.getAdditionalConfig
 import net.corda.applications.workers.workercommon.getParams
 import net.corda.applications.workers.workercommon.setUpHealthMonitor
@@ -35,10 +35,10 @@ class DBWorker @Activate constructor(
         logger.info("DB worker starting.")
 
         val params = getParams(args, RPCWorkerParams())
-        setUpHealthMonitor(healthMonitor, params.standardWorkerParams)
+        setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val config = getAdditionalConfig(params.standardWorkerParams, smartConfigFactory)
-        processor.start(params.standardWorkerParams.instanceId, config)
+        val config = getAdditionalConfig(params.defaultParams, smartConfigFactory)
+        processor.start(params.defaultParams.instanceId, config)
     }
 
     override fun shutdown() {
@@ -51,5 +51,5 @@ class DBWorker @Activate constructor(
 /** Additional parameters for the DB worker are added here. */
 private class RPCWorkerParams {
     @Mixin
-    var standardWorkerParams = StandardWorkerParams()
+    var defaultParams = DefaultWorkerParams()
 }

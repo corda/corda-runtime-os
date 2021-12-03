@@ -1,7 +1,7 @@
 package net.corda.applications.workers.combined
 
 import net.corda.applications.workers.workercommon.HealthMonitor
-import net.corda.applications.workers.workercommon.StandardWorkerParams
+import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.getAdditionalConfig
 import net.corda.applications.workers.workercommon.getParams
 import net.corda.applications.workers.workercommon.setUpHealthMonitor
@@ -44,14 +44,14 @@ class CombinedWorker @Activate constructor(
         logger.info("Combined worker starting.")
 
         val params = getParams(args, CombinedWorkerParams())
-        setUpHealthMonitor(healthMonitor, params.standardWorkerParams)
+        setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val config = getAdditionalConfig(params.standardWorkerParams, smartConfigFactory)
+        val config = getAdditionalConfig(params.defaultParams, smartConfigFactory)
 
-        cryptoProcessor.start(params.standardWorkerParams.instanceId, config)
-        dbProcessor.start(params.standardWorkerParams.instanceId, config)
-        flowProcessor.start(params.standardWorkerParams.instanceId, config)
-        rpcProcessor.start(params.standardWorkerParams.instanceId, config)
+        cryptoProcessor.start(params.defaultParams.instanceId, config)
+        dbProcessor.start(params.defaultParams.instanceId, config)
+        flowProcessor.start(params.defaultParams.instanceId, config)
+        rpcProcessor.start(params.defaultParams.instanceId, config)
     }
 
     override fun shutdown() {
@@ -69,5 +69,5 @@ class CombinedWorker @Activate constructor(
 /** Additional parameters for the combined worker are added here. */
 private class CombinedWorkerParams {
     @Mixin
-    var standardWorkerParams = StandardWorkerParams()
+    var defaultParams = DefaultWorkerParams()
 }
