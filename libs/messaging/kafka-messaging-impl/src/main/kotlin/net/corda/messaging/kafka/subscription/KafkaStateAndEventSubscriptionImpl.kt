@@ -24,6 +24,7 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
+import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Clock
@@ -140,7 +141,16 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     processor.stateValueClass,
                     processor.eventValueClass,
                     stateAndEventListener
-                )
+                ) { topic, data ->
+                    log.error("Failed to deserialize record from $topic")
+                    producer.send(
+                        ProducerRecord(
+                            topic + config.deadLetterQueueSuffix,
+                            null,
+                            data
+                        ), null
+                    )
+                }
                 stateAndEventConsumer = stateAndEventConsumerTmp
                 eventConsumer = stateAndEventConsumer.eventConsumer
                 eventConsumer.subscribeToTopic(rebalanceListener)

@@ -4,6 +4,15 @@ class TopicTemplates {
     companion object {
         const val TEST_TOPIC_PREFIX  = "testPrefix"
         const val DLQ_SUFFIX  = ".DLQ"
+        const val RANDOM_ACCESS_TOPIC1  = "RandomAccessTopic1"
+        const val RANDOM_ACCESS_TOPIC1_TEMPLATE = """topics = [ 
+                    { 
+                        topicName = "$TEST_TOPIC_PREFIX$RANDOM_ACCESS_TOPIC1" 
+                        numPartitions = 1 
+                        replicationFactor = 3 
+                    } 
+                ]"""
+
         const val COMPACTED_TOPIC1  = "CompactedTopic1"
         const val COMPACTED_TOPIC1_TEMPLATE = """topics = [ 
                     { 
@@ -18,6 +27,15 @@ class TopicTemplates {
 
         const val DURABLE_TOPIC1  = "DurableTopic1"
         const val DURABLE_TOPIC1_TEMPLATE = """topics = [ 
+                    { 
+                        topicName = "$TEST_TOPIC_PREFIX$DURABLE_TOPIC1" 
+                        numPartitions = 2 
+                        replicationFactor = 3 
+                    } 
+                ]"""
+
+        const val PUBLISHER_TEST_DURABLE_TOPIC1  = "PublisherTestDurableTopic1"
+        const val PUBLISHER_TEST_DURABLE_TOPIC1_TEMPLATE = """topics = [ 
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$DURABLE_TOPIC1" 
                         numPartitions = 2 

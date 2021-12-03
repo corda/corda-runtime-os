@@ -120,7 +120,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                     config.getConfig(KAFKA_CONSUMER),
                     processor.keyClass,
                     processor.valueClass
-                ).use {
+                ) { topic, _ -> log.error("Failed to deserialize record from $topic") }.use {
                     val partitions = it.getPartitions(
                         topic,
                         Duration.ofSeconds(consumerThreadStopTimeout)

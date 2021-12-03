@@ -14,6 +14,7 @@ import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.DEAD_LETTER_QUEUE_SUFFIX
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.INSTANCE_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_PRODUCER
@@ -28,7 +29,9 @@ import net.corda.messaging.kafka.utils.toEventLogRecord
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
+import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.LoggerFactory
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -162,13 +165,26 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 log.debug { "Attempt: $attempts" }
+                producer = producerBuilder.createProducer(config.getConfig(KAFKA_PRODUCER))
                 consumer = if (partitionAssignmentListener != null) {
                     val consumerGroup = config.getString(CONSUMER_GROUP_ID)
                     val rebalanceListener =
                         ForwardingRebalanceListener(topic, consumerGroup, partitionAssignmentListener)
                     consumerBuilder.createDurableConsumer(
-                        config.getConfig(KAFKA_CONSUMER), processor.keyClass,
-                        processor.valueClass, consumerRebalanceListener = rebalanceListener
+                        config.getConfig(KAFKA_CONSUMER),
+                        processor.keyClass,
+                        processor.valueClass,
+                        { topic, data ->
+                            log.error("Failed to deserialize record from $topic")
+                            producer.send(
+                                ProducerRecord(
+                                    topic + config.getString(DEAD_LETTER_QUEUE_SUFFIX),
+                                    null,
+                                    data
+                                ), null
+                            )
+                        },
+                        consumerRebalanceListener = rebalanceListener
                     )
                 } else {
                     consumerBuilder.createDurableConsumer(
@@ -176,7 +192,6 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                         processor.keyClass, processor.valueClass
                     )
                 }
-                producer = producerBuilder.createProducer(config.getConfig(KAFKA_PRODUCER))
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribeToTopic()
                     producer.use { cordaProducer ->
