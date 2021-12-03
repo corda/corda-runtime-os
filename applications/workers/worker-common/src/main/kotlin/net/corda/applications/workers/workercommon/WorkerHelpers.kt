@@ -3,15 +3,12 @@ package net.corda.applications.workers.workercommon
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Shutdown
-import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import picocli.CommandLine
 
-// TODO - Joel - Describe.
+/** Helpers used across multiple workers. */
 class WorkerHelpers {
     companion object {
-        private val logger = contextLogger()
-
         /**
          * Parses the [args] into the [params].
          *
@@ -42,7 +39,7 @@ class WorkerHelpers {
          * Prints help if `params.helpRequested` is true. Else prints version if `params.versionRequested` is true.
          *
          * If help or version are printed, the application is shut down using [shutdownService].
-         * 
+         *
          * The version printed is the specification version and implementation of the JAR containing [applicationClass].
          *
          * @return `true` if help or version has been printed, `false` otherwise.
@@ -56,8 +53,9 @@ class WorkerHelpers {
                 CommandLine.usage(params, System.out)
 
             } else if (params.versionRequested) {
-                logger.info("Specification version: ${applicationClass.`package`.specificationVersion}")
-                logger.info("Implementation version: ${applicationClass.`package`.implementationVersion}")
+                val appName = applicationClass.simpleName
+                println("$appName specification version: ${applicationClass.`package`.specificationVersion}")
+                println("$appName implementation version: ${applicationClass.`package`.implementationVersion}")
             }
 
             if (params.helpRequested || params.versionRequested) {
