@@ -62,8 +62,8 @@
 	org.opentest4j;version='[1.2.0,1.2.1)',\
 	org.osgi.test.common;version='[1.0.0,1.0.1)',\
 	org.osgi.test.junit5;version='[1.0.0,1.0.1)',\
-	org.osgi.util.function;version='[1.1.0,1.1.1)',\
-	org.osgi.util.promise;version='[1.1.1,1.1.2)',\
+	org.osgi.util.function;version='[1.2.0,1.2.1)',\
+	org.osgi.util.promise;version='[1.2.0,1.2.1)',\
 	sandbox-tests;version='[5.0.0,5.0.1)',\
 	slf4j.api;version='[1.7.32,1.7.33)',\
 	slf4j.simple;version='[1.7.32,1.7.33)'
