@@ -3,6 +3,12 @@ package net.corda.messaging.kafka.integration.subscription
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -12,7 +18,11 @@ import net.corda.messaging.kafka.integration.IntegrationTestProperties
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.processors.TestEventLogProcessor
+import net.corda.test.util.eventually
+import net.corda.v5.base.util.millis
+import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -31,6 +41,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
     private companion object {
         const val CLIENT_ID = "eventLogTestPublisher"
+
         //automatically created topics
         const val TOPIC1 = "EventLogTopic1"
         const val TOPIC2 = "EventLogTopic2"
@@ -42,10 +53,16 @@ class KafkaEventLogSubscriptionIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
 
+    @InjectService(timeout = 4000)
+    lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+
     @BeforeEach
     fun beforeEach() {
         kafkaConfig = SmartConfigImpl.empty()
-            .withValue(IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE))
+            .withValue(
+                IntegrationTestProperties.KAFKA_COMMON_BOOTSTRAP_SERVER,
+                ConfigValueFactory.fromAnyRef(IntegrationTestProperties.BOOTSTRAP_SERVERS_VALUE)
+            )
             .withValue(IntegrationTestProperties.TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }
 
@@ -58,6 +75,21 @@ class KafkaEventLogSubscriptionIntegrationTest {
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
         publisher.close()
 
+        val coordinator =
+            lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName("eventLogTest"))
+            { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
+                when (event) {
+                    is RegistrationStatusChangeEvent -> {
+                        if (event.status == LifecycleStatus.UP) {
+                            coordinator.updateStatus(LifecycleStatus.UP)
+                        } else {
+                            coordinator.updateStatus(LifecycleStatus.DOWN)
+                        }
+                    }
+                }
+            }
+        coordinator.start()
+
         val latch = CountDownLatch(10)
         val eventLogSub = subscriptionFactory.createEventLogSubscription(
             SubscriptionConfig("$TOPIC1-group", TOPIC1, 1),
@@ -65,10 +97,20 @@ class KafkaEventLogSubscriptionIntegrationTest {
             kafkaConfig,
             null
         )
+
+        coordinator.followStatusChangesByName(setOf(eventLogSub.subscriptionName))
         eventLogSub.start()
+
+        eventually(duration = 5.seconds, waitBetween = 200.millis) {
+            assertEquals(LifecycleStatus.UP, coordinator.status)
+        }
 
         assertTrue(latch.await(5, TimeUnit.SECONDS))
         eventLogSub.stop()
+
+        eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
+            assertEquals(LifecycleStatus.DOWN, coordinator.status)
+        }
     }
 
 
@@ -104,7 +146,7 @@ class KafkaEventLogSubscriptionIntegrationTest {
 
         eventLogSub1.start()
         eventLogSub2.start()
-        assertTrue(latch.await(20, TimeUnit.SECONDS))
+        assertTrue(latch.await(40, TimeUnit.SECONDS))
         eventLogSub1.stop()
         eventLogSub2.stop()
         publisher.close()

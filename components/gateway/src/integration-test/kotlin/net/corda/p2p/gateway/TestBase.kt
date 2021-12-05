@@ -97,7 +97,7 @@ open class TestBase {
             ConfigurationReadServiceImpl(
                 LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl()),
                 ConfigReaderFactoryImpl(
-                    InMemSubscriptionFactory(configurationTopicService, rpcTopicService),
+                    InMemSubscriptionFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory),
                     smartConfigFactory
                 ),
             ).also {
@@ -125,7 +125,7 @@ open class TestBase {
                 .withValue("connectionConfig.acquireTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
                 .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
                 .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
-            CordaPublisherFactory(configurationTopicService, rpcTopicService).createPublisher(PublisherConfig((topicName))).use { publisher ->
+            CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory).createPublisher(PublisherConfig((topicName))).use { publisher ->
                 val configurationPublisher = ConfigWriterImpl(topicName, publisher)
                 configurationPublisher.updateConfiguration(
                     CordaConfigurationKey(
@@ -140,7 +140,7 @@ open class TestBase {
         fun publishBadConfig() {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hello", ConfigValueFactory.fromAnyRef("world"))
-            CordaPublisherFactory(configurationTopicService, rpcTopicService)
+            CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory)
                 .createPublisher(PublisherConfig((topicName)))
                 .use { publisher ->
                     val configurationPublisher = ConfigWriterImpl(topicName, publisher)

@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.messaging.RPCResponse
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -35,7 +36,9 @@ import java.util.concurrent.atomic.AtomicInteger
 @Component
 class CordaKafkaPublisherFactory @Activate constructor(
     @Reference(service = AvroSchemaRegistry::class)
-    private val avroSchemaRegistry: AvroSchemaRegistry
+    private val avroSchemaRegistry: AvroSchemaRegistry,
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : PublisherFactory {
 
     // Used to ensure that each subscription has a unique client.id
@@ -83,7 +86,8 @@ class CordaKafkaPublisherFactory @Activate constructor(
             publisher,
             consumerBuilder,
             serializer,
-            deserializer
+            deserializer,
+            lifecycleCoordinatorFactory
         )
     }
 }
