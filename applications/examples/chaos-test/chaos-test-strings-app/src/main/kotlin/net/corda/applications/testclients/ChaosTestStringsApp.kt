@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.io.FileInputStream
-import java.util.*
+import java.util.Properties
 
 enum class LifeCycleState {
     UNINITIALIZED, STARTINGCONFIG, STARTINGMESSAGING, REINITMESSAGING
@@ -58,8 +58,6 @@ class ChaosTestApp @Activate constructor(
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val TOPIC_PREFIX = "messaging.topic.prefix"
         const val CONFIG_TOPIC_NAME = "config.topic.name"
-        // Can use SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH instead
-        // const val BOOTSTRAP_SERVERS = "bootstrap.servers"
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
@@ -83,8 +81,7 @@ class ChaosTestApp @Activate constructor(
 
             val instanceId = parameters.instanceId.toInt()
 
-            val kafkaProperties = getKafkaPropertiesFromFile(parameters.kafkaProperties)
-            //fun getBootstrapConfig(instanceId: Int?): Config
+            val kafkaProperties = getKafkaPropertiesFromFile(parameters.kafkaProperties, instanceId)
             val bootstrapConfig = getBootstrapConfig(kafkaProperties)
             var state: LifeCycleState = LifeCycleState.UNINITIALIZED
             log.info("Creating life cycle coordinator")

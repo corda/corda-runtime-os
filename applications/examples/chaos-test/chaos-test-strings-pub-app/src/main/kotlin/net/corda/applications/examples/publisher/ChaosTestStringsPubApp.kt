@@ -2,6 +2,7 @@ package net.corda.applications.examples.testclients
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.applications.common.ConfigHelper
 import net.corda.applications.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
 import net.corda.components.examples.publisher.RunChaosTestStringsPub
 import net.corda.libs.configuration.SmartConfig
@@ -43,7 +44,7 @@ class ChaosTestStringsPubApp @Activate constructor(
         val log: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val TOPIC_PREFIX = "messaging.topic.prefix"
-        const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
+        // const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
@@ -86,7 +87,7 @@ class ChaosTestStringsPubApp @Activate constructor(
                 instanceId,
                 parameters.numberOfRecords.toInt(),
                 parameters.numberOfKeys.toInt(),
-                getBootstrapConfig(getKafkaPropertiesFromFile(parameters.kafkaProperties)),
+                getBootstrapConfig(getKafkaPropertiesFromFile(parameters.kafkaProperties), instanceId),
                 parameters.msgPrefix,
                 parameters.msgDelayMs,
                 parameters.logPubMsgs
@@ -107,13 +108,29 @@ class ChaosTestStringsPubApp @Activate constructor(
         shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
 
+    /*
+    // Old
     private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH)
         return smartConfigFactory.create(ConfigFactory.empty())
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
     }
+     */
 
+    // New version wrapping ConfigHelper
+    // Looking to remove kafkaConnectionProperties
+    // kafkaConnectionProperties currently provides:
+    // TOPIC_PREFIX - covered by ConfigHelper.Companion.getBootstrapConfig() provides
+    // SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH - covered by ConfigHelper.Companion.getBootstrapConfig() provides
+    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?, instanceId: Int?): SmartConfig {
+        val bootstrapServer = getConfigValue(kafkaConnectionProperties, SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH)
+        return smartConfigFactory.create(ConfigHelper.Companion.getBootstrapConfig(instanceId))
+            .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
+            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
+    }
+
+    /*
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {
         var configValue = System.getProperty(path)
         if (configValue == null && kafkaConnectionProperties != null) {
@@ -127,6 +144,32 @@ class ChaosTestStringsPubApp @Activate constructor(
             log.error(
                 "No $path property found! " +
                     "Pass property in via --kafka properties file or via -D$path"
+            )
+            shutdown()
+        }
+        return configValue
+    }
+     */
+    
+    private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {
+        val configValue: String = ConfigHelper.Companion.getConfigValue(path, default)
+        if 
+        return configValue
+    }
+    
+    private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {
+        var configValue = System.getProperty(path)
+        if (configValue == null && kafkaConnectionProperties != null) {
+            configValue = kafkaConnectionProperties[path].toString()
+        }
+
+        if (configValue == null) {
+            if (default != null) {
+                return default
+            }
+            log.error(
+                "No $path property found! " +
+                        "Pass property in via --kafka properties file or via -D$path"
             )
             shutdown()
         }
