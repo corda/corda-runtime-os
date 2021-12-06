@@ -40,29 +40,26 @@ class WorkerHelpers {
          *
          * If help or version are printed, the application is shut down using [shutdownService].
          *
-         * The version printed is the specification version and implementation of the JAR containing [applicationClass].
+         * The version printed is the specification version and implementation of the JAR containing [appClass].
          *
          * @return `true` if help or version has been printed, `false` otherwise.
          */
-        fun printHelpOrVersion(
-            params: DefaultWorkerParams,
-            applicationClass: Class<*>,
-            shutdownService: Shutdown
-        ): Boolean {
+        fun printHelpOrVersion(params: DefaultWorkerParams, appClass: Class<*>, shutdownService: Shutdown): Boolean {
             if (params.helpRequested) {
                 CommandLine.usage(params, System.out)
 
             } else if (params.versionRequested) {
-                val appName = applicationClass.simpleName
-                println("$appName specification version: ${applicationClass.`package`.specificationVersion}")
-                println("$appName implementation version: ${applicationClass.`package`.implementationVersion}")
+                val appName = appClass.simpleName
+                println("$appName specification version: ${appClass.`package`.specificationVersion}")
+                println("$appName implementation version: ${appClass.`package`.implementationVersion}")
             }
 
             if (params.helpRequested || params.versionRequested) {
-                shutdownService.shutdown(FrameworkUtil.getBundle(applicationClass))
+                shutdownService.shutdown(FrameworkUtil.getBundle(appClass))
+                return true
             }
 
-            return true
+            return false
         }
     }
 }
