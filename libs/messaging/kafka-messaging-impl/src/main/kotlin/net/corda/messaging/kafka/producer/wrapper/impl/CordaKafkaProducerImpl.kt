@@ -33,6 +33,7 @@ import org.apache.kafka.common.errors.UnsupportedVersionException
 import org.slf4j.Logger
 import java.time.Duration
 import java.util.concurrent.Future
+import kotlin.concurrent.thread
 
 /**
  * Wrapper for the CordaKafkaProducer.
@@ -66,7 +67,22 @@ class CordaKafkaProducerImpl(
 
     override fun sendRecords(records: List<Record<*, *>>) {
         for (record in records) {
-            producer.send(ProducerRecord(topicPrefix + record.topic, record.key, record.value))
+            if(record.topic == "session.out.partitions") {
+                log.info("QQQ Sending record -> ${record.topic}; topicPrefix = $topicPrefix")
+            }
+            val future = producer.send(ProducerRecord(topicPrefix + record.topic, record.key, record.value))
+            if(record.topic == "session.out.partitions") {
+                thread {
+                    log.info("QQQ waiting in another thread...")
+                    try {
+                        val gotIt = future.get()
+                        log.info("QQQ got $gotIt")
+                    } catch (e: Exception) {
+                        log.info("QQQ oops", e)
+                    }
+
+                }
+            }
         }
     }
 
