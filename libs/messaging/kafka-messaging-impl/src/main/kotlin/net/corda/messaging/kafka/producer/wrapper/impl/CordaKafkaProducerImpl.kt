@@ -10,6 +10,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PRE
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.utils.getRecordListOffsets
 import net.corda.messaging.kafka.utils.getStringOrNull
+import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException
@@ -65,8 +66,10 @@ class CordaKafkaProducerImpl(
     }
 
     override fun sendRecords(records: List<Record<*, *>>) {
-        for (record in records) {
+        records.map { record->
             producer.send(ProducerRecord(topicPrefix + record.topic, record.key, record.value))
+        }.forEach {
+            it.getOrThrow()
         }
     }
 
