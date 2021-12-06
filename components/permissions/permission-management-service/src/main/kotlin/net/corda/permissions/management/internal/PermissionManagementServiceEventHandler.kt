@@ -21,6 +21,7 @@ import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.permissions.cache.PermissionCacheService
 import net.corda.rpc.schema.Schema
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.util.contextLogger
 
 private class NewConfigurationReceivedEvent(val config: SmartConfig) : LifecycleEvent
 
@@ -32,9 +33,10 @@ internal class PermissionManagementServiceEventHandler(
 ) : LifecycleEventHandler {
 
     private companion object {
+        val log = contextLogger()
         const val GROUP_NAME = "rpc.permission.management"
         const val CLIENT_NAME = "rpc.permission.manager"
-        const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
+        const val BOOTSTRAP_CONFIG = "corda.boot"
     }
 
     @VisibleForTesting
@@ -44,20 +46,32 @@ internal class PermissionManagementServiceEventHandler(
     internal var rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>? = null
 
     internal var permissionManager: PermissionManager? = null
+    private var configSubscription: AutoCloseable? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
-                handleStartEvent(coordinator)
+                log.info("Received start event, following ConfigReadService and PermissionCacheService for status updates.")
+                registrationHandle?.close()
+                registrationHandle = coordinator.followStatusChangesByName(
+                    setOf(
+                        LifecycleCoordinatorName.forComponent<PermissionCacheService>(),
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                    )
+                )
             }
             is NewConfigurationReceivedEvent -> {
-                handleNewConfigurationReceived(event, coordinator)
+                log.info("Received new configuration event. Creating RPCSender.")
+                createAndStartRpcSender(event.config)
+                createPermissionManager()
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
             is RegistrationStatusChangeEvent -> {
-                // These status updates are from PermissionCacheService
+                log.info("Registration status change received: ${event.status.name}.")
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        handlePermissionCacheUp(coordinator)
+                        log.info("Registering for updates from configuration read service.")
+                        registerForConfigurationUpdates(coordinator)
                     }
                     LifecycleStatus.DOWN -> {
                         permissionManager?.stop()
@@ -71,6 +85,9 @@ internal class PermissionManagementServiceEventHandler(
                 }
             }
             is StopEvent -> {
+                log.info("Stop event received, stopping dependencies and setting status to DOWN.")
+                configSubscription?.close()
+                configSubscription = null
                 rpcSender?.stop()
                 rpcSender = null
                 permissionManager?.stop()
@@ -82,48 +99,26 @@ internal class PermissionManagementServiceEventHandler(
         }
     }
 
-    private fun handleStartEvent(coordinator: LifecycleCoordinator) {
-        registrationHandle?.close()
-        registrationHandle = coordinator.followStatusChangesByName(
-            setOf(
-                LifecycleCoordinatorName.forComponent<PermissionCacheService>()
-            )
-        )
-        configurationReadService.registerForUpdates { changedKeys: Set<String>, config: Map<String, SmartConfig> ->
-            if (KAFKA_COMMON_BOOTSTRAP_SERVER in changedKeys) {
-                val newConfig = config[KAFKA_COMMON_BOOTSTRAP_SERVER]
+    private fun registerForConfigurationUpdates(coordinator: LifecycleCoordinator) {
+        configSubscription?.close()
+        configSubscription = configurationReadService.registerForUpdates { changedKeys: Set<String>, config: Map<String, SmartConfig> ->
+            log.info("Received configuration update event, changedKeys: $changedKeys")
+            if (BOOTSTRAP_CONFIG in changedKeys) {
+                val newConfig = config[BOOTSTRAP_CONFIG]
                 coordinator.postEvent(NewConfigurationReceivedEvent(newConfig!!))
             }
         }
     }
 
-    private fun handlePermissionCacheUp(coordinator: LifecycleCoordinator) {
+    private fun createPermissionManager() {
         val permissionCache = permissionCacheService.permissionCache
         checkNotNull(permissionCache) {
-            "The PermissionCacheService reported status UP but its permissionCache field was null."
+            "Configuration received for permission manager but permission cache was null."
         }
-        if (rpcSender != null) {
-            permissionManager?.stop()
-            permissionManager = permissionManagerFactory.create(rpcSender!!, permissionCache)
-                .also { it.start() }
-            coordinator.updateStatus(LifecycleStatus.UP)
-        }
-    }
-
-    private fun handleNewConfigurationReceived(
-        event: NewConfigurationReceivedEvent,
-        coordinator: LifecycleCoordinator
-    ) {
-        createAndStartRpcSender(event.config)
-
-        // if permission cache is not up yet, permission manager can be created during its registration UP event instead.
-        val permissionCache = permissionCacheService.permissionCache
-        if (permissionCache != null) {
-            permissionManager?.stop()
-            permissionManager = permissionManagerFactory.create(rpcSender!!, permissionCache)
-                .also { it.start() }
-            coordinator.updateStatus(LifecycleStatus.UP)
-        }
+        permissionManager?.stop()
+        log.info("Creating and starting permission manager.")
+        permissionManager = permissionManagerFactory.create(rpcSender!!, permissionCache)
+            .also { it.start() }
     }
 
     private fun createAndStartRpcSender(kafkaConfig: SmartConfig) {

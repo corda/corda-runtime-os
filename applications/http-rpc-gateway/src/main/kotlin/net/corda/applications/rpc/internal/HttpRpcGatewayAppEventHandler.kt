@@ -1,7 +1,6 @@
 package net.corda.applications.rpc.internal
 
 import net.corda.components.rpc.HttpRpcGateway
-import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -16,8 +15,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 class HttpRpcGatewayAppEventHandler(
-    private val httpRpcGateway: HttpRpcGateway,
-    private val bootstrapConfig: SmartConfig
+    private val httpRpcGateway: HttpRpcGateway
 ) : LifecycleEventHandler {
 
     private companion object {
@@ -31,7 +29,7 @@ class HttpRpcGatewayAppEventHandler(
         log.info("LifecycleEvent received: $event")
         when (event) {
             is StartEvent -> {
-                consoleLogger.info("Starting HTTP RPC Gateway")
+                consoleLogger.info("Following gateway and config read service for status updates.")
                 registration?.close()
                 registration =
                     coordinator.followStatusChangesByName(
@@ -40,7 +38,8 @@ class HttpRpcGatewayAppEventHandler(
                         )
                     )
 
-                httpRpcGateway.start(bootstrapConfig)
+                consoleLogger.info("Starting HTTP RPC Gateway component.")
+                httpRpcGateway.start()
                 consoleLogger.info("HTTP RPC Gateway application started")
             }
             is RegistrationStatusChangeEvent -> {

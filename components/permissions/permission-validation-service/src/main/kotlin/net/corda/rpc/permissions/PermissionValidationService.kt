@@ -13,6 +13,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.cache.PermissionCacheService
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -26,6 +27,10 @@ class PermissionValidationService @Activate constructor(
     @Reference(service = PermissionCacheService::class)
     private val permissionCacheService: PermissionCacheService,
 ) : Lifecycle {
+
+    private companion object {
+        val log = contextLogger()
+    }
 
     private val coordinator = coordinatorFactory.createCoordinator<PermissionValidationService> { event, _ -> eventHandler(event) }
 
@@ -42,6 +47,7 @@ class PermissionValidationService @Activate constructor(
     private fun eventHandler(event: LifecycleEvent) {
         when (event) {
             is StartEvent -> {
+                log.info("Received start event, following PermissionCacheService for status updates.")
                 registration?.close()
                 registration = coordinator.followStatusChangesByName(
                     setOf(
@@ -50,13 +56,16 @@ class PermissionValidationService @Activate constructor(
                 )
             }
             is RegistrationStatusChangeEvent -> {
+                log.info("Registration status change received: PermissionCacheService ${event.status.name}.")
                 if (event.status == LifecycleStatus.UP) {
                     startValidationComponent()
+                    coordinator.updateStatus(LifecycleStatus.UP)
                 } else {
                     coordinator.stop()
                 }
             }
             is StopEvent -> {
+                log.info("Stop event received, stopping dependencies and setting status to DOWN.")
                 _permissionValidator?.stop()
                 _permissionValidator = null
                 registration?.close()

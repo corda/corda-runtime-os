@@ -25,6 +25,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Properties
 import net.corda.applications.rpc.internal.HttpRpcGatewayAppEventHandler
+import net.corda.configuration.read.ConfigurationReadService
 
 @Component(service = [Application::class], immediate = true)
 @Suppress("LongParameterList")
@@ -37,6 +38,8 @@ class HttpRpcGatewayApp @Activate constructor(
     private val smartConfigFactory: SmartConfigFactory,
     @Reference(service = HttpRpcGateway::class)
     private val httpRpcGateway: HttpRpcGateway,
+    @Reference(service = ConfigurationReadService::class)
+    private val configurationReadService: ConfigurationReadService,
 ) : Application {
 
     private companion object {
@@ -49,10 +52,12 @@ class HttpRpcGatewayApp @Activate constructor(
 
         const val TEMP_DIRECTORY_PREFIX = "http-rpc-gateway-app-temp-dir"
         const val CONFIG_FILE = "local_http_rpc_gateway.conf"
+        const val GENERAL_CONFIG_INSTANCE_ID_PATH = "instanceId"
     }
 
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
     private lateinit var tempDirectoryPath: Path
+    private var sub: AutoCloseable? = null
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
@@ -65,11 +70,15 @@ class HttpRpcGatewayApp @Activate constructor(
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
             val kafkaProperties = getKafkaPropertiesFromFile(parameters.kafkaProperties)
-            val bootstrapConfig = getBootstrapConfig(kafkaProperties)
+            val bootstrapConfig = getBootstrapConfig(parameters.instanceId.toInt(), kafkaProperties)
+
+            log.info("Starting configuration read service with bootstrap config ${bootstrapConfig}.")
+            configurationReadService.start()
+            configurationReadService.bootstrapConfig(bootstrapConfig)
 
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator = coordinatorFactory.createCoordinator<HttpRpcGatewayApp>(
-                HttpRpcGatewayAppEventHandler(httpRpcGateway, bootstrapConfig)
+                HttpRpcGatewayAppEventHandler(httpRpcGateway)
             )
 
             log.info("Starting life cycle coordinator")
@@ -105,7 +114,7 @@ class HttpRpcGatewayApp @Activate constructor(
         return configFilePath.toString()
     }
 
-    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
+    private fun getBootstrapConfig(instanceId: Int, kafkaConnectionProperties: Properties?): SmartConfig {
 
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
         val configFile = createConfigFile()
@@ -120,6 +129,7 @@ class HttpRpcGatewayApp @Activate constructor(
                 TOPIC_PREFIX,
                 ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, ""))
             )
+            .withValue(GENERAL_CONFIG_INSTANCE_ID_PATH, ConfigValueFactory.fromAnyRef(instanceId))
             .withValue("config.file", ConfigValueFactory.fromAnyRef(configFile)))
     }
 
@@ -141,9 +151,11 @@ class HttpRpcGatewayApp @Activate constructor(
 
     override fun shutdown() {
         consoleLogger.info("Stopping application")
+        log.info("Stopping application")
+        sub?.close()
+        sub = null
         lifeCycleCoordinator?.stop()
         File(tempDirectoryPath.toUri()).deleteRecursively()
-        log.info("Stopping application")
     }
 }
 

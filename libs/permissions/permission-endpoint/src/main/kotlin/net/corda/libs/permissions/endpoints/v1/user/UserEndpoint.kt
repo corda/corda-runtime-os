@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.user
 
-import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
@@ -17,7 +17,7 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
     description = "User Management APIs",
     path = "user"
 )
-interface UserEndpoint : PluggableRPCOps<UserEndpoint> {
+interface UserEndpoint : RpcOps {
 
     /**
      * Create a user in the RBAC permission system.

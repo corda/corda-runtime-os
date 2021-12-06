@@ -25,7 +25,7 @@ class UserEndpointImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PermissionServiceComponent::class)
     private val permissionServiceComponent: PermissionServiceComponent
-) : UserEndpoint, Lifecycle {
+) : UserEndpoint, PluggableRPCOps<UserEndpoint>, Lifecycle {
 
     override val targetInterface: Class<UserEndpoint> = UserEndpoint::class.java
 
