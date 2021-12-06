@@ -960,6 +960,8 @@ class LinkManagerTest {
     fun `DRAFT InboundMessageProcessor authenticates AuthenticatedDataMessages producing a FlowMessage and an ACK`() {
         val session = createSessionPair()
         DRAFTtestDataMessagesWithInboundMessageProcessor(session)
+        loggingInterceptor.assertErrorContains("Actual source does not match declared source.")
+        loggingInterceptor.assertErrorContains("The message was discarded.")
     }
 
     @Test
@@ -970,7 +972,7 @@ class LinkManagerTest {
     }
 
     private fun DRAFTtestDataMessagesWithInboundMessageProcessor(session: SessionPair) {
-        val header = AuthenticatedMessageHeader(FIRST_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
+        val header = AuthenticatedMessageHeader(FIRST_DEST, FAKE_SOURCE, null, MESSAGE_ID, "", "system-1")
         val messageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
 
         val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session.initiatorSession, netMap)
@@ -980,8 +982,6 @@ class LinkManagerTest {
             EventLogRecord(TOPIC, KEY, linkInMessage, 0, 0),
             EventLogRecord(TOPIC, KEY, linkInMessage, 0, 0)
         )
-
-
 
         val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
         Mockito.`when`(mockSessionManager.getSessionById(any())).thenReturn(

@@ -407,7 +407,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                             makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
                             sessionManager.inboundSessionEstablished(sessionId)
                         } else {
-                            logger.warn("Actual source does not match declared source. The message was discarded.")
+                            logger.debug("Actual source does not match declared source. The message was discarded.")
                         }
                     }
                     else -> logger.warn("Unknown incoming message type: ${innerMessage.javaClass}. The message was discarded.")
