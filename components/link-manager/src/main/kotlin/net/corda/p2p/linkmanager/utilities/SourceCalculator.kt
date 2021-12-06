@@ -1,10 +1,7 @@
 package net.corda.p2p.linkmanager.utilities
 
-import net.corda.v5.base.util.toHex
 import org.bouncycastle.asn1.x500.AttributeTypeAndValue
 import org.bouncycastle.asn1.x500.X500Name
-import org.bouncycastle.jce.provider.BouncyCastleProvider
-import java.security.MessageDigest
 
 object SourceCalculator {
 

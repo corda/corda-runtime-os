@@ -400,11 +400,15 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                         makeAckMessageForHeartbeatMessage(sessionKey, session)?.let { ack -> messages.add(ack) }
                     }
                     is AuthenticatedMessageAndKey -> {
-                        logger.debug { "Processing message ${innerMessage.message.header.messageId} " +
-                                "of type ${innerMessage.message.javaClass} from session ${session.sessionId}" }
-                        messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
-                        makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
-                        sessionManager.inboundSessionEstablished(sessionId)
+                        if(sessionKey.responderId.x500Name == innerMessage.message.header.source.x500Name) {
+                            logger.debug { "Processing message ${innerMessage.message.header.messageId} " +
+                                    "of type ${innerMessage.message.javaClass} from session ${session.sessionId}" }
+                            messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
+                            makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
+                            sessionManager.inboundSessionEstablished(sessionId)
+                        } else {
+                            logger.warn("Actual source does not match declared source. The message was discarded.")
+                        }
                     }
                     else -> logger.warn("Unknown incoming message type: ${innerMessage.javaClass}. The message was discarded.")
                 }
