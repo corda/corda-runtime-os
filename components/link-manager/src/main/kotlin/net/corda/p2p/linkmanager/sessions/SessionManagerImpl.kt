@@ -243,7 +243,9 @@ open class SessionManagerImpl(
         pendingInboundSessions.clear()
         //This is suboptimal we could instead restart session negotiation
         pendingOutboundSessionMessageQueues.destroyAllQueues()
-        publisher.publish(tombstoneRecords)
+        if (tombstoneRecords.isNotEmpty()) {
+            publisher.publish(tombstoneRecords)
+        }
     }
 
     private fun destroyOutboundSession(sessionKey: SessionKey, sessionId: String) {
