@@ -30,5 +30,5 @@ dependencies {
 
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
-
+    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
 }

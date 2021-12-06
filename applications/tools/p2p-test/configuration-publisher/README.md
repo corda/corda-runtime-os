@@ -36,19 +36,17 @@ To run the application use:
                             before closing it in seconds
                             Default: 60
   -h, --help              display this help message
-      --host=<hostname>   The name of the HTTP host
-                            Default: yift-XPS-15-7590
+      --hostAddress=<hostAddress>   The host name or IP address where the HTTP server will
+                            bind
+                            Default: 0.0.0.0
       --keyStore=<keyStoreFile>
-                          The key store file
-                            Default: keystore.jks
+                          The path to the key store file
       --keyStorePassword=<keyStorePassword>
                           The key store password
-                            Default: password
       --maxClientConnections=<maxClientConnections>
                           The maximal number of client connections
                             Default: 100
       --port=<port>       The HTTP port
-                            Default: 80
       --responseTimeoutMilliSecs=<responseTimeoutMilliSecs>
                           Time after which a message delivery is considered
                             failed in milliseconds
@@ -62,11 +60,9 @@ To run the application use:
                             OFF)
                             Default: OFF
       --trustStore=<trustStoreFile>
-                          The trust store file
-                            Default: truststore.jks
+                          The path to the trust store file
       --trustStorePassword=<trustStorePassword>
                           The trust store password
-                            Default: password
 ```
 #### Link manager Arguments:
 ```
@@ -108,9 +104,10 @@ java \
 -jar ./applications/tools/p2p-test/configuration-publisher/build/bin/corda-configuration-publisher-5.0.0.0-SNAPSHOT.jar \
 gateway \
 --keyStore ./components/gateway/src/integration-test/resources/sslkeystore_alice.jks \
+--keyStorePassword password \
 --trustStore ./components/gateway/src/integration-test/resources/truststore.jks \
---port 3123 \
---host www.alice.net
+--trustStorePassword password \
+--port 3123
 ```
 The `keyStore` and `trustStore` are valid stores used in the integration tests.
 
@@ -148,7 +145,7 @@ docker run \
  -v "$(pwd)/applications/tools/p2p-test/configuration-publisher/docker-args-example.txt:/args.txt" \
  -v "$(pwd)/components/gateway/src/integration-test/resources/sslkeystore_alice.jks:/keystore.jks" \
  -v "$(pwd)/components/gateway/src/integration-test/resources/truststore.jks:/truststore.jks" \
- engineering-docker-dev.software.r3.com/corda-os-configuration-publisher:5.0.0.0-SNAPSHOT \
+ corda-os-docker-dev.software.r3.com/corda-os-configuration-publisher:5.0.0.0-SNAPSHOT \
  @/args.txt
 ```
 Please note:
@@ -165,14 +162,16 @@ docker run \
  --rm \
  -e KAFKA_SERVERS="broker1:9093" \
  --network kafka-docker_default \
- --hostname www.alice.net \
  -v "$(pwd)/components/gateway/src/integration-test/resources/sslkeystore_alice.jks:/keystore.jks" \
  -v "$(pwd)/components/gateway/src/integration-test/resources/truststore.jks:/truststore.jks" \
- engineering-docker-dev.software.r3.com/corda-os-configuration-publisher:5.0.0.0-SNAPSHOT \
+ corda-os-docker-dev.software.r3.com/corda-os-configuration-publisher:5.0.0.0-SNAPSHOT \
  gateway \
+ --keyStore /keystore.jks \
+ --keyStorePassword password \
+ --trustStore /truststore.jks \
+ --trustStorePassword password \
  --port 24123
 ```
 Please note:
 * The image need to be able to talk with the kafka broker, hence the network and `KAFKA_SERVERS` environment variable.
-* Using the `--hostname` set the default hostname
 *  Since the keystore and truststore are getting mounted to the correct name, there is no need to add them to the arguments.

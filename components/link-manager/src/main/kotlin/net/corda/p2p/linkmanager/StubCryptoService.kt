@@ -14,7 +14,6 @@ import net.corda.p2p.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.v5.base.util.contextLogger
-import java.lang.IllegalStateException
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
@@ -45,7 +44,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
         val future = CompletableFuture<Unit>()
         readyFuture.set(future)
         subscription.start()
-        resources.keep (subscription)
+        resources.keep { subscription.stop() }
         return future
     }
 

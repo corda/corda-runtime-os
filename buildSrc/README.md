@@ -445,14 +445,14 @@ If ran locally with no Gradle properties passed the task will publish images to 
 
 if jibRemotePublish is true images will be published to artifactory under:
 
-    engineering-docker-dev.software.r3.com/corda-os-${projectName}
+    corda-os-docker-dev.software.r3.com/corda-os-${projectName}
 
 CI builds will automatically publish to the remote repo.
 
 Optionally an 'arguments' array may be provided to the task which will bake parameters into the image to be passed to the java -jar command.
 Unless necessary this should be avoided and use environment variable JAVA_TOOL_OPTIONS to pass properties at run time instead, as follows:
 
-    docker run -p 8888:8888 -e "JAVA_TOOL_OPTIONS=-DinstanceId=1" engineering-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
+    docker run -p 8888:8888 -e "JAVA_TOOL_OPTIONS=-DinstanceId=1" corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
 
 If a kafka.properties file exists in the project root as follows:
 
@@ -471,14 +471,14 @@ If this file does not exist in the project and therefore is never copied ot the 
 ### Running the container
 
 ```
-docker run -it -p 8888:8888 -e "JAVA_TOOL_OPTIONS=-DinstanceId=1" engineering-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
+docker run -it -p 8888:8888 -e "JAVA_TOOL_OPTIONS=-DinstanceId=1" corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
 ```
 
 ### Debugging the container
 To debug a running container we can use the JAVA_TOOL_OPTIONS environment variable to pass arguments at runtime e.g.
 
 ```
-docker run -it -p 8888:8888 -p 5005:5005 -e "JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005 -DinstanceId=1"" engineering-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
+docker run -it -p 8888:8888 -p 5005:5005 -e "JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005 -DinstanceId=1"" corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
 ```
 
 __NOTE:__ `-p 5005:5005` which forwards internal container debug port to a local port such that remote debugger can

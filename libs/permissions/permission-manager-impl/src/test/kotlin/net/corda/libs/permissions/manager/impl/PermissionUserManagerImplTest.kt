@@ -46,16 +46,13 @@ class PermissionUserManagerImplTest {
     private val passwordExpiry = Instant.now()
     private val parentGroup = "some-parent-group"
 
-    private val createUserRequestDto = CreateUserRequestDto(requestedBy = requestUserName, virtualNodeId = "virtNode1",
-        loginName = "loginname123", fullName = fullName, enabled = true, initialPassword = "mypassword", passwordExpiry = passwordExpiry,
-        parentGroup = parentGroup)
-    private val createUserRequestDtoWithoutPassword = CreateUserRequestDto(requestedBy = requestUserName, virtualNodeId = "virtNode1",
-        loginName = "loginname123", fullName = fullName, enabled = true, initialPassword = null, passwordExpiry = null,
-        parentGroup = parentGroup)
+    private val createUserRequestDto = CreateUserRequestDto(requestedBy = requestUserName, loginName = "loginname123", fullName = fullName,
+        enabled = true, initialPassword = "mypassword", passwordExpiry = passwordExpiry, parentGroup = parentGroup)
+    private val createUserRequestDtoWithoutPassword = CreateUserRequestDto(requestedBy = requestUserName, loginName = "loginname123",
+        fullName = fullName, enabled = true, initialPassword = null, passwordExpiry = null, parentGroup = parentGroup)
 
     private val userCreationTime = Instant.now()
-    private val getUserRequestDto = GetUserRequestDto(requestedBy = requestUserName, virtualNodeId = "virtNode1",
-        loginName = "loginname123")
+    private val getUserRequestDto = GetUserRequestDto(requestedBy = requestUserName, loginName = "loginname123")
     private val userProperty = Property(UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "email",
         "a@b.com")
 
@@ -87,7 +84,7 @@ class PermissionUserManagerImplTest {
 
         val capturedPermissionManagementRequest = requestCaptor.firstValue
         assertEquals(requestUserName, capturedPermissionManagementRequest.requestUserId)
-        assertEquals("virtNode1", capturedPermissionManagementRequest.virtualNodeId)
+        assertEquals("cluster", capturedPermissionManagementRequest.virtualNodeId)
 
         val capturedCreateUserRequest = capturedPermissionManagementRequest.request as CreateUserRequest
         assertEquals(createUserRequestDto.loginName, capturedCreateUserRequest.loginName)
@@ -130,7 +127,7 @@ class PermissionUserManagerImplTest {
 
         val capturedPermissionManagementRequest = requestCaptor.firstValue
         assertEquals(requestUserName, capturedPermissionManagementRequest.requestUserId)
-        assertEquals("virtNode1", capturedPermissionManagementRequest.virtualNodeId)
+        assertEquals("cluster", capturedPermissionManagementRequest.virtualNodeId)
 
         val capturedCreateUserRequest = capturedPermissionManagementRequest.request as CreateUserRequest
         assertEquals(createUserRequestDto.loginName, capturedCreateUserRequest.loginName)

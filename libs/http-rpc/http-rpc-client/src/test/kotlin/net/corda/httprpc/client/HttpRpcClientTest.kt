@@ -2,7 +2,7 @@ package net.corda.httprpc.client
 
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.config.HttpRpcClientConfig
-import net.corda.httprpc.client.impl.HttpRpcClientProxyHandler
+import net.corda.httprpc.client.connect.HttpRpcClientProxyHandler
 import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy

@@ -50,6 +50,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.valid
 import net.corda.p2p.schema.Schema
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
@@ -73,15 +74,13 @@ open class SessionManagerImpl(
     private val configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
-    instanceId: Int,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
     private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
         publisherFactory,
         configurationReaderService,
         coordinatorFactory,
         configuration,
-        networkMap,
-        instanceId
+        networkMap
     )
 ) : SessionManager {
 
@@ -113,8 +112,7 @@ open class SessionManagerImpl(
         coordinatorFactory,
         configuration,
         networkMap,
-        ::destroyOutboundSession,
-        instanceId
+        ::destroyOutboundSession
     )
 
     override val dominoTile = DominoTile(
@@ -273,6 +271,7 @@ open class SessionManagerImpl(
 
         pendingOutboundSessionKeys.add(sessionKey)
         pendingOutboundSessions[sessionId] = Pair(sessionKey, session)
+        logger.info("Local identity (${sessionKey.ourId}) initiating new session $sessionId with remote identity ${sessionKey.responderId}")
 
         val sessionInitPayload = session.generateInitiatorHello()
         val initiatorHelloUniqueId = "${sessionId}_${sessionInitPayload::class.java.simpleName}"
@@ -401,6 +400,8 @@ open class SessionManagerImpl(
             pendingOutboundSessionKeys.remove(sessionInfo)
             pendingOutboundSessionMessageQueues.sessionNegotiatedCallback(this, sessionInfo, authenticatedSession, networkMap)
         }
+        logger.info("Outbound session ${authenticatedSession.sessionId} established " +
+                "(local=${sessionInfo.ourId}, remote=${sessionInfo.responderId}).")
         return null
     }
 
@@ -431,6 +432,8 @@ open class SessionManagerImpl(
             logger.couldNotFindNetworkType(message::class.java.simpleName, message.header.sessionId, peer.holdingIdentity.groupId)
             return null
         }
+
+        logger.info("Remote identity ${peer.holdingIdentity} initiated new session ${message.header.sessionId}.")
         return createLinkOutMessage(responderHello, peer, networkType)
     }
 
@@ -499,6 +502,8 @@ open class SessionManagerImpl(
             SessionKey(ourMemberInfo.holdingIdentity, peer.holdingIdentity),
             session.getSession()
         )
+        logger.info("Inbound session ${message.header.sessionId} established " +
+                "(local=${ourMemberInfo.holdingIdentity}, remote=${peer.holdingIdentity}).")
         /**
          * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
          * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
@@ -512,8 +517,7 @@ open class SessionManagerImpl(
         coordinatorFactory: LifecycleCoordinatorFactory,
         configuration: SmartConfig,
         private val networkMap: LinkManagerNetworkMap,
-        private val destroySession: (key: SessionKey, sessionId: String) -> Any,
-        instanceId: Int
+        private val destroySession: (key: SessionKey, sessionId: String) -> Any
     ) : LifecycleWithDominoTile {
 
         companion object {
@@ -568,7 +572,7 @@ open class SessionManagerImpl(
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID, instanceId),
+            PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID),
             configuration
         )
 
@@ -653,6 +657,8 @@ open class SessionManagerImpl(
             val sessionInfo = trackedSessions[sessionId] ?: return
             val timeSinceLastAck = timeStamp() - sessionInfo.lastAckTimestamp
             if (timeSinceLastAck >= config.get().sessionTimeout.toMillis()) {
+                logger.info("Outbound session $sessionId (local=${key.ourId}, remote=${key.responderId}) timed out due to inactivity and " +
+                        "it will be cleaned up.")
                 destroySession(key, sessionId)
                 trackedSessions.remove(sessionId)
             } else {
@@ -674,7 +680,7 @@ open class SessionManagerImpl(
 
             val timeSinceLastSend = timeStamp() - sessionInfo.lastSendTimestamp
             if (timeSinceLastSend >= config.heartbeatPeriod.toMillis()) {
-                logger.trace("Sending heartbeat message between ${sessionKey.ourId} (our Identity) and ${sessionKey.responderId}.")
+                logger.trace { "Sending heartbeat message between ${sessionKey.ourId} (our Identity) and ${sessionKey.responderId}." }
                 sendHeartbeatMessage(
                     sessionKey.ourId.toHoldingIdentity(),
                     sessionKey.responderId.toHoldingIdentity(),

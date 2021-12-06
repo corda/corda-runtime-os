@@ -21,7 +21,6 @@ import net.corda.serialization.CheckpointSerializer
 import net.corda.serialization.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -110,8 +109,8 @@ class FlowManagerImpl @Activate constructor(
 
     @Suppress("SpreadOperator")
     private fun getOrCreate(sandboxGroup: SandboxGroup, flowName: String, jsonArg: String?): Flow<*> {
-        val flowClazz: Class<Flow<*>> =
-            uncheckedCast(sandboxGroup.loadClassFromMainBundles(flowName, Flow::class.java))
+        val flowClazz: Class<out Flow<*>> =
+            sandboxGroup.loadClassFromMainBundles(flowName, Flow::class.java)
         val constructor = flowClazz.getDeclaredConstructor(String::class.java)
         return constructor.newInstance(jsonArg)
     }
