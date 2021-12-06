@@ -36,7 +36,7 @@ To launch Swagger UI and execute HTTP RPC calls please browse to: https://localh
 
 Kafka topics are created automatically by Docker Compose.
 
-If you do, however, need to manipulate them, there is a dedicated script for that.
+If you do, however, need to manipulate Kafka topic, there is a dedicated script for that.
 
 To create topics:
 ```shell
