@@ -6,6 +6,7 @@ class Gateway(
     override val hosts: Collection<String>,
     tag: String,
     debug: Boolean,
+    override val autoStart: Boolean,
 ) : P2pPod(kafkaServers, tag, index, debug) {
     companion object {
         fun gateways(
@@ -14,9 +15,10 @@ class Gateway(
             kafkaServers: String,
             tag: String,
             debug: Boolean,
+            avoidStart: Boolean,
         ): Collection<Pod> {
             val gateways = (1..count).map {
-                Gateway(it, kafkaServers, hostNames, tag, debug)
+                Gateway(it, kafkaServers, hostNames, tag, debug, !avoidStart)
             }
             val balancer = LoadBalancer(
                 hostNames,

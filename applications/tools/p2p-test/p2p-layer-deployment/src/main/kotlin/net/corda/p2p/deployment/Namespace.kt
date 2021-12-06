@@ -3,6 +3,7 @@ package net.corda.p2p.deployment
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.commands.ConfigureAll
+import net.corda.p2p.deployment.commands.CopyJars
 import net.corda.p2p.deployment.commands.Destroy
 import net.corda.p2p.deployment.commands.UpdateIps
 import net.corda.p2p.deployment.pods.Gateway
@@ -110,6 +111,12 @@ class Namespace : Runnable {
     private var dryRun = false
 
     @Option(
+        names = ["-c", "--copy-jars"],
+        description = ["Copy locally build jars after the build"]
+    )
+    private var copyJars = false
+
+    @Option(
         names = ["-t", "--tag"],
         description = ["The docker name of the tag to pull"]
     )
@@ -160,8 +167,8 @@ class Namespace : Runnable {
     private val pods by lazy {
         KafkaBroker.kafka(namespaceName, zooKeeperCount, kafkaBrokerCount, kafkaUi) +
             PostGreSql(dbUsername, dbPassword, sqlInitFile) +
-            Gateway.gateways(gatewayCount, listOf(actualHostName), kafkaServers, tag, debug) +
-            LinkManager.linkManagers(linkManagerCount, kafkaServers, tag, debug) +
+            Gateway.gateways(gatewayCount, listOf(actualHostName), kafkaServers, tag, debug, copyJars) +
+            LinkManager.linkManagers(linkManagerCount, kafkaServers, tag, debug, copyJars) +
             Simulator(kafkaServers, tag, 1024, debug)
     }
 
@@ -276,5 +283,8 @@ class Namespace : Runnable {
         config.linkManagerExtraArguments = linkManagerExtraArguments
         config.gatewayArguments = gatewayArguments
         config.run()
+        if (copyJars) {
+            CopyJars(namespaceName).run()
+        }
     }
 }
