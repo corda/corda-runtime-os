@@ -1,9 +1,9 @@
 package net.corda.applications.examples.testclients
 
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
+// import com.typesafe.config.ConfigFactory
+// import com.typesafe.config.ConfigValueFactory
 import net.corda.applications.common.ConfigHelper
-import net.corda.applications.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
+// import net.corda.applications.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
 import net.corda.components.examples.publisher.RunChaosTestStringsPub
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -24,9 +24,9 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import java.io.File
-import java.io.FileInputStream
-import java.util.*
+// import java.io.File
+// import java.io.FileInputStream
+// import java.util.*
 
 @Component
 class ChaosTestStringsPubApp @Activate constructor(
@@ -43,9 +43,10 @@ class ChaosTestStringsPubApp @Activate constructor(
     private companion object {
         val log: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
-        const val TOPIC_PREFIX = "messaging.topic.prefix"
+        // To be removed
+        // const val TOPIC_PREFIX = "messaging.topic.prefix"
         // const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
-        const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
+        // const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
@@ -87,7 +88,7 @@ class ChaosTestStringsPubApp @Activate constructor(
                 instanceId,
                 parameters.numberOfRecords.toInt(),
                 parameters.numberOfKeys.toInt(),
-                getBootstrapConfig(getKafkaPropertiesFromFile(parameters.kafkaProperties), instanceId),
+                getBootstrapConfig(instanceId),
                 parameters.msgPrefix,
                 parameters.msgDelayMs,
                 parameters.logPubMsgs
@@ -123,13 +124,12 @@ class ChaosTestStringsPubApp @Activate constructor(
     // kafkaConnectionProperties currently provides:
     // TOPIC_PREFIX - covered by ConfigHelper.Companion.getBootstrapConfig() provides
     // SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH - covered by ConfigHelper.Companion.getBootstrapConfig() provides
-    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?, instanceId: Int?): SmartConfig {
-        val bootstrapServer = getConfigValue(kafkaConnectionProperties, SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH)
+    private fun getBootstrapConfig(instanceId: Int?): SmartConfig {
         return smartConfigFactory.create(ConfigHelper.Companion.getBootstrapConfig(instanceId))
-            .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
     }
 
+
+    // Old Way
     /*
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {
         var configValue = System.getProperty(path)
@@ -150,14 +150,24 @@ class ChaosTestStringsPubApp @Activate constructor(
         return configValue
     }
      */
-    
-    private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {
+    /*
+    private fun getConfigValue(
+        path: String,
+        default: String? = null
+    ): String {
         val configValue: String = ConfigHelper.Companion.getConfigValue(path, default)
-        if 
         return configValue
     }
-    
-    private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {
+
+     */
+
+    // Old way
+    /*
+    private fun getConfigValue(
+        kafkaConnectionProperties: Properties?,
+        path: String,
+        default: String? = null
+    ): String {
         var configValue = System.getProperty(path)
         if (configValue == null && kafkaConnectionProperties != null) {
             configValue = kafkaConnectionProperties[path].toString()
@@ -175,7 +185,10 @@ class ChaosTestStringsPubApp @Activate constructor(
         }
         return configValue
     }
+    */
 
+    // Not using a kafkaproperties file anymore
+    /*
     private fun getKafkaPropertiesFromFile(kafkaPropertiesFile: File?): Properties? {
         if (kafkaPropertiesFile == null) {
             return null
@@ -185,6 +198,8 @@ class ChaosTestStringsPubApp @Activate constructor(
         kafkaConnectionProperties.load(FileInputStream(kafkaPropertiesFile))
         return kafkaConnectionProperties
     }
+
+     */
 }
 
 class CliParameters {
@@ -224,6 +239,8 @@ class CliParameters {
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false
 
+    /*
     @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties"])
     var kafkaProperties: File? = null
+     */
 }
