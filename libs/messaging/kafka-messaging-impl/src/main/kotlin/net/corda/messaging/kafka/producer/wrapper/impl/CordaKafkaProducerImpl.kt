@@ -73,16 +73,12 @@ class CordaKafkaProducerImpl(
             }
             val future = producer.send(ProducerRecord(topicPrefix + record.topic, record.key, record.value))
             if(record.topic == "session.out.partitions") {
-                thread {
-                    log.info("QQQ waiting in another thread...")
-                    try {
-                        val gotIt = future.getOrThrow()
-                        log.info("QQQ got $gotIt")
-                    } catch (e: Exception) {
-                        log.info("QQQ oops", e)
-                    }
+                log.info("QQQ Sent waiting...")
+            }
 
-                }
+            future.getOrThrow()
+            if(record.topic == "session.out.partitions") {
+                log.info("QQQ waited")
             }
         }
     }
