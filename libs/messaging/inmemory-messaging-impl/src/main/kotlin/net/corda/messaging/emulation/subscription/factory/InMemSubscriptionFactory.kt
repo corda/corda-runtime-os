@@ -1,6 +1,7 @@
 package net.corda.messaging.emulation.subscription.factory
 
 import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -29,6 +30,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * In memory implementation of the Subscription Factory.
@@ -38,8 +40,13 @@ class InMemSubscriptionFactory @Activate constructor(
     @Reference(service = TopicService::class)
     private val topicService: TopicService,
     @Reference(service = RPCTopicService::class)
-    private val rpcTopicService: RPCTopicService
+    private val rpcTopicService: RPCTopicService,
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : SubscriptionFactory {
+
+    // Used to ensure that each subscription has a unique client.id
+    private val clientIdCounter = AtomicInteger()
 
     override fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
@@ -47,7 +54,14 @@ class InMemSubscriptionFactory @Activate constructor(
         executor: ExecutorService?,
         nodeConfig: SmartConfig
     ): Subscription<K, V> {
-        return PubSubSubscription(subscriptionConfig, processor, executor, topicService)
+        return PubSubSubscription(
+            subscriptionConfig,
+            processor,
+            executor,
+            topicService,
+            lifecycleCoordinatorFactory,
+            clientIdCounter.getAndIncrement().toString()
+        )
     }
 
     override fun <K : Any, V : Any> createDurableSubscription(
@@ -60,7 +74,8 @@ class InMemSubscriptionFactory @Activate constructor(
             subscriptionConfig,
             processor,
             partitionAssignmentListener,
-            topicService
+            topicService,
+            lifecycleCoordinatorFactory
         )
     }
 
@@ -72,7 +87,9 @@ class InMemSubscriptionFactory @Activate constructor(
         return InMemoryCompactedSubscription(
             subscriptionConfig,
             processor,
-            topicService
+            topicService,
+            lifecycleCoordinatorFactory,
+            clientIdCounter.getAndIncrement().toString()
         )
     }
 
@@ -80,13 +97,14 @@ class InMemSubscriptionFactory @Activate constructor(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
         nodeConfig: SmartConfig,
-        stateAndEventListener: StateAndEventListener<K, S>?,
+        stateAndEventListener: StateAndEventListener<K, S>?
     ): StateAndEventSubscription<K, S, E> {
         return InMemoryStateAndEventSubscription(
             subscriptionConfig,
             processor,
             stateAndEventListener,
             topicService,
+            lifecycleCoordinatorFactory
         )
     }
 
@@ -101,6 +119,7 @@ class InMemSubscriptionFactory @Activate constructor(
             processor,
             partitionAssignmentListener,
             topicService,
+            lifecycleCoordinatorFactory
         )
     }
 
@@ -118,6 +137,11 @@ class InMemSubscriptionFactory @Activate constructor(
         nodeConfig: SmartConfig,
         responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE> {
-        return RPCSubscriptionImpl(rpcConfig.requestTopic,rpcTopicService,responderProcessor)
+        return RPCSubscriptionImpl(
+            rpcConfig,
+            rpcTopicService,
+            responderProcessor,
+            lifecycleCoordinatorFactory
+        )
     }
 }

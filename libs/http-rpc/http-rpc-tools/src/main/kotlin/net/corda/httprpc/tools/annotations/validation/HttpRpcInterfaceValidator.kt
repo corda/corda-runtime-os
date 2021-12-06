@@ -25,7 +25,6 @@ object HttpRpcInterfaceValidator {
             ParameterClassTypeValidator(rpcOpsInterface),
             PathParameterInURLPathValidator(rpcOpsInterface),
             URLPathParameterNotDeclaredValidator(rpcOpsInterface),
-            ParameterBodyCordaSerializableAnnotationValidator(rpcOpsInterface),
             DurableStreamsEndPointValidator(rpcOpsInterface),
             DurableStreamsContextParameterValidator(rpcOpsInterface),
             NestedGenericsParameterTypeValidator(rpcOpsInterface)

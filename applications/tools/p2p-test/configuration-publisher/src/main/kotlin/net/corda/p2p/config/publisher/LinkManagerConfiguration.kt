@@ -26,9 +26,9 @@ class LinkManagerConfiguration : ConfigProducer() {
 
     @Option(
         names = ["--maxMessageSize"],
-        description = ["The maximal message size"]
+        description = ["The maximal message size in bytes"]
     )
-    var maxMessageSize = 500
+    var maxMessageSize = 1_000_000
 
     @Option(
         names = ["--protocolMode"],
@@ -37,10 +37,10 @@ class LinkManagerConfiguration : ConfigProducer() {
     var protocolModes: List<ProtocolMode> = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
 
     @Option(
-        names = ["--messageReplayPeriodSecs"],
-        description = ["message replay period in seconds"]
+        names = ["--messageReplayPeriodMilliSecs"],
+        description = ["message replay period in milliseconds"]
     )
-    var messageReplayPeriodSecs = 2L
+    var messageReplayPeriodMilliSecs = 2_000L
 
     @Option(
         names = ["--heartbeatMessagePeriodMilliSecs"],
@@ -84,7 +84,7 @@ class LinkManagerConfiguration : ConfigProducer() {
             )
             .withValue(
                 "messageReplayPeriod",
-                ConfigValueFactory.fromAnyRef(messageReplayPeriodSecs)
+                ConfigValueFactory.fromAnyRef(messageReplayPeriodMilliSecs)
             )
             .withValue(
                 "heartbeatMessagePeriod",

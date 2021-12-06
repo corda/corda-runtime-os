@@ -32,7 +32,7 @@ class PermissionUserManagerImpl(
             val future = rpcSender.sendRequest(
                 PermissionManagementRequest(
                     createUserRequestDto.requestedBy,
-                    createUserRequestDto.virtualNodeId,
+                    "cluster",
                     CreateUserRequest(
                         createUserRequestDto.fullName,
                         createUserRequestDto.loginName,

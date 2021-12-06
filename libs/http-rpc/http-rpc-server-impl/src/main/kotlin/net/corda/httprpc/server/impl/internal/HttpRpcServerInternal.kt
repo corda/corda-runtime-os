@@ -150,7 +150,7 @@ internal class HttpRpcServerInternal(
         try {
             return securityManager.authenticate(credentials).also {
                 val rpcAuthContext = RpcAuthContext(
-                    InvocationContext.Rpc(
+                    InvocationContext(
                         Actor.service(
                             this::javaClass.toString(),
                             CordaX500Name.parse(CORDA_X500_NAME)
