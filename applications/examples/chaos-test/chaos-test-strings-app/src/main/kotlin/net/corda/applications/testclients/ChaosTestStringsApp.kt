@@ -1,9 +1,6 @@
 package net.corda.applications.testclients
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
-import net.corda.applications.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
+import net.corda.applications.common.ConfigHelper
 import net.corda.components.examples.config.reader.ConfigReader
 import net.corda.components.examples.config.reader.ConfigReader.Companion.MESSAGING_CONFIG
 import net.corda.components.examples.config.reader.ConfigReceivedEvent
@@ -31,9 +28,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import java.io.File
-import java.io.FileInputStream
-import java.util.Properties
 
 enum class LifeCycleState {
     UNINITIALIZED, STARTINGCONFIG, STARTINGMESSAGING, REINITMESSAGING
@@ -56,9 +50,6 @@ class ChaosTestApp @Activate constructor(
     private companion object {
         val log: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
-        const val TOPIC_PREFIX = "messaging.topic.prefix"
-        const val CONFIG_TOPIC_NAME = "config.topic.name"
-        const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
@@ -81,8 +72,7 @@ class ChaosTestApp @Activate constructor(
 
             val instanceId = parameters.instanceId.toInt()
 
-            val kafkaProperties = getKafkaPropertiesFromFile(parameters.kafkaProperties, instanceId)
-            val bootstrapConfig = getBootstrapConfig(kafkaProperties)
+            val bootstrapConfig = getBootstrapConfig(instanceId)
             var state: LifeCycleState = LifeCycleState.UNINITIALIZED
             log.info("Creating life cycle coordinator")
             lifeCycleCoordinator =
@@ -158,41 +148,8 @@ class ChaosTestApp @Activate constructor(
         }
     }
 
-    private fun getKafkaPropertiesFromFile(kafkaPropertiesFile: File?): Properties? {
-        if (kafkaPropertiesFile == null) {
-            return null
-        }
-
-        val kafkaConnectionProperties = Properties()
-        kafkaConnectionProperties.load(FileInputStream(kafkaPropertiesFile))
-        return kafkaConnectionProperties
-    }
-
-    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
-        val bootstrapServer = getConfigValue(kafkaConnectionProperties, SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH)
-        return smartConfigFactory.create(ConfigFactory.empty())
-            .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
-            .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
-    }
-
-    private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {
-        var configValue = System.getProperty(path)
-        if (configValue == null && kafkaConnectionProperties != null) {
-            configValue = kafkaConnectionProperties[path].toString()
-        }
-
-        if (configValue == null) {
-            if (default != null) {
-                return default
-            }
-            log.error(
-                "No $path property found! " +
-                    "Pass property in via --kafka properties file or via -D$path"
-            )
-            shutdown()
-        }
-        return configValue
+    private fun getBootstrapConfig(instanceId: Int?): SmartConfig {
+        return smartConfigFactory.create(ConfigHelper.Companion.getBootstrapConfig(instanceId))
     }
 
     override fun shutdown() {
@@ -205,9 +162,6 @@ class ChaosTestApp @Activate constructor(
 class CliParameters {
     @CommandLine.Option(names = ["--instanceId"], description = ["InstanceId for this worker"])
     lateinit var instanceId: String
-
-    @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties"])
-    var kafkaProperties: File? = null
 
     @CommandLine.Option(
         names = ["--durableKillProcessOnRecord"],

@@ -1,7 +1,5 @@
 package net.corda.applications.examples.testclients
 
-// import com.typesafe.config.ConfigFactory
-// import com.typesafe.config.ConfigValueFactory
 import net.corda.applications.common.ConfigHelper
 // import net.corda.applications.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
 import net.corda.components.examples.publisher.RunChaosTestStringsPub
@@ -24,9 +22,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-// import java.io.File
-// import java.io.FileInputStream
-// import java.util.*
 
 @Component
 class ChaosTestStringsPubApp @Activate constructor(
@@ -43,10 +38,6 @@ class ChaosTestStringsPubApp @Activate constructor(
     private companion object {
         val log: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
-        // To be removed
-        // const val TOPIC_PREFIX = "messaging.topic.prefix"
-        // const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
-        // const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
 
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
@@ -109,97 +100,9 @@ class ChaosTestStringsPubApp @Activate constructor(
         shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
     }
 
-    /*
-    // Old
-    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
-        val bootstrapServer = getConfigValue(kafkaConnectionProperties, SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH)
-        return smartConfigFactory.create(ConfigFactory.empty())
-            .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, "")))
-    }
-     */
-
-    // New version wrapping ConfigHelper
-    // Looking to remove kafkaConnectionProperties
-    // kafkaConnectionProperties currently provides:
-    // TOPIC_PREFIX - covered by ConfigHelper.Companion.getBootstrapConfig() provides
-    // SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH - covered by ConfigHelper.Companion.getBootstrapConfig() provides
     private fun getBootstrapConfig(instanceId: Int?): SmartConfig {
         return smartConfigFactory.create(ConfigHelper.Companion.getBootstrapConfig(instanceId))
     }
-
-
-    // Old Way
-    /*
-    private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {
-        var configValue = System.getProperty(path)
-        if (configValue == null && kafkaConnectionProperties != null) {
-            configValue = kafkaConnectionProperties[path].toString()
-        }
-
-        if (configValue == null) {
-            if (default != null) {
-                return default
-            }
-            log.error(
-                "No $path property found! " +
-                    "Pass property in via --kafka properties file or via -D$path"
-            )
-            shutdown()
-        }
-        return configValue
-    }
-     */
-    /*
-    private fun getConfigValue(
-        path: String,
-        default: String? = null
-    ): String {
-        val configValue: String = ConfigHelper.Companion.getConfigValue(path, default)
-        return configValue
-    }
-
-     */
-
-    // Old way
-    /*
-    private fun getConfigValue(
-        kafkaConnectionProperties: Properties?,
-        path: String,
-        default: String? = null
-    ): String {
-        var configValue = System.getProperty(path)
-        if (configValue == null && kafkaConnectionProperties != null) {
-            configValue = kafkaConnectionProperties[path].toString()
-        }
-
-        if (configValue == null) {
-            if (default != null) {
-                return default
-            }
-            log.error(
-                "No $path property found! " +
-                        "Pass property in via --kafka properties file or via -D$path"
-            )
-            shutdown()
-        }
-        return configValue
-    }
-    */
-
-    // Not using a kafkaproperties file anymore
-    /*
-    private fun getKafkaPropertiesFromFile(kafkaPropertiesFile: File?): Properties? {
-        if (kafkaPropertiesFile == null) {
-            return null
-        }
-
-        val kafkaConnectionProperties = Properties()
-        kafkaConnectionProperties.load(FileInputStream(kafkaPropertiesFile))
-        return kafkaConnectionProperties
-    }
-
-     */
 }
 
 class CliParameters {

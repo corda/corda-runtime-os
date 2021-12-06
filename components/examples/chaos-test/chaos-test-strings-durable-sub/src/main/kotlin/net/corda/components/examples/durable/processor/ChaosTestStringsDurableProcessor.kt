@@ -4,7 +4,6 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import kotlin.system.exitProcess
 
 class ChaosTestStringsDurableProcessor(
