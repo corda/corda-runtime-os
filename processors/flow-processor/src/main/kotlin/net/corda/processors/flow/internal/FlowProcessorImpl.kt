@@ -14,7 +14,6 @@ class FlowProcessorImpl: FlowProcessor {
     }
 
     override fun start(instanceId: Int, config: SmartConfig) {
-        // TODO - Inspect config here is correct.
         logger.info("Flow processor starting.")
     }
 
