@@ -42,7 +42,9 @@ class SessionPartitionMapperImpl(
             throw IllegalStateException("getPartitions invoked, while session partition mapper is not running.")
         } else {
             println("QQQ getPartitions: $sessionId")
-            sessionPartitionsMapping[sessionId]
+            sessionPartitionsMapping[sessionId]?.also {
+                println("QQQ \t <- $it")
+            }
         }
     }
 

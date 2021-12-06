@@ -10,6 +10,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PRE
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.utils.getRecordListOffsets
 import net.corda.messaging.kafka.utils.getStringOrNull
+import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException
@@ -75,7 +76,7 @@ class CordaKafkaProducerImpl(
                 thread {
                     log.info("QQQ waiting in another thread...")
                     try {
-                        val gotIt = future.get()
+                        val gotIt = future.getOrThrow()
                         log.info("QQQ got $gotIt")
                     } catch (e: Exception) {
                         log.info("QQQ oops", e)
