@@ -289,6 +289,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
             producer.sendRecords(processor.onNext(consumerRecords.map { it.toEventLogRecord() }))
             log.info("QQQ sent - producer = $producer...")
             producer.sendAllOffsetsToTransaction(consumer)
+            log.info("QQQ will commit now...")
             producer.commitTransaction()
             log.info("QQQ commited - producer = $producer...")
         } catch (ex: Exception) {

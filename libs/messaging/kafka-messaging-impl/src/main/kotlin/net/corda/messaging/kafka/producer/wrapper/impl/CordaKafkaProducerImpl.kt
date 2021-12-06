@@ -75,11 +75,14 @@ class CordaKafkaProducerImpl(
             if(record.topic == "session.out.partitions") {
                 log.info("QQQ Sent waiting...")
             }
-
-            future.getOrThrow()
-            if(record.topic == "session.out.partitions") {
-                log.info("QQQ waited")
+            thread {
+                log.info("QQQ waiting in thread...")
+                future.getOrThrow()
+                if(record.topic == "session.out.partitions") {
+                    log.info("QQQ waited")
+                }
             }
+
         }
     }
 
