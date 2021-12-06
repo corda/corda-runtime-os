@@ -104,6 +104,17 @@ class InMemorySessionReplayerTest {
     }
 
     @Test
+    fun `The InMemorySessionReplacer removes a message from the replayScheduler when removeAllMessageFromReplay`() {
+        val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), netMap)
+
+        setRunning()
+        replayer.removeAllMessagesFromReplay()
+        @Suppress("UNCHECKED_CAST")
+        verify(replayScheduler.constructed().last() as ReplayScheduler<InMemorySessionReplayer.SessionMessageReplay>)
+            .removeAllMessagesFromReplay()
+    }
+
+    @Test
     fun `The replaySchedular callback publishes the session message`() {
         InMemorySessionReplayer(mock(), mock(), mock(), mock(), netMap)
         val id = UUID.randomUUID().toString()

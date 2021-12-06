@@ -232,6 +232,7 @@ open class SessionManagerImpl(
 
     private fun destroyAllSessions() {
         sessionReplayer.removeAllMessagesFromReplay()
+        heartbeatManager.removeAllMessages()
         val tombstoneRecords = (activeOutboundSessionsById.keys + pendingOutboundSessions.keys + activeInboundSessions.keys
                 + pendingInboundSessions.keys).map { Record(Schema.SESSION_OUT_PARTITIONS, it, null) }
         activeOutboundSessions.clear()
@@ -624,6 +625,10 @@ open class SessionManagerImpl(
             @Volatile
             var sendingHeartbeats: Boolean = false
         )
+
+        fun removeAllMessages() {
+            trackedSessions.clear()
+        }
 
         fun sessionMessageSent(key: SessionKey, sessionId: String) {
             dominoTile.withLifecycleLock {
