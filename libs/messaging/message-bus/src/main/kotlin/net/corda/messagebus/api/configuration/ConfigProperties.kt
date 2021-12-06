@@ -1,8 +1,5 @@
 package net.corda.messagebus.api.configuration
 
-import org.apache.kafka.clients.CommonClientConfigs
-import org.apache.kafka.clients.producer.ProducerConfig
-
 class ConfigProperties {
     companion object {
         const val TOPIC = "topic"
@@ -45,15 +42,15 @@ class ConfigProperties {
         const val SUBSCRIBE_MAX_RETRIES = "subscribe.retries"
         const val COMMIT_OFFSET_MAX_RETRIES = "commit.retries"
 
-        const val GROUP_INSTANCE_ID = org.apache.kafka.clients.CommonClientConfigs.GROUP_INSTANCE_ID_CONFIG
-        const val PRODUCER_CLIENT_ID = "producer.${org.apache.kafka.clients.CommonClientConfigs.CLIENT_ID_CONFIG}"
-        const val CONSUMER_GROUP_ID = "consumer.${org.apache.kafka.clients.CommonClientConfigs.GROUP_ID_CONFIG}"
-        const val CONSUMER_MAX_POLL_INTERVAL = "consumer.${org.apache.kafka.clients.CommonClientConfigs.MAX_POLL_INTERVAL_MS_CONFIG}"
-        const val PRODUCER_TRANSACTIONAL_ID = "producer.${org.apache.kafka.clients.producer.ProducerConfig.TRANSACTIONAL_ID_CONFIG}"
+        const val GROUP_INSTANCE_ID = "group.instance.id"
+        const val PRODUCER_CLIENT_ID = "producer.client.id"
+        const val CONSUMER_GROUP_ID = "consumer.group.id"
+        const val CONSUMER_MAX_POLL_INTERVAL = "consumer.max.poll.interval.ms"
+        const val PRODUCER_TRANSACTIONAL_ID = "producer.transactional.id"
 
         const val STATE_TOPIC_NAME = "$STATE_CONSUMER.$TOPIC_NAME"
 
-        const val EVENT_GROUP_ID = "$EVENT_CONSUMER.${org.apache.kafka.clients.CommonClientConfigs.GROUP_ID_CONFIG}"
+        const val EVENT_GROUP_ID = "$EVENT_CONSUMER.$CONSUMER_GROUP_ID"
         val EVENT_CONSUMER_THREAD_STOP_TIMEOUT = CONSUMER_THREAD_STOP_TIMEOUT.replace("consumer", "eventConsumer")
         val EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES = CONSUMER_POLL_AND_PROCESS_RETRIES.replace("consumer", "eventConsumer")
         val EVENT_CONSUMER_CLOSE_TIMEOUT = CONSUMER_CLOSE_TIMEOUT.replace("consumer", "eventConsumer")

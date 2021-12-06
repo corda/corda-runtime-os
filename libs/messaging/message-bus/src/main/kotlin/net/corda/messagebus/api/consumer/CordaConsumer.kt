@@ -76,6 +76,15 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
     fun seekToBeginning(partitions: Collection<TopicPartition>)
 
     /**
+     * Seek to the last offset for each of the given [partitions]. This function evaluates lazily, seeking to the
+     * final offset in all partitions only when [poll] or [position] are called.
+     * If no partitions are provided, seek to the first offset for all the currently assigned partitions.
+     *
+     * @param partitions the partitions which will be returned to the last offset
+     */
+    fun seekToEnd(partitions: Collection<TopicPartition>)
+
+    /**
      * Get the first offset for the given [partitions].
      * This method does not change the current consumer position of the partitions.
      *
