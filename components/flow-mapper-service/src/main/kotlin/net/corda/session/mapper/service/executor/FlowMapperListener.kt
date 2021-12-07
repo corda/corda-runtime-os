@@ -1,4 +1,4 @@
-package net.corda.components.session.mapper.service
+package net.corda.session.mapper.service.executor
 
 import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent

@@ -1,4 +1,4 @@
-package net.corda.components.session.mapper.service
+package net.corda.session.mapper.service.executor
 
 import net.corda.messaging.api.publisher.Publisher
 import java.util.concurrent.ScheduledExecutorService
