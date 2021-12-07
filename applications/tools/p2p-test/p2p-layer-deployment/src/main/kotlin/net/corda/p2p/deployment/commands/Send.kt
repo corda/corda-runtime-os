@@ -53,7 +53,7 @@ class Send : RunSimulator() {
         mapOf(
             "parallelClients" to 1,
             "simulatorMode" to "SENDER",
-            "dbParams" to dbParams,
+            "dbParams" to dbParams(peer),
             "loadGenerationParams" to loadGenerationParams,
         )
     }

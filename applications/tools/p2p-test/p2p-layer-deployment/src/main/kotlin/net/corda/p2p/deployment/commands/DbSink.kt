@@ -9,6 +9,10 @@ import picocli.CommandLine.Command
 )
 class DbSink : RunSimulator() {
     override val parameters by lazy {
-        mapOf("parallelClients" to 1, "simulatorMode" to "DB_SINK", "dbParams" to dbParams)
+        mapOf(
+            "parallelClients" to 1,
+            "simulatorMode" to "DB_SINK",
+            "dbParams" to dbParams(namespaceName)
+        )
     }
 }

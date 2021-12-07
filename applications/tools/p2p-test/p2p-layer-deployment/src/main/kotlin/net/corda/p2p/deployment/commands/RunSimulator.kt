@@ -7,6 +7,46 @@ import net.corda.p2p.deployment.pods.Simulator
 import picocli.CommandLine.Option
 
 abstract class RunSimulator : Runnable {
+    companion object {
+
+        @Suppress("UNCHECKED_CAST")
+        fun dbParams(namespaceName: String): Yaml {
+            val getDb = ProcessBuilder().command(
+                "kubectl",
+                "get", "pods",
+                "-n", namespaceName,
+                "-l", "app=db",
+                "-o", "jsonpath={.items[*].spec.containers[].env}"
+            ).start()
+            if (getDb.waitFor() != 0) {
+                System.err.println(getDb.errorStream.reader().readText())
+                throw DeploymentException("Could not get DB pod")
+            }
+
+            val json = getDb.inputStream.reader().readText()
+            if (json.isBlank()) {
+                throw DeploymentException("Could not DB pod in namespace $namespaceName")
+            }
+            val reader = ObjectMapper().reader()
+            val env = reader.readValue(json, List::class.java) as Collection<Yaml>
+            val password = env.firstOrNull {
+                it["name"] == "POSTGRES_PASSWORD"
+            }?.let {
+                it["value"] as? String
+            }
+            val username = env.firstOrNull {
+                it["name"] == "POSTGRES_USER"
+            }?.let {
+                it["value"] as? String
+            }
+            return mapOf(
+                "username" to username,
+                "password" to password,
+                "host" to "db.$namespaceName",
+                "db" to username
+            )
+        }
+    }
     @Option(
         names = ["-n", "--name"],
         description = ["The name of the namespace"],
@@ -40,44 +80,6 @@ abstract class RunSimulator : Runnable {
         }
         val reader = ObjectMapper().reader()
         reader.readValue(json, Map::class.java)
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    val dbParams by lazy {
-        val getDb = ProcessBuilder().command(
-            "kubectl",
-            "get", "pods",
-            "-n", namespaceName,
-            "-l", "app=db",
-            "-o", "jsonpath={.items[*].spec.containers[].env}"
-        ).start()
-        if (getDb.waitFor() != 0) {
-            System.err.println(getDb.errorStream.reader().readText())
-            throw DeploymentException("Could not get DB pod")
-        }
-
-        val json = getDb.inputStream.reader().readText()
-        if (json.isBlank()) {
-            throw DeploymentException("Could not DB pod in namespace $namespaceName")
-        }
-        val reader = ObjectMapper().reader()
-        val env = reader.readValue(json, List::class.java) as Collection<Yaml>
-        val password = env.firstOrNull {
-            it["name"] == "POSTGRES_PASSWORD"
-        }?.let {
-            it["value"] as? String
-        }
-        val username = env.firstOrNull {
-            it["name"] == "POSTGRES_USER"
-        }?.let {
-            it["value"] as? String
-        }
-        mapOf(
-            "username" to username,
-            "password" to password,
-            "host" to "db.$namespaceName",
-            "db" to username
-        )
     }
 
     @Suppress("UNCHECKED_CAST")
