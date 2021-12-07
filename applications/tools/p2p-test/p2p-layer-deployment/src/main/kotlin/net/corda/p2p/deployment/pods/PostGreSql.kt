@@ -13,6 +13,7 @@ class PostGreSql(
     override val environmentVariables = mapOf(
         "POSTGRES_USER" to username,
         "POSTGRES_PASSWORD" to password,
+        "POSTGRES_HOST_AUTH_METHOD" to "trust",
     )
     override val rawData = listOf(
         TextRawData(

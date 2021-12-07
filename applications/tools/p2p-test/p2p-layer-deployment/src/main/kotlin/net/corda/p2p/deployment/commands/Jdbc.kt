@@ -16,22 +16,19 @@ class Jdbc : Runnable {
     )
     private lateinit var namespaceName: String
 
-    private val port = PortDetector()
-
-    override fun run() {
-        val port = port.next()
-        val commands = listOf(
-            "kubectl",
-            "port-forward",
-            "-n",
-            namespaceName,
-            "service/db",
-            "$port:psql"
-        )
-        println("Example of JDBC URL: jdbc:postgresql://localhost:$port/corda?user=corda&password=corda-p2p-masters")
-        ProcessBuilder(commands)
+    private fun startTelepresence() {
+        ProcessBuilder()
+            .command(
+                "telepresence",
+                "connect"
+            )
             .inheritIO()
             .start()
             .waitFor()
+    }
+
+    override fun run() {
+        startTelepresence()
+        println("Example of JDBC URL: jdbc:postgresql://db.$namespaceName/corda?user=corda&password=corda-p2p-masters")
     }
 }
