@@ -404,8 +404,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
                 makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
                 sessionManager.inboundSessionEstablished(session.sessionId)
+            } else if(declaredSource.toHoldingIdentity() != actualSource) {
+                logger.debug("Actual source ($actualSource) does not match declared source ($declaredSource)," +
+                        " which indicates a spoofing attempt!")
             } else {
-                logger.debug("Actual source does not match declared source. The message was discarded.")
+                logger.debug("Actual destination ($actualDestination) does not match declared destination ($declaredDestination)," +
+                        " which indicates a spoofing attempt!")
             }
         }
 

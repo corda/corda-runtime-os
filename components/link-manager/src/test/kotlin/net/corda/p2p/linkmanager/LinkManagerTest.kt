@@ -1018,7 +1018,9 @@ class LinkManagerTest {
         val session = createSessionPair()
         verifySourceForDataMessagesWithInboundMessageProcessor(session)
         loggingInterceptor.assertSingleDebug(
-            "Actual source does not match declared source. The message was discarded."
+            "Actual source ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
+                    " does not match declared source (HoldingIdentity(x500Name=PartyA, groupId=Group))," +
+                    " which indicates a spoofing attempt!"
         )
     }
 
@@ -1027,7 +1029,9 @@ class LinkManagerTest {
         val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
         verifySourceForDataMessagesWithInboundMessageProcessor(session)
         loggingInterceptor.assertSingleDebug(
-            "Actual source does not match declared source. The message was discarded."
+            "Actual source ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
+                    " does not match declared source (HoldingIdentity(x500Name=PartyA, groupId=Group))," +
+                    " which indicates a spoofing attempt!"
         )
     }
 }
