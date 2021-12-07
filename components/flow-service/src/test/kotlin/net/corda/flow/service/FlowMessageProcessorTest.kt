@@ -91,7 +91,7 @@ class FlowMessageProcessorTest {
         val flowMessageProcessor = FlowMessageProcessor(flowManager, sandboxService)
         doReturn(FlowResult(null, emptyList())).whenever(flowManager).wakeFlow(any(), any(), any(), anyOrNull())
 
-        flowMessageProcessor.onNext(Checkpoint(flowKey, null, "cpidId", null, emptyMap()), wakeupFlow)
+        flowMessageProcessor.onNext(Checkpoint(flowKey, null, "cpidId", null, emptyList()), wakeupFlow)
 
         verify(sandboxService, times(1)).getSandboxGroupFor(any(), any(), any())
         verify(flowManager, times(1)).wakeFlow(any(), any(), any(), anyOrNull())
