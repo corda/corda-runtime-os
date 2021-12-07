@@ -72,5 +72,4 @@ class LoggingInterceptor private constructor(private val testAppender: TestAppen
         assertEquals(1, errors.size)
         assertThat(errors.single().message).contains(message)
     }
-
 }
