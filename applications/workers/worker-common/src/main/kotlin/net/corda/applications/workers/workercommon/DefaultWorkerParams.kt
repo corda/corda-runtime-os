@@ -19,6 +19,13 @@ class DefaultWorkerParams {
     )
     var instanceId = Random.nextInt().absoluteValue
 
+    @Suppress("Unused")
+    @Option(
+        names = ["-t", "--topicPrefix"],
+        description = ["The prefix to use for Kafka topics. Defaults to the empty string."]
+    )
+    var topicPrefix = ""
+
     @Option(names = ["-d", "--disableHealthMonitor"], description = ["Disables the health monitor."])
     var disableHealthMonitor = false
 

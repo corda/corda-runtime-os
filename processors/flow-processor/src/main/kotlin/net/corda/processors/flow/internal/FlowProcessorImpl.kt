@@ -13,7 +13,7 @@ class FlowProcessorImpl: FlowProcessor {
         val logger = contextLogger()
     }
 
-    override fun start(instanceId: Int, config: SmartConfig) {
+    override fun start(instanceId: Int, topicPrefix: String, config: SmartConfig) {
         logger.info("Flow processor starting.")
     }
 
