@@ -89,7 +89,7 @@ abstract class RunSimulator : Runnable {
             configFile
         )
         DeployYamls(job.yamls(namespaceName)).run()
-        if(follow) {
+        if (follow) {
             followPod(job.app)
         }
     }
@@ -98,10 +98,10 @@ abstract class RunSimulator : Runnable {
         val getPodName = ProcessBuilder().command(
             "kubectl", "get", "pods",
             "-n", namespaceName,
-            "--selector=job-name=${app}",
+            "--selector=job-name=$app",
             "--output=jsonpath={.items[*].metadata.name}"
         ).start()
-        if(getPodName.waitFor() != 0) {
+        if (getPodName.waitFor() != 0) {
             System.err.println(getPodName.errorStream.reader().readText())
             throw DeploymentException("Could not get pod")
         }
@@ -117,10 +117,9 @@ abstract class RunSimulator : Runnable {
             "-f"
         ).inheritIO().start()
         log.waitFor()
-
     }
 
-    private fun isRunning(podName: String) : Boolean {
+    private fun isRunning(podName: String): Boolean {
         val getStatus = ProcessBuilder().command(
             "kubectl",
             "get", "pods",
@@ -138,14 +137,11 @@ abstract class RunSimulator : Runnable {
             "Pending" -> false
             else -> throw DeploymentException("Simulator job had error")
         }
-
-
     }
     private fun waitForPod(podName: String) {
-        while(!isRunning(podName)) {
+        while (!isRunning(podName)) {
             println("Waiting for $podName")
             Thread.sleep(1000)
         }
-
     }
 }

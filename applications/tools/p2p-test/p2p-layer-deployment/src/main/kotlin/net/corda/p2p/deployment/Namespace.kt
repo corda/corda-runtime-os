@@ -195,7 +195,7 @@ class Namespace : Runnable {
             DeployPods(this, infrastructurePods).run()
 
             println("Creating/alerting kafka topics...")
-            KafkaSetup(namespaceName).run()
+            KafkaSetup(namespaceName, kafkaBrokerCount).run()
 
             DeployPods(this, p2pPodsPods).run()
 

@@ -8,6 +8,7 @@ abstract class Pod {
     open val ports: Collection<Port> = emptyList()
     open val rawData: Collection<RawData<*>> = emptyList()
     open val environmentVariables: Map<String, String> = emptyMap()
+    open val labels: Map<String, String> = emptyMap()
     open val hosts: Collection<String>? = null
     open val pullSecrets: Collection<String> = emptyList()
     open val readyLog: Regex? = null
@@ -36,13 +37,13 @@ abstract class Pod {
         "kind" to "Deployment",
         "metadata" to mapOf(
             "name" to app,
-            "namespace" to namespace
+            "namespace" to namespace,
         ),
         "spec" to mapOf(
             "replicas" to 1,
             "selector" to mapOf("matchLabels" to mapOf("app" to app)),
             "template" to mapOf(
-                "metadata" to mapOf("labels" to mapOf("app" to app)),
+                "metadata" to mapOf("labels" to mapOf("app" to app) + labels),
                 "spec" to mapOf(
                     "imagePullSecrets" to pullSecrets.map {
                         mapOf("name" to it)

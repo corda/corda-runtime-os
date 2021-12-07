@@ -17,6 +17,9 @@ abstract class P2pPod(
     override val app by lazy {
         "$imageName-$index"
     }
+    override val labels by lazy {
+        mapOf("type" to imageName)
+    }
     override val environmentVariables by lazy {
         mapOf(
             "KAFKA_SERVERS" to kafkaServers,

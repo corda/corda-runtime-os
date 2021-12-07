@@ -1,9 +1,11 @@
 package net.corda.p2p.deployment.commands
 
 import net.corda.p2p.deployment.DeploymentException
+import java.lang.Integer.min
 
 class KafkaSetup(
-    private val namespaceName: String
+    private val namespaceName: String,
+    private val kafkaBrokersCount: Int,
 ) : Runnable {
     override fun run() {
         println("Setting up kafka topics...")
@@ -74,7 +76,7 @@ class KafkaSetup(
             "--partitions",
             "10",
             "--replication-factor",
-            "3",
+            "${min(3, kafkaBrokersCount)}",
         )
     }
 

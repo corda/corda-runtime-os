@@ -26,7 +26,6 @@ class Destroy : Runnable {
     @Option(
         names = ["-n", "--name"],
         description = ["The name of the namespace"],
-        required = true
     )
     lateinit var namespaceName: String
 
