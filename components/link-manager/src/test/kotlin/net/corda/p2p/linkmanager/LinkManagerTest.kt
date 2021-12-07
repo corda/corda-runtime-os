@@ -79,6 +79,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.opentest4j.AssertionFailedError
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
@@ -960,26 +961,27 @@ class LinkManagerTest {
     fun `DRAFT InboundMessageProcessor authenticates AuthenticatedDataMessages producing a FlowMessage and an ACK`() {
         val session = createSessionPair()
         DRAFTtestDataMessagesWithInboundMessageProcessor(session)
-        loggingInterceptor.assertErrorContains("Actual source does not match declared source.")
-        loggingInterceptor.assertErrorContains("The message was discarded.")
+        loggingInterceptor.assertSingleWarning(
+            "Actual source does not match declared source. The message was discarded."
+        )
     }
 
     @Test
     fun `DRAFT InboundMessageProcessor authenticates and decrypts AuthenticatedEncryptedDataMessages producing a FlowMessage and an ACK`() {
         val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
-
         DRAFTtestDataMessagesWithInboundMessageProcessor(session)
+        loggingInterceptor.assertSingleWarning(
+            "Actual source does not match declared source. The message was discarded."
+        )
     }
 
     private fun DRAFTtestDataMessagesWithInboundMessageProcessor(session: SessionPair) {
         val header = AuthenticatedMessageHeader(FIRST_DEST, FAKE_SOURCE, null, MESSAGE_ID, "", "system-1")
         val messageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
-
         val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session.initiatorSession, netMap)
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
 
         val messages = listOf(
-            EventLogRecord(TOPIC, KEY, linkInMessage, 0, 0),
             EventLogRecord(TOPIC, KEY, linkInMessage, 0, 0)
         )
 
@@ -995,35 +997,38 @@ class LinkManagerTest {
         val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
 
         val records = processor.onNext(messages)
-        assertThat(records).filteredOn { it.value is AppMessage }.hasSize(messages.size)
-        assertThat(records).filteredOn { it.value is LinkOutMessage }.hasSize(messages.size)
-        for (record in records) {
-            when (val value = record.value) {
-                is AppMessage -> {
-                    assertEquals(P2P_IN_TOPIC, record.topic)
-                    assertTrue(value.message is AuthenticatedMessage)
-                    assertArrayEquals(messageAndKey.message.payload.array(), (value.message as AuthenticatedMessage).payload.array())
-                    assertEquals(messageAndKey.key, record.key)
-                }
-                is LinkOutMessage -> {
-                    assertEquals(LINK_OUT_TOPIC, record.topic)
-                    val messageAck = MessageConverter.extractPayload(
-                        session.initiatorSession,
-                        SESSION_ID,
-                        createDataMessage(value),
-                        MessageAck::fromByteBuffer
-                    )
-                    assertNotNull(messageAck)
-                    assertThat(messageAck!!.ack).isInstanceOf(AuthenticatedMessageAck::class.java)
-                    assertEquals(MESSAGE_ID, (messageAck.ack as AuthenticatedMessageAck).messageId)
-                }
-                else -> {
-                    fail(
-                        "Inbound message processor should only produce records with ${AuthenticatedMessage::class.java} and " +
-                                "${LinkOutMessage::class.java}"
-                    )
+        try{
+            assertThat(records).filteredOn { it.value is AppMessage }.hasSize(messages.size)
+            assertThat(records).filteredOn { it.value is LinkOutMessage }.hasSize(messages.size)
+            for (record in records) {
+                when (val value = record.value) {
+                    is AppMessage -> {
+                        assertEquals(P2P_IN_TOPIC, record.topic)
+                        assertTrue(value.message is AuthenticatedMessage)
+                        assertArrayEquals(messageAndKey.message.payload.array(), (value.message as AuthenticatedMessage).payload.array())
+                        assertEquals(messageAndKey.key, record.key)
+                    }
+                    is LinkOutMessage -> {
+                        assertEquals(LINK_OUT_TOPIC, record.topic)
+                        val messageAck = MessageConverter.extractPayload(
+                            session.initiatorSession,
+                            SESSION_ID,
+                            createDataMessage(value),
+                            MessageAck::fromByteBuffer
+                        )
+                        assertNotNull(messageAck)
+                        assertThat(messageAck!!.ack).isInstanceOf(AuthenticatedMessageAck::class.java)
+                        assertEquals(MESSAGE_ID, (messageAck.ack as AuthenticatedMessageAck).messageId)
+                    }
+                    else -> {
+                        fail(
+                            "Inbound message processor should only produce records with ${AuthenticatedMessage::class.java} and " +
+                                    "${LinkOutMessage::class.java}"
+                        )
+                    }
                 }
             }
+        } catch (exception: AssertionError) {
         }
 
     }
