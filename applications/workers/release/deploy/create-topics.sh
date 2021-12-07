@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 
-kafka_topics='docker exec kafka /opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092'
-create_kafka_topics="$kafka_topics --partitions 1 --replication-factor 1"
+kafka_command='docker exec kafka /opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092'
+kafka_flags="--partitions 1 --replication-factor 1 --create --topic"
 
 echo "Creating topics."
-$create_kafka_topics --create --topic config-update-request --config "cleanup.policy=compact"
-
-echo "Existing topics:"
-$kafka_topics --list
+$kafka_command $kafka_flags config-update-request --config "cleanup.policy=compact"
+$kafka_command $kafka_flags config --config "cleanup.policy=compact"

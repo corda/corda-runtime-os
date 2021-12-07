@@ -4,19 +4,17 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.processor.CompactedProcessor
-import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.processors.db.DBProcessor
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+
+// TODO - Joel - I'm currently hanging this all off the main processor. I'll want to create a sub-component instead.
 
 /** The processor for a `DBWorker`. */
 @Suppress("Unused")
@@ -25,7 +23,11 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = EntityManagerFactoryFactory::class)
+    private val entityManagerFactoryFactory: EntityManagerFactoryFactory
 ) : DBProcessor {
     private companion object {
         val logger = contextLogger()
@@ -36,7 +38,7 @@ class DBProcessorImpl @Activate constructor(
     override fun start(instanceId: Int, config: SmartConfig) {
         logger.info("DB processor starting.")
 
-        val eventHandler = DBEventHandler(subscriptionFactory, instanceId, config)
+        val eventHandler = DBEventHandler(subscriptionFactory, publisherFactory, /*entityManagerFactoryFactory,*/ instanceId, config)
         // TODO - Joel - Not sure if naming the coordinator after the processor itself is an anti-pattern.
         coordinator = coordinatorFactory.createCoordinator<DBProcessor>(eventHandler).apply { start() }
 
@@ -50,48 +52,3 @@ class DBProcessorImpl @Activate constructor(
     }
 }
 
-// TODO - Joel - Move to separate file.
-private class DBEventHandler(
-    subscriptionFactory: SubscriptionFactory,
-    instanceId: Int,
-    config: SmartConfig,
-) : LifecycleEventHandler {
-
-    private companion object {
-        val logger = contextLogger()
-        const val GROUP_NAME = "DB_EVENT_HANDLER"
-    }
-
-    private val subscription = subscriptionFactory.createCompactedSubscription(
-        SubscriptionConfig(GROUP_NAME, "config-update-request", instanceId), DBCompactedProcessor(), config
-    )
-
-    override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("jjj processing event of type $event in dbeventhandler")
-
-        when (event) {
-            is StartEvent -> subscription.start()
-            is StopEvent -> subscription.stop()
-        }
-    }
-}
-
-// TODO - Joel - Move to separate file.
-private class DBCompactedProcessor : CompactedProcessor<String, String> {
-    private companion object {
-        val logger = contextLogger()
-    }
-
-    override val keyClass = String::class.java
-    override val valueClass = String::class.java
-
-    override fun onSnapshot(currentData: Map<String, String>) {
-        logger.info("jjj processing snapshot in dbcompactedprocessor: $currentData")
-    }
-
-    override fun onNext(newRecord: Record<String, String>, oldValue: String?, currentData: Map<String, String>) {
-        logger.info("jjj processing update in dbcompactedprocessor: $newRecord")
-        // TODO - Joel - Send config to DB.
-        // TODO - Joel - Publish updated config.
-    }
-}
