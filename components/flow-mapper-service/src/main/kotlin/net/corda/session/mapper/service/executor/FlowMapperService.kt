@@ -13,7 +13,6 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -45,7 +44,6 @@ class FlowMapperService(
     private val coordinator = coordinatorFactory.createCoordinator<FlowMapperService>(::eventHandler)
 
     private var stateAndEventSub: StateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>? = null
-    private var publisher: Publisher? = null
     private var scheduledTaskState: ScheduledTaskState? = null
 
     private val instanceId = config.getInt(INSTANCE_ID)
@@ -80,7 +78,6 @@ class FlowMapperService(
                 stateAndEventSub?.start()
             }
             is StopEvent -> {
-                publisher?.close()
                 stateAndEventSub?.close()
                 scheduledTaskState?.close()
             }
