@@ -34,7 +34,12 @@ internal class SandboxGroupImpl(
             } catch (e: SandboxException) {
                 null
             }
-        }.singleOrNull() ?: bundleUtils.loadClassFromSystemBundle(className))
+        }.singleOrNull()
+            ?: try {
+                bundleUtils.loadClassFromSystemBundle(className)
+            } catch (e: ClassNotFoundException) {
+                null
+            })
             ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group or in the system bundle.")
     }
 
