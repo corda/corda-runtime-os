@@ -404,10 +404,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
                 sessionManager.inboundSessionEstablished(session.sessionId)
             } else if(sessionSource.toHoldingIdentity() != messageSource) {
-                logger.debug("Actual source ($messageSource) does not match declared source ($sessionSource)," +
+                logger.warn("Actual source ($messageSource) does not match declared source ($sessionSource)," +
                         " which indicates a spoofing attempt!")
             } else {
-                logger.debug("Actual destination ($messageDestination) does not match declared destination ($sessionDestination)," +
+                logger.warn("Actual destination ($messageDestination) does not match declared destination ($sessionDestination)," +
                         " which indicates a spoofing attempt!")
             }
         }

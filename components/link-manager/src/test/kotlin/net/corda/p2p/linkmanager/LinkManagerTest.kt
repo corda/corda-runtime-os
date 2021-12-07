@@ -983,7 +983,7 @@ class LinkManagerTest {
     fun `InboundMessageProcessor discards AuthenticatedMessages when the identity (source or destination) in the Header is spoofed`() {
         val session = createSessionPair()
         verifySourceForDataMessagesWithInboundMessageProcessor(session)
-        loggingInterceptor.assertSingleDebug(
+        loggingInterceptor.assertSingleWarning(
             "Actual source ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
                     " does not match declared source (HoldingIdentity(x500Name=PartyA, groupId=Group))," +
                     " which indicates a spoofing attempt!"
@@ -994,7 +994,7 @@ class LinkManagerTest {
     fun `InboundMessageProcessor discards AuthenticatedEncryptedMessages when the identity (source or destination) in the Header is spoofed`() {
         val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
         verifySourceForDataMessagesWithInboundMessageProcessor(session)
-        loggingInterceptor.assertSingleDebug(
+        loggingInterceptor.assertSingleWarning(
             "Actual source ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
                     " does not match declared source (HoldingIdentity(x500Name=PartyA, groupId=Group))," +
                     " which indicates a spoofing attempt!"
