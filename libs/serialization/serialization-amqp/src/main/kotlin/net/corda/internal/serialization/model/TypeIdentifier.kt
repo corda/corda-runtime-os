@@ -3,7 +3,6 @@ package net.corda.internal.serialization.model
 import com.google.common.reflect.TypeToken
 import net.corda.internal.serialization.amqp.Metadata
 import net.corda.internal.serialization.amqp.asClass
-import net.corda.internal.serialization.osgi.TypeResolver
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import java.io.NotSerializableException
@@ -168,7 +167,8 @@ sealed class TypeIdentifier {
         }
         val isPrimitive get() = name in primitives
 
-        override fun getLocalType(sandboxGroup: SandboxGroup): Type = primitives[name] ?: TypeResolver.resolve(name, sandboxGroup)
+        override fun getLocalType(sandboxGroup: SandboxGroup): Type =
+            primitives[name] ?: sandboxGroup.loadClassFromMainBundles(name)
         override fun getLocalType(sandboxGroup: SandboxGroup, metadata: Metadata): Type {
             return primitives[name] ?: loadTypeFromMetadata(sandboxGroup, metadata)
         }
@@ -180,10 +180,12 @@ sealed class TypeIdentifier {
      * because they have been erased.
      */
     data class Erased(override val name: String, val erasedParameterCount: Int) : TypeIdentifier() {
-        override fun getLocalType(sandboxGroup: SandboxGroup): Type = TypeResolver.resolve(name, sandboxGroup)
-        override fun getLocalType(sandboxGroup: SandboxGroup, metadata: Metadata): Type {
-            return loadTypeFromMetadata(sandboxGroup, metadata)
-        }
+
+        override fun getLocalType(sandboxGroup: SandboxGroup): Type =
+            sandboxGroup.loadClassFromMainBundles(name)
+        override fun getLocalType(sandboxGroup: SandboxGroup, metadata: Metadata): Type =
+            loadTypeFromMetadata(sandboxGroup, metadata)
+
         override fun toString() = "Erased($name)"
         fun toParameterized(parameters: List<TypeIdentifier>): TypeIdentifier {
             if (parameters.size != erasedParameterCount) throw IncompatibleTypeIdentifierException(
@@ -240,7 +242,7 @@ sealed class TypeIdentifier {
         override val erased: TypeIdentifier get() = Erased(name, parameters.size)
 
         override fun getLocalType(sandboxGroup: SandboxGroup): Type {
-            val rawType = TypeResolver.resolve(name, sandboxGroup)
+            val rawType = sandboxGroup.loadClassFromMainBundles(name)
             if (rawType.typeParameters.size != parameters.size) {
                 throw IncompatibleTypeIdentifierException(
                         "Class $rawType expects ${rawType.typeParameters.size} type arguments, " +
@@ -278,7 +280,7 @@ sealed class TypeIdentifier {
             }
         } else {
             // Must be a Platform type as these are not attached to the metadata
-            TypeResolver.resolve(name, sandboxGroup)
+            sandboxGroup.loadClassFromMainBundles(name)
         }
     }
 }

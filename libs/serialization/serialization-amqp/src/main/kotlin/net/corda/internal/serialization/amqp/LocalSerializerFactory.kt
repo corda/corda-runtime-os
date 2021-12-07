@@ -6,7 +6,6 @@ import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.LocalTypeModel
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.internal.serialization.model.TypeIdentifier.Parameterised
-import net.corda.internal.serialization.osgi.TypeResolver
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.ClassWhitelist
@@ -138,7 +137,7 @@ class DefaultLocalSerializerFactory(
     override fun getTypeInformation(typeName: String): LocalTypeInformation? {
         return typesByName.getOrPut(typeName) {
             val localType = try {
-                TypeResolver.resolve(typeName, sandboxGroup)
+                sandboxGroup.loadClassFromMainBundles(typeName)
             } catch (e: Exception) {
                 null
             }
