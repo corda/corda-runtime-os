@@ -61,7 +61,6 @@ import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
-import javax.print.attribute.standard.Destination
 
 @Suppress("LongParameterList")
 class LinkManager(@Reference(service = SubscriptionFactory::class)
@@ -388,27 +387,27 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return messages
         }
 
-        private fun checkSourceBeforeProcessing(
-            declaredDestination: LinkManagerNetworkMap.HoldingIdentity,
-            actualDestination: HoldingIdentity,
-            declaredSource: LinkManagerNetworkMap.HoldingIdentity,
-            actualSource: HoldingIdentity,
+        private fun checkIdentityBeforeProcessing(
+            sessionDestination: LinkManagerNetworkMap.HoldingIdentity,
+            messageDestination: HoldingIdentity,
+            sessionSource: LinkManagerNetworkMap.HoldingIdentity,
+            messageSource: HoldingIdentity,
             innerMessage: AuthenticatedMessageAndKey,
             session: Session,
             messages: MutableList<Record<*, *>>
         )
         {
-            if(declaredSource.toHoldingIdentity() == actualSource && declaredDestination.toHoldingIdentity() == actualDestination) {
+            if(sessionSource.toHoldingIdentity() == messageSource && sessionDestination.toHoldingIdentity() == messageDestination) {
                 logger.debug { "Processing message ${innerMessage.message.header.messageId} " +
                         "of type ${innerMessage.message.javaClass} from session ${session.sessionId}" }
                 messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
                 makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
                 sessionManager.inboundSessionEstablished(session.sessionId)
-            } else if(declaredSource.toHoldingIdentity() != actualSource) {
-                logger.debug("Actual source ($actualSource) does not match declared source ($declaredSource)," +
+            } else if(sessionSource.toHoldingIdentity() != messageSource) {
+                logger.debug("Actual source ($messageSource) does not match declared source ($sessionSource)," +
                         " which indicates a spoofing attempt!")
             } else {
-                logger.debug("Actual destination ($actualDestination) does not match declared destination ($declaredDestination)," +
+                logger.debug("Actual destination ($messageDestination) does not match declared destination ($sessionDestination)," +
                         " which indicates a spoofing attempt!")
             }
         }
@@ -427,7 +426,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                         makeAckMessageForHeartbeatMessage(sessionKey, session)?.let { ack -> messages.add(ack) }
                     }
                     is AuthenticatedMessageAndKey -> {
-                        checkSourceBeforeProcessing(
+                        checkIdentityBeforeProcessing(
                             sessionKey.ourId,
                             innerMessage.message.header.destination,
                             sessionKey.responderId,

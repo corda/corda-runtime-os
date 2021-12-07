@@ -980,7 +980,7 @@ class LinkManagerTest {
     }
 
     @Test
-    fun `InboundMessageProcessor verifies source in incoming AuthenticatedMessageHeader`() {
+    fun `InboundMessageProcessor discards AuthenticatedMessages when the identity (source or destination) in the Header is spoofed`() {
         val session = createSessionPair()
         verifySourceForDataMessagesWithInboundMessageProcessor(session)
         loggingInterceptor.assertSingleDebug(
@@ -991,7 +991,7 @@ class LinkManagerTest {
     }
 
     @Test
-    fun `InboundMessageProcessor verifies source in incoming AuthenticatedEncryptedMessageHeader`() {
+    fun `InboundMessageProcessor discards AuthenticatedEncryptedMessages when the identity (source or destination) in the Header is spoofed`() {
         val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
         verifySourceForDataMessagesWithInboundMessageProcessor(session)
         loggingInterceptor.assertSingleDebug(
