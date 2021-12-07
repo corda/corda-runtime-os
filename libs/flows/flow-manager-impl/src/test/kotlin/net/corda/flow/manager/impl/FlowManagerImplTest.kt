@@ -63,7 +63,7 @@ class FlowManagerImplTest {
             emptyList()
         )
         val cpiId = "cpidId"
-        val checkpoint = Checkpoint(flowKey, ByteBuffer.allocate(1), cpiId, stateMachineState, emptyMap())
+        val checkpoint = Checkpoint(flowKey, ByteBuffer.allocate(1), cpiId, stateMachineState, emptyList())
         val eventsOut = listOf(FlowEvent(flowKey, rpcFlowResult))
         val serialized = "Test".toByteArray()
         val topic = "Topic1"
