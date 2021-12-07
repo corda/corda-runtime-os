@@ -386,6 +386,23 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return messages
         }
 
+        private fun checkSourceBeforeProcessing(
+            declaredSource: String, actualSource: String,
+            innerMessage: AuthenticatedMessageAndKey,
+            session: Session,
+            messages: MutableList<Record<*, *>>
+        ) {
+            if(declaredSource == actualSource) {
+                logger.debug { "Processing message ${innerMessage.message.header.messageId} " +
+                        "of type ${innerMessage.message.javaClass} from session ${session.sessionId}" }
+                messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
+                makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
+                sessionManager.inboundSessionEstablished(session.sessionId)
+            } else {
+                logger.debug("Actual source does not match declared source. The message was discarded.")
+            }
+        }
+
         private fun processLinkManagerPayload(
             sessionKey: SessionKey,
             session: Session,
@@ -396,19 +413,14 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             extractPayload(session, sessionId, message, DataMessagePayload::fromByteBuffer)?.let {
                 when (val innerMessage = it.message) {
                     is HeartbeatMessage -> {
-                        logger.debug { "Processing heartbeat message from session ${session.sessionId}" }
+                        logger.debug ("Processing heartbeat message from session $sessionId")
                         makeAckMessageForHeartbeatMessage(sessionKey, session)?.let { ack -> messages.add(ack) }
                     }
                     is AuthenticatedMessageAndKey -> {
-                        if(sessionKey.responderId.x500Name == innerMessage.message.header.source.x500Name) {
-                            logger.debug { "Processing message ${innerMessage.message.header.messageId} " +
-                                    "of type ${innerMessage.message.javaClass} from session ${session.sessionId}" }
-                            messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
-                            makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
-                            sessionManager.inboundSessionEstablished(sessionId)
-                        } else {
-                            logger.debug("Actual source does not match declared source. The message was discarded.")
-                        }
+                        checkSourceBeforeProcessing(
+                            sessionKey.responderId.x500Name,
+                            innerMessage.message.header.source.x500Name,
+                            innerMessage, session, messages)
                     }
                     else -> logger.warn("Unknown incoming message type: ${innerMessage.javaClass}. The message was discarded.")
                 }
