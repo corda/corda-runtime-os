@@ -13,6 +13,7 @@ import net.corda.flow.mapper.FlowMapperMetaData
 import net.corda.flow.mapper.FlowMapperTopics
 import net.corda.flow.mapper.factory.FlowMapperMetaDataFactory
 import net.corda.messaging.api.records.Record
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Component
 
@@ -23,7 +24,7 @@ class FlowMapperMetaDataFactoryImpl : FlowMapperMetaDataFactory {
         flowMapperTopics: FlowMapperTopics, state: FlowMapperState?, eventRecord: Record<String, FlowMapperEvent>
     ): FlowMapperMetaData {
         val flowEvent = eventRecord.value
-        val payload = flowEvent?.payload ?: throw IllegalArgumentException()
+        val payload = flowEvent?.payload ?: throw CordaRuntimeException("No payload for session event on key ${eventRecord.key}")
         var holdingIdentity: HoldingIdentity? = null
 
         var outputTopic = ""
@@ -75,16 +76,10 @@ class FlowMapperMetaDataFactoryImpl : FlowMapperMetaDataFactory {
      * Outbound records should be directed to the p2p out topic.
      */
     private fun getSessionEventOutputTopic(flowMapperTopics: FlowMapperTopics, messageDirection: MessageDirection): String {
-        return when (messageDirection) {
-            MessageDirection.INBOUND -> {
-                flowMapperTopics.flowEventTopic
-            }
-            MessageDirection.OUTBOUND -> {
-                flowMapperTopics.p2pOutTopic
-            }
-            else -> {
-                throw IllegalArgumentException("TODO replace with new exceptions")
-            }
+        return if (messageDirection == MessageDirection.INBOUND) {
+            flowMapperTopics.flowEventTopic
+        } else {
+            flowMapperTopics.p2pOutTopic
         }
     }
 }
