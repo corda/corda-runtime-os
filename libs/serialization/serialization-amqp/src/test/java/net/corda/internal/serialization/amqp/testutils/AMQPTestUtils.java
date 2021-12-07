@@ -5,10 +5,12 @@ import net.corda.internal.serialization.amqp.SerializerFactory;
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder;
 import net.corda.sandbox.SandboxGroup;
 
+import java.util.Objects;
+
 public class AMQPTestUtils {
 
     public static SerializerFactory testDefaultFactory() {
         return SerializerFactoryBuilder.build(AllWhitelist.INSTANCE,
-                (SandboxGroup) TestSerializationContext.getTestSerializationContext().getSandboxGroup());
+                (SandboxGroup) Objects.requireNonNull(TestSerializationContext.testSerializationContext.getSandboxGroup()));
     }
 }
