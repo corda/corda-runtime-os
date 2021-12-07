@@ -24,6 +24,8 @@ class StartRPCFlowExecutor(
     override fun execute(): FlowMapperResult {
         val flowMapperState = flowMapperMetaData.flowMapperState
         return if (flowMapperState == null) {
+            val outputTopic = flowMapperMetaData.outputTopic ?: throw CordaRuntimeException("Output topic should not be null for " +
+                    "StartRPCFlow on key ${flowMapperMetaData.flowMapperEventKey}")
             val identity = flowMapperMetaData.holdingIdentity ?: throw CordaRuntimeException("Holding Identity should not be null for " +
                     "StartRPCFlow on key ${flowMapperMetaData.flowMapperEventKey}")
             val flowKey = flowKeyGenerator.generateFlowKey(identity)
@@ -31,7 +33,7 @@ class StartRPCFlowExecutor(
             val flowEvent = FlowEvent(flowKey, flowMapperMetaData.payload)
             FlowMapperResult(
                 updatedState,
-                mutableListOf(Record(flowMapperMetaData.outputTopic, flowKey, flowEvent))
+                mutableListOf(Record(outputTopic, flowKey, flowEvent))
             )
         } else {
             //duplicate

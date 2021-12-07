@@ -11,7 +11,7 @@ import net.corda.data.identity.HoldingIdentity
 data class FlowMapperMetaData (
     val flowMapperEvent: FlowMapperEvent,
     val flowMapperEventKey: String,
-    val outputTopic: String,
+    val outputTopic: String?,
     val holdingIdentity: HoldingIdentity?,
     val payload: Any,
     val flowMapperState: FlowMapperState?,

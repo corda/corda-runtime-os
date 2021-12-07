@@ -60,6 +60,10 @@ class SessionEventExecutor(
     }
 
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
+        val outputTopic = flowMapperMetaData.outputTopic ?: throw CordaRuntimeException(
+            "Output topic should not be null for " +
+                    "SessionEvent on key ${flowMapperMetaData.flowMapperEventKey}"
+        )
         val (recordKey, recordValue) = if (flowMapperMetaData.messageDirection == MessageDirection.OUTBOUND) {
             Pair(generateOutboundSessionId(flowMapperMetaData.flowMapperEventKey), flowMapperMetaData.flowMapperEvent)
         } else {
@@ -70,7 +74,7 @@ class SessionEventExecutor(
             flowMapperState,
             listOf(
                 Record(
-                    flowMapperMetaData.outputTopic,
+                    outputTopic,
                     recordKey,
                     recordValue
                 )
@@ -79,8 +83,11 @@ class SessionEventExecutor(
     }
 
     private fun processSessionInit(sessionEvent: SessionEvent, sessionInit: SessionInit): FlowMapperResult {
-        val identity =
-            flowMapperMetaData.holdingIdentity ?: throw CordaRuntimeException("Holding identity not set for SessionInit event$sessionEvent")
+        val identity = flowMapperMetaData.holdingIdentity
+            ?: throw CordaRuntimeException("Holding identity not set for SessionInit on key ${flowMapperMetaData.flowMapperEventKey}")
+        val outputTopic = flowMapperMetaData.outputTopic ?: throw CordaRuntimeException(
+            "Output topic should not be null for SessionInit on key ${flowMapperMetaData.flowMapperEventKey}"
+        )
 
         val (flowKey, outputRecordKey, outputRecordValue) =
             getSessionInitOutputs(
@@ -93,7 +100,7 @@ class SessionEventExecutor(
 
         return FlowMapperResult(
             FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
-            listOf(Record(flowMapperMetaData.outputTopic, outputRecordKey, outputRecordValue))
+            listOf(Record(outputTopic, outputRecordKey, outputRecordValue))
         )
     }
 

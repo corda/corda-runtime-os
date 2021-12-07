@@ -14,7 +14,6 @@ import net.corda.flow.mapper.FlowMapperTopics
 import net.corda.flow.mapper.factory.FlowMapperMetaDataFactory
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [FlowMapperMetaDataFactory::class])
@@ -27,7 +26,7 @@ class FlowMapperMetaDataFactoryImpl : FlowMapperMetaDataFactory {
         val payload = flowEvent?.payload ?: throw CordaRuntimeException("No payload for session event on key ${eventRecord.key}")
         var holdingIdentity: HoldingIdentity? = null
 
-        var outputTopic = ""
+        var outputTopic: String? = null
         var expiryTime: Long? = null
         val messageDirection = flowEvent.messageDirection
 
@@ -41,18 +40,17 @@ class FlowMapperMetaDataFactoryImpl : FlowMapperMetaDataFactory {
                 expiryTime = payload.expiryTime
             }
             is ExecuteCleanup -> {
-                outputTopic = flowMapperTopics.flowMapperEventTopic
+                expiryTime = state?.expiryTime
             }
             is SessionEvent -> {
                 outputTopic = getSessionEventOutputTopic(flowMapperTopics, flowEvent.messageDirection)
                 val sessionPayload = payload.payload
 
-                if (sessionPayload::class is SessionInit) {
-                    val sessionInit: SessionInit = uncheckedCast(sessionPayload)
+                if (sessionPayload is SessionInit) {
                     holdingIdentity = if (messageDirection == MessageDirection.OUTBOUND) {
-                        sessionInit.flowKey.identity
+                        sessionPayload.flowKey.identity
                     } else {
-                        sessionInit.initiatedIdentity
+                        sessionPayload.initiatedIdentity
                     }
                 }
             }
