@@ -89,7 +89,7 @@ abstract class Pod {
                 "metadata" to mapOf(
                     "name" to app,
                     "namespace" to namespace,
-                    "labels" to mapOf("app" to app)
+                    "labels" to mapOf("app" to app) + labels
                 ),
                 "spec" to mapOf(
                     "type" to "NodePort",

@@ -1,9 +1,7 @@
 package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.DeploymentException
-import net.corda.p2p.deployment.Yaml
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
@@ -34,8 +32,8 @@ class ConfigureAll : Runnable {
     )
     var gatewayArguments = listOf("--responseTimeoutMilliSecs", "1800000")
 
-    private val yamlReader = ObjectMapper(YAMLFactory()).reader()
-    private val jsonWriter = ObjectMapper().writer()
+    private val jsonReader = ObjectMapper()
+    private val jsonWriter = jsonReader.writer()
 
     @Suppress("UNCHECKED_CAST")
     private val namespaces by lazy {
@@ -43,23 +41,23 @@ class ConfigureAll : Runnable {
             "kubectl",
             "get",
             "namespace",
+            "-l",
+            "namespace-type=p2p-deployment,creator=${MyUserName.userName}",
             "-o",
-            "yaml"
+            "jsonpath={range .items[*]}{.metadata.name}{\"|\"}{.metadata.annotations}{\"\\n\"}{end}",
         ).start()
         if (getAll.waitFor() != 0) {
             System.err.println(getAll.errorStream.reader().readText())
             throw DeploymentException("Could not get namespaces")
         }
-        val rawData = yamlReader.readValue(getAll.inputStream, Map::class.java)
-        val items = rawData["items"] as List<Yaml>
-        items.map {
-            it["metadata"] as Yaml
-        }.filter {
-            val annotations = it["annotations"] as? Yaml
-            annotations?.get("type") == "p2p"
-        }.associate {
-            it["name"] as String to it["annotations"] as Yaml
-        }
+        getAll
+            .inputStream
+            .reader()
+            .readLines().associate { line ->
+                val name = line.substringBefore('|')
+                val annotations = line.substringAfter('|')
+                name to jsonReader.readValue(annotations, Map::class.java)
+            }
     }
     private val annotations by lazy {
         namespaces[namespaceName] ?: throw DeploymentException("Could not find $namespaceName")
@@ -139,24 +137,23 @@ class ConfigureAll : Runnable {
                 "service",
                 "-n",
                 namespace,
-                "-o",
-                "yaml"
+                "-l", "type=kafka-broker",
+                "--output", "jsonpath={.items[*].metadata.name}",
             ).start()
             if (getAll.waitFor() != 0) {
                 System.err.println(getAll.errorStream.reader().readText())
                 throw DeploymentException("Could not get services")
             }
-            val rawData = yamlReader.readValue(getAll.inputStream, Map::class.java)
-            val items = rawData["items"] as List<Yaml>
-            items.asSequence().map {
-                it["metadata"] as Yaml
-            }.mapNotNull {
-                it["name"] as? String
-            }.filter {
-                it.startsWith("kafka-broker-")
-            }.map {
-                "$it.$namespace:9093"
-            }.joinToString(",")
+            getAll
+                .inputStream
+                .reader()
+                .readText()
+                .split(" ")
+                .filter {
+                    it.isNotBlank()
+                }.joinToString(",") {
+                    "$it.$namespace:9093"
+                }
         }
     }
 

@@ -1,9 +1,6 @@
 package net.corda.p2p.deployment.commands
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.DeploymentException
-import net.corda.p2p.deployment.Yaml
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
@@ -39,24 +36,17 @@ class Bash : Runnable {
             "get",
             "pod",
             "-n", namespaceName,
-            "-o", "yaml",
+            "-l", "app=$pod",
+            "--output", "jsonpath={.items[*].metadata.name}",
         ).start()
         if (getPods.waitFor() != 0) {
             System.err.println(getPods.errorStream.reader().readText())
             throw DeploymentException("Could not get pods")
         }
-
-        val reader = ObjectMapper(YAMLFactory()).reader()
-        val rawData = reader.readValue(getPods.inputStream, Map::class.java)
-        val items = rawData["items"] as List<Yaml>
-        val name = items.firstOrNull {
-            val spec = it["spec"] as Yaml
-            val containers = spec["containers"] as List<Yaml>
-            containers.firstOrNull()?.get("name") == pod
-        }?.let {
-            val metadata = it["metadata"] as Yaml
-            metadata["name"] as? String
-        } ?: throw DeploymentException("Could not find $pod")
+        val name = getPods.inputStream.reader().readText()
+        if (name.isBlank()) {
+            throw DeploymentException("Could not find $pod")
+        }
 
         val command = listOf(
             "kubectl",
@@ -66,10 +56,8 @@ class Bash : Runnable {
             namespaceName,
             name,
             "--",
-        ) + if (params.isEmpty()) {
+        ) + params.ifEmpty {
             listOf("bash")
-        } else {
-            params
         }
 
         val bash = ProcessBuilder().command(command)

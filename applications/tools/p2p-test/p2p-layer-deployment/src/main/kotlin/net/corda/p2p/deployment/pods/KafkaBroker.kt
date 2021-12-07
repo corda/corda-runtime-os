@@ -41,6 +41,7 @@ class KafkaBroker(
     }
     override val app = "kafka-broker-$index"
     override val image = "wurstmeister/kafka:latest"
+    override val labels = mapOf("type" to "kafka-broker")
 
     override val ports = listOf(
         Port("client-broker", 9092),
