@@ -345,13 +345,7 @@ class ConfigureAll : Runnable {
         )
     }
 
-    private fun kafkaSetup() {
-        println("Creating/alerting kafka topics...")
-        KafkaSetup(namespaceName).run()
-    }
-
     override fun run() {
-        kafkaSetup()
         startTelepresence()
         publishNetworkMap()
         publishKeys()

@@ -29,4 +29,6 @@ class PostGreSql(
             )
         )
     )
+
+    override val readyLog = ".*database system is ready to accept connections.*".toRegex()
 }

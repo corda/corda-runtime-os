@@ -61,4 +61,6 @@ class KafkaBroker(
         "KAFKA_DEFAULT_REPLICATION_FACTOR" to "3",
         "KAFKA_NUM_PARTITIONS" to "5",
     )
+
+    override val readyLog = ".*started \\(kafka.server.KafkaServer\\).*".toRegex()
 }

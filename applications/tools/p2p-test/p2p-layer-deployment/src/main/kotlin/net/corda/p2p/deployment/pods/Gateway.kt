@@ -29,4 +29,6 @@ class Gateway(
     override val otherPorts = listOf(
         Port("p2p-gateway", 1433)
     )
+
+    override val readyLog = ".*Waiting for gateway to start.*".toRegex()
 }

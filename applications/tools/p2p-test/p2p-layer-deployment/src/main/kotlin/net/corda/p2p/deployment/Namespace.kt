@@ -3,7 +3,10 @@ package net.corda.p2p.deployment
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.commands.ConfigureAll
+import net.corda.p2p.deployment.commands.DeployPods
+import net.corda.p2p.deployment.commands.DeployYamls
 import net.corda.p2p.deployment.commands.Destroy
+import net.corda.p2p.deployment.commands.KafkaSetup
 import net.corda.p2p.deployment.commands.UpdateIps
 import net.corda.p2p.deployment.pods.Gateway
 import net.corda.p2p.deployment.pods.KafkaBroker
@@ -13,7 +16,6 @@ import net.corda.p2p.deployment.pods.Simulator
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
-import kotlin.concurrent.thread
 
 typealias Yaml = Map<String, Any?>
 
@@ -157,24 +159,25 @@ class Namespace : Runnable {
         KafkaBroker.kafkaServers(namespaceName, kafkaBrokerCount)
     }
 
-    private val pods by lazy {
+    private val infrastructurePods by lazy {
         KafkaBroker.kafka(namespaceName, zooKeeperCount, kafkaBrokerCount, kafkaUi) +
-            PostGreSql(dbUsername, dbPassword, sqlInitFile) +
-            Gateway.gateways(gatewayCount, listOf(actualHostName), kafkaServers, tag, debug) +
+            PostGreSql(dbUsername, dbPassword, sqlInitFile)
+    }
+
+    private val p2pPodsPods by lazy {
+        Gateway.gateways(gatewayCount, listOf(actualHostName), kafkaServers, tag, debug) +
             LinkManager.linkManagers(linkManagerCount, kafkaServers, tag, debug) +
             Simulator(kafkaServers, tag, 1024, debug)
     }
 
-    private val yamls by lazy {
-        nameSpaceYaml + pods.flatMap { it.yamls(this) }
-    }
-
     override fun run() {
         val writer = ObjectMapper(YAMLFactory()).writer()
-        val rawYaml = yamls.joinToString("\n") {
-            writer.writeValueAsString(it)
-        }
         if (dryRun) {
+            val pods = infrastructurePods + p2pPodsPods
+            val yamls = nameSpaceYaml + pods.flatMap { it.yamls(this) }
+            val rawYaml = yamls.joinToString("\n") {
+                writer.writeValueAsString(it)
+            }
             println(rawYaml)
         } else {
             val delete = Destroy()
@@ -182,91 +185,18 @@ class Namespace : Runnable {
             delete.run()
 
             println("Creating namespace $namespaceName...")
-            val create = ProcessBuilder().command(
-                "kubectl",
-                "apply",
-                "-f",
-                "-"
-            ).start()
-            thread(isDaemon = true) {
-                create.inputStream.reader().useLines {
-                    it.forEach { line ->
-                        println(line)
-                    }
-                }
-            }
-            thread(isDaemon = true) {
-                create.errorStream.reader().useLines {
-                    it.forEach { line ->
-                        System.err.println(line)
-                    }
-                }
-            }
-            create.outputStream.write(rawYaml.toByteArray())
-            create.outputStream.close()
-            if (create.waitFor() != 0) {
-                throw DeploymentException("Could not create $namespaceName")
-            }
-            waitForCluster()
+
+            DeployYamls(nameSpaceYaml).run()
+            DeployPods(this, infrastructurePods).run()
+
+            println("Creating/alerting kafka topics...")
+            KafkaSetup(namespaceName).run()
+
+            DeployPods(this, p2pPodsPods).run()
+
+            configureNamespace()
             println("Cluster $namespaceName is deployed")
         }
-    }
-
-    @Suppress("ThrowsCount")
-    private fun waitForCluster() {
-        repeat(300) {
-            Thread.sleep(1000)
-            val listPods = ProcessBuilder().command(
-                "kubectl",
-                "get",
-                "pod",
-                "-n",
-                namespaceName
-            ).start()
-            if (listPods.waitFor() != 0) {
-                throw DeploymentException("Could not get the pods in $namespaceName")
-            }
-            val waitingFor = listPods.inputStream
-                .reader()
-                .readLines()
-                .drop(1)
-                .map {
-                    it.split("\\s+".toRegex())
-                }.map {
-                    it[0] to it[2]
-                }.filter {
-                    it.second != "Running"
-                }.toMap()
-            val badContainers = waitingFor.filterValues {
-                it == "Error" || it == "CrashLoopBackOff" || it == "ErrImagePull" || it == "ImagePullBackOff"
-            }
-            if (badContainers.isNotEmpty()) {
-                println("Error in ${badContainers.keys}")
-                badContainers.keys.forEach {
-                    ProcessBuilder().command(
-                        "kubectl",
-                        "describe",
-                        "pod",
-                        "-n",
-                        namespaceName,
-                        it
-                    ).inheritIO()
-                        .start()
-                        .waitFor()
-                    throw DeploymentException("Error in pods")
-                }
-            }
-            if (waitingFor.isEmpty()) {
-                configureNamespace()
-                return
-            } else {
-                println("Waiting for:")
-                waitingFor.forEach { (name, status) ->
-                    println("\t $name ($status)")
-                }
-            }
-        }
-        throw DeploymentException("Waiting too long for $namespaceName")
     }
 
     private fun configureNamespace() {

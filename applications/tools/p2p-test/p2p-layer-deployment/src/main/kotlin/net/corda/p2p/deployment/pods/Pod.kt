@@ -12,6 +12,7 @@ abstract class Pod {
     open val hosts: Collection<String>? = null
     open val command: Collection<String>? = null
     open val pullSecrets: Collection<String> = emptyList()
+    open val readyLog: Regex? = null
 
     fun yamls(namespace: Namespace): Collection<Yaml> {
         return rawData.map {
