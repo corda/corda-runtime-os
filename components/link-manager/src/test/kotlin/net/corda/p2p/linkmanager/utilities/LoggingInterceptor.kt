@@ -43,6 +43,12 @@ class LoggingInterceptor private constructor(private val testAppender: TestAppen
         testAppender.messages.clear()
     }
 
+    fun assertSingleDebug(expectedMessage: String) {
+        val debugs = testAppender.messages.filter { it.level == Level.DEBUG }
+        assertEquals(1, debugs.size)
+        assertEquals(expectedMessage, debugs.single().message)
+    }
+
     fun assertSingleWarning(expectedMessage: String) {
         val warnings = testAppender.messages.filter { it.level == Level.WARN }
         assertEquals(1, warnings.size)

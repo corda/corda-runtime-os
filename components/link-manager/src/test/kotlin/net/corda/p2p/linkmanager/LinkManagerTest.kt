@@ -961,7 +961,7 @@ class LinkManagerTest {
     fun `DRAFT InboundMessageProcessor authenticates AuthenticatedDataMessages producing a FlowMessage and an ACK`() {
         val session = createSessionPair()
         DRAFTtestDataMessagesWithInboundMessageProcessor(session)
-        loggingInterceptor.assertSingleWarning(
+        loggingInterceptor.assertSingleDebug(
             "Actual source does not match declared source. The message was discarded."
         )
     }
@@ -970,7 +970,7 @@ class LinkManagerTest {
     fun `DRAFT InboundMessageProcessor authenticates and decrypts AuthenticatedEncryptedDataMessages producing a FlowMessage and an ACK`() {
         val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
         DRAFTtestDataMessagesWithInboundMessageProcessor(session)
-        loggingInterceptor.assertSingleWarning(
+        loggingInterceptor.assertSingleDebug(
             "Actual source does not match declared source. The message was discarded."
         )
     }
