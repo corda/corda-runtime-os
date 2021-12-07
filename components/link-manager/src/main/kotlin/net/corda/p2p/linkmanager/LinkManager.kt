@@ -388,15 +388,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun checkIdentityBeforeProcessing(
-            sessionDestination: LinkManagerNetworkMap.HoldingIdentity,
-            messageDestination: HoldingIdentity,
-            sessionSource: LinkManagerNetworkMap.HoldingIdentity,
-            messageSource: HoldingIdentity,
+            sessionKey: SessionKey,
             innerMessage: AuthenticatedMessageAndKey,
             session: Session,
             messages: MutableList<Record<*, *>>
         )
         {
+            val sessionSource = sessionKey.responderId
+            val sessionDestination = sessionKey.ourId
+            val messageDestination = innerMessage.message.header.destination
+            val messageSource = innerMessage.message.header.source
             if(sessionSource.toHoldingIdentity() == messageSource && sessionDestination.toHoldingIdentity() == messageDestination) {
                 logger.debug { "Processing message ${innerMessage.message.header.messageId} " +
                         "of type ${innerMessage.message.javaClass} from session ${session.sessionId}" }
@@ -427,10 +428,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     }
                     is AuthenticatedMessageAndKey -> {
                         checkIdentityBeforeProcessing(
-                            sessionKey.ourId,
-                            innerMessage.message.header.destination,
-                            sessionKey.responderId,
-                            innerMessage.message.header.source,
+                            sessionKey,
                             innerMessage,
                             session,
                             messages)
