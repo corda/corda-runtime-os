@@ -1,9 +1,6 @@
 package net.corda.p2p.deployment.commands
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.DeploymentException
-import net.corda.p2p.deployment.Yaml
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
@@ -22,29 +19,28 @@ class Psql : Runnable {
 
     @Suppress("UNCHECKED_CAST")
     override fun run() {
-        val getPods = ProcessBuilder().command(
+        val getPod = ProcessBuilder().command(
             "kubectl",
             "get",
             "pod",
-            "-n", namespaceName,
-            "-o", "yaml",
+            "-n",
+            namespaceName,
+            "-l",
+            "app=db",
+            "--output",
+            "jsonpath={.items[].metadata.name}",
         ).start()
-        if (getPods.waitFor() != 0) {
-            System.err.println(getPods.errorStream.reader().readText())
+        if (getPod.waitFor() != 0) {
+            System.err.println(getPod.errorStream.reader().readText())
             throw DeploymentException("Could not get pods")
         }
-
-        val reader = ObjectMapper(YAMLFactory()).reader()
-        val rawData = reader.readValue(getPods.inputStream, Map::class.java)
-        val items = rawData["items"] as List<Yaml>
-        val name = items.firstOrNull {
-            val spec = it["spec"] as Yaml
-            val containers = spec["containers"] as List<Yaml>
-            containers.firstOrNull()?.get("name") == "db"
-        }?.let {
-            val metadata = it["metadata"] as Yaml
-            metadata["name"] as? String
-        } ?: throw DeploymentException("Could not find database pod")
+        val name = getPod
+            .inputStream
+            .reader()
+            .readText()
+        if (name.isBlank()) {
+            throw DeploymentException("Could not find database pod")
+        }
 
         val bash = ProcessBuilder().command(
             "kubectl",

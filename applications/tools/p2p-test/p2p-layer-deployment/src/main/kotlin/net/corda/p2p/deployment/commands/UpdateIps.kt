@@ -58,7 +58,7 @@ class UpdateIps : Runnable {
             ).start()
             if (getAll.waitFor() != 0) {
                 System.err.println(getAll.errorStream.reader().readText())
-                throw DeploymentException("Could not get services")
+                throw DeploymentException("Could not get pods")
             }
             getAll
                 .inputStream
