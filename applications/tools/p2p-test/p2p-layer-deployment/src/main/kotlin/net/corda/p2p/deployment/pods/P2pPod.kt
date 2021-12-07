@@ -9,7 +9,6 @@ abstract class P2pPod(
     debug: Boolean,
 ) : Pod() {
     override val pullSecrets = listOf(CordaOsDockerDevSecret.name)
-    open val autoStart = true
     open val otherPorts: Collection<Port> = emptyList()
     abstract val imageName: String
     override val image by lazy {
@@ -17,13 +16,6 @@ abstract class P2pPod(
     }
     override val app by lazy {
         "$imageName-$index"
-    }
-    override val command by lazy {
-        if (autoStart) {
-            null
-        } else {
-            listOf("sleep", "infinity")
-        }
     }
     override val environmentVariables by lazy {
         mapOf(

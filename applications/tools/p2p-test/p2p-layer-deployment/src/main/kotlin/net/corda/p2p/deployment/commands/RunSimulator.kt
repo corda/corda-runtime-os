@@ -1,11 +1,10 @@
 package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.Yaml
+import net.corda.p2p.deployment.pods.Simulator
 import picocli.CommandLine.Option
-import java.io.File
 
 abstract class RunSimulator : Runnable {
     @Option(
@@ -15,119 +14,138 @@ abstract class RunSimulator : Runnable {
     )
     lateinit var namespaceName: String
 
+    @Option(
+        names = ["-l", "--follow"],
+        description = ["Follow the simulator output"],
+    )
+    private var follow = false
+
     abstract val parameters: Yaml
-    abstract val filePrefix: String
 
-    @Suppress("UNCHECKED_CAST")
-    val pods by lazy {
-        val getPods = ProcessBuilder().command(
+    private val namespaceAnnotation by lazy {
+        val getNamespace = ProcessBuilder().command(
             "kubectl",
-            "get",
-            "pod",
-            "-n", namespaceName,
-            "-o", "yaml",
+            "get", "ns",
+            "--field-selector", "metadata.name=$namespaceName",
+            "-o",
+            "jsonpath={.items[*].metadata.annotations}"
         ).start()
-        if (getPods.waitFor() != 0) {
-            System.err.println(getPods.errorStream.reader().readText())
-            throw DeploymentException("Could not get pods")
+        if (getNamespace.waitFor() != 0) {
+            System.err.println(getNamespace.errorStream.reader().readText())
+            throw DeploymentException("Could not get namespace")
         }
-
-        val reader = ObjectMapper(YAMLFactory()).reader()
-        val rawData = reader.readValue(getPods.inputStream, Map::class.java)
-        rawData["items"] as List<Yaml>
+        val json = getNamespace.inputStream.reader().readText()
+        if (json.isBlank()) {
+            throw DeploymentException("Could not find namespace $namespaceName")
+        }
+        val reader = ObjectMapper().reader()
+        reader.readValue(json, Map::class.java)
     }
 
     @Suppress("UNCHECKED_CAST")
     val dbParams by lazy {
-        pods.mapNotNull {
-            val spec = it["spec"] as Yaml
-            val containers = spec["containers"] as List<Yaml>
-            containers.firstOrNull()
-        }.firstOrNull {
-            it["name"] == "db"
+        val getDb = ProcessBuilder().command(
+            "kubectl",
+            "get", "pods",
+            "-n", namespaceName,
+            "-l", "app=db",
+            "-o", "jsonpath={.items[*].spec.containers[].env}"
+        ).start()
+        if (getDb.waitFor() != 0) {
+            System.err.println(getDb.errorStream.reader().readText())
+            throw DeploymentException("Could not get DB pod")
+        }
+
+        val json = getDb.inputStream.reader().readText()
+        if (json.isBlank()) {
+            throw DeploymentException("Could not DB pod in namespace $namespaceName")
+        }
+        val reader = ObjectMapper().reader()
+        val env = reader.readValue(json, List::class.java) as Collection<Yaml>
+        val password = env.firstOrNull {
+            it["name"] == "POSTGRES_PASSWORD"
         }?.let {
-            it["env"] as? Collection<Yaml>
+            it["value"] as? String
+        }
+        val username = env.firstOrNull {
+            it["name"] == "POSTGRES_USER"
         }?.let {
-            val password = it.firstOrNull {
-                it["name"] == "POSTGRES_PASSWORD"
-            }?.let {
-                it["value"] as? String
-            }
-            val username = it.firstOrNull {
-                it["name"] == "POSTGRES_USER"
-            }?.let {
-                it["value"] as? String
-            }
-            mapOf(
-                "username" to username,
-                "password" to password,
-                "host" to "db.$namespaceName",
-                "db" to username
-            )
-        } ?: throw DeploymentException("Could not find database parameters")
+            it["value"] as? String
+        }
+        mapOf(
+            "username" to username,
+            "password" to password,
+            "host" to "db.$namespaceName",
+            "db" to username
+        )
     }
 
     @Suppress("UNCHECKED_CAST")
     override fun run() {
-        val name = pods.firstOrNull {
-            val spec = it["spec"] as Yaml
-            val containers = spec["containers"] as List<Yaml>
-            containers.firstOrNull()?.get("name") == "app-simulator-1024"
-        }?.let {
-            val metadata = it["metadata"] as Yaml
-            metadata["name"] as? String
-        } ?: throw DeploymentException("Could not find simulator")
-
-        val file = File.createTempFile(filePrefix, ".conf")
-        file.deleteOnExit()
-        ObjectMapper().writeValue(file, parameters)
-        val cpCommand = listOf(
-            "kubectl",
-            "cp",
-            file.absolutePath,
-            "$namespaceName/$name:/tmp"
+        val configFile = ObjectMapper().writeValueAsString(parameters)
+        val job = Simulator(
+            namespaceAnnotation["kafkaServers"] as String,
+            namespaceAnnotation["tag"] as String,
+            configFile
         )
-        val cp = ProcessBuilder().command(cpCommand)
-            .start()
-        if (cp.waitFor() != 0) {
-            System.err.println(cp.errorStream.reader().readText())
-            throw DeploymentException("Could not copy configuration file")
+        DeployYamls(job.yamls(namespaceName)).run()
+        if(follow) {
+            followPod(job.app)
+        }
+    }
+
+    private fun followPod(app: String) {
+        val getPodName = ProcessBuilder().command(
+            "kubectl", "get", "pods",
+            "-n", namespaceName,
+            "--selector=job-name=${app}",
+            "--output=jsonpath={.items[*].metadata.name}"
+        ).start()
+        if(getPodName.waitFor() != 0) {
+            System.err.println(getPodName.errorStream.reader().readText())
+            throw DeploymentException("Could not get pod")
+        }
+        val podName = getPodName.inputStream.reader().readText()
+
+        waitForPod(podName)
+
+        val log = ProcessBuilder().command(
+            "kubectl",
+            "logs",
+            "-n", namespaceName,
+            podName,
+            "-f"
+        ).inheritIO().start()
+        log.waitFor()
+
+    }
+
+    private fun isRunning(podName: String) : Boolean {
+        val getStatus = ProcessBuilder().command(
+            "kubectl",
+            "get", "pods",
+            "-n", namespaceName,
+            "--field-selector", "metadata.name=$podName",
+            "--output=jsonpath={.items[*].status.phase}",
+        ).start()
+        if (getStatus.waitFor() != 0) {
+            System.err.println(getStatus.errorStream.reader().readText())
+            throw DeploymentException("Could not get job status")
         }
 
-        val command = listOf(
-            "kubectl",
-            "exec",
-            "-it",
-            "-n",
-            namespaceName,
-            name,
-            "--",
-            "java",
-            "-jar",
-            "/opt/override/app-simulator.jar",
-            "--simulator-config",
-            "/tmp/${file.name}"
-        )
+        return when (getStatus.inputStream.reader().readText()) {
+            "Running", "Succeeded" -> true
+            "Pending" -> false
+            else -> throw DeploymentException("Simulator job had error")
+        }
 
-        val simulator = ProcessBuilder().command(command)
-            .inheritIO()
-            .start()
 
-        simulator.waitFor()
+    }
+    private fun waitForPod(podName: String) {
+        while(!isRunning(podName)) {
+            println("Waiting for $podName")
+            Thread.sleep(1000)
+        }
 
-        ProcessBuilder().command(
-            "kubectl",
-            "exec",
-            "-n",
-            namespaceName,
-            name,
-            "--",
-            "rm",
-            "-f",
-            "/tmp/${file.name}"
-        )
-            .inheritIO()
-            .start()
-            .waitFor()
     }
 }

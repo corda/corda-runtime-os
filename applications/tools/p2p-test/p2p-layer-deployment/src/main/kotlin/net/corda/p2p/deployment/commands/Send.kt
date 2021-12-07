@@ -13,8 +13,6 @@ import picocli.CommandLine.Option
     description = ["Start sender simulator"]
 )
 class Send : RunSimulator() {
-    override val filePrefix = "send"
-
     @Option(
         names = ["-p", "--peer"],
         description = ["The name of the peer namespace"]

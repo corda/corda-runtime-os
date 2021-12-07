@@ -9,5 +9,4 @@ import picocli.CommandLine.Command
 )
 class Receive : RunSimulator() {
     override val parameters = mapOf("parallelClients" to 1, "simulatorMode" to "RECEIVER")
-    override val filePrefix = "receive"
 }

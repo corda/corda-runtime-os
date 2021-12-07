@@ -13,7 +13,6 @@ import net.corda.p2p.deployment.pods.Gateway
 import net.corda.p2p.deployment.pods.KafkaBroker
 import net.corda.p2p.deployment.pods.LinkManager
 import net.corda.p2p.deployment.pods.PostGreSql
-import net.corda.p2p.deployment.pods.Simulator
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
@@ -152,6 +151,9 @@ class Namespace : Runnable {
                         "x500-name" to (x500Name ?: "O=$namespaceName, L=London, C=GB"),
                         "group-id" to groupId,
                         "host" to actualHostName,
+                        "debug" to debug.toString(),
+                        "tag" to tag,
+                        "kafkaServers" to kafkaServers
                     )
                 )
             ),
@@ -170,15 +172,14 @@ class Namespace : Runnable {
 
     private val p2pPodsPods by lazy {
         Gateway.gateways(gatewayCount, listOf(actualHostName), kafkaServers, tag, debug) +
-            LinkManager.linkManagers(linkManagerCount, kafkaServers, tag, debug) +
-            Simulator(kafkaServers, tag, 1024, debug)
+            LinkManager.linkManagers(linkManagerCount, kafkaServers, tag, debug)
     }
 
     override fun run() {
         val writer = ObjectMapper(YAMLFactory()).writer()
         if (dryRun) {
             val pods = infrastructurePods + p2pPodsPods
-            val yamls = nameSpaceYaml + pods.flatMap { it.yamls(this) }
+            val yamls = nameSpaceYaml + pods.flatMap { it.yamls(namespaceName) }
             val rawYaml = yamls.joinToString("\n") {
                 writer.writeValueAsString(it)
             }

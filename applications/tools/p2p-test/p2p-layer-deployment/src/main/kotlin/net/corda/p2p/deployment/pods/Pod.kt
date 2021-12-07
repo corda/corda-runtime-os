@@ -1,6 +1,5 @@
 package net.corda.p2p.deployment.pods
 
-import net.corda.p2p.deployment.Namespace
 import net.corda.p2p.deployment.Yaml
 
 abstract class Pod {
@@ -10,16 +9,15 @@ abstract class Pod {
     open val rawData: Collection<RawData<*>> = emptyList()
     open val environmentVariables: Map<String, String> = emptyMap()
     open val hosts: Collection<String>? = null
-    open val command: Collection<String>? = null
     open val pullSecrets: Collection<String> = emptyList()
     open val readyLog: Regex? = null
 
-    fun yamls(namespace: Namespace): Collection<Yaml> {
+    fun yamls(namespaceName: String): Collection<Yaml> {
         return rawData.map {
-            it.createConfig(namespace.namespaceName, app)
+            it.createConfig(namespaceName, app)
         } +
-            createPod(namespace.namespaceName) +
-            createService(namespace.namespaceName)
+            createPod(namespaceName) +
+            createService(namespaceName)
     }
 
     private fun hostAliases() = if (hosts == null) {
@@ -54,7 +52,6 @@ abstract class Pod {
                             "name" to app,
                             "image" to image,
                             "imagePullPolicy" to "IfNotPresent",
-                            "command" to command,
                             "ports" to ports.map {
                                 mapOf(
                                     "containerPort" to it.port,

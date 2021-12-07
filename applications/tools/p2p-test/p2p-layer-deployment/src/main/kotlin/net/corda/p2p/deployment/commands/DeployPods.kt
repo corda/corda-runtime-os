@@ -10,7 +10,7 @@ class DeployPods(
 ) :
     Runnable {
     override fun run() {
-        val yamls = DeployYamls(pods.flatMap { it.yamls(namespace) })
+        val yamls = DeployYamls(pods.flatMap { it.yamls(namespace.namespaceName) })
         yamls.run()
 
         val runningPods = getPods()
