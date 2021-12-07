@@ -955,27 +955,25 @@ class LinkManagerTest {
         loggingInterceptor.assertErrorContains("The message was discarded.")
     }
 
-
-
     @Test
-    fun `DRAFT InboundMessageProcessor authenticates AuthenticatedDataMessages producing a FlowMessage and an ACK`() {
+    fun `InboundMessageProcessor verifies source in incoming AuthenticatedMessageHeader`() {
         val session = createSessionPair()
-        DRAFTtestDataMessagesWithInboundMessageProcessor(session)
+        verifySourceForDataMessagesWithInboundMessageProcessor(session)
         loggingInterceptor.assertSingleDebug(
             "Actual source does not match declared source. The message was discarded."
         )
     }
 
     @Test
-    fun `DRAFT InboundMessageProcessor authenticates and decrypts AuthenticatedEncryptedDataMessages producing a FlowMessage and an ACK`() {
+    fun `InboundMessageProcessor verifies source in incoming AuthenticatedEncryptedMessageHeader`() {
         val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
-        DRAFTtestDataMessagesWithInboundMessageProcessor(session)
+        verifySourceForDataMessagesWithInboundMessageProcessor(session)
         loggingInterceptor.assertSingleDebug(
             "Actual source does not match declared source. The message was discarded."
         )
     }
 
-    private fun DRAFTtestDataMessagesWithInboundMessageProcessor(session: SessionPair) {
+    private fun verifySourceForDataMessagesWithInboundMessageProcessor(session: SessionPair) {
         val header = AuthenticatedMessageHeader(FIRST_DEST, FAKE_SOURCE, null, MESSAGE_ID, "", "system-1")
         val messageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
         val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session.initiatorSession, netMap)
@@ -1029,7 +1027,7 @@ class LinkManagerTest {
                 }
             }
         } catch (exception: AssertionError) {
-        }
 
+        }
     }
 }
