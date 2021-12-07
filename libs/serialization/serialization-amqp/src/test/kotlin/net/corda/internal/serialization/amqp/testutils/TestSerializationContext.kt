@@ -9,12 +9,13 @@ import net.corda.packaging.CPK
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 
-private class MockSandboxGroup : SandboxGroup {
+private class MockSandboxGroup(private val classLoader: ClassLoader = ClassLoader.getSystemClassLoader()) : SandboxGroup {
         override val cpks: Collection<CPK> = emptyList()
 
-        override fun loadClassFromMainBundles(className: String): Class<*> = Class.forName(className)
+        override fun loadClassFromMainBundles(className: String): Class<*> =
+                Class.forName(className, false, classLoader)
         override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> =
-                Class.forName(className).asSubclass(type)
+                Class.forName(className, false, classLoader).asSubclass(type)
         override fun getClass(className: String, serialisedClassTag: String) = Class.forName(className)
         override fun getStaticTag(klass: Class<*>): String = "S;bundle;sandbox"
         override fun getEvolvableTag(klass: Class<*>) = "E;bundle;sandbox"
