@@ -14,6 +14,8 @@ dependencies {
     implementation project(':processors:db-processor')
     implementation "info.picocli:picocli:$picocliVersion"
 
+    runtimeOnly project(":libs:messaging:kafka-messaging-impl")
+    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
