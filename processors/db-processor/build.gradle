@@ -17,49 +17,19 @@ dependencies {
     implementation project(":libs:db:db-orm")
     implementation project(":libs:db:db-core")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-
-    // TODO - Joel - Work out what is actually needed from this heap of crap.
-
-    runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
-    runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
-    runtimeOnly "com.sun.activation:javax.activation:1.2.0"
-    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
-
-    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
-    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
-    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-
-    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
-    runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
-    runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
-//    runtimeOnly "org.hibernate:hibernate-core:$hibernateVersion"
-    // Not sure why these are needed
-    runtimeOnly "com.sun.activation:javax.activation:1.2.0"
-    runtimeOnly "javax.interceptor:javax.interceptor-api:1.2"
-
-    runtimeOnly project(":libs:db:db-admin-impl")
-    runtimeOnly project(":libs:messaging:kafka-messaging-impl")
-    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
-    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
-
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation 'org.slf4j:slf4j-api'
-    implementation 'net.corda:corda-base'
-
-    implementation "info.picocli:picocli:$picocliVersion"
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-
-    implementation project(":osgi-framework-api")
-
-    implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-admin")
-    implementation project(":libs:db:db-orm")
-    implementation project(":libs:messaging:messaging")
-    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:db:db-admin-impl")
 
-    implementation project(":components:examples:persistence:config-admin")
-    implementation project(":components:examples:persistence:cluster-admin")
+    runtimeOnly project(":libs:db:db-orm-impl")
+    runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
+    runtimeOnly "com.sun.activation:javax.activation:1.2.0"
+    runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    runtimeOnly project(":libs:db:db-admin-impl")
+}
+
+tasks.named('jar', Jar) {
+    bnd '''\
+DynamicImport-Package: org.hibernate.proxy
+'''
 }

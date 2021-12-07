@@ -36,6 +36,15 @@ services:
       JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
     depends_on:
       - kafka
+  cluster-db:
+    container_name: cluster-db
+    image: postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: "cordacluster"
+      POSTGRES_USER: "user"
+      POSTGRES_PASSWORD: "pass"
 #  crypto-worker:
 #    container_name: crypto-worker
 #    # Created with `gradlew applications:workers:release:crypto:publishOSGiImage`.

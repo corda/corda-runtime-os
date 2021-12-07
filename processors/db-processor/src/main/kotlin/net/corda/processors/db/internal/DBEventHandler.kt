@@ -1,5 +1,7 @@
 package net.corda.processors.db.internal
 
+import net.corda.db.admin.LiquibaseSchemaMigrator
+import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -18,7 +20,8 @@ import net.corda.v5.base.util.contextLogger
 internal class DBEventHandler(
     private val subscriptionFactory: SubscriptionFactory,
     private val publisherFactory: PublisherFactory,
-    /*private val entityManagerFactoryFactory: EntityManagerFactoryFactory,*/
+    private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
+    private val schemaMigrator: LiquibaseSchemaMigrator,
     private val instanceId: Int,
     private val config: SmartConfig,
 ) : LifecycleEventHandler {
@@ -32,21 +35,28 @@ internal class DBEventHandler(
         // TODO - Joel - Choose a client ID.
         val publisher = publisherFactory.createPublisher(PublisherConfig("joel", instanceId), config)
 
-//        val dbSource = PostgresDataSourceFactory().create(
-//            "jdbc:postgresql://localhost:5433/cordacluster",
-//            "user",
-//            "pass")
-//        val entityManagerFactory = entityManagerFactoryFactory.create(
-//            "joel",
-//            listOf(ConfigEntity::class.java),
-//            DbEntityManagerConfiguration(dbSource)
-//        )
-//        entityManagerFactory.createEntityManager()
-//        logger.info("jjj see if any errors thrown $entityManagerFactory")
+        val dbSource = PostgresDataSourceFactory().create(
+            "jdbc:postgresql://cluster-db:5432/cordacluster",
+            "user",
+            "pass")
+        val entityManagerFactory = entityManagerFactoryFactory.create(
+            "joel",
+            listOf(ConfigEntity::class.java),
+            DbEntityManagerConfiguration(dbSource)
+        )
+        val entityManager = entityManagerFactory.createEntityManager()
+
+        val dbChange = ClassloaderChangeLog(linkedSetOf(
+            ClassloaderChangeLog.ChangeLogResourceFiles(
+                ConfigEntity::class.java.packageName,
+                listOf("migration/db.changelog-master.xml"),
+                classLoader = ConfigEntity::class.java.classLoader)
+        ))
+        schemaMigrator.updateDb(dbSource.connection, dbChange, LiquibaseSchemaMigrator.PUBLIC_SCHEMA)
 
         subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(GROUP_NAME, "config-update-request", instanceId),
-            DBCompactedProcessor(publisher),
+            DBCompactedProcessor(publisher, entityManager),
             config
         )
     }

@@ -4,8 +4,13 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
+import javax.persistence.EntityManager
 
-internal class DBCompactedProcessor(private val publisher: Publisher) : CompactedProcessor<String, String> {
+internal class DBCompactedProcessor(
+    private val publisher: Publisher,
+    private val entityManager: EntityManager
+) : CompactedProcessor<String, String> {
+
     private companion object {
         val logger = contextLogger()
     }
@@ -19,6 +24,9 @@ internal class DBCompactedProcessor(private val publisher: Publisher) : Compacte
         logger.info("jjj processing update in dbcompactedprocessor: $newRecord")
 
         // TODO - Joel - Send config to DB.
+        entityManager.transaction.begin()
+        entityManager.persist(ConfigEntity("a", "b"))
+        entityManager.transaction.commit()
 
         publisher.publish(listOf(Record("config", newRecord.key, newRecord.value)))
     }

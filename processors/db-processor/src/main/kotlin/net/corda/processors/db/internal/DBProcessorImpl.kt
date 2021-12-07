@@ -1,5 +1,6 @@
 package net.corda.processors.db.internal
 
+import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -27,7 +28,9 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = EntityManagerFactoryFactory::class)
-    private val entityManagerFactoryFactory: EntityManagerFactoryFactory
+    private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
+    @Reference(service = LiquibaseSchemaMigrator::class)
+    private val schemaMigrator: LiquibaseSchemaMigrator
 ) : DBProcessor {
     private companion object {
         val logger = contextLogger()
@@ -38,7 +41,14 @@ class DBProcessorImpl @Activate constructor(
     override fun start(instanceId: Int, config: SmartConfig) {
         logger.info("DB processor starting.")
 
-        val eventHandler = DBEventHandler(subscriptionFactory, publisherFactory, /*entityManagerFactoryFactory,*/ instanceId, config)
+        val eventHandler = DBEventHandler(
+            subscriptionFactory,
+            publisherFactory,
+            entityManagerFactoryFactory,
+            schemaMigrator,
+            instanceId,
+            config
+        )
         // TODO - Joel - Not sure if naming the coordinator after the processor itself is an anti-pattern.
         coordinator = coordinatorFactory.createCoordinator<DBProcessor>(eventHandler).apply { start() }
 
