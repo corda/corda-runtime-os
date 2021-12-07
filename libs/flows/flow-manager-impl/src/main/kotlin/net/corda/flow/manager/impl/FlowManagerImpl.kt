@@ -3,8 +3,8 @@ package net.corda.flow.manager.impl
 import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberExecutorScheduler
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.FlowSessionMessage
 import net.corda.data.flow.state.Checkpoint
 import net.corda.dependency.injection.DependencyInjectionService
 import net.corda.flow.manager.FlowManager
@@ -50,12 +50,15 @@ class FlowManagerImpl @Activate constructor(
     ): FlowResult {
         val flowName = flowMetaData.flowName
         val jsonArg = flowMetaData.jsonArg
+        val flowKey = flowMetaData.flowKey
+        val cpiId = flowMetaData.cpiId
         log.info("start new flow clientId: $clientId flowName: $flowName args $jsonArg")
         val flow =  getOrCreate(sandboxGroup, flowName, jsonArg)
         val stateMachine = flowStateMachineFactory.createStateMachine(
             clientId,
-            flowMetaData.flowInfo,
+            flowKey,
             flow,
+            cpiId,
             flowName,
             scheduler,
         )
@@ -73,15 +76,8 @@ class FlowManagerImpl @Activate constructor(
 
         return FlowResult(
             checkpoint,
-            events.toRecordsWithKey(flowMetaData.flowEventTopic)
+            events.toRecordsWithKey(flowKey, flowMetaData.flowEventTopic)
         )
-    }
-
-    override fun startRemoteInitiatedFlow(
-        flowMetaData: FlowMetaData,
-        flowSessionMessage: FlowSessionMessage
-    ): FlowResult {
-        TODO("Not yet implemented")
     }
 
     override fun wakeFlow(
@@ -104,7 +100,7 @@ class FlowManagerImpl @Activate constructor(
         setupFlow(flowStateMachine, sandboxGroup)
         Fiber.unparkDeserialized(flowStateMachine, scheduler)
         val (checkpoint, events) = flowStateMachine.waitForCheckpoint()
-        return FlowResult(checkpoint, events.toRecordsWithKey(flowEventTopic))
+        return FlowResult(checkpoint, events.toRecordsWithKey(wakeupEvent.flowKey, flowEventTopic))
     }
 
     @Suppress("SpreadOperator")
@@ -136,11 +132,11 @@ class FlowManagerImpl @Activate constructor(
         }
     }
 
-    private fun List<FlowEvent>.toRecordsWithKey(flowEventTopic: String): List<Record<net.corda.data.flow.FlowInfo, FlowEvent>> {
+    private fun List<Any>.toRecordsWithKey(flowKey: FlowKey, flowEventTopic: String): List<Record<FlowKey, Any>> {
         return this.map { event ->
             Record(
                 flowEventTopic,
-                event.flowInfo,
+                flowKey,
                 event
             )
         }

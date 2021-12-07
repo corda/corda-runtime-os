@@ -1,6 +1,7 @@
 package net.corda.applications.flowworker.setup.helper
 
-import net.corda.data.flow.FlowInfo
+
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.identity.HoldingIdentity
@@ -24,8 +25,7 @@ fun getHelloWorldRPCEventRecord() : Record<*, *>  {
 fun getStartRPCEventRecord(clientId: String, cpiId: String, flowId: String, flowName: String, x500Name: String, groupId: String):
         Record<*, *> {
     val identity = HoldingIdentity(x500Name, groupId)
-    val key = "${identity.x500Name}.${identity.groupId}.$clientId"
-    val flowInfo = FlowInfo(flowId, cpiId, identity)
-    val rpcStartFlow = StartRPCFlow(clientId, key, flowName, identity, Instant.now(), "I am the json arg String!")
-    return Record(DEFAULT_FLOW_EVENT_TOPIC_VALUE, key, FlowEvent(flowInfo, rpcStartFlow))
+    val flowKey = FlowKey(flowId, identity)
+    val rpcStartFlow = StartRPCFlow(clientId, cpiId, flowName, identity, Instant.now(), "I am the json arg String!")
+    return Record(DEFAULT_FLOW_EVENT_TOPIC_VALUE, flowKey, FlowEvent(flowKey, rpcStartFlow))
 }

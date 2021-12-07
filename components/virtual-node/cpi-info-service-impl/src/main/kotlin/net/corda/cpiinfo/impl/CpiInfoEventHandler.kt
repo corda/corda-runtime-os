@@ -1,6 +1,5 @@
 package net.corda.cpiinfo.impl
 
-import net.corda.configuration.read.ConfigKeys
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.CpiInfoService
@@ -20,6 +19,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
@@ -116,8 +116,8 @@ class CpiInfoEventHandler(
 
     /** Configuration callback, for a change in Kafka (messaging) configuration, post (via a callback) as an event. */
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        if (ConfigKeys.MESSAGING_KEY in changedKeys) {
-            configChangedEventCallback(ConfigChangedEvent(config[ConfigKeys.MESSAGING_KEY]!!))
+        if (ConfigKeys.MESSAGING_CONFIG in changedKeys) {
+            configChangedEventCallback(ConfigChangedEvent(config[ConfigKeys.MESSAGING_CONFIG]!!))
         }
     }
 

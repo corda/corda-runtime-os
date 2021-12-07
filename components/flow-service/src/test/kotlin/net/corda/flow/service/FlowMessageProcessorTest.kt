@@ -1,6 +1,6 @@
 package net.corda.flow.service
 
-import net.corda.data.flow.FlowInfo
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.Wakeup
@@ -30,10 +30,10 @@ class FlowMessageProcessorTest {
 
     @Test
     fun `Start RPC flow`() {
-        val flowInfo = FlowInfo("1", "cpiId",  holdingIdentity)
+        val flowKey = FlowKey("1", holdingIdentity)
         val startRPCFlow = Record(
-            "Topic1", flowInfo, FlowEvent(
-                flowInfo, StartRPCFlow(
+            "Topic1", flowKey, FlowEvent(
+                flowKey, StartRPCFlow(
                     "", "","", holdingIdentity, Instant.now(), ""
                 )
             )
@@ -51,8 +51,8 @@ class FlowMessageProcessorTest {
 
     @Test
     fun `Start RPC flow non null state`() {
-        val flowInfo = FlowInfo("1", "cpiId",  holdingIdentity)
-        val startRPCFlow = Record("Topic1", flowInfo, FlowEvent(flowInfo, StartRPCFlow("", "", "", holdingIdentity, Instant.now(),
+        val flowKey = FlowKey("1", holdingIdentity)
+        val startRPCFlow = Record("Topic1", flowKey, FlowEvent(flowKey, StartRPCFlow("", "", "", holdingIdentity, Instant.now(),
             "")))
         val flowMessageProcessor = FlowMessageProcessor(flowManager, sandboxService)
 
@@ -70,9 +70,9 @@ class FlowMessageProcessorTest {
 
     @Test
     fun `Null event`() {
-        val flowInfo = FlowInfo("1", "cpiId",  holdingIdentity)
+        val flowKey = FlowKey("1", holdingIdentity)
         val flowEvent: FlowEvent? = null
-        val startRPCFlow = Record("Topic1", flowInfo, flowEvent)
+        val startRPCFlow = Record("Topic1", flowKey, flowEvent)
         val flowMessageProcessor = FlowMessageProcessor(flowManager, sandboxService)
 
         val state = Checkpoint()
@@ -86,12 +86,12 @@ class FlowMessageProcessorTest {
 
     @Test
     fun `Wakeup flow`() {
-        val flowInfo = FlowInfo("1", "cpiId",  holdingIdentity)
-        val wakeupFlow = Record("Topic1", flowInfo, FlowEvent(flowInfo, Wakeup("flowName")))
+        val flowKey = FlowKey("1", holdingIdentity)
+        val wakeupFlow = Record("Topic1", flowKey, FlowEvent(flowKey, Wakeup("flowName")))
         val flowMessageProcessor = FlowMessageProcessor(flowManager, sandboxService)
         doReturn(FlowResult(null, emptyList())).whenever(flowManager).wakeFlow(any(), any(), any(), anyOrNull())
 
-        flowMessageProcessor.onNext(Checkpoint(), wakeupFlow)
+        flowMessageProcessor.onNext(Checkpoint(flowKey, null, "cpidId", null, emptyMap()), wakeupFlow)
 
         verify(sandboxService, times(1)).getSandboxGroupFor(any(), any(), any())
         verify(flowManager, times(1)).wakeFlow(any(), any(), any(), anyOrNull())
@@ -99,8 +99,8 @@ class FlowMessageProcessorTest {
 
     @Test
     fun `Wakeup flow no state`() {
-        val flowInfo = FlowInfo("1", "cpiId",  holdingIdentity)
-        val wakeupFlow = Record("Topic1", flowInfo, FlowEvent(flowInfo, Wakeup("flowName")))
+        val flowKey = FlowKey("1",  holdingIdentity)
+        val wakeupFlow = Record("Topic1", flowKey, FlowEvent(flowKey, Wakeup("flowName")))
         val flowMessageProcessor = FlowMessageProcessor(flowManager, sandboxService)
 
         assertThrows<FlowHospitalException> {
