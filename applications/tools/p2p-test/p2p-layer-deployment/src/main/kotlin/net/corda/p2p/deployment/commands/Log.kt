@@ -15,9 +15,10 @@ import kotlin.concurrent.thread
 class Log : Runnable {
     @Option(
         names = ["-n", "--name"],
-        description = ["The name of the namespace"]
+        description = ["The name of the namespace"],
+        required = true
     )
-    private var namespaceName = "p2p-layer"
+    lateinit private var namespaceName : String
 
     @Option(
         names = ["-p", "--pods"],

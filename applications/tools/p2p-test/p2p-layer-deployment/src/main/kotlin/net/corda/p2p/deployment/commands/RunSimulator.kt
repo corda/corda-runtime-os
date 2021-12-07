@@ -10,9 +10,10 @@ import java.io.File
 abstract class RunSimulator : Runnable {
     @Option(
         names = ["-n", "--name"],
-        description = ["The name of the namespace"]
+        description = ["The name of the namespace"],
+        required = true
     )
-    var namespaceName = "p2p-layer"
+    lateinit var namespaceName: String
 
     abstract val parameters: Yaml
     abstract val filePrefix: String

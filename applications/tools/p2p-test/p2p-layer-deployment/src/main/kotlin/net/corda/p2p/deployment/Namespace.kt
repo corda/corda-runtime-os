@@ -7,6 +7,7 @@ import net.corda.p2p.deployment.commands.DeployPods
 import net.corda.p2p.deployment.commands.DeployYamls
 import net.corda.p2p.deployment.commands.Destroy
 import net.corda.p2p.deployment.commands.KafkaSetup
+import net.corda.p2p.deployment.commands.MyUserName
 import net.corda.p2p.deployment.commands.UpdateIps
 import net.corda.p2p.deployment.pods.Gateway
 import net.corda.p2p.deployment.pods.KafkaBroker
@@ -83,9 +84,10 @@ class Namespace : Runnable {
 
     @Option(
         names = ["-n", "--name"],
-        description = ["The name of the namespace"]
+        description = ["The name of the namespace"],
+        required = true
     )
-    var namespaceName = "p2p-layer"
+    lateinit var namespaceName: String
 
     @Option(
         names = ["--db-init-sql-file"],
@@ -142,6 +144,7 @@ class Namespace : Runnable {
                     "name" to namespaceName,
                     "labels" to mapOf(
                         "namespace-type" to "p2p-deployment",
+                        "creator" to MyUserName.userName,
                     ),
                     "annotations" to mapOf(
                         "type" to "p2p",

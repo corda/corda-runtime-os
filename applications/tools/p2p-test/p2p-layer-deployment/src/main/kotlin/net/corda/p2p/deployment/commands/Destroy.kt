@@ -1,9 +1,6 @@
 package net.corda.p2p.deployment.commands
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.DeploymentException
-import net.corda.p2p.deployment.Yaml
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
@@ -27,9 +24,10 @@ class Destroy : Runnable {
     }
     @Option(
         names = ["-n", "--name"],
-        description = ["The name of the namespace"]
+        description = ["The name of the namespace"],
+        required = true
     )
-    var namespaceName = "p2p-layer"
+    private lateinit var namespaceName: String
 
     @Option(
         names = ["--all"],
@@ -40,27 +38,27 @@ class Destroy : Runnable {
     @Suppress("UNCHECKED_CAST")
     private fun getNamespaces(): Collection<String> {
         val getAll = ProcessBuilder().command(
+            //kubectl get ns -l 'namespace-type=p2p-deployment,creator=yiftach.kaplan' -o 'jsonpath={.items[*].metadata.name}'
             "kubectl",
             "get",
             "namespace",
+            "-l",
+            "namespace-type=p2p-deployment,creator=${MyUserName.userName}",
             "-o",
-            "yaml"
+            "jsonpath={.items[*].metadata.name}",
         ).start()
         if (getAll.waitFor() != 0) {
             System.err.println(getAll.errorStream.reader().readText())
             throw DeploymentException("Could not get namespaces")
         }
-        val reader = ObjectMapper(YAMLFactory()).reader()
-        val rawData = reader.readValue(getAll.inputStream, Map::class.java)
-        val items = rawData["items"] as List<Yaml>
-        return items.map {
-            it["metadata"] as Yaml
-        }.filter {
-            val annotations = it["annotations"] as? Yaml
-            annotations?.get("type") == "p2p"
-        }.mapNotNull {
-            it["name"] as? String
-        }
+        return getAll
+            .inputStream
+            .reader()
+            .readText()
+            .split(" ")
+            .filter {
+                it.isNotEmpty()
+            }
     }
 
     override fun run() {

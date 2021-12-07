@@ -16,9 +16,10 @@ import java.nio.file.Files
 class ConfigureAll : Runnable {
     @Option(
         names = ["-n", "--name"],
-        description = ["The name of the namespace to configure"]
+        description = ["The name of the namespace to configure"],
+        required = true
     )
-    var namespaceName = "p2p-layer"
+    lateinit var namespaceName: String
 
     @Option(
         names = ["-l", "--lm", "--link-manager"],
