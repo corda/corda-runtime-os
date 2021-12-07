@@ -31,7 +31,7 @@ class ForbiddenLambdaSerializationTests {
     @Test
     void serialization_fails_for_serializable_java_lambdas() {
         contexts.forEach(ctx -> {
-            SerializationContext context = TestSerializationContext.getTestSerializationContext();
+            SerializationContext context = TestSerializationContext.testSerializationContext;
             String value = "Hey";
             Callable<String> target = (Callable<String> & Serializable) () -> value;
 
@@ -47,7 +47,7 @@ class ForbiddenLambdaSerializationTests {
     @Test
     void serialization_fails_for_not_serializable_java_lambdas() {
         contexts.forEach(ctx -> {
-            SerializationContext context = TestSerializationContext.getTestSerializationContext();
+            SerializationContext context = TestSerializationContext.testSerializationContext;
             String value = "Hey";
             Callable<String> target = () -> value;
 
