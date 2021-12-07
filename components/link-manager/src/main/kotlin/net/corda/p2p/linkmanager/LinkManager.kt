@@ -423,7 +423,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             extractPayload(session, sessionId, message, DataMessagePayload::fromByteBuffer)?.let {
                 when (val innerMessage = it.message) {
                     is HeartbeatMessage -> {
-                        logger.debug ("Processing heartbeat message from session $sessionId")
+                        logger.debug {"Processing heartbeat message from session $sessionId"}
                         makeAckMessageForHeartbeatMessage(sessionKey, session)?.let { ack -> messages.add(ack) }
                     }
                     is AuthenticatedMessageAndKey -> {
