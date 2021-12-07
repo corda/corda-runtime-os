@@ -21,12 +21,12 @@ private class MockSandboxGroup : SandboxGroup {
         override fun getEvolvableTag(klass: Class<*>) = "E;bundle;sandbox"
 }
 
-val testSerializationContext: SerializationContext
-        get() = SerializationContextImpl(
-                preferredSerializationVersion = amqpMagic,
-                whitelist = AllWhitelist,
-                properties = mutableMapOf(),
-                objectReferencesEnabled = false,
-                useCase = SerializationContext.UseCase.Testing,
-                encoding = null
-        ).withSandboxGroup(MockSandboxGroup())
+val testSerializationContext = SerializationContextImpl(
+        preferredSerializationVersion = amqpMagic,
+        whitelist = AllWhitelist,
+        properties = mutableMapOf(),
+        objectReferencesEnabled = false,
+        useCase = SerializationContext.UseCase.Testing,
+        encoding = null,
+        sandboxGroup = MockSandboxGroup()
+)
