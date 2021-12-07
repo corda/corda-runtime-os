@@ -21,6 +21,7 @@ private class MockSandboxGroup : SandboxGroup {
         override fun getEvolvableTag(klass: Class<*>) = "E;bundle;sandbox"
 }
 
+@JvmField
 val testSerializationContext = SerializationContextImpl(
         preferredSerializationVersion = amqpMagic,
         whitelist = AllWhitelist,

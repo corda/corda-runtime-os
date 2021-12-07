@@ -85,8 +85,8 @@ public class JavaCustomSerializerTests {
 
         factory.registerExternal(new ExampleSerializer(), factory);
 
-        var serializedBytes = ser.serialize(e, TestSerializationContext.getTestSerializationContext());
-        var deserialize = new DeserializationInput(factory).deserialize(serializedBytes, ClassThatNeedsCustomSerializer.class, TestSerializationContext.getTestSerializationContext());
+        var serializedBytes = ser.serialize(e, TestSerializationContext.testSerializationContext);
+        var deserialize = new DeserializationInput(factory).deserialize(serializedBytes, ClassThatNeedsCustomSerializer.class, TestSerializationContext.testSerializationContext);
 
         Assertions.assertEquals(10, deserialize.getA());
         Assertions.assertEquals(20, deserialize.getB());

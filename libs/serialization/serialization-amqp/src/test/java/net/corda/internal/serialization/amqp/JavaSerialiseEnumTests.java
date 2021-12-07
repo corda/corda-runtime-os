@@ -33,6 +33,6 @@ public class JavaSerialiseEnumTests {
         Bra bra = new Bra(Bras.UNDERWIRE);
 
         SerializationOutput ser = new SerializationOutput(testDefaultFactory());
-        ser.serialize(bra, TestSerializationContext.getTestSerializationContext());
+        ser.serialize(bra, TestSerializationContext.testSerializationContext);
     }
 }

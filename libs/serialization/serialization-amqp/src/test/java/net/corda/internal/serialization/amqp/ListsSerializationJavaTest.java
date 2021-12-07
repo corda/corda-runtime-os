@@ -132,9 +132,9 @@ public class ListsSerializationJavaTest {
     private static <T> void assertEqualAfterRoundTripSerialization(T container, Class<T> clazz) throws Exception {
         SerializerFactory factory1 = testDefaultFactory();
         SerializationOutput ser = new SerializationOutput(factory1);
-        SerializedBytes<Object> bytes = ser.serialize(container, TestSerializationContext.getTestSerializationContext());
+        SerializedBytes<Object> bytes = ser.serialize(container, TestSerializationContext.testSerializationContext);
         DeserializationInput des = new DeserializationInput(factory1);
-        T deserialized = des.deserialize(bytes, clazz, TestSerializationContext.getTestSerializationContext());
+        T deserialized = des.deserialize(bytes, clazz, TestSerializationContext.testSerializationContext);
         assertThat(deserialized).isEqualTo(container);
     }
 }

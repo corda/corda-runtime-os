@@ -48,17 +48,17 @@ class OuterClass1 {
     }
 
     public void run() throws NotSerializableException {
-        SerializedBytes b = ser.serialize(new DummyState(), TestSerializationContext.getTestSerializationContext());
-        desExisting.deserialize(b, DummyState.class, TestSerializationContext.getTestSerializationContext());
-        desRegen.deserialize(b, DummyState.class, TestSerializationContext.getTestSerializationContext());
+        SerializedBytes b = ser.serialize(new DummyState(), TestSerializationContext.testSerializationContext);
+        desExisting.deserialize(b, DummyState.class, TestSerializationContext.testSerializationContext);
+        desRegen.deserialize(b, DummyState.class, TestSerializationContext.testSerializationContext);
     }
 }
 
 class Inherator1 extends OuterClass1 {
     public void iRun() throws NotSerializableException {
-        SerializedBytes b = ser.serialize(new DummyState(), TestSerializationContext.getTestSerializationContext());
-        desExisting.deserialize(b, DummyState.class, TestSerializationContext.getTestSerializationContext());
-        desRegen.deserialize(b, DummyState.class, TestSerializationContext.getTestSerializationContext());
+        SerializedBytes b = ser.serialize(new DummyState(), TestSerializationContext.testSerializationContext);
+        desExisting.deserialize(b, DummyState.class, TestSerializationContext.testSerializationContext);
+        desRegen.deserialize(b, DummyState.class, TestSerializationContext.testSerializationContext);
     }
 }
 
@@ -92,17 +92,17 @@ class OuterClass2 {
     }
 
     public void run() throws NotSerializableException {
-        SerializedBytes b = ser.serialize(new DummyState(12), TestSerializationContext.getTestSerializationContext());
-        desExisting.deserialize(b, DummyState.class, TestSerializationContext.getTestSerializationContext());
-        desRegen.deserialize(b, DummyState.class, TestSerializationContext.getTestSerializationContext());
+        SerializedBytes b = ser.serialize(new DummyState(12), TestSerializationContext.testSerializationContext);
+        desExisting.deserialize(b, DummyState.class, TestSerializationContext.testSerializationContext);
+        desRegen.deserialize(b, DummyState.class, TestSerializationContext.testSerializationContext);
     }
 }
 
 class Inherator2 extends OuterClass2 {
     public void iRun() throws NotSerializableException {
-        SerializedBytes b = ser.serialize(new DummyState(12), TestSerializationContext.getTestSerializationContext());
-        desExisting.deserialize(b, DummyState.class, TestSerializationContext.getTestSerializationContext());
-        desRegen.deserialize(b, DummyState.class, TestSerializationContext.getTestSerializationContext());
+        SerializedBytes b = ser.serialize(new DummyState(12), TestSerializationContext.testSerializationContext);
+        desExisting.deserialize(b, DummyState.class, TestSerializationContext.testSerializationContext);
+        desRegen.deserialize(b, DummyState.class, TestSerializationContext.testSerializationContext);
     }
 }
 
@@ -127,7 +127,7 @@ abstract class AbstractClass2 {
 
 class Inherator4 extends AbstractClass2 {
     public void run() throws NotSerializableException {
-        ser.serialize(new DummyState(), TestSerializationContext.getTestSerializationContext());
+        ser.serialize(new DummyState(), TestSerializationContext.testSerializationContext);
     }
 }
 
@@ -146,7 +146,7 @@ class Inherator5 extends AbstractClass3 {
         SerializerFactory factory = testDefaultFactory();
 
         SerializationOutput ser = new SerializationOutput(factory);
-        ser.serialize(new DummyState(), TestSerializationContext.getTestSerializationContext());
+        ser.serialize(new DummyState(), TestSerializationContext.testSerializationContext);
     }
 }
 
@@ -164,7 +164,7 @@ class Inherator6 extends AbstractClass3 {
         SerializerFactory factory = testDefaultFactory();
 
         SerializationOutput ser = new SerializationOutput(factory);
-        ser.serialize(new Wrapper(new DummyState()), TestSerializationContext.getTestSerializationContext());
+        ser.serialize(new Wrapper(new DummyState()), TestSerializationContext.testSerializationContext);
     }
 }
 

@@ -76,7 +76,7 @@ public class JavaEvolutionTests {
         N1 n2 = new DeserializationInput(factory).deserialize(
                 new SerializedBytes<>(AMQPTestUtilsKt.readTestResource(this)),
                 N1.class,
-                TestSerializationContext.getTestSerializationContext());
+                TestSerializationContext.testSerializationContext);
         assertThat(n2.getWord()).isEqualTo("potato");
         assertThat(n2.getWibble()).isNull();
     }
@@ -95,7 +95,7 @@ public class JavaEvolutionTests {
             new DeserializationInput(factory).deserialize(
                     new SerializedBytes<>(AMQPTestUtilsKt.readTestResource(this)),
                     N2.class,
-                    TestSerializationContext.getTestSerializationContext());
+                    TestSerializationContext.testSerializationContext);
         });
     }
 
@@ -149,7 +149,7 @@ public class JavaEvolutionTests {
         POJOWithInteger n2 = new DeserializationInput(factory).deserialize(
                 new SerializedBytes<>(AMQPTestUtilsKt.readTestResource(this)),
                 POJOWithInteger.class,
-                TestSerializationContext.getTestSerializationContext());
+                TestSerializationContext.testSerializationContext);
 
         assertThat(n2.getId()).isEqualTo(Integer.valueOf(100));
     }
