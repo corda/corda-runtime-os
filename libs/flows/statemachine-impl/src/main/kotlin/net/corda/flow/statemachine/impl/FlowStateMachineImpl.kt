@@ -234,7 +234,7 @@ class FlowStateMachineImpl<R>(
                 ByteBuffer.wrap(fibreState),
                 cpiId,
                 buildStateMachineState(),
-                emptyMap()
+                emptyList()
             ),
             nonSerializableState.eventsOut,
         )
