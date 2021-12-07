@@ -90,7 +90,7 @@ open class SessionManagerImpl(
             val us = message.header.source.toHoldingIdentity()
             return SessionKey(us, peer)
         }
-        private const val SESSION_MANAGER_CLIENT_ID = "session-manager-client"
+        private const val SESSION_MANAGER_CLIENT_ID = "session-manager"
     }
 
     private val pendingOutboundSessions = ConcurrentHashMap<String, Pair<SessionKey, AuthenticationProtocolInitiator>>()
@@ -232,7 +232,7 @@ open class SessionManagerImpl(
 
     private fun destroyAllSessions() {
         sessionReplayer.removeAllMessagesFromReplay()
-        heartbeatManager.removeAllMessages()
+        heartbeatManager.stopTrackingAllSessions()
         val tombstoneRecords = (activeOutboundSessionsById.keys + pendingOutboundSessions.keys + activeInboundSessions.keys
                 + pendingInboundSessions.keys).map { Record(Schema.SESSION_OUT_PARTITIONS, it, null) }
         activeOutboundSessions.clear()
@@ -251,10 +251,8 @@ open class SessionManagerImpl(
 
     private fun destroyOutboundSession(sessionKey: SessionKey, sessionId: String) {
         sessionNegotiationLock.write {
-            val initiatorHandshakeUniqueId = sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName
-            sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId)
-            val initiatorHelloUniqueId = "${sessionId}_${InitiatorHelloMessage::class.java.simpleName}"
-            sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId)
+            sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId))
+            sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId))
             activeOutboundSessions.remove(sessionKey)
             activeOutboundSessionsById.remove(sessionId)
             pendingOutboundSessions.remove(sessionId)
@@ -262,6 +260,14 @@ open class SessionManagerImpl(
             pendingOutboundSessionMessageQueues.destroyQueue(sessionKey)
             publisher.publish(listOf(Record(Schema.SESSION_OUT_PARTITIONS, sessionId, null)))
         }
+    }
+
+    private fun initiatorHelloUniqueId(sessionId: String): String {
+        return sessionId + "_" + InitiatorHelloMessage::class.java.simpleName
+    }
+
+    private fun initiatorHandshakeUniqueId(sessionId: String): String {
+        return sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName
     }
 
     private fun getSessionInitMessage(sessionKey: SessionKey): Pair<String, LinkOutMessage>? {
@@ -299,9 +305,8 @@ open class SessionManagerImpl(
         logger.info("Local identity (${sessionKey.ourId}) initiating new session $sessionId with remote identity ${sessionKey.responderId}")
 
         val sessionInitPayload = session.generateInitiatorHello()
-        val initiatorHelloUniqueId = "${sessionId}_${sessionInitPayload::class.java.simpleName}"
         sessionReplayer.addMessageForReplay(
-            initiatorHelloUniqueId,
+            initiatorHelloUniqueId(sessionId),
             InMemorySessionReplayer.SessionMessageReplay(
                 sessionInitPayload,
                 sessionId,
@@ -364,13 +369,11 @@ open class SessionManagerImpl(
             return null
         }
 
-        val initiatorHelloUniqueId = "${message.header.sessionId}_${InitiatorHelloMessage::class.java.simpleName}"
-        sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId)
+        sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(message.header.sessionId))
         heartbeatManager.messageAcknowledged(message.header.sessionId)
 
-        val initiatorHandshakeUniqueId = "${message.header.sessionId}_${payload::class.java.simpleName}"
         sessionReplayer.addMessageForReplay(
-            initiatorHandshakeUniqueId,
+            initiatorHandshakeUniqueId(message.header.sessionId),
             InMemorySessionReplayer.SessionMessageReplay(
                 payload,
                 message.header.sessionId,
@@ -415,8 +418,7 @@ open class SessionManagerImpl(
             return null
         }
         val authenticatedSession = session.getSession()
-        val initiatorHandshakeUniqueId = message.header.sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName
-        sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId)
+        sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(message.header.sessionId))
         heartbeatManager.messageAcknowledged(message.header.sessionId)
         sessionNegotiationLock.write {
             activeOutboundSessions[sessionInfo] = authenticatedSession
@@ -626,7 +628,7 @@ open class SessionManagerImpl(
             var sendingHeartbeats: Boolean = false
         )
 
-        fun removeAllMessages() {
+        fun stopTrackingAllSessions() {
             trackedSessions.clear()
         }
 

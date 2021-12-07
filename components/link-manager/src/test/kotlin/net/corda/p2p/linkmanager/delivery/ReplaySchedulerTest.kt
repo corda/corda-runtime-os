@@ -126,7 +126,7 @@ class ReplaySchedulerTest {
     }
 
     @Test
-    fun `The ReplaySchedular stops replaying messages after removeAllMessages`() {
+    fun `The ReplayScheduler stops replaying messages after removeAllMessages`() {
         val messages = 9
 
         val tracker = TrackReplayedMessages(messages)
@@ -146,7 +146,7 @@ class ReplaySchedulerTest {
         tracker.await()
         replayManager.removeAllMessagesFromReplay()
         val totalMessagesAfterRemoveAll = tracker.numberOfReplays
-        Thread.sleep(messages * replayPeriod.toMillis())
+        Thread.sleep(5 * replayPeriod.toMillis())
 
         assertThat(tracker.numberOfReplays).isEqualTo(totalMessagesAfterRemoveAll)
         replayManager.stop()
