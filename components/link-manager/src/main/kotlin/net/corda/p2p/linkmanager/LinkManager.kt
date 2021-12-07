@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
@@ -60,6 +61,7 @@ import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
+import javax.print.attribute.standard.Destination
 
 @Suppress("LongParameterList")
 class LinkManager(@Reference(service = SubscriptionFactory::class)
@@ -387,12 +389,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun checkSourceBeforeProcessing(
-            declaredSource: String, actualSource: String,
+            declaredDestination: LinkManagerNetworkMap.HoldingIdentity,
+            actualDestination: HoldingIdentity,
+            declaredSource: LinkManagerNetworkMap.HoldingIdentity,
+            actualSource: HoldingIdentity,
             innerMessage: AuthenticatedMessageAndKey,
             session: Session,
             messages: MutableList<Record<*, *>>
-        ) {
-            if(declaredSource == actualSource) {
+        )
+        {
+            if(declaredSource.toHoldingIdentity() == actualSource && declaredDestination.toHoldingIdentity() == actualDestination) {
                 logger.debug { "Processing message ${innerMessage.message.header.messageId} " +
                         "of type ${innerMessage.message.javaClass} from session ${session.sessionId}" }
                 messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
@@ -418,9 +424,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     }
                     is AuthenticatedMessageAndKey -> {
                         checkSourceBeforeProcessing(
-                            sessionKey.responderId.x500Name,
-                            innerMessage.message.header.source.x500Name,
-                            innerMessage, session, messages)
+                            sessionKey.ourId,
+                            innerMessage.message.header.destination,
+                            sessionKey.responderId,
+                            innerMessage.message.header.source,
+                            innerMessage,
+                            session,
+                            messages)
                     }
                     else -> logger.warn("Unknown incoming message type: ${innerMessage.javaClass}. The message was discarded.")
                 }
