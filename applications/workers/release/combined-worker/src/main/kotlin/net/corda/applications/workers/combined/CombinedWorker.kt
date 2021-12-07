@@ -20,7 +20,7 @@ import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine.Mixin
 
 /** A worker that starts all processors. */
-@Suppress("Unused")
+@Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
 class CombinedWorker @Activate constructor(
     @Reference(service = CryptoProcessor::class)
