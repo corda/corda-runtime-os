@@ -71,10 +71,10 @@ class Namespace : Runnable {
     private var kafkaBrokerCount = 3
 
     @Option(
-        names = ["--kafka-ui"],
-        description = ["Enable Kafka UI"]
+        names = ["--disable-kafka-ui"],
+        description = ["Disable Kafka UI"]
     )
-    private var kafkaUi = false
+    private var disableKafkaUi = false
 
     @Option(
         names = ["-z", "--zoo-keepers-count"],
@@ -166,7 +166,7 @@ class Namespace : Runnable {
     }
 
     private val infrastructurePods by lazy {
-        KafkaBroker.kafka(namespaceName, zooKeeperCount, kafkaBrokerCount, kafkaUi) +
+        KafkaBroker.kafka(namespaceName, zooKeeperCount, kafkaBrokerCount, !disableKafkaUi) +
             PostGreSql(dbUsername, dbPassword, sqlInitFile)
     }
 
