@@ -5,6 +5,7 @@ import picocli.CommandLine.Option
 
 @Command(
     name = "jdbc",
+    showDefaultValues = true,
     description = ["Forward the database port"]
 )
 class Jdbc : Runnable {
@@ -13,7 +14,7 @@ class Jdbc : Runnable {
         description = ["The name of the namespace"],
         required = true,
     )
-    lateinit private var namespaceName: String
+    private lateinit var namespaceName: String
 
     private val port = PortDetector()
 

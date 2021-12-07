@@ -8,6 +8,7 @@ import picocli.CommandLine.Command
 
 @Command(
     name = "update-ips",
+    showDefaultValues = true,
     description = ["Update all the ips in all the gateways"]
 )
 class UpdateIps : Runnable {

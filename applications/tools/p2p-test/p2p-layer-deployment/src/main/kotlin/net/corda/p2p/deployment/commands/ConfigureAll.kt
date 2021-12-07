@@ -11,6 +11,7 @@ import java.nio.file.Files
 
 @Command(
     name = "configure",
+    showDefaultValues = true,
     description = ["configure a cluster (and the other cluster to know about it)"]
 )
 class ConfigureAll : Runnable {

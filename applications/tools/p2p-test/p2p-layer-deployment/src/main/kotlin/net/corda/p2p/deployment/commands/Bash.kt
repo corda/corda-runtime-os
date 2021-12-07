@@ -10,7 +10,8 @@ import picocli.CommandLine.Parameters
 
 @Command(
     name = "bash",
-    description = ["Bash into one of the pods"]
+    description = ["Bash into one of the pods"],
+    showDefaultValues = true,
 )
 class Bash : Runnable {
     @Option(
@@ -18,7 +19,7 @@ class Bash : Runnable {
         description = ["The name of the namespace"],
         required = true,
     )
-    lateinit private var namespaceName: String
+    private lateinit var namespaceName: String
 
     @Option(
         names = ["-p", "--pod"],

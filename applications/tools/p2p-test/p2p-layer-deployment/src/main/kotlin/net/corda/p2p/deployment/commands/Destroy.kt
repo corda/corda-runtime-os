@@ -6,6 +6,7 @@ import picocli.CommandLine.Option
 
 @Command(
     name = "destroy",
+    showDefaultValues = true,
     description = ["Delete a running namespace"]
 )
 class Destroy : Runnable {
@@ -27,7 +28,7 @@ class Destroy : Runnable {
         description = ["The name of the namespace"],
         required = true
     )
-    private lateinit var namespaceName: String
+    lateinit var namespaceName: String
 
     @Option(
         names = ["--all"],
@@ -38,7 +39,6 @@ class Destroy : Runnable {
     @Suppress("UNCHECKED_CAST")
     private fun getNamespaces(): Collection<String> {
         val getAll = ProcessBuilder().command(
-            //kubectl get ns -l 'namespace-type=p2p-deployment,creator=yiftach.kaplan' -o 'jsonpath={.items[*].metadata.name}'
             "kubectl",
             "get",
             "namespace",

@@ -4,6 +4,7 @@ import picocli.CommandLine.Command
 
 @Command(
     name = "receive",
+    showDefaultValues = true,
     description = ["Start receiving messages"]
 )
 class Receive : RunSimulator() {

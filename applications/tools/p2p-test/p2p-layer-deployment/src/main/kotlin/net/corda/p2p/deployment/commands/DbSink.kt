@@ -4,6 +4,7 @@ import picocli.CommandLine.Command
 
 @Command(
     name = "db-sink",
+    showDefaultValues = true,
     description = ["Start db sink simulator"]
 )
 class DbSink : RunSimulator() {

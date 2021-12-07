@@ -9,6 +9,7 @@ import picocli.CommandLine.Option
 
 @Command(
     name = "psql",
+    showDefaultValues = true,
     description = ["Interact with the DB SQL client"]
 )
 class Psql : Runnable {
@@ -17,7 +18,7 @@ class Psql : Runnable {
         description = ["The name of the namespace"],
         required = true,
     )
-    lateinit private var namespaceName : String
+    private lateinit var namespaceName: String
 
     @Suppress("UNCHECKED_CAST")
     override fun run() {

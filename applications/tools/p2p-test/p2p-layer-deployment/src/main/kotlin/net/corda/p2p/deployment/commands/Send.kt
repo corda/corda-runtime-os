@@ -9,6 +9,7 @@ import picocli.CommandLine.Option
 
 @Command(
     name = "send",
+    showDefaultValues = true,
     description = ["Start sender simulator"]
 )
 class Send : RunSimulator() {

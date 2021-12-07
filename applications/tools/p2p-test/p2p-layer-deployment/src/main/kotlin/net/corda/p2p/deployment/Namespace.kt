@@ -22,6 +22,7 @@ typealias Yaml = Map<String, Any?>
 
 @Command(
     name = "deploy",
+    showDefaultValues = true,
     description = ["Deploy P2P layer cluster for K8S"]
 )
 class Namespace : Runnable {

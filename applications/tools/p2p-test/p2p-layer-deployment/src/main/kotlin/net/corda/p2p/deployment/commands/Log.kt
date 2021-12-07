@@ -10,6 +10,7 @@ import kotlin.concurrent.thread
 
 @Command(
     name = "log",
+    showDefaultValues = true,
     description = ["print the logs of the pods in the namespace"]
 )
 class Log : Runnable {
@@ -18,7 +19,7 @@ class Log : Runnable {
         description = ["The name of the namespace"],
         required = true
     )
-    lateinit private var namespaceName : String
+    private lateinit var namespaceName: String
 
     @Option(
         names = ["-p", "--pods"],
