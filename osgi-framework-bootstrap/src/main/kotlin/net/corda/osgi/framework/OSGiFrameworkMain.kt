@@ -1,8 +1,8 @@
 package net.corda.osgi.framework
 
-import org.slf4j.bridge.SLF4JBridgeHandler
 import net.corda.osgi.framework.OSGiFrameworkMain.Companion.main
 import org.slf4j.LoggerFactory
+import org.slf4j.bridge.SLF4JBridgeHandler
 import java.nio.file.Files
 
 /**
@@ -30,16 +30,19 @@ import java.nio.file.Files
 class OSGiFrameworkMain {
 
     companion object {
+        /** The names of the console and app log appenders. */
+        private const val CONSOLE_APPENDER = "Console"
+        private const val APP_APPENDER = "App"
 
         /**
          * Full qualified name of the OSGi framework factory should be part of the class path.
          */
-        const val FRAMEWORK_FACTORY_FQN = "org.apache.felix.framework.FrameworkFactory"
+        private const val FRAMEWORK_FACTORY_FQN = "org.apache.felix.framework.FrameworkFactory"
 
         /**
          * Prefix of the temporary directory used as bundle cache.
          */
-        const val FRAMEWORK_STORAGE_PREFIX = "osgi-cache"
+        private const val FRAMEWORK_STORAGE_PREFIX = "osgi-cache"
 
         /**
          * Wait for stop of the OSGi framework, without timeout.
@@ -145,6 +148,5 @@ class OSGiFrameworkMain {
                 logger.error("Error: ${e.message}!", e)
             }
         }
-
     } //~ companion object
 }
