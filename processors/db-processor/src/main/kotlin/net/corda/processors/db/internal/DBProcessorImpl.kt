@@ -2,7 +2,7 @@ package net.corda.processors.db.internal
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.processors.db.DBProcessor
-import net.corda.processors.db.internal.config.ConfigProvidedEvent
+import net.corda.processors.db.internal.config.BootstrapConfigEvent
 import net.corda.processors.db.internal.config.ConfigWriter
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -21,7 +21,7 @@ class DBProcessorImpl @Activate constructor(
     }
 
     override fun start(instanceId: Int, topicPrefix: String, config: SmartConfig) {
-        configWriter.coordinator.postEvent(ConfigProvidedEvent(config, instanceId))
+        configWriter.coordinator.postEvent(BootstrapConfigEvent(config, instanceId))
     }
 
     override fun stop() {

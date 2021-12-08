@@ -10,6 +10,7 @@ import net.corda.processors.db.internal.config.ConfigEntity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import javax.sql.DataSource
 
 @Suppress("Unused")
 @Component(service = [DBWriter::class])
@@ -18,21 +19,14 @@ class DBWriterImpl @Activate constructor(
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
     @Reference(service = LiquibaseSchemaMigrator::class)
     private val schemaMigrator: LiquibaseSchemaMigrator
-): DBWriter {
+) : DBWriter {
 
     private companion object {
-        private const val JDBC_URL = "jdbc:postgresql://cluster-db:5432/cordacluster"
-        private const val DB_USER = "user"
-        private const val DB_PASSWORD = "pass"
-        // TODO - Joel - Choose better persistence unit name.
-        private const val PERSISTENCE_UNIT_NAME = "joel"
-        private const val MIGRATION_FILE_LOCATION = "migration/db.changelog-master.xml"
-
         // TODO - Joel - Stop hardcoding this.
         private val MANAGED_ENTITIES = setOf(ConfigEntity::class.java)
     }
 
-    private val dataSource = PostgresDataSourceFactory().create(JDBC_URL, DB_USER, DB_PASSWORD)
+    private val dataSource = createDataSource()
     private val entityManager = createEntityManager()
 
     init {
@@ -40,12 +34,27 @@ class DBWriterImpl @Activate constructor(
         migrateDb()
     }
 
-    override fun writeConfig(entity: Any) {
+    override fun writeConfig(entities: List<Any>) {
         entityManager.transaction.begin()
-        entityManager.merge(entity)
+        entities.forEach { entity ->
+            entityManager.merge(entity)
+        }
         entityManager.transaction.commit()
     }
 
+    private fun createDataSource(): DataSource {
+        // TODO - Joel - End hardcoding of username and password. Pass them down in config.
+        val username = DB_USER
+        val password = DB_PASSWORD
+        return PostgresDataSourceFactory().create(JDBC_URL, username, password)
+    }
+
+    // TODO - Joel - Understand this better. Can I just use a single entity manager for the lifetime of this component?
+    private fun createEntityManager() = entityManagerFactoryFactory.create(
+        PERSISTENCE_UNIT_NAME, listOf(ConfigEntity::class.java), DbEntityManagerConfiguration(dataSource)
+    ).createEntityManager()
+
+    // TODO - Joel - Move this migration to its proper place.
     private fun migrateDb() {
         val changeLogResourceFiles = MANAGED_ENTITIES.mapTo(LinkedHashSet()) { entity ->
             ChangeLogResourceFiles(entity.packageName, listOf(MIGRATION_FILE_LOCATION), entity.classLoader)
@@ -53,8 +62,4 @@ class DBWriterImpl @Activate constructor(
         val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
         schemaMigrator.updateDb(dataSource.connection, dbChange, LiquibaseSchemaMigrator.PUBLIC_SCHEMA)
     }
-
-    private fun createEntityManager() = entityManagerFactoryFactory.create(
-        PERSISTENCE_UNIT_NAME, listOf(ConfigEntity::class.java), DbEntityManagerConfiguration(dataSource)
-    ).createEntityManager()
 }

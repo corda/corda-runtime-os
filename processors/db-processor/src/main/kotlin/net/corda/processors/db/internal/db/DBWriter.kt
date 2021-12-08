@@ -1,5 +1,5 @@
 package net.corda.processors.db.internal.db
 
 interface DBWriter {
-    fun writeConfig(entity: Any)
+    fun writeConfig(entities: List<Any>)
 }

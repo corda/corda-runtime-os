@@ -7,25 +7,23 @@ description 'DB Processor'
 
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:lifecycle:lifecycle')
-    implementation project(":libs:messaging:messaging")
+    implementation project(':libs:db:db-orm')
+    implementation project(':libs:db:db-core')
+    implementation project(':libs:db:db-admin')
     implementation 'net.corda:corda-base'
-    implementation project(":libs:db:db-orm")
-    implementation project(":libs:db:db-core")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation project(":libs:db:db-admin")
-    implementation project(":libs:db:db-admin-impl")
 
-    runtimeOnly project(":libs:db:db-orm-impl")
-    runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
+    runtimeOnly project(':libs:db:db-admin-impl')
+    runtimeOnly project(':libs:db:db-orm-impl')
+    runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
-    runtimeOnly "com.sun.activation:javax.activation:1.2.0"
+    runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
-    runtimeOnly project(":libs:db:db-admin-impl")
 }
 
 tasks.named('jar', Jar) {
