@@ -986,7 +986,7 @@ class LinkManagerTest {
         sendDataMessageWithSpoofedIdentity(session, FAKE_SOURCE, FIRST_DEST)
         loggingInterceptor.assertSingleWarning(
             "The identity in the message's source header ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
-                    " does not match the session's source identity (HoldingIdentity(x500Name=PartyA, groupId=Group))," +
+                    " does not match the session's source identity ({\"x500Name\": \"PartyA\", \"groupId\": \"Group\"})," +
                     " which indicates a spoofing attempt! The message was discarded."
         )
     }
@@ -997,7 +997,7 @@ class LinkManagerTest {
         sendDataMessageWithSpoofedIdentity(session, FAKE_SOURCE, FIRST_DEST)
         loggingInterceptor.assertSingleWarning(
             "The identity in the message's source header ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
-                    " does not match the session's source identity (HoldingIdentity(x500Name=PartyA, groupId=Group))," +
+                    " does not match the session's source identity ({\"x500Name\": \"PartyA\", \"groupId\": \"Group\"})," +
                     " which indicates a spoofing attempt! The message was discarded."
         )
     }
@@ -1008,7 +1008,7 @@ class LinkManagerTest {
         sendDataMessageWithSpoofedIdentity(session, FIRST_SOURCE, LOCAL_PARTY)
         loggingInterceptor.assertSingleWarning(
             "The identity in the message's destination header ({\"x500Name\": \"PartyD\", \"groupId\": \"Group\"})" +
-                    " does not match the session's destination identity (HoldingIdentity(x500Name=PartyB, groupId=Group))," +
+                    " does not match the session's destination identity ({\"x500Name\": \"PartyB\", \"groupId\": \"Group\"})," +
                     " which indicates a spoofing attempt! The message was discarded"
         )
     }
@@ -1019,7 +1019,7 @@ class LinkManagerTest {
         sendDataMessageWithSpoofedIdentity(session, FIRST_SOURCE, LOCAL_PARTY)
         loggingInterceptor.assertSingleWarning(
             "The identity in the message's destination header ({\"x500Name\": \"PartyD\", \"groupId\": \"Group\"})" +
-                    " does not match the session's destination identity (HoldingIdentity(x500Name=PartyB, groupId=Group))," +
+                    " does not match the session's destination identity ({\"x500Name\": \"PartyB\", \"groupId\": \"Group\"})," +
                     " which indicates a spoofing attempt! The message was discarded"
         )
     }
