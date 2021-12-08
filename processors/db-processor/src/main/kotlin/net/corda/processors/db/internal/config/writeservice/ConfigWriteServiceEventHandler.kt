@@ -12,16 +12,11 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.processors.db.internal.config.writer.ConfigWriterProcessor
 import net.corda.processors.db.internal.db.DBWriter
-import net.corda.v5.base.util.contextLogger
 
 class ConfigWriteServiceEventHandler(
     private val dbWriter: DBWriter,
     private val subscriptionFactory: SubscriptionFactory
 ) : LifecycleEventHandler {
-
-    private companion object {
-        private val logger = contextLogger()
-    }
 
     private var instanceId: Int? = null
     private var bootstrapConfig: SmartConfig? = null
@@ -32,7 +27,6 @@ class ConfigWriteServiceEventHandler(
             is StartEvent -> Unit // We cannot start until we have the required config.
 
             is BootstrapConfigEvent -> {
-                logger.info("JJJ received bootstrap event")
                 // TODO - Joel - Introduce similar logic to config read service to be idempotent.
                 instanceId = event.instanceId
                 bootstrapConfig = event.config
@@ -40,9 +34,8 @@ class ConfigWriteServiceEventHandler(
             }
 
             is SubscribeEvent -> {
-                logger.info("JJJ received subscribe event")
                 subscribe()
-                // TODO - Joel - Should I sleep here while waiting for DB to come up, if it's not up?
+                // TODO - Joel - Should I spin here while waiting for DB to come up, if it's not up?
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
 
