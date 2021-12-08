@@ -35,6 +35,6 @@ interface UserEndpoint : RpcOps {
     fun getUser(
         @HttpRpcQueryParameter(name = "loginName", description = "Login Name of the user to be returned.", required = true)
         loginName: String
-    ): UserResponseType?
+    ): UserResponseType
 
 }
