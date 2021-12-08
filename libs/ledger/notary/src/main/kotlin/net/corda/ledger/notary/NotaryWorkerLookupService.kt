@@ -8,8 +8,7 @@ import net.corda.v5.membership.identity.MemberInfo
  */
 interface NotaryWorkerLookupService {
     /**
-     * Returns the list of [MemberInfo]s representing the workers
-     * for the given notary service identity.
+     * Returns the list of [MemberInfo]s representing the workers for the given notary service identity.
      *
      * @param notaryService The [NotaryInfo] of a notary service.
      *
