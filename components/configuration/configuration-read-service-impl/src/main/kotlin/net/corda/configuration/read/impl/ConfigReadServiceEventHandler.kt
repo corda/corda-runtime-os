@@ -42,10 +42,10 @@ internal class ConfigReadServiceEventHandler(
                     bootstrapConfig = event.config
                     coordinator.postEvent(SetupSubscription())
                 } else if (bootstrapConfig != event.config) {
-                    logger.error("An attempt was made to set the bootstrap configuration twice with " +
-                            "different config. Current: $bootstrapConfig, New: ${event.config}")
-                    throw ConfigurationReadException("An attempt was made to set the bootstrap configuration " +
-                            "twice with different config. Current: $bootstrapConfig, New: ${event.config}")
+                    val errorString = "An attempt was made to set the bootstrap configuration twice with " +
+                            "different config. Current: $bootstrapConfig, New: ${event.config}"
+                    logger.error(errorString)
+                    throw ConfigurationReadException(errorString)
                 } else {
                     logger.debug { "Duplicate bootstrap configuration received." }
                 }
