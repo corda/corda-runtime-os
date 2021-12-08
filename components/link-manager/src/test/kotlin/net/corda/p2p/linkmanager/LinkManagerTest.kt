@@ -89,10 +89,9 @@ class LinkManagerTest {
 
     companion object {
         private val FIRST_SOURCE = HoldingIdentity("PartyA", "Group")
-        private val FAKE_SOURCE = HoldingIdentity("FakeParty", "FakeGroup")
         private val SECOND_SOURCE = HoldingIdentity("PartyA", "AnotherGroup")
+        private val FAKE_SOURCE = HoldingIdentity("FakeParty", "FakeGroup")
         private val FIRST_DEST = HoldingIdentity("PartyB", "Group")
-        private val FAKE_DEST = HoldingIdentity("FakeParty", "FakeGroup")
         private val SECOND_DEST = HoldingIdentity("PartyC", "Group")
         private val LOCAL_PARTY = HoldingIdentity("PartyD", "Group")
         private const val FAKE_ADDRESS = "http://10.0.0.1/"
@@ -115,7 +114,7 @@ class LinkManagerTest {
             listOf(
                 FIRST_SOURCE.toHoldingIdentity(), SECOND_SOURCE.toHoldingIdentity(),
                 FIRST_DEST.toHoldingIdentity(), SECOND_DEST.toHoldingIdentity(),
-                FAKE_SOURCE.toHoldingIdentity(), FAKE_DEST.toHoldingIdentity()
+                FAKE_SOURCE.toHoldingIdentity(), LOCAL_PARTY.toHoldingIdentity()
             )
         ).getSessionNetworkMapForNode(FIRST_SOURCE.toHoldingIdentity())
 
@@ -982,7 +981,7 @@ class LinkManagerTest {
     }
 
     private fun verifyDestinationForDataMessagesWithInboundMessageProcessor(session: SessionPair) {
-        val header = AuthenticatedMessageHeader(FAKE_DEST, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
+        val header = AuthenticatedMessageHeader(LOCAL_PARTY, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
         val messageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
         val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session.initiatorSession, netMap)
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
@@ -1033,7 +1032,7 @@ class LinkManagerTest {
         val session = createSessionPair()
         verifyDestinationForDataMessagesWithInboundMessageProcessor(session)
         loggingInterceptor.assertSingleWarning(
-            "The identity in the message's destination header ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
+            "The identity in the message's destination header ({\"x500Name\": \"PartyD\", \"groupId\": \"Group\"})" +
                     " does not match the session's destination identity (HoldingIdentity(x500Name=PartyB, groupId=Group))," +
                     " which indicates a spoofing attempt! The message was discarded"
         )
@@ -1044,7 +1043,7 @@ class LinkManagerTest {
         val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
         verifyDestinationForDataMessagesWithInboundMessageProcessor(session)
         loggingInterceptor.assertSingleWarning(
-            "The identity in the message's destination header ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
+            "The identity in the message's destination header ({\"x500Name\": \"PartyD\", \"groupId\": \"Group\"})" +
                     " does not match the session's destination identity (HoldingIdentity(x500Name=PartyB, groupId=Group))," +
                     " which indicates a spoofing attempt! The message was discarded"
         )
