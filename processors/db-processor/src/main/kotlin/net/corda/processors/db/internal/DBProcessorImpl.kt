@@ -11,18 +11,18 @@ import org.osgi.service.component.annotations.Reference
 @Suppress("Unused")
 @Component(service = [DBProcessor::class])
 class DBProcessorImpl @Activate constructor(
-    @Reference(service = DBConfigManager::class)
-    private val dbConfigManager: DBConfigManager
+    @Reference(service = ConfigWriter::class)
+    private val configWriter: ConfigWriter
 ): DBProcessor {
     private companion object {
         val logger = contextLogger()
     }
 
     override fun start(instanceId: Int, topicPrefix: String, config: SmartConfig) {
-        dbConfigManager.coordinator.postEvent(BootstrapConfigProvidedEvent(config, instanceId))
+        configWriter.coordinator.postEvent(ConfigProvidedEvent(config, instanceId))
     }
 
     override fun stop() {
-        dbConfigManager.coordinator.stop()
+        configWriter.coordinator.stop()
     }
 }

@@ -23,8 +23,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Component(service = [DBConfigManager::class])
-class DBConfigManager @Activate constructor(
+@Component(service = [ConfigWriter::class])
+class ConfigWriter @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = SubscriptionFactory::class)
@@ -40,13 +40,12 @@ class DBConfigManager @Activate constructor(
     private companion object {
         private val logger = contextLogger()
         private const val GROUP_NAME = "DB_EVENT_HANDLER"
-        // TODO - Joel - Choose a proper client ID.
-        private const val CLIENT_ID = "joel"
+        private const val CLIENT_ID = "joel" // TODO - Joel - Choose a proper client ID.
         private const val TOPIC = "config"
         private const val EVENT_TOPIC = "config-update-request"
     }
 
-    internal val coordinator = coordinatorFactory.createCoordinator<DBConfigManager>(this).apply { start() }
+    internal val coordinator = coordinatorFactory.createCoordinator<ConfigWriter>(this).apply { start() }
     private val dbWriter = DBWriter(schemaMigrator, entityManagerFactoryFactory)
     private var instanceId: Int? = null
     private var bootstrapConfig: SmartConfig? = null
@@ -57,14 +56,14 @@ class DBConfigManager @Activate constructor(
         when (event) {
             is StartEvent -> Unit // We cannot start until we have the required config.
 
-            is BootstrapConfigProvidedEvent -> {
+            is ConfigProvidedEvent -> {
                 // TODO - Joel - Introduce similar logic to config read service to be idempotent.
                 instanceId = event.instanceId
                 bootstrapConfig = event.config
-                coordinator.postEvent(StartListeningEvent())
+                coordinator.postEvent(StartPubSubEvent())
             }
 
-            is StartListeningEvent -> {
+            is StartPubSubEvent -> {
                 setUpPubSub()
                 // TODO - Joel - Should I sleep here while waiting for DB to come up, if it's not up?
                 coordinator.updateStatus(LifecycleStatus.UP)
@@ -80,12 +79,10 @@ class DBConfigManager @Activate constructor(
     private fun setUpPubSub() {
         newConfigRequestSub?.stop()
 
-        // TODO - Joel - Custom exception type.
-        val config = bootstrapConfig ?: throw IllegalArgumentException("TODO - Joel - Throw exception.")
+        val config = bootstrapConfig ?: throw ConfigWriteException("TODO - Joel - Exception message.")
 
         if (newConfigPub != null || newConfigRequestSub != null) {
-            // TODO - Joel - Custom exception type.
-            throw IllegalArgumentException("TODO - Joel - Throw exception.")
+            throw ConfigWriteException("TODO - Joel - Exception message.")
         }
 
         val publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID, instanceId), config)
@@ -106,11 +103,6 @@ class DBConfigManager @Activate constructor(
 
         val record = Record(TOPIC, newRecord.key, newRecord.value)
         logger.info("JJJ publishing record $record")
-        // TODO - Joel - Custom exception type.
-        newConfigPub?.publish(listOf(record)) ?: throw IllegalArgumentException("TODO - Joel - Throw exception.")
+        newConfigPub?.publish(listOf(record)) ?: throw ConfigWriteException("TODO - Joel - Exception message.")
     }
 }
-
-// TODO - Joel - Move to another file and nest.
-internal class BootstrapConfigProvidedEvent(val config: SmartConfig, val instanceId: Int) : LifecycleEvent
-internal class StartListeningEvent : LifecycleEvent
