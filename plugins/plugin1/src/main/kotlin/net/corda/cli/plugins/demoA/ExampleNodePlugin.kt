@@ -4,19 +4,21 @@ import org.apache.commons.lang3.StringUtils
 import org.pf4j.Extension
 import org.pf4j.Plugin
 import org.pf4j.PluginWrapper
-import net.corda.cli.api.CordaCliCommand
+import net.corda.cli.api.CordaCliPlugin
+import net.corda.cli.api.services.HttpRpcService
+import net.corda.cli.api.services.HttpType
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 class ExampleNodePlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     override fun start() {
-        logger.info("ExampleNodePlugin.start()")
-        logger.info(StringUtils.upperCase("ExampleNodePlugin"))
+        logger.debug("ExampleNodePlugin.start()")
+        logger.debug(StringUtils.upperCase("ExampleNodePlugin"))
     }
 
     override fun stop() {
-        logger.info("ExampleNodePlugin.stop()")
+        logger.debug("ExampleNodePlugin.stop()")
     }
 
     companion object {
@@ -24,10 +26,18 @@ class ExampleNodePlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     @Extension
-    @CommandLine.Command(name = "node", subcommands = [NodeStatusCommand::class, NodeAddressCommand::class])
-    class WelcomeCordaCliCommand : CordaCliCommand {
-        override val pluginID: String
+    @CommandLine.Command(name = "node", subcommands = [NodeStatusCommand::class, NodeAddressCommand::class, SendRequestCommand::class])
+    class WelcomeCordaCliPlugin : CordaCliPlugin {
+        override lateinit var service: HttpRpcService
+
+        override val version: String
+            get() = "0.0.1"
+        override val pluginId: String
             get() = "ExampleNodePlugin"
+
+        override fun setHttpService(httpRpcService: HttpRpcService) {
+            this.service = httpRpcService
+        }
     }
 
 }
@@ -43,5 +53,15 @@ class NodeStatusCommand(): Runnable {
 class NodeAddressCommand(): Runnable {
     override fun run() {
         println("Address: 1.1.1.1")
+    }
+}
+
+@CommandLine.Command(name = "sendRequest", description = ["Sends Request to the connect node"])
+class SendRequestCommand(): Runnable {
+
+    override fun run() {
+        val rpcService = HttpRpcService()
+
+        println(rpcService.sendRequest(HttpType.GET, "{'id':'4587348907'}", "http://node1.com/rpc"))
     }
 }

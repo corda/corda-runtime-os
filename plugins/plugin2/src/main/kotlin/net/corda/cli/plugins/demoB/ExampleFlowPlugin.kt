@@ -1,22 +1,25 @@
 package net.corda.cli.plugins.demoB
 
+
+
 import org.apache.commons.lang3.StringUtils
 import org.pf4j.Extension
 import org.pf4j.Plugin
 import org.pf4j.PluginWrapper
-import net.corda.cli.api.CordaCliCommand
+import net.corda.cli.api.CordaCliPlugin
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
 import picocli.CommandLine
 
 class ExampleFlowPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     override fun start() {
-        logger.info("ExampleFlowPlugin.start()")
-        logger.info(StringUtils.upperCase("ExampleFlowPlugin"))
+        logger.debug("ExampleFlowPlugin.start()")
+        logger.debug(StringUtils.upperCase("ExampleFlowPlugin"))
     }
 
     override fun stop() {
-        logger.info("ExampleFlowPlugin.stop()")
+        logger.debug("ExampleFlowPlugin.stop()")
     }
 
     companion object {
@@ -25,9 +28,11 @@ class ExampleFlowPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     @Extension
     @CommandLine.Command(name="flow", subcommands = [StartFlowCommand::class, ListFlowsCommand::class])
-    class WelcomeCordaCliCommand : CordaCliCommand {
-        override val pluginID: String
+    class WelcomeCordaCliPlugin : CordaCliPlugin {
+        override val pluginId: String
             get() = "ExampleFlowPlugin"
+        override val version: String
+            get() = "0.0.1"
     }
 }
 

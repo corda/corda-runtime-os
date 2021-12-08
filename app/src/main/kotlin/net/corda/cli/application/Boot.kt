@@ -4,7 +4,7 @@ import org.pf4j.CompoundPluginDescriptorFinder
 import org.pf4j.DefaultPluginManager
 import org.pf4j.ManifestPluginDescriptorFinder
 import org.pf4j.PluginWrapper
-import net.corda.cli.api.CordaCliCommand
+import net.corda.cli.api.CordaCliPlugin
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
@@ -37,7 +37,7 @@ object Boot {
     fun runDemo(vararg args: String) {
 
         val pluginsDir = System.getProperty("pf4j.pluginsDir", "./plugins")
-        logger.info("Plugin directory: $pluginsDir")
+        logger.debug("Plugin directory: $pluginsDir")
         // create the plugin manager
         val pluginManager = PluginManager(listOf(Paths.get(pluginsDir)))
 
@@ -48,28 +48,28 @@ object Boot {
         pluginManager.startPlugins()
 
         // retrieves the extensions for Greeting extension point
-        val cordaCliCommands: List<CordaCliCommand> = pluginManager.getExtensions(CordaCliCommand::class.java)
-        logger.info(
+        val cordaCliPlugins: List<CordaCliPlugin> = pluginManager.getExtensions(CordaCliPlugin::class.java)
+        logger.debug(
             String.format(
                 "Found %d extensions for extension point '%s'",
-                cordaCliCommands.size,
-                CordaCliCommand::class.java.name
+                cordaCliPlugins.size,
+                CordaCliPlugin::class.java.name
             )
         )
         val commandLine = CommandLine(App())
-        cordaCliCommands.forEach { cordaCommand ->
-            logger.info("Adding subcommands from >>> ${cordaCommand.pluginID}")
-            commandLine.addSubcommand(cordaCommand)
+        cordaCliPlugins.forEach { cordaCliPlugin ->
+            logger.debug("Adding subcommands from >>> ${cordaCliPlugin.pluginId}")
+            commandLine.addSubcommand(cordaCliPlugin)
         }
 
         // print extensions for each started plugin
         val startedPlugins: List<PluginWrapper> = pluginManager.startedPlugins
         startedPlugins.forEach { plugin ->
             val pluginId: String = plugin.descriptor.pluginId
-            logger.info(String.format("Extensions added by plugin '%s':", pluginId))
+            logger.debug(String.format("Extensions added by plugin '%s':", pluginId))
              val extensionClassNames = pluginManager.getExtensionClassNames(pluginId);
                  extensionClassNames.forEach { extension ->
-                 logger.info("   $extension");
+                 logger.debug("   $extension");
              }
         }
 
