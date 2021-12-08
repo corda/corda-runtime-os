@@ -80,11 +80,11 @@ class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: Ent
 
     private fun requireNewUser(entityManager: EntityManager, loginName: String) {
         val result = entityManager
-            .createQuery("SELECT count(1) from users where users.loginName = :loginName")
+            .createQuery("SELECT count(1) FROM User WHERE loginName = :loginName")
             .setParameter("loginName", loginName)
-            .singleResult as Int
+            .singleResult as Long
 
-        require(result == 0) { "Failed to create new user: $loginName as they already exist" }
+        require(result == 0L) { "Failed to create new user: $loginName as they already exist" }
     }
 
     private fun User.toAvroUser(): net.corda.data.permissions.User {
