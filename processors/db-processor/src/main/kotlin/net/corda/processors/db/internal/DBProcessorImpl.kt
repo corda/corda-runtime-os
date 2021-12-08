@@ -2,8 +2,7 @@ package net.corda.processors.db.internal
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.processors.db.DBProcessor
-import net.corda.processors.db.internal.config.BootstrapConfigEvent
-import net.corda.processors.db.internal.config.ConfigWriter
+import net.corda.processors.db.internal.config.writeservice.ConfigWriteService
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -13,18 +12,18 @@ import org.osgi.service.component.annotations.Reference
 @Suppress("Unused")
 @Component(service = [DBProcessor::class])
 class DBProcessorImpl @Activate constructor(
-    @Reference(service = ConfigWriter::class)
-    private val configWriter: ConfigWriter
-): DBProcessor {
+    @Reference(service = ConfigWriteService::class)
+    private val configWriteService: ConfigWriteService
+) : DBProcessor {
     private companion object {
         val logger = contextLogger()
     }
 
+    // TODO - Joel - Pass in the topic prefix and use it.
     override fun start(instanceId: Int, topicPrefix: String, config: SmartConfig) {
-        configWriter.coordinator.postEvent(BootstrapConfigEvent(config, instanceId))
+        configWriteService.start()
+        configWriteService.bootstrapConfig(config, instanceId)
     }
 
-    override fun stop() {
-        configWriter.coordinator.stop()
-    }
+    override fun stop() = configWriteService.stop()
 }

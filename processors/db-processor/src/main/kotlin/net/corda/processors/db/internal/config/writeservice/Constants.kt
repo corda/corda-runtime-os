@@ -1,4 +1,4 @@
-package net.corda.processors.db.internal.config
+package net.corda.processors.db.internal.config.writeservice
 
 import net.corda.messaging.api.records.Record
 

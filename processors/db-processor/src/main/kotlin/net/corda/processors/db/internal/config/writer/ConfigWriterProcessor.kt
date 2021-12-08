@@ -1,7 +1,11 @@
-package net.corda.processors.db.internal.config
+package net.corda.processors.db.internal.config.writer
 
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.processors.db.internal.config.writeservice.CONFIG_TOPIC
+import net.corda.processors.db.internal.config.writeservice.ConfigEntity
+import net.corda.processors.db.internal.config.writeservice.ConfigWriteServiceException
+import net.corda.processors.db.internal.config.writeservice.StringRecord
 import net.corda.processors.db.internal.db.DBWriter
 import net.corda.v5.base.util.contextLogger
 import javax.persistence.RollbackException
@@ -26,11 +30,11 @@ internal class ConfigWriterProcessor(private val dbWriter: DBWriter) : DurablePr
             // TODO - Joel - Retry? Push back onto queue?
         } catch (e: Exception) {
             // These are exceptions related to incorrect set-up of the transaction, and should not occur.
-            throw ConfigWriteException("TODO - Joel - Exception message.", e)
+            throw ConfigWriteServiceException("TODO - Joel - Exception message.", e)
         }
 
         val outgoingRecords = events.map { record -> Record(CONFIG_TOPIC, record.key, record.value) }
-        logger.info("JJJ publishing records $outgoingRecords") // TODO - Joel - Only logging for demo purposes here.
+        logger.info("JJJ publishing records $outgoingRecords") // TODO - Joel - This logging is only for demo purposes.
         return outgoingRecords
     }
 }

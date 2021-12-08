@@ -15,10 +15,11 @@ dependencies {
     implementation project(':libs:db:db-orm')
     implementation project(':libs:db:db-core')
     implementation project(':libs:db:db-admin')
+    implementation project(':libs:db:db-admin-impl')
+    implementation project(":libs:messaging:messaging")
     implementation 'net.corda:corda-base'
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    runtimeOnly project(':libs:db:db-admin-impl')
     runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"

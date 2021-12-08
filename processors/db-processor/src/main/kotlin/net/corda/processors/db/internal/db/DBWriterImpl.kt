@@ -6,7 +6,7 @@ import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
-import net.corda.processors.db.internal.config.ConfigEntity
+import net.corda.processors.db.internal.config.writeservice.ConfigEntity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -56,6 +56,7 @@ class DBWriterImpl @Activate constructor(
 
     // TODO - Joel - Move this migration to its proper place.
     private fun migrateDb() {
+        // TODO - Joel - This is using `impl` classes. Check this is correct.
         val changeLogResourceFiles = MANAGED_ENTITIES.mapTo(LinkedHashSet()) { entity ->
             ChangeLogResourceFiles(entity.packageName, listOf(MIGRATION_FILE_LOCATION), entity.classLoader)
         }
