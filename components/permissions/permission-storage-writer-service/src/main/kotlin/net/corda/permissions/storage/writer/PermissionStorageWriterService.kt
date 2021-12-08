@@ -1,5 +1,6 @@
 package net.corda.permissions.storage.writer
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.storage.writer.factory.PermissionStorageWriterProcessorFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -21,14 +22,17 @@ class PermissionStorageWriterService @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     subscriptionFactory: SubscriptionFactory,
     @Reference(service = PermissionStorageWriterProcessorFactory::class)
-    permissionStorageWriterProcessorFactory: PermissionStorageWriterProcessorFactory
+    permissionStorageWriterProcessorFactory: PermissionStorageWriterProcessorFactory,
+    @Reference(service = SmartConfig::class)
+    private val nodeConfig: SmartConfig
 ) : Lifecycle {
 
     private val coordinator = coordinatorFactory.createCoordinator<PermissionStorageWriterService>(
         PermissionStorageWriterServiceEventHandler(
             entityManagerFactory,
             subscriptionFactory,
-            permissionStorageWriterProcessorFactory
+            permissionStorageWriterProcessorFactory,
+            nodeConfig
         )
     )
 
