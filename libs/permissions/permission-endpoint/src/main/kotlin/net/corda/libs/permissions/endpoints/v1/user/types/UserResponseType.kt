@@ -1,7 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.user.types
 
 import java.time.Instant
-import net.corda.v5.base.annotations.CordaSerializable
 
 /**
  * Response type representing a User to be returned to the caller.

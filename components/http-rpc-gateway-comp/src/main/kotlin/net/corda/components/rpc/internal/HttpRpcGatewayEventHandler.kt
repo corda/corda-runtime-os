@@ -141,11 +141,11 @@ internal class HttpRpcGatewayEventHandler(
             log.info("RPC config received. Recreating HTTP RPC Server.")
 
             val rpcConfig = currentConfigurationSnapshot[RPC_CONFIG]!!
-            createHttpRpcServer(rpcConfig)
+            createAndStartHttpRpcServer(rpcConfig)
         }
     }
 
-    private fun createHttpRpcServer(config: SmartConfig) {
+    private fun createAndStartHttpRpcServer(config: SmartConfig) {
         log.info("Stopping any running HTTP RPC Server and endpoints.")
         server?.stop()
         securityManager?.stop()
