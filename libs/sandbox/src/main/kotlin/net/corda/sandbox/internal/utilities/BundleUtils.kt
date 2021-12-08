@@ -63,7 +63,7 @@ internal class BundleUtils @Activate constructor(
         null
     }
 
-    /** Loads OSGi or java platform classes. */
+    /** Loads non bundle classes like java platform types. For e.g. [java.lang.Integer]. */
     fun loadClassFromSystemBundle(className: String): Class<*> = systemBundle.loadClass(className)
 
     /**
