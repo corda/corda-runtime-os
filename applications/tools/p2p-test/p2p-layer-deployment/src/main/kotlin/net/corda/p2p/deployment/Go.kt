@@ -4,6 +4,7 @@ import net.corda.p2p.deployment.commands.Bash
 import net.corda.p2p.deployment.commands.ConfigureAll
 import net.corda.p2p.deployment.commands.CreateStores
 import net.corda.p2p.deployment.commands.DbSink
+import net.corda.p2p.deployment.commands.Deploy
 import net.corda.p2p.deployment.commands.Destroy
 import net.corda.p2p.deployment.commands.Jdbc
 import net.corda.p2p.deployment.commands.Log
@@ -17,7 +18,7 @@ import kotlin.system.exitProcess
 
 @Command(
     subcommands = [
-        Namespace::class,
+        Deploy::class,
         Destroy::class,
         Bash::class,
         Psql::class,

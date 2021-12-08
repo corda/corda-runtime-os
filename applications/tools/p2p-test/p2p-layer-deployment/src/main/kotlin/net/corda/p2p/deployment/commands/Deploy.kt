@@ -1,30 +1,22 @@
-package net.corda.p2p.deployment
+package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import net.corda.p2p.deployment.commands.ConfigureAll
-import net.corda.p2p.deployment.commands.DeployPods
-import net.corda.p2p.deployment.commands.DeployYamls
-import net.corda.p2p.deployment.commands.Destroy
-import net.corda.p2p.deployment.commands.KafkaSetup
-import net.corda.p2p.deployment.commands.MyUserName
-import net.corda.p2p.deployment.commands.UpdateIps
-import net.corda.p2p.deployment.pods.Gateway
-import net.corda.p2p.deployment.pods.KafkaBroker
-import net.corda.p2p.deployment.pods.LinkManager
-import net.corda.p2p.deployment.pods.PostGreSql
+import net.corda.p2p.deployment.pods.DbDetails
+import net.corda.p2p.deployment.pods.InfrastructureDetails
+import net.corda.p2p.deployment.pods.Namespace
+import net.corda.p2p.deployment.pods.NamespaceIdentifier
+import net.corda.p2p.deployment.pods.P2PDeploymentDetails
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
-
-typealias Yaml = Map<String, Any?>
 
 @Command(
     name = "deploy",
     showDefaultValues = true,
     description = ["Deploy P2P layer cluster for K8S"]
 )
-class Namespace : Runnable {
+class Deploy : Runnable {
     @Option(
         names = ["--debug"],
         description = ["Enable Debug"]
@@ -47,10 +39,6 @@ class Namespace : Runnable {
         description = ["The host name"]
     )
     var hostName: String? = null
-
-    private val actualHostName: String
-        get() =
-            hostName ?: "www.$namespaceName.com"
 
     @Option(
         names = ["-x", "--x500-name"],
@@ -117,7 +105,7 @@ class Namespace : Runnable {
         names = ["-t", "--tag"],
         description = ["The docker name of the tag to pull"]
     )
-    private var tag = "5.0.0.0-beta-1638524084494"
+    private var tag = "5.0.0.0-beta-1638952927164"
 
     @Option(
         names = ["--lm-conf", "--link-manager-config"],
@@ -135,51 +123,35 @@ class Namespace : Runnable {
         "--retryDelayMilliSecs", "100000",
     )
 
-    private val nameSpaceYaml by lazy {
-        listOf(
-            mapOf(
-                "apiVersion" to "v1",
-                "kind" to "Namespace",
-                "metadata" to mapOf(
-                    "name" to namespaceName,
-                    "labels" to mapOf(
-                        "namespace-type" to "p2p-deployment",
-                        "creator" to MyUserName.userName,
-                    ),
-                    "annotations" to mapOf(
-                        "type" to "p2p",
-                        "x500-name" to (x500Name ?: "O=$namespaceName, L=London, C=GB"),
-                        "group-id" to groupId,
-                        "host" to actualHostName,
-                        "debug" to debug.toString(),
-                        "tag" to tag,
-                        "kafkaServers" to kafkaServers
-                    )
-                )
-            ),
-            CordaOsDockerDevSecret.secret(namespaceName),
-        )
-    }
-
-    private val kafkaServers by lazy {
-        KafkaBroker.kafkaServers(namespaceName, kafkaBrokerCount)
-    }
-
-    private val infrastructurePods by lazy {
-        KafkaBroker.kafka(namespaceName, zooKeeperCount, kafkaBrokerCount, !disableKafkaUi) +
-            PostGreSql(dbUsername, dbPassword, sqlInitFile)
-    }
-
-    private val p2pPodsPods by lazy {
-        Gateway.gateways(gatewayCount, listOf(actualHostName), kafkaServers, tag, debug) +
-            LinkManager.linkManagers(linkManagerCount, kafkaServers, tag, debug)
-    }
-
     override fun run() {
+        val namespace = Namespace(
+            NamespaceIdentifier(
+                namespaceName,
+                x500Name ?: "O=$namespaceName, L=London, C=GB",
+                groupId,
+                hostName ?: "www.$namespaceName.com"
+            ),
+            P2PDeploymentDetails(
+                linkManagerCount,
+                gatewayCount,
+                debug,
+                tag
+            ),
+            InfrastructureDetails(
+                kafkaBrokerCount,
+                zooKeeperCount,
+                disableKafkaUi,
+                DbDetails(
+                    dbUsername,
+                    dbPassword,
+                    sqlInitFile
+                )
+            )
+        )
         val writer = ObjectMapper(YAMLFactory()).writer()
         if (dryRun) {
-            val pods = infrastructurePods + p2pPodsPods
-            val yamls = nameSpaceYaml + pods.flatMap { it.yamls(namespaceName) }
+            val pods = namespace.infrastructurePods + namespace.p2pPods
+            val yamls = namespace.nameSpaceYaml + pods.flatMap { it.yamls(namespaceName) }
             val rawYaml = yamls.joinToString("\n") {
                 writer.writeValueAsString(it)
             }
@@ -191,13 +163,13 @@ class Namespace : Runnable {
 
             println("Creating namespace $namespaceName...")
 
-            DeployYamls(nameSpaceYaml).run()
-            DeployPods(this, infrastructurePods).run()
+            DeployYamls(namespace.nameSpaceYaml).run()
+            DeployPods(namespaceName, namespace.infrastructurePods).run()
 
             println("Creating/alerting kafka topics...")
             KafkaSetup(namespaceName, kafkaBrokerCount).run()
 
-            DeployPods(this, p2pPodsPods).run()
+            DeployPods(namespaceName, namespace.p2pPods).run()
 
             configureNamespace()
             println("Cluster $namespaceName is deployed")

@@ -1,22 +1,21 @@
 package net.corda.p2p.deployment.commands
 
 import net.corda.p2p.deployment.DeploymentException
-import net.corda.p2p.deployment.Namespace
 import net.corda.p2p.deployment.pods.Pod
 
 class DeployPods(
-    private val namespace: Namespace,
+    private val namespaceName: String,
     private val pods: Collection<Pod>,
 ) :
     Runnable {
     override fun run() {
-        val yamls = DeployYamls(pods.flatMap { it.yamls(namespace.namespaceName) })
+        val yamls = DeployYamls(pods.flatMap { it.yamls(namespaceName) })
         yamls.run()
 
         val runningPods = getPods()
         pods.forEach { pod ->
             pod.readyLog?.also {
-                val wait = WaitForLogs(namespace.namespaceName, pod, runningPods, it)
+                val wait = WaitForLogs(namespaceName, pod, runningPods, it)
                 wait.run()
             }
         }
@@ -31,10 +30,10 @@ class DeployPods(
                 "get",
                 "pod",
                 "-n",
-                namespace.namespaceName
+                namespaceName
             ).start()
             if (listPods.waitFor() != 0) {
-                throw DeploymentException("Could not get the pods in ${namespace.namespaceName}")
+                throw DeploymentException("Could not get the pods in $namespaceName")
             }
             val allPods = listPods.inputStream
                 .reader()
@@ -56,7 +55,7 @@ class DeployPods(
                         "describe",
                         "pod",
                         "-n",
-                        namespace.namespaceName,
+                        namespaceName,
                         it
                     ).inheritIO()
                         .start()
@@ -74,6 +73,6 @@ class DeployPods(
                 }
             }
         }
-        throw DeploymentException("Waiting too long for ${namespace.namespaceName}")
+        throw DeploymentException("Waiting too long for $namespaceName")
     }
 }
