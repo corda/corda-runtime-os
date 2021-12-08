@@ -1,9 +1,12 @@
 package net.corda.p2p.deployment.pods
 
+import java.lang.Integer.min
+
 class KafkaBroker(
     index: Int,
     clusterName: String,
-    zookeeperConnectString: String
+    zookeeperConnectString: String,
+    replicationFactor: Int,
 ) : Pod() {
     companion object {
         fun kafkaServers(namespace: String, brokersCount: Int) =
@@ -22,7 +25,12 @@ class KafkaBroker(
                 "${it.app}:2181"
             }.joinToString(",")
             val brokers = (1..brokersCount).map {
-                KafkaBroker(it, clusterName, zookeeperConnectString)
+                KafkaBroker(
+                    it,
+                    clusterName,
+                    zookeeperConnectString,
+                    min(3, brokersCount)
+                )
             }
             val ui = if (kafkaUi) {
                 listOf(
@@ -59,7 +67,7 @@ class KafkaBroker(
         "KAFKA_LISTENERS" to "INTERNAL://:9091,CLIENT://:9092,EXTERNAL://:9093",
         "KAFKA_ADVERTISED_LISTENERS" to "INTERNAL://$app:9091,CLIENT://$app:9092,EXTERNAL://$app.$clusterName:9093",
         "KAFKA_MIN_INSYNC_REPLICAS" to "1",
-        "KAFKA_DEFAULT_REPLICATION_FACTOR" to "3",
+        "KAFKA_DEFAULT_REPLICATION_FACTOR" to replicationFactor.toString(),
         "KAFKA_NUM_PARTITIONS" to "5",
     )
 

@@ -22,15 +22,15 @@ class ConfigureAll : Runnable {
 
     @Option(
         names = ["-l", "--lm", "--link-manager"],
-        description = ["Link manager extra configuration arguments"]
+        description = ["Link manager extra configuration arguments (for example --sessionTimeoutMilliSecs=1800000)"]
     )
-    var linkManagerExtraArguments = listOf("--sessionTimeoutMilliSecs", "1800000")
+    var linkManagerExtraArguments = emptyList<String>()
 
     @Option(
         names = ["-g", "--gateway"],
-        description = ["Gateway extra configuration arguments"]
+        description = ["Gateway extra configuration arguments (for example --responseTimeoutMilliSecs=1800000)"]
     )
-    var gatewayArguments = listOf("--responseTimeoutMilliSecs", "1800000")
+    var gatewayArguments = emptyList<String>()
 
     private val jsonReader = ObjectMapper()
     private val jsonWriter = jsonReader.writer()

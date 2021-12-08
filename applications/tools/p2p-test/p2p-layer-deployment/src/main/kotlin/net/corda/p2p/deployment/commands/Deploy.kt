@@ -109,19 +109,15 @@ class Deploy : Runnable {
 
     @Option(
         names = ["--lm-conf", "--link-manager-config"],
-        description = ["Link manager extra configuration arguments"]
+        description = ["Link manager extra configuration arguments (fop example: --sessionTimeoutMilliSecs=1800000)"]
     )
-    var linkManagerExtraArguments = listOf("--sessionTimeoutMilliSecs", "1800000")
+    var linkManagerExtraArguments = emptyList<String>()
 
     @Option(
         names = ["--gateway-config", "--gateway-conf"],
-        description = ["Gateway extra configuration arguments"]
+        description = ["Gateway extra configuration arguments (for example: --retryDelayMilliSecs=100000)"]
     )
-    var gatewayArguments = listOf(
-        "--responseTimeoutMilliSecs", "1800000",
-        "--connectionIdleTimeoutSec", "1800",
-        "--retryDelayMilliSecs", "100000",
-    )
+    var gatewayArguments = emptyList<String>()
 
     override fun run() {
         val namespace = Namespace(
