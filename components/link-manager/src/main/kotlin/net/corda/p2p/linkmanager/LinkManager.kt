@@ -1,7 +1,6 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
@@ -405,11 +404,13 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
                 sessionManager.inboundSessionEstablished(session.sessionId)
             } else if(sessionSource.toHoldingIdentity() != messageSource) {
-                logger.warn("Actual source ($messageSource) does not match declared source ($sessionSource)," +
-                        " which indicates a spoofing attempt!")
+                logger.warn("The identity in the message's source header ($messageSource)" +
+                        " does not match the session's source identity ($sessionSource)," +
+                        " which indicates a spoofing attempt! The message was discarded.")
             } else {
-                logger.warn("Actual destination ($messageDestination) does not match declared destination ($sessionDestination)," +
-                        " which indicates a spoofing attempt!")
+                logger.warn("The identity in the message's destination header ($messageDestination)" +
+                        " does not match the session's destination identity ($sessionDestination)," +
+                        " which indicates a spoofing attempt! The message was discarded")
             }
         }
 

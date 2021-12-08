@@ -69,7 +69,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -80,7 +79,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.lang.NullPointerException
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
@@ -1035,9 +1033,9 @@ class LinkManagerTest {
         val session = createSessionPair()
         verifyDestinationForDataMessagesWithInboundMessageProcessor(session)
         loggingInterceptor.assertSingleWarning(
-            "Actual destination ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
-                    " does not match declared destination (HoldingIdentity(x500Name=PartyB, groupId=Group))," +
-                    " which indicates a spoofing attempt!"
+            "The identity in the message's destination header ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
+                    " does not match the session's destination identity (HoldingIdentity(x500Name=PartyB, groupId=Group))," +
+                    " which indicates a spoofing attempt! The message was discarded"
         )
     }
 
@@ -1046,9 +1044,9 @@ class LinkManagerTest {
         val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
         verifyDestinationForDataMessagesWithInboundMessageProcessor(session)
         loggingInterceptor.assertSingleWarning(
-            "Actual destination ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
-                    " does not match declared destination (HoldingIdentity(x500Name=PartyB, groupId=Group))," +
-                    " which indicates a spoofing attempt!"
+            "The identity in the message's destination header ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
+                    " does not match the session's destination identity (HoldingIdentity(x500Name=PartyB, groupId=Group))," +
+                    " which indicates a spoofing attempt! The message was discarded"
         )
     }
 }
