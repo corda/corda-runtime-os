@@ -116,7 +116,8 @@ class LinkManagerTest {
         private val netMap = MockNetworkMap(
             listOf(
                 FIRST_SOURCE.toHoldingIdentity(), SECOND_SOURCE.toHoldingIdentity(),
-                FIRST_DEST.toHoldingIdentity(), SECOND_DEST.toHoldingIdentity()
+                FIRST_DEST.toHoldingIdentity(), SECOND_DEST.toHoldingIdentity(),
+                FAKE_SOURCE.toHoldingIdentity(), FAKE_DEST.toHoldingIdentity()
             )
         ).getSessionNetworkMapForNode(FIRST_SOURCE.toHoldingIdentity())
 
@@ -1033,7 +1034,6 @@ class LinkManagerTest {
     fun `InboundMessageProcessor discards AuthenticatedMessages when the destination in the Header is spoofed`() {
         val session = createSessionPair()
         verifyDestinationForDataMessagesWithInboundMessageProcessor(session)
-        //assertThrows<NullPointerException> {  }
         loggingInterceptor.assertSingleWarning(
             "Actual destination ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
                     " does not match declared destination (HoldingIdentity(x500Name=PartyA, groupId=Group))," +
