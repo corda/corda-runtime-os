@@ -1010,9 +1010,9 @@ class LinkManagerTest {
         val session = createSessionPair()
         verifySourceForDataMessagesWithInboundMessageProcessor(session)
         loggingInterceptor.assertSingleWarning(
-            "Actual source ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
-                    " does not match declared source (HoldingIdentity(x500Name=PartyA, groupId=Group))," +
-                    " which indicates a spoofing attempt!"
+            "The identity in the message's source header ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
+                    " does not match the session's source identity (HoldingIdentity(x500Name=PartyA, groupId=Group))," +
+                    " which indicates a spoofing attempt! The message was discarded."
         )
     }
 
@@ -1021,9 +1021,9 @@ class LinkManagerTest {
         val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
         verifySourceForDataMessagesWithInboundMessageProcessor(session)
         loggingInterceptor.assertSingleWarning(
-            "Actual source ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
-                    " does not match declared source (HoldingIdentity(x500Name=PartyA, groupId=Group))," +
-                    " which indicates a spoofing attempt!"
+            "The identity in the message's source header ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
+                    " does not match the session's source identity (HoldingIdentity(x500Name=PartyA, groupId=Group))," +
+                    " which indicates a spoofing attempt! The message was discarded."
         )
     }
 
