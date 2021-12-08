@@ -45,8 +45,8 @@ class SessionEventExecutor(
             }
             else -> {
                 if (flowMapperState == null) {
-                    //expired closed session
-                    log.warn("Event received for expired closed session. Key: $eventKey, Event: $sessionEvent")
+                    //expired closed session. This is likely a bug and we should return an error event to the sender.
+                    log.error("Event received for expired closed session. Key: $eventKey, Event: $sessionEvent")
                     FlowMapperResult(flowMapperState, emptyList())
                 } else {
                     processOtherSessionEvents(flowMapperState)
