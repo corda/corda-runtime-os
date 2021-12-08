@@ -3,7 +3,7 @@ package net.corda.data
 /**
  * Defines the interface for Message Bus serialization.  The underlying mechanism may differ.
  */
-interface CordaSerializer<T> {
+interface CordaAvroSerializer<T> {
     /**
      * Serialize the [data] into a [ByteArray]
      *
