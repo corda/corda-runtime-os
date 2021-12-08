@@ -7,7 +7,7 @@ class ExecuteCleanupEventExecutorTest {
 
     @Test
     fun testSExecuteCleanupEventExecutor() {
-        val result = ExecuteCleanupEventExecutor().execute()
+        val result = ExecuteCleanupEventExecutor("key").execute()
         assertThat(result.flowMapperState).isNull()
         assertThat(result.outputEvents).isEmpty()
     }

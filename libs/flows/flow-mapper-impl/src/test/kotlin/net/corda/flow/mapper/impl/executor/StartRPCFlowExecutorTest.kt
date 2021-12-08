@@ -3,21 +3,22 @@ package net.corda.flow.mapper.impl.executor
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartRPCFlow
-import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.mapper.FlowMapperMetaData
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 class StartRPCFlowExecutorTest {
+    private val eventKey = "key"
+    private val outputTopic = "topic"
+    private val startRPCFlow = StartRPCFlow("", "", "", HoldingIdentity(), Instant.now(), "")
+
 
     @Test
     fun testStartRPCFlowExecutor() {
-        val meta = FlowMapperMetaData(FlowMapperEvent(), "", "FlowEventTopic", HoldingIdentity(), StartRPCFlow(), null, null, Long
-            .MAX_VALUE)
-        val result = StartRPCFlowExecutor(meta).execute()
+        val result = StartRPCFlowExecutor(eventKey, outputTopic, startRPCFlow, null).execute()
         val state = result.flowMapperState
         assertThat(state?.flowKey).isNotNull
         assertThat(state?.status).isEqualTo(FlowMapperStateType.OPEN)
@@ -27,15 +28,13 @@ class StartRPCFlowExecutorTest {
         val outputEvent = result.outputEvents.first()
         assertThat(outputEvent.value!!::class).isEqualTo(FlowEvent::class)
         assertThat(outputEvent.key::class).isEqualTo(FlowKey::class)
-        assertThat(outputEvent.topic).isEqualTo("FlowEventTopic")
+        assertThat(outputEvent.topic).isEqualTo(outputTopic)
     }
 
     @Test
     fun testStartRPCFlowExecutorNonNullState() {
         val inputState = FlowMapperState()
-        val meta = FlowMapperMetaData(FlowMapperEvent(), "", "FlowEventTopic", HoldingIdentity(), StartRPCFlow(), inputState, null, Long
-            .MAX_VALUE)
-        val result = StartRPCFlowExecutor(meta).execute()
+        val result = StartRPCFlowExecutor(eventKey, outputTopic, startRPCFlow, inputState).execute()
         assertThat(inputState).isEqualTo(result.flowMapperState)
         assertThat(result.outputEvents).isEmpty()
     }

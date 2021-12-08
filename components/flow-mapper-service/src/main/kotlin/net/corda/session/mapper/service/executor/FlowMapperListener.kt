@@ -11,11 +11,13 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
+import java.time.Clock
 import java.util.concurrent.TimeUnit
 
 class FlowMapperListener(
     private val scheduledTaskState: ScheduledTaskState,
     private val eventTopic: String,
+    private val clock: Clock = Clock.systemUTC()
 ) : StateAndEventListener<String, FlowMapperState> {
     private val publisher = scheduledTaskState.publisher
     private val executorService = scheduledTaskState.executorService
@@ -27,12 +29,12 @@ class FlowMapperListener(
 
     override fun onPartitionSynced(states: Map<String, FlowMapperState>) {
         log.trace { "Synced states $states" }
-        val currentTime = System.currentTimeMillis()
+        val currentTime = clock.instant().toEpochMilli()
         for (stateEntry in states) {
             val key = stateEntry.key
             val state = stateEntry.value
             val expiryTime = state.expiryTime
-            if (expiryTime != null && state.status != FlowMapperStateType.CLOSING) {
+            if (expiryTime != null && state.status == FlowMapperStateType.CLOSING) {
                 if (currentTime > expiryTime) {
                     log.debug { "Clearing up expired state for synced key $key" }
                     publisher?.publish(

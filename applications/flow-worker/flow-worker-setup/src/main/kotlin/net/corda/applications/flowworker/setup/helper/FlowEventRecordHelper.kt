@@ -1,6 +1,5 @@
 package net.corda.applications.flowworker.setup.helper
 
-
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartRPCFlow

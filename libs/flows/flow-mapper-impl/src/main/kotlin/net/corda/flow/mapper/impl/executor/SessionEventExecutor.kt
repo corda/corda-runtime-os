@@ -9,17 +9,18 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.mapper.FlowKeyGenerator
-import net.corda.flow.mapper.FlowMapperMetaData
 import net.corda.flow.mapper.FlowMapperResult
+import net.corda.flow.mapper.FlowMapperTopics
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.uncheckedCast
 
 class SessionEventExecutor(
-    private val flowMapperMetaData: FlowMapperMetaData
+    private val eventKey: String,
+    private val flowMapperTopics: FlowMapperTopics,
+    private val messageDirection: MessageDirection,
+    private val sessionEvent: SessionEvent,
+    private val flowMapperState: FlowMapperState?,
 ) : FlowMapperEventExecutor {
 
     private companion object {
@@ -27,10 +28,9 @@ class SessionEventExecutor(
     }
 
     private val flowKeyGenerator = FlowKeyGenerator()
+    private val outputTopic = getSessionEventOutputTopic(flowMapperTopics, messageDirection)
 
     override fun execute(): FlowMapperResult {
-        val flowMapperState = flowMapperMetaData.flowMapperState
-        val sessionEvent: SessionEvent = uncheckedCast(flowMapperMetaData.payload)
         return when (val sessionEventPayload = sessionEvent.payload) {
             is SessionInit -> {
                 if (flowMapperState == null) {
@@ -38,8 +38,7 @@ class SessionEventExecutor(
                 } else {
                     //duplicate
                     log.warn(
-                        "Duplicate SessionInit event received. Key: ${flowMapperMetaData.flowMapperEventKey}, Event: " +
-                                "${flowMapperMetaData.payload}"
+                        "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent"
                     )
                     FlowMapperResult(flowMapperState, emptyList())
                 }
@@ -47,10 +46,7 @@ class SessionEventExecutor(
             else -> {
                 if (flowMapperState == null) {
                     //expired closed session
-                    log.warn(
-                        "Event received for expired closed session. Key: ${flowMapperMetaData.flowMapperEventKey}, " +
-                                "Event: ${flowMapperMetaData.payload}"
-                    )
+                    log.warn("Event received for expired closed session. Key: $eventKey, Event: $sessionEvent")
                     FlowMapperResult(flowMapperState, emptyList())
                 } else {
                     processOtherSessionEvents(flowMapperState)
@@ -60,14 +56,10 @@ class SessionEventExecutor(
     }
 
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
-        val outputTopic = flowMapperMetaData.outputTopic ?: throw CordaRuntimeException(
-            "Output topic should not be null for " +
-                    "SessionEvent on key ${flowMapperMetaData.flowMapperEventKey}"
-        )
-        val (recordKey, recordValue) = if (flowMapperMetaData.messageDirection == MessageDirection.OUTBOUND) {
-            Pair(generateOutboundSessionId(flowMapperMetaData.flowMapperEventKey), flowMapperMetaData.flowMapperEvent)
+        val (recordKey, recordValue) = if (messageDirection == MessageDirection.OUTBOUND) {
+            Pair(generateOutboundSessionId(eventKey), FlowMapperEvent(messageDirection, sessionEvent))
         } else {
-            Pair(flowMapperState.flowKey, FlowEvent(flowMapperState.flowKey, flowMapperMetaData.payload))
+            Pair(flowMapperState.flowKey, FlowEvent(flowMapperState.flowKey, sessionEvent))
         }
 
         return FlowMapperResult(
@@ -83,16 +75,17 @@ class SessionEventExecutor(
     }
 
     private fun processSessionInit(sessionEvent: SessionEvent, sessionInit: SessionInit): FlowMapperResult {
-        val identity = flowMapperMetaData.holdingIdentity
-            ?: throw CordaRuntimeException("Holding identity not set for SessionInit on key ${flowMapperMetaData.flowMapperEventKey}")
-        val outputTopic = flowMapperMetaData.outputTopic ?: throw CordaRuntimeException(
-            "Output topic should not be null for SessionInit on key ${flowMapperMetaData.flowMapperEventKey}"
-        )
+        val identity  = if (messageDirection == MessageDirection.OUTBOUND) {
+            sessionInit.flowKey.identity
+        } else {
+            sessionInit.initiatedIdentity
+        }
+
 
         val (flowKey, outputRecordKey, outputRecordValue) =
             getSessionInitOutputs(
-                flowMapperMetaData.messageDirection,
-                flowMapperMetaData.flowMapperEventKey,
+                messageDirection,
+                eventKey,
                 sessionEvent,
                 sessionInit,
                 identity
@@ -142,6 +135,19 @@ class SessionEventExecutor(
             sessionKey.removeSuffix("-INITIATED")
         } else {
             "$sessionKey-INITIATED"
+        }
+    }
+
+    /**
+     * Get the output topic based on [messageDirection].
+     * Inbound records should be directed to the flow event topic.
+     * Outbound records should be directed to the p2p out topic.
+     */
+    private fun getSessionEventOutputTopic(flowMapperTopics: FlowMapperTopics, messageDirection: MessageDirection): String {
+        return if (messageDirection == MessageDirection.INBOUND) {
+            flowMapperTopics.flowEventTopic
+        } else {
+            flowMapperTopics.p2pOutTopic
         }
     }
 

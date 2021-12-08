@@ -15,7 +15,6 @@ import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.mapper.FlowMapperTopics
 import net.corda.flow.mapper.impl.FlowMapperEventExecutorFactoryImpl
-import net.corda.flow.mapper.impl.FlowMapperMetaDataFactoryImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.uncheckedCast
@@ -33,7 +32,6 @@ class FlowMapperIntegrationTest {
     }
 
     private val flowMapperTopics = FlowMapperTopics(P2P_OUT, FLOW_MAPPER_TOPIC, FLOW_EVENT_TOPIC)
-    private val flowMetaDataFactory = FlowMapperMetaDataFactoryImpl()
     private val flowMapperEventExecutorFactory = FlowMapperEventExecutorFactoryImpl()
 
     @Test
@@ -192,8 +190,7 @@ class FlowMapperIntegrationTest {
         state: FlowMapperState?,
         event: Record<String, FlowMapperEvent>
     ): StateAndEventProcessor.Response<FlowMapperState> {
-        val metaData = flowMetaDataFactory.createFromEvent(flowMapperTopics, state, event)
-        val executor = flowMapperEventExecutorFactory.create(metaData)
+        val executor = flowMapperEventExecutorFactory.create(event.key, event.value!!, state, flowMapperTopics)
         val result = executor.execute()
         return StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
     }

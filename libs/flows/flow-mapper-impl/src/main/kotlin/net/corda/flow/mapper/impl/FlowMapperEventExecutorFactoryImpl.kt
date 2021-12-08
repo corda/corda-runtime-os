@@ -3,8 +3,10 @@ package net.corda.flow.mapper.impl
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.mapper.ExecuteCleanup
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
-import net.corda.flow.mapper.FlowMapperMetaData
+import net.corda.data.flow.state.mapper.FlowMapperState
+import net.corda.flow.mapper.FlowMapperTopics
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.flow.mapper.impl.executor.ExecuteCleanupEventExecutor
@@ -16,15 +18,16 @@ import org.osgi.service.component.annotations.Component
 @Component(service = [FlowMapperEventExecutorFactory::class])
 class FlowMapperEventExecutorFactoryImpl : FlowMapperEventExecutorFactory{
 
-    override fun create(flowMetaData: FlowMapperMetaData): FlowMapperEventExecutor {
-        return when (flowMetaData.payload) {
-            is SessionEvent -> SessionEventExecutor(flowMetaData)
-            is StartRPCFlow -> StartRPCFlowExecutor(flowMetaData)
-            is ExecuteCleanup -> ExecuteCleanupEventExecutor()
-            is ScheduleCleanup -> ScheduleCleanupEventExecutor(flowMetaData)
+    override fun create(eventKey: String, flowMapperEvent: FlowMapperEvent, state: FlowMapperState?, flowMapperTopics: FlowMapperTopics):
+            FlowMapperEventExecutor {
+        return when (val payload = flowMapperEvent.payload) {
+            is SessionEvent -> SessionEventExecutor(eventKey, flowMapperTopics, flowMapperEvent.messageDirection, payload, state)
+            is StartRPCFlow -> StartRPCFlowExecutor(eventKey, flowMapperTopics.flowEventTopic, payload, state)
+            is ExecuteCleanup -> ExecuteCleanupEventExecutor(eventKey)
+            is ScheduleCleanup -> ScheduleCleanupEventExecutor(eventKey, payload, state)
 
             else -> throw NotImplementedError(
-                "The event type '${flowMetaData.payload.javaClass.name}' is not supported.")
+                "The event type '${payload.javaClass.name}' is not supported.")
         }
     }
 }

@@ -3,13 +3,6 @@ plugins {
     id 'corda.common-library'
 }
 
-sourceSets {
-    integrationTest {
-        compileClasspath += main.output + test.output
-        runtimeClasspath += main.output + test.output
-    }
-}
-
 tasks.register('integrationTest', Test) {
     description = "Runs integration tests."
 

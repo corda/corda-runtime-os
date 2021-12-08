@@ -1,4 +1,4 @@
-package net.corda.flow.mapper
+package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.identity.HoldingIdentity
