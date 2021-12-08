@@ -27,12 +27,12 @@ class Deploy : Runnable {
         names = ["-g", "--gateway-count"],
         description = ["Number of Gateways in the cluster"]
     )
-    private var gatewayCount = 3
+    private var gatewayCount = 2
     @Option(
         names = ["-l", "--link-manager-count"],
         description = ["Number of Link Managers in the cluster"]
     )
-    private var linkManagerCount = 3
+    private var linkManagerCount = 2
 
     @Option(
         names = ["-H", "--host"],
@@ -68,7 +68,7 @@ class Deploy : Runnable {
         names = ["-z", "--zoo-keepers-count"],
         description = ["Number of Zoo Keepers in the cluster"]
     )
-    private var zooKeeperCount = 3
+    private var zooKeeperCount = 1
 
     @Option(
         names = ["-n", "--name"],
