@@ -1,4 +1,4 @@
-package net.corda.services.json
+package net.corda.application.impl.services.json
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.v5.application.injection.CordaFlowInjectable

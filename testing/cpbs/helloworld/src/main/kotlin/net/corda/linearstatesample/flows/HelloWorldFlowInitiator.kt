@@ -7,10 +7,15 @@ import net.corda.v5.application.injection.CordaInject
 import net.corda.v5.application.services.json.JsonMarshallingService
 import net.corda.v5.application.services.json.parseJson
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.util.contextLogger
 
 @InitiatingFlow
 @StartableByRPC
 class HelloWorldFlowInitiator(private val jsonArg: String) : Flow<Boolean> {
+
+    private companion object {
+        val log = contextLogger()
+    }
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
@@ -20,9 +25,9 @@ class HelloWorldFlowInitiator(private val jsonArg: String) : Flow<Boolean> {
 
         try{
             val target = jsonMarshallingService.parseJson<HelloTarget>(jsonArg)
-            println("Hello ${target.who}!")
+            log.info("Hello ${target.who}!")
         }catch(e: Throwable){
-            println(":( could not deserialize '$jsonArg' because:'${e.message}'")
+            log.warn(":( could not deserialize '$jsonArg' because:'${e.message}'")
         }
 
         return true

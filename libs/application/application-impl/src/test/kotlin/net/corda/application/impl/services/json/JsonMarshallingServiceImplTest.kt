@@ -1,4 +1,4 @@
-package net.corda.services.json
+package net.corda.application.impl.services.json
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
