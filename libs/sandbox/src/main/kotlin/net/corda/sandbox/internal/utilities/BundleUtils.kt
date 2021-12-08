@@ -64,7 +64,7 @@ internal class BundleUtils @Activate constructor(
     }
 
     /** Loads OSGi or java platform classes. */
-    fun loadClassFromSystemBundle(className: String): Class<*>? = systemBundle.loadClass(className)
+    fun loadClassFromSystemBundle(className: String): Class<*> = systemBundle.loadClass(className)
 
     /**
      * Returns the bundle from which [serviceComponentRuntime] is loaded, or null if there is no such bundle.
