@@ -15,7 +15,6 @@ dependencies {
     implementation "net.corda:corda-application"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    // Concluded this is the one acceptable dependency in addition to kotlin.
     implementation 'org.slf4j:slf4j-api'
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
