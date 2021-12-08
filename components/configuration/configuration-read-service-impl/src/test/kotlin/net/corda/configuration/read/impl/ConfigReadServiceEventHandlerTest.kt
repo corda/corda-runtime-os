@@ -121,8 +121,8 @@ internal class ConfigReadServiceEventHandlerTest {
 
     @Test
     fun `Multiple bootstrap events with same config are ignored`() {
-        val configA = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
-        val configB = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
+        val configA = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("foo" to "bar", "bar" to "baz")))
+        val configB = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("bar" to "baz", "foo" to "bar")))
         configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configA), coordinator)
         configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configB), coordinator)
         verify(coordinator, times(1)).postEvent(capture(lifecycleEventCaptor))
@@ -131,8 +131,8 @@ internal class ConfigReadServiceEventHandlerTest {
 
     @Test
     fun `Multiple bootstrap events with different config raises an error`() {
-        val configA = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
-        val configB = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("foo" to "foo")))
+        val configA = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("foo" to "bar", "bar" to "baz")))
+        val configB = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("bar" to "baz", "foo" to "foo")))
         configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configA), coordinator)
         assertThrows<ConfigurationReadException> {
             configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configB), coordinator)
