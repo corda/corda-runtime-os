@@ -15,7 +15,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.common.ConfigChangedEvent
-import net.corda.virtualnode.common.InstanceIdSupplier
 import net.corda.virtualnode.common.MessagingConfigEventHandler
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.VirtualNodeInfoWriterComponent
@@ -31,14 +30,15 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
-    @Reference(service = InstanceIdSupplier::class)
-    private val instanceId: InstanceIdSupplier
+    private val publisherFactory: PublisherFactory
 ) : VirtualNodeInfoWriterComponent {
     companion object {
         val log: Logger = contextLogger()
         internal const val CLIENT_ID = "VIRTUAL_NODE_INFO_WRITER"
     }
+
+    // This eventually needs to be passed in to here from the parent `main`
+    private val instanceId: Int? = null
 
     private val eventHandler: MessagingConfigEventHandler =
         MessagingConfigEventHandler(configurationReadService, this::onConfigChangeEvent, this::onConfig)
@@ -101,7 +101,7 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     private fun onConfig(coordinator: LifecycleCoordinator, config: SmartConfig) {
         coordinator.updateStatus(LifecycleStatus.DOWN)
         publisher?.close()
-        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID, instanceId.get()), config)
+        publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID, instanceId), config)
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 }

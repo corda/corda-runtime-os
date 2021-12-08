@@ -17,7 +17,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.common.InstanceId
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -54,9 +53,7 @@ class VirtualNodeCli @Activate constructor(
     @Reference(service = KafkaConfigWrite::class)
     private val configWriter: KafkaConfigWrite,
     @Reference(service = KafkaTopicAdmin::class)
-    private var topicAdmin: KafkaTopicAdmin,
-    @Reference(service = InstanceId::class)
-    private val instanceId: InstanceId
+    private var topicAdmin: KafkaTopicAdmin
 ) : Application, ConfigPublisher {
 
     private companion object {
@@ -80,9 +77,8 @@ class VirtualNodeCli @Activate constructor(
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
 
-        // Set the instance id for the components to pick up (via an OSGi object).
-        val instanceIdentifier = parameters.instanceId?.toInt()
-        instanceId.set(instanceIdentifier)
+        // Set the instance id for the components to pick up (eventually - not implemented here).
+        val instanceId = parameters.instanceId?.toInt()
 
         // Custom config file.
         configurationFile = parameters.configurationFile
@@ -91,7 +87,7 @@ class VirtualNodeCli @Activate constructor(
         topicTemplate = parameters.topicTemplate
 
         // Get a default, hard-coded config.  tl;dr returns bootstrap.servers = localhost:9092
-        bootstrapConfig = smartConfigFactory.create(ConfigHelper.getBootstrapConfig(instanceIdentifier))
+        bootstrapConfig = smartConfigFactory.create(ConfigHelper.getBootstrapConfig(instanceId))
 
         // Start the event handler loop.
         coordinator.start()
@@ -114,8 +110,8 @@ class VirtualNodeCli @Activate constructor(
      *
      */
     override fun ready() {
-        log.debug{ "Components all ready" }
-        log.debug{ "Writing CPI Metadata" }
+        log.debug { "Components all ready" }
+        log.debug { "Writing CPI Metadata" }
 
         val hash = SecureHash("Dummy", "0123456789ABCDEF".toByteArray())
         val id = CPI.Identifier.newInstance("test-cpi-name", "0.0.0", hash)
@@ -129,7 +125,7 @@ class VirtualNodeCli @Activate constructor(
     }
 
     override fun publishConfig() {
-        log.debug{ "Publish config" }
+        log.debug { "Publish config" }
         val config = bootstrapConfig ?: throw CordaRuntimeException("BootstrapConfig is null")
 
         if (configurationFile == null)
@@ -144,11 +140,11 @@ class VirtualNodeCli @Activate constructor(
             configurationFile!!.readText()
         )
 
-        log.debug{ "Config published" }
+        log.debug { "Config published" }
     }
 
     override fun createTopics() {
-        log.debug{ "Creating topics" }
+        log.debug { "Creating topics" }
 
         if (topicTemplate == null)
             return

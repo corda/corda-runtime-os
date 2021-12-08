@@ -11,7 +11,6 @@ import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.common.ConfigChangedEvent
-import net.corda.virtualnode.common.InstanceIdSupplier
 import net.corda.virtualnode.impl.VirtualNodeInfoProcessor
 import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
 import net.corda.virtualnode.service.VirtualNodeInfoListener
@@ -34,13 +33,14 @@ class VirtualNodeInfoReaderComponentImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
     @Reference(service = SubscriptionFactory::class)
-    subscriptionFactory: SubscriptionFactory,
-    @Reference(service = InstanceIdSupplier::class)
-    instanceId: InstanceIdSupplier
+    subscriptionFactory: SubscriptionFactory
 ) : VirtualNodeInfoReaderComponent {
     companion object {
         val log: Logger = contextLogger()
     }
+
+    // This eventually needs to be passed in to here from the parent `main`
+    private val instanceId: Int? = null
 
     /** The processor calls the call back when it receives a snapshot. */
     private val virtualNodeInfoProcessor: VirtualNodeInfoProcessor =
@@ -54,7 +54,7 @@ class VirtualNodeInfoReaderComponentImpl @Activate constructor(
         configurationReadService,
         virtualNodeInfoProcessor,
         subscriptionFactory,
-        instanceId.get(),
+        instanceId,
         this::onConfigChangeEvent
     )
 

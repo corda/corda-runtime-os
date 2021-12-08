@@ -12,7 +12,6 @@ import net.corda.packaging.CPI
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.common.ConfigChangedEvent
-import net.corda.virtualnode.common.InstanceIdSupplier
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -32,13 +31,14 @@ class CpiInfoReaderComponentImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = SubscriptionFactory::class)
-    subscriptionFactory: SubscriptionFactory,
-    @Reference(service = InstanceIdSupplier::class)
-    instanceId: InstanceIdSupplier
+    subscriptionFactory: SubscriptionFactory
 ) : CpiInfoReaderComponent {
     companion object {
         val log: Logger = contextLogger()
     }
+
+    // This eventually needs to be passed in to here from the parent `main`
+    private val instanceId: Int? = null
 
     private val cpiInfoProcessor = CpiInfoReaderProcessor(::setStatusToUp, ::setStatusToError)
 
@@ -50,7 +50,7 @@ class CpiInfoReaderComponentImpl @Activate constructor(
         configurationReadService,
         cpiInfoProcessor,
         subscriptionFactory,
-        instanceId.get(),
+        instanceId,
         this::onConfigChangeEvent
     )
 
