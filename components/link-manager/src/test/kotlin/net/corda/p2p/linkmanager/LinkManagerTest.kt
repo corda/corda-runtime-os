@@ -1036,7 +1036,7 @@ class LinkManagerTest {
         verifyDestinationForDataMessagesWithInboundMessageProcessor(session)
         loggingInterceptor.assertSingleWarning(
             "Actual destination ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
-                    " does not match declared destination (HoldingIdentity(x500Name=PartyA, groupId=Group))," +
+                    " does not match declared destination (HoldingIdentity(x500Name=PartyB, groupId=Group))," +
                     " which indicates a spoofing attempt!"
         )
     }
@@ -1047,7 +1047,7 @@ class LinkManagerTest {
         verifyDestinationForDataMessagesWithInboundMessageProcessor(session)
         loggingInterceptor.assertSingleWarning(
             "Actual destination ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
-                    " does not match declared destination (HoldingIdentity(x500Name=PartyA, groupId=Group))," +
+                    " does not match declared destination (HoldingIdentity(x500Name=PartyB, groupId=Group))," +
                     " which indicates a spoofing attempt!"
         )
     }
