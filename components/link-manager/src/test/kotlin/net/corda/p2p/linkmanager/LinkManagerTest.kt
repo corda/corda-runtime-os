@@ -955,33 +955,8 @@ class LinkManagerTest {
         loggingInterceptor.assertErrorContains("The message was discarded.")
     }
 
-    private fun verifySourceForDataMessagesWithInboundMessageProcessor(session: SessionPair) {
-        val header = AuthenticatedMessageHeader(FIRST_DEST, FAKE_SOURCE, null, MESSAGE_ID, "", "system-1")
-        val messageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
-        val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session.initiatorSession, netMap)
-        val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
-
-        val messages = listOf(
-            EventLogRecord(TOPIC, KEY, linkInMessage, 0, 0)
-        )
-
-        val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
-        Mockito.`when`(mockSessionManager.getSessionById(any())).thenReturn(
-            SessionManager.SessionDirection.Inbound(SessionManager.SessionKey(
-                FIRST_DEST.toHoldingIdentity(),
-                FIRST_SOURCE.toHoldingIdentity()),
-                session.responderSession
-            )
-        )
-
-        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
-
-        val records = processor.onNext(messages)
-        assertThat(records).isEmpty()
-    }
-
-    private fun verifyDestinationForDataMessagesWithInboundMessageProcessor(session: SessionPair) {
-        val header = AuthenticatedMessageHeader(LOCAL_PARTY, FIRST_SOURCE, null, MESSAGE_ID, "", "system-1")
+    private fun sendDataMessageWithSpoofedIdentity(session: SessionPair, source: HoldingIdentity, destination: HoldingIdentity) {
+        val header = AuthenticatedMessageHeader(destination, source, null, MESSAGE_ID, "", "system-1")
         val messageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
         val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session.initiatorSession, netMap)
         val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
@@ -1008,7 +983,7 @@ class LinkManagerTest {
     @Test
     fun `InboundMessageProcessor discards AuthenticatedMessages when the source in the Header is spoofed`() {
         val session = createSessionPair()
-        verifySourceForDataMessagesWithInboundMessageProcessor(session)
+        sendDataMessageWithSpoofedIdentity(session, FAKE_SOURCE, FIRST_DEST)
         loggingInterceptor.assertSingleWarning(
             "The identity in the message's source header ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
                     " does not match the session's source identity (HoldingIdentity(x500Name=PartyA, groupId=Group))," +
@@ -1019,7 +994,7 @@ class LinkManagerTest {
     @Test
     fun `InboundMessageProcessor discards AuthenticatedEncryptedMessages when the source in the Header is spoofed`() {
         val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
-        verifySourceForDataMessagesWithInboundMessageProcessor(session)
+        sendDataMessageWithSpoofedIdentity(session, FAKE_SOURCE, FIRST_DEST)
         loggingInterceptor.assertSingleWarning(
             "The identity in the message's source header ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
                     " does not match the session's source identity (HoldingIdentity(x500Name=PartyA, groupId=Group))," +
@@ -1030,7 +1005,7 @@ class LinkManagerTest {
     @Test
     fun `InboundMessageProcessor discards AuthenticatedMessages when the destination in the Header is spoofed`() {
         val session = createSessionPair()
-        verifyDestinationForDataMessagesWithInboundMessageProcessor(session)
+        sendDataMessageWithSpoofedIdentity(session, FIRST_SOURCE, LOCAL_PARTY)
         loggingInterceptor.assertSingleWarning(
             "The identity in the message's destination header ({\"x500Name\": \"PartyD\", \"groupId\": \"Group\"})" +
                     " does not match the session's destination identity (HoldingIdentity(x500Name=PartyB, groupId=Group))," +
@@ -1041,7 +1016,7 @@ class LinkManagerTest {
     @Test
     fun `InboundMessageProcessor discards AuthenticatedEncryptedMessages when the destination in the Header is spoofed`() {
         val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
-        verifyDestinationForDataMessagesWithInboundMessageProcessor(session)
+        sendDataMessageWithSpoofedIdentity(session, FIRST_SOURCE, LOCAL_PARTY)
         loggingInterceptor.assertSingleWarning(
             "The identity in the message's destination header ({\"x500Name\": \"PartyD\", \"groupId\": \"Group\"})" +
                     " does not match the session's destination identity (HoldingIdentity(x500Name=PartyB, groupId=Group))," +
