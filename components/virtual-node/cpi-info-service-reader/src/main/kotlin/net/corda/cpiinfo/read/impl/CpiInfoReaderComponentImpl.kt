@@ -71,17 +71,17 @@ class CpiInfoReaderComponentImpl @Activate constructor(
         }
 
     override fun start() {
-        log.debug { "Cpi Info Writer Service component starting" }
+        log.debug { "Cpi Info Reader Service component starting" }
         coordinator.start()
     }
 
     override fun stop() {
-        log.debug { "Cpi Info Writer Service component stopping" }
+        log.debug { "Cpi Info Reader Service component stopping" }
         coordinator.stop()
     }
 
     override fun close() {
-        log.debug { "Cpi Info Writer Service component closing" }
+        log.debug { "Cpi Info Reader Service component closing" }
         coordinator.close()
         cpiInfoProcessor.close()
     }
