@@ -24,6 +24,8 @@ import java.io.FileInputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Properties
+import kotlin.math.absoluteValue
+import kotlin.random.Random
 import net.corda.applications.rpc.internal.HttpRpcGatewayAppEventHandler
 import net.corda.configuration.read.ConfigurationReadService
 
@@ -56,7 +58,7 @@ class HttpRpcGatewayApp @Activate constructor(
     }
 
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
-    private lateinit var tempDirectoryPath: Path
+    private var tempDirectoryPath: Path? = null
     private var sub: AutoCloseable? = null
 
     @Suppress("SpreadOperator")
@@ -70,7 +72,7 @@ class HttpRpcGatewayApp @Activate constructor(
             shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
         } else {
             val kafkaProperties = getKafkaPropertiesFromFile(parameters.kafkaProperties)
-            val bootstrapConfig = getBootstrapConfig(parameters.instanceId.toInt(), kafkaProperties)
+            val bootstrapConfig = getBootstrapConfig(parameters.instanceId, kafkaProperties)
 
             log.info("Starting configuration read service with bootstrap config ${bootstrapConfig}.")
             configurationReadService.start()
@@ -155,13 +157,15 @@ class HttpRpcGatewayApp @Activate constructor(
         sub?.close()
         sub = null
         lifeCycleCoordinator?.stop()
-        File(tempDirectoryPath.toUri()).deleteRecursively()
+        tempDirectoryPath?.let {
+            File(it.toUri()).deleteRecursively()
+        }
     }
 }
 
 class CliParameters {
-    @CommandLine.Option(names = ["--instanceId"], description = ["InstanceId for this worker"])
-    lateinit var instanceId: String
+    @CommandLine.Option(names = ["--instanceId"], description = ["InstanceId for this worker. Defaults to a random value."])
+    var instanceId: Int = Random.nextInt().absoluteValue
 
     @CommandLine.Option(names = ["--kafka"], description = ["File containing Kafka connection properties"])
     var kafkaProperties: File? = null

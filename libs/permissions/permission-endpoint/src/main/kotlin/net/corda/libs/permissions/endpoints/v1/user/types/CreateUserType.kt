@@ -6,7 +6,6 @@ import net.corda.v5.base.annotations.CordaSerializable
 /**
  * Request type for creating a User in the permission system.
  */
-@CordaSerializable
 data class CreateUserType(
 
     /**

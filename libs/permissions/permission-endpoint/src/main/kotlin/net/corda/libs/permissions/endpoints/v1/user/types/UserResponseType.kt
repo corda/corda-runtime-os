@@ -6,7 +6,6 @@ import net.corda.v5.base.annotations.CordaSerializable
 /**
  * Response type representing a User to be returned to the caller.
  */
-@CordaSerializable
 data class UserResponseType(
 
     /**
