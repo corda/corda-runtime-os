@@ -17,6 +17,7 @@ class WorkerHelpers {
         fun <T> getParams(args: Array<String>, params: T): T {
             val commandLine = CommandLine(params)
             try {
+                @Suppress("SpreadOperator")
                 commandLine.parseArgs(*args)
             } catch (e: CommandLine.ParameterException) {
                 throw IllegalArgumentException(e.message)

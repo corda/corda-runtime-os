@@ -13,13 +13,26 @@ class DefaultWorkerParams {
     var versionRequested = false
 
     @Suppress("Unused")
-    @Option(names = ["-i", "--instanceId"], description = ["The Kafka instance ID for this worker. Defaults to a random value."])
+    @Option(
+        names = ["-i", "--instanceId"],
+        description = ["The Kafka instance ID for this worker. Defaults to a random value."]
+    )
     var instanceId = Random.nextInt().absoluteValue
+
+    @Suppress("Unused")
+    @Option(
+        names = ["-t", "--topicPrefix"],
+        description = ["The prefix to use for Kafka topics. Defaults to the empty string."]
+    )
+    var topicPrefix = ""
 
     @Option(names = ["-d", "--disableHealthMonitor"], description = ["Disables the health monitor."])
     var disableHealthMonitor = false
 
-    @Option(names = ["-p", "--healthMonitorPort"], description = ["The port the health monitor should listen on. Defaults to $HEALTH_MONITOR_PORT."])
+    @Option(
+        names = ["-p", "--healthMonitorPort"],
+        description = ["The port the health monitor should listen on. Defaults to $HEALTH_MONITOR_PORT."]
+    )
     var healthMonitorPort = HEALTH_MONITOR_PORT
 
     @Option(names = ["-c", "--additionalParams"], description = ["Additional parameters for the worker."])

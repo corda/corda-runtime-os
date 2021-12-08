@@ -20,7 +20,7 @@ import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine.Mixin
 
 /** A worker that starts all processors. */
-@Suppress("Unused")
+@Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
 class CombinedWorker @Activate constructor(
     @Reference(service = CryptoProcessor::class)
@@ -52,10 +52,10 @@ class CombinedWorker @Activate constructor(
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
         val config = getAdditionalConfig(params.defaultParams, smartConfigFactory)
-        cryptoProcessor.start(params.defaultParams.instanceId, config)
-        dbProcessor.start(params.defaultParams.instanceId, config)
-        flowProcessor.start(params.defaultParams.instanceId, config)
-        rpcProcessor.start(params.defaultParams.instanceId, config)
+        cryptoProcessor.start(params.defaultParams.instanceId, params.defaultParams.topicPrefix, config)
+        dbProcessor.start(params.defaultParams.instanceId, params.defaultParams.topicPrefix, config)
+        flowProcessor.start(params.defaultParams.instanceId, params.defaultParams.topicPrefix, config)
+        rpcProcessor.start(params.defaultParams.instanceId, params.defaultParams.topicPrefix, config)
     }
 
     override fun shutdown() {

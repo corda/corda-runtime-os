@@ -40,35 +40,57 @@ class DBConfigManager @Activate constructor(
     private companion object {
         private val logger = contextLogger()
         private const val GROUP_NAME = "DB_EVENT_HANDLER"
+        // TODO - Joel - Choose a proper client ID.
+        private const val CLIENT_ID = "joel"
+        private const val TOPIC = "config"
+        private const val EVENT_TOPIC = "config-update-request"
     }
 
     internal val coordinator = coordinatorFactory.createCoordinator<DBConfigManager>(this).apply { start() }
     private val dbWriter = DBWriter(schemaMigrator, entityManagerFactoryFactory)
+    private var instanceId: Int? = null
+    private var bootstrapConfig: SmartConfig? = null
     private var newConfigRequestSub: Subscription<String, String>? = null
     private var newConfigPub: Publisher? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
-            is StartEvent -> Unit // We cannot start until we have the required Kafka config.
-            is StartListentingEvent -> {
-                // The component is temporarily down while we reconfigure it.
-                coordinator.updateStatus(LifecycleStatus.DOWN)
-                listenForConfig(event.instanceId, event.config)
+            is StartEvent -> Unit // We cannot start until we have the required config.
+
+            is BootstrapConfigProvidedEvent -> {
+                // TODO - Joel - Introduce similar logic to config read service to be idempotent.
+                instanceId = event.instanceId
+                bootstrapConfig = event.config
+                coordinator.postEvent(StartListeningEvent())
+            }
+
+            is StartListeningEvent -> {
+                setUpPubSub()
                 // TODO - Joel - Should I sleep here while waiting for DB to come up, if it's not up?
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
-            is StopEvent -> newConfigRequestSub?.stop()
+
+            is StopEvent -> {
+                newConfigRequestSub?.stop()
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+            }
         }
     }
 
-    @Synchronized
-    private fun listenForConfig(instanceId: Int, config: SmartConfig) {
+    private fun setUpPubSub() {
         newConfigRequestSub?.stop()
 
-        // TODO - Joel - Choose a client ID.
-        val publisher = publisherFactory.createPublisher(PublisherConfig("joel", instanceId), config)
+        // TODO - Joel - Custom exception type.
+        val config = bootstrapConfig ?: throw IllegalArgumentException("TODO - Joel - Throw exception.")
+
+        if (newConfigPub != null || newConfigRequestSub != null) {
+            // TODO - Joel - Custom exception type.
+            throw IllegalArgumentException("TODO - Joel - Throw exception.")
+        }
+
+        val publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID, instanceId), config)
         val subscription = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(GROUP_NAME, "config-update-request", instanceId),
+            SubscriptionConfig(GROUP_NAME, EVENT_TOPIC, instanceId),
             DBCompactedProcessor(::newConfigHandler),
             config
         )
@@ -78,15 +100,17 @@ class DBConfigManager @Activate constructor(
     }
 
     private fun newConfigHandler(newRecord: Record<String, String>) {
+        // TODO - Joel - Don't default record value to empty string. Handle properly.
         val configEntity = ConfigEntity(newRecord.key, newRecord.value ?: "")
         dbWriter.writeConfig(configEntity)
 
-        val record = Record("config", newRecord.key, newRecord.value)
+        val record = Record(TOPIC, newRecord.key, newRecord.value)
         logger.info("JJJ publishing record $record")
-        // TODO - Handle publisher being null.
-        newConfigPub?.publish(listOf(record))
+        // TODO - Joel - Custom exception type.
+        newConfigPub?.publish(listOf(record)) ?: throw IllegalArgumentException("TODO - Joel - Throw exception.")
     }
 }
 
 // TODO - Joel - Move to another file and nest.
-internal class StartListentingEvent(val instanceId: Int, val config: SmartConfig) : LifecycleEvent
+internal class BootstrapConfigProvidedEvent(val config: SmartConfig, val instanceId: Int) : LifecycleEvent
+internal class StartListeningEvent : LifecycleEvent

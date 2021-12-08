@@ -18,12 +18,11 @@ class DBProcessorImpl @Activate constructor(
         val logger = contextLogger()
     }
 
-    override fun start(instanceId: Int, config: SmartConfig) {
-        dbConfigManager.coordinator.postEvent(StartListentingEvent(instanceId, config))
+    override fun start(instanceId: Int, topicPrefix: String, config: SmartConfig) {
+        dbConfigManager.coordinator.postEvent(BootstrapConfigProvidedEvent(config, instanceId))
     }
 
     override fun stop() {
         dbConfigManager.coordinator.stop()
     }
 }
-

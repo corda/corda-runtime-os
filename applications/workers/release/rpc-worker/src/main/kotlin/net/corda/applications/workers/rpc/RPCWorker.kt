@@ -43,7 +43,7 @@ class RPCWorker @Activate constructor(
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
         val config = getAdditionalConfig(params.defaultParams, smartConfigFactory)
-        processor.start(params.defaultParams.instanceId, config)
+        processor.start(params.defaultParams.instanceId, params.defaultParams.topicPrefix, config)
     }
 
     override fun shutdown() {
