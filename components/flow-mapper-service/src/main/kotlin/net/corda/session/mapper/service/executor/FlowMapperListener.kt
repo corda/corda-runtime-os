@@ -29,7 +29,7 @@ class FlowMapperListener(
 
     override fun onPartitionSynced(states: Map<String, FlowMapperState>) {
         log.trace { "Synced states $states" }
-        val currentTime = clock.instant().toEpochMilli()
+        val currentTime = clock.millis()
         for (stateEntry in states) {
             val key = stateEntry.key
             val state = stateEntry.value
@@ -81,7 +81,7 @@ class FlowMapperListener(
                 log.debug { "Clearing up mapper state for key $eventKey" }
                 publisher?.publish(listOf(Record(eventTopic, eventKey, ExecuteCleanup())))
             },
-            expiryTime - System.currentTimeMillis(),
+            expiryTime - clock.millis(),
             TimeUnit.MILLISECONDS
         )
     }

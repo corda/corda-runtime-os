@@ -11,6 +11,7 @@ data class ScheduledTaskState(
 ) :AutoCloseable {
     override fun close() {
         tasks.values.forEach { it.cancel(false) }
+        tasks.clear()
         executorService.shutdown()
         publisher?.close()
     }
