@@ -7,6 +7,7 @@ import net.corda.p2p.deployment.pods.InfrastructureDetails
 import net.corda.p2p.deployment.pods.Namespace
 import net.corda.p2p.deployment.pods.NamespaceIdentifier
 import net.corda.p2p.deployment.pods.P2PDeploymentDetails
+import net.corda.p2p.deployment.pods.ResourceRequest
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
@@ -119,6 +120,60 @@ class Deploy : Runnable {
     )
     var gatewayArguments = emptyList<String>()
 
+    private val isMiniKube = let {
+        val getConfig = ProcessBuilder().command(
+            "kubectl",
+            "config",
+            "current-context"
+        ).start()
+        getConfig
+            .inputStream
+            .reader()
+            .useLines {
+                it.contains("minikube")
+            }
+    }
+
+    @Option(
+        names = ["--p2p-memory"],
+        description = ["The memory each P2P component will need (for example: 2Gi, 750Mi...)"]
+    )
+    var p2pMemory = if (isMiniKube) {
+        null
+    } else {
+        "2Gi"
+    }
+
+    @Option(
+        names = ["--p2p-cpu"],
+        description = ["The number of CPUs each P2P component will need (for example: 0.5, 1, 3...)"]
+    )
+    var p2pCpu = if (isMiniKube) {
+        null
+    } else {
+        1.0
+    }
+
+    @Option(
+        names = ["--kafka-broker-memory"],
+        description = ["The memory each Kafka broker will need (for example: 2Gi, 750Mi...)"]
+    )
+    var kafkaBrokerMemory = if (isMiniKube) {
+        null
+    } else {
+        "4Gi"
+    }
+
+    @Option(
+        names = ["--kakfa-broker-cpu"],
+        description = ["The number of CPUs each Kafka broker will need (for example: 0.5, 1, 3...)"]
+    )
+    var kafkaBrokerCpu = if (isMiniKube) {
+        null
+    } else {
+        1.0
+    }
+
     override fun run() {
         val namespace = Namespace(
             NamespaceIdentifier(
@@ -131,7 +186,11 @@ class Deploy : Runnable {
                 linkManagerCount,
                 gatewayCount,
                 debug,
-                tag
+                tag,
+                ResourceRequest(
+                    p2pMemory,
+                    p2pCpu,
+                )
             ),
             InfrastructureDetails(
                 kafkaBrokerCount,
@@ -141,6 +200,10 @@ class Deploy : Runnable {
                     dbUsername,
                     dbPassword,
                     sqlInitFile
+                ),
+                ResourceRequest(
+                    kafkaBrokerMemory,
+                    kafkaBrokerCpu,
                 )
             )
         )

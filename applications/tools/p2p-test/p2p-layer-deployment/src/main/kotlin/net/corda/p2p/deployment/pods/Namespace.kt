@@ -15,6 +15,7 @@ data class P2PDeploymentDetails(
     val gatewayCount: Int,
     val debug: Boolean,
     val tag: String,
+    val resourceRequest: ResourceRequest,
 )
 data class DbDetails(
     val username: String,
@@ -26,6 +27,7 @@ data class InfrastructureDetails(
     val zooKeeperCount: Int,
     val disableKafkaUi: Boolean,
     val dbDetails: DbDetails,
+    val kafkaBrokerResourceRequest: ResourceRequest,
 )
 
 class Namespace(
@@ -69,23 +71,20 @@ class Namespace(
             identifier.namespaceName,
             infrastructureDetails.zooKeeperCount,
             infrastructureDetails.kafkaBrokerCount,
-            !infrastructureDetails.disableKafkaUi
+            !infrastructureDetails.disableKafkaUi,
+            infrastructureDetails.kafkaBrokerResourceRequest,
         ) +
             PostGreSql(infrastructureDetails.dbDetails)
     }
 
     val p2pPods by lazy {
         Gateway.gateways(
-            p2pDeployment.gatewayCount,
             listOf(identifier.hostName),
             kafkaServers,
-            p2pDeployment.tag,
-            p2pDeployment.debug
+            p2pDeployment,
         ) +
             LinkManager.linkManagers(
-                p2pDeployment.linkManagerCount,
-                kafkaServers, p2pDeployment.tag,
-                p2pDeployment.debug
+                kafkaServers, p2pDeployment
             )
     }
 }

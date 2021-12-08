@@ -4,19 +4,16 @@ class Gateway(
     index: Int,
     kafkaServers: String,
     override val hosts: Collection<String>,
-    tag: String,
-    debug: Boolean,
-) : P2pPod(kafkaServers, tag, index, debug) {
+    details: P2PDeploymentDetails,
+) : P2pPod(kafkaServers, index, details) {
     companion object {
         fun gateways(
-            count: Int,
             hostNames: Collection<String>,
             kafkaServers: String,
-            tag: String,
-            debug: Boolean,
+            details: P2PDeploymentDetails,
         ): Collection<Pod> {
-            val gateways = (1..count).map {
-                Gateway(it, kafkaServers, hostNames, tag, debug)
+            val gateways = (1..details.gatewayCount).map {
+                Gateway(it, kafkaServers, hostNames, details)
             }
             val balancer = LoadBalancer(
                 hostNames,

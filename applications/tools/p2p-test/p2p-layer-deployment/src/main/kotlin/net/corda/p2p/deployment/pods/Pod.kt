@@ -12,6 +12,7 @@ abstract class Pod {
     open val hosts: Collection<String>? = null
     open val pullSecrets: Collection<String> = emptyList()
     open val readyLog: Regex? = null
+    open val resourceRequest: ResourceRequest? = null
 
     fun yamls(namespaceName: String): Collection<Yaml> {
         return rawData.map {
@@ -30,6 +31,28 @@ abstract class Pod {
                 "hostnames" to hosts
             )
         )
+    }
+
+    private val resourceRequestYaml by lazy {
+        resourceRequest?.let { resourceRequest ->
+            val memory = resourceRequest.memory?.let {
+                mapOf("memory" to it)
+            } ?: emptyMap()
+            val cpu = resourceRequest.cpu?.let {
+                mapOf("cpu" to it.toString())
+            } ?: emptyMap()
+            if ((cpu.isEmpty()) && (memory.isEmpty())) {
+                emptyMap()
+            } else {
+                mapOf(
+                    "resources" to
+                        mapOf(
+                            "requests" to
+                                memory + cpu
+                        )
+                )
+            }
+        } ?: emptyMap()
     }
 
     private fun createPod(namespace: String) = mapOf(
@@ -69,7 +92,8 @@ abstract class Pod {
                                 rawData.map {
                                     it.createVolumeMount(app)
                                 }
-                        ),
+                        ) +
+                            resourceRequestYaml,
                     ),
                     "volumes" to
                         rawData.map { it.createVolume(app) },

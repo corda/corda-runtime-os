@@ -7,6 +7,7 @@ class KafkaBroker(
     clusterName: String,
     zookeeperConnectString: String,
     replicationFactor: Int,
+    override val resourceRequest: ResourceRequest?,
 ) : Pod() {
     companion object {
         fun kafkaServers(namespace: String, brokersCount: Int) =
@@ -18,7 +19,8 @@ class KafkaBroker(
             clusterName: String,
             zookeepersCount: Int,
             brokersCount: Int,
-            kafkaUi: Boolean
+            kafkaUi: Boolean,
+            resourceRequest: ResourceRequest?
         ): Collection<Pod> {
             val zookeepers = ZooKeeper.zookeepers(zookeepersCount)
             val zookeeperConnectString = zookeepers.map {
@@ -29,7 +31,8 @@ class KafkaBroker(
                     it,
                     clusterName,
                     zookeeperConnectString,
-                    min(3, brokersCount)
+                    min(3, brokersCount),
+                    resourceRequest,
                 )
             }
             val ui = if (kafkaUi) {
