@@ -2,7 +2,7 @@ package net.corda.permissions.storage.writer
 
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.storage.writer.factory.PermissionStorageWriterProcessorFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
@@ -19,7 +19,8 @@ import javax.persistence.EntityManagerFactory
 class PermissionStorageWriterServiceEventHandler(
     private val entityManagerFactory: EntityManagerFactory,
     private val subscriptionFactory: SubscriptionFactory,
-    private val permissionStorageWriterProcessorFactory: PermissionStorageWriterProcessorFactory
+    private val permissionStorageWriterProcessorFactory: PermissionStorageWriterProcessorFactory,
+    private val nodeConfig: SmartConfig
 ) : LifecycleEventHandler {
 
     private companion object {
@@ -41,7 +42,7 @@ class PermissionStorageWriterServiceEventHandler(
                         requestType = PermissionManagementRequest::class.java,
                         responseType = PermissionManagementResponse::class.java
                     ),
-                    nodeConfig = SmartConfigImpl.empty(),
+                    nodeConfig = nodeConfig,
                     responderProcessor = permissionStorageWriterProcessorFactory.create(entityManagerFactory)
                 ).also {
                     this.subscription = it
