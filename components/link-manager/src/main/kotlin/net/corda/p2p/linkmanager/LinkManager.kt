@@ -393,17 +393,17 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             messages: MutableList<Record<*, *>>
         )
         {
-            val sessionSource = sessionKey.responderId
-            val sessionDestination = sessionKey.ourId
+            val sessionSource = sessionKey.responderId.toHoldingIdentity()
+            val sessionDestination = sessionKey.ourId.toHoldingIdentity()
             val messageDestination = innerMessage.message.header.destination
             val messageSource = innerMessage.message.header.source
-            if(sessionSource.toHoldingIdentity() == messageSource && sessionDestination.toHoldingIdentity() == messageDestination) {
+            if(sessionSource == messageSource && sessionDestination == messageDestination) {
                 logger.debug { "Processing message ${innerMessage.message.header.messageId} " +
                         "of type ${innerMessage.message.javaClass} from session ${session.sessionId}" }
                 messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
                 makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
                 sessionManager.inboundSessionEstablished(session.sessionId)
-            } else if(sessionSource.toHoldingIdentity() != messageSource) {
+            } else if(sessionSource != messageSource) {
                 logger.warn("The identity in the message's source header ($messageSource)" +
                         " does not match the session's source identity ($sessionSource)," +
                         " which indicates a spoofing attempt! The message was discarded.")
