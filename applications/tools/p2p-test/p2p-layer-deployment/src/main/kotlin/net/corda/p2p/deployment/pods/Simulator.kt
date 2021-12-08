@@ -1,11 +1,13 @@
 package net.corda.p2p.deployment.pods
 
 import net.corda.p2p.deployment.CordaOsDockerDevSecret
+import kotlin.random.Random
 
 class Simulator(
     kafkaServers: String,
     tag: String,
     simulatorConfig: String,
+    override val labels: Map<String, String>
 ) : Job() {
     override val pullSecrets = listOf(CordaOsDockerDevSecret.name)
     override val image by lazy {
@@ -33,6 +35,6 @@ class Simulator(
     }
 
     override val app by lazy {
-        "simulator-${simulatorConfig.hashCode()}-${System.nanoTime()}"
+        "simulator-${simulatorConfig.hashCode()}-${System.nanoTime() % 3600}-${Random.nextInt()}"
     }
 }

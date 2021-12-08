@@ -1,4 +1,4 @@
-package net.corda.p2p.deployment.commands
+package net.corda.p2p.deployment.commands.simulator.db
 
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
@@ -6,15 +6,14 @@ import picocli.CommandLine.Option
 @Command(
     name = "jdbc",
     showDefaultValues = true,
-    description = ["Forward the database port"]
+    description = ["Show the JDB connection URL"]
 )
 class Jdbc : Runnable {
     @Option(
         names = ["-n", "--name"],
         description = ["The name of the namespace"],
-        required = true,
     )
-    private lateinit var namespaceName: String
+    private var namespaceName = Db.defaultName
 
     private fun startTelepresence() {
         ProcessBuilder()
@@ -28,7 +27,12 @@ class Jdbc : Runnable {
     }
 
     override fun run() {
+        val status = Db.getDbStatus(namespaceName)
+        if (status == null) {
+            println("Database is not running")
+            return
+        }
         startTelepresence()
-        println("Example of JDBC URL: jdbc:postgresql://db.$namespaceName/corda?user=corda&password=corda-p2p-masters")
+        println("Example of JDBC URL: jdbc:postgresql://db.$namespaceName/${status.username}?user=${status.username}&password=${status.password}")
     }
 }
