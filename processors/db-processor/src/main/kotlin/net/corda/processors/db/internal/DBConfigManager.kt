@@ -54,6 +54,7 @@ class DBConfigManager @Activate constructor(
                 // The component is temporarily down while we reconfigure it.
                 coordinator.updateStatus(LifecycleStatus.DOWN)
                 listenForConfig(event.instanceId, event.config)
+                // TODO - Joel - Should I sleep here while waiting for DB to come up, if it's not up?
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> newConfigRequestSub?.stop()
