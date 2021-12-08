@@ -18,7 +18,7 @@ import net.corda.v5.base.util.debug
 internal class ConfigReadServiceEventHandler(
     private val readServiceFactory: ConfigReaderFactory,
     private val callbackHandles: ConfigurationHandlerStorage
-): LifecycleEventHandler {
+) : LifecycleEventHandler {
 
     private var serviceUpCallback: AutoCloseable? = null
     private var bootstrapConfig: SmartConfig? = null
@@ -37,14 +37,18 @@ internal class ConfigReadServiceEventHandler(
                 }
             }
             is BootstrapConfigProvided -> {
-                if (bootstrapConfig != null) {
-                    // Let the lifecycle library error the service. The application can listen for error events and
-                    // respond accordingly.
-                    logger.error("An attempt was made to set the bootstrap configuration twice.")
-                    throw ConfigurationReadException("An attempt was made to set the bootstrap configuration twice.")
+                if (bootstrapConfig == null) {
+                    logger.debug { "Bootstrap config received: ${event.config}" }
+                    bootstrapConfig = event.config
+                    coordinator.postEvent(SetupSubscription())
+                } else if (bootstrapConfig != event.config) {
+                    logger.error("An attempt was made to set the bootstrap configuration twice with " +
+                            "different config. Current: $bootstrapConfig, New: ${event.config}")
+                    throw ConfigurationReadException("An attempt was made to set the bootstrap configuration " +
+                            "twice with different config. Current: $bootstrapConfig, New: ${event.config}")
+                } else {
+                    logger.debug { "Duplicate bootstrap configuration received." }
                 }
-                bootstrapConfig = event.config
-                coordinator.postEvent(SetupSubscription())
             }
             is SetupSubscription -> {
                 setupSubscription(coordinator)
@@ -81,7 +85,7 @@ internal class ConfigReadServiceEventHandler(
 
     internal class ServiceUpHandler(
         private val coordinator: LifecycleCoordinator
-    ): ConfigListener {
+    ) : ConfigListener {
         override fun onUpdate(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, SmartConfig>) {
             if (coordinator.status == LifecycleStatus.DOWN) {
                 coordinator.updateStatus(LifecycleStatus.UP, "Connected to configuration repository.")

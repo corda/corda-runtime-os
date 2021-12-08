@@ -1,5 +1,8 @@
 package net.corda.configuration.read.impl
 
+import com.typesafe.config.ConfigFactory
+import net.corda.configuration.read.ConfigurationReadException
+import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
@@ -12,6 +15,7 @@ import net.corda.lifecycle.StopEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentCaptor
 import org.mockito.Captor
 import org.mockito.Mockito.`when`
@@ -113,5 +117,25 @@ internal class ConfigReadServiceEventHandlerTest {
         verifyZeroInteractions(configReaderFactory)
         verifyZeroInteractions(configReader)
         verifyZeroInteractions(callbackHandles)
+    }
+
+    @Test
+    fun `Multiple bootstrap events with same config are ignored`() {
+        val configA = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
+        val configB = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configA), coordinator)
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configB), coordinator)
+        verify(coordinator, times(1)).postEvent(capture(lifecycleEventCaptor))
+        assertThat(lifecycleEventCaptor.firstValue is SetupSubscription)
+    }
+
+    @Test
+    fun `Multiple bootstrap events with different config raises an error`() {
+        val configA = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("foo" to "bar")))
+        val configB = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("foo" to "foo")))
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configA), coordinator)
+        assertThrows<ConfigurationReadException> {
+            configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configB), coordinator)
+        }
     }
 }
