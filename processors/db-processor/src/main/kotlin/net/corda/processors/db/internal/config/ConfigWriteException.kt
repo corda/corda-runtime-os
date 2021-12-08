@@ -1,4 +1,4 @@
-package net.corda.processors.db.internal
+package net.corda.processors.db.internal.config
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
 

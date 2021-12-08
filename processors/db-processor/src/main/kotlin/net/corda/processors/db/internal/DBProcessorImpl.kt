@@ -2,6 +2,8 @@ package net.corda.processors.db.internal
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.processors.db.DBProcessor
+import net.corda.processors.db.internal.config.ConfigProvidedEvent
+import net.corda.processors.db.internal.config.ConfigWriter
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

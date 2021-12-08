@@ -1,6 +1,5 @@
-package net.corda.processors.db.internal
+package net.corda.processors.db.internal.config
 
-import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -17,7 +16,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.processors.db.internal.db.DBWriter
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -27,14 +26,12 @@ import org.osgi.service.component.annotations.Reference
 class ConfigWriter @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = DBWriter::class)
+    private val dbWriter: DBWriter,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
-    @Reference(service = EntityManagerFactoryFactory::class)
-    entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    @Reference(service = LiquibaseSchemaMigrator::class)
-    schemaMigrator: LiquibaseSchemaMigrator
+    private val publisherFactory: PublisherFactory
 ) : LifecycleEventHandler {
 
     private companion object {
@@ -46,7 +43,6 @@ class ConfigWriter @Activate constructor(
     }
 
     internal val coordinator = coordinatorFactory.createCoordinator<ConfigWriter>(this).apply { start() }
-    private val dbWriter = DBWriter(schemaMigrator, entityManagerFactoryFactory)
     private var instanceId: Int? = null
     private var bootstrapConfig: SmartConfig? = null
     private var newConfigRequestSub: Subscription<String, String>? = null
@@ -88,7 +84,7 @@ class ConfigWriter @Activate constructor(
         val publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID, instanceId), config)
         val subscription = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(GROUP_NAME, EVENT_TOPIC, instanceId),
-            DBCompactedProcessor(::newConfigHandler),
+            ConfigWriterProcessor(::newConfigHandler),
             config
         )
 

@@ -1,9 +1,9 @@
-package net.corda.processors.db.internal
+package net.corda.processors.db.internal.config
 
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 
-internal class DBCompactedProcessor(private val newConfigHandler: (Record<String, String>) -> Unit) :
+internal class ConfigWriterProcessor(private val newConfigHandler: (Record<String, String>) -> Unit) :
     CompactedProcessor<String, String> {
 
     override val keyClass = String::class.java
