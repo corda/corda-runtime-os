@@ -74,6 +74,10 @@ class InMemorySessionReplayer(
         replayScheduler.removeFromReplay(uniqueId)
     }
 
+    fun removeAllMessagesFromReplay() {
+        replayScheduler.removeAllMessagesFromReplay()
+    }
+
     private fun replayMessage(
         messageReplay: SessionMessageReplay,
     ) {

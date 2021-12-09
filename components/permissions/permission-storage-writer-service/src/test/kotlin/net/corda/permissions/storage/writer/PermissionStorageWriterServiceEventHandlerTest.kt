@@ -26,7 +26,12 @@ class PermissionStorageWriterServiceEventHandlerTest {
     private val permissionStorageWriterProcessorFactory = mock<PermissionStorageWriterProcessorFactory>().apply {
         whenever(create(any())).thenReturn(permissionStorageWriterProcessor)
     }
-    private val handler = PermissionStorageWriterServiceEventHandler(mock(), subscriptionFactory, permissionStorageWriterProcessorFactory)
+    private val handler = PermissionStorageWriterServiceEventHandler(
+        mock(),
+        subscriptionFactory,
+        permissionStorageWriterProcessorFactory,
+        mock()
+    )
 
     @Test
     fun `processing a start event starts the writer's subscription`() {
