@@ -41,7 +41,7 @@ class SessionPartitionMapperImpl(
         return if (!isRunning) {
             throw IllegalStateException("getPartitions invoked, while session partition mapper is not running.")
         } else {
-            println("QQQ getting partition $sessionId - known? - ${sessionPartitionsMapping.contains(sessionId)}")
+            println("QQQ (${hashCode()}) getting partition |$sessionId| - known? - ${sessionPartitionsMapping.contains(sessionId)}")
             sessionPartitionsMapping[sessionId]
         }
     }
@@ -70,7 +70,7 @@ class SessionPartitionMapperImpl(
             } else {
                 sessionPartitionsMapping[newRecord.key] = newRecord.value!!.partitions
             }
-            println("QQQ after got next ${newRecord.key} -> ${sessionPartitionsMapping[newRecord.key]}")
+            println("QQQ (${hashCode()}) after got next |${newRecord.key}| -> ${sessionPartitionsMapping[newRecord.key]}")
         }
     }
 
