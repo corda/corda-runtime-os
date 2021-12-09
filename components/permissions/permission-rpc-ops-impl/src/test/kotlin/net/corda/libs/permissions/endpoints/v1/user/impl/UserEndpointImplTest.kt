@@ -144,7 +144,7 @@ internal class UserEndpointImplTest {
     }
 
     @Test
-    fun `get a user throws with resource not found exception and status 404 when the user isn't found`() {
+    fun `get a user throws with resource not found exception when the user isn't found`() {
         val getUserRequestDtoCapture = argumentCaptor<GetUserRequestDto>()
         whenever(permissionManager.getUser(getUserRequestDtoCapture.capture())).thenReturn(null)
         whenever(lifecycleCoordinator.isRunning).thenReturn(true)
@@ -153,7 +153,7 @@ internal class UserEndpointImplTest {
         val e = assertThrows<ResourceNotFoundException> {
             endpoint.getUser("abc")
         }
-        assertEquals(404, e.statusCode)
+        assertEquals(null, e.statusCode, "Resource not found exception should not override any status codes.")
         assertEquals("User abc not found.", e.message)
         assertEquals("abc", getUserRequestDtoCapture.firstValue.loginName)
     }
