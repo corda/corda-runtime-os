@@ -11,7 +11,6 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
