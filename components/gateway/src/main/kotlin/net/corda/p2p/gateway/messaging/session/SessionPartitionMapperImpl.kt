@@ -41,6 +41,7 @@ class SessionPartitionMapperImpl(
         return if (!isRunning) {
             throw IllegalStateException("getPartitions invoked, while session partition mapper is not running.")
         } else {
+            println("QQQ getting partition $sessionId - known? - ${sessionPartitionsMapping.contains(sessionId)}")
             sessionPartitionsMapping[sessionId]
         }
     }
@@ -53,6 +54,7 @@ class SessionPartitionMapperImpl(
             get() = SessionPartitions::class.java
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
+            println("QQQ got snapshots $currentData")
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
             future.get().complete(Unit)
         }
@@ -62,11 +64,13 @@ class SessionPartitionMapperImpl(
             oldValue: SessionPartitions?,
             currentData: Map<String, SessionPartitions>
         ) {
+            println("QQQ got next ${newRecord.key} -> ${newRecord.value}")
             if (newRecord.value == null) {
                 sessionPartitionsMapping.remove(newRecord.key)
             } else {
                 sessionPartitionsMapping[newRecord.key] = newRecord.value!!.partitions
             }
+            println("QQQ after got next ${newRecord.key} -> ${sessionPartitionsMapping[newRecord.key]}")
         }
     }
 
