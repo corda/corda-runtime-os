@@ -33,9 +33,14 @@ class ConfigWriterSubscriptionFactoryImpl @Activate constructor(
             RPCConfig(GROUP_NAME, CLIENT_NAME, CONFIG_UPDATE_REQUEST_TOPIC, REQ_CLASS, RESP_CLASS, instanceId)
 
         val publisherConfig = PublisherConfig(CLIENT_ID, instanceId)
-        val publisher = publisherFactory.createPublisher(publisherConfig, config).apply { start() }
+        val publisher = publisherFactory.createPublisher(publisherConfig, config)
 
         val processor = ConfigWriterProcessor(dbWriter, publisher)
-        return subscriptionFactory.createRPCSubscription(rpcConfig, config, processor).apply { start() }
+        val subscription = subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
+        
+        publisher.start()
+        subscription.start()
+
+        return subscription
     }
 }
