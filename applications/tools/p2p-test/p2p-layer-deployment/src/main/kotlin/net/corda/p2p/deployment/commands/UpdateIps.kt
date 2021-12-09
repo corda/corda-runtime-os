@@ -96,13 +96,8 @@ class UpdateIps : Runnable {
         val namespaces = namespaces()
         namespaces.forEach { namespaceToPatch ->
             val ipMap = namespaces.map { namespaceToGetIp ->
-                val ip = if (namespaceToPatch == namespaceToGetIp) {
-                    "0.0.0.0"
-                } else {
-                    namespaceToGetIp.loadBalancerIp
-                }
                 mapOf(
-                    "ip" to ip,
+                    "ip" to namespaceToGetIp.loadBalancerIp,
                     "hostnames" to listOf(namespaceToGetIp.host)
                 )
             }

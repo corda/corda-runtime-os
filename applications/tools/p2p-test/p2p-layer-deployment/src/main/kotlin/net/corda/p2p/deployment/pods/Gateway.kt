@@ -3,7 +3,6 @@ package net.corda.p2p.deployment.pods
 class Gateway(
     index: Int,
     kafkaServers: String,
-    override val hosts: Collection<String>,
     details: P2PDeploymentDetails,
 ) : P2pPod(kafkaServers, index, details) {
     companion object {
@@ -13,7 +12,7 @@ class Gateway(
             details: P2PDeploymentDetails,
         ): Collection<Pod> {
             val gateways = (1..details.gatewayCount).map {
-                Gateway(it, kafkaServers, hostNames, details)
+                Gateway(it, kafkaServers, details)
             }
             val balancer = LoadBalancer(
                 hostNames,

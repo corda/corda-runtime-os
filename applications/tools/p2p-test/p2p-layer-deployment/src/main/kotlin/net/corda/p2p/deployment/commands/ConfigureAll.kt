@@ -253,7 +253,7 @@ class ConfigureAll : Runnable {
                 "-k",
                 RunJar.kafkaServers(namespaceName),
                 "gateway",
-                "--hostAddress=$host",
+                "--hostAddress=0.0.0.0",
                 "--port=1433",
                 "--keyStore=${sslKeyStore.absolutePath}",
                 "--keyStorePassword=password",
