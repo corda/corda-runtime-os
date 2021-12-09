@@ -7,6 +7,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+/** An implementation of [ConfigWriteService]. */
 @Suppress("Unused")
 @Component(service = [ConfigWriteService::class])
 class ConfigWriteServiceImpl @Activate constructor(
@@ -17,7 +18,7 @@ class ConfigWriteServiceImpl @Activate constructor(
 ) : ConfigWriteService {
 
     private val coordinator = coordinatorFactory.createCoordinator<ConfigWriteService>(
-        ConfigWriteServiceEventHandler(configWriterSubscriptionFactory)
+        ConfigWriteEventHandler(configWriterSubscriptionFactory)
     )
 
     override fun bootstrapConfig(config: SmartConfig, instanceId: Int) =

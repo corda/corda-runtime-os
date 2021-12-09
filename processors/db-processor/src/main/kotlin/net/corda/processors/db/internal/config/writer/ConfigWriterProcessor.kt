@@ -10,6 +10,12 @@ import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
 import javax.persistence.RollbackException
 
+/**
+ * Receives RPC requests to update the cluster's config, updates the config in the cluster database using [dbWriter],
+ * and publishes the updated config for use by the rest of the cluster using [publisher].
+ *
+ * // TODO - Joel - Describe expected format.
+ */
 internal class ConfigWriterProcessor(
     private val dbWriter: DBWriter,
     private val publisher: Publisher
@@ -19,9 +25,9 @@ internal class ConfigWriterProcessor(
         private val logger = contextLogger()
     }
 
+    // TODO - Joel - Describe what exceptions are thrown.
     override fun onNext(
-        request: PermissionManagementRequest,
-        respFuture: CompletableFuture<PermissionManagementResponse>
+        request: PermissionManagementRequest, respFuture: CompletableFuture<PermissionManagementResponse>
     ) {
         logger.info("JJJ got this request: $request")
 
@@ -31,12 +37,12 @@ internal class ConfigWriterProcessor(
         val configEntity = ConfigEntity(key, value)
 
         try {
-            dbWriter.writeConfig(listOf(configEntity))
+            dbWriter.writeEntity(listOf(configEntity))
         } catch (e: RollbackException) {
             // TODO - Joel - Retry? Push back onto queue?
         } catch (e: Exception) {
             // These are exceptions related to incorrect set-up of the transaction, and should not occur.
-            throw ConfigWriteServiceException("TODO - Joel - Exception message.", e)
+            throw ConfigWriteException("TODO - Joel - Exception message.", e)
         }
 
         logger.info("JJJ publishing records $configEntity") // TODO - Joel - This logging is only for demo purposes.

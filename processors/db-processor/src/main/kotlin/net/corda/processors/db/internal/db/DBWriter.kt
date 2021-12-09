@@ -1,5 +1,7 @@
 package net.corda.processors.db.internal.db
 
+// TODO - Joel - Describe.
 interface DBWriter {
-    fun writeConfig(entities: List<Any>)
+    // TODO - Joel - Describe.
+    fun writeEntity(entities: List<Any>)
 }
