@@ -3,7 +3,7 @@ package net.corda.processors.db.internal.db
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
-import net.corda.db.core.PostgresDataSourceFactory
+import net.corda.db.core.HikariDataSourceFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
@@ -63,12 +63,12 @@ class DBWriterImpl @Activate constructor(
 
     /** Creates a [DataSource] for the cluster database. */
     private fun createDataSource(config: SmartConfig): DataSource {
+        val driver = config.getString(CONFIG_DB_DRIVER)
         val jdbcUrl = config.getString(CONFIG_JDBC_URL)
         val username = config.getString(CONFIG_DB_USER)
         val password = config.getString(CONFIG_DB_PASS)
 
-        // TODO - Joel - Do not hardcode use of Postgres.
-        return PostgresDataSourceFactory().create(jdbcUrl, username, password)
+        return HikariDataSourceFactory().create(driver, jdbcUrl, username, password, false, MAX_POOL_SIZE)
     }
 
     // TODO - Joel - Understand this better. Can I just use a single entity manager for the lifetime of this component?
@@ -81,7 +81,7 @@ class DBWriterImpl @Activate constructor(
     // TODO - Joel - Move this migration to its proper place.
     /** Applies the Liquibase schema migrations for the [managedEntities]. */
     private fun migrateDb(managedEntities: Iterable<Class<*>>, dataSource: DataSource) {
-        // TODO - Joel - This is using `impl` classes. Check this is correct.
+        // TODO - Joel - This is using `impl` classes. Check with Dries this is correct.
         val changeLogResourceFiles = managedEntities.mapTo(LinkedHashSet()) { entity ->
             ChangeLogResourceFiles(entity.packageName, listOf(MIGRATION_FILE_LOCATION), entity.classLoader)
         }

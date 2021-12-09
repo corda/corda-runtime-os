@@ -55,8 +55,8 @@ class KafkaDriver @Activate constructor(
             val createUserRequest = CreateUserRequest(
                 "", "", false, "", "", Instant.now(), ""
             )
-            val req = PermissionManagementRequest("joel=dudley", "", createUserRequest)
-            // val bytes = avroSchemaRegistry.serialize(req).array()
+            val timestamp = Instant.now()
+            val req = PermissionManagementRequest("joel=$timestamp", "", createUserRequest)
             publisher.sendRequest(req)
             context.status(200).result("Done.")
         }
