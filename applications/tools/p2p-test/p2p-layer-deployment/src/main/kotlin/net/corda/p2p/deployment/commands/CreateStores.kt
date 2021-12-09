@@ -16,6 +16,7 @@ import javax.crypto.spec.SecretKeySpec
 
 @Command(
     name = "create-stores",
+    showDefaultValues = true,
     description = ["Create key and trust stores"]
 )
 class CreateStores : Runnable {

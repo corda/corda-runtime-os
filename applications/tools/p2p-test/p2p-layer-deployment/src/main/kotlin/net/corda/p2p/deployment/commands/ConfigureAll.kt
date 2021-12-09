@@ -1,39 +1,38 @@
 package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.DeploymentException
-import net.corda.p2p.deployment.Yaml
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
-import java.nio.file.Files
 
 @Command(
     name = "configure",
+    showDefaultValues = true,
     description = ["configure a cluster (and the other cluster to know about it)"]
 )
 class ConfigureAll : Runnable {
     @Option(
         names = ["-n", "--name"],
-        description = ["The name of the namespace to configure"]
+        description = ["The name of the namespace to configure"],
+        required = true
     )
-    var namespaceName = "p2p-layer"
+    lateinit var namespaceName: String
 
     @Option(
         names = ["-l", "--lm", "--link-manager"],
-        description = ["Link manager extra configuration arguments"]
+        description = ["Link manager extra configuration arguments (for example --sessionTimeoutMilliSecs=1800000)"]
     )
-    var linkManagerExtraArguments = listOf("--sessionTimeoutMilliSecs", "1800000")
+    var linkManagerExtraArguments = emptyList<String>()
 
     @Option(
         names = ["-g", "--gateway"],
-        description = ["Gateway extra configuration arguments"]
+        description = ["Gateway extra configuration arguments (for example --responseTimeoutMilliSecs=1800000)"]
     )
-    var gatewayArguments = listOf("--responseTimeoutMilliSecs", "1800000")
+    var gatewayArguments = emptyList<String>()
 
-    private val yamlReader = ObjectMapper(YAMLFactory()).reader()
-    private val jsonWriter = ObjectMapper().writer()
+    private val jsonReader = ObjectMapper()
+    private val jsonWriter = jsonReader.writer()
 
     @Suppress("UNCHECKED_CAST")
     private val namespaces by lazy {
@@ -41,23 +40,23 @@ class ConfigureAll : Runnable {
             "kubectl",
             "get",
             "namespace",
+            "-l",
+            "namespace-type=p2p-deployment,creator=${MyUserName.userName}",
             "-o",
-            "yaml"
+            "jsonpath={range .items[*]}{.metadata.name}{\"|\"}{.metadata.annotations}{\"\\n\"}{end}",
         ).start()
         if (getAll.waitFor() != 0) {
             System.err.println(getAll.errorStream.reader().readText())
             throw DeploymentException("Could not get namespaces")
         }
-        val rawData = yamlReader.readValue(getAll.inputStream, Map::class.java)
-        val items = rawData["items"] as List<Yaml>
-        items.map {
-            it["metadata"] as Yaml
-        }.filter {
-            val annotations = it["annotations"] as? Yaml
-            annotations?.get("type") == "p2p"
-        }.associate {
-            it["name"] as String to it["annotations"] as Yaml
-        }
+        getAll
+            .inputStream
+            .reader()
+            .readLines().associate { line ->
+                val name = line.substringBefore('|')
+                val annotations = line.substringAfter('|')
+                name to jsonReader.readValue(annotations, Map::class.java)
+            }
     }
     private val annotations by lazy {
         namespaces[namespaceName] ?: throw DeploymentException("Could not find $namespaceName")
@@ -127,87 +126,6 @@ class ConfigureAll : Runnable {
 
     private val trustStoreFile = File(keyStoreDir.absolutePath, "truststore.jks")
 
-    private val kafkaServers = mutableMapOf<String, String>()
-    @Suppress("UNCHECKED_CAST")
-    private fun kafkaServers(namespace: String): String {
-        return kafkaServers.computeIfAbsent(namespace) {
-            val getAll = ProcessBuilder().command(
-                "kubectl",
-                "get",
-                "service",
-                "-n",
-                namespace,
-                "-o",
-                "yaml"
-            ).start()
-            if (getAll.waitFor() != 0) {
-                System.err.println(getAll.errorStream.reader().readText())
-                throw DeploymentException("Could not get services")
-            }
-            val rawData = yamlReader.readValue(getAll.inputStream, Map::class.java)
-            val items = rawData["items"] as List<Yaml>
-            items.asSequence().map {
-                it["metadata"] as Yaml
-            }.mapNotNull {
-                it["name"] as? String
-            }.filter {
-                it.startsWith("kafka-broker-")
-            }.map {
-                "$it.$namespace:9093"
-            }.joinToString(",")
-        }
-    }
-
-    private val kafkaFiles = mutableMapOf<String, File>()
-    private fun kafkaFile(namespace: String): File {
-        return kafkaFiles.computeIfAbsent(namespace) {
-            File.createTempFile("$namespace.kafka.", ".properties").also { file ->
-                file.deleteOnExit()
-                file.delete()
-                file.writeText("bootstrap.servers=${kafkaServers(namespace)}")
-            }
-        }
-    }
-
-    private val savedJar = mutableMapOf<String, File>()
-    private fun jarToRun(jarName: String): File {
-        return savedJar.computeIfAbsent(jarName) {
-            File.createTempFile(jarName, ".jar").also { jarFile ->
-                jarFile.deleteOnExit()
-                jarFile.delete()
-                ClassLoader.getSystemClassLoader()
-                    .getResource("$jarName.jar")
-                    ?.openStream()?.use { input ->
-                        Files.copy(input, jarFile.toPath())
-                    }
-            }
-        }
-    }
-
-    private fun runJar(jarName: String, arguments: Collection<String>) {
-        val jarFile = jarToRun(jarName)
-        val java = "${System.getProperty("java.home")}/bin/java"
-        val commands = listOf(java, "-jar", jarFile.absolutePath) + arguments
-        ProcessBuilder()
-            .command(
-                commands
-            )
-            .inheritIO()
-            .start()
-            .waitFor()
-    }
-
-    private fun startTelepresence() {
-        ProcessBuilder()
-            .command(
-                "telepresence",
-                "connect"
-            )
-            .inheritIO()
-            .start()
-            .waitFor()
-    }
-
     private fun publishMySelfToOthers() {
         val configurationFile = File.createTempFile("network-map.", ".conf").also {
             it.deleteOnExit()
@@ -233,13 +151,13 @@ class ConfigureAll : Runnable {
         jsonWriter.writeValue(configurationFile, configurationMap)
         namespaces.keys.forEach { nameSpace ->
             println("Publishing $namespaceName to $nameSpace")
-            runJar(
+            RunJar(
                 "network-map-creator",
                 listOf(
                     "--netmap-file", configurationFile.absolutePath, "--kafka",
-                    kafkaFile(nameSpace).absolutePath
+                    RunJar.kafkaFile(nameSpace).absolutePath
                 )
-            )
+            ).run()
         }
     }
     private fun publishOthersToMySelf() {
@@ -275,13 +193,13 @@ class ConfigureAll : Runnable {
         )
         jsonWriter.writeValue(configurationFile, configurationMap)
         println("Publishing ${otherNamespaces.keys} to $namespaceName")
-        runJar(
+        RunJar(
             "network-map-creator",
             listOf(
                 "--netmap-file", configurationFile.absolutePath, "--kafka",
-                kafkaFile(namespaceName).absolutePath
+                RunJar.kafkaFile(namespaceName).absolutePath
             )
-        )
+        ).run()
     }
 
     private fun publishNetworkMap() {
@@ -305,35 +223,35 @@ class ConfigureAll : Runnable {
         )
         jsonWriter.writeValue(configurationFile, configurationMap)
         println("Publishing keys to $namespaceName")
-        runJar(
+        RunJar(
             "cryptoservice-key-creator",
             listOf(
                 "--keys-config", configurationFile.absolutePath, "--kafka",
-                kafkaFile(namespaceName).absolutePath
+                RunJar.kafkaFile(namespaceName).absolutePath
             )
-        )
+        ).run()
     }
 
     private fun configureLinkManager() {
         println("Configure link manager of $namespaceName")
-        runJar(
+        RunJar(
             "configuration-publisher",
             listOf(
                 "-k",
-                kafkaServers(namespaceName),
+                RunJar.kafkaServers(namespaceName),
                 "link-manager",
                 "--locallyHostedIdentity=$x500name:$groupId",
             ) + linkManagerExtraArguments
-        )
+        ).run()
     }
 
     private fun configureGateway() {
         println("Configure gateway of $namespaceName")
-        runJar(
+        RunJar(
             "configuration-publisher",
             listOf(
                 "-k",
-                kafkaServers(namespaceName),
+                RunJar.kafkaServers(namespaceName),
                 "gateway",
                 "--hostAddress=$host",
                 "--port=1433",
@@ -342,17 +260,11 @@ class ConfigureAll : Runnable {
                 "--trustStore=${trustStoreFile.absolutePath}",
                 "--trustStorePassword=password",
             ) + gatewayArguments
-        )
-    }
-
-    private fun kafkaSetup() {
-        println("Creating/alerting kafka topics...")
-        KafkaSetup(namespaceName).run()
+        ).run()
     }
 
     override fun run() {
-        kafkaSetup()
-        startTelepresence()
+        RunJar.startTelepresence()
         publishNetworkMap()
         publishKeys()
         configureLinkManager()

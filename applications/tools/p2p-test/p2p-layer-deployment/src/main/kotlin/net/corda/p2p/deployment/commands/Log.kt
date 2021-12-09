@@ -1,23 +1,22 @@
 package net.corda.p2p.deployment.commands
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.DeploymentException
-import net.corda.p2p.deployment.Yaml
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import kotlin.concurrent.thread
 
 @Command(
     name = "log",
+    showDefaultValues = true,
     description = ["print the logs of the pods in the namespace"]
 )
 class Log : Runnable {
     @Option(
         names = ["-n", "--name"],
-        description = ["The name of the namespace"]
+        description = ["The name of the namespace"],
+        required = true
     )
-    private var namespaceName = "p2p-layer"
+    private lateinit var namespaceName: String
 
     @Option(
         names = ["-p", "--pods"],
@@ -75,24 +74,21 @@ class Log : Runnable {
             "get",
             "pod",
             "-n", namespaceName,
-            "-o", "yaml",
+            "--output",
+            "jsonpath={range .items[*]}{.metadata.name}{\",\"}{.spec.containers[].name}{\"\\n\"}{end}"
         ).start()
         if (getPods.waitFor() != 0) {
             System.err.println(getPods.errorStream.reader().readText())
             throw DeploymentException("Could not get pods")
         }
-
-        val reader = ObjectMapper(YAMLFactory()).reader()
-        val rawData = reader.readValue(getPods.inputStream, Map::class.java)
-        val items = rawData["items"] as List<Yaml>
-        return items.associate {
-            val spec = it["spec"] as Yaml
-            val containers = spec["containers"] as List<Yaml>
-            val displayName =
-                containers.firstOrNull()?.get("name") as? String ?: throw DeploymentException("Can not get pod name")
-            val metadata = it["metadata"] as Yaml
-            val podName = metadata["name"] as? String ?: throw DeploymentException("Could not find $displayName")
-            displayName to podName
-        }
+        return getPods
+            .inputStream
+            .reader()
+            .readLines()
+            .map {
+                it.split(",")
+            }.map {
+                it[1] to it[0]
+            }.toMap()
     }
 }

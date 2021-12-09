@@ -1,14 +1,12 @@
 package net.corda.p2p.deployment.commands
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.DeploymentException
-import net.corda.p2p.deployment.Yaml
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
 @Command(
     name = "destroy",
+    showDefaultValues = true,
     description = ["Delete a running namespace"]
 )
 class Destroy : Runnable {
@@ -27,9 +25,9 @@ class Destroy : Runnable {
     }
     @Option(
         names = ["-n", "--name"],
-        description = ["The name of the namespace"]
+        description = ["The name of the namespace"],
     )
-    var namespaceName = "p2p-layer"
+    lateinit var namespaceName: String
 
     @Option(
         names = ["--all"],
@@ -43,24 +41,23 @@ class Destroy : Runnable {
             "kubectl",
             "get",
             "namespace",
+            "-l",
+            "namespace-type=p2p-deployment,creator=${MyUserName.userName}",
             "-o",
-            "yaml"
+            "jsonpath={.items[*].metadata.name}",
         ).start()
         if (getAll.waitFor() != 0) {
             System.err.println(getAll.errorStream.reader().readText())
             throw DeploymentException("Could not get namespaces")
         }
-        val reader = ObjectMapper(YAMLFactory()).reader()
-        val rawData = reader.readValue(getAll.inputStream, Map::class.java)
-        val items = rawData["items"] as List<Yaml>
-        return items.map {
-            it["metadata"] as Yaml
-        }.filter {
-            val annotations = it["annotations"] as? Yaml
-            annotations?.get("type") == "p2p"
-        }.mapNotNull {
-            it["name"] as? String
-        }
+        return getAll
+            .inputStream
+            .reader()
+            .readText()
+            .split(" ")
+            .filter {
+                it.isNotEmpty()
+            }
     }
 
     override fun run() {

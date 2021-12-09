@@ -3,16 +3,15 @@ package net.corda.p2p.deployment.commands
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import net.corda.p2p.deployment.DeploymentException
-import net.corda.p2p.deployment.Yaml
 import picocli.CommandLine.Command
 
 @Command(
     name = "update-ips",
+    showDefaultValues = true,
     description = ["Update all the ips in all the gateways"]
 )
 class UpdateIps : Runnable {
     private val yaml = ObjectMapper(YAMLFactory())
-    private val yamlReader = yaml.reader()
     private val yamlWriter = yaml.writer()
 
     private inner class Namespace(
@@ -22,26 +21,26 @@ class UpdateIps : Runnable {
 
         @Suppress("UNCHECKED_CAST")
         val loadBalancerIp by lazy {
-            val getAll = ProcessBuilder().command(
+            val getIp = ProcessBuilder().command(
                 "kubectl",
                 "get",
                 "service",
                 "-n",
                 name,
-                "-o",
-                "yaml"
+                "--field-selector",
+                "metadata.name=load-balancer",
+                "--output",
+                "jsonpath={.items[*].spec.clusterIP}",
             ).start()
-            if (getAll.waitFor() != 0) {
-                System.err.println(getAll.errorStream.reader().readText())
-                throw DeploymentException("Could not get services")
+            if (getIp.waitFor() != 0) {
+                System.err.println(getIp.errorStream.reader().readText())
+                throw DeploymentException("Could not get load balancer service")
             }
-            val rawData = yamlReader.readValue(getAll.inputStream, Map::class.java)
-            val items = rawData["items"] as List<Yaml>
-            val spec = items.first {
-                val metadata = it["metadata"] as Yaml
-                metadata["name"] == "load-balancer"
-            }["spec"] as Yaml
-            spec["clusterIP"] as String
+            val ip = getIp.inputStream.reader().readText()
+            if (ip.isBlank()) {
+                throw DeploymentException("No load balancer service")
+            }
+            ip
         }
 
         @Suppress("UNCHECKED_CAST")
@@ -52,23 +51,23 @@ class UpdateIps : Runnable {
                 "pod",
                 "-n",
                 name,
-                "-o",
-                "yaml"
+                "-l",
+                "type=p2p-gateway",
+                "--output",
+                "jsonpath={.items[*].metadata.labels.app}",
             ).start()
             if (getAll.waitFor() != 0) {
                 System.err.println(getAll.errorStream.reader().readText())
-                throw DeploymentException("Could not get services")
+                throw DeploymentException("Could not get pods")
             }
-            val rawData = yamlReader.readValue(getAll.inputStream, Map::class.java)
-            val items = rawData["items"] as List<Yaml>
-            items.asSequence().map {
-                it["metadata"] as Yaml
-            }.mapNotNull {
-                val labels = it["labels"] as? Yaml
-                labels?.get("app") as? String
-            }.filter {
-                it.startsWith("p2p-gateway")
-            }
+            getAll
+                .inputStream
+                .reader()
+                .readText()
+                .split(" ")
+                .filter {
+                    it.isNotBlank()
+                }
         }
     }
 
@@ -78,25 +77,18 @@ class UpdateIps : Runnable {
             "kubectl",
             "get",
             "namespace",
+            "-l",
+            "namespace-type=p2p-deployment,creator=${MyUserName.userName}",
             "-o",
-            "yaml"
+            "jsonpath={range .items[*]}{.metadata.name}{\",\"}{.metadata.annotations.host}{\"\\n\"}{end}",
         ).start()
         if (getAll.waitFor() != 0) {
             System.err.println(getAll.errorStream.reader().readText())
             throw DeploymentException("Could not get namespaces")
         }
-        val rawData = yamlReader.readValue(getAll.inputStream, Map::class.java)
-        val items = rawData["items"] as List<Yaml>
-        return items.map {
-            it["metadata"] as Yaml
-        }.filter {
-            val annotations = it["annotations"] as? Yaml
-            annotations?.get("type") == "p2p"
-        }.map {
-            val annotations = it["annotations"] as Yaml
-            val host = annotations["host"] as String
-            val name = it["name"] as String
-            Namespace(name, host)
+        return getAll.inputStream.reader().readLines().map { line ->
+            val split = line.split(",")
+            Namespace(split[0], split[1])
         }
     }
 

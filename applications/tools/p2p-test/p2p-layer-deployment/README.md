@@ -1,4 +1,4 @@
-A set of scripts to crate a p2p cluster.
+A tool that can be used to deploy all the p2p components in a Kubernetes cluster.
 
 # Before you begin
 1. Install kubectl (see [here](https://kubernetes.io/docs/tasks/tools/))
@@ -17,7 +17,7 @@ telepresence connect
 ```bash
 ./gradlew :applications:tools:p2p-test:p2p-layer-deployment:install
 ```
-8. Login into [TinyCert](https://www.tinycert.org/login) and make sure you have those Make sure that you have those environment variables:
+8. Login into [TinyCert](https://www.tinycert.org/login) and make sure you have those environment variables:
   * `TINYCERT_API_KEY` the API key (You can get it [here](https://www.tinycert.org/docs/api))
   * `TINYCERT_PASS_PHRASE` Your pass phrase.
   * `TINYCERT_EMAIL` Your email address as it's registered in TinyCert.
@@ -172,7 +172,7 @@ To start the receiver run:
 ### DB-Sink
 To start the DB sink:
 ```bash
-./applications/tools/p2p-test/p2p-layer-deployment/build/install/p2p-layer-deployment/bin/p2p-layer-deployment sb-sink [-n <namespace>] 
+./applications/tools/p2p-test/p2p-layer-deployment/build/install/p2p-layer-deployment/bin/p2p-layer-deployment db-sink [-n <namespace>] 
 ```
 
 ### Sender
