@@ -7,7 +7,6 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -64,10 +63,14 @@ class FlowMapperListener(
     override fun onPostCommit(updatedStates: Map<String, FlowMapperState?>) {
         log.trace { "Committed states $updatedStates" }
         updatedStates.forEach { state ->
-            if (state.value?.status == FlowMapperStateType.CLOSING) {
-                val expiryTime = state.value?.expiryTime
-                    ?: throw CordaRuntimeException("Expiry time not set for FlowMapperState with status of CLOSING on key ${state.key}")
-                setupCleanupTimer(state.key, expiryTime)
+            val status = state.value?.status
+            val expiryTime = state.value?.expiryTime
+            if (status == FlowMapperStateType.CLOSING) {
+                if (expiryTime == null) {
+                    log.error("Expiry time not set for FlowMapperState with status of CLOSING on key ${state.key}")
+                } else {
+                    setupCleanupTimer(state.key, expiryTime)
+                }
             }
         }
     }
