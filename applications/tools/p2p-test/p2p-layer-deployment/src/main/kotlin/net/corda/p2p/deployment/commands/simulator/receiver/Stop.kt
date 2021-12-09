@@ -7,6 +7,7 @@ import picocli.CommandLine.Option
 @Command(
     name = "stop",
     showDefaultValues = true,
+    mixinStandardHelpOptions = true,
     description = ["Stop receiving messages"]
 )
 class Stop : Runnable {

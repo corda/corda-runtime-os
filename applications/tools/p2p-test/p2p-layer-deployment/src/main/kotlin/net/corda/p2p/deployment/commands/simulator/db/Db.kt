@@ -13,6 +13,7 @@ import picocli.CommandLine.Command
         Jdbc::class,
         StopDb::class,
     ],
+    mixinStandardHelpOptions = true,
     name = "db",
     description = ["Manage a database"]
 )

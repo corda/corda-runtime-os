@@ -8,6 +8,7 @@ import picocli.CommandLine.Option
 @Command(
     name = "start",
     showDefaultValues = true,
+    mixinStandardHelpOptions = true,
     description = ["Start receiving messages"]
 )
 class Start : Runnable {

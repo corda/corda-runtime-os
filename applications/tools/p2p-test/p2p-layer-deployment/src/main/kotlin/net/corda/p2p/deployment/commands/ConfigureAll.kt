@@ -9,7 +9,8 @@ import java.io.File
 @Command(
     name = "configure",
     showDefaultValues = true,
-    description = ["configure a cluster (and the other cluster to know about it)"]
+    description = ["configure a cluster (and the other cluster to know about it)"],
+    mixinStandardHelpOptions = true,
 )
 class ConfigureAll : Runnable {
     @Option(

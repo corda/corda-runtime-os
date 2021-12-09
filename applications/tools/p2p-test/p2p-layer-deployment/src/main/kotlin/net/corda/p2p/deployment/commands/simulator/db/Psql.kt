@@ -7,6 +7,7 @@ import picocli.CommandLine.Option
 @Command(
     name = "psql",
     showDefaultValues = true,
+    mixinStandardHelpOptions = true,
     description = ["Interact with the DB SQL client"]
 )
 class Psql : Runnable {

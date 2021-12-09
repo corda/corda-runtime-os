@@ -5,6 +5,7 @@ import picocli.CommandLine.Command
 @Command(
     name = "send",
     showDefaultValues = true,
+    mixinStandardHelpOptions = true,
     description = ["Send one off batch of messages"]
 )
 class Send : InvokeSender() {

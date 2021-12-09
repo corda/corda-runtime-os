@@ -6,6 +6,7 @@ import picocli.CommandLine.Option
 @Command(
     name = "status",
     showDefaultValues = true,
+    mixinStandardHelpOptions = true,
     description = ["Check if database is running"]
 )
 class DbStatus : Runnable {

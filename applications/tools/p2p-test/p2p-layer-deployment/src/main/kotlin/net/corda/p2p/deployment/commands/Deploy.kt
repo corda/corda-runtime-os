@@ -13,7 +13,8 @@ import picocli.CommandLine.Option
 @Command(
     name = "deploy",
     showDefaultValues = true,
-    description = ["Deploy P2P layer cluster for K8S"]
+    description = ["Deploy P2P layer cluster for K8S"],
+    mixinStandardHelpOptions = true,
 )
 class Deploy : Runnable {
     @Option(

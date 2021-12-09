@@ -9,6 +9,7 @@ import picocli.CommandLine.Command
         Status::class,
         Stop::class,
     ],
+    mixinStandardHelpOptions = true,
     name = "sender",
     description = ["Manage the senders"]
 )

@@ -7,6 +7,7 @@ import picocli.CommandLine.Option
 @Command(
     name = "status",
     showDefaultValues = true,
+    mixinStandardHelpOptions = true,
     description = ["Show the senders status"]
 )
 class Status : Runnable {

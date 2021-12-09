@@ -7,6 +7,7 @@ import picocli.CommandLine.Option
 @Command(
     name = "stop",
     showDefaultValues = true,
+    mixinStandardHelpOptions = true,
     description = ["Stop a database"]
 )
 class StopDb : Runnable {

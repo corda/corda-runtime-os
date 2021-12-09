@@ -8,6 +8,7 @@ import picocli.CommandLine
         Status::class,
         Stop::class,
     ],
+    mixinStandardHelpOptions = true,
     name = "receiver",
     description = ["Manage the receivers"]
 )

@@ -7,6 +7,7 @@ import picocli.CommandLine.Option
 @Command(
     name = "jdbc",
     showDefaultValues = true,
+    mixinStandardHelpOptions = true,
     description = ["Show the JDB connection URL"]
 )
 class Jdbc : Runnable {

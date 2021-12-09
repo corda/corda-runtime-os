@@ -13,5 +13,6 @@ import picocli.CommandLine.Command
     ],
     header = ["Manage the simulator app"],
     name = "simulator",
+    mixinStandardHelpOptions = true,
 )
 class Simulator

@@ -7,7 +7,8 @@ import picocli.CommandLine.Option
 @Command(
     name = "destroy",
     showDefaultValues = true,
-    description = ["Delete a running namespace"]
+    description = ["Delete a running namespace"],
+    mixinStandardHelpOptions = true,
 )
 class Destroy : Runnable {
     companion object {

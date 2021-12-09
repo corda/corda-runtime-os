@@ -8,7 +8,8 @@ import kotlin.concurrent.thread
 @Command(
     name = "log",
     showDefaultValues = true,
-    description = ["print the logs of the pods in the namespace"]
+    description = ["print the logs of the pods in the namespace"],
+    mixinStandardHelpOptions = true,
 )
 class Log : Runnable {
     @Option(

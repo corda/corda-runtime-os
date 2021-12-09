@@ -9,6 +9,7 @@ import picocli.CommandLine.Parameters
     name = "bash",
     description = ["Bash into one of the pods"],
     showDefaultValues = true,
+    mixinStandardHelpOptions = true,
 )
 class Bash : Runnable {
     @Option(

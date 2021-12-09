@@ -8,7 +8,8 @@ import picocli.CommandLine.Command
 @Command(
     name = "update-ips",
     showDefaultValues = true,
-    description = ["Update all the ips in all the gateways"]
+    description = ["Update all the ips in all the gateways"],
+    mixinStandardHelpOptions = true,
 )
 class UpdateIps : Runnable {
     private val yaml = ObjectMapper(YAMLFactory())

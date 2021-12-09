@@ -5,6 +5,7 @@ import picocli.CommandLine.Command
 @Command(
     name = "start",
     showDefaultValues = true,
+    mixinStandardHelpOptions = true,
     description = ["Send messages continuously"]
 )
 class Start : InvokeSender() {
