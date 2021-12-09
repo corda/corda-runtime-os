@@ -1,11 +1,8 @@
-package net.corda.processors.db.internal.config.writeservice
+package net.corda.processors.db.internal.config.writer
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.processors.db.internal.db.DBWriter
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -15,21 +12,16 @@ import org.osgi.service.component.annotations.Reference
 class ConfigWriteServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = DBWriter::class)
-    dbWriter: DBWriter,
-    @Reference(service = SubscriptionFactory::class)
-    subscriptionFactory: SubscriptionFactory,
-    @Reference(service = PublisherFactory::class)
-    publisherFactory: PublisherFactory
+    @Reference(service = ConfigWriterSubscriptionFactory::class)
+    configWriterSubscriptionFactory: ConfigWriterSubscriptionFactory
 ) : ConfigWriteService {
 
-    private val coordinator = let {
-        val eventHandler = ConfigWriteServiceEventHandler(dbWriter, subscriptionFactory, publisherFactory)
-        coordinatorFactory.createCoordinator<ConfigWriteService>(eventHandler)
-    }
+    private val coordinator = coordinatorFactory.createCoordinator<ConfigWriteService>(
+        ConfigWriteServiceEventHandler(configWriterSubscriptionFactory)
+    )
 
     override fun bootstrapConfig(config: SmartConfig, instanceId: Int) =
-        coordinator.postEvent(BootstrapConfigEvent(config, instanceId))
+        coordinator.postEvent(SubscribeEvent(config, instanceId))
 
     override val isRunning get() = coordinator.isRunning
 

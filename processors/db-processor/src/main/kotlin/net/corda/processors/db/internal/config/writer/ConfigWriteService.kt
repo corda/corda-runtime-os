@@ -1,4 +1,4 @@
-package net.corda.processors.db.internal.config.writeservice
+package net.corda.processors.db.internal.config.writer
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle

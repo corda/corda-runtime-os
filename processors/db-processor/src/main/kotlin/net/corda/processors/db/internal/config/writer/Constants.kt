@@ -1,4 +1,4 @@
-package net.corda.processors.db.internal.config.writeservice
+package net.corda.processors.db.internal.config.writer
 
 internal const val CONFIG_TABLE_NAME = "config"
 internal const val GROUP_NAME = "DB_EVENT_HANDLER" // TODO - Joel - Choose a proper group name.

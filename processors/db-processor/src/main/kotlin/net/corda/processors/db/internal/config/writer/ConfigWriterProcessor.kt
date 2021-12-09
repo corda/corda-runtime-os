@@ -5,22 +5,24 @@ import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
-import net.corda.processors.db.internal.config.writeservice.CONFIG_TOPIC
-import net.corda.processors.db.internal.config.writeservice.ConfigEntity
-import net.corda.processors.db.internal.config.writeservice.ConfigWriteServiceException
 import net.corda.processors.db.internal.db.DBWriter
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
 import javax.persistence.RollbackException
 
-internal class ConfigWriterProcessor(private val dbWriter: DBWriter, private val publisher: Publisher) :
-    RPCResponderProcessor<PermissionManagementRequest, PermissionManagementResponse> {
+internal class ConfigWriterProcessor(
+    private val dbWriter: DBWriter,
+    private val publisher: Publisher
+) : RPCResponderProcessor<PermissionManagementRequest, PermissionManagementResponse> {
 
     private companion object {
         private val logger = contextLogger()
     }
 
-    override fun onNext(request: PermissionManagementRequest, respFuture: CompletableFuture<PermissionManagementResponse>) {
+    override fun onNext(
+        request: PermissionManagementRequest,
+        respFuture: CompletableFuture<PermissionManagementResponse>
+    ) {
         logger.info("JJJ got this request: $request")
 
         // TODO - Joel - Create actual Avro classes for requests and responses. Currently, we just stuff the
@@ -38,7 +40,7 @@ internal class ConfigWriterProcessor(private val dbWriter: DBWriter, private val
         }
 
         logger.info("JJJ publishing records $configEntity") // TODO - Joel - This logging is only for demo purposes.
-        // TODO - Joel - Provide actual response.
+        // TODO - Joel - Send proper response.
         respFuture.complete(PermissionManagementResponse("DONT_CARE"))
 
         val record = Record(CONFIG_TOPIC, key, value)

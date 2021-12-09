@@ -6,7 +6,7 @@ import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
-import net.corda.processors.db.internal.config.writeservice.ConfigEntity
+import net.corda.processors.db.internal.config.writer.ConfigEntity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
