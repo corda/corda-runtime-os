@@ -77,7 +77,7 @@ class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: Ent
                 updateTimestamp = user.updateTimestamp,
                 actorUser = requestUserId,
                 changeType = RPCPermissionOperation.USER_INSERT,
-                details = "User '${user.loginName} created by '$requestUserId'."
+                details = "User '${user.loginName}' created by '$requestUserId'."
             )
 
             entityManager.persist(auditLog)
