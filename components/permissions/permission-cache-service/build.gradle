@@ -10,14 +10,18 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-topic-schema"
     implementation "net.corda:corda-avro-schema"
+    implementation 'net.corda:corda-base'
 
+    implementation project(":components:configuration:configuration-read-service")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(':libs:permissions:permission-cache')
     implementation project(':libs:configuration:configuration-core')
+
+    api project(':libs:permissions:permission-cache')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

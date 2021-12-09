@@ -16,9 +16,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Component(service = [PermissionManagerFactory::class], immediate = true)
+@Component(service = [PermissionManagerFactory::class])
 class PermissionManagerFactoryImpl @Activate constructor(
-    @Reference
+    @Reference(service = PasswordServiceFactory::class)
     private val passwordServiceFactory: PasswordServiceFactory
 ) : PermissionManagerFactory {
     override fun create(

@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.user
 
-import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
@@ -15,9 +15,9 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 @HttpRpcResource(
     name = "UserEndpoint",
     description = "User Management APIs",
-    path = "/v1/user"
+    path = "user"
 )
-interface UserEndpoint : PluggableRPCOps<UserEndpoint> {
+interface UserEndpoint : RpcOps {
 
     /**
      * Create a user in the RBAC permission system.
@@ -35,6 +35,6 @@ interface UserEndpoint : PluggableRPCOps<UserEndpoint> {
     fun getUser(
         @HttpRpcQueryParameter(name = "loginName", description = "Login Name of the user to be returned.", required = true)
         loginName: String
-    ): UserResponseType?
+    ): UserResponseType
 
 }

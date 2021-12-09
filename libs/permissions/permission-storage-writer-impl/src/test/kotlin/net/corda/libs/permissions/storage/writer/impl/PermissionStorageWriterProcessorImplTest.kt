@@ -59,7 +59,7 @@ class PermissionStorageWriterProcessorImplTest {
     @Test
     fun `receiving CreateUserRequest persists a new user to the database`() {
         whenever(query.setParameter(any<String>(), any())).thenReturn(query)
-        whenever(query.singleResult).thenReturn(0)
+        whenever(query.singleResult).thenReturn(0L)
         whenever(entityManager.createQuery(any<String>())).thenReturn(query)
         val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
@@ -79,7 +79,7 @@ class PermissionStorageWriterProcessorImplTest {
     @Test
     fun `receiving CreateUserRequest when a user with the same login name already exists completes exceptionally`() {
         whenever(query.setParameter(any<String>(), any())).thenReturn(query)
-        whenever(query.singleResult).thenReturn(1)
+        whenever(query.singleResult).thenReturn(1L)
         whenever(entityManager.createQuery(any<String>())).thenReturn(query)
         val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
@@ -96,7 +96,7 @@ class PermissionStorageWriterProcessorImplTest {
     fun `receiving CreateUserRequest specifying a parent group that exists persists a new user to the database`() {
         val group = mock<Group>()
         whenever(query.setParameter(any<String>(), any())).thenReturn(query)
-        whenever(query.singleResult).thenReturn(0)
+        whenever(query.singleResult).thenReturn(0L)
         whenever(entityManager.createQuery(any<String>())).thenReturn(query)
         whenever(entityManager.find(eq(Group::class.java), any())).thenReturn(group)
         val future = CompletableFuture<PermissionManagementResponse>()
@@ -115,7 +115,7 @@ class PermissionStorageWriterProcessorImplTest {
     @Test
     fun `receiving CreateUserRequest specifying a parent group that doesn't exist completes exceptionally`() {
         whenever(query.setParameter(any<String>(), any())).thenReturn(query)
-        whenever(query.singleResult).thenReturn(0)
+        whenever(query.singleResult).thenReturn(0L)
         whenever(entityManager.createQuery(any<String>())).thenReturn(query)
         whenever(entityManager.find(eq(Group::class.java), any())).thenReturn(null)
         val future = CompletableFuture<PermissionManagementResponse>()
