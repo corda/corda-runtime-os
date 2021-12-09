@@ -1,9 +1,17 @@
 package net.corda.processors.db.internal.db
 
+import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.Lifecycle
 import javax.persistence.RollbackException
 
 /** Writes entities to the cluster database. */
-interface DBWriter {
+interface DBWriter : Lifecycle {
+
+    /**
+     * Bootstraps the [DBWriter] by providing the required information to connect to the cluster database and manage
+     * entities.
+     */
+    fun bootstrapConfig(config: SmartConfig, managedEntities: Iterable<Class<*>>)
 
     /**
      * Writes all the [entities] to the database.

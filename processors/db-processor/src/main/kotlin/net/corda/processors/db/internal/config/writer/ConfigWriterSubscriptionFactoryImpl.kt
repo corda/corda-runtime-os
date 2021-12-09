@@ -18,7 +18,7 @@ import org.osgi.service.component.annotations.Reference
  * Processing is delegated to [ConfigWriterProcessor].
  */
 @Suppress("Unused")
-@Component(service = [ConfigWriterSubscriptionFactoryImpl::class])
+@Component(service = [ConfigWriterSubscriptionFactory::class])
 class ConfigWriterSubscriptionFactoryImpl @Activate constructor(
     @Reference(service = DBWriter::class)
     private val dbWriter: DBWriter,
