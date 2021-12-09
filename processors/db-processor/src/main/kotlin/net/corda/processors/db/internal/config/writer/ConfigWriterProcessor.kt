@@ -37,7 +37,7 @@ internal class ConfigWriterProcessor(
         val configEntity = ConfigEntity(key, value)
 
         try {
-            dbWriter.writeEntity(listOf(configEntity))
+            dbWriter.writeEntity(setOf(configEntity))
         } catch (e: RollbackException) {
             // TODO - Joel - Retry? Push back onto queue?
         } catch (e: Exception) {
