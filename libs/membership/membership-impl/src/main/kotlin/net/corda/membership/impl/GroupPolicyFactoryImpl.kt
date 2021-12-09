@@ -16,7 +16,7 @@ class GroupPolicyFactoryImpl : GroupPolicyFactory {
         return GroupPolicyImpl(
             try {
                 if (groupPolicyJson.isBlank()) {
-                    logger.error("Group policy file is empty.")
+                    logger.info("Group policy file is empty.")
                     emptyMap()
                 } else {
                     ConfigFactory
