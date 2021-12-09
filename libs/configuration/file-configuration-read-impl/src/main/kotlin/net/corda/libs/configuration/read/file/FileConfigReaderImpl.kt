@@ -1,6 +1,5 @@
 package net.corda.libs.configuration.read.file
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
@@ -18,7 +17,7 @@ import kotlin.concurrent.withLock
 
 class FileConfigReaderImpl(
     private val configurationRepository: ConfigRepository,
-    private val bootstrapConfig: Config,
+    private val bootstrapConfig: SmartConfig,
     private val smartConfigFactory: SmartConfigFactory,
 ) : ConfigReader {
 
@@ -44,6 +43,7 @@ class FileConfigReaderImpl(
     override fun start() {
         lock.withLock {
             storeFileConfig()
+            if(!bootstrapConfig.isEmpty) storeBootstrapConfig()
             stopped = false
             val configs = configurationRepository.getConfigurations()
             configUpdates.forEach { it.value.onUpdate(configs.keys, configs) }
@@ -85,11 +85,15 @@ class FileConfigReaderImpl(
         }
     }
 
+    private fun storeBootstrapConfig() {
+        configurationRepository.updateConfiguration("corda.boot", bootstrapConfig)
+    }
+
     private fun parseConfigFile(): SmartConfig {
         val conf = try {
             val parseOptions = ConfigParseOptions.defaults().setAllowMissing(false)
             val configFilePath = bootstrapConfig.getString(CONFIG_FILE_NAME)
-            ConfigFactory.parseURL(File(configFilePath).toURI().toURL(), parseOptions).resolve()
+            ConfigFactory.parseURL(File(configFilePath).toURI().toURL(), parseOptions)
 
         } catch (e: ConfigException) {
             log.error(e.message, e)

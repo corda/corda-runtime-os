@@ -17,22 +17,25 @@ import net.corda.v5.base.util.debug
 internal class UserEndpointImplEventHandler : LifecycleEventHandler {
 
     private companion object {
-        val logger = contextLogger()
+        val log = contextLogger()
     }
 
     @VisibleForTesting
     internal var registration: RegistrationHandle? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.debug { "Received event: $event" }
+        log.debug { "Received event: $event" }
         when (event) {
             is StartEvent -> {
+                log.info("Received start event, following PermissionServiceComponent for status updates.")
                 followServicesForStatusUpdates(coordinator)
             }
             is RegistrationStatusChangeEvent -> {
+                log.info("Received status update from PermissionServiceComponent: ${event.status}.")
                 coordinator.updateStatus(event.status)
             }
             is StopEvent -> {
+                log.info("Received stop event, closing dependencies and setting status to DOWN.")
                 registration?.close()
                 registration = null
                 coordinator.updateStatus(LifecycleStatus.DOWN)

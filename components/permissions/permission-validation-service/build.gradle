@@ -15,7 +15,9 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(':libs:permissions:permission-validation')
+    implementation project(':components:permissions:permission-cache-service')
+
+    api project(':libs:permissions:permission-validation')
 
     implementation project(":osgi-framework-api")
 }

@@ -14,10 +14,10 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"
 
+    implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(':libs:permissions:permission-validation')
-    implementation project(':libs:permissions:permission-cache')
-    implementation project(':libs:permissions:permission-manager')
+    api project(':libs:permissions:permission-validation')
+    api project(':libs:permissions:permission-manager')
     implementation project(':components:permissions:permission-cache-service')
     implementation project(':components:permissions:permission-management-service')
     implementation project(':components:permissions:permission-validation-service')
