@@ -1,6 +1,7 @@
 package net.corda.virtualnode.write.impl
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -47,35 +48,42 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     private var publisher: Publisher? = null
 
     override fun put(virtualNodeInfo: VirtualNodeInfo) {
-        if (publisher != null) {
-            publisher!!.publish(
-                listOf(
-                    Record(
-                        Schemas.VIRTUAL_NODE_INFO_TOPIC,
-                        virtualNodeInfo.holdingIdentity.toAvro(),
-                        virtualNodeInfo.toAvro()
-                    )
+        publish(
+            listOf(
+                Record(
+                    Schemas.VIRTUAL_NODE_INFO_TOPIC,
+                    virtualNodeInfo.holdingIdentity.toAvro(),
+                    virtualNodeInfo.toAvro()
                 )
             )
-        } else {
-            log.debug { "Virtual Node Info Writer is null, not publishing" }
-        }
+        )
     }
 
     override fun remove(virtualNodeInfo: VirtualNodeInfo) {
-        if (publisher != null) {
-            publisher!!.publish(
-                listOf(
-                    Record(
-                        Schemas.VIRTUAL_NODE_INFO_TOPIC,
-                        virtualNodeInfo.holdingIdentity.toAvro(),
-                        null
-                    )
+        publish(
+            listOf(
+                Record(
+                    Schemas.VIRTUAL_NODE_INFO_TOPIC,
+                    virtualNodeInfo.holdingIdentity.toAvro(),
+                    null
                 )
             )
-        } else {
-            log.debug { "Virtual Node Info Writer is null, not publishing" }
+        )
+    }
+
+    /** Synchronous publish */
+    @Suppress("ForbiddenComment")
+    private fun publish(records: List<Record<HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>) {
+        if (publisher == null) {
+            log.error("Virtual Node Info Writer is null, not publishing, this error will addressed in a later PR")
+            return
         }
+
+        //TODO:  according the publish kdoc, we need to handle failure, retries, and possibly transactions.  Next PR.
+        val futures = publisher!!.publish(records)
+
+        // Wait for the future (there should only be one) to complete.
+        futures.forEach { it.get() }
     }
 
     override val isRunning: Boolean

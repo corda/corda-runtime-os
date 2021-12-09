@@ -2,6 +2,8 @@ package net.corda.cpiinfo.write.impl
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.write.CpiInfoWriterComponent
+import net.corda.data.packaging.CPIIdentifier
+import net.corda.data.packaging.CPIMetadata
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -46,6 +48,8 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     // This eventually needs to be passed in to here from the parent `main`
     private val instanceId: Int? = null
 
+    private val maxAttempts = 10
+
     private val eventHandler: MessagingConfigEventHandler =
         MessagingConfigEventHandler(configurationReadService, this::onConfigChangeEvent, this::onConfig)
 
@@ -54,19 +58,26 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     private var publisher: Publisher? = null
 
     override fun put(cpiMetadata: CPI.Metadata) {
-        if (publisher != null) {
-            publisher!!.publish(listOf(Record(Schemas.CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), cpiMetadata.toAvro())))
-        } else {
-            log.debug { "Cpi Info Writer publisher is null, not publishing" }
-        }
+        publish(listOf(Record(Schemas.CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), cpiMetadata.toAvro())))
     }
 
     override fun remove(cpiMetadata: CPI.Metadata) {
-        if (publisher != null) {
-            publisher!!.publish(listOf(Record(Schemas.CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), null)))
-        } else {
-            log.debug { "Cpi Info Writer publisher is null, not publishing" }
+        publish(listOf(Record(Schemas.CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), null)))
+    }
+
+    /** Synchronous publish */
+    @Suppress("ForbiddenComment")
+    private fun publish(records: List<Record<CPIIdentifier, CPIMetadata>>) {
+        if (publisher == null) {
+            log.error("Cpi Info Writer publisher is null, not publishing, this error will addressed in a later PR")
+            return
         }
+
+        //TODO:  according the publish kdoc, we need to handle failure, retries, and possibly transactions.  Next PR.
+        val futures = publisher!!.publish(records)
+
+        // Wait for the future (there should only be one) to complete.
+        futures.forEach { it.get() }
     }
 
     override val isRunning: Boolean
