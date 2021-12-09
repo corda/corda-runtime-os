@@ -4,10 +4,12 @@ import net.corda.membership.impl.TestGroupPolicies.Companion.emptyString
 import net.corda.membership.impl.TestGroupPolicies.Companion.fullGroupPolicy
 import net.corda.membership.impl.TestGroupPolicies.Companion.invalidFormatGroupPolicy
 import net.corda.membership.impl.TestGroupPolicies.Companion.whitespaceString
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 /**
  * Unit tests for [GroupPolicyFactoryImpl]
@@ -42,13 +44,13 @@ class GroupPolicyFactoryTest {
     }
 
     /**
-     * Test that invalid JSON passed in for the group policy doesn't throw an exception but instead results
-     * in an empty map.
+     * Test that invalid JSON passed in for the group policy throws a corda runtime exception.
      */
     @Test
-    fun `Invalid format group policy results in empty group policy map`() {
-        val result = groupPolicyFactory.createGroupPolicy(invalidFormatGroupPolicy)
-        assertEquals(0, result.size)
+    fun `Invalid format group policy throws corda runtime exception`() {
+        assertThrows<CordaRuntimeException> {
+            groupPolicyFactory.createGroupPolicy(invalidFormatGroupPolicy)
+        }
     }
 
     /**
