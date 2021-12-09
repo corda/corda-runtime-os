@@ -23,15 +23,13 @@ class ConfigWriterSubscriptionFactory @Activate constructor(
     private val publisherFactory: PublisherFactory
 ) {
     private companion object {
-        private val rpcConfigTemplate = RPCConfig(
-            GROUP_NAME,
-            CLIENT_NAME,
-            CONFIG_UPDATE_REQUEST_TOPIC,
+        private val rpcConfigTemplate = let {
+            val topic = CONFIG_UPDATE_REQUEST_TOPIC
             // TODO - Joel - Define own Avro objects, instead of reusing these existing ones.
-            PermissionManagementRequest::class.java,
-            PermissionManagementResponse::class.java,
-            null
-        )
+            val reqClass = PermissionManagementRequest::class.java
+            val respClass = PermissionManagementResponse::class.java
+            RPCConfig(GROUP_NAME, CLIENT_NAME, topic, reqClass, respClass, null)
+        }
     }
 
     internal fun create(config: SmartConfig, instanceId: Int): Lifecycle {
