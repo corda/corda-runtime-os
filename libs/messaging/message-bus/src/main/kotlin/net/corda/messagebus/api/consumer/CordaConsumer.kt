@@ -11,25 +11,24 @@ import java.time.Duration
 interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
 
     /**
-     * Subscribe to given [topics]. Attach the rebalance [listener] to the [Consumer].
-     * If [listener] is null and a default listener exists (only for some patterns) it is used.
-     * If a recoverable error occurs retry. If max retries is exceeded or a fatal error occurs then throw a
+     * Subscribe to given [topics]. If not null, attach the rebalance [listener] to the [Consumer].
+     * If a recoverable error occurs retry. If max retries is exceeded or a fatal error occurs then
+     * a fatal exception is thrown.
      *
      * @param topics the topics to subscribe to
      * @param listener the [CordaConsumerRebalanceListener] handler for rebalance events
      */
-    fun subscribe(topics: Collection<String>, listener: CordaConsumerRebalanceListener?)
+    fun subscribe(topics: Collection<String>, listener: CordaConsumerRebalanceListener? = null)
 
     /**
-     * Subscribe this consumer to the configuration specified topic. Attach the rebalance [listener] to the [Consumer].
-     * If [listener] is null and a default listener exists (only for some patterns) it is used.
-     * If a recoverable error occurs retry. If max retries is exceeded or a fatal error occurs then throw a
-     * [CordaMessageAPIFatalException]
+     * Subscribe to given [topic]. If not null, attach the rebalance [listener] to the [Consumer].
+     * If a recoverable error occurs retry. If max retries is exceeded or a fatal error occurs then
+     * a fatal exception is thrown.
      *
+     * @param topic the topic to subscribe to
      * @param listener the [CordaConsumerRebalanceListener] handler for rebalance events
-     * @throws CordaMessageAPIFatalException for fatal errors.
      */
-    fun subscribeToTopic(listener: CordaConsumerRebalanceListener? = null)
+    fun subscribe(topic: String, listener: CordaConsumerRebalanceListener? = null)
 
     /**
      * Manually assign a list of partitions to this consumer. This interface does not allow for incremental assignment
@@ -160,17 +159,6 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      * @return The list of [TopicPartition]s
      */
     fun getPartitions(topic: String, timeout: Duration): List<TopicPartition>
-
-    /**
-     * Manually assigns the specified partitions of the configured topic to this consumer.
-     *
-     * Note: manual assignment is an alternative to subscription, where the message bus does not execute any partition
-     * assignment logic and lets the client assign partitions explicitly. So, do not use this in conjunction
-     * with [subscribeToTopic] as they satisfy different use-cases.
-     *
-     * @param partitions the set of partitions which this consumer will use
-     */
-    fun assignPartitionsManually(partitions: Set<Int>)
 
     /**
      * Tries to close the consumer cleanly within the specified timeout. This method waits up to

@@ -2,7 +2,6 @@ package net.corda.messagebus.api.producer
 
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messaging.api.records.Record
 import java.time.Duration
 
 /**
@@ -10,6 +9,9 @@ import java.time.Duration
  */
 interface CordaProducer : AutoCloseable {
 
+    /**
+     * Defines the callback for post-send events.  If there was an exception it will be provided on this callback.
+     */
     fun interface Callback {
         fun onCompletion(exception: Exception?)
     }
@@ -18,9 +20,10 @@ interface CordaProducer : AutoCloseable {
      * Asynchronously send a record to a topic and invoke the provided callback when the record has been acknowledged.
      *
      * @param record The record to send
-     * @param callback A user-supplied callback to execute when the record has been successfully published
+     * @param callback A user-supplied callback to execute when the record has been successfully published or if an
+     * error has occurred.
      */
-    fun send(record: Record<*, *>, callback: Callback?)
+    fun send(record: CordaProducerRecord<*, *>, callback: Callback?)
 
 
     /**
@@ -28,28 +31,34 @@ interface CordaProducer : AutoCloseable {
      *
      * @param record The record to send
      * @param partition The partition on which the record will be published
-     * @param callback A user-supplied callback to execute when the record has been successfully published
+     * @param callback A user-supplied callback to execute when the record has been successfully published or if an
+     * error has occurred
      */
-    fun send(record: Record<*, *>, partition: Int, callback: Callback?)
+    fun send(record: CordaProducerRecord<*, *>, partition: Int, callback: Callback?)
 
     /**
      * Send [records] of varying key and value types to their respective topics
      *
      * @param records the list of records to send to be published
      */
-    fun sendRecords(records: List<Record<*, *>>)
+    fun sendRecords(records: List<CordaProducerRecord<*, *>>)
 
     /**
      * Send the records to the specified partitions.
      *
-     * @param recordsWithPartitions a list of pairs, where the first element is the partition and the second is the record.
+     * @param recordsWithPartitions a list of pairs, where the first element is the partition and the second
+     * is the record.
      */
-    fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, Record<*, *>>>)
+    fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>)
 
     /**
-     * Send the [consumer] offsets back to the bus for a list of given [records].
+     * Add the [consumer] offsets for a list of given [records] to the current transaction.
+     * These offsets will be considered committed only if the transaction is committed successfully.
+     * The committed offset should be the next message your application will consume,
+     * i.e. lastProcessedMessageOffset + 1.
      *
-     * @param consumer
+     * @param consumer the consumer which received the records (and whose offsets will be committed).
+     * @param records the records which are part of the current transaction
      * @throws CordaMessageAPIFatalException Fatal error
      * @throws CordaMessageAPIIntermittentException Retryable error
      */

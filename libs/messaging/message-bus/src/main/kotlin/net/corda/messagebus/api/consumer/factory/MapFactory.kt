@@ -14,9 +14,3 @@ interface MapFactory<K : Any, V : Any> {
      */
     fun destroyMap(map: MutableMap<K, V>)
 }
-
-object DEFAULT_MAP_FACTORY : MapFactory<Any, Any> {
-    override fun createMap(): MutableMap<Any, Any> = createMap()
-    override fun destroyMap(map: MutableMap<Any, Any>) = map.clear()
-}
-

@@ -11,7 +11,6 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:messaging:messaging")
     implementation project(":libs:configuration:configuration-core")
 }
 
