@@ -18,6 +18,7 @@ dependencies {
     implementation project(':libs:db:db-admin-impl')
     implementation project(":libs:messaging:messaging")
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-avro-schema'
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     runtimeOnly project(':libs:db:db-orm-impl')
@@ -25,6 +26,13 @@ dependencies {
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+
+    // TODO - Joel - Below are dependencies required by `KafkaDriver`. Remove in the future.
+    compileOnly 'org.osgi:osgi.core'
+    implementation "io.javalin:javalin-osgi:$javalinVersion"
+    runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"
+    implementation project(":libs:schema-registry:schema-registry")
+    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
 }
 
 tasks.named('jar', Jar) {

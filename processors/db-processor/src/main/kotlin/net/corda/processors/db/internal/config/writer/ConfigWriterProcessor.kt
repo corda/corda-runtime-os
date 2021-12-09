@@ -1,31 +1,35 @@
 package net.corda.processors.db.internal.config.writer
 
-import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.data.permissions.management.PermissionManagementRequest
+import net.corda.data.permissions.management.PermissionManagementResponse
+import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.processors.db.internal.config.writeservice.CONFIG_TOPIC
 import net.corda.processors.db.internal.config.writeservice.ConfigEntity
 import net.corda.processors.db.internal.config.writeservice.ConfigWriteServiceException
-import net.corda.processors.db.internal.config.writeservice.StringRecord
 import net.corda.processors.db.internal.db.DBWriter
 import net.corda.v5.base.util.contextLogger
+import java.util.concurrent.CompletableFuture
 import javax.persistence.RollbackException
 
-internal class ConfigWriterProcessor(private val dbWriter: DBWriter) : DurableProcessor<String, String> {
+internal class ConfigWriterProcessor(private val dbWriter: DBWriter, private val publisher: Publisher) :
+    RPCResponderProcessor<PermissionManagementRequest, PermissionManagementResponse> {
+
     private companion object {
         private val logger = contextLogger()
     }
 
-    override val keyClass = String::class.java
-    override val valueClass = String::class.java
+    override fun onNext(request: PermissionManagementRequest, respFuture: CompletableFuture<PermissionManagementResponse>) {
+        logger.info("JJJ got this request: $request")
 
-    override fun onNext(events: List<StringRecord>) : List<StringRecord> {
-        // TODO - Joel - We just grab the key and value here. We should establish the actual message format.
-        // TODO - Joel - Have Avro schema.
-        // TODO - Joel - Don't default record value to empty string. Handle properly.
-        val configEntities = events.map { record -> ConfigEntity(record.key, record.value ?: "") }
+        // TODO - Joel - Create actual Avro classes for requests and responses. Currently, we just stuff the
+        //  key and value into the request user ID.
+        val (key, value) = request.requestUserId.split('=')
+        val configEntity = ConfigEntity(key, value)
 
         try {
-            dbWriter.writeConfig(configEntities)
+            dbWriter.writeConfig(listOf(configEntity))
         } catch (e: RollbackException) {
             // TODO - Joel - Retry? Push back onto queue?
         } catch (e: Exception) {
@@ -33,8 +37,11 @@ internal class ConfigWriterProcessor(private val dbWriter: DBWriter) : DurablePr
             throw ConfigWriteServiceException("TODO - Joel - Exception message.", e)
         }
 
-        val outgoingRecords = events.map { record -> Record(CONFIG_TOPIC, record.key, record.value) }
-        logger.info("JJJ publishing records $outgoingRecords") // TODO - Joel - This logging is only for demo purposes.
-        return outgoingRecords
+        logger.info("JJJ publishing records $configEntity") // TODO - Joel - This logging is only for demo purposes.
+        // TODO - Joel - Provide actual response.
+        respFuture.complete(PermissionManagementResponse("DONT_CARE"))
+
+        val record = Record(CONFIG_TOPIC, key, value)
+        publisher.publish(listOf(record))
     }
 }

@@ -5,4 +5,4 @@ kafka_config='--topic config-update-request --bootstrap-server localhost:9092 --
 timestamp=$(date +%T)
 
 echo "Writing to topics."
-docker exec kafka bash -c "$kafka_script $kafka_config <<< \"timestamp:$timestamp\""
+docker exec kafka bash -c "$kafka_script $kafka_config <<< \"timestamp=$timestamp\""
