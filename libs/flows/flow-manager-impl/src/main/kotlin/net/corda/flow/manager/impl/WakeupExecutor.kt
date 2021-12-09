@@ -6,8 +6,8 @@ import net.corda.dependency.injection.FlowDependencyInjector
 import net.corda.flow.manager.FlowEventExecutor
 import net.corda.flow.manager.FlowMetaData
 import net.corda.flow.manager.FlowResult
-import net.corda.flow.manager.FlowSandboxService
 import net.corda.flow.manager.FlowSandboxContextTypes
+import net.corda.flow.manager.FlowSandboxService
 import net.corda.flow.manager.impl.FlowExecutorUtilities.Companion.setupFlow
 import net.corda.flow.manager.impl.FlowExecutorUtilities.Companion.toRecordsWithKey
 import net.corda.flow.statemachine.HousekeepingState
@@ -38,7 +38,7 @@ class WakeupExecutor(
         setupFlow(stateMachine, dependencyInjector,checkpointSerializer )
         Fiber.unparkDeserialized(stateMachine, fiberScheduler)
         val (checkpoint, events) = stateMachine.waitForCheckpoint()
-        return FlowResult(checkpoint, events.toRecordsWithKey(flowMetaData.flowEventTopic))
+        return FlowResult(checkpoint, events.toRecordsWithKey(flowMetaData.flowKey, flowMetaData.flowEventTopic))
 
     }
 }

@@ -24,7 +24,7 @@ fun getHelloWorldRPCEventRecord() : Record<*, *>  {
 fun getStartRPCEventRecord(clientId: String, cpiId: String, flowId: String, flowName: String, x500Name: String, groupId: String):
         Record<*, *> {
     val identity = HoldingIdentity(x500Name, groupId)
-    val key = FlowKey(flowId, identity)
-    val rpcStartFlow = StartRPCFlow(clientId, flowName, identity, Instant.now(), "{ \"who\":\"world\"}")
-    return Record(DEFAULT_FLOW_EVENT_TOPIC_VALUE, key, FlowEvent(key, cpiId, rpcStartFlow))
+    val flowKey = FlowKey(flowId, identity)
+    val rpcStartFlow = StartRPCFlow(clientId, cpiId, flowName, identity, Instant.now(), "{ \"who\":\"world\"}")
+    return Record(DEFAULT_FLOW_EVENT_TOPIC_VALUE, flowKey, FlowEvent(flowKey, rpcStartFlow))
 }

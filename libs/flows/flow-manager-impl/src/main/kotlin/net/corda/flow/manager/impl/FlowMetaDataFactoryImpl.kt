@@ -1,15 +1,16 @@
 package net.corda.flow.manager.impl
 
-import net.corda.data.flow.Checkpoint
+
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.Wakeup
-import net.corda.virtualnode.HoldingIdentity
+import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.manager.FlowMetaData
 import net.corda.flow.manager.FlowMetaDataFactory
 import net.corda.messaging.api.records.Record
 import net.corda.packaging.CPI
+import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [FlowMetaDataFactory::class])
@@ -22,16 +23,22 @@ class FlowMetaDataFactoryImpl : FlowMetaDataFactory {
         var flowName = ""
         var jsonArgs = ""
         var clientId = ""
+        var cpiId = ""
 
        when (payload) {
             is StartRPCFlow -> {
                 flowName = payload.flowName
                 jsonArgs = payload.jsonArgs
                 clientId = payload.clientId
+                cpiId = payload.cpiId
             }
             is Wakeup -> {
-                payload.flowName
+                flowName = payload.flowName
             }
+        }
+
+        if (state != null) {
+            cpiId = state.cpiId
         }
 
         // This will need to be cleaned up to remove the duplicate and redundant properties
@@ -42,10 +49,10 @@ class FlowMetaDataFactoryImpl : FlowMetaDataFactory {
             flowName = flowName,
             flowKey = flowEvent.flowKey,
             jsonArg = jsonArgs,
-            cpiId = flowEvent.cpiId,
+            cpiId = cpiId,
             flowEventTopic = eventRecord.topic,
             holdingIdentity = HoldingIdentity(flowKey.identity.x500Name, flowKey.identity.groupId),
-            cpi = CPI.Identifier.newInstance(flowEvent.cpiId, "1", null),
+            cpi = CPI.Identifier.newInstance(cpiId, "1", null),
             payload = payload,
             checkpoint = state
         )
