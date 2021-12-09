@@ -21,7 +21,7 @@ import org.osgi.service.component.annotations.ReferencePolicy
 
 @Suppress("LongParameterList")
 @Component(service = [HttpRpcGateway::class])
-class HttpRpcGateway(
+class HttpRpcGateway private constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configurationReadService: ConfigurationReadService,
     httpRpcServerFactory: HttpRpcServerFactory,
