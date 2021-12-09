@@ -1,5 +1,9 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
+import net.corda.httprpc.exception.HttpApiException
+import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.RpcAuthContext
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
@@ -9,6 +13,9 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.permissions.service.PermissionServiceComponent
 import net.corda.v5.base.util.Try
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -16,10 +23,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import net.corda.httprpc.exception.HttpApiException
-import net.corda.httprpc.exception.ResourceNotFoundException
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 
 internal class UserEndpointImplTest {
 
@@ -57,6 +60,14 @@ internal class UserEndpointImplTest {
     }
 
     private val endpoint = UserEndpointImpl(lifecycleCoordinatorFactory, permissionService)
+
+    @BeforeEach
+    fun beforeEach() {
+        val authContext = mock<RpcAuthContext>().apply {
+            whenever(principal).thenReturn("anRpcUser")
+        }
+        CURRENT_RPC_CONTEXT.set(authContext)
+    }
 
     @Test
     fun getProtocolVersion() {
