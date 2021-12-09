@@ -10,7 +10,6 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PRE
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.utils.getRecordListOffsets
 import net.corda.messaging.kafka.utils.getStringOrNull
-import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException
@@ -34,7 +33,6 @@ import org.apache.kafka.common.errors.UnsupportedVersionException
 import org.slf4j.Logger
 import java.time.Duration
 import java.util.concurrent.Future
-import kotlin.concurrent.thread
 
 /**
  * Wrapper for the CordaKafkaProducer.
@@ -68,21 +66,7 @@ class CordaKafkaProducerImpl(
 
     override fun sendRecords(records: List<Record<*, *>>) {
         for (record in records) {
-            if(record.topic == "session.out.partitions") {
-                log.info("QQQ Sending record -> ${record.topic}; topicPrefix = $topicPrefix")
-            }
-            val future = producer.send(ProducerRecord(topicPrefix + record.topic, record.key, record.value))
-            if(record.topic == "session.out.partitions") {
-                log.info("QQQ Sent waiting...")
-            }
-            thread {
-                log.info("QQQ waiting in thread...")
-                future.getOrThrow()
-                if(record.topic == "session.out.partitions") {
-                    log.info("QQQ waited")
-                }
-            }
-
+            producer.send(ProducerRecord(topicPrefix + record.topic, record.key, record.value))
         }
     }
 

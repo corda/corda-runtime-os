@@ -41,10 +41,7 @@ class SessionPartitionMapperImpl(
         return if (!isRunning) {
             throw IllegalStateException("getPartitions invoked, while session partition mapper is not running.")
         } else {
-            println("QQQ getPartitions: $sessionId")
-            sessionPartitionsMapping[sessionId]?.also {
-                println("QQQ \t <- $it")
-            }
+            sessionPartitionsMapping[sessionId]
         }
     }
 
@@ -56,7 +53,6 @@ class SessionPartitionMapperImpl(
             get() = SessionPartitions::class.java
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
-            println("QQQ got snapshots: $currentData")
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
             future.get().complete(Unit)
         }
@@ -66,7 +62,6 @@ class SessionPartitionMapperImpl(
             oldValue: SessionPartitions?,
             currentData: Map<String, SessionPartitions>
         ) {
-            println("QQQ got data: ${newRecord.key} -> ${newRecord.value}")
             if (newRecord.value == null) {
                 sessionPartitionsMapping.remove(newRecord.key)
             } else {
@@ -76,7 +71,6 @@ class SessionPartitionMapperImpl(
     }
 
     fun createResources(resources: ResourcesHolder): CompletableFuture<Unit> {
-        println("QQQ createResources!")
         val resourceFuture = CompletableFuture<Unit>()
         future.set(resourceFuture)
         sessionPartitionSubscription.start()

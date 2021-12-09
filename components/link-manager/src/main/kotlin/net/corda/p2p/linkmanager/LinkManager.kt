@@ -50,7 +50,6 @@ import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema
 import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
-import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -193,12 +192,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private var logger = LoggerFactory.getLogger(this::class.java.name)
 
         override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<*, *>> {
-            logger.info("QQQ in onNext!")
             val records = mutableListOf<Record<String, *>>()
             for (event in events) {
                 records += processEvent(event)
             }
-            logger.info("QQQ going out of onNext with ${records.map { it.topic }} (SESSION_OUT_PARTITIONS = $SESSION_OUT_PARTITIONS)!")
             return records
         }
 
@@ -274,10 +271,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             val records = mutableListOf<Record<String, *>>()
             records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage))
             val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
-            records.add(Record(Schema.SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions))).also {
-                println("QQQ publish partition II for ${state.sessionId}")
-                logger.info("QQQ publish partition II for ${state.sessionId}", Exception("QQQ"))
-            }
+            records.add(Record(Schema.SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions)))
             return records
         }
 
@@ -350,9 +344,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                         val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
                         listOf(
                             Record(Schema.LINK_OUT_TOPIC, generateKey(), response),
-                            Record(Schema.SESSION_OUT_PARTITIONS, payload.header.sessionId, SessionPartitions(partitionsAssigned)).also {
-                                println("QQQ publish partition I for ${payload.header.sessionId}")
-                            }
+                            Record(Schema.SESSION_OUT_PARTITIONS, payload.header.sessionId, SessionPartitions(partitionsAssigned))
                         )
                     }
                     else -> {
