@@ -20,8 +20,8 @@ dependencies {
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }
 
-private boolean isBundle(JarFile jarFile) {
-    return jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.BUNDLE_SYMBOLICNAME) != null
+private static boolean isBundle(JarFile jarFile) {
+    return jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.BUNDLE_MANIFESTVERSION) != null
 }
 
 private static boolean isJar(final File file) {

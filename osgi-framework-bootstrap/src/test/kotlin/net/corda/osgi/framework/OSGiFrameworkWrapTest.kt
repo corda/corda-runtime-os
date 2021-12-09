@@ -129,7 +129,7 @@ internal class OSGiFrameworkWrapTest {
         )
         OSGiFrameworkWrap(framework).use { frameworkWrap ->
             frameworkWrap.start()
-            frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
+            frameworkWrap.install(OSGiFrameworkMain.APPLICATION_BUNDLES)
             frameworkWrap.activate()
             framework.bundleContext.bundles.forEach { bundle ->
                 if (!OSGiFrameworkWrap.isFragment(bundle)) {
@@ -164,8 +164,8 @@ internal class OSGiFrameworkWrapTest {
         )
         OSGiFrameworkWrap(framework).use { frameworkWrap ->
             frameworkWrap.start()
-            frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
-            val bundleLocationList = readTextLines(OSGiFrameworkMain.SYSTEM_BUNDLES)
+            frameworkWrap.install(OSGiFrameworkMain.APPLICATION_BUNDLES)
+            val bundleLocationList = readTextLines(OSGiFrameworkMain.APPLICATION_BUNDLES)
             assertEquals(bundleLocationList.size, framework.bundleContext.bundles.size - 1)
             bundleLocationList.forEach { location ->
                 assertNotNull(framework.bundleContext.getBundle(location))
@@ -179,7 +179,7 @@ internal class OSGiFrameworkWrapTest {
         assertThrows<IllegalStateException> {
             val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
             OSGiFrameworkWrap(framework).use { frameworkWrap ->
-                frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
+                frameworkWrap.install(OSGiFrameworkMain.APPLICATION_BUNDLES)
             }
         }
     }
