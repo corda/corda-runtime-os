@@ -12,26 +12,10 @@ public class NotaryInfoJavaApiTest {
     private final NotaryInfo notaryInfo = mock(NotaryInfo.class);
 
     @Test
-    public void notary_Type_Validating() {
-        String result = NotaryInfo.NOTARY_TYPE_VALIDATING;
-
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo("corda.notary.type.validating");
-    }
-
-    @Test
-    public void notary_Type_Non_Validating() {
-        String result = NotaryInfo.NOTARY_TYPE_NON_VALIDATING;
-
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo("corda.notary.type.non-validating");
-    }
-
-    @Test
-    public void getType() {
+    public void getPluginClass() {
         String test = "test";
-        when(notaryInfo.getType()).thenReturn(test);
-        String result = notaryInfo.getType();
+        when(notaryInfo.getPluginClass()).thenReturn(test);
+        String result = notaryInfo.getPluginClass();
 
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result).isEqualTo(test);

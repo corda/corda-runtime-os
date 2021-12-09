@@ -2,9 +2,11 @@ package net.corda.v5.ledger.services;
 
 import net.corda.v5.application.identity.CordaX500Name;
 import net.corda.v5.application.identity.Party;
+import net.corda.v5.ledger.NotaryInfo;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.security.PublicKey;
 import java.util.List;
 
 import static org.mockito.Mockito.mock;
@@ -13,38 +15,40 @@ import static org.mockito.Mockito.when;
 public class NotaryLookupServiceJavaApiTest {
 
     private final NotaryLookupService notaryLookupService = mock(NotaryLookupService.class);
+    private final CordaX500Name testCordaX500Name = new CordaX500Name("Bob Plc", "Rome", "IT");
     private final Party party = mock(Party.class);
-    private final List<Party> partyList = List.of(party);
+    private final NotaryInfo notaryInfo = mock(NotaryInfo.class);
+    private final List<NotaryInfo> notaryInfoList = List.of(notaryInfo);
 
     @Test
     public void getNotaryIdentities() {
-        when(notaryLookupService.getNotaryIdentities()).thenReturn(partyList);
+        when(notaryLookupService.getNotaryServices()).thenReturn(notaryInfoList);
 
-        List<Party> result = notaryLookupService.getNotaryIdentities();
+        List<NotaryInfo> result = notaryLookupService.getNotaryServices();
 
         Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(partyList);
+        Assertions.assertThat(result).isEqualTo(notaryInfoList);
     }
 
     @Test
-    public void getNotary() {
-        CordaX500Name testCordaX500Name = new CordaX500Name("Bob Plc", "Rome", "IT");
-        when(notaryLookupService.getNotary(testCordaX500Name)).thenReturn(party);
+    public void getNotaryByName() {
+        when(notaryLookupService.lookup(testCordaX500Name)).thenReturn(notaryInfo);
 
-        Party result = notaryLookupService.getNotary(testCordaX500Name);
+        NotaryInfo result = notaryLookupService.lookup(testCordaX500Name);
 
         Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(party);
+        Assertions.assertThat(result).isEqualTo(notaryInfo);
     }
 
     @Test
-    public void getNotaryWorkers() {
-        when(notaryLookupService.getNotaryWorkers(party)).thenReturn(partyList);
+    public void getNotaryByKey() {
+        PublicKey testPublicKey = mock(PublicKey.class);
+        when(notaryLookupService.lookup(testPublicKey)).thenReturn(notaryInfo);
 
-        List<Party> result = notaryLookupService.getNotaryWorkers(party);
+        NotaryInfo result = notaryLookupService.lookup(testPublicKey);
 
         Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(partyList);
+        Assertions.assertThat(result).isEqualTo(notaryInfo);
     }
 
     @Test
@@ -55,17 +59,5 @@ public class NotaryLookupServiceJavaApiTest {
 
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result).isEqualTo(true);
-    }
-
-
-    @Test
-    public void getNotaryType() {
-        String test = "test";
-        when(notaryLookupService.getNotaryType(party)).thenReturn(test);
-
-        String result = notaryLookupService.getNotaryType(party);
-
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo(test);
     }
 }
