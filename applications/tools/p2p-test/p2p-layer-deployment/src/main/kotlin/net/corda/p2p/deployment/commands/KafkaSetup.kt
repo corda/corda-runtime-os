@@ -1,6 +1,7 @@
 package net.corda.p2p.deployment.commands
 
-import net.corda.p2p.deployment.DeploymentException
+import com.fasterxml.jackson.databind.ObjectMapper
+import java.io.File
 import java.lang.Integer.min
 
 class KafkaSetup(
@@ -9,117 +10,47 @@ class KafkaSetup(
 ) : Runnable {
     override fun run() {
         println("Setting up kafka topics...")
-        listOf("ConfigTopic", "session.out.partitions", "p2p.out.markers.state").forEach {
-            println("\t $it...")
-            createOrAlterTopic(it)
-            makeCompactTopic(it)
-        }
-        println("\t p2p.out.markers...")
-        createOrAlterTopic("p2p.out.markers")
-    }
-
-    private fun makeCompactTopic(topicName: String, retries: Int = 3) {
-        try {
-            execute(
-                "--alter",
-                "--topic",
-                topicName,
-                "--config",
-                "cleanup.policy=compact",
-                "--config",
-                "segment.ms=300000",
-                "--config",
-                "delete.retention.ms=300000",
-                "--config",
-                "min.compaction.lag.ms=300000",
-                "--config",
-                "min.cleanable.dirty.ratio=0.8",
+        val topics = listOf("ConfigTopic", "session.out.partitions", "p2p.out.markers.state").map {
+            mapOf(
+                "topicName" to it,
+                "numPartitions" to 10,
+                "replicationFactor" to min(3, kafkaBrokersCount),
+                "config" to mapOf(
+                    "cleanup" to mapOf("policy" to "compact"),
+                    "segment" to mapOf("ms" to 300000),
+                    "min" to mapOf(
+                        "compaction" to
+                            mapOf("lag" to mapOf("ms" to 60000)),
+                        "cleanable" to
+                            mapOf(
+                                "dirty" to mapOf("ratio" to 0.5)
+                            )
+                    ),
+                )
             )
-        } catch (e: DeploymentException) {
-            if (retries == 0) {
-                throw e
-            }
-            println("Something went wrong... retrying in a few seconds")
-            Thread.sleep(5000)
-            createOrAlterTopic(topicName)
-            makeCompactTopic(topicName, retries - 1)
-        }
-    }
-
-    private fun createOrAlterTopic(name: String) {
-        try {
-            createTopic(name)
-        } catch (e: DeploymentException) {
-            try {
-                println("\t Topic $name already exists")
-                alterTopic(name)
-            } catch (e: DeploymentException) {
-                println("\t Topic $name already exists and setup")
-            }
-        }
-    }
-
-    private fun alterTopic(name: String) {
-        execute(
-            "--alter",
-            "--topic",
-            name,
-            "--partitions",
-            "10",
+        } + mapOf(
+            "topicName" to "p2p.out.markers",
+            "numPartitions" to 10,
+            "replicationFactor" to min(3, kafkaBrokersCount),
+            "config" to mapOf(
+                "cleanup" to mapOf("policy" to "delete"),
+            )
         )
-    }
-    private fun createTopic(name: String) {
-        execute(
-            "--create",
-            "--topic",
-            name,
-            "--partitions",
-            "10",
-            "--replication-factor",
-            "${min(3, kafkaBrokersCount)}",
+        val config = mapOf(
+            "topics" to topics
         )
-    }
+        val configurationFile = File.createTempFile("kafka-setup", ".json")
+        configurationFile.deleteOnExit()
+        ObjectMapper().writer().writeValue(configurationFile, config)
 
-    private fun execute(vararg args: String): Collection<String> {
-        val commandInPod = "\$KAFKA_HOME/bin/kafka-topics.sh --zookeeper=\$KAFKA_ZOOKEEPER_CONNECT ${args.joinToString(" ")}"
-
-        val bash = ProcessBuilder().command(
+        RunJar.startTelepresence()
+        RunJar(
+            "kafka-setup",
             listOf(
-                "kubectl",
-                "exec",
-                "-n",
-                namespaceName,
-                pod,
-                "--",
-                "bash",
-                "-c",
-                commandInPod
+                "--topic", configurationFile.absolutePath,
+                "--kafka",
+                RunJar.kafkaFile(namespaceName).absolutePath
             )
-        )
-            .start()
-
-        if (bash.waitFor() != 0) {
-            val error = bash.errorStream.reader().readText()
-            throw DeploymentException("Can not run $commandInPod: $error")
-        }
-        return bash.inputStream.reader().readLines()
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private val pod by lazy {
-        val getPods = ProcessBuilder().command(
-            "kubectl",
-            "get",
-            "pod",
-            "-n", namespaceName,
-            "-l", "app=kafka-broker-1",
-            "-o", "jsonpath={.items[*].metadata.name}"
-        ).start()
-        if (getPods.waitFor() != 0) {
-            System.err.println(getPods.errorStream.reader().readText())
-            throw DeploymentException("Could not get pods")
-        }
-
-        getPods.inputStream.reader().readText().trim()
+        ).run()
     }
 }

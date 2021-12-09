@@ -9,6 +9,7 @@ abstract class Job {
     open val environmentVariables: Map<String, String> = emptyMap()
     open val command: Collection<String>? = null
     open val pullSecrets: Collection<String> = emptyList()
+    open val labels: Map<String, String> = emptyMap()
 
     fun yamls(namespaceName: String): Collection<Yaml> {
         return rawData.map {
@@ -27,7 +28,7 @@ abstract class Job {
         "spec" to mapOf(
             "backoffLimit" to 1,
             "template" to mapOf(
-                "metadata" to mapOf("labels" to mapOf("app" to app)),
+                "metadata" to mapOf("labels" to mapOf("app" to app) + labels),
                 "spec" to mapOf(
                     "imagePullSecrets" to pullSecrets.map {
                         mapOf("name" to it)

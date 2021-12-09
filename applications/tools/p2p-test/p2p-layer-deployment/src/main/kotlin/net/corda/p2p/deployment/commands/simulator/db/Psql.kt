@@ -1,4 +1,4 @@
-package net.corda.p2p.deployment.commands
+package net.corda.p2p.deployment.commands.simulator.db
 
 import net.corda.p2p.deployment.DeploymentException
 import picocli.CommandLine.Command
@@ -13,9 +13,8 @@ class Psql : Runnable {
     @Option(
         names = ["-n", "--name"],
         description = ["The name of the namespace"],
-        required = true,
     )
-    private lateinit var namespaceName: String
+    private var namespaceName = Db.defaultName
 
     @Suppress("UNCHECKED_CAST")
     override fun run() {

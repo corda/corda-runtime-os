@@ -5,7 +5,6 @@ import net.corda.p2p.deployment.DeploymentException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
-import java.nio.file.Files
 
 @Command(
     name = "configure",
@@ -127,86 +126,6 @@ class ConfigureAll : Runnable {
 
     private val trustStoreFile = File(keyStoreDir.absolutePath, "truststore.jks")
 
-    private val kafkaServers = mutableMapOf<String, String>()
-    @Suppress("UNCHECKED_CAST")
-    private fun kafkaServers(namespace: String): String {
-        return kafkaServers.computeIfAbsent(namespace) {
-            val getAll = ProcessBuilder().command(
-                "kubectl",
-                "get",
-                "service",
-                "-n",
-                namespace,
-                "-l", "type=kafka-broker",
-                "--output", "jsonpath={.items[*].metadata.name}",
-            ).start()
-            if (getAll.waitFor() != 0) {
-                System.err.println(getAll.errorStream.reader().readText())
-                throw DeploymentException("Could not get services")
-            }
-            getAll
-                .inputStream
-                .reader()
-                .readText()
-                .split(" ")
-                .filter {
-                    it.isNotBlank()
-                }.joinToString(",") {
-                    "$it.$namespace:9093"
-                }
-        }
-    }
-
-    private val kafkaFiles = mutableMapOf<String, File>()
-    private fun kafkaFile(namespace: String): File {
-        return kafkaFiles.computeIfAbsent(namespace) {
-            File.createTempFile("$namespace.kafka.", ".properties").also { file ->
-                file.deleteOnExit()
-                file.delete()
-                file.writeText("bootstrap.servers=${kafkaServers(namespace)}")
-            }
-        }
-    }
-
-    private val savedJar = mutableMapOf<String, File>()
-    private fun jarToRun(jarName: String): File {
-        return savedJar.computeIfAbsent(jarName) {
-            File.createTempFile(jarName, ".jar").also { jarFile ->
-                jarFile.deleteOnExit()
-                jarFile.delete()
-                ClassLoader.getSystemClassLoader()
-                    .getResource("$jarName.jar")
-                    ?.openStream()?.use { input ->
-                        Files.copy(input, jarFile.toPath())
-                    }
-            }
-        }
-    }
-
-    private fun runJar(jarName: String, arguments: Collection<String>) {
-        val jarFile = jarToRun(jarName)
-        val java = "${System.getProperty("java.home")}/bin/java"
-        val commands = listOf(java, "-jar", jarFile.absolutePath) + arguments
-        ProcessBuilder()
-            .command(
-                commands
-            )
-            .inheritIO()
-            .start()
-            .waitFor()
-    }
-
-    private fun startTelepresence() {
-        ProcessBuilder()
-            .command(
-                "telepresence",
-                "connect"
-            )
-            .inheritIO()
-            .start()
-            .waitFor()
-    }
-
     private fun publishMySelfToOthers() {
         val configurationFile = File.createTempFile("network-map.", ".conf").also {
             it.deleteOnExit()
@@ -232,13 +151,13 @@ class ConfigureAll : Runnable {
         jsonWriter.writeValue(configurationFile, configurationMap)
         namespaces.keys.forEach { nameSpace ->
             println("Publishing $namespaceName to $nameSpace")
-            runJar(
+            RunJar(
                 "network-map-creator",
                 listOf(
                     "--netmap-file", configurationFile.absolutePath, "--kafka",
-                    kafkaFile(nameSpace).absolutePath
+                    RunJar.kafkaFile(nameSpace).absolutePath
                 )
-            )
+            ).run()
         }
     }
     private fun publishOthersToMySelf() {
@@ -274,13 +193,13 @@ class ConfigureAll : Runnable {
         )
         jsonWriter.writeValue(configurationFile, configurationMap)
         println("Publishing ${otherNamespaces.keys} to $namespaceName")
-        runJar(
+        RunJar(
             "network-map-creator",
             listOf(
                 "--netmap-file", configurationFile.absolutePath, "--kafka",
-                kafkaFile(namespaceName).absolutePath
+                RunJar.kafkaFile(namespaceName).absolutePath
             )
-        )
+        ).run()
     }
 
     private fun publishNetworkMap() {
@@ -304,35 +223,35 @@ class ConfigureAll : Runnable {
         )
         jsonWriter.writeValue(configurationFile, configurationMap)
         println("Publishing keys to $namespaceName")
-        runJar(
+        RunJar(
             "cryptoservice-key-creator",
             listOf(
                 "--keys-config", configurationFile.absolutePath, "--kafka",
-                kafkaFile(namespaceName).absolutePath
+                RunJar.kafkaFile(namespaceName).absolutePath
             )
-        )
+        ).run()
     }
 
     private fun configureLinkManager() {
         println("Configure link manager of $namespaceName")
-        runJar(
+        RunJar(
             "configuration-publisher",
             listOf(
                 "-k",
-                kafkaServers(namespaceName),
+                RunJar.kafkaServers(namespaceName),
                 "link-manager",
                 "--locallyHostedIdentity=$x500name:$groupId",
             ) + linkManagerExtraArguments
-        )
+        ).run()
     }
 
     private fun configureGateway() {
         println("Configure gateway of $namespaceName")
-        runJar(
+        RunJar(
             "configuration-publisher",
             listOf(
                 "-k",
-                kafkaServers(namespaceName),
+                RunJar.kafkaServers(namespaceName),
                 "gateway",
                 "--hostAddress=$host",
                 "--port=1433",
@@ -341,11 +260,11 @@ class ConfigureAll : Runnable {
                 "--trustStore=${trustStoreFile.absolutePath}",
                 "--trustStorePassword=password",
             ) + gatewayArguments
-        )
+        ).run()
     }
 
     override fun run() {
-        startTelepresence()
+        RunJar.startTelepresence()
         publishNetworkMap()
         publishKeys()
         configureLinkManager()
