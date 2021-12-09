@@ -24,7 +24,7 @@ abstract class P2pPod(
             "KAFKA_SERVERS" to kafkaServers,
             "INSTANCE_ID" to index.toString(),
         ) + if (details.debug) {
-            mapOf("JAVA_TOOL_OPTIONS" to "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8002")
+            mapOf("JAVA_TOOL_OPTIONS" to "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:${Port.Debug.port}")
         } else {
             emptyMap()
         }
@@ -35,10 +35,7 @@ abstract class P2pPod(
     override val ports by lazy {
         otherPorts + if (details.debug) {
             listOf(
-                Port(
-                    "debug",
-                    8002
-                )
+                Port.Debug
             )
         } else {
             emptyList()

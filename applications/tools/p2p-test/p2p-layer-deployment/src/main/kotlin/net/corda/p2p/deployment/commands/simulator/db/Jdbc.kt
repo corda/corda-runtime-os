@@ -24,6 +24,11 @@ class Jdbc : Runnable {
             return
         }
         RunJar.startTelepresence()
-        println("Example of JDBC URL: jdbc:postgresql://db.$namespaceName/${status.username}?user=${status.username}&password=${status.password}")
+        println(
+            "Example of JDBC " +
+                "URL: jdbc:postgresql://db.$namespaceName/" +
+                "${status.username}?" +
+                "user=${status.username}&password=${status.password}"
+        )
     }
 }

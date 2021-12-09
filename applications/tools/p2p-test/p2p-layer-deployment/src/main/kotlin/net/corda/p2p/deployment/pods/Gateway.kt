@@ -23,7 +23,7 @@ class Gateway(
     }
     override val imageName = "p2p-gateway"
     override val otherPorts = listOf(
-        Port("p2p-gateway", 1433)
+        Port.Gateway
     )
 
     override val readyLog = ".*Waiting for gateway to start.*".toRegex()

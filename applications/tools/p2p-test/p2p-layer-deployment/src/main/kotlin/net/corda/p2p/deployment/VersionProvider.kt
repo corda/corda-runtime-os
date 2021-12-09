@@ -11,12 +11,12 @@ class VersionProvider : CommandLine.IVersionProvider {
                 .use {
                     val manifest = Manifest(it)
                     val version = manifest.mainAttributes.getValue("Bundle-Version")
-                    if(version == null) {
+                    if (version == null) {
                         emptyArray()
                     } else {
                         arrayOf(version)
                     }
-            }
+                }
         } catch (e: Exception) {
             emptyArray()
         }

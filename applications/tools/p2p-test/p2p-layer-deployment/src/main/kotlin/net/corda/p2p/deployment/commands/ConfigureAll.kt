@@ -2,6 +2,7 @@ package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.p2p.deployment.DeploymentException
+import net.corda.p2p.deployment.pods.Port
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
@@ -140,7 +141,7 @@ class ConfigureAll : Runnable {
                     "publicKeyAlias" to "ec",
                     "keystorePassword" to "password",
                     "publicKeyAlgo" to "ECDSA",
-                    "address" to "http://$host:1433",
+                    "address" to "http://$host:${Port.Gateway.port}",
                     "networkType" to "CORDA_5"
                 )
             )
@@ -183,7 +184,7 @@ class ConfigureAll : Runnable {
                         "publicKeyAlias" to "ec",
                         "keystorePassword" to "password",
                         "publicKeyAlgo" to "ECDSA",
-                        "address" to "http://$host:1433",
+                        "address" to "http://$host:${Port.Gateway.port}",
                         "networkType" to "CORDA_5"
                     )
                 )
@@ -255,7 +256,7 @@ class ConfigureAll : Runnable {
                 RunJar.kafkaServers(namespaceName),
                 "gateway",
                 "--hostAddress=0.0.0.0",
-                "--port=1433",
+                "--port=${Port.Gateway.port}",
                 "--keyStore=${sslKeyStore.absolutePath}",
                 "--keyStorePassword=password",
                 "--trustStore=${trustStoreFile.absolutePath}",

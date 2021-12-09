@@ -5,7 +5,7 @@ class PostGreSql(
 ) : Pod() {
     override val app = "db"
     override val image = "postgres"
-    override val ports = listOf(Port("psql", 5432))
+    override val ports = listOf(Port.Psql)
     override val environmentVariables = mapOf(
         "POSTGRES_USER" to dbDetails.username,
         "POSTGRES_PASSWORD" to dbDetails.password,

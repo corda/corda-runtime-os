@@ -79,7 +79,7 @@ abstract class Pod {
                             "ports" to ports.map {
                                 mapOf(
                                     "containerPort" to it.port,
-                                    "name" to it.name
+                                    "name" to it.displayName
                                 )
                             },
                             "env" to environmentVariables.map { (key, value) ->
@@ -120,7 +120,7 @@ abstract class Pod {
                     "ports" to ports.map {
                         mapOf(
                             "port" to it.port,
-                            "name" to it.name
+                            "name" to it.displayName
                         )
                     },
                     "selector" to mapOf("app" to app)

@@ -7,18 +7,13 @@ class KafkaUi(
 ) : Pod() {
     override val app = "kafka-ui"
     override val image = "provectuslabs/kafka-ui"
-    override val ports = listOf(
-        Port(
-            "http",
-            80
-        )
-    )
+    override val ports = listOf(Port.Http)
     override val environmentVariables =
         mapOf(
             "KAFKA_CLUSTERS_0_NAME" to clusterName,
             "KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS" to broker,
             "KAFKA_CLUSTERS_0_ZOOKEEPER" to zooKeeper,
             "KAFKA_CLUSTERS_0_READONLY" to "false",
-            "SERVER_PORT" to "80",
+            "SERVER_PORT" to Port.Http.port.toString(),
         )
 }

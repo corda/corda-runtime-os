@@ -1,6 +1,7 @@
 package net.corda.p2p.deployment.commands
 
 import net.corda.p2p.deployment.DeploymentException
+import net.corda.p2p.deployment.pods.Port
 import java.io.File
 import java.nio.file.Files
 
@@ -59,7 +60,7 @@ class RunJar(
                     .filter {
                         it.isNotBlank()
                     }.joinToString(",") {
-                        "$it.$namespace:9093"
+                        "$it.$namespace:${Port.KafkaExternalBroker.port}"
                     }
             }
         }
