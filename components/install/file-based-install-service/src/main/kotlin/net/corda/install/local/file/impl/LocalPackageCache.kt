@@ -1,5 +1,6 @@
 package net.corda.install.local.file.impl
 
+import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.install.InstallService
 import net.corda.install.InstallServiceListener
@@ -7,13 +8,14 @@ import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
 import net.corda.packaging.CPI
 import net.corda.packaging.CPK
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
@@ -30,7 +32,6 @@ import java.util.NavigableSet
 import java.util.TreeMap
 import java.util.TreeSet
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import java.util.stream.Collector
 import kotlin.concurrent.read
@@ -38,7 +39,7 @@ import kotlin.concurrent.write
 
 class UpdatedCPIList(val delta: NavigableSet<CPI.Identifier>) : LifecycleEvent
 
-@Suppress("unused")
+@Suppress("unused", "TooManyFunctions")
 @Component(service = [InstallService::class], scope = ServiceScope.SINGLETON)
 class LocalPackageCache @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -48,6 +49,8 @@ class LocalPackageCache @Activate constructor(
 ) : InstallService, Lifecycle {
 
     private companion object {
+        private const val CFG_KEY = "corda.cpi"
+        private const val BOOTSTRAP_KEY = "corda.boot"
         private val logger = contextLogger()
         private val cpiMapCollector: Collector<CPI, TreeMap<CPI.Identifier, CPI>, NavigableMap<CPI.Identifier, CPI>> =
             Collector.of(
@@ -63,7 +66,6 @@ class LocalPackageCache @Activate constructor(
                 { set1, set2 -> set1.putAll(set2); set1 },
                 Collections::unmodifiableNavigableMap
             )
-        private val instanceId = AtomicInteger(0)
     }
 
     private val cacheDir = Files.createTempDirectory("packageCache")
@@ -74,9 +76,7 @@ class LocalPackageCache @Activate constructor(
         val cpkByHashMap: Map<SecureHash, CPK> = emptyMap(),
     )
 
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
-        LifecycleCoordinatorName(InstallService::class.java.name, instanceId.incrementAndGet().toString()),
-        ::eventHandler)
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator<InstallService>(::eventHandler)
 
     private val packageCacheLock = ReentrantReadWriteLock(true)
 
@@ -128,8 +128,19 @@ class LocalPackageCache @Activate constructor(
         }
     }
 
+    private fun getIdOrClosestMatch(id: CPI.Identifier) : CPI.Identifier {
+        // One code path in the flows code sets version to "1" and clearly needs to be fixed
+        logger.error("THIS METHOD IS CALLED FOR TESTING ONLY AND MUST BE REMOVED IN A FUTURE RELEASE")
+        logger.error("Put a breakpoint here to see why it has been called - likely a badly specified version")
+
+        if (id in packageCache.cpiByIdMap) return id
+
+        return packageCache.cpiByIdMap.keys.first { it.name == id.name }
+            ?: throw CordaRuntimeException("No CPI found in local package cache with id:  ${id}")
+    }
+
     override fun get(id: CPI.Identifier): CompletableFuture<CPI?> = packageCacheLock.read {
-        CompletableFuture.completedFuture(packageCache.cpiByIdMap[id])
+        CompletableFuture.completedFuture(packageCache.cpiByIdMap[getIdOrClosestMatch(id)])
     }
 
     override fun get(id: CPK.Identifier): CompletableFuture<CPK?> = packageCacheLock.read {
@@ -157,35 +168,47 @@ class LocalPackageCache @Activate constructor(
         }
     }
 
-    fun setup() {
+    private fun setup() {
         configurationReadService.registerForUpdates { changedKeys, config ->
-            if ("corda.cpi" in changedKeys) {
-                packageCacheLock.write {
-                    val repositoryFolder = (
-                            config["corda.cpi"]?.getString("cacheDir")
-                                ?: throw IllegalStateException("Missing configuration key"))
-                        .let(Path::of)
-                    val cpiByIdMap = scanCPIs(repositoryFolder)
-                    val cpkByIdMap = cpiByIdMap.values.stream().flatMap {
-                        it.cpks.stream()
-                    }.collect(cpkMapCollector)
-                    val cpkByHashMap = cpkByIdMap.values.associateBy { it.metadata.hash }
-                    val oldCpiSet = packageCache.cpiByIdMap.keys
-                    packageCache = PackageCache(cpiByIdMap, cpkByIdMap, cpkByHashMap)
-                    if (lifecycleCoordinator.status != LifecycleStatus.UP) {
-                        lifecycleCoordinator.updateStatus(LifecycleStatus.UP, "CPI cache is ready")
-                    }
-                    val newCpiSet = packageCache.cpiByIdMap.keys
-                    val delta = TreeSet<CPI.Identifier>().let {
-                        it.addAll(oldCpiSet - newCpiSet)
-                        it.addAll(newCpiSet - oldCpiSet)
-                        Collections.unmodifiableNavigableSet(it)
-                    }
-                    lifecycleCoordinator.postEvent(UpdatedCPIList(delta))
+            if (CFG_KEY in changedKeys) {
+                scanDirectoryAndBuildCache(config[CFG_KEY]!!)
+            }
+            // allow us to pass the directory in via the bootstrap config.
+            if (BOOTSTRAP_KEY in changedKeys) {
+                val cfg = config[BOOTSTRAP_KEY]!!.toSafeConfig()
+
+                if (cfg.hasPath(CFG_KEY)) {
+                    scanDirectoryAndBuildCache(cfg.getConfig(CFG_KEY)!!)
                 }
             }
         }
         lifecycleCoordinator.start()
+    }
+
+    private fun scanDirectoryAndBuildCache(config: Config) {
+        packageCacheLock.write {
+            val repositoryFolder = (
+                    config.getString("cacheDir")
+                        ?: throw IllegalStateException("Missing configuration key"))
+                .let(Path::of)
+            val cpiByIdMap = scanCPIs(repositoryFolder)
+            val cpkByIdMap = cpiByIdMap.values.stream().flatMap {
+                it.cpks.stream()
+            }.collect(cpkMapCollector)
+            val cpkByHashMap = cpkByIdMap.values.associateBy { it.metadata.hash }
+            val oldCpiSet = packageCache.cpiByIdMap.keys
+            packageCache = PackageCache(cpiByIdMap, cpkByIdMap, cpkByHashMap)
+            if (lifecycleCoordinator.status != LifecycleStatus.UP) {
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP, "CPI cache is ready")
+            }
+            val newCpiSet = packageCache.cpiByIdMap.keys
+            val delta = TreeSet<CPI.Identifier>().let {
+                it.addAll(oldCpiSet - newCpiSet)
+                it.addAll(newCpiSet - oldCpiSet)
+                Collections.unmodifiableNavigableSet(it)
+            }
+            lifecycleCoordinator.postEvent(UpdatedCPIList(delta))
+        }
     }
 
     fun teardown() {
@@ -204,9 +227,13 @@ class LocalPackageCache @Activate constructor(
             .forEach(Files::delete)
     }
 
-    override val isRunning = lifecycleCoordinator.isRunning
+    override val isRunning: Boolean
+        get() = lifecycleCoordinator.isRunning
 
-    override fun start() = setup()
+    override fun start() {
+        configurationReadService.start()
+        setup()
+    }
 
     override fun stop() = teardown()
 }

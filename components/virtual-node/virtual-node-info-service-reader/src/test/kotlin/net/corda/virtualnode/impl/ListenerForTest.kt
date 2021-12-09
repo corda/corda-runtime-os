@@ -2,7 +2,7 @@ package net.corda.virtualnode.impl
 
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.service.VirtualNodeInfoListener
+import net.corda.virtualnode.read.VirtualNodeInfoListener
 
 class ListenerForTest : VirtualNodeInfoListener {
     var update = false
