@@ -1,14 +1,14 @@
 package net.corda.messagebus.api.consumer.listener
 
 import net.corda.messagebus.api.TopicPartition
-import net.corda.messagebus.api.consumer.ConsumerRebalanceListener
+import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 open class LoggingConsumerRebalanceListener(
     private val topic: String,
     private val groupName: String,
-) : ConsumerRebalanceListener {
+) : CordaConsumerRebalanceListener {
 
     open val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-$topic-$groupName")
 

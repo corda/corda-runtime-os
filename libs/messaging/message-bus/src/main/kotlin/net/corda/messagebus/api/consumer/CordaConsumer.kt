@@ -16,9 +16,9 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      * If a recoverable error occurs retry. If max retries is exceeded or a fatal error occurs then throw a
      *
      * @param topics the topics to subscribe to
-     * @param listener the [ConsumerRebalanceListener] handler for rebalance events
+     * @param listener the [CordaConsumerRebalanceListener] handler for rebalance events
      */
-    fun subscribe(topics: Collection<String>, listener: ConsumerRebalanceListener?)
+    fun subscribe(topics: Collection<String>, listener: CordaConsumerRebalanceListener?)
 
     /**
      * Subscribe this consumer to the configuration specified topic. Attach the rebalance [listener] to the [Consumer].
@@ -26,10 +26,10 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      * If a recoverable error occurs retry. If max retries is exceeded or a fatal error occurs then throw a
      * [CordaMessageAPIFatalException]
      *
-     * @param listener the [ConsumerRebalanceListener] handler for rebalance events
+     * @param listener the [CordaConsumerRebalanceListener] handler for rebalance events
      * @throws CordaMessageAPIFatalException for fatal errors.
      */
-    fun subscribeToTopic(listener: ConsumerRebalanceListener? = null)
+    fun subscribeToTopic(listener: CordaConsumerRebalanceListener? = null)
 
     /**
      * Manually assign a list of partitions to this consumer. This interface does not allow for incremental assignment
@@ -127,14 +127,14 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
     /**
      * Poll records from the consumer and sort them by timestamp
      */
-    fun poll(): List<ConsumerRecord<K, V>>
+    fun poll(): List<CordaConsumerRecord<K, V>>
 
     /**
      * Poll records from the consumer and sort them by timestamp with a [timeout]
      *
      * @param timeout The maximum time to block (must not be greater than {@link Long#MAX_VALUE} milliseconds)
      */
-    fun poll(timeout: Duration): List<ConsumerRecord<K, V>>
+    fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>>
 
     /**
      * Reset the consumer position on a topic to the last committed position. Next poll from the topic will
@@ -142,14 +142,14 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      *
      * @param offsetStrategy the strategy to apply when no last committed position exists
      */
-    fun resetToLastCommittedPositions(offsetStrategy: OffsetResetStrategy)
+    fun resetToLastCommittedPositions(offsetStrategy: CordaOffsetResetStrategy)
 
     /**
      * Synchronously commit the consumer offset for this [event] back to the topic partition.
      * Record [metaData] about this commit back on the [event] topic.
      * @throws CordaMessageAPIFatalException fatal error occurred attempting to commit offsets.
      */
-    fun commitSyncOffsets(event: ConsumerRecord<K, V>, metaData: String? = null)
+    fun commitSyncOffsets(event: CordaConsumerRecord<K, V>, metaData: String? = null)
 
     /**
      * Get metadata about the partitions for a given topic.

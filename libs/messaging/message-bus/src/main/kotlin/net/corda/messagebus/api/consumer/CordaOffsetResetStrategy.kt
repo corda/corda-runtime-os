@@ -6,6 +6,6 @@ package net.corda.messagebus.api.consumer;
  * - [EARLIEST] - reset to the earliest offset position
  * - [NONE] - throw an exception
  */
-enum class OffsetResetStrategy {
+enum class CordaOffsetResetStrategy {
     LATEST, EARLIEST, NONE
 }

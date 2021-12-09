@@ -1,7 +1,7 @@
 package net.corda.messagebus.api.producer
 
-import net.corda.messagebus.api.consumer.ConsumerRecord
 import net.corda.messagebus.api.consumer.CordaConsumer
+import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.records.Record
 import java.time.Duration
 
@@ -53,7 +53,7 @@ interface CordaProducer : AutoCloseable {
      * @throws CordaMessageAPIFatalException Fatal error
      * @throws CordaMessageAPIIntermittentException Retryable error
      */
-    fun sendRecordOffsetsToTransaction(consumer: CordaConsumer<*, *>, records: List<ConsumerRecord<*, *>>)
+    fun sendRecordOffsetsToTransaction(consumer: CordaConsumer<*, *>, records: List<CordaConsumerRecord<*, *>>)
 
     /**
      * Should be called before the start of each new transaction.

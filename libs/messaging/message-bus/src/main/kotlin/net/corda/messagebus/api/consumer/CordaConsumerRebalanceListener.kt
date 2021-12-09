@@ -6,7 +6,7 @@ import net.corda.messagebus.api.TopicPartition
  * A callback interface that the user can implement to trigger custom actions when the set of partitions assigned to the
  * consumer changes.
  */
-interface ConsumerRebalanceListener {
+interface CordaConsumerRebalanceListener {
 
     /**
      * This method will be called during a rebalance operation when the consumer has to give up some partitions.

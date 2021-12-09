@@ -1,13 +1,13 @@
 package net.corda.messagebus.api.consumer.listener
 
 import net.corda.messagebus.api.TopicPartition
-import net.corda.messagebus.api.consumer.ConsumerRebalanceListener
+import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
- * A [ConsumerRebalanceListener] that logs any assignment events and forwards them to the underlying [partitionAssignmentListener].
+ * A [CordaConsumerRebalanceListener] that logs any assignment events and forwards them to the underlying [partitionAssignmentListener].
  */
 class ForwardingRebalanceListener(private val topic: String,
                                   groupName: String,

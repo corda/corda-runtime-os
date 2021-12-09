@@ -1,6 +1,6 @@
 package net.corda.messagebus.api
 
-data class OffsetAndMetadata(
+data class CordaOffsetAndMetadata(
     val offset: Long,
     val metadata: String = "",
 )

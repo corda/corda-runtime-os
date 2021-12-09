@@ -1,8 +1,8 @@
 package net.corda.messagebus.api.consumer.builder
 
 import com.typesafe.config.Config
-import net.corda.messagebus.api.consumer.ConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumer
+import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 
 /**
  * Builder for creating Consumers.
@@ -21,13 +21,13 @@ interface CordaConsumerBuilder {
         consumerConfig: Config,
         kClazz: Class<K>,
         vClazz: Class<V>,
-        onError: (String, ByteArray) -> Unit = {_, _ ->},
+        onError: (ByteArray) -> Unit = {_ ->},
     ) : CordaConsumer<K, V>
 
     /**
      * Generate a Corda Consumer based on the [consumerConfig] for a [DurableSubscription].
      * This function will handle all retry logic and error handling
-     * @param consumerRebalanceListener when not null, an override for the default rebalance handling for
+     * @param cordaConsumerRebalanceListener when not null, an override for the default rebalance handling for
      * the subscription.
      * @return CordaConsumer
      * @throws CordaMessageAPIFatalException if fatal error occurs during construction of the consumer
@@ -36,8 +36,8 @@ interface CordaConsumerBuilder {
         consumerConfig: Config,
         kClazz: Class<K>,
         vClazz: Class<V>,
-        onError: (String, ByteArray) -> Unit = {_, _ ->},
-        consumerRebalanceListener: ConsumerRebalanceListener? = null
+        onError: (ByteArray) -> Unit = {_ ->},
+        cordaConsumerRebalanceListener: CordaConsumerRebalanceListener? = null
     ) : CordaConsumer<K, V>
 
     /**
@@ -50,7 +50,7 @@ interface CordaConsumerBuilder {
         consumerConfig: Config,
         kClazz: Class<K>,
         vClazz: Class<V>,
-        onError: (String, ByteArray) -> Unit = {_, _ ->},
+        onError: (ByteArray) -> Unit = {_ ->},
     ) : CordaConsumer<K, V>
 
     /**
@@ -63,7 +63,7 @@ interface CordaConsumerBuilder {
         consumerConfig: Config,
         kClazz: Class<K>,
         vClazz: Class<V>,
-        onError: (String, ByteArray) -> Unit = {_, _ ->},
+        onError: (ByteArray) -> Unit = {_ ->},
     ) : CordaConsumer<K, V>
 
 }
