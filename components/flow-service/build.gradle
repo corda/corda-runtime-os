@@ -13,11 +13,17 @@ dependencies {
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:configuration:configuration-core")
+
+    implementation project(':libs:flows:dependency-injection')
     implementation project(":libs:flows:flow-manager")
+    implementation project(":libs:flows:flow-manager-impl")
+    implementation project(":libs:flows:statemachine")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:sandbox")
     implementation project(":libs:serialization:checkpoint-serialization-api")
     implementation "net.corda:corda-application"
+    implementation "net.corda:corda-packaging"
+    implementation project(':libs:virtual-node:sandbox-group-service')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
@@ -27,6 +33,7 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

@@ -17,6 +17,12 @@ import net.corda.sandbox.service.helper.initPublicSandboxes
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.uncheckedCast
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.sandboxgroup.MutableSandboxGroupContext
+import net.corda.virtualnode.sandboxgroup.SandboxGroupContext
+import net.corda.virtualnode.sandboxgroup.SandboxGroupService
+import net.corda.virtualnode.sandboxgroup.VirtualNodeContext
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -24,9 +30,10 @@ import org.osgi.service.component.annotations.Reference
 import java.io.File
 import java.net.URI
 import java.nio.file.Paths
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
-@Component(service = [SandboxService::class])
+@Component(service = [SandboxService::class, SandboxGroupService::class])
 class SandboxServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -36,7 +43,7 @@ class SandboxServiceImpl @Activate constructor(
     private val sandboxCreationService: SandboxCreationService,
     @Reference(service = ConfigurationAdmin::class)
     private val configurationAdmin: ConfigurationAdmin
-) : SandboxService {
+) : SandboxService, SandboxGroupService {
 
     companion object {
         private val logger = contextLogger()
@@ -58,7 +65,7 @@ class SandboxServiceImpl @Activate constructor(
 
     override fun getSandboxGroupFor(cpiId: String, identity: String, sandboxType: SandboxType): SandboxGroup {
         return cache.computeIfAbsent(SandboxCacheKey(identity, cpiId)) {
-            //hacky stuff until cpi service component is available. e.g dummy load logic doesnt handle multiple groups
+            //hacky stuff until cpi service component is available. e.g dummy load logic doesn't handle multiple groups
             val cpiIdentifier = cpiIdentifierById[cpiId]
                 ?: throw CordaRuntimeException("Could not get cpi identifier")
             val cpb = installService.getCpb(cpiIdentifier)
@@ -119,4 +126,40 @@ class SandboxServiceImpl @Activate constructor(
     }
 
     data class SandboxCacheKey(val identity: String, val cpiId: String)
+
+    override fun get(
+        key: VirtualNodeContext,
+        initializer: (holdingIdentity: HoldingIdentity, sandboxGroupContext: MutableSandboxGroupContext) -> AutoCloseable
+    ): SandboxGroupContext {
+
+        var cpi  = key.cpiIdentifier
+        var holdingIdentity = key.holdingIdentity
+        var context =  SimpleSandboxGroupContext(
+            key,
+            getSandboxGroupFor(cpi.name, holdingIdentity.x500Name, SandboxType.FLOW))
+
+        initializer(holdingIdentity,context)
+
+        return context
+    }
+
+
+    class SimpleSandboxGroupContext(
+        override val context: VirtualNodeContext,
+        override val sandboxGroup: SandboxGroup
+    ) : MutableSandboxGroupContext {
+
+        private val contextState = Collections.synchronizedMap(mutableMapOf<String, Any>())
+
+        override fun <T> put(key: String, value: T) {
+            contextState[key] = value
+        }
+
+        override fun <T> get(key: String): T? {
+            return uncheckedCast(contextState[key])
+        }
+
+        override fun close() {
+        }
+    }
 }

@@ -25,6 +25,6 @@ fun getStartRPCEventRecord(clientId: String, cpiId: String, flowId: String, flow
         Record<*, *> {
     val identity = HoldingIdentity(x500Name, groupId)
     val flowKey = FlowKey(flowId, identity)
-    val rpcStartFlow = StartRPCFlow(clientId, cpiId, flowName, identity, Instant.now(), "I am the json arg String!")
+    val rpcStartFlow = StartRPCFlow(clientId, cpiId, flowName, identity, Instant.now(), "{ \"who\":\"world\"}")
     return Record(DEFAULT_FLOW_EVENT_TOPIC_VALUE, flowKey, FlowEvent(flowKey, rpcStartFlow))
 }

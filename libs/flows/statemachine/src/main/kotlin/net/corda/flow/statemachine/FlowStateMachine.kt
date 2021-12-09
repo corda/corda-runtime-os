@@ -2,7 +2,6 @@ package net.corda.flow.statemachine
 
 import co.paralleluniverse.fibers.Fiber
 import net.corda.data.flow.state.Checkpoint
-import net.corda.dependency.injection.FlowStateMachineInjectable
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowSession
@@ -28,7 +27,7 @@ data class FlowStackSnapshot(
 }
 
 @DoNotImplement
-interface FlowStateMachine<FLOWRETURN> : FlowStateMachineInjectable {
+interface FlowStateMachine<FLOWRETURN>   {
 
     @Suspendable
     fun <SUSPENDRETURN : Any> suspend(ioRequest: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN
