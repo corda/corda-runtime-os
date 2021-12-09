@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.membership.GroupPolicy
 import net.corda.membership.GroupPolicyFactory
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 
 class GroupPolicyFactoryImpl : GroupPolicyFactory {
@@ -25,7 +26,7 @@ class GroupPolicyFactoryImpl : GroupPolicyFactory {
                 }
             } catch (e: ConfigException.Parse) {
                 logger.error("Group policy file failed to parse. Check the file format.")
-                emptyMap()
+                throw throw CordaRuntimeException("GroupPolicy file is incorrectly formatted and parsing failed.", e)
             }
         )
     }
