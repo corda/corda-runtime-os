@@ -4,7 +4,8 @@ import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.crypto.service.CryptoFactory
 import net.corda.crypto.testkit.CryptoMocks
-import net.corda.data.WireKeyValuePair
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.WireNoContentValue
 import net.corda.data.crypto.wire.WirePublicKey
 import net.corda.data.crypto.wire.WireRequestContext
@@ -153,9 +154,11 @@ class FreshKeysServiceRpcProcessorTests {
             "test-component",
             Instant.now(),
             memberId,
-            listOf(
-                WireKeyValuePair("key1", "value1"),
-                WireKeyValuePair("key2", "value2")
+            KeyValuePairList(
+                listOf(
+                    KeyValuePair("key1", "value1"),
+                    KeyValuePair("key2", "value2")
+                )
             )
         )
 
@@ -169,9 +172,9 @@ class FreshKeysServiceRpcProcessorTests {
                 allOf(greaterThanOrEqualTo(expected.requestTimestamp.epochSecond), lessThanOrEqualTo(now.epochSecond))
             )
             assertTrue(
-                actual.other.size == expected.other.size &&
-                        actual.other.containsAll(expected.other) &&
-                        expected.other.containsAll(actual.other)
+                actual.other.items.size == expected.other.items.size &&
+                        actual.other.items.containsAll(expected.other.items) &&
+                        expected.other.items.containsAll(actual.other.items)
             )
         }
 
@@ -221,14 +224,14 @@ class FreshKeysServiceRpcProcessorTests {
         // generate
         val context = getWireRequestContext()
         val operationContext = listOf(
-            WireKeyValuePair("someId", UUID.randomUUID().toString()),
-            WireKeyValuePair("reason", "Hello World!")
+            KeyValuePair("someId", UUID.randomUUID().toString()),
+            KeyValuePair("reason", "Hello World!")
         )
         val future = CompletableFuture<WireFreshKeysResponse>()
         processor.onNext(
             WireFreshKeysRequest(
                 context,
-                WireFreshKeysFreshKey(null, operationContext)
+                WireFreshKeysFreshKey(null, KeyValuePairList(operationContext))
             ),
             future
         )
@@ -256,14 +259,14 @@ class FreshKeysServiceRpcProcessorTests {
         val externalId = UUID.randomUUID()
         val context = getWireRequestContext()
         val operationContext = listOf(
-            WireKeyValuePair("someId", UUID.randomUUID().toString()),
-            WireKeyValuePair("reason", "Hello World!")
+            KeyValuePair("someId", UUID.randomUUID().toString()),
+            KeyValuePair("reason", "Hello World!")
         )
         val future = CompletableFuture<WireFreshKeysResponse>()
         processor.onNext(
             WireFreshKeysRequest(
                 context,
-                WireFreshKeysFreshKey(externalId.toString(), operationContext)
+                WireFreshKeysFreshKey(externalId.toString(), KeyValuePairList(operationContext))
             ),
             future
         )
@@ -289,14 +292,14 @@ class FreshKeysServiceRpcProcessorTests {
         // generate
         val context = getWireRequestContext()
         val operationContext = listOf(
-            WireKeyValuePair("someId", UUID.randomUUID().toString()),
-            WireKeyValuePair("reason", "Hello World!")
+            KeyValuePair("someId", UUID.randomUUID().toString()),
+            KeyValuePair("reason", "Hello World!")
         )
         val future = CompletableFuture<WireFreshKeysResponse>()
         processor.onNext(
             WireFreshKeysRequest(
                 context,
-                WireFreshKeysFreshKey(null, operationContext)
+                WireFreshKeysFreshKey(null, KeyValuePairList(operationContext))
             ),
             future
         )
@@ -325,7 +328,7 @@ class FreshKeysServiceRpcProcessorTests {
                         "BAD-DIGEST-ALGORITHM"
                     ),
                     ByteBuffer.wrap(data),
-                    emptyList()
+                    KeyValuePairList(emptyList())
                 )
             ),
             future3
@@ -383,8 +386,8 @@ class FreshKeysServiceRpcProcessorTests {
         // sign using default scheme
         val context2 = getWireRequestContext()
         val operationContext = listOf(
-            WireKeyValuePair("someId", UUID.randomUUID().toString()),
-            WireKeyValuePair("reason", "Hello World!")
+            KeyValuePair("someId", UUID.randomUUID().toString()),
+            KeyValuePair("reason", "Hello World!")
         )
         val future2 = CompletableFuture<WireFreshKeysResponse>()
         processor.onNext(
@@ -393,7 +396,7 @@ class FreshKeysServiceRpcProcessorTests {
                 WireFreshKeysSign(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     ByteBuffer.wrap(data),
-                    operationContext
+                    KeyValuePairList(operationContext)
                 )
             ),
             future2
@@ -420,7 +423,7 @@ class FreshKeysServiceRpcProcessorTests {
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     WireSignatureSpec(signatureSpec3.signatureName, signatureSpec3.customDigestName?.name),
                     ByteBuffer.wrap(data),
-                    emptyList()
+                    KeyValuePairList(emptyList())
                 )
             ),
             future3
@@ -443,7 +446,7 @@ class FreshKeysServiceRpcProcessorTests {
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     WireSignatureSpec(signatureSpec4!!.signatureName, signatureSpec4.customDigestName?.name),
                     ByteBuffer.wrap(data),
-                    emptyList()
+                    KeyValuePairList(emptyList())
                 )
             ),
             future4
