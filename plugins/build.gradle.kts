@@ -11,6 +11,7 @@ subprojects {
     val pluginId: String by project
     val pluginClass: String by project
     val pluginProvider: String by project
+    val pluginDescription: String by project
 
     val project = this
     // we have to apply the gradle jvm plugin, because it provides the jar and build tasks
@@ -47,6 +48,7 @@ subprojects {
             attributes["Plugin-Id"] = pluginId
             attributes["Plugin-Version"] = archiveVersion
             attributes["Plugin-Provider"] = pluginProvider
+            attributes["Plugin-Description"] = pluginDescription
         }
     }
 

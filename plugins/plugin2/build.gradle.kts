@@ -10,8 +10,7 @@ dependencies {
 
     compileOnly("org.pf4j:pf4j:${pf4jVersion}")
     kapt("org.pf4j:pf4j:${pf4jVersion}")
-    implementation("org.apache.commons:commons-lang3:3.5") // this is an example for an external library included
-//    implementation("org.slf4j:slf4j-simple:1.7.30")
+    implementation("org.apache.commons:commons-lang3:3.5") // this is an examples for an external library included
 }
 
 

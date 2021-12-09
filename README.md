@@ -1,76 +1,106 @@
-# Corda CLI PF4J And PicoCLI Demo
+# Corda CLI Plugin Host
 
 ## Setup/Build
 
 run `./gradlew build`
 
 * This will produce:
-    * one jar, named corda-cli.jar, located in the `app/build/libs/` directory 
+    * one jar, named corda-cli.jar, located in the `app/build/libs/` directory
     * two plugins zips located in `build/plugins` directory.
 * The plugins are:
-  * `plugin-flow-plugin-0.0.1.zip`
-  * `plugin-node-plugin-0.0.1.zip`
+    * `plugin-example-plugin-one-0.0.1.zip`
+    * `plugin-example-plugin-two-0.0.1.zip`
 
-## Run the demo
+## Running The CLI Script
 
-1. Run 
-
-```
- ./gradlew app:run
-```
-
-2. The demo's output should look similar to: (Please see `Boot#main()` for more details)
-```
-2021-10-19 16:32:38,522 INFO net.corda.cli.application.Boot - Plugin directory: C:\Workspace\pf4j-kotlin-demo\build\plugins
-2021-10-19 16:32:38,545 INFO org.pf4j.DefaultPluginStatusProvider - Enabled plugins: []
-2021-10-19 16:32:38,545 INFO org.pf4j.DefaultPluginStatusProvider - Disabled plugins: []
-2021-10-19 16:32:38,548 INFO org.pf4j.DefaultPluginManager - PF4J version 0.0.0 in 'deployment' mode
-2021-10-19 16:32:38,569 INFO org.pf4j.AbstractPluginManager - Plugin 'flow-plugin@0.0.1' resolved
-2021-10-19 16:32:38,570 INFO org.pf4j.AbstractPluginManager - Plugin 'node-plugin@0.0.1' resolved
-2021-10-19 16:32:38,570 INFO org.pf4j.AbstractPluginManager - Start plugin 'flow-plugin@0.0.1'
-2021-10-19 16:32:38,576 INFO net.corda.cli.plugins.demoB.ExampleFlowPlugin - ExampleFlowPlugin.start()
-2021-10-19 16:32:38,578 INFO net.corda.cli.plugins.demoB.ExampleFlowPlugin - EXAMPLEFLOWPLUGIN
-2021-10-19 16:32:38,578 INFO org.pf4j.AbstractPluginManager - Start plugin 'node-plugin@0.0.1'
-2021-10-19 16:32:38,580 INFO net.corda.cli.plugins.demoA.ExampleNodePlugin - ExampleNodePlugin.start()
-2021-10-19 16:32:38,582 INFO net.corda.cli.plugins.demoA.ExampleNodePlugin - EXAMPLENODEPLUGIN
-2021-10-19 16:32:38,610 INFO net.corda.cli.application.Boot - Found 2 extensions for extension point 'net.corda.cli.api.CordaCliCommand'
-2021-10-19 16:32:38,675 INFO net.corda.cli.application.Boot - Adding subcommands from >>> ExampleFlowPlugin
-2021-10-19 16:32:38,678 INFO net.corda.cli.application.Boot - Adding subcommands from >>> ExampleNodePlugin
-2021-10-19 16:32:38,683 INFO net.corda.cli.application.Boot - Extensions added by plugin 'flow-plugin':
-2021-10-19 16:32:38,684 INFO net.corda.cli.application.Boot -    net.corda.cli.plugins.demoB.ExampleFlowPlugin$WelcomeCordaCliCommand
-2021-10-19 16:32:38,684 INFO net.corda.cli.application.Boot - Extensions added by plugin 'node-plugin':
-2021-10-19 16:32:38,685 INFO net.corda.cli.application.Boot -    net.corda.cli.plugins.demoA.ExampleNodePlugin$WelcomeCordaCliCommand
-Missing required subcommand
-Usage: corda [COMMAND]
-Commands:
-  flow
-  node
-2021-10-19 16:32:38,723 INFO org.pf4j.AbstractPluginManager - Stop plugin 'node-plugin@0.0.1'
-2021-10-19 16:32:38,724 INFO net.corda.cli.plugins.demoA.ExampleNodePlugin - ExampleNodePlugin.stop()
-2021-10-19 16:32:38,724 INFO org.pf4j.AbstractPluginManager - Stop plugin 'flow-plugin@0.0.1'
-2021-10-19 16:32:38,724 INFO net.corda.cli.plugins.demoB.ExampleFlowPlugin - ExampleFlowPlugin.stop()
-
-```
-
-## Running the JAR
-
-Note that for manually running the application jar in `app/build/libs/corda-cli.jar` the property
-pf4j.pluginsDir for example using the parameter `-Dpf4j.pluginsDir=<absolute path to plugins dir>` when running Java.
-
-## Script file
-
-In the script directory there is a windows cmd shell command script that can be called after a gradlew Build. `corda-cli.cmd node address` etc
+In the script directory there is a windows cmd shell command script that can be called after a gradlew
+Build. `corda-cli.cmd` etc
 
 ## The Plugins
 
-### Node Plugin
-Root Command: `node`
-Sub Commands included:
-1. `status`
-2. `address`
+### Example Plugin One
 
-### flow Plugin
-Root Command: `flow`
+Root Command: `pluginOne`
 Sub Commands included:
-1. `listAvailable`
-2. `startFlow`
+
+1. `basicExample` - Prints a welcome message.
+2. `serviceExample` - Uses and injected service.
+
+### Example Plugin Two
+
+Root Command: `pluginTwo`
+Sub Commands included:
+
+1. `subCommand` - Prints a welcome message.
+
+## Writing Your Own Plugin
+### Plugin Location
+
+The easiest place to create a plugin is in this project in the 'plugins' module. If you do not wish to create one here,
+you will have to ensure that you have gradle tasks that bundle the plugin for pf4j, more
+info [here](https://pf4j.org/doc/packaging.html)
+
+### Basics
+To Write your own plugin for the CLI you must depend on this project's 'api' module.
+
+The API module contains the `CordaCliPlugin` Interface which must be used when constructing your plugin. For examples of
+use please see the 'plugins' module where you will find two example plugins.
+
+To construct a plugin you will have to follow the pf4j pattern below:
+
+```kotlin
+class ExamplePluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
+
+    override fun start() {
+    }
+
+    override fun stop() {
+    }
+
+    @Extension
+    @CommandLine.Command(name = "example")
+    class ExamplePlugin : CordaCliPlugin {}
+}
+```
+
+In the above example, your wrapper is passed the plugin wrapper by pf4j on plugin load, and must implement the Plugin
+Interface. You must override `start()` and `stop()` and place any bootstrapping or teardown logic your plugin will need
+here.
+
+`@Extension` must be placed on the root picocli command of your plugin, and you must implement `CordaCliPlugin`.
+
+In your plugins `gradle.properties` file you must put the following plugin metadata
+
+```properties
+version=<plugin version>
+pluginId=<unique plugin name>
+pluginClass=<package of your plugin wrapper e.g. net.corda.cli.plugins.myplugin.MyPlugginWrapper>
+pluginProvider=R3
+pluginDescription=<A brief description>
+```
+
+### Services
+
+If you wish to use a service supplied by the plugin host (currently only HttpRpcService) you must implement
+a `ServiceUser` interface for each service you will use. This interface looks similar to the following:
+
+```kotlin
+interface HttpServiceUser: ServiceUser {
+    var service: HttpService
+}
+```
+
+And its implementation requires a `lateinit` keyword like below: 
+
+```kotlin
+@Extension
+@CommandLine.Command(name = "plugin", description = ["Example Plugin using services"])
+class ExamplePlugin : CordaCliPlugin, HttpServiceUser {
+    override lateinit var service: HttpService
+    
+    @CommandLine.Command(name = "serviceExample", description = ["A subcommand that uses a service supplied by the host."])
+    fun exampleServiceSubCommand() {
+        println(service.get())
+    }
+}
+```

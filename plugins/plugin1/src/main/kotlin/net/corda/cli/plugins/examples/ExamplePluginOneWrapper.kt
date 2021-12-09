@@ -1,6 +1,5 @@
-package net.corda.cli.plugins.demoA
+package net.corda.cli.plugins.examples
 
-import org.apache.commons.lang3.StringUtils
 import org.pf4j.Extension
 import org.pf4j.Plugin
 import org.pf4j.PluginWrapper
@@ -11,16 +10,16 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
-class ExampleNodePlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
+// The PluginWrapper and Plugin are required for PF4J
+class ExamplePluginOneWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(ExampleNodePlugin::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(ExamplePluginOneWrapper::class.java)
     }
 
     // Supply plugin startup logic here
     override fun start() {
         logger.debug("ExampleNodePlugin.start()")
-        logger.debug(StringUtils.upperCase("ExampleNodePlugin"))
     }
 
     // Supply plugin tear down here
@@ -29,18 +28,9 @@ class ExampleNodePlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     @Extension
-    @CommandLine.Command(name = "node")
-    class WelcomeCordaCliPlugin : CordaCliPlugin, HttpServiceUser {
+    @CommandLine.Command(name = "pluginOne", description = ["Example Plugin one using function based subcommands, and services"])
+    class ExamplePluginOne : CordaCliPlugin, HttpServiceUser {
         override lateinit var service: HttpService
-
-        override val version: String
-            get() = "0.0.1"
-        override val pluginId: String
-            get() = "ExampleNodePlugin"
-
-        override fun setHttpService(httpService: HttpService) {
-            this.service = httpService
-        }
 
         @CommandLine.Command(name = "basicExample", description = ["A basic subcommand that doesnt use services."])
         fun exampleSubCommand() {
