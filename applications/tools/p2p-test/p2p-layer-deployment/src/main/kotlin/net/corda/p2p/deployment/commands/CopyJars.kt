@@ -86,7 +86,3 @@ class CopyJars(
         copyJar("app-simulator", false)
     }
 }
-
-fun main() {
-    CopyJars("yift-test-receiver").run()
-}

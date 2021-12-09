@@ -92,13 +92,17 @@ class Deploy : Runnable {
         names = ["--lm-conf", "--link-manager-config"],
         description = ["Link manager extra configuration arguments (fop example: --sessionTimeoutMilliSecs=1800000)"]
     )
-    var linkManagerExtraArguments = emptyList<String>()
+    var linkManagerExtraArguments = listOf("--sessionTimeoutMilliSecs", "1800000")
 
     @Option(
         names = ["--gateway-config", "--gateway-conf"],
         description = ["Gateway extra configuration arguments (for example: --retryDelayMilliSecs=100000)"]
     )
-    var gatewayArguments = emptyList<String>()
+    var gatewayArguments = listOf(
+        "--responseTimeoutMilliSecs", "1800000",
+        "--connectionIdleTimeoutSec", "1800",
+        "--retryDelayMilliSecs", "100000",
+    )
 
     private val isMiniKube = let {
         val getConfig = ProcessBuilder().command(

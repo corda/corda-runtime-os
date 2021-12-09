@@ -147,7 +147,9 @@ class GatewayConfiguration : ConfigProducer() {
             )
             .withValue(
                 "connectionConfig.retryDelay",
-                ConfigValueFactory.fromAnyRef(Duration.ofMillis(retryDelayMilliSecs))
+                ConfigValueFactory.fromAnyRef(Duration.ofMillis(retryDelayMilliSecs).also {
+                    println("QQQ ${it.toMillis()}")
+                })
             )
     }
 
