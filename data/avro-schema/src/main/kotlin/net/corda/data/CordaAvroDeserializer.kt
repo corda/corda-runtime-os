@@ -3,7 +3,7 @@ package net.corda.data
 /**
  * Defines the interface for Message Bus deserialization.  The underlying mechanism may differ.
  */
-interface CordaAvroDeserializer<T> {
+interface CordaAvroDeserializer<T : Any> {
     /**
      * Deserialize the given [data] into an object of type [T].
      *
