@@ -21,6 +21,9 @@ class SessionPartitionMapperImpl(
     nodeConfiguration: SmartConfig,
     instanceId: Int,
 ) : SessionPartitionMapper, LifecycleWithDominoTile {
+    init {
+        println("QQQ created ${hashCode()}")
+    }
 
     companion object {
         const val CONSUMER_GROUP_ID = "session_partitions_mapper"
@@ -70,7 +73,7 @@ class SessionPartitionMapperImpl(
             } else {
                 sessionPartitionsMapping[newRecord.key] = newRecord.value!!.partitions
             }
-            println("QQQ (${hashCode()}) after got next |${newRecord.key}| -> ${sessionPartitionsMapping[newRecord.key]}")
+            println("QQQ (${this@SessionPartitionMapperImpl.hashCode()}) after got next |${newRecord.key}| -> ${sessionPartitionsMapping[newRecord.key]}")
         }
     }
 
