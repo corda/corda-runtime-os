@@ -24,7 +24,7 @@ import kotlin.system.exitProcess
         UpdateIps::class,
     ],
     header = ["Deployer for p2p layer"],
-    name = "deployer",
+    name = "p2p-layer-deployment",
     mixinStandardHelpOptions = true,
     versionProvider = VersionProvider::class
 )
