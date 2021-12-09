@@ -2,7 +2,6 @@ package net.corda.messagebus.api.producer.builder
 
 import com.typesafe.config.Config
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 
 /**
  * Producer Builder Interface for creating Producers.

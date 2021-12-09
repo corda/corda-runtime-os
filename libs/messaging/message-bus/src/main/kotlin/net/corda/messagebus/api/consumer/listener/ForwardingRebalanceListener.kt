@@ -2,7 +2,7 @@ package net.corda.messagebus.api.consumer.listener
 
 import net.corda.messagebus.api.TopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
-import net.corda.messaging.api.subscription.PartitionAssignmentListener
+import net.corda.messagebus.api.subscription.PartitionAssignmentListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
