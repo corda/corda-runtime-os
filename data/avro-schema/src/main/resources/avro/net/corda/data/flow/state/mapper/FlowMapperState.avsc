@@ -1,0 +1,32 @@
+{
+  "type": "record",
+  "name": "FlowMapperState",
+  "namespace": "net.corda.data.flow.state.mapper",
+  "fields": [
+    {
+      "name": "flowKey",
+      "type": "net.corda.data.flow.FlowKey",
+      "doc": "The key on which inbound events should be forwarded to on the flow event topic."
+    },
+    {
+      "name": "expiryTime",
+      "type": [
+        "null",
+        "long"
+      ],
+      "doc": "The time at which this state will be set to null. This is only set for closed sessions."
+    },
+    {
+      "name": "status",
+      "doc": "The status of a session. OPEN for ongoing sessions. CLOSING for sessions which are finished and the expiryTime has been set.",
+      "type": {
+        "type": "enum",
+        "name": "FlowMapperStateType",
+        "symbols": [
+          "OPEN",
+          "CLOSING"
+        ]
+      }
+    }
+  ]
+}

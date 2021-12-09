@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "SessionData",
+  "doc": "Data message sent between parties containing a serialized payload",
+  "namespace": "net.corda.data.flow.event.session",
+  "fields": [
+    {
+      "name": "payload",
+      "type": "bytes"
+    }
+  ]
+}

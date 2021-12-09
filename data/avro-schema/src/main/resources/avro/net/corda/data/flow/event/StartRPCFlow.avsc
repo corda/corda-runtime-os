@@ -8,6 +8,10 @@
       "type": "string"
     },
     {
+      "name": "cpiId",
+      "type": "string"
+    },
+    {
       "name": "flowName",
       "type": "string"
     },

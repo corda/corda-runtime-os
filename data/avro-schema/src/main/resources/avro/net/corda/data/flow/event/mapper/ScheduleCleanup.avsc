@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "ScheduleCleanup",
+  "docs": "When this event is processed a timer is started to schedule the flow mapper state to be set to null",
+  "namespace": "net.corda.data.flow.event.mapper",
+  "fields": [
+    {
+      "name": "expiryTime",
+      "docs": "The time at which the flow mapper state should be set to null",
+      "type": "long"
+    }
+  ]
+}

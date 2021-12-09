@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "StateMachineState",
-  "namespace": "net.corda.data.flow",
+  "namespace": "net.corda.data.flow.state",
   "fields": [
     {
       "name": "clientId",

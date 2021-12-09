@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "SessionProcessState",
+  "namespace": "net.corda.data.flow.state.session",
+  "fields": [
+    {
+      "name": "lastProcessedSequenceNum",
+      "type": "int",
+      "doc": "The sequence number of the last message in the unbroken contiguous sequence of previous messages. undeliveredMessages can contain messages which sequence numbers greater than this."
+    },
+    {
+      "name": "undeliveredMessages",
+      "doc": "The list of messages not confirmed as delivered. For outbound messages these are non-acked events. For inbound events these are events not yet processed by the client lib and/or of order messages.",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.flow.event.SessionEvent"
+      }
+    }
+  ]
+}

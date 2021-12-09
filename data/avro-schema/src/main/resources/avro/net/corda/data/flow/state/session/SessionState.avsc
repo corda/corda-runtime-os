@@ -1,0 +1,47 @@
+{
+  "type": "record",
+  "name": "SessionState",
+  "namespace": "net.corda.data.flow.state.session",
+  "fields": [
+    {
+      "name": "sessionId",
+      "type": "string"
+    },
+    {
+      "name": "sessionStartTime",
+      "type": "long"
+    },
+    {
+      "name": "counterpartyIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "isInitiator",
+      "type": "boolean"
+    },
+    {
+      "name": "receivedEventsState",
+      "type": "net.corda.data.flow.state.session.SessionProcessState",
+      "doc" : "Record the highest contiguous sequence number received from the counterparty. Record all events received but not yet processed by this party's client code."
+    },
+    {
+      "name": "sentEventsState",
+      "type": "net.corda.data.flow.state.session.SessionProcessState",
+      "doc" : "Record the sequence number of the last event sent to the counterparty. Record all events sent but not yet acknowledged by the counterparty."
+    },
+    {
+      "name": "status",
+      "type": {
+        "type": "enum",
+        "name": "SessionStateType",
+        "symbols": [
+          "CREATED",
+          "CONFIRMED",
+          "CLOSING",
+          "CLOSED",
+          "ERROR"
+        ]
+      }
+    }
+  ]
+}

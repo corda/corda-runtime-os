@@ -1,0 +1,30 @@
+{
+  "type": "record",
+  "name": "Checkpoint",
+  "namespace": "net.corda.data.flow.state",
+  "fields": [
+    {
+      "name": "flowKey",
+      "type": "net.corda.data.flow.FlowKey"
+    },
+    {
+      "name": "fiber",
+      "type": "bytes"
+    },
+    {
+      "name": "cpiId",
+      "type": "string"
+    },
+    {
+      "name": "flowState",
+      "type": "net.corda.data.flow.state.StateMachineState"
+    },
+    {
+      "name": "sessions",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.flow.state.session.SessionState"
+      }
+    }
+  ]
+}

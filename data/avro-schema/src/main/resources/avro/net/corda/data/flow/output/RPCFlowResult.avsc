@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "RPCFlowResult",
-  "namespace": "net.corda.data.flow",
+  "namespace": "net.corda.data.flow.output",
   "fields": [
     {
       "name": "clientId",

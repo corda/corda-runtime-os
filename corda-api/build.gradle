@@ -13,6 +13,7 @@ dependencies {
         api project(':cipher-suite')
         api project(':crypto')
         api project(':data:avro-schema')
+        api project(':data:config-schema')
         api project(':data:topic-schema')
         api project(':data:db-schema')
         api project(':ledger')
