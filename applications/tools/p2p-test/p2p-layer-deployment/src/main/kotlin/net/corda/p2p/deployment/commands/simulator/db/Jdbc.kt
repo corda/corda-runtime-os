@@ -1,5 +1,6 @@
 package net.corda.p2p.deployment.commands.simulator.db
 
+import net.corda.p2p.deployment.commands.RunJar
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
@@ -15,24 +16,13 @@ class Jdbc : Runnable {
     )
     private var namespaceName = Db.defaultName
 
-    private fun startTelepresence() {
-        ProcessBuilder()
-            .command(
-                "telepresence",
-                "connect"
-            )
-            .inheritIO()
-            .start()
-            .waitFor()
-    }
-
     override fun run() {
         val status = Db.getDbStatus(namespaceName)
         if (status == null) {
             println("Database is not running")
             return
         }
-        startTelepresence()
+        RunJar.startTelepresence()
         println("Example of JDBC URL: jdbc:postgresql://db.$namespaceName/${status.username}?user=${status.username}&password=${status.password}")
     }
 }

@@ -26,7 +26,6 @@ data class InfrastructureDetails(
     val kafkaBrokerCount: Int,
     val zooKeeperCount: Int,
     val disableKafkaUi: Boolean,
-    val dbDetails: DbDetails,
     val kafkaBrokerResourceRequest: ResourceRequest,
 )
 
@@ -73,8 +72,7 @@ class Namespace(
             infrastructureDetails.kafkaBrokerCount,
             !infrastructureDetails.disableKafkaUi,
             infrastructureDetails.kafkaBrokerResourceRequest,
-        ) +
-            PostGreSql(infrastructureDetails.dbDetails)
+        )
     }
 
     val p2pPods by lazy {

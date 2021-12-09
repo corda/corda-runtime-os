@@ -2,7 +2,6 @@ package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import net.corda.p2p.deployment.pods.DbDetails
 import net.corda.p2p.deployment.pods.InfrastructureDetails
 import net.corda.p2p.deployment.pods.Namespace
 import net.corda.p2p.deployment.pods.NamespaceIdentifier
@@ -10,7 +9,6 @@ import net.corda.p2p.deployment.pods.P2PDeploymentDetails
 import net.corda.p2p.deployment.pods.ResourceRequest
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import java.io.File
 
 @Command(
     name = "deploy",
@@ -77,24 +75,6 @@ class Deploy : Runnable {
         required = true
     )
     lateinit var namespaceName: String
-
-    @Option(
-        names = ["--db-init-sql-file"],
-        description = ["A file name with the initial SQL to create the databases"]
-    )
-    private var sqlInitFile: File? = null
-
-    @Option(
-        names = ["--db-username"],
-        description = ["The database username"]
-    )
-    private var dbUsername: String = "corda"
-
-    @Option(
-        names = ["--db-password"],
-        description = ["The database password"]
-    )
-    private var dbPassword: String = "corda-p2p-masters"
 
     @Option(
         names = ["-d", "--dry-run"],
@@ -196,15 +176,10 @@ class Deploy : Runnable {
                 kafkaBrokerCount,
                 zooKeeperCount,
                 disableKafkaUi,
-                DbDetails(
-                    dbUsername,
-                    dbPassword,
-                    sqlInitFile
-                ),
                 ResourceRequest(
                     kafkaBrokerMemory,
                     kafkaBrokerCpu,
-                )
+                ),
             )
         )
         val writer = ObjectMapper(YAMLFactory()).writer()
