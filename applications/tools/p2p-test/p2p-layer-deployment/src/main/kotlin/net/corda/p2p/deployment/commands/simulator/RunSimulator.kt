@@ -7,6 +7,7 @@ import net.corda.p2p.deployment.commands.DeployYamls
 import net.corda.p2p.deployment.commands.simulator.db.Db
 import net.corda.p2p.deployment.commands.simulator.db.StartDb
 import net.corda.p2p.deployment.pods.Simulator
+import java.util.concurrent.ConcurrentHashMap
 
 class RunSimulator(
     private val namespaceName: String,
@@ -15,29 +16,33 @@ class RunSimulator(
     private val follow: Boolean,
 ) : Runnable {
     companion object {
-        @Suppress("UNCHECKED_CAST")
-        fun namespaceAnnotation(namespaceName: String): Yaml {
-            val getNamespace = ProcessBuilder().command(
-                "kubectl",
-                "get", "ns",
-                "--field-selector", "metadata.name=$namespaceName",
-                "-o",
-                "jsonpath={.items[*].metadata.annotations}"
-            ).start()
-            if (getNamespace.waitFor() != 0) {
-                System.err.println(getNamespace.errorStream.reader().readText())
-                throw DeploymentException("Could not get namespace")
+        private val namespacesAnnotation = ConcurrentHashMap<String, Yaml>()
+
+        fun getNamespaceAnnotation(namespaceName: String): Yaml =
+            namespacesAnnotation.computeIfAbsent(namespaceName) {
+                val getNamespace = ProcessBuilder().command(
+                    "kubectl",
+                    "get", "ns",
+                    "--field-selector", "metadata.name=$namespaceName",
+                    "-o",
+                    "jsonpath={.items[*].metadata.annotations}"
+                ).start()
+                if (getNamespace.waitFor() != 0) {
+                    System.err.println(getNamespace.errorStream.reader().readText())
+                    throw DeploymentException("Could not get namespace")
+                }
+                val json = getNamespace.inputStream.reader().readText()
+                if (json.isBlank()) {
+                    throw DeploymentException("Could not find namespace $namespaceName")
+                }
+                val reader = ObjectMapper().reader()
+                @Suppress("UNCHECKED_CAST")
+                reader.readValue(json, Map::class.java) as Yaml
             }
-            val json = getNamespace.inputStream.reader().readText()
-            if (json.isBlank()) {
-                throw DeploymentException("Could not find namespace $namespaceName")
-            }
-            val reader = ObjectMapper().reader()
-            return reader.readValue(json, Map::class.java) as Yaml
-        }
     }
-    val namespaceAnnotation by lazy {
-        namespaceAnnotation(namespaceName)
+
+    private val namespaceAnnotation by lazy {
+        getNamespaceAnnotation(namespaceName)
     }
 
     @Suppress("UNCHECKED_CAST")

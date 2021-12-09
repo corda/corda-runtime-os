@@ -1,6 +1,7 @@
 package net.corda.p2p.deployment.commands.simulator.sender
 
-import net.corda.p2p.deployment.commands.simulator.RunSimulator.Companion.namespaceAnnotation
+import net.corda.p2p.deployment.commands.simulator.RunSimulator
+import net.corda.p2p.deployment.commands.simulator.RunSimulator.Companion.getNamespaceAnnotation
 import net.corda.p2p.deployment.commands.simulator.db.Db
 import picocli.CommandLine.Option
 
@@ -52,7 +53,8 @@ abstract class InvokeSender : Runnable {
     private var totalNumberOfMessages = 50L
 
     private val loadGenerationParams by lazy {
-        val peerAnnotations = namespaceAnnotation(peer)
+        val peerAnnotations = getNamespaceAnnotation(peer)
+        val ourAnnotations = getNamespaceAnnotation(namespaceName)
         val loadGenerationType = if (oneOff) {
             "ONE_OFF"
         } else {
@@ -61,8 +63,8 @@ abstract class InvokeSender : Runnable {
         mapOf(
             "peerX500Name" to peerAnnotations["x500-name"],
             "peerGroupId" to peerAnnotations["group-id"],
-            "ourX500Name" to peerAnnotations["x500-name"],
-            "ourGroupId" to peerAnnotations["group-id"],
+            "ourX500Name" to ourAnnotations["x500-name"],
+            "ourGroupId" to ourAnnotations["group-id"],
             "loadGenerationType" to loadGenerationType,
             "batchSize" to batchSize,
             "interBatchDelay" to "${delay}ms",
@@ -77,7 +79,7 @@ abstract class InvokeSender : Runnable {
             "simulatorMode" to "SENDER",
             "loadGenerationParams" to loadGenerationParams,
         )
-        net.corda.p2p.deployment.commands.simulator.RunSimulator(
+        RunSimulator(
             namespaceName,
             dbName,
             parameters,
