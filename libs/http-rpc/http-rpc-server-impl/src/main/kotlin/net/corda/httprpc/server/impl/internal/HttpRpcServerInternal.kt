@@ -48,6 +48,7 @@ import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
 import java.io.PrintStream
 import javax.security.auth.login.FailedLoginException
+import net.corda.httprpc.exception.HttpApiException
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown")
 internal class HttpRpcServerInternal(
@@ -283,6 +284,7 @@ internal class HttpRpcServerInternal(
 //            is InvalidCordaX500NameException -> throw BadRequestResponse(messageEscaped)
 //            is MemberNotFoundException -> throw NotFoundResponse(messageEscaped)
 
+            is HttpApiException -> throw HttpResponseException(e.statusCode, e.message)
             else -> {
                 with(mutableMapOf<String, String>()) {
                     this["exception"] = e.toString()
