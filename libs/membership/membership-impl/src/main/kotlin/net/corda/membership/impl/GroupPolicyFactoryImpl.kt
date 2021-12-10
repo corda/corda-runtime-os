@@ -26,7 +26,7 @@ class GroupPolicyFactoryImpl : GroupPolicyFactory {
                 }
             } catch (e: ConfigException.Parse) {
                 logger.error("Group policy file failed to parse. Check the file format.")
-                throw throw CordaRuntimeException("GroupPolicy file is incorrectly formatted and parsing failed.", e)
+                throw CordaRuntimeException("GroupPolicy file is incorrectly formatted and parsing failed.", e)
             }
         )
     }

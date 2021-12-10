@@ -17,6 +17,7 @@ import org.junit.jupiter.api.assertThrows
 class GroupPolicyFactoryTest {
 
     private lateinit var groupPolicyFactory: GroupPolicyFactoryImpl
+    private val testGroupId = "ABC123"
 
     @BeforeEach
     fun setUp() {
@@ -59,7 +60,7 @@ class GroupPolicyFactoryTest {
     @Test
     fun `Parse group policy - verify interface properties`() {
         val result = groupPolicyFactory.createGroupPolicy(fullGroupPolicy)
-        assertEquals("ABC123", result.groupId)
+        assertEquals(testGroupId, result.groupId)
     }
 
     /**
@@ -72,7 +73,7 @@ class GroupPolicyFactoryTest {
 
         // Top level properties
         assertEquals(1, result["fileFormatVersion"])
-        assertEquals("ABC123", result["groupId"])
+        assertEquals(testGroupId, result["groupId"])
         assertEquals("net.corda.v5.mgm.MGMRegistrationProtocolFactory", result["registrationProtocolFactory"])
         assertEquals("net.corda.v5.mgm.MGMSynchronisationProtocolFactory", result["synchronisationProtocolFactory"])
         assertTrue(result["protocolParameters"] is Map<*, *>)
