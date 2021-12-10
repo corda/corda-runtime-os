@@ -22,11 +22,11 @@ internal class CpkSandboxImpl(
     override fun loadClassFromMainBundle(className: String): Class<*> = try {
         mainBundle.loadClass(className).also { clazz ->
             if (!accept(clazz)) {
-                throw SandboxException("The class $className cannot be found in bundle $mainBundle in sandbox $id.")
+                throw SandboxException("The class $className cannot be loaded from bundle $mainBundle in sandbox $id.")
             }
         }
     } catch (e: ClassNotFoundException) {
-        throw SandboxException("The class $className cannot be found in bundle $mainBundle in sandbox $id.", e)
+        throw SandboxException("The class $className cannot be loaded from bundle $mainBundle in sandbox $id.", e)
     } catch (e: IllegalStateException) {
         throw SandboxException("The bundle $mainBundle in sandbox $id has been uninstalled.", e)
     }
@@ -34,11 +34,11 @@ internal class CpkSandboxImpl(
     private fun accept(clazz: Class<*>): Boolean {
         return FrameworkUtil.getBundle(clazz).let { bundle ->
             // Accept Java platform classes, or classes from either our "main" or the system bundle.
-            bundle == null || (bundle === mainBundle && bundle.isExported(clazz)) || bundle.bundleId == SYSTEM_BUNDLE_ID
+            bundle == null || (bundle === mainBundle && bundle.exports(clazz)) || bundle.bundleId == SYSTEM_BUNDLE_ID
         }
     }
 
-    private fun Bundle.isExported(clazz: Class<*>): Boolean {
+    private fun Bundle.exports(clazz: Class<*>): Boolean {
         return adapt(BundleWiring::class.java).getCapabilities(PACKAGE_WIRING).any { capability ->
             capability.attributes[PACKAGE_WIRING] == clazz.packageName
         }
