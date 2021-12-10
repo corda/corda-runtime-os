@@ -34,11 +34,8 @@ internal class SandboxGroupImpl(
             } catch (e: SandboxException) {
                 null
             }
-        }.singleOrNull() ?: try {
-            bundleUtils.loadClassFromSystemBundle(className)
-        } catch (_: ClassNotFoundException) {
-            throw SandboxException("Class $className was not found in any sandbox in the sandbox group or in the system bundle.")
-        }
+        }.singleOrNull()
+            ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
     }
 
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
