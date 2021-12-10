@@ -25,7 +25,6 @@ import java.io.ByteArrayInputStream
 import java.nio.file.Paths
 import java.security.cert.Certificate
 import java.util.Collections.emptyNavigableSet
-import java.util.Hashtable
 import java.util.NavigableSet
 import kotlin.random.Random.Default.nextBytes
 
@@ -91,9 +90,6 @@ class SandboxServiceImplTests {
                 whenever(bundle.uninstall()).then {
                     if (bundleName in notUninstallableBundles) throw IllegalStateException()
                     uninstalledBundles.add(bundle)
-                }
-                whenever(bundle.headers).then {
-                    Hashtable<String, String>()
                 }
 
                 bundle
