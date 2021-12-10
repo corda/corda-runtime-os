@@ -20,9 +20,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
-import java.util.Hashtable
 import java.util.UUID.randomUUID
-import org.mockito.kotlin.whenever
 
 const val MOCK_BUNDLE_NAME = "mock_bundle_symbolic_name"
 
@@ -30,9 +28,7 @@ class ClassTagFactoryImplTests {
     private val classTagFactory = ClassTagFactoryImpl()
 
     private val mockBundle = mockBundle(MOCK_BUNDLE_NAME)
-    private val mockCpkMainBundle = mockBundle(CPK_MAIN_BUNDLE_NAME).apply {
-        whenever(headers).thenReturn(Hashtable())
-    }
+    private val mockCpkMainBundle = mockBundle(CPK_MAIN_BUNDLE_NAME)
     private val mockCpk = mockCpk()
     private val mockSandbox = CpkSandboxImpl(randomUUID(), mockCpk, mockCpkMainBundle, emptySet())
 
