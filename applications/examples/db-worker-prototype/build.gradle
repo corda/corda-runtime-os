@@ -23,6 +23,8 @@ dependencies {
     implementation project(":osgi-framework-api")
 
     implementation project(":components:permissions:permission-storage-writer-service")
+    implementation project(":components:permissions:permission-storage-reader-service")
+    implementation project(":components:permissions:permission-cache-service")
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:db:db-core")
@@ -33,6 +35,7 @@ dependencies {
     implementation project(':libs:permissions:permission-datamodel')
     implementation project(":libs:db:db-admin-impl")
     implementation project(":libs:permissions:permission-storage-writer")
+    implementation project(":libs:permissions:permission-storage-reader")
 
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")

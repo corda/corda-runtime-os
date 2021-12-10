@@ -8,6 +8,7 @@ import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.libs.permissions.storage.writer.factory.PermissionStorageWriterProcessorFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -15,11 +16,13 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.permissions.cache.PermissionCacheService
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.GroupProperty
@@ -30,6 +33,7 @@ import net.corda.permissions.model.RolePermissionAssociation
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
 import net.corda.permissions.model.UserProperty
+import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
@@ -45,7 +49,7 @@ import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
 
 @Component
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "UNUSED")
 class DbWorkerPrototypeApp @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
@@ -60,7 +64,13 @@ class DbWorkerPrototypeApp @Activate constructor(
     @Reference(service = SmartConfigFactory::class)
     private val smartConfigFactory: SmartConfigFactory,
     @Reference(service = PermissionStorageWriterProcessorFactory::class)
-    private val permissionStorageWriterProcessorFactory: PermissionStorageWriterProcessorFactory
+    private val permissionStorageWriterProcessorFactory: PermissionStorageWriterProcessorFactory,
+    @Reference(service = PermissionCacheService::class)
+    private val permissionCacheService: PermissionCacheService,
+    @Reference(service = PermissionStorageReaderFactory::class)
+    private val permissionStorageReaderFactory: PermissionStorageReaderFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory
 ) : Application {
 
     private companion object {
@@ -77,6 +87,7 @@ class DbWorkerPrototypeApp @Activate constructor(
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
 
     private var permissionStorageWriterService: PermissionStorageWriterService? = null
+    private var permissionStorageReaderService: PermissionStorageReaderService? = null
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
@@ -125,6 +136,13 @@ class DbWorkerPrototypeApp @Activate constructor(
 
             val nodeConfig: SmartConfig = getBootstrapConfig(null)
 
+            log.info("Creating and starting PermissionStorageReaderService")
+            val localPermissionStorageReaderService = PermissionStorageReaderService(
+                permissionCacheService, permissionStorageReaderFactory,
+                coordinatorFactory, emf, publisherFactory
+            )
+            permissionStorageReaderService = localPermissionStorageReaderService
+
             log.info("Creating and starting PermissionStorageWriterService")
             permissionStorageWriterService =
                 PermissionStorageWriterService(
@@ -132,7 +150,8 @@ class DbWorkerPrototypeApp @Activate constructor(
                     emf,
                     subscriptionFactory,
                     permissionStorageWriterProcessorFactory,
-                    nodeConfig
+                    nodeConfig,
+                    localPermissionStorageReaderService
                 ).also { it.start() }
 
             consoleLogger.info("DB Worker prototype application fully started")
@@ -219,6 +238,8 @@ class DbWorkerPrototypeApp @Activate constructor(
         consoleLogger.info("Shutting down DB Worker prototype application")
         lifeCycleCoordinator?.stop()
         lifeCycleCoordinator = null
+        permissionStorageReaderService?.stop()
+        permissionStorageReaderService = null
         permissionStorageWriterService?.stop()
         permissionStorageWriterService = null
     }
