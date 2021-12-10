@@ -102,7 +102,5 @@ class ThrowableSerializer(
         val suppressed: Array<Throwable>,
         val additionalProperties: Map<String, Any?>
     )
-
-    override fun fromProxy(proxy: ThrowableProxy) = throw UnsupportedOperationException()
 }
 
