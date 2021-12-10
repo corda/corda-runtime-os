@@ -5,7 +5,7 @@ import net.corda.internal.serialization.amqp.PropertyReader
 import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.model.LocalConstructorInformation
 import net.corda.internal.serialization.model.LocalTypeInformation
-import net.corda.serialization.BaseProxySerializer
+import net.corda.serialization.InternalProxySerializer
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.exceptions.CordaThrowable
