@@ -1,15 +1,15 @@
 package net.corda.libs.permissions.manager.request
 
 /**
- * Request object for getting a User in the permission system.
+ * Request object for getting a Role in the permission system.
  */
-data class GetUserRequestDto(
+data class GetRoleRequestDto(
     /**
      * ID of the user making the request.
      */
     val requestedBy: String,
     /**
-     * User login name to be found.
+     * Name of the role to be found.
      */
-    val loginName: String
+    val roleName: String
 )

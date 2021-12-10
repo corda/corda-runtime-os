@@ -8,7 +8,7 @@ import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.manager.PermissionUserManager
 import net.corda.libs.permissions.manager.exception.PermissionManagerException
-import net.corda.libs.permissions.manager.impl.converter.convertAvroUserToUserResponseDto
+import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
@@ -51,12 +51,12 @@ class PermissionUserManagerImpl(
             if (result !is User)
                 throw PermissionManagerException("Unknown response for Create User operation: $result")
 
-            result.convertAvroUserToUserResponseDto()
+            result.convertToResponseDto()
         }
     }
 
     override fun getUser(userRequestDto: GetUserRequestDto): UserResponseDto? {
         val cachedUser: User = permissionCache.getUser(userRequestDto.loginName) ?: return null
-        return cachedUser.convertAvroUserToUserResponseDto()
+        return cachedUser.convertToResponseDto()
     }
 }

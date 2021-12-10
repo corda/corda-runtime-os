@@ -1,10 +1,10 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
+import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserRequestType
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
-import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -27,7 +27,7 @@ import java.time.Instant
 internal class UserEndpointImplTest {
 
     private val now = Instant.now()
-    private val createUserType = CreateUserType(
+    private val createUserRequestType = CreateUserRequestType(
         "fullName1",
         "loginName1",
         true,
@@ -83,7 +83,7 @@ internal class UserEndpointImplTest {
         whenever(mockTry.getOrThrow()).thenReturn(userResponseDto)
 
         endpoint.start()
-        val responseType = endpoint.createUser(createUserType)
+        val responseType = endpoint.createUser(createUserRequestType)
 
         assertEquals("uuid", responseType.id)
         assertEquals(0, responseType.version)
@@ -101,7 +101,7 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.isRunning).thenReturn(false)
 
         val e = assertThrows<HttpApiException> {
-            endpoint.createUser(createUserType)
+            endpoint.createUser(createUserRequestType)
         }
         assertEquals(500, e.statusCode)
     }
@@ -109,7 +109,7 @@ internal class UserEndpointImplTest {
     @Test
     fun `create a user throws with status 500 when this service is not running`() {
         val e = assertThrows<HttpApiException> {
-            endpoint.createUser(createUserType)
+            endpoint.createUser(createUserRequestType)
         }
         assertEquals(500, e.statusCode)
     }

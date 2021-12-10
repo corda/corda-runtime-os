@@ -3,13 +3,14 @@ package net.corda.libs.permissions.endpoints.v1.user.impl
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
+import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
+import net.corda.libs.permissions.endpoints.v1.converter.convertToEndpointType
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
-import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
+import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserRequestType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
-import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
-import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
@@ -33,16 +34,18 @@ class UserEndpointImpl @Activate constructor(
 
     override val protocolVersion = 1
 
-    private val coordinator = coordinatorFactory.createCoordinator<UserEndpoint>(UserEndpointImplEventHandler())
+    private val coordinator = coordinatorFactory.createCoordinator<UserEndpoint>(
+        PermissionEndpointEventHandler("User")
+    )
 
-    override fun createUser(createUserType: CreateUserType): UserResponseType {
+    override fun createUser(createUserRequestType: CreateUserRequestType): UserResponseType {
         validatePermissionManager()
 
         val createUserResult = permissionServiceComponent.permissionManager.createUser(
-            convertFromUserType(createUserType)
+            createUserRequestType.convertToDto("todo")
         )
 
-        return createUserResult.getOrThrow().convertToUserType()
+        return createUserResult.getOrThrow().convertToEndpointType()
     }
 
     override fun getUser(loginName: String): UserResponseType {
@@ -53,7 +56,7 @@ class UserEndpointImpl @Activate constructor(
             GetUserRequestDto(principal, loginName)
         )
 
-        return userResponseDto?.convertToUserType() ?: throw ResourceNotFoundException("User", loginName)
+        return userResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("User", loginName)
     }
 
     @Suppress("ThrowsCount")
@@ -81,10 +84,8 @@ class UserEndpointImpl @Activate constructor(
     }
 
     private fun convertFromUserType(createUserType: CreateUserType): CreateUserRequestDto {
-        val rpcContext = CURRENT_RPC_CONTEXT.get()
-        val principal = rpcContext.principal
         return CreateUserRequestDto(
-            principal,
+            "todo", // the endpoint needs more context to get the request user name
             createUserType.fullName,
             createUserType.loginName,
             createUserType.enabled,

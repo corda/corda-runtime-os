@@ -6,11 +6,16 @@ import net.corda.libs.permissions.storage.writer.factory.PermissionStorageWriter
 import net.corda.libs.permissions.storage.writer.impl.PermissionStorageWriterProcessorImpl
 import org.osgi.service.component.annotations.Component
 import javax.persistence.EntityManagerFactory
+import net.corda.libs.permissions.storage.writer.impl.role.impl.RoleWriterImpl
+import net.corda.libs.permissions.storage.writer.impl.user.impl.UserWriterImpl
 
 @Component(service = [PermissionStorageWriterProcessorFactory::class])
 class PermissionStorageWriterProcessorFactoryImpl : PermissionStorageWriterProcessorFactory {
 
     override fun create(entityManagerFactory: EntityManagerFactory, reader: PermissionStorageReader): PermissionStorageWriterProcessor {
-        return PermissionStorageWriterProcessorImpl(entityManagerFactory, reader)
+        return PermissionStorageWriterProcessorImpl(
+            UserWriterImpl(entityManagerFactory, reader),
+            RoleWriterImpl(entityManagerFactory, reader)
+        )
     }
 }
