@@ -1,11 +1,13 @@
 package net.corda.membership.identity
 
-import net.corda.data.membership.WireMemberInfo
+import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.WireSignatureWithKey
+import net.corda.data.membership.SignedMemberInfo
 import net.corda.v5.membership.conversion.parse
 import net.corda.v5.membership.conversion.parseList
 import net.corda.v5.membership.conversion.parseOrNull
 import net.corda.membership.conversion.PropertyConverterImpl
-import net.corda.membership.conversion.toWireKeyValuePairList
+import net.corda.membership.conversion.toWire
 import net.corda.membership.identity.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEYS
 import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEYS_KEY
@@ -47,6 +49,7 @@ import org.mockito.Mockito
 import org.mockito.kotlin.whenever
 import java.io.File
 import java.lang.ClassCastException
+import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 import kotlin.test.assertFailsWith
@@ -147,6 +150,11 @@ class MemberInfoTest {
 
         private val avroMemberInfo = File("avro-member-info.avro")
 
+        private val signature = WireSignatureWithKey(
+            ByteBuffer.wrap(byteArrayOf()),
+            ByteBuffer.wrap(byteArrayOf()),
+        )
+
         @BeforeAll
         @JvmStatic
         fun setUp() {
@@ -169,32 +177,34 @@ class MemberInfoTest {
 
     @Test
     fun `serializing and deserializing WireMemberInfo using avro`() {
-        var user: WireMemberInfo? = null
-        val userDatumWriter: DatumWriter<WireMemberInfo> = SpecificDatumWriter(
-            WireMemberInfo::class.java
+        var user: SignedMemberInfo? = null
+        val userDatumWriter: DatumWriter<SignedMemberInfo> = SpecificDatumWriter(
+            SignedMemberInfo::class.java
         )
-        val dataFileWriter: DataFileWriter<WireMemberInfo> = DataFileWriter(userDatumWriter)
-        val wireMemberInfo = WireMemberInfo(
-            memberInfo?.memberProvidedContext?.toWireKeyValuePairList(),
-            memberInfo?.mgmProvidedContext?.toWireKeyValuePairList()
+        val dataFileWriter: DataFileWriter<SignedMemberInfo> = DataFileWriter(userDatumWriter)
+        val signedMemberInfo = SignedMemberInfo(
+            memberInfo?.memberProvidedContext?.toWire(),
+            memberInfo?.mgmProvidedContext?.toWire(),
+            signature,
+            signature
         )
 
-        dataFileWriter.create(wireMemberInfo.schema, avroMemberInfo)
-        dataFileWriter.append(wireMemberInfo)
+        dataFileWriter.create(signedMemberInfo.schema, avroMemberInfo)
+        dataFileWriter.append(signedMemberInfo)
         dataFileWriter.close()
 
-        val userDatumReader: DatumReader<WireMemberInfo> = SpecificDatumReader(
-            WireMemberInfo::class.java
+        val userDatumReader: DatumReader<SignedMemberInfo> = SpecificDatumReader(
+            SignedMemberInfo::class.java
         )
-        val dataFileReader: DataFileReader<WireMemberInfo> =
+        val dataFileReader: DataFileReader<SignedMemberInfo> =
             DataFileReader(avroMemberInfo, userDatumReader)
 
         var recreatedMemberInfo: MemberInfo? = null
         while (dataFileReader.hasNext()) {
             user = dataFileReader.next(user)
             recreatedMemberInfo = toMemberInfo(
-                MemberContextImpl(user.memberContext.toSortedMap(), converter),
-                MGMContextImpl(user.mgmContext.toSortedMap(), converter)
+                MemberContextImpl(KeyValuePairList.fromByteBuffer(user.memberContext).toSortedMap(), converter),
+                MGMContextImpl(KeyValuePairList.fromByteBuffer(user.mgmContext).toSortedMap(), converter)
             )
         }
 

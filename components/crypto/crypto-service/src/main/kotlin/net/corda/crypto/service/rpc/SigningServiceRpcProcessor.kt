@@ -84,7 +84,7 @@ class SigningServiceRpcProcessor(
         )
         val signingService = cryptoFactory.getSigningService(
             memberId = request.context.memberId,
-            category = request.context.other.firstOrNull { it.key == CATEGORY }?.value
+            category = request.context.other.items.firstOrNull { it.key == CATEGORY }?.value
                 ?: throw CryptoServiceBadRequestException(
                     "The category was not specified for request type ${request.request::class.java.name}"
                 )
@@ -108,7 +108,7 @@ class SigningServiceRpcProcessor(
         private val signingService: SigningService,
         private val cipherSchemeMetadata: CipherSchemeMetadata
     ) : CryptoRpcHandler<WireRequestContext, WireSigningFindPublicKey> {
-        override fun handle(context: WireRequestContext, request: WireSigningFindPublicKey): Any? {
+        override fun handle(context: WireRequestContext, request: WireSigningFindPublicKey): Any {
             val publicKey = signingService.findPublicKey(request.alias)
             return if (publicKey != null) {
                 WirePublicKey(ByteBuffer.wrap(cipherSchemeMetadata.encodeAsByteArray(publicKey)))
@@ -123,7 +123,7 @@ class SigningServiceRpcProcessor(
         private val cipherSchemeMetadata: CipherSchemeMetadata
     ) : CryptoRpcHandler<WireRequestContext, WireSigningGenerateKeyPair> {
         override fun handle(context: WireRequestContext, request: WireSigningGenerateKeyPair): Any {
-            val publicKey = signingService.generateKeyPair(request.alias, request.context.toMap())
+            val publicKey = signingService.generateKeyPair(request.alias, request.context.items.toMap())
             return WirePublicKey(ByteBuffer.wrap(cipherSchemeMetadata.encodeAsByteArray(publicKey)))
         }
     }
@@ -134,7 +134,7 @@ class SigningServiceRpcProcessor(
     ) : CryptoRpcHandler<WireRequestContext, WireSigningSign> {
         override fun handle(context: WireRequestContext, request: WireSigningSign): Any {
             val publicKey = cipherSchemeMetadata.decodePublicKey(request.publicKey.array())
-            val signature = signingService.sign(publicKey, request.bytes.array(), request.context.toMap())
+            val signature = signingService.sign(publicKey, request.bytes.array(), request.context.items.toMap())
             return WireSignatureWithKey(
                 ByteBuffer.wrap(cipherSchemeMetadata.encodeAsByteArray(signature.by)),
                 ByteBuffer.wrap(signature.bytes)
@@ -156,7 +156,7 @@ class SigningServiceRpcProcessor(
                     DigestAlgorithmName(request.signatureSpec.customDigestName)
                 }
             )
-            val signature = signingService.sign(publicKey, spec, request.bytes.array(), request.context.toMap())
+            val signature = signingService.sign(publicKey, spec, request.bytes.array(), request.context.items.toMap())
             return WireSignatureWithKey(
                 ByteBuffer.wrap(cipherSchemeMetadata.encodeAsByteArray(signature.by)),
                 ByteBuffer.wrap(signature.bytes)
@@ -168,7 +168,7 @@ class SigningServiceRpcProcessor(
         private val signingService: SigningService
     ) : CryptoRpcHandler<WireRequestContext, WireSigningSignWithAlias> {
         override fun handle(context: WireRequestContext, request: WireSigningSignWithAlias): Any {
-            val signature = signingService.sign(request.alias, request.bytes.array(), request.context.toMap())
+            val signature = signingService.sign(request.alias, request.bytes.array(), request.context.items.toMap())
             return WireSignature(ByteBuffer.wrap(signature))
         }
     }
@@ -185,7 +185,7 @@ class SigningServiceRpcProcessor(
                     DigestAlgorithmName(request.signatureSpec.customDigestName)
                 }
             )
-            val signature = signingService.sign(request.alias, spec, request.bytes.array(), request.context.toMap())
+            val signature = signingService.sign(request.alias, spec, request.bytes.array(), request.context.items.toMap())
             return WireSignature(ByteBuffer.wrap(signature))
         }
     }
