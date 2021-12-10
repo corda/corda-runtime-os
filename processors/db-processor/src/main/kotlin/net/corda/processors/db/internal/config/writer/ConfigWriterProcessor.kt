@@ -5,7 +5,6 @@ import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
-import net.corda.processors.db.internal.db.DBWriter
 import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
 import javax.persistence.RollbackException
@@ -17,7 +16,7 @@ import javax.persistence.RollbackException
  * // TODO - Joel - Describe expected format.
  */
 internal class ConfigWriterProcessor(
-    private val dbWriter: DBWriter,
+    private val dbUtils: DBUtils,
     private val publisher: Publisher
 ) : RPCResponderProcessor<PermissionManagementRequest, PermissionManagementResponse> {
 
@@ -38,9 +37,9 @@ internal class ConfigWriterProcessor(
         val configEntity = ConfigEntity(key, value)
 
         try {
-            dbWriter.writeEntity(setOf(configEntity))
+            dbUtils.writeEntity(setOf(configEntity))
         } catch (e: RollbackException) {
-            // TODO - Joel - Use completeExceptionally for both branches.
+            // TODO - Joel - Use completeExceptionally for both exception branches.
         } catch (e: Exception) {
             // These are exceptions related to incorrect set-up of the transaction, and should not occur.
             throw ConfigWriteException("Updated config could not be written to the cluster database.", e)

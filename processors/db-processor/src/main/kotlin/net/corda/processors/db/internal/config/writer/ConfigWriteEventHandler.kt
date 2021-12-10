@@ -18,25 +18,25 @@ class ConfigWriteEventHandler(private val configWriterSubscriptionFactory: Confi
     /**
      * Upon [SubscribeEvent], starts processing new config requests. Upon [StopEvent], stops processing them.
      *
-     * @throws ConfigWriteException If any [SubscribeEvent]s are received beyond the first, or if an event type other
-     * than [StartEvent]/[SubscribeEvent]/[StopEvent] is received.
+     * @throws ConfigWriteException If any [SubscribeEvent]s are received beyond the first, if an event type other
+     * than [StartEvent]/[SubscribeEvent]/[StopEvent] is received, or if the cluster database cannot be connected to.
      * TODO - Joel - Document what else is thrown.
      */
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> Unit // We cannot start until we have the required bootstrap config.
 
-            // TODO - Joel - Handle repeated subscription attempts? If so, differentiate between duplicate subscribes
-            //  with the same vs different config?
+            // TODO - Joel - Catch errors here and set unhealthy status.
             is SubscribeEvent -> {
                 if (subscriptionHandle != null) {
                     throw ConfigWriteException("An attempt was made to subscribe twice.")
                 }
 
-                // TODO - Joel - Catch errors and set unhealthy status.
-                // TODO - Joel - Check if DB can be connected to, at a minimum.
+                val dbUtils = event.dbUtils
+                dbUtils.checkClusterDatabaseConnection()
+                dbUtils.migrateClusterDatabase()
 
-                subscriptionHandle = configWriterSubscriptionFactory.create(event.config, event.instanceId)
+                subscriptionHandle = configWriterSubscriptionFactory.create(event.config, event.instanceId, dbUtils)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
 
