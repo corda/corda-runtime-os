@@ -2,6 +2,7 @@ package net.corda.applications.examples.dbworker
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.core.PostgresDataSourceFactory
@@ -70,7 +71,9 @@ class DbWorkerPrototypeApp @Activate constructor(
     @Reference(service = PermissionStorageReaderFactory::class)
     private val permissionStorageReaderFactory: PermissionStorageReaderFactory,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = ConfigurationReadService::class)
+    private val configurationReadService: ConfigurationReadService
 ) : Application {
 
     private companion object {
@@ -134,13 +137,17 @@ class DbWorkerPrototypeApp @Activate constructor(
             applyLiquibaseSchema(dbSource)
             val emf = obtainEntityManagerFactory(dbSource)
 
-            val nodeConfig: SmartConfig = getBootstrapConfig(null)
+            val bootstrapConfig: SmartConfig = getBootstrapConfig(null)
+
+            log.info("Starting configuration read service with bootstrap config ${bootstrapConfig}.")
+            configurationReadService.start()
+            configurationReadService.bootstrapConfig(bootstrapConfig)
 
             log.info("Creating and starting PermissionStorageReaderService")
             val localPermissionStorageReaderService = PermissionStorageReaderService(
                 permissionCacheService, permissionStorageReaderFactory,
                 coordinatorFactory, emf, publisherFactory
-            )
+            ).also { it.start() }
             permissionStorageReaderService = localPermissionStorageReaderService
 
             log.info("Creating and starting PermissionStorageWriterService")
@@ -150,7 +157,7 @@ class DbWorkerPrototypeApp @Activate constructor(
                     emf,
                     subscriptionFactory,
                     permissionStorageWriterProcessorFactory,
-                    nodeConfig,
+                    bootstrapConfig,
                     localPermissionStorageReaderService
                 ).also { it.start() }
 

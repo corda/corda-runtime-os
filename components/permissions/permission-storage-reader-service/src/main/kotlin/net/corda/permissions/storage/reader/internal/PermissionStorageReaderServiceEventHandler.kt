@@ -17,6 +17,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.cache.PermissionCacheService
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.util.contextLogger
 import javax.persistence.EntityManagerFactory
 
 class PermissionStorageReaderServiceEventHandler(
@@ -29,6 +30,7 @@ class PermissionStorageReaderServiceEventHandler(
     private companion object {
         // Is this right?
         const val CLIENT_NAME = "user.permissions.management"
+        val log = contextLogger()
     }
 
     @VisibleForTesting
@@ -43,6 +45,7 @@ class PermissionStorageReaderServiceEventHandler(
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
+                log.info("Start Event received")
                 registrationHandle?.close()
                 registrationHandle = coordinator.followStatusChangesByName(
                     setOf(LifecycleCoordinatorName.forComponent<PermissionCacheService>())
@@ -57,6 +60,7 @@ class PermissionStorageReaderServiceEventHandler(
                 }
             }
             is RegistrationStatusChangeEvent -> {
+                log.info("Status Change Event received: $event")
                 when (event.status) {
                     LifecycleStatus.UP -> {
                         permissionStorageReader = permissionStorageReaderFactory.create(
@@ -81,6 +85,7 @@ class PermissionStorageReaderServiceEventHandler(
                 }
             }
             is StopEvent -> {
+                log.info("Stop Event received")
                 publisher?.close()
                 publisher = null
                 permissionStorageReader?.stop()

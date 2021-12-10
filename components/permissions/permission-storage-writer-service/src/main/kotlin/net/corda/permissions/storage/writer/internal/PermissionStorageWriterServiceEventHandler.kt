@@ -44,9 +44,9 @@ class PermissionStorageWriterServiceEventHandler(
                 log.info("Start event received")
             }
             is RegistrationStatusChangeEvent -> {
+                log.info("Status Change Event received: $event")
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        log.info("Status: UP")
                         val subscription = subscriptionFactory.createRPCSubscription(
                             rpcConfig = RPCConfig(
                                 groupName = GROUP_NAME,
@@ -67,11 +67,9 @@ class PermissionStorageWriterServiceEventHandler(
                         coordinator.updateStatus(LifecycleStatus.UP)
                     }
                     LifecycleStatus.DOWN -> {
-                        log.info("Status: DOWN")
                         downTransition(coordinator)
                     }
                     LifecycleStatus.ERROR -> {
-                        log.info("Status: ERROR")
                         coordinator.updateStatus(LifecycleStatus.ERROR)
                         coordinator.stop()
                     }
