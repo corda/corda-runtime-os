@@ -71,7 +71,6 @@ internal class InboundMessageHandler(
      * A session init request has additional handling as the Gateway needs to generate a secret and share it
      */
     override fun onRequest(request: HttpRequest) {
-        println("QQQ Got request: $request")
         dominoTile.withLifecycleLock { handleRequest(request) }
     }
 
@@ -91,6 +90,7 @@ internal class InboundMessageHandler(
             server.writeResponse(HttpResponseStatus.BAD_REQUEST, request.source)
             return
         }
+        println("QQQ Got request: $p2pMessage")
 
         logger.debug("Received and processing message ${gatewayMessage.id} of type ${p2pMessage.payload.javaClass} from ${request.source}")
         val response = GatewayResponse(gatewayMessage.id)

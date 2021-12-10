@@ -227,7 +227,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 listOf(Record(P2P_IN_TOPIC, generateKey(), AppMessage(message)))
             } else {
                 val linkOutMessage = linkOutFromUnauthenticatedMessage(message, networkMap)
-                listOf(Record(Schema.LINK_OUT_TOPIC, generateKey(), linkOutMessage))
+                listOf(Record(Schema.LINK_OUT_TOPIC, generateKey(), linkOutMessage).also {
+                    println("QQQ sending 5 ${it.value}")
+                })
             }
         }
 
@@ -269,7 +271,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         private fun recordsForNewSession(state: SessionState.NewSessionNeeded): List<Record<String, *>> {
             val records = mutableListOf<Record<String, *>>()
-            records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage))
+            records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage).also {
+                println("QQQ sending 6 ${it.value}")
+            })
             val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
             records.add(Record(Schema.SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions)))
             return records
@@ -343,12 +347,16 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     is InitiatorHelloMessage -> {
                         val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
                         listOf(
-                            Record(Schema.LINK_OUT_TOPIC, generateKey(), response),
+                            Record(Schema.LINK_OUT_TOPIC, generateKey(), response).also {
+                                println("QQQ sending I ${it.value}")
+                            },
                             Record(Schema.SESSION_OUT_PARTITIONS, payload.header.sessionId, SessionPartitions(partitionsAssigned))
                         )
                     }
                     else -> {
-                        listOf(Record(Schema.LINK_OUT_TOPIC, generateKey(), response))
+                        listOf(Record(Schema.LINK_OUT_TOPIC, generateKey(), response).also {
+                            println("QQQ sending II ${it.value}")
+                        })
                     }
                 }
             } else {
@@ -457,7 +465,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 Schema.LINK_OUT_TOPIC,
                 generateKey(),
                 ack
-            )
+            ).also {
+                println("QQQ sending III ${it.value}")
+            }
         }
 
         private fun makeAckMessageForFlowMessage(message: AuthenticatedMessage, session: Session): Record<String, LinkOutMessage>? {
@@ -475,7 +485,9 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 Schema.LINK_OUT_TOPIC,
                 generateKey(),
                 ack
-            )
+            ).also {
+                println("QQQ sending 4 ${it.value}")
+            }
         }
 
         private fun makeMarkerForAckMessage(message: AuthenticatedMessageAck): Record<String, AppMessageMarker> {
@@ -581,7 +593,9 @@ fun recordsForSessionEstablished(
     val key = LinkManager.generateKey()
     sessionManager.dataMessageSent(session)
     linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, networkMap)?. let {
-        records.add(Record(Schema.LINK_OUT_TOPIC, key, it))
+        records.add(Record(Schema.LINK_OUT_TOPIC, key, it).also {
+            println("QQQ sending 7 ${it.value}")
+        })
     }
     return records
 }

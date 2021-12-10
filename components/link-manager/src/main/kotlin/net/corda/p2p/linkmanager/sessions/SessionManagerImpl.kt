@@ -740,7 +740,9 @@ open class SessionManagerImpl(
                         Schema.LINK_OUT_TOPIC,
                         UUID.randomUUID().toString(),
                         message
-                    )
+                    ).also {
+                        println("QQQ sending d ${it.value}")
+                    }
                 )
             )
             future.single().exceptionally { error ->
