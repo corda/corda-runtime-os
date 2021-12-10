@@ -1,6 +1,5 @@
 package net.corda.p2p.deployment.commands
 
-import net.corda.p2p.deployment.DeploymentException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
@@ -15,13 +14,12 @@ class Destroy : Runnable {
         @Suppress("UNCHECKED_CAST")
         fun destroy(namespaceName: String) {
             println("Removing namespace $namespaceName...")
-            val delete = ProcessBuilder().command(
+            ProcessRunner.follow(
                 "kubectl",
                 "delete",
                 "namespace",
                 namespaceName
-            ).inheritIO().start()
-            delete.waitFor()
+            )
         }
     }
     @Option(
@@ -38,7 +36,7 @@ class Destroy : Runnable {
 
     @Suppress("UNCHECKED_CAST")
     private fun getNamespaces(): Collection<String> {
-        val getAll = ProcessBuilder().command(
+        val all = ProcessRunner.execute(
             "kubectl",
             "get",
             "namespace",
@@ -46,15 +44,8 @@ class Destroy : Runnable {
             "namespace-type=p2p-deployment,creator=${MyUserName.userName}",
             "-o",
             "jsonpath={.items[*].metadata.name}",
-        ).start()
-        if (getAll.waitFor() != 0) {
-            System.err.println(getAll.errorStream.reader().readText())
-            throw DeploymentException("Could not get namespaces")
-        }
-        return getAll
-            .inputStream
-            .reader()
-            .readText()
+        )
+        return all
             .split(" ")
             .filter {
                 it.isNotEmpty()

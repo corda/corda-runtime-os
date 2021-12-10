@@ -1,6 +1,5 @@
 package net.corda.p2p.deployment.commands
 
-import net.corda.p2p.deployment.DeploymentException
 import net.corda.p2p.deployment.pods.Port
 import java.io.File
 import java.nio.file.Files
@@ -11,14 +10,10 @@ class RunJar(
 ) : Runnable {
     companion object {
         fun startTelepresence() {
-            ProcessBuilder()
-                .command(
-                    "telepresence",
-                    "connect"
-                )
-                .inheritIO()
-                .start()
-                .waitFor()
+            ProcessRunner.follow(
+                "telepresence",
+                "connect"
+            )
         }
 
         private val savedJar = mutableMapOf<String, File>()
@@ -39,7 +34,7 @@ class RunJar(
 
         fun kafkaServers(namespace: String): String {
             return kafkaServers.computeIfAbsent(namespace) {
-                val getAll = ProcessBuilder().command(
+                ProcessRunner.execute(
                     "kubectl",
                     "get",
                     "service",
@@ -47,15 +42,7 @@ class RunJar(
                     namespace,
                     "-l", "type=kafka-broker",
                     "--output", "jsonpath={.items[*].metadata.name}",
-                ).start()
-                if (getAll.waitFor() != 0) {
-                    System.err.println(getAll.errorStream.reader().readText())
-                    throw DeploymentException("Could not get services")
-                }
-                getAll
-                    .inputStream
-                    .reader()
-                    .readText()
+                )
                     .split(" ")
                     .filter {
                         it.isNotBlank()
@@ -80,12 +67,8 @@ class RunJar(
         val jarFile = jarToRun(jarName)
         val java = "${System.getProperty("java.home")}/bin/java"
         val commands = listOf(java, "-jar", jarFile.absolutePath) + arguments
-        ProcessBuilder()
-            .command(
-                commands
-            )
-            .inheritIO()
-            .start()
-            .waitFor()
+        ProcessRunner.follow(
+            commands
+        )
     }
 }

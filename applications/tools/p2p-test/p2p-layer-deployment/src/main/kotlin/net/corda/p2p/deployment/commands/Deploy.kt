@@ -102,17 +102,11 @@ class Deploy : Runnable {
     var gatewayArguments = emptyList<String>()
 
     private val isMiniKube = let {
-        val getConfig = ProcessBuilder().command(
+        ProcessRunner.execute(
             "kubectl",
             "config",
             "current-context"
-        ).start()
-        getConfig
-            .inputStream
-            .reader()
-            .useLines {
-                it.contains("minikube")
-            }
+        ).contains("minikube")
     }
 
     @Option(

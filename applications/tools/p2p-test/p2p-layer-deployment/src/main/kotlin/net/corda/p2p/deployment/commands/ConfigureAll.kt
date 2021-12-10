@@ -38,7 +38,7 @@ class ConfigureAll : Runnable {
 
     @Suppress("UNCHECKED_CAST")
     private val namespaces by lazy {
-        val getAll = ProcessBuilder().command(
+        ProcessRunner.execute(
             "kubectl",
             "get",
             "namespace",
@@ -46,15 +46,11 @@ class ConfigureAll : Runnable {
             "namespace-type=p2p-deployment,creator=${MyUserName.userName}",
             "-o",
             "jsonpath={range .items[*]}{.metadata.name}{\"|\"}{.metadata.annotations}{\"\\n\"}{end}",
-        ).start()
-        if (getAll.waitFor() != 0) {
-            System.err.println(getAll.errorStream.reader().readText())
-            throw DeploymentException("Could not get namespaces")
-        }
-        getAll
-            .inputStream
-            .reader()
-            .readLines().associate { line ->
+        ).lines()
+            .filter {
+                it.contains('|')
+            }
+            .associate { line ->
                 val name = line.substringBefore('|')
                 val annotations = line.substringAfter('|')
                 name to jsonReader.readValue(annotations, Map::class.java)
@@ -78,7 +74,7 @@ class ConfigureAll : Runnable {
         return File(keyStoreDir.absolutePath, "$name.keystore.jks").also { keyStoreFile ->
             if (!keyStoreFile.exists()) {
                 keyStoreDir.mkdirs()
-                val createKetstore = ProcessBuilder().command(
+                val success = ProcessRunner.follow(
                     "keytool",
                     "-genkeypair",
                     "-alias",
@@ -95,9 +91,8 @@ class ConfigureAll : Runnable {
                     "CN=GB",
                     "-keypass",
                     "password"
-                ).inheritIO()
-                    .start()
-                if (createKetstore.waitFor() != 0) {
+                )
+                if (!success) {
                     throw DeploymentException("Could not create key store for $name")
                 }
             }

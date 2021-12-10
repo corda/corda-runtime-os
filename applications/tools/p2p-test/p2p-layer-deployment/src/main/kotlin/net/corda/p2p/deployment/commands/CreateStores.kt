@@ -251,12 +251,8 @@ class CreateStores : Runnable {
     }
 
     private fun runCommand(vararg commands: String) {
-        val process = ProcessBuilder()
-            .command(*commands)
-            .inheritIO()
-            .start()
-        if (process.waitFor() != 0) {
-            System.err.println(process.errorStream.reader().readText())
+        val success = ProcessRunner.follow(*commands)
+        if (!success) {
             throw DeploymentException("Could not run command ${commands.joinToString(" ")}")
         }
     }

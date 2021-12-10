@@ -3,6 +3,7 @@ package net.corda.p2p.deployment.commands.simulator.db
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.p2p.deployment.Yaml
 import net.corda.p2p.deployment.commands.MyUserName
+import net.corda.p2p.deployment.commands.ProcessRunner
 import picocli.CommandLine.Command
 
 @Command(
@@ -27,15 +28,13 @@ class Db {
         val defaultName = "${MyUserName.userName}-p2p-db".replace('.', '-')
 
         fun getDbStatus(namespace: String): DbStatus? {
-            val getter = ProcessBuilder().command(
+            val statusLine = ProcessRunner.execute(
                 "kubectl",
                 "get", "pods",
                 "-n", namespace,
                 "-l", "app=db",
                 "--output", "jsonpath={range .items[*]}{.status.phase}{\"|\"}{.spec.containers[].env}{\"\\n\"}{end}"
-            ).start()
-            getter.waitFor()
-            val statusLine = getter.inputStream.reader().readLines().firstOrNull()
+            ).lines().firstOrNull()
             if ((statusLine == null) || (statusLine.isBlank())) {
                 return null
             }

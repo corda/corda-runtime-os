@@ -1,6 +1,5 @@
 package net.corda.p2p.deployment.commands
 
-import net.corda.p2p.deployment.DeploymentException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import kotlin.concurrent.thread
@@ -70,26 +69,21 @@ class Log : Runnable {
 
     @Suppress("UNCHECKED_CAST", "ThrowsCount")
     private fun getAllPods(): Map<String, String> {
-        val getPods = ProcessBuilder().command(
+        val pods = ProcessRunner.execute(
             "kubectl",
             "get",
             "pod",
             "-n", namespaceName,
             "--output",
             "jsonpath={range .items[*]}{.metadata.name}{\",\"}{.spec.containers[].name}{\"\\n\"}{end}"
-        ).start()
-        if (getPods.waitFor() != 0) {
-            System.err.println(getPods.errorStream.reader().readText())
-            throw DeploymentException("Could not get pods")
-        }
-        return getPods
-            .inputStream
-            .reader()
-            .readLines()
+        )
+        return pods
+            .lines()
+            .filter { it.contains(',') }
             .map {
                 it.split(",")
-            }.map {
+            }.associate {
                 it[1] to it[0]
-            }.toMap()
+            }
     }
 }

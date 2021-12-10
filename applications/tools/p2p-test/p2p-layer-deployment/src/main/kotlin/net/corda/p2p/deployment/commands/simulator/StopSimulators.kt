@@ -1,5 +1,7 @@
 package net.corda.p2p.deployment.commands.simulator
 
+import net.corda.p2p.deployment.commands.ProcessRunner
+
 class StopSimulators(
     private val namespaceName: String,
     private val mode: String,
@@ -10,14 +12,13 @@ class StopSimulators(
             namespaceName
         )().forEach {
             println("Stopping ${it.name}")
-            val kill = ProcessBuilder().command(
+            ProcessRunner.follow(
                 "kubectl",
                 "delete",
                 "job",
                 "-n", namespaceName,
                 it.name
-            ).inheritIO().start()
-            kill.waitFor()
+            )
         }
     }
 }

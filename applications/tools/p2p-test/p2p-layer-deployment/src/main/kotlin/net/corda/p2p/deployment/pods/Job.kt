@@ -30,7 +30,7 @@ abstract class Job {
             "template" to mapOf(
                 "metadata" to mapOf(
                     "labels" to
-                            mapOf("app" to app) + labels,
+                        mapOf("app" to app) + labels,
                     "annotations" to mapOf(
                         "cluster-autoscaler.kubernetes.io/safe-to-evict" to "false"
                     )
