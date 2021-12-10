@@ -1,9 +1,10 @@
 package net.corda.libs.permissions.storage.writer.impl
 
-import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.CreateUserRequest
+import net.corda.libs.permissions.storage.reader.PermissionStorageReader
+import net.corda.libs.permissions.storage.reader.toAvroUser
 import net.corda.data.permissions.User as AvroUser
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
 import net.corda.permissions.model.ChangeAudit
@@ -18,7 +19,10 @@ import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: EntityManagerFactory) : PermissionStorageWriterProcessor {
+class PermissionStorageWriterProcessorImpl(
+    private val entityManagerFactory: EntityManagerFactory,
+    private val reader: PermissionStorageReader
+) : PermissionStorageWriterProcessor {
 
     private companion object {
         val log = contextLogger()
@@ -86,7 +90,11 @@ class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: Ent
 
             log.info("Successfully created new user: $loginName")
 
-            user.toAvroUser()
+            user.toAvroUser().also {
+                // At this time of publishing the User is successfully committed into the DB with no conflicts like
+                // login name clash.
+                reader.publishNewUser(it)
+            }
         } finally {
             entityManager.close()
         }
@@ -99,23 +107,5 @@ class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: Ent
             .singleResult as Long
 
         require(result == 0L) { "Failed to create new user: $loginName as they already exist" }
-    }
-
-    private fun User.toAvroUser(): AvroUser {
-        return AvroUser(
-            id,
-            version,
-            ChangeDetails(updateTimestamp),
-            loginName,
-            fullName,
-            enabled,
-            hashedPassword,
-            saltValue,
-            passwordExpiry,
-            false,
-            parentGroup?.id,
-            emptyList(),
-            emptyList()
-        )
     }
 }
