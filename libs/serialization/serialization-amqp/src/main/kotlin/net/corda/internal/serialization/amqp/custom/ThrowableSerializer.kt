@@ -15,7 +15,7 @@ import java.io.NotSerializableException
 @Suppress("LongParameterList")
 class ThrowableSerializer(
     private val factory: LocalSerializerFactory
-) : BaseProxySerializer<Throwable, ThrowableSerializer.ThrowableProxy>() {
+) : InternalProxySerializer<Throwable, ThrowableSerializer.ThrowableProxy> {
     override val type: Class<Throwable> get() = Throwable::class.java
     override val proxyType: Class<ThrowableProxy> get() = ThrowableProxy::class.java
     override val withInheritance: Boolean get() = true
@@ -34,7 +34,7 @@ class ThrowableSerializer(
             else -> throw NotSerializableException("$this has no deserialization constructor")
         }
 
-    override fun toProxy(obj: Throwable): ThrowableProxy {
+    override fun toProxy(obj: Throwable, context: SerializationContext): ThrowableProxy {
         val extraProperties: MutableMap<String, Any?> = LinkedHashMap()
         val message = if (obj is CordaThrowable) {
             // Try and find a constructor
