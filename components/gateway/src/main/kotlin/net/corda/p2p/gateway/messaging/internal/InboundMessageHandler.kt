@@ -116,6 +116,8 @@ internal class InboundMessageHandler(
         return if (partitions == null) {
             logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
             HttpResponseStatus.INTERNAL_SERVER_ERROR
+        } else if (partitions.isEmpty()) {
+            HttpResponseStatus.NOT_FOUND
         } else {
             // this is simplistic (stateless) load balancing amongst the partitions owned by the LM that "hosts" the session.
             val selectedPartition = partitions.random()
