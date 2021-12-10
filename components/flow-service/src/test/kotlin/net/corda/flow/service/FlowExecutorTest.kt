@@ -5,8 +5,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
-import net.corda.flow.manager.FlowEventExecutorFactory
-import net.corda.flow.manager.FlowMetaDataFactory
+import net.corda.flow.manager.factory.FlowEventProcessorFactory
 import net.corda.flow.service.stubs.StateAndEventSubscriptionStub
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
@@ -42,8 +41,7 @@ class FlowExecutorTest {
         ).withValue(GROUP_NAME_KEY, ConfigValueFactory.fromAnyRef("Group1"))
     )
     private val subscriptionFactory: SubscriptionFactory = mock()
-    private val flowMetaDataFactory: FlowMetaDataFactory = mock()
-    private val flowEventExecutorFactory: FlowEventExecutorFactory = mock()
+    private val flowEventProcessorFactory: FlowEventProcessorFactory = mock()
 
     @Test
     fun testFlowExecutor() {
@@ -60,7 +58,7 @@ class FlowExecutorTest {
         )
 
         val flowExecutor =
-            FlowExecutor(coordinatorFactory, config, subscriptionFactory, flowMetaDataFactory, flowEventExecutorFactory)
+            FlowExecutor(coordinatorFactory, config, subscriptionFactory, flowEventProcessorFactory)
 
         flowExecutor.start()
         assertTrue(startLatch.await(5, TimeUnit.SECONDS))

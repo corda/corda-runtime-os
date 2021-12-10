@@ -1,7 +1,7 @@
 package net.corda.dependency.injection.impl
 
 import net.corda.dependency.injection.InjectableFactory
-import net.corda.flow.statemachine.FlowStateMachine
+import net.corda.flow.statemachine.FlowFiber
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.injection.CordaInject
@@ -19,7 +19,7 @@ class FlowDependencyInjectorImplTest {
     private val fac2 = Service2Factory(Service2::class.java)
 
     private val sandboxGroup: SandboxGroup = mock()
-    private val flowStateMachine: FlowStateMachine<ExampleFlow> = mock()
+    private val flowFiber: FlowFiber<ExampleFlow> = mock()
 
     private var flowDependencyInjector = FlowDependencyInjectorImpl(sandboxGroup, listOf(fac1, fac2), listOf(s1, s2))
 
@@ -33,7 +33,7 @@ class FlowDependencyInjectorImplTest {
     @Test
     fun `inject services uses factories to inject services into flows`() {
         val flow = ExampleFlow()
-        flowDependencyInjector.injectServices(flow, flowStateMachine)
+        flowDependencyInjector.injectServices(flow, flowFiber)
 
         val service1 = flow.service1 as Service1Impl
         val service2 = flow.service2 as Service2Impl
@@ -42,8 +42,8 @@ class FlowDependencyInjectorImplTest {
         assertThat(service2).isNotNull
 
         // Assert the factories were passed the state machine and sandbox
-        assertThat(service1.flowStateMachine).isSameAs(flowStateMachine)
-        assertThat(service2.flowStateMachine).isSameAs(flowStateMachine)
+        assertThat(service1.flowFiber).isSameAs(flowFiber)
+        assertThat(service2.flowFiber).isSameAs(flowFiber)
 
         assertThat(service1.sandboxGroup).isSameAs(sandboxGroup)
         assertThat(service2.sandboxGroup).isSameAs(sandboxGroup)
@@ -53,7 +53,7 @@ class FlowDependencyInjectorImplTest {
     fun `an exception is thrown if the flow request a type that is unregistered`() {
         val flow = ExampleInvalidFlow()
         Assertions.assertThatIllegalArgumentException()
-            .isThrownBy { flowDependencyInjector.injectServices(flow, flowStateMachine) }
+            .isThrownBy { flowDependencyInjector.injectServices(flow, flowFiber) }
             .withMessage("No registered types could be found for the following field(s) 'service'")
     }
 
@@ -69,13 +69,15 @@ class FlowDependencyInjectorImplTest {
  * Example Service 1
  */
 interface Service1
-class Service1Impl(val flowStateMachine: FlowStateMachine<*>, val sandboxGroup: SandboxGroup) : Service1
+
+class Service1Impl(val flowFiber: FlowFiber<*>, val sandboxGroup: SandboxGroup) : Service1
+
 class Service1Factory(
     override val target: Class<Service1>
 ) : InjectableFactory<Service1> {
 
-    override fun create(flowStateMachine: FlowStateMachine<*>, sandboxGroup: SandboxGroup): Service1 {
-        return Service1Impl(flowStateMachine, sandboxGroup)
+    override fun create(flowFiber: FlowFiber<*>, sandboxGroup: SandboxGroup): Service1 {
+        return Service1Impl(flowFiber, sandboxGroup)
     }
 }
 
@@ -83,13 +85,15 @@ class Service1Factory(
  * Example Service 2
  */
 interface Service2
-class Service2Impl(val flowStateMachine: FlowStateMachine<*>, val sandboxGroup: SandboxGroup) : Service2
+
+class Service2Impl(val flowFiber: FlowFiber<*>, val sandboxGroup: SandboxGroup) : Service2
+
 class Service2Factory(
     override val target: Class<Service2>,
 ) : InjectableFactory<Service2> {
 
-    override fun create(flowStateMachine: FlowStateMachine<*>, sandboxGroup: SandboxGroup): Service2 {
-        return Service2Impl(flowStateMachine, sandboxGroup)
+    override fun create(flowFiber: FlowFiber<*>, sandboxGroup: SandboxGroup): Service2 {
+        return Service2Impl(flowFiber, sandboxGroup)
     }
 }
 
@@ -109,6 +113,7 @@ class ExampleFlow : Flow<String> {
 }
 
 interface UnavailableService
+
 class ExampleInvalidFlow : Flow<String> {
     @CordaInject
     lateinit var service: UnavailableService
