@@ -58,7 +58,7 @@ class Status : Runnable {
             "jsonpath={range .items[*]}" +
                 "{.metadata.name}{\"\\t\"}" +
                 "{.metadata.creationTimestamp}{\"\\t\"}" +
-                "{.metadata.labels.creator}{\"\\t\"}" +
+                "{.metadata.labels.creator}{\"\\n\"}" +
                 "{end}"
         ).lines().map {
             it.split("\t")

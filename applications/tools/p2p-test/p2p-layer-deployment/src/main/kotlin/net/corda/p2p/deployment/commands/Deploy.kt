@@ -87,7 +87,7 @@ class Deploy : Runnable {
         names = ["-t", "--tag"],
         description = ["The docker name of the tag to pull"]
     )
-    private var tag = "5.0.0.0-beta-1638978815651"
+    private var tag = "5.0.0.0-beta-1639153101369"
 
     @Option(
         names = ["--lm-conf", "--link-manager-config"],
