@@ -12,7 +12,7 @@ import javax.persistence.EntityManager
 import javax.persistence.RollbackException
 import javax.sql.DataSource
 
-/** Encapsulates database-related functionality, so that it can be substituted during tests. */
+/** Encapsulates database-related functionality, so that it can be stubbed during tests. */
 class DBUtils(
     private val config: SmartConfig,
     private val schemaMigrator: LiquibaseSchemaMigrator,
