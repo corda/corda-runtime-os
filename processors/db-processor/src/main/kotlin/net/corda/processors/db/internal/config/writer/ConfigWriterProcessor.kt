@@ -48,8 +48,8 @@ internal class ConfigWriterProcessor(
         request: ConfigurationManagementRequest,
         respFuture: CompletableFuture<ConfigurationManagementResponse>
     ): Boolean {
-        // TODO - Joel - Re-enable version, which wasn't working.
-        val configEntity = ConfigEntity(request.section, request.configuration/**, request.version*/)
+        // TODO - Joel - If this works, switch to actual Int in avro.
+        val configEntity = ConfigEntity(request.section, request.configuration, request.version)
 
         return try {
             dbUtils.writeEntity(setOf(configEntity))
@@ -73,7 +73,8 @@ internal class ConfigWriterProcessor(
         request: ConfigurationManagementRequest,
         respFuture: CompletableFuture<ConfigurationManagementResponse>
     ) {
-        val record = Record(TOPIC_CONFIG, request.section, Configuration(request.configuration, request.version))
+        val record =
+            Record(TOPIC_CONFIG, request.section, Configuration(request.configuration, request.version.toString()))
 
         val failedFutures = publisher.publish(listOf(record)).mapNotNull { future ->
             try {

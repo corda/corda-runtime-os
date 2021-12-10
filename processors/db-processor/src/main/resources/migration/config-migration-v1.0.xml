@@ -11,9 +11,9 @@
             <column name="value" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-<!--            <column name="version" type="INT">-->
-<!--                <constraints nullable="false"/>-->
-<!--            </column>-->
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
         <addPrimaryKey columnNames="name" constraintName="config_pk" tableName="config"/>
     </changeSet>

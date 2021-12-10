@@ -79,7 +79,7 @@ class KafkaDriver @Activate constructor(
                 Instant.now().toEpochMilli(),
                 section,
                 configurationString,
-                ""
+                1
             )
             publisher.sendRequest(req)
 
