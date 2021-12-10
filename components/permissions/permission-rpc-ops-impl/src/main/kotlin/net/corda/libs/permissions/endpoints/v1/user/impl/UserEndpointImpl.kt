@@ -1,7 +1,9 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.libs.permissions.endpoints.exception.PermissionEndpointException
+import net.corda.httprpc.exception.HttpApiException
+import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
@@ -25,7 +27,7 @@ class UserEndpointImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PermissionServiceComponent::class)
     private val permissionServiceComponent: PermissionServiceComponent
-) : UserEndpoint, Lifecycle {
+) : UserEndpoint, PluggableRPCOps<UserEndpoint>, Lifecycle {
 
     override val targetInterface: Class<UserEndpoint> = UserEndpoint::class.java
 
@@ -43,25 +45,25 @@ class UserEndpointImpl @Activate constructor(
         return createUserResult.getOrThrow().convertToUserType()
     }
 
-    override fun getUser(loginName: String): UserResponseType? {
+    override fun getUser(loginName: String): UserResponseType {
         validatePermissionManager()
+        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val principal = rpcContext.principal
         val userResponseDto = permissionServiceComponent.permissionManager.getUser(
-            GetUserRequestDto(
-                "todo", // the endpoint needs more context to get the request user name
-                loginName
-            )
+            GetUserRequestDto(principal, loginName)
         )
-        return userResponseDto?.convertToUserType()
+
+        return userResponseDto?.convertToUserType() ?: throw ResourceNotFoundException("User", loginName)
     }
 
     @Suppress("ThrowsCount")
     private fun validatePermissionManager() {
         if (!isRunning) {
-            throw PermissionEndpointException("User Endpoint must be started.", 500)
+            throw HttpApiException("User Endpoint must be started.", 500)
         }
 
         if (!permissionServiceComponent.isRunning) {
-            throw PermissionEndpointException("Permission manager must be running.", 500)
+            throw HttpApiException("Permission manager must be running.", 500)
         }
     }
 
@@ -79,8 +81,10 @@ class UserEndpointImpl @Activate constructor(
     }
 
     private fun convertFromUserType(createUserType: CreateUserType): CreateUserRequestDto {
+        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val principal = rpcContext.principal
         return CreateUserRequestDto(
-            "todo", // the endpoint needs more context to get the request user name
+            principal,
             createUserType.fullName,
             createUserType.loginName,
             createUserType.enabled,

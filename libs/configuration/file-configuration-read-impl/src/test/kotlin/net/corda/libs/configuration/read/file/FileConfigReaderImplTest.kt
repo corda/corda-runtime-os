@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
+import net.corda.libs.configuration.SmartConfigImpl
 
 class FileConfigReaderImplTest {
 
@@ -29,7 +30,7 @@ class FileConfigReaderImplTest {
     @BeforeEach
     fun beforeEach() {
         createTempTestConfig()
-        service = FileConfigReaderImpl(configRepository, bootstrapConfig(), SmartConfigFactoryImpl())
+        service = FileConfigReaderImpl(configRepository, SmartConfigImpl(bootstrapConfig()), SmartConfigFactoryImpl())
         service.start()
     }
 
@@ -39,7 +40,7 @@ class FileConfigReaderImplTest {
     }
 
     @Test
-    fun `test registerCallback with lambda`() {
+    fun `test registerCallback with lambda and bootstrap`() {
         var lambdaFlag = false
         var changedKeys = setOf<String>()
         var configSnapshot = mapOf<String, Config>()
@@ -50,11 +51,13 @@ class FileConfigReaderImplTest {
             configSnapshot = config
         }
         assertThat(lambdaFlag).isTrue
-        assertThat(changedKeys.size).isEqualTo(2)
+        assertThat(changedKeys.size).isEqualTo(3)
         assertNotNull(configRepository.getConfigurations()["corda.rpc"])
         assertNotNull(configRepository.getConfigurations()["corda.another_rpc"])
+        assertNotNull(configRepository.getConfigurations()["corda.boot"])
         assertThat(configSnapshot["corda.rpc"]).isEqualTo(configRepository.getConfigurations()["corda.rpc"])
         assertTrue(configRepository.getConfigurations()["corda.rpc"]!!.hasPath("address"))
+        assertTrue(configRepository.getConfigurations()["corda.boot"]!!.hasPath("config.file"))
     }
 
     @Test
@@ -73,11 +76,13 @@ class FileConfigReaderImplTest {
         service.start()
 
         assertThat(lambdaFlag).isTrue
-        assertThat(changedKeys.size).isEqualTo(2)
+        assertThat(changedKeys.size).isEqualTo(3)
         assertNotNull(configRepository.getConfigurations()["corda.rpc"])
         assertNotNull(configRepository.getConfigurations()["corda.another_rpc"])
+        assertNotNull(configRepository.getConfigurations()["corda.boot"])
         assertThat(configSnapshot["corda.rpc"]).isEqualTo(configRepository.getConfigurations()["corda.rpc"])
         assertTrue(configRepository.getConfigurations()["corda.rpc"]!!.hasPath("address"))
+        assertTrue(configRepository.getConfigurations()["corda.boot"]!!.hasPath("config.file"))
     }
 
     private fun createTempTestConfig() {

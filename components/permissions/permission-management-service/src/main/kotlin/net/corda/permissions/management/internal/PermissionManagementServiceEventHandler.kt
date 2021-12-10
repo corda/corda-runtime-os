@@ -1,16 +1,16 @@
 package net.corda.permissions.management.internal
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.factory.PermissionManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.LifecycleStatus.DOWN
-import net.corda.lifecycle.LifecycleStatus.ERROR
-import net.corda.lifecycle.LifecycleStatus.UP
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
@@ -21,16 +21,22 @@ import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.permissions.cache.PermissionCacheService
 import net.corda.rpc.schema.Schema
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.util.contextLogger
+
+private class NewConfigurationReceivedEvent(val config: SmartConfig) : LifecycleEvent
 
 internal class PermissionManagementServiceEventHandler(
     private val publisherFactory: PublisherFactory,
     private val permissionCacheService: PermissionCacheService,
-    private val permissionManagerFactory: PermissionManagerFactory
+    private val permissionManagerFactory: PermissionManagerFactory,
+    private val configurationReadService: ConfigurationReadService
 ) : LifecycleEventHandler {
 
     private companion object {
+        val log = contextLogger()
         const val GROUP_NAME = "rpc.permission.management"
         const val CLIENT_NAME = "rpc.permission.manager"
+        const val BOOTSTRAP_CONFIG = "corda.boot"
     }
 
     @VisibleForTesting
@@ -40,59 +46,92 @@ internal class PermissionManagementServiceEventHandler(
     internal var rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>? = null
 
     internal var permissionManager: PermissionManager? = null
+    private var configSubscription: AutoCloseable? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
+                log.info("Received start event, following ConfigReadService and PermissionCacheService for status updates.")
                 registrationHandle?.close()
                 registrationHandle = coordinator.followStatusChangesByName(
                     setOf(
-                        LifecycleCoordinatorName.forComponent<PermissionCacheService>()
+                        LifecycleCoordinatorName.forComponent<PermissionCacheService>(),
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
                     )
                 )
-                rpcSender = publisherFactory.createRPCSender(
-                    RPCConfig(
-                        GROUP_NAME,
-                        CLIENT_NAME,
-                        Schema.RPC_PERM_MGMT_REQ_TOPIC,
-                        PermissionManagementRequest::class.java,
-                        PermissionManagementResponse::class.java
-                    )
-                ).also { it.start() }
+            }
+            is NewConfigurationReceivedEvent -> {
+                log.info("Received new configuration event. Creating RPCSender.")
+                createAndStartRpcSender(event.config)
+                createPermissionManager()
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
             is RegistrationStatusChangeEvent -> {
-                // These status updates are from PermissionCacheService
+                log.info("Registration status change received: ${event.status.name}.")
                 when (event.status) {
-                    UP -> {
-                        val permissionCache = permissionCacheService.permissionCache
-                        checkNotNull(permissionCache) {
-                            "The ${PermissionCacheService::class.java} should be up and ready to provide the cache"
-                        }
-                        checkNotNull(rpcSender) { "The ${RPCSender::class.java} must be initialized" }
-                        permissionManager = permissionManagerFactory.create(rpcSender!!, permissionCache)
-                            .also { it.start() }
-                        coordinator.updateStatus(UP)
+                    LifecycleStatus.UP -> {
+                        log.info("Registering for updates from configuration read service.")
+                        registerForConfigurationUpdates(coordinator)
                     }
-                    DOWN -> {
+                    LifecycleStatus.DOWN -> {
                         permissionManager?.stop()
                         permissionManager = null
-                        coordinator.updateStatus(DOWN)
+                        coordinator.updateStatus(LifecycleStatus.DOWN)
                     }
-                    ERROR -> {
+                    LifecycleStatus.ERROR -> {
                         coordinator.stop()
-                        coordinator.updateStatus(ERROR)
+                        coordinator.updateStatus(LifecycleStatus.ERROR)
                     }
                 }
             }
             is StopEvent -> {
+                log.info("Stop event received, stopping dependencies and setting status to DOWN.")
+                configSubscription?.close()
+                configSubscription = null
                 rpcSender?.stop()
                 rpcSender = null
                 permissionManager?.stop()
                 permissionManager = null
                 registrationHandle?.close()
                 registrationHandle = null
-                coordinator.updateStatus(DOWN)
+                coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }
+    }
+
+    private fun registerForConfigurationUpdates(coordinator: LifecycleCoordinator) {
+        configSubscription?.close()
+        configSubscription = configurationReadService.registerForUpdates { changedKeys: Set<String>, config: Map<String, SmartConfig> ->
+            log.info("Received configuration update event, changedKeys: $changedKeys")
+            if (BOOTSTRAP_CONFIG in changedKeys) {
+                val newConfig = config[BOOTSTRAP_CONFIG]
+                coordinator.postEvent(NewConfigurationReceivedEvent(newConfig!!))
+            }
+        }
+    }
+
+    private fun createPermissionManager() {
+        val permissionCache = permissionCacheService.permissionCache
+        checkNotNull(permissionCache) {
+            "Configuration received for permission manager but permission cache was null."
+        }
+        permissionManager?.stop()
+        log.info("Creating and starting permission manager.")
+        permissionManager = permissionManagerFactory.create(rpcSender!!, permissionCache)
+            .also { it.start() }
+    }
+
+    private fun createAndStartRpcSender(kafkaConfig: SmartConfig) {
+        rpcSender?.stop()
+        rpcSender = publisherFactory.createRPCSender(
+            RPCConfig(
+                GROUP_NAME,
+                CLIENT_NAME,
+                Schema.RPC_PERM_MGMT_REQ_TOPIC,
+                PermissionManagementRequest::class.java,
+                PermissionManagementResponse::class.java
+            ),
+            kafkaConfig
+        ).also { it.start() }
     }
 }

@@ -51,7 +51,7 @@ class StartRPCFlowExecutor(
 
         return FlowResult(
             checkpoint,
-            events.toRecordsWithKey(flowMetaData.flowEventTopic)
+            events.toRecordsWithKey(flowMetaData.flowKey, flowMetaData.flowEventTopic)
         )
     }
 

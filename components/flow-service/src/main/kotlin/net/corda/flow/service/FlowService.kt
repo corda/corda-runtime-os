@@ -1,8 +1,5 @@
 package net.corda.flow.service
 
-import net.corda.configuration.read.ConfigKeys.Companion.BOOTSTRAP_KEY
-import net.corda.configuration.read.ConfigKeys.Companion.FLOW_KEY
-import net.corda.configuration.read.ConfigKeys.Companion.MESSAGING_KEY
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.manager.FlowEventExecutorFactory
 import net.corda.flow.manager.FlowMetaDataFactory
@@ -20,6 +17,9 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.sandbox.service.SandboxService
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.FLOW_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
@@ -103,9 +103,9 @@ class FlowService @Activate constructor(
 
     @Suppress("TooGenericExceptionThrown", "UNUSED_PARAMETER")
     private fun onConfigChange(keys: Set<String>, config: Map<String, SmartConfig>) {
-        if (isRelevantConfigKey(keys) && config.keys.containsAll(listOf(MESSAGING_KEY, BOOTSTRAP_KEY, FLOW_KEY))) {
+        if (isRelevantConfigKey(keys)) {
             coordinator.postEvent(
-                NewConfigurationReceived(config[BOOTSTRAP_KEY]!!.withFallback(config[MESSAGING_KEY]).withFallback(config[FLOW_KEY]))
+                NewConfigurationReceived(config[BOOT_CONFIG]!!.withFallback(config[MESSAGING_CONFIG]).withFallback(config[FLOW_CONFIG]))
             )
         }
     }
@@ -114,7 +114,7 @@ class FlowService @Activate constructor(
      * True if any of the config [keys] are relevant to this app.
      */
     private fun isRelevantConfigKey(keys: Set<String>) : Boolean {
-        return MESSAGING_KEY in keys || BOOTSTRAP_KEY in keys || FLOW_KEY in keys
+        return MESSAGING_CONFIG in keys || BOOT_CONFIG in keys || FLOW_CONFIG in keys
     }
 
     override val isRunning: Boolean

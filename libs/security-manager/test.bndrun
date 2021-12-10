@@ -36,6 +36,7 @@
 	org.apache.felix.framework.security;version='[2.8.0,2.8.1)',\
 	org.apache.felix.scr;version='[2.1.28,2.1.29)',\
 	org.apache.logging.log4j.api;version='[2.14.1,2.14.2)',\
+	org.apache.logging.log4j.slf4j-impl;version='[2.14.1,2.14.2)',\
 	org.assertj.core;version='[3.12.2,3.12.3)',\
 	org.jetbrains.kotlin.osgi-bundle;version='[1.4.32,1.4.33)',\
 	org.opentest4j;version='[1.2.0,1.2.1)',\
@@ -44,5 +45,4 @@
 	org.osgi.util.function;version='[1.1.0,1.1.1)',\
 	org.osgi.util.promise;version='[1.1.1,1.1.2)',\
 	security-manager-tests;version='[5.0.0,5.0.1)',\
-	slf4j.api;version='[1.7.32,1.7.33)',\
-	slf4j.simple;version='[1.7.32,1.7.33)'
+	slf4j.api;version='[1.7.32,1.7.33)'
