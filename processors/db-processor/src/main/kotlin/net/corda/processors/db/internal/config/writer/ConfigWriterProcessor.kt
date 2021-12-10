@@ -33,23 +33,25 @@ internal class ConfigWriterProcessor(
 
         // TODO - Joel - Create actual Avro classes for requests and responses. Currently, we just stuff the
         //  key and value into the request user ID.
+        // TODO - Joel - Replace with Config Avro class for now. Look in demo components.
         val (key, value) = request.requestUserId.split('=')
         val configEntity = ConfigEntity(key, value)
 
         try {
             dbWriter.writeEntity(setOf(configEntity))
         } catch (e: RollbackException) {
-            // TODO - Joel - Retry? Push back onto queue?
+            // TODO - Joel - Use completeExceptionally for both branches.
         } catch (e: Exception) {
             // These are exceptions related to incorrect set-up of the transaction, and should not occur.
-            throw ConfigWriteException("TODO - Joel - Exception message.", e)
+            throw ConfigWriteException("Updated config could not be written to the cluster database.", e)
         }
 
         logger.info("JJJ publishing records $configEntity") // TODO - Joel - This logging is only for demo purposes.
         // TODO - Joel - Send proper response.
         respFuture.complete(PermissionManagementResponse("DONT_CARE"))
 
-        val record = Record(CONFIG_TOPIC, key, value)
+        val record = Record(TOPIC_CONFIG, key, value)
+        // TODO - Joel - Wait for future.
         publisher.publish(listOf(record))
     }
 }

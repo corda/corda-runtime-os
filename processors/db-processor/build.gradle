@@ -29,10 +29,10 @@ dependencies {
 
     // TODO - Joel - Below are dependencies required by `KafkaDriver`. Remove in the future.
     compileOnly 'org.osgi:osgi.core'
-    implementation "io.javalin:javalin-osgi:$javalinVersion"
-    runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"
     implementation project(":libs:schema-registry:schema-registry")
+    implementation "io.javalin:javalin-osgi:$javalinVersion"
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
+    runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"
 }
 
 tasks.named('jar', Jar) {

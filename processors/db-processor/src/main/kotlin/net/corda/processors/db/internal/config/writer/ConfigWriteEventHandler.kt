@@ -22,21 +22,28 @@ class ConfigWriteEventHandler(private val configWriterSubscriptionFactory: Confi
      * than [StartEvent]/[SubscribeEvent]/[StopEvent] is received.
      * TODO - Joel - Document what else is thrown.
      */
-    override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) = when (event) {
-        is StartEvent -> Unit // We cannot start until we have the required config.
+    override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        when (event) {
+            is StartEvent -> Unit // We cannot start until we have the required bootstrap config.
 
-        is SubscribeEvent -> {
-            if (subscriptionHandle != null) throw ConfigWriteException("TODO - Joel - Exception message.")
-            subscriptionHandle = configWriterSubscriptionFactory.create(event.config, event.instanceId)
-            // TODO - Joel - Should I spin here while waiting for DB to come up, if it's not up?
-            coordinator.updateStatus(LifecycleStatus.UP)
+            // TODO - Joel - Handle repeated subscription attempts? If so, differentiate between duplicate subscribes
+            //  with the same vs different config?
+            is SubscribeEvent -> {
+                if (subscriptionHandle != null) {
+                    throw ConfigWriteException("An attempt was made to subscribe twice.")
+                }
+
+                // TODO - Joel - Catch errors and set unhealthy status.
+                // TODO - Joel - Check if DB can be connected to, at a minimum.
+
+                subscriptionHandle = configWriterSubscriptionFactory.create(event.config, event.instanceId)
+                coordinator.updateStatus(LifecycleStatus.UP)
+            }
+
+            is StopEvent -> {
+                subscriptionHandle?.stop()
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+            }
         }
-
-        is StopEvent -> {
-            subscriptionHandle?.stop()
-            coordinator.updateStatus(LifecycleStatus.DOWN)
-        }
-
-        else -> throw ConfigWriteException("TODO - Joel - Exception message.")
     }
 }

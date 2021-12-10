@@ -28,7 +28,7 @@ class DBProcessorImpl @Activate constructor(
         dbWriter.bootstrapConfig(config, setOf(ConfigEntity::class.java))
 
         configWriteService.start()
-        // TODO - Joel - Pass in the topic prefix and use it.
+        // TODO - Joel - Use atKey/atPath to stuff topic prefix into config.
         configWriteService.bootstrapConfig(config, instanceId)
     }
 

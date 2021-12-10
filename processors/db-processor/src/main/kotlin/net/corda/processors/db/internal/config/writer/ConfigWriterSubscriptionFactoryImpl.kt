@@ -29,16 +29,16 @@ class ConfigWriterSubscriptionFactoryImpl @Activate constructor(
 ) : ConfigWriterSubscriptionFactory {
 
     override fun create(config: SmartConfig, instanceId: Int): Lifecycle {
+        val publisherConfig = PublisherConfig(CLIENT_NAME_DB, instanceId)
         val rpcConfig =
-            RPCConfig(GROUP_NAME, CLIENT_NAME, CONFIG_UPDATE_REQUEST_TOPIC, REQ_CLASS, RESP_CLASS, instanceId)
+            RPCConfig(GROUP_NAME, CLIENT_NAME_RPC, TOPIC_CONFIG_UPDATE_REQUEST, REQ_CLASS, RESP_CLASS, instanceId)
 
-        val publisherConfig = PublisherConfig(CLIENT_ID, instanceId)
         val publisher = publisherFactory.createPublisher(publisherConfig, config)
-
         val processor = ConfigWriterProcessor(dbWriter, publisher)
         val subscription = subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
         
         publisher.start()
+        // TODO - Joel - Allow publisher to be closed.
         subscription.start()
 
         return subscription
