@@ -25,41 +25,36 @@ class DeployPods(
     private fun getPods(): Collection<String> {
         repeat(300) {
             Thread.sleep(1000)
-            val listPods = ProcessBuilder().command(
+            val pods = ProcessRunner.execute(
                 "kubectl",
                 "get",
                 "pod",
                 "-n",
                 namespaceName
-            ).start()
-            if (listPods.waitFor() != 0) {
-                throw DeploymentException("Could not get the pods in $namespaceName")
-            }
-            val allPods = listPods.inputStream
-                .reader()
-                .readLines()
+            )
+            val allPods = pods.lines()
                 .drop(1)
                 .map {
                     it.split("\\s+".toRegex())
-                }.map {
+                }.filter {
+                    it.size > 3
+                }.associate {
                     it[0] to it[2]
-                }.toMap()
+                }
             val badContainers = allPods.filterValues {
                 it == "Error" || it == "CrashLoopBackOff" || it == "ErrImagePull" || it == "ImagePullBackOff"
             }
             if (badContainers.isNotEmpty()) {
                 println("Error in ${badContainers.keys}")
                 badContainers.keys.forEach {
-                    ProcessBuilder().command(
+                    ProcessRunner.follow(
                         "kubectl",
                         "describe",
                         "pod",
                         "-n",
                         namespaceName,
                         it
-                    ).inheritIO()
-                        .start()
-                        .waitFor()
+                    )
                     throw DeploymentException("Error in pods")
                 }
             }

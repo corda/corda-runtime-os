@@ -17,7 +17,8 @@ import javax.crypto.spec.SecretKeySpec
 @Command(
     name = "create-stores",
     showDefaultValues = true,
-    description = ["Create key and trust stores"]
+    description = ["Create key and trust stores"],
+    mixinStandardHelpOptions = true,
 )
 class CreateStores : Runnable {
     companion object {
@@ -44,7 +45,7 @@ class CreateStores : Runnable {
     private var email = System.getenv("TINYCERT_EMAIL") ?: System.getenv("CORDA_ARTIFACTORY_USERNAME")
 
     @Option(
-        names = ["-h", "--host"],
+        names = ["--hosts"],
         description = ["The host names"]
     )
     var hosts = listOf("corda.net", "www.corda.net", "dev.corda.net")
@@ -250,12 +251,8 @@ class CreateStores : Runnable {
     }
 
     private fun runCommand(vararg commands: String) {
-        val process = ProcessBuilder()
-            .command(*commands)
-            .inheritIO()
-            .start()
-        if (process.waitFor() != 0) {
-            System.err.println(process.errorStream.reader().readText())
+        val success = ProcessRunner.follow(*commands)
+        if (!success) {
             throw DeploymentException("Could not run command ${commands.joinToString(" ")}")
         }
     }

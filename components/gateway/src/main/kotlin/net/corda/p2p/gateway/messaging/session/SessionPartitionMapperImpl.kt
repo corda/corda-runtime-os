@@ -21,9 +21,6 @@ class SessionPartitionMapperImpl(
     nodeConfiguration: SmartConfig,
     instanceId: Int,
 ) : SessionPartitionMapper, LifecycleWithDominoTile {
-    init {
-        println("QQQ created ${hashCode()}")
-    }
 
     companion object {
         const val CONSUMER_GROUP_ID = "session_partitions_mapper"
@@ -44,13 +41,7 @@ class SessionPartitionMapperImpl(
         return if (!isRunning) {
             throw IllegalStateException("getPartitions invoked, while session partition mapper is not running.")
         } else {
-            val partitions = sessionPartitionsMapping[sessionId]
-            if(partitions == null) {
-                println("QQQ (${hashCode()}) getting partition |$sessionId| - unknown! - $sessionPartitionsMapping")
-            } else {
-                println("QQQ (${hashCode()}) getting partition |$sessionId| - known - $partitions!")
-            }
-            partitions
+            sessionPartitionsMapping[sessionId]
         }
     }
 
@@ -62,7 +53,6 @@ class SessionPartitionMapperImpl(
             get() = SessionPartitions::class.java
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
-            println("QQQ got snapshots $currentData")
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
             future.get().complete(Unit)
         }
@@ -72,13 +62,11 @@ class SessionPartitionMapperImpl(
             oldValue: SessionPartitions?,
             currentData: Map<String, SessionPartitions>
         ) {
-            println("QQQ got next ${newRecord.key} -> ${newRecord.value}")
             if (newRecord.value == null) {
                 sessionPartitionsMapping.remove(newRecord.key)
             } else {
                 sessionPartitionsMapping[newRecord.key] = newRecord.value!!.partitions
             }
-            println("QQQ (${this@SessionPartitionMapperImpl.hashCode()}) after got next |${newRecord.key}| -> ${sessionPartitionsMapping[newRecord.key]}")
         }
     }
 

@@ -234,9 +234,7 @@ open class SessionManagerImpl(
         sessionReplayer.removeAllMessagesFromReplay()
         heartbeatManager.stopTrackingAllSessions()
         val tombstoneRecords = (activeOutboundSessionsById.keys + pendingOutboundSessions.keys + activeInboundSessions.keys
-                + pendingInboundSessions.keys).map { Record(Schema.SESSION_OUT_PARTITIONS, it, null).also {
-                    println("QQQ remove partition A $it")
-        } }
+                + pendingInboundSessions.keys).map { Record(Schema.SESSION_OUT_PARTITIONS, it, null) }
         activeOutboundSessions.clear()
         activeOutboundSessionsById.clear()
         pendingOutboundSessions.clear()
@@ -260,9 +258,7 @@ open class SessionManagerImpl(
             pendingOutboundSessions.remove(sessionId)
             pendingOutboundSessionKeys.remove(sessionKey)
             pendingOutboundSessionMessageQueues.destroyQueue(sessionKey)
-            publisher.publish(listOf(Record(Schema.SESSION_OUT_PARTITIONS, sessionId, null))).also {
-                println("QQQ destroy partition B $sessionId")
-            }
+            publisher.publish(listOf(Record(Schema.SESSION_OUT_PARTITIONS, sessionId, null)))
         }
     }
 

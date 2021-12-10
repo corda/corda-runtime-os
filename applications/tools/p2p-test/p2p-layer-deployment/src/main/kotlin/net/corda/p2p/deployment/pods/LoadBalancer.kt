@@ -7,7 +7,7 @@ class LoadBalancer(
     override val app = "load-balancer"
     override val image = "tekn0ir/nginx-stream"
     override val ports: Collection<Port> = listOf(
-        Port("http", 1433)
+        Port.Gateway
     )
     override val rawData = listOf(
         TextRawData(
@@ -19,12 +19,12 @@ class LoadBalancer(
                     upstream loadbalancer {
                           ${
                     servers.joinToString("\n") {
-                        "server $it:1433;"
+                        "server $it:${Port.Gateway.port};"
                     }
                     }
                     }
                     server {
-                        listen 1433;
+                        listen ${Port.Gateway.port};
                         proxy_pass loadbalancer;
                     }
                     """.trimIndent()

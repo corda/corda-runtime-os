@@ -13,7 +13,8 @@ import picocli.CommandLine.Option
 @Command(
     name = "deploy",
     showDefaultValues = true,
-    description = ["Deploy P2P layer cluster for K8S"]
+    description = ["Deploy P2P layer cluster for K8S"],
+    mixinStandardHelpOptions = true,
 )
 class Deploy : Runnable {
     @Option(
@@ -92,30 +93,20 @@ class Deploy : Runnable {
         names = ["--lm-conf", "--link-manager-config"],
         description = ["Link manager extra configuration arguments (fop example: --sessionTimeoutMilliSecs=1800000)"]
     )
-    var linkManagerExtraArguments = listOf("--sessionTimeoutMilliSecs", "1800000")
+    var linkManagerExtraArguments = emptyList<String>()
 
     @Option(
         names = ["--gateway-config", "--gateway-conf"],
         description = ["Gateway extra configuration arguments (for example: --retryDelayMilliSecs=100000)"]
     )
-    var gatewayArguments = listOf(
-        "--responseTimeoutMilliSecs", "1800000",
-        "--connectionIdleTimeoutSec", "1800",
-        "--retryDelayMilliSecs", "100000",
-    )
+    var gatewayArguments = emptyList<String>()
 
     private val isMiniKube = let {
-        val getConfig = ProcessBuilder().command(
+        ProcessRunner.execute(
             "kubectl",
             "config",
             "current-context"
-        ).start()
-        getConfig
-            .inputStream
-            .reader()
-            .useLines {
-                it.contains("minikube")
-            }
+        ).contains("minikube")
     }
 
     @Option(

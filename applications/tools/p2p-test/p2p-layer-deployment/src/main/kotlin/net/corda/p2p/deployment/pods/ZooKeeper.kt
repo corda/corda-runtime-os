@@ -13,7 +13,10 @@ class ZooKeeper(
                     } else {
                         "zookeeper-$indexToString"
                     }
-                    "server.$indexToString=$server:2888:3888;2181"
+                    "server.$indexToString=" +
+                        "$server:${Port.ZooKeeperFollowerPort.port}" +
+                        ":${Port.ZooKeeperElectionPort.port};" +
+                        "${Port.ZooKeeperClientPort.port}"
                 }
                 ZooKeeper(index, serverString)
             }
@@ -23,9 +26,9 @@ class ZooKeeper(
     override val image = "zookeeper"
 
     override val ports = listOf(
-        Port("client-port", 2181),
-        Port("follower-port", 2888),
-        Port("election-port", 3888),
+        Port.ZooKeeperClientPort,
+        Port.ZooKeeperElectionPort,
+        Port.ZooKeeperFollowerPort,
     )
     override val environmentVariables = mapOf(
         "ZOO_MY_ID" to index.toString(),

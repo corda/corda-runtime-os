@@ -35,6 +35,6 @@ class Simulator(
     }
 
     override val app by lazy {
-        "simulator-${simulatorConfig.hashCode()}-${System.nanoTime() % 3600}-${Random.nextInt()}"
+        "simulator-${System.nanoTime() % 3600000}-${Random.nextInt()}"
     }
 }

@@ -271,9 +271,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             val records = mutableListOf<Record<String, *>>()
             records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage))
             val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
-            records.add(Record(Schema.SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions))).also {
-                println("QQQ publish partition B ${state.sessionId} - $partitions")
-            }
+            records.add(Record(Schema.SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions)))
             return records
         }
 
@@ -347,9 +345,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                         listOf(
                             Record(Schema.LINK_OUT_TOPIC, generateKey(), response),
                             Record(Schema.SESSION_OUT_PARTITIONS, payload.header.sessionId, SessionPartitions(partitionsAssigned))
-                        ).also {
-                            println("QQQ publish partition A ${payload.header.sessionId} -> $partitionsAssigned")
-                        }
+                        )
                     }
                     else -> {
                         listOf(Record(Schema.LINK_OUT_TOPIC, generateKey(), response))

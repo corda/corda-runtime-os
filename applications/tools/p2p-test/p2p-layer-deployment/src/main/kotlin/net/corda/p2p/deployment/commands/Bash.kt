@@ -9,6 +9,7 @@ import picocli.CommandLine.Parameters
     name = "bash",
     description = ["Bash into one of the pods"],
     showDefaultValues = true,
+    mixinStandardHelpOptions = true,
 )
 class Bash : Runnable {
     @Option(
@@ -31,39 +32,31 @@ class Bash : Runnable {
 
     @Suppress("UNCHECKED_CAST")
     override fun run() {
-        val getPods = ProcessBuilder().command(
+        val name = ProcessRunner.execute(
             "kubectl",
             "get",
             "pod",
             "-n", namespaceName,
             "-l", "app=$pod",
             "--output", "jsonpath={.items[*].metadata.name}",
-        ).start()
-        if (getPods.waitFor() != 0) {
-            System.err.println(getPods.errorStream.reader().readText())
-            throw DeploymentException("Could not get pods")
-        }
-        val name = getPods.inputStream.reader().readText()
+        )
         if (name.isBlank()) {
             throw DeploymentException("Could not find $pod")
         }
 
-        val command = listOf(
-            "kubectl",
-            "exec",
-            "-it",
-            "-n",
-            namespaceName,
-            name,
-            "--",
-        ) + params.ifEmpty {
-            listOf("bash")
-        }
-
-        val bash = ProcessBuilder().command(command)
-            .inheritIO()
-            .start()
-
-        bash.waitFor()
+        ProcessRunner.follow(
+            listOf(
+                "kubectl",
+                "exec",
+                "-it",
+                "-n",
+                namespaceName,
+                name,
+                "--",
+            ) +
+                params.ifEmpty {
+                    listOf("bash")
+                }
+        )
     }
 }

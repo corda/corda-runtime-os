@@ -7,6 +7,7 @@ import picocli.CommandLine.Option
 @Command(
     name = "jdbc",
     showDefaultValues = true,
+    mixinStandardHelpOptions = true,
     description = ["Show the JDB connection URL"]
 )
 class Jdbc : Runnable {
@@ -23,6 +24,11 @@ class Jdbc : Runnable {
             return
         }
         RunJar.startTelepresence()
-        println("Example of JDBC URL: jdbc:postgresql://db.$namespaceName/${status.username}?user=${status.username}&password=${status.password}")
+        println(
+            "Example of JDBC " +
+                "URL: jdbc:postgresql://db.$namespaceName/" +
+                "${status.username}?" +
+                "user=${status.username}&password=${status.password}"
+        )
     }
 }

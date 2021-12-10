@@ -1,12 +1,14 @@
 package net.corda.p2p.deployment.commands.simulator.db
 
 import net.corda.p2p.deployment.DeploymentException
+import net.corda.p2p.deployment.commands.ProcessRunner
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
 @Command(
     name = "psql",
     showDefaultValues = true,
+    mixinStandardHelpOptions = true,
     description = ["Interact with the DB SQL client"]
 )
 class Psql : Runnable {
@@ -18,7 +20,7 @@ class Psql : Runnable {
 
     @Suppress("UNCHECKED_CAST")
     override fun run() {
-        val getPod = ProcessBuilder().command(
+        val name = ProcessRunner.execute(
             "kubectl",
             "get",
             "pod",
@@ -28,20 +30,12 @@ class Psql : Runnable {
             "app=db",
             "--output",
             "jsonpath={.items[].metadata.name}",
-        ).start()
-        if (getPod.waitFor() != 0) {
-            System.err.println(getPod.errorStream.reader().readText())
-            throw DeploymentException("Could not get pods")
-        }
-        val name = getPod
-            .inputStream
-            .reader()
-            .readText()
+        )
         if (name.isBlank()) {
             throw DeploymentException("Could not find database pod")
         }
 
-        val bash = ProcessBuilder().command(
+        ProcessRunner.follow(
             "kubectl",
             "exec",
             "-it",
@@ -53,9 +47,5 @@ class Psql : Runnable {
             "-U",
             "corda",
         )
-            .inheritIO()
-            .start()
-
-        bash.waitFor()
     }
 }

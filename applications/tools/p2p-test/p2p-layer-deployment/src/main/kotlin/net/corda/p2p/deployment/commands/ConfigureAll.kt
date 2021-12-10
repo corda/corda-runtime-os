@@ -2,6 +2,7 @@ package net.corda.p2p.deployment.commands
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.p2p.deployment.DeploymentException
+import net.corda.p2p.deployment.pods.Port
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
@@ -9,7 +10,8 @@ import java.io.File
 @Command(
     name = "configure",
     showDefaultValues = true,
-    description = ["configure a cluster (and the other cluster to know about it)"]
+    description = ["configure a cluster (and the other cluster to know about it)"],
+    mixinStandardHelpOptions = true,
 )
 class ConfigureAll : Runnable {
     @Option(
@@ -23,24 +25,20 @@ class ConfigureAll : Runnable {
         names = ["-l", "--lm", "--link-manager"],
         description = ["Link manager extra configuration arguments (for example --sessionTimeoutMilliSecs=1800000)"]
     )
-    var linkManagerExtraArguments = listOf("--sessionTimeoutMilliSecs", "1800000")
+    var linkManagerExtraArguments = emptyList<String>()
 
     @Option(
         names = ["-g", "--gateway"],
         description = ["Gateway extra configuration arguments (for example --responseTimeoutMilliSecs=1800000)"]
     )
-    var gatewayArguments = listOf(
-        "--responseTimeoutMilliSecs", "1800000",
-        "--connectionIdleTimeoutSec", "1800",
-        "--retryDelayMilliSecs", "100000",
-    )
+    var gatewayArguments = emptyList<String>()
 
     private val jsonReader = ObjectMapper()
     private val jsonWriter = jsonReader.writer()
 
     @Suppress("UNCHECKED_CAST")
     private val namespaces by lazy {
-        val getAll = ProcessBuilder().command(
+        ProcessRunner.execute(
             "kubectl",
             "get",
             "namespace",
@@ -48,15 +46,11 @@ class ConfigureAll : Runnable {
             "namespace-type=p2p-deployment,creator=${MyUserName.userName}",
             "-o",
             "jsonpath={range .items[*]}{.metadata.name}{\"|\"}{.metadata.annotations}{\"\\n\"}{end}",
-        ).start()
-        if (getAll.waitFor() != 0) {
-            System.err.println(getAll.errorStream.reader().readText())
-            throw DeploymentException("Could not get namespaces")
-        }
-        getAll
-            .inputStream
-            .reader()
-            .readLines().associate { line ->
+        ).lines()
+            .filter {
+                it.contains('|')
+            }
+            .associate { line ->
                 val name = line.substringBefore('|')
                 val annotations = line.substringAfter('|')
                 name to jsonReader.readValue(annotations, Map::class.java)
@@ -80,7 +74,7 @@ class ConfigureAll : Runnable {
         return File(keyStoreDir.absolutePath, "$name.keystore.jks").also { keyStoreFile ->
             if (!keyStoreFile.exists()) {
                 keyStoreDir.mkdirs()
-                val createKetstore = ProcessBuilder().command(
+                val success = ProcessRunner.follow(
                     "keytool",
                     "-genkeypair",
                     "-alias",
@@ -97,9 +91,8 @@ class ConfigureAll : Runnable {
                     "CN=GB",
                     "-keypass",
                     "password"
-                ).inheritIO()
-                    .start()
-                if (createKetstore.waitFor() != 0) {
+                )
+                if (!success) {
                     throw DeploymentException("Could not create key store for $name")
                 }
             }
@@ -143,7 +136,7 @@ class ConfigureAll : Runnable {
                     "publicKeyAlias" to "ec",
                     "keystorePassword" to "password",
                     "publicKeyAlgo" to "ECDSA",
-                    "address" to "http://$host:1433",
+                    "address" to "http://$host:${Port.Gateway.port}",
                     "networkType" to "CORDA_5"
                 )
             )
@@ -186,7 +179,7 @@ class ConfigureAll : Runnable {
                         "publicKeyAlias" to "ec",
                         "keystorePassword" to "password",
                         "publicKeyAlgo" to "ECDSA",
-                        "address" to "http://$host:1433",
+                        "address" to "http://$host:${Port.Gateway.port}",
                         "networkType" to "CORDA_5"
                     )
                 )
@@ -257,8 +250,8 @@ class ConfigureAll : Runnable {
                 "-k",
                 RunJar.kafkaServers(namespaceName),
                 "gateway",
-                "--hostAddress=$host",
-                "--port=1433",
+                "--hostAddress=0.0.0.0",
+                "--port=${Port.Gateway.port}",
                 "--keyStore=${sslKeyStore.absolutePath}",
                 "--keyStorePassword=password",
                 "--trustStore=${trustStoreFile.absolutePath}",

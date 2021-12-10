@@ -79,7 +79,7 @@ abstract class Pod {
                             "ports" to ports.map {
                                 mapOf(
                                     "containerPort" to it.port,
-                                    "name" to it.name
+                                    "name" to it.displayName
                                 )
                             },
                             "env" to environmentVariables.map { (key, value) ->
@@ -113,14 +113,17 @@ abstract class Pod {
                 "metadata" to mapOf(
                     "name" to app,
                     "namespace" to namespace,
-                    "labels" to mapOf("app" to app) + labels
+                    "labels" to mapOf("app" to app) + labels,
+                    "annotations" to mapOf(
+                        "cluster-autoscaler.kubernetes.io/safe-to-evict" to "false"
+                    )
                 ),
                 "spec" to mapOf(
                     "type" to "NodePort",
                     "ports" to ports.map {
                         mapOf(
                             "port" to it.port,
-                            "name" to it.name
+                            "name" to it.displayName
                         )
                     },
                     "selector" to mapOf("app" to app)

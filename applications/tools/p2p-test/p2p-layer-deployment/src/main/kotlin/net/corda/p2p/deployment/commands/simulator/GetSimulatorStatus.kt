@@ -1,5 +1,6 @@
 package net.corda.p2p.deployment.commands.simulator
 
+import net.corda.p2p.deployment.commands.ProcessRunner
 import java.time.Instant
 
 data class JobStatus(
@@ -27,26 +28,23 @@ class GetSimulatorStatus(
 ) : () -> Collection<JobStatus> {
 
     override fun invoke(): Collection<JobStatus> {
-        val getStatus = ProcessBuilder().command(
+        return ProcessRunner.execute(
             "kubectl",
             "get", "job",
             "-n", namespaceName,
             "-l", "mode=$mode",
             "-o", "jsonpath={range .items[*]}{.metadata.name}{\",\"}{.metadata.labels.db}{\",\"}{.status.completionTime}{\"\\n\"}{end}"
-        ).start()
-        getStatus.waitFor()
-        return getStatus
-            .inputStream.reader().useLines { lines ->
-                lines.map {
-                    it.split(",")
-                }.map {
-                    val completedAt = if (it[2].isNotBlank()) {
-                        Instant.parse(it[2])
-                    } else {
-                        null
-                    }
-                    JobStatus(it[0], it[1], completedAt)
-                }.toList()
-            }
+        ).lines()
+            .filter { it.contains(',') }
+            .map {
+                it.split(",")
+            }.map {
+                val completedAt = if (it[2].isNotBlank()) {
+                    Instant.parse(it[2])
+                } else {
+                    null
+                }
+                JobStatus(it[0], it[1], completedAt)
+            }.toList()
     }
 }

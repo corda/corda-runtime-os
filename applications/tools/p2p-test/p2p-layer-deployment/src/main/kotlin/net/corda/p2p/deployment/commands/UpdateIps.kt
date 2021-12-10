@@ -8,7 +8,8 @@ import picocli.CommandLine.Command
 @Command(
     name = "update-ips",
     showDefaultValues = true,
-    description = ["Update all the ips in all the gateways"]
+    description = ["Update all the ips in all the gateways"],
+    mixinStandardHelpOptions = true,
 )
 class UpdateIps : Runnable {
     private val yaml = ObjectMapper(YAMLFactory())
@@ -21,7 +22,7 @@ class UpdateIps : Runnable {
 
         @Suppress("UNCHECKED_CAST")
         val loadBalancerIp by lazy {
-            val getIp = ProcessBuilder().command(
+            val ip = ProcessRunner.execute(
                 "kubectl",
                 "get",
                 "service",
@@ -31,12 +32,7 @@ class UpdateIps : Runnable {
                 "metadata.name=load-balancer",
                 "--output",
                 "jsonpath={.items[*].spec.clusterIP}",
-            ).start()
-            if (getIp.waitFor() != 0) {
-                System.err.println(getIp.errorStream.reader().readText())
-                throw DeploymentException("Could not get load balancer service")
-            }
-            val ip = getIp.inputStream.reader().readText()
+            )
             if (ip.isBlank()) {
                 throw DeploymentException("No load balancer service")
             }
@@ -45,7 +41,7 @@ class UpdateIps : Runnable {
 
         @Suppress("UNCHECKED_CAST")
         val gateways by lazy {
-            val getAll = ProcessBuilder().command(
+            ProcessRunner.execute(
                 "kubectl",
                 "get",
                 "pod",
@@ -55,15 +51,7 @@ class UpdateIps : Runnable {
                 "type=p2p-gateway",
                 "--output",
                 "jsonpath={.items[*].metadata.labels.app}",
-            ).start()
-            if (getAll.waitFor() != 0) {
-                System.err.println(getAll.errorStream.reader().readText())
-                throw DeploymentException("Could not get pods")
-            }
-            getAll
-                .inputStream
-                .reader()
-                .readText()
+            )
                 .split(" ")
                 .filter {
                     it.isNotBlank()
@@ -73,7 +61,7 @@ class UpdateIps : Runnable {
 
     @Suppress("UNCHECKED_CAST")
     private fun namespaces(): Collection<Namespace> {
-        val getAll = ProcessBuilder().command(
+        return ProcessRunner.execute(
             "kubectl",
             "get",
             "namespace",
@@ -81,28 +69,22 @@ class UpdateIps : Runnable {
             "namespace-type=p2p-deployment,creator=${MyUserName.userName}",
             "-o",
             "jsonpath={range .items[*]}{.metadata.name}{\",\"}{.metadata.annotations.host}{\"\\n\"}{end}",
-        ).start()
-        if (getAll.waitFor() != 0) {
-            System.err.println(getAll.errorStream.reader().readText())
-            throw DeploymentException("Could not get namespaces")
-        }
-        return getAll.inputStream.reader().readLines().map { line ->
-            val split = line.split(",")
-            Namespace(split[0], split[1])
-        }
+        ).lines()
+            .filter {
+                it.contains(",")
+            }
+            .map { line ->
+                val split = line.split(",")
+                Namespace(split[0], split[1])
+            }
     }
 
     override fun run() {
         val namespaces = namespaces()
         namespaces.forEach { namespaceToPatch ->
             val ipMap = namespaces.map { namespaceToGetIp ->
-                val ip = if (namespaceToPatch == namespaceToGetIp) {
-                    "0.0.0.0"
-                } else {
-                    namespaceToGetIp.loadBalancerIp
-                }
                 mapOf(
-                    "ip" to ip,
+                    "ip" to namespaceToGetIp.loadBalancerIp,
                     "hostnames" to listOf(namespaceToGetIp.host)
                 )
             }
@@ -120,18 +102,17 @@ class UpdateIps : Runnable {
             )
             namespaceToPatch.gateways.forEach { gatewayName ->
                 println("Setting IP map of $gatewayName in ${namespaceToPatch.name}")
-                val patch = ProcessBuilder()
-                    .command(
-                        "kubectl",
-                        "patch",
-                        "deployment",
-                        gatewayName,
-                        "-n",
-                        namespaceToPatch.name,
-                        "--patch",
-                        yamlWriter.writeValueAsString(conf)
-                    ).inheritIO().start()
-                if (patch.waitFor() != 0) {
+                val patched = ProcessRunner.follow(
+                    "kubectl",
+                    "patch",
+                    "deployment",
+                    gatewayName,
+                    "-n",
+                    namespaceToPatch.name,
+                    "--patch",
+                    yamlWriter.writeValueAsString(conf)
+                )
+                if (!patched) {
                     throw DeploymentException("Could not patch gateway $gatewayName in ${namespaceToPatch.name}")
                 }
             }

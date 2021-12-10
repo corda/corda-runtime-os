@@ -13,6 +13,7 @@ import java.io.File
 @Command(
     name = "start",
     showDefaultValues = true,
+    mixinStandardHelpOptions = true,
     description = ["Start a database"]
 )
 class StartDb : Runnable {
