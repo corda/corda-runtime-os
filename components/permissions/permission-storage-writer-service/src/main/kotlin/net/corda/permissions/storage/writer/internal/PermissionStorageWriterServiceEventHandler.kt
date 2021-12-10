@@ -68,9 +68,7 @@ class PermissionStorageWriterServiceEventHandler(
                     }
                     LifecycleStatus.DOWN -> {
                         log.info("Status: DOWN")
-                        subscription?.stop()
-                        subscription = null
-                        coordinator.updateStatus(LifecycleStatus.DOWN)
+                        downTransition(coordinator)
                     }
                     LifecycleStatus.ERROR -> {
                         log.info("Status: ERROR")
@@ -81,7 +79,14 @@ class PermissionStorageWriterServiceEventHandler(
             }
             is StopEvent -> {
                 log.info("Stop event received")
+                downTransition(coordinator)
             }
         }
+    }
+
+    private fun downTransition(coordinator: LifecycleCoordinator) {
+        subscription?.stop()
+        subscription = null
+        coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 }

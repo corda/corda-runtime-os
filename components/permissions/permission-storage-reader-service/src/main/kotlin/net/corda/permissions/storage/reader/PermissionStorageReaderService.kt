@@ -4,6 +4,8 @@ import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.cache.PermissionCacheService
@@ -41,10 +43,10 @@ class PermissionStorageReaderService @Activate constructor(
     override val isRunning: Boolean get() = coordinator.isRunning
 
     override fun start() {
-        coordinator.start()
+        coordinator.postEvent(StartEvent())
     }
 
     override fun stop() {
-        coordinator.stop()
+        coordinator.postEvent(StopEvent())
     }
 }
