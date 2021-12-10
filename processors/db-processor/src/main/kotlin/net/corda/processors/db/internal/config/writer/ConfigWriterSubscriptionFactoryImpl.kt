@@ -1,5 +1,7 @@
 package net.corda.processors.db.internal.config.writer
 
+import net.corda.data.config.ConfigurationManagementRequest
+import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -26,11 +28,17 @@ class ConfigWriterSubscriptionFactoryImpl @Activate constructor(
 ) : ConfigWriterSubscriptionFactory {
 
     override fun create(config: SmartConfig, instanceId: Int, dbUtils: DBUtils): Closeable {
-        val publisherConfig = PublisherConfig(CLIENT_NAME_DB, instanceId)
-        val rpcConfig =
-            RPCConfig(GROUP_NAME, CLIENT_NAME_RPC, TOPIC_CONFIG_UPDATE_REQUEST, REQ_CLASS, RESP_CLASS, instanceId)
+        val publisher = let {
+            val publisherConfig = PublisherConfig(CLIENT_NAME_DB, instanceId)
+            publisherFactory.createPublisher(publisherConfig, config)
+        }
 
-        val publisher = publisherFactory.createPublisher(publisherConfig, config)
+        val rpcConfig = let {
+            val requestClass = ConfigurationManagementRequest::class.java
+            val responseClass = ConfigurationManagementResponse::class.java
+            RPCConfig(GROUP_NAME, CLIENT_NAME_RPC, TOPIC_CONFIG_UPDATE_REQUEST, requestClass, responseClass, instanceId)
+        }
+
         val processor = ConfigWriterProcessor(dbUtils, publisher)
         val subscription = subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
 

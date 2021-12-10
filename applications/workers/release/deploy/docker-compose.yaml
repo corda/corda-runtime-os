@@ -53,7 +53,7 @@ services:
     container_name: db-worker
     # Created with `gradlew applications:workers:release:db:publishOSGiImage`.
     image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker:latest"
-    command: -c messaging.kafka.common.bootstrap.servers=kafka:9092 -c db.driver=org.postgresql.Driver -c db.jdbc.url=jdbc:postgresql://cluster-db:5432/cordacluster -c db.user=user -c db.pass=pass
+    command: -c messaging.kafka.common.bootstrap.servers=kafka:9092
 #  flow-worker:
 #    container_name: flow-worker
 #    # Created with `gradlew applications:workers:release:flow:publishOSGiImage`.

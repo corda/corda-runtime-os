@@ -75,11 +75,10 @@ class DBUtils(
 
     /** Creates a [DataSource] for the cluster database. */
     private fun createDataSource(): DataSource {
-        // TODO - Joel - Define fallback for driver, username and password.
-        val driver = config.getString(CONFIG_DB_DRIVER)
-        val jdbcUrl = config.getString(CONFIG_JDBC_URL)
-        val username = config.getString(CONFIG_DB_USER)
-        val password = config.getString(CONFIG_DB_PASS)
+        val driver = config.getString(CONFIG_DB_DRIVER) ?: CONFIG_DB_DRIVER_DEFAULT
+        val jdbcUrl = config.getString(CONFIG_JDBC_URL) ?: CONFIG_JDBC_URL_DEFAULT
+        val username = config.getString(CONFIG_DB_USER) ?: CONFIG_DB_USER_DEFAULT
+        val password = config.getString(CONFIG_DB_PASS) ?: CONFIG_DB_PASS_DEFAULT
 
         return dataSourceFactory.create(driver, jdbcUrl, username, password, false, MAX_POOL_SIZE)
     }
