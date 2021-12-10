@@ -19,11 +19,11 @@ class OptionalSerializationTests {
     fun setupEnclosedSerializationTest() {
         fun `java optionals should serialize`() {
             val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
-            factory.register(OptionalSerializer(), factory,)
+            factory.register(OptionalSerializer(), factory)
             val obj = Optional.ofNullable("YES")
             val bytes = TestSerializationOutput(true, factory).serialize(obj)
             val deserializerFactory = testDefaultFactory().apply {
-                register(OptionalSerializer(), this,)
+                register(OptionalSerializer(), this)
             }
 
             val deserialized = DeserializationInput(factory).deserialize(bytes)

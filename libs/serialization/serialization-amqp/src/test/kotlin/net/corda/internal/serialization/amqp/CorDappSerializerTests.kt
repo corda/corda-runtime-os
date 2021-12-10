@@ -63,7 +63,7 @@ class CorDappSerializerTests {
         val msg = "help"
 
         proxyFactory.registerExternal(NeedsProxyProxySerializer(), proxyFactory)
-        internalProxyFactory.register(ExampleInternalProxySerializer(), internalProxyFactory,)
+        internalProxyFactory.register(ExampleInternalProxySerializer(), internalProxyFactory)
 
         val needsProxy = NeedsProxy(msg)
 
