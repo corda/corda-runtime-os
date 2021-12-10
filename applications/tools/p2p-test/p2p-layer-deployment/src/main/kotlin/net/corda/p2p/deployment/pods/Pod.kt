@@ -113,7 +113,10 @@ abstract class Pod {
                 "metadata" to mapOf(
                     "name" to app,
                     "namespace" to namespace,
-                    "labels" to mapOf("app" to app) + labels
+                    "labels" to mapOf("app" to app) + labels,
+                    "annotations" to mapOf(
+                        "cluster-autoscaler.kubernetes.io/safe-to-evict" to "false"
+                    )
                 ),
                 "spec" to mapOf(
                     "type" to "NodePort",
