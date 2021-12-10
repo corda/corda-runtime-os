@@ -36,7 +36,7 @@ class ConfigWriterSubscriptionFactoryImpl @Activate constructor(
         val rpcConfig = let {
             val requestClass = ConfigurationManagementRequest::class.java
             val responseClass = ConfigurationManagementResponse::class.java
-            RPCConfig(GROUP_NAME, CLIENT_NAME_RPC, TOPIC_CONFIG_UPDATE_REQUEST, requestClass, responseClass, instanceId)
+            RPCConfig(GROUP_NAME, CLIENT_NAME_RPC, TOPIC_CONFIG_MANAGEMENT_REQUEST, requestClass, responseClass, instanceId)
         }
 
         val processor = ConfigWriterProcessor(dbUtils, publisher)

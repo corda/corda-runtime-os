@@ -41,7 +41,7 @@ class ConfigWriteServiceImpl @Activate constructor(
 
     override fun stop() = coordinator.stop()
 
-    // TODO - Joel - Describe.
+    /** Creates a [DBUtils] instance for the given [config]. */
     private fun createDbUtils(config: SmartConfig): DBUtils {
         val managedEntities = setOf(ConfigEntity::class.java)
         return DBUtils(config, schemaMigrator, HikariDataSourceFactory(), entityManagerFactoryFactory, managedEntities)

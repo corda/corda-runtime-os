@@ -16,7 +16,7 @@ data class ConfigEntity(
     val name: String,
     @Column
     val value: String,
-    @Version
-    @Column
-    val version: String
+//    @Version
+//    @Column
+//    val version: String
 )

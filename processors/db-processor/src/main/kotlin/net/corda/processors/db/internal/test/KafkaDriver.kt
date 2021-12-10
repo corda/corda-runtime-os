@@ -4,12 +4,12 @@ import com.typesafe.config.ConfigFactory
 import io.javalin.Javalin
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
-import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.processors.db.internal.config.writer.TOPIC_CONFIG_MANAGEMENT_REQUEST
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
@@ -38,7 +38,7 @@ class KafkaDriver @Activate constructor(
     private val kafkaConfig = let {
         val configMap = mapOf(
             "messaging.kafka.common.bootstrap.servers" to "kafka:9092",
-            "config.topic.name" to "config"
+            "config.topic.name" to "config.topic"
         )
         val config = ConfigFactory.parseMap(configMap)
         smartConfigFactory.create(config)
@@ -48,7 +48,7 @@ class KafkaDriver @Activate constructor(
         RPCConfig(
             "random_group_name",
             "random_client_name",
-            "config-update-request",
+            TOPIC_CONFIG_MANAGEMENT_REQUEST,
             ConfigurationManagementRequest::class.java,
             ConfigurationManagementResponse::class.java
         ),
@@ -61,7 +61,10 @@ class KafkaDriver @Activate constructor(
     private var currentConfig: Map<String, SmartConfig> = mapOf()
     private val reader = configReaderFactory.createReader(kafkaConfig).apply {
         logger.info("JJJ starting reader.")
-        registerCallback { _, snapshot -> currentConfig = snapshot }
+        registerCallback { _, snapshot ->
+            logger.info("JJJ in snapshot ${snapshot.keys} ${snapshot.values}")
+            currentConfig = snapshot
+        }
         start()
     }
 
@@ -69,16 +72,21 @@ class KafkaDriver @Activate constructor(
         .create()
         .apply { startServer(this) }
         .get("/sendMessage") { context ->
-            val createUserRequest = CreateUserRequest(
-                "", "", false, "", "", Instant.now(), ""
+            val section = "corda.db"
+            val configurationString = """{"timestamp": "${Instant.now()}"}"""
+            val req = ConfigurationManagementRequest(
+                "joel-user",
+                Instant.now().toEpochMilli(),
+                section,
+                configurationString,
+                ""
             )
-            val timestamp = Instant.now()
-            val requestContent = """joel={"timestamp": "$timestamp"}"""
-            val req = ConfigurationManagementRequest(requestContent, Instant.now().toEpochMilli(), createUserRequest)
             publisher.sendRequest(req)
-            Thread.sleep(1000)
 
-            val readBackTimestamp = currentConfig["joel"]?.getString("timestamp")
+            Thread.sleep(3000)
+
+            logger.info("JJJ - Existing entries: $currentConfig")
+            val readBackTimestamp = currentConfig[section]?.getString("timestamp")
             context.status(200).result("Current config: $readBackTimestamp")
         }
 

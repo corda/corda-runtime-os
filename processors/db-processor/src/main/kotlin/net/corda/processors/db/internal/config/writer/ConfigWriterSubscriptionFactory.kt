@@ -1,7 +1,6 @@
 package net.corda.processors.db.internal.config.writer
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import java.io.Closeable

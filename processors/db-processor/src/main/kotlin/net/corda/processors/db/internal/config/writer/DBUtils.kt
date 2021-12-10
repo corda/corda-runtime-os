@@ -1,5 +1,6 @@
 package net.corda.processors.db.internal.config.writer
 
+import com.typesafe.config.ConfigException
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
@@ -37,7 +38,7 @@ class DBUtils(
     /**
      * Connects to the cluster database, and applies the Liquibase schema migrations for the [managedEntities].
      *
-     * This is a temporary measure. Migrations will be applied by a different codepath in the future.
+     * This is a temporary measure. Migrations will be applied by a different code-path in the future.
      */
     fun migrateClusterDatabase() {
         val changeLogResourceFiles = managedEntities.mapTo(LinkedHashSet()) { entity ->
@@ -75,10 +76,10 @@ class DBUtils(
 
     /** Creates a [DataSource] for the cluster database. */
     private fun createDataSource(): DataSource {
-        val driver = config.getString(CONFIG_DB_DRIVER) ?: CONFIG_DB_DRIVER_DEFAULT
-        val jdbcUrl = config.getString(CONFIG_JDBC_URL) ?: CONFIG_JDBC_URL_DEFAULT
-        val username = config.getString(CONFIG_DB_USER) ?: CONFIG_DB_USER_DEFAULT
-        val password = config.getString(CONFIG_DB_PASS) ?: CONFIG_DB_PASS_DEFAULT
+        val driver = getConfigStringOrDefault(CONFIG_DB_DRIVER, CONFIG_DB_DRIVER_DEFAULT)
+        val jdbcUrl = getConfigStringOrDefault(CONFIG_JDBC_URL, CONFIG_JDBC_URL_DEFAULT)
+        val username = getConfigStringOrDefault(CONFIG_DB_USER, CONFIG_DB_USER_DEFAULT)
+        val password = getConfigStringOrDefault(CONFIG_DB_PASS, CONFIG_DB_PASS_DEFAULT)
 
         return dataSourceFactory.create(driver, jdbcUrl, username, password, false, MAX_POOL_SIZE)
     }
@@ -89,5 +90,12 @@ class DBUtils(
         return entityManagerFactoryFactory.create(
             PERSISTENCE_UNIT_NAME, managedEntities.toList(), DbEntityManagerConfiguration(dataSource)
         ).createEntityManager()
+    }
+
+    /** Returns [path] from [config], or default if [path] does not exist. */
+    private fun getConfigStringOrDefault(path: String, default: String) = try {
+        config.getString(path)
+    } catch (e: ConfigException.Missing) {
+        default
     }
 }

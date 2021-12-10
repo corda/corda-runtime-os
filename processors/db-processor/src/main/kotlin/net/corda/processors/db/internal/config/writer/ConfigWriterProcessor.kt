@@ -7,6 +7,7 @@ import net.corda.libs.configuration.read.ConfigReader
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -17,6 +18,10 @@ internal class ConfigWriterProcessor(
     private val dbUtils: DBUtils,
     private val publisher: Publisher
 ) : RPCResponderProcessor<ConfigurationManagementRequest, ConfigurationManagementResponse> {
+
+    private companion object {
+        val logger = contextLogger()
+    }
 
     /**
      * For each [request], the processor attempts to commit the updated config to the cluster database using [dbUtils].
@@ -43,14 +48,16 @@ internal class ConfigWriterProcessor(
         request: ConfigurationManagementRequest,
         respFuture: CompletableFuture<ConfigurationManagementResponse>
     ): Boolean {
-        val configEntity = ConfigEntity(request.section, request.configuration, request.version)
+        // TODO - Joel - Re-enable version, which wasn't working.
+        val configEntity = ConfigEntity(request.section, request.configuration/**, request.version*/)
 
         return try {
             dbUtils.writeEntity(setOf(configEntity))
             true
         } catch (e: Exception) {
+            logger.debug("Config $configEntity couldn't be written to the database. Cause: $e.")
             respFuture.completeExceptionally(
-                ConfigWriteException("Config couldn't be written to the database.", e)
+                ConfigWriteException("Config $configEntity couldn't be written to the database.", e)
             )
             false
         }
@@ -78,10 +85,12 @@ internal class ConfigWriterProcessor(
         }
 
         if (failedFutures.isEmpty()) {
-            respFuture.complete(ConfigurationManagementResponse("DONT_CARE"))
+            respFuture.complete(ConfigurationManagementResponse(true))
         } else {
+            val cause = failedFutures[0]
+            logger.debug("Record $record was written to the database, but couldn't be published. Cause: $cause.")
             respFuture.completeExceptionally(
-                ConfigWriteException("Config was written to the database, but couldn't be published.", failedFutures[0])
+                ConfigWriteException("Record $record was written to the database, but couldn't be published.", cause)
             )
         }
     }
