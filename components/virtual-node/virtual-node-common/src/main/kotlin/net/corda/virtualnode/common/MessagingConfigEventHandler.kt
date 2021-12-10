@@ -1,6 +1,5 @@
 package net.corda.virtualnode.common
 
-import net.corda.configuration.read.ConfigKeys
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
@@ -13,6 +12,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.schema.configuration.ConfigKeys
 
 /**
  * Event handler that specifically handles, and calls back on changes to the MESSAGING config.
@@ -93,8 +93,8 @@ class MessagingConfigEventHandler(
 
     /** Only raise a [ConfigChangedEvent] is the Kafka messaging config has been sent */
     override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {
-        if (ConfigKeys.MESSAGING_KEY in changedKeys) {
-            configChangedEventCallback(ConfigChangedEvent(config[ConfigKeys.MESSAGING_KEY]!!))
+        if (ConfigKeys.MESSAGING_CONFIG in changedKeys) {
+            configChangedEventCallback(ConfigChangedEvent(config[ConfigKeys.MESSAGING_CONFIG]!!))
         }
     }
 

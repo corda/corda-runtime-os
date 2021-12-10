@@ -1,8 +1,9 @@
 package net.corda.flow.manager.impl
 
-import net.corda.data.flow.Checkpoint
+
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.manager.FlowMetaData
 import net.corda.packaging.CPI
 import net.corda.virtualnode.HoldingIdentity

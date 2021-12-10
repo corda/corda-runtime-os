@@ -1,7 +1,6 @@
 package net.corda.flow.manager.impl
 
 import net.corda.data.flow.FlowKey
-import net.corda.data.flow.event.FlowEvent
 import net.corda.dependency.injection.FlowDependencyInjector
 import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.flow.statemachine.NonSerializableState
@@ -28,11 +27,11 @@ class FlowExecutorUtilities{
             dependencyInjector.injectServices(flow.getFlowLogic(), flow)
         }
 
-        fun List<FlowEvent>.toRecordsWithKey(flowEventTopic: String): List<Record<FlowKey, FlowEvent>> {
+        fun List<Any>.toRecordsWithKey(flowKey: FlowKey, flowEventTopic: String): List<Record<FlowKey, Any>> {
             return this.map { event ->
                 Record(
                     flowEventTopic,
-                    event.flowKey,
+                    flowKey,
                     event
                 )
             }

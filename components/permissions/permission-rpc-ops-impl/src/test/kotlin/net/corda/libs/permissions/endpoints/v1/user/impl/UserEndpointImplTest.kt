@@ -1,6 +1,9 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
-import net.corda.libs.permissions.endpoints.exception.PermissionEndpointException
+import net.corda.httprpc.exception.HttpApiException
+import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.RpcAuthContext
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
@@ -10,7 +13,9 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.permissions.service.PermissionServiceComponent
 import net.corda.v5.base.util.Try
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -56,9 +61,17 @@ internal class UserEndpointImplTest {
 
     private val endpoint = UserEndpointImpl(lifecycleCoordinatorFactory, permissionService)
 
+    @BeforeEach
+    fun beforeEach() {
+        val authContext = mock<RpcAuthContext>().apply {
+            whenever(principal).thenReturn("anRpcUser")
+        }
+        CURRENT_RPC_CONTEXT.set(authContext)
+    }
+
     @Test
     fun getProtocolVersion() {
-        Assertions.assertEquals(1, endpoint.protocolVersion)
+        assertEquals(1, endpoint.protocolVersion)
     }
 
     @Test
@@ -72,14 +85,14 @@ internal class UserEndpointImplTest {
         endpoint.start()
         val responseType = endpoint.createUser(createUserType)
 
-        Assertions.assertEquals("uuid", responseType.id)
-        Assertions.assertEquals(0, responseType.version)
-        Assertions.assertEquals(now, responseType.updateTimestamp)
-        Assertions.assertEquals("fullName1", responseType.fullName)
-        Assertions.assertEquals("loginName1", responseType.loginName)
-        Assertions.assertEquals(true, responseType.enabled)
-        Assertions.assertEquals(now, responseType.passwordExpiry)
-        Assertions.assertEquals("parentGroupId", responseType.parentGroup)
+        assertEquals("uuid", responseType.id)
+        assertEquals(0, responseType.version)
+        assertEquals(now, responseType.updateTimestamp)
+        assertEquals("fullName1", responseType.fullName)
+        assertEquals("loginName1", responseType.loginName)
+        assertEquals(true, responseType.enabled)
+        assertEquals(now, responseType.passwordExpiry)
+        assertEquals("parentGroupId", responseType.parentGroup)
     }
 
     @Test
@@ -87,18 +100,18 @@ internal class UserEndpointImplTest {
         endpoint.start()
         whenever(permissionManager.isRunning).thenReturn(false)
 
-        val e = assertThrows<PermissionEndpointException> {
+        val e = assertThrows<HttpApiException> {
             endpoint.createUser(createUserType)
         }
-        Assertions.assertEquals(500, e.status)
+        assertEquals(500, e.statusCode)
     }
 
     @Test
     fun `create a user throws with status 500 when this service is not running`() {
-        val e = assertThrows<PermissionEndpointException> {
+        val e = assertThrows<HttpApiException> {
             endpoint.createUser(createUserType)
         }
-        Assertions.assertEquals(500, e.status)
+        assertEquals(500, e.statusCode)
     }
 
     @Test
@@ -111,15 +124,15 @@ internal class UserEndpointImplTest {
         endpoint.start()
         val responseType = endpoint.getUser("loginName1")
 
-        Assertions.assertNotNull(responseType)
-        Assertions.assertEquals("uuid", responseType!!.id)
-        Assertions.assertEquals(0, responseType.version)
-        Assertions.assertEquals(now, responseType.updateTimestamp)
-        Assertions.assertEquals("fullName1", responseType.fullName)
-        Assertions.assertEquals("loginName1", responseType.loginName)
-        Assertions.assertEquals(true, responseType.enabled)
-        Assertions.assertEquals(now, responseType.passwordExpiry)
-        Assertions.assertEquals("parentGroupId", responseType.parentGroup)
+        assertNotNull(responseType)
+        assertEquals("uuid", responseType.id)
+        assertEquals(0, responseType.version)
+        assertEquals(now, responseType.updateTimestamp)
+        assertEquals("fullName1", responseType.fullName)
+        assertEquals("loginName1", responseType.loginName)
+        assertEquals(true, responseType.enabled)
+        assertEquals(now, responseType.passwordExpiry)
+        assertEquals("parentGroupId", responseType.parentGroup)
     }
 
     @Test
@@ -127,17 +140,32 @@ internal class UserEndpointImplTest {
         endpoint.start()
         whenever(permissionManager.isRunning).thenReturn(false)
 
-        val e = assertThrows<PermissionEndpointException> {
+        val e = assertThrows<HttpApiException> {
             endpoint.getUser("abc")
         }
-        Assertions.assertEquals(500, e.status)
+        assertEquals(500, e.statusCode)
     }
 
     @Test
     fun `get a user throws with status 500 when this service is not running`() {
-        val e = assertThrows<PermissionEndpointException> {
+        val e = assertThrows<HttpApiException> {
             endpoint.getUser("abc")
         }
-        Assertions.assertEquals(500, e.status)
+        assertEquals(500, e.statusCode)
+    }
+
+    @Test
+    fun `get a user throws with resource not found exception when the user isn't found`() {
+        val getUserRequestDtoCapture = argumentCaptor<GetUserRequestDto>()
+        whenever(permissionManager.getUser(getUserRequestDtoCapture.capture())).thenReturn(null)
+        whenever(lifecycleCoordinator.isRunning).thenReturn(true)
+        whenever(permissionService.isRunning).thenReturn(true)
+
+        val e = assertThrows<ResourceNotFoundException> {
+            endpoint.getUser("abc")
+        }
+        assertEquals(null, e.statusCode, "Resource not found exception should not override any status codes.")
+        assertEquals("User abc not found.", e.message)
+        assertEquals("abc", getUserRequestDtoCapture.firstValue.loginName)
     }
 }

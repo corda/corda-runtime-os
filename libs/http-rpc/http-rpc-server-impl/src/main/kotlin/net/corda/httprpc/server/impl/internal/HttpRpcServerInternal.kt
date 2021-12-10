@@ -8,6 +8,7 @@ import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.HandlerType
 import io.javalin.http.HttpResponseException
+import io.javalin.http.NotFoundResponse
 import io.javalin.http.UnauthorizedResponse
 import io.javalin.http.util.RedirectToLowercasePathPlugin
 import io.javalin.plugin.json.JavalinJackson
@@ -48,6 +49,8 @@ import org.osgi.framework.wiring.BundleWiring
 import java.io.OutputStream
 import java.io.PrintStream
 import javax.security.auth.login.FailedLoginException
+import net.corda.httprpc.exception.HttpApiException
+import net.corda.httprpc.exception.ResourceNotFoundException
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown")
 internal class HttpRpcServerInternal(
@@ -283,6 +286,8 @@ internal class HttpRpcServerInternal(
 //            is InvalidCordaX500NameException -> throw BadRequestResponse(messageEscaped)
 //            is MemberNotFoundException -> throw NotFoundResponse(messageEscaped)
 
+            is ResourceNotFoundException -> throw NotFoundResponse(e.message)
+            is HttpApiException -> throw HttpResponseException(e.statusCode ?: 500, e.message)
             else -> {
                 with(mutableMapOf<String, String>()) {
                     this["exception"] = e.toString()

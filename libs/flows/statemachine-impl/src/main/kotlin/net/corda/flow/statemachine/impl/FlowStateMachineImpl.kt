@@ -4,12 +4,12 @@ import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHash
-import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
-import net.corda.data.flow.RPCFlowResult
-import net.corda.data.flow.StateMachineState
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.output.RPCFlowResult
+import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.StateMachineState
 import net.corda.flow.statemachine.FlowIORequest
 import net.corda.flow.statemachine.FlowStateMachine
 import net.corda.flow.statemachine.HousekeepingState
@@ -116,9 +116,7 @@ class FlowStateMachineImpl<R>(
 
     private fun handleSuccess(resultOrError: Try.Success<R>) {
         if (clientId != null) {
-            nonSerializableState.eventsOut += FlowEvent(
-                id,
-                cpiId,
+            nonSerializableState.eventsOut +=
                 RPCFlowResult(
                     clientId,
                     logic.javaClass.name,
@@ -126,15 +124,13 @@ class FlowStateMachineImpl<R>(
                     SecureHash(),
                     null
                 )
-            )
         }
+
     }
 
     private fun handleFailure(resultOrError: Try.Failure<R>) {
         if (clientId != null) {
-            nonSerializableState.eventsOut += FlowEvent(
-                id,
-                cpiId,
+            nonSerializableState.eventsOut +=
                 RPCFlowResult(
                     clientId,
                     logic.javaClass.name,
@@ -145,7 +141,7 @@ class FlowStateMachineImpl<R>(
                         resultOrError.exception.message
                     )
                 )
-            )
+
         }
 //        else if (transientState.initiatedBy != null) {
 //            transientValues.eventsOut += RemoteFlowError(
@@ -183,7 +179,6 @@ class FlowStateMachineImpl<R>(
             FlowIORequest.ForceCheckpoint -> {
                 nonSerializableState.eventsOut += FlowEvent(
                     id,
-                    cpiId,
                     Wakeup(flowName)
                 )
             }
@@ -230,16 +225,18 @@ class FlowStateMachineImpl<R>(
         TODO("Not yet implemented")
     }
 
-    override fun waitForCheckpoint(): Pair<Checkpoint?, List<FlowEvent>> {
+    override fun waitForCheckpoint(): Pair<Checkpoint?, List<Any>> {
         val fibreState = nonSerializableState.suspended.getOrThrow() ?: return Pair(null, emptyList())
 
         return Pair(
             Checkpoint(
                 id,
                 ByteBuffer.wrap(fibreState),
-                buildStateMachineState()
+                cpiId,
+                buildStateMachineState(),
+                emptyList()
             ),
-            nonSerializableState.eventsOut
+            nonSerializableState.eventsOut,
         )
     }
 
