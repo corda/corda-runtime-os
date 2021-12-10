@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "SignedMemberInfo",
+  "namespace": "net.corda.data.membership",
+  "doc": "Avro representation of signed MemberInfo.",
+  "fields": [
+    {
+      "name": "memberContext",
+      "doc": "Member provided data in MemberInfo serialised as byte array by using KeyValuePairList.",
+      "type": "bytes"
+    },
+    {
+      "name": "mgmContext",
+      "doc": "MGM provided data in MemberInfo serialised as byte array by using KeyValuePairList.",
+      "type": "bytes"
+    },
+    {
+      "name": "memberSignature",
+      "doc": "Signature of the member over the memberContext.",
+      "type": "net.corda.data.crypto.wire.WireSignatureWithKey"
+    },
+    {
+      "name": "mgmSignature",
+      "doc": "Signature of the MGM over both the mgmContext and memberContext using MerkleTree.",
+      "type": "net.corda.data.crypto.wire.WireSignatureWithKey"
+    }
+  ]
+}

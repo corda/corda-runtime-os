@@ -1,0 +1,47 @@
+{
+  "type": "record",
+  "name": "MembershipPackage",
+  "namespace": "net.corda.data.membership",
+  "doc": "Membership data package which will be distributed on the wire across members.",
+  "fields": [
+    {
+      "name": "distributionType",
+      "doc": "Distribution type for this data package. Could be a standard MGM update, or a response to a requested synchronisation.",
+      "type": {
+        "type": "enum",
+        "name": "distributionType",
+        "symbols": ["STANDARD", "SYNC"]
+      }
+    },
+    {
+      "name": "currentPage",
+      "doc": "Placeholder for the current page we are processing.",
+      "type": "int"
+    },
+    {
+      "name": "pageCount",
+      "doc": "The total number of pages in the given update.",
+      "type": "int"
+    },
+    {
+      "name": "distributionMetaData",
+      "doc": "Basic information about the data distribution, can also be a response to a sync.",
+      "type": "net.corda.data.membership.DistributionMetaData"
+    },
+    {
+      "name": "memberships",
+      "doc": "Membership updates.",
+      "type": ["null", "net.corda.data.membership.SignedMemberships"]
+    },
+    {
+      "name": "groupParameters",
+      "doc": "GroupParameters updates.",
+      "type": ["null", "net.corda.data.membership.WireGroupParameters"]
+    },
+    {
+      "name": "cpiWhitelist",
+      "doc": "CpiWhiteList updates.",
+      "type": ["null", "net.corda.data.membership.WireCpiWhitelist"]
+    }
+  ]
+}

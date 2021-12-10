@@ -2,12 +2,17 @@
   "type": "record",
   "name": "WireGroupParameters",
   "namespace": "net.corda.data.membership",
-  "doc": "Avro representation of GroupParameters data part, which will be sent over the wire, wrapped into the WireMembershipPackage..",
+  "doc": "Avro representation of GroupParameters data part, which will be sent over the wire, wrapped into the MembershipPackage.",
   "fields": [
     {
       "name": "groupParameters",
-      "doc": "GroupParameters in a <List<Pair<String, String?>> format.",
-      "type": { "type": "array", "items": "net.corda.data.WireKeyValuePair" }
+      "doc": "GroupParameters entries serialised as byte array by using KeyValuePairList.",
+      "type": "bytes"
+    },
+    {
+      "name": "mgmSignature",
+      "doc": "Signature of the MGM using MerkleTree.",
+      "type": "net.corda.data.crypto.wire.WireSignatureWithKey"
     }
   ]
 }

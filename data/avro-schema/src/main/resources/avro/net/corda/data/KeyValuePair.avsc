@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "WireKeyValuePair",
+  "name": "KeyValuePair",
   "namespace": "net.corda.data",
   "doc": "Key-value pair of strings.",
   "fields": [

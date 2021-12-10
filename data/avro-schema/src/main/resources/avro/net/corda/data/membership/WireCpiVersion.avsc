@@ -6,8 +6,8 @@
   "fields": [
     {
       "name": "cpiVersion",
-      "doc": "CpiVersion in a <List<Pair<String, String?>> format.",
-      "type": { "type": "array", "items": "net.corda.data.WireKeyValuePair" }
+      "doc": "CpiVersion in a List<Pair<String, String?>> format.",
+      "type": "net.corda.data.KeyValuePairList"
     }
   ]
 }

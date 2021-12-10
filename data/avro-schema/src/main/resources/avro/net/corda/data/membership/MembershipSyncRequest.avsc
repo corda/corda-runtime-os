@@ -1,13 +1,23 @@
 {
   "type": "record",
-  "name": "WireMembershipSyncRequest",
+  "name": "MembershipSyncRequest",
   "namespace": "net.corda.data.membership",
   "doc": "Membership data synchronization request which will be processed by the MGM.",
   "fields": [
     {
-      "name": "sendMembershipDataFrom",
-      "doc": "Timestamp value representing the date the member wants to have the sync from.",
-      "type": { "type": "long", "logicalType": "timestamp-millis" }
+      "name": "distributionMetaData",
+      "doc": "Basic information about the request.",
+      "type": "net.corda.data.membership.DistributionMetaData"
+    },
+    {
+      "name": "membersHash",
+      "doc": "Hash value to help validate the member requesting for sync.",
+      "type": "string"
+    },
+    {
+      "name": "bloomFilter",
+      "doc": "Bloom filter to calculate missing MemberInfo entries.",
+      "type": ["null", "net.corda.data.sync.BloomFilter"]
     },
     {
       "name": "groupParametersHash",

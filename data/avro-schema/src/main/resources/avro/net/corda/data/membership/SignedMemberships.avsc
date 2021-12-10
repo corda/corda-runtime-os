@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "SignedMemberships",
+  "namespace": "net.corda.data.membership",
+  "doc": "Avro representation of the membership data part, which will be sent over the wire, wrapped into the MembershipPackage.",
+  "fields": [
+    {
+      "name": "hashCheck",
+      "doc": "Hash value to help identify out-of-sync members.",
+      "type": "string"
+    },
+    {
+      "name": "memberships",
+      "doc": "List of signed membership updates.",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.membership.SignedMemberInfo"
+      }
+    }
+  ]
+}

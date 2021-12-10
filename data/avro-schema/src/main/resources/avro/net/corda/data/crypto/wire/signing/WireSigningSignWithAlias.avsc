@@ -19,10 +19,7 @@
     },
     {
       "name": "context",
-      "type": {
-        "type": "array",
-        "items": "net.corda.data.WireKeyValuePair"
-      },
+      "type": "net.corda.data.KeyValuePairList",
       "doc": "The optional key/value operation specific context"
     }
   ]
