@@ -1,11 +1,13 @@
 package net.corda.permissions.storage.reader
 
+import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.cache.PermissionCacheService
+import net.corda.permissions.storage.reader.internal.PermissionStorageReaderServiceEventHandler
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -25,14 +27,16 @@ class PermissionStorageReaderService @Activate constructor(
     publisherFactory: PublisherFactory
 ) : Lifecycle {
 
-    private val coordinator = coordinatorFactory.createCoordinator<PermissionStorageReaderService>(
-        PermissionStorageReaderServiceEventHandler(
-            permissionCacheService,
-            permissionStorageReaderFactory,
-            entityManagerFactory,
-            publisherFactory
-        )
+    val permissionStorageReader: PermissionStorageReader? get() = handler.permissionStorageReader
+
+    private val handler = PermissionStorageReaderServiceEventHandler(
+        permissionCacheService,
+        permissionStorageReaderFactory,
+        entityManagerFactory,
+        publisherFactory
     )
+
+    private val coordinator = coordinatorFactory.createCoordinator<PermissionStorageReaderService>(handler)
 
     override val isRunning: Boolean get() = coordinator.isRunning
 

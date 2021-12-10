@@ -1,4 +1,4 @@
-package net.corda.permissions.storage.writer
+package net.corda.permissions.storage.writer.internal
 
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
@@ -8,8 +8,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -24,29 +23,30 @@ class PermissionStorageWriterServiceEventHandlerTest {
     }
     private val permissionStorageWriterProcessor = mock<PermissionStorageWriterProcessor>()
     private val permissionStorageWriterProcessorFactory = mock<PermissionStorageWriterProcessorFactory>().apply {
-        whenever(create(any())).thenReturn(permissionStorageWriterProcessor)
+        whenever(create(any(), any())).thenReturn(permissionStorageWriterProcessor)
     }
     private val handler = PermissionStorageWriterServiceEventHandler(
         mock(),
         subscriptionFactory,
         permissionStorageWriterProcessorFactory,
+        mock(),
         mock()
     )
 
     @Test
     fun `processing a start event starts the writer's subscription`() {
-        assertNull(handler.subscription)
+        Assertions.assertNull(handler.subscription)
         handler.processEvent(StartEvent(), mock())
-        assertNotNull(handler.subscription)
+        Assertions.assertNotNull(handler.subscription)
         verify(subscription).start()
     }
 
     @Test
     fun `processing a stop event stops the permission storage writer`() {
         handler.processEvent(StartEvent(), mock())
-        assertNotNull(handler.subscription)
+        Assertions.assertNotNull(handler.subscription)
         handler.processEvent(StopEvent(), mock())
-        assertNull(handler.subscription)
+        Assertions.assertNull(handler.subscription)
         verify(subscription).stop()
     }
 }

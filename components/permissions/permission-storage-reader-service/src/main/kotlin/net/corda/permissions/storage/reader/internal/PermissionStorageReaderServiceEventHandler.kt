@@ -1,4 +1,4 @@
-package net.corda.permissions.storage.reader
+package net.corda.permissions.storage.reader.internal
 
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
@@ -7,9 +7,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.LifecycleStatus.DOWN
-import net.corda.lifecycle.LifecycleStatus.ERROR
-import net.corda.lifecycle.LifecycleStatus.UP
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
@@ -60,7 +58,7 @@ class PermissionStorageReaderServiceEventHandler(
             }
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
-                    UP -> {
+                    LifecycleStatus.UP -> {
                         permissionStorageReader = permissionStorageReaderFactory.create(
                             checkNotNull(permissionCacheService.permissionCache) {
                                 "The ${PermissionCacheService::class.java} should be up and ready to provide the cache"
@@ -69,15 +67,15 @@ class PermissionStorageReaderServiceEventHandler(
                             entityManagerFactory
                         )
                         permissionStorageReader?.start()
-                        coordinator.updateStatus(UP)
+                        coordinator.updateStatus(LifecycleStatus.UP)
                     }
-                    DOWN -> {
+                    LifecycleStatus.DOWN -> {
                         permissionStorageReader?.stop()
                         permissionStorageReader = null
-                        coordinator.updateStatus(DOWN)
+                        coordinator.updateStatus(LifecycleStatus.DOWN)
                     }
-                    ERROR -> {
-                        coordinator.updateStatus(ERROR)
+                    LifecycleStatus.ERROR -> {
+                        coordinator.updateStatus(LifecycleStatus.ERROR)
                         coordinator.stop()
                     }
                 }
@@ -89,7 +87,7 @@ class PermissionStorageReaderServiceEventHandler(
                 permissionStorageReader = null
                 registrationHandle?.close()
                 registrationHandle = null
-                coordinator.updateStatus(DOWN)
+                coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }
     }

@@ -1,5 +1,6 @@
 package net.corda.libs.permissions.storage.writer.factory
 
+import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
 import javax.persistence.EntityManagerFactory
 
@@ -8,5 +9,5 @@ import javax.persistence.EntityManagerFactory
  */
 interface PermissionStorageWriterProcessorFactory {
 
-    fun create(entityManagerFactory: EntityManagerFactory): PermissionStorageWriterProcessor
+    fun create(entityManagerFactory: EntityManagerFactory, reader: PermissionStorageReader): PermissionStorageWriterProcessor
 }

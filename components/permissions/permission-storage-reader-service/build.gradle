@@ -6,6 +6,7 @@ plugins {
 description "Permission storage reader service"
 
 dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
