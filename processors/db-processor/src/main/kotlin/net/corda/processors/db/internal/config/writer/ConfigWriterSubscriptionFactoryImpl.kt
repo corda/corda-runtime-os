@@ -1,7 +1,6 @@
 package net.corda.processors.db.internal.config.writer
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -9,6 +8,7 @@ import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.io.Closeable
 
 /**
  * An implementation of [ConfigWriterSubscriptionFactory] that creates an `RPCSubscription` for processing new config
@@ -25,7 +25,7 @@ class ConfigWriterSubscriptionFactoryImpl @Activate constructor(
     private val publisherFactory: PublisherFactory
 ) : ConfigWriterSubscriptionFactory {
 
-    override fun create(config: SmartConfig, instanceId: Int, dbUtils: DBUtils): Lifecycle {
+    override fun create(config: SmartConfig, instanceId: Int, dbUtils: DBUtils): Closeable {
         val publisherConfig = PublisherConfig(CLIENT_NAME_DB, instanceId)
         val rpcConfig =
             RPCConfig(GROUP_NAME, CLIENT_NAME_RPC, TOPIC_CONFIG_UPDATE_REQUEST, REQ_CLASS, RESP_CLASS, instanceId)
@@ -35,9 +35,11 @@ class ConfigWriterSubscriptionFactoryImpl @Activate constructor(
         val subscription = subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
 
         publisher.start()
-        // TODO - Joel - Allow publisher to be closed.
         subscription.start()
 
-        return subscription
+        return Closeable {
+            subscription.stop()
+            publisher.close()
+        }
     }
 }

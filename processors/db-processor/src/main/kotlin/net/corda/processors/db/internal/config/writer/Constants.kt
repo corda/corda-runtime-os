@@ -11,7 +11,6 @@ internal const val CLIENT_NAME_DB = "DB_CLIENT_NAME"
 internal const val CLIENT_NAME_RPC = "RPC_CLIENT_NAME"
 internal const val TOPIC_CONFIG_UPDATE_REQUEST = "config-update-request"
 internal const val TOPIC_CONFIG = "config"
-// TODO - Joel - Define own Avro objects, instead of reusing these existing ones.
 internal val REQ_CLASS = PermissionManagementRequest::class.java
 internal val RESP_CLASS = PermissionManagementResponse::class.java
 internal const val CONFIG_DB_DRIVER = "db.driver"

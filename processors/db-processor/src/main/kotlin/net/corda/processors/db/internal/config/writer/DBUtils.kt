@@ -62,11 +62,15 @@ class DBUtils(
     fun writeEntity(entities: Iterable<Any>) {
         val entityManager = createEntityManager()
 
-        entityManager.transaction.begin()
-        entities.forEach { entity ->
-            entityManager.merge(entity)
+        try {
+            entityManager.transaction.begin()
+            entities.forEach { entity ->
+                entityManager.merge(entity)
+            }
+            entityManager.transaction.commit()
+        } finally {
+            entityManager.close()
         }
-        entityManager.transaction.commit()
     }
 
     /** Creates a [DataSource] for the cluster database. */

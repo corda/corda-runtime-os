@@ -3,5 +3,5 @@ package net.corda.processors.db.internal.config.writer
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleEvent
 
-// TODO - Joel - Describe.
+/** The [config] and [instanceId] for connecting to Kafka, plus [dbUtils] for interacting with the database. */
 internal class SubscribeEvent(val config: SmartConfig, val instanceId: Int, val dbUtils: DBUtils) : LifecycleEvent

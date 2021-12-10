@@ -4,6 +4,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import java.io.Closeable
 
 /** Creates subscriptions that process new config requests. */
 interface ConfigWriterSubscriptionFactory {
@@ -15,10 +16,10 @@ interface ConfigWriterSubscriptionFactory {
      * @param instanceId The instance ID to use if subscribing to Kafka.
      * @param dbUtils The utilities for interacting with the database.
      *
-     * @return A handle to the started subscription.
+     * @return A handle for closing the subscription.
      *
      * @throws CordaMessageAPIFatalException For non-recoverable errors setting up the subscription.
      * @throws CordaMessageAPIIntermittentException For recoverable errors setting up the subscription.
      */
-    fun create(config: SmartConfig, instanceId: Int, dbUtils: DBUtils): Lifecycle
+    fun create(config: SmartConfig, instanceId: Int, dbUtils: DBUtils): Closeable
 }

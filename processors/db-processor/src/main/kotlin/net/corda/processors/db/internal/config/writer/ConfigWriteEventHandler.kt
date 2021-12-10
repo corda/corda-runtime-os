@@ -1,19 +1,19 @@
 package net.corda.processors.db.internal.config.writer
 
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import java.io.Closeable
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigWriteServiceImpl]. */
 class ConfigWriteEventHandler(private val configWriterSubscriptionFactory: ConfigWriterSubscriptionFactory) :
     LifecycleEventHandler {
 
     // A handle for stopping the processing of new config requests.
-    private var subscriptionHandle: Lifecycle? = null
+    private var subscriptionHandle: Closeable? = null
 
     /**
      * Upon [SubscribeEvent], starts processing new config requests. Upon [StopEvent], stops processing them.
@@ -41,7 +41,7 @@ class ConfigWriteEventHandler(private val configWriterSubscriptionFactory: Confi
             }
 
             is StopEvent -> {
-                subscriptionHandle?.stop()
+                subscriptionHandle?.close()
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }
