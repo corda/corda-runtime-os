@@ -22,6 +22,7 @@ class FlowFailedRequestHandler : FlowRequestHandler<FlowIORequest.FlowFailed> {
         context.setCheckpointFlowIORequest(null)
         // Needs to go to a different topic, but currently sends to the flow event topic
         // The commented out code should be added + changed when this is resolved.
+        // Needs to handle sending errors when there are initiated sessions.
 //        val result = RPCFlowResult.newBuilder()
 //            .setClientId(checkpoint.flowState.clientId)
 //            .setFlowName(checkpoint.flowState.flowClassName)

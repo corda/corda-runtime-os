@@ -76,15 +76,14 @@ class FlowFiberImpl<R>(
         val resultOrError = executeFlowLogic()
         log.debug { "flow ended $id. isSuccess: ${resultOrError.isSuccess}" }
 
-//        when (resultOrError) {
-//            is Try.Success -> {
-//                handleSuccess(resultOrError)
-//            }
-//            is Try.Failure -> {
-//                handleFailure(resultOrError)
-//            }
-//        }
-        housekeepingState = housekeepingState.copy(output = FlowIORequest.FlowFinished(resultOrError.getOrThrow()))
+        housekeepingState = when (resultOrError) {
+            is Try.Success -> {
+                housekeepingState.copy(output = FlowIORequest.FlowFinished(resultOrError.value))
+            }
+            is Try.Failure -> {
+                housekeepingState.copy(output = FlowIORequest.FlowFailed(resultOrError.exception))
+            }
+        }
         housekeepingState.suspended.complete(null)
     }
 
@@ -110,51 +109,6 @@ class FlowFiberImpl<R>(
             Try.Failure(t)
         }
     }
-
-//    private fun handleSuccess(resultOrError: Try.Success<R>) {
-//        if (clientId != null) {
-//            nonSerializableState.eventsOut += FlowEvent(
-//                id,
-//                cpiId,
-//                RPCFlowResult(
-//                    clientId,
-//                    logic.javaClass.name,
-//                    resultOrError.value.toString(),
-//                    SecureHash(),
-//                    null
-//                )
-//            )
-//        }
-//    }
-//
-//    private fun handleFailure(resultOrError: Try.Failure<R>) {
-//        if (clientId != null) {
-//            nonSerializableState.eventsOut += FlowEvent(
-//                id,
-//                cpiId,
-//                RPCFlowResult(
-//                    clientId,
-//                    logic.javaClass.name,
-//                    null,
-//                    SecureHash(),
-//                    ExceptionEnvelope(
-//                        resultOrError.exception.cause.toString(),
-//                        resultOrError.exception.message
-//                    )
-//                )
-//            )
-//        }
-////        else if (transientState.initiatedBy != null) {
-////            transientValues.eventsOut += RemoteFlowError(
-////                id,
-////                transientState.ourIdentity,
-////                transientState.initiatedBy!!.counterparty,
-////                transientState.initiatedBy!!.sourceSessionId,
-////                transientState.initiatedBy!!.sequenceNo++,
-////                resultOrError.exception.message ?: "remote error"
-////            )
-////        }
-//    }
 
     @Suspendable
     override fun <SUSPENDRETURN : Any> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
