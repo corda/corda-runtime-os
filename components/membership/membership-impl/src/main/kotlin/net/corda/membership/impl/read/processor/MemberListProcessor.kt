@@ -27,7 +27,11 @@ class MemberListProcessor(
     /**
      * Receive a new record and update the member list cache.
      */
-    override fun onNext(newRecord: Record<String, SignedMemberInfo>, oldValue: SignedMemberInfo?, currentData: Map<String, SignedMemberInfo>) {
+    override fun onNext(
+        newRecord: Record<String, SignedMemberInfo>,
+        oldValue: SignedMemberInfo?,
+        currentData: Map<String, SignedMemberInfo>
+    ) {
         TODO("Not yet implemented")
     }
 }
