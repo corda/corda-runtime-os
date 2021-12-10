@@ -24,28 +24,52 @@ internal class ConfigWriterProcessor(
     }
 
     override fun onNext(
+        // TODO - Joel - Replace with new Avro request and response classes.
         request: PermissionManagementRequest, respFuture: CompletableFuture<PermissionManagementResponse>
     ) {
-        logger.info("JJJ got this request: $request")
+        if (publishConfigToDB(request, respFuture)) {
+            publishConfigToKafka(request, respFuture)
+        }
+    }
 
-        // TODO - Joel - Replace with Config Avro class for now. Look in demo components.
+    // TODO - Joel - Describe.
+    private fun publishConfigToDB(request: PermissionManagementRequest, respFuture: CompletableFuture<PermissionManagementResponse>): Boolean {
         val (key, value) = request.requestUserId.split('=')
         val configEntity = ConfigEntity(key, value)
 
-        try {
+        return try {
             dbUtils.writeEntity(setOf(configEntity))
+            true
         } catch (e: Exception) {
             respFuture.completeExceptionally(
-                ConfigWriteException("Updated config could not be written to the cluster database.", e)
+                ConfigWriteException("Config couldn't be written to the database.", e)
+            )
+            false
+        }
+    }
+
+    // TODO - Joel - Describe.
+    private fun publishConfigToKafka(request: PermissionManagementRequest, respFuture: CompletableFuture<PermissionManagementResponse>) {
+        val (key, value) = request.requestUserId.split('=')
+        val record = Record(TOPIC_CONFIG, key, value)
+
+        val failedFutures = publisher.publish(listOf(record)).mapNotNull { future ->
+            try {
+                future.get()
+                null
+            } catch (e: Exception) {
+                e
+            }
+        }
+
+        if (failedFutures.isEmpty()) {
+            respFuture.complete(PermissionManagementResponse("DONT_CARE"))
+        } else {
+            respFuture.completeExceptionally(
+                ConfigWriteException("Config was written to the database, but couldn't be published.", failedFutures[0])
             )
         }
 
-        logger.info("JJJ publishing records $configEntity") // TODO - Joel - This logging is only for demo purposes.
-        // TODO - Joel - Replace with Config Avro class for now. Look in demo components.
-        respFuture.complete(PermissionManagementResponse("DONT_CARE"))
-
-        val record = Record(TOPIC_CONFIG, key, value)
-        // TODO - Joel - Catch exceptions from futures.
-        publisher.publish(listOf(record)).forEach { future -> future.get() }
+        logger.info("JJJ published records $key, $value") // TODO - Joel - This logging is only for demo purposes.
     }
 }
