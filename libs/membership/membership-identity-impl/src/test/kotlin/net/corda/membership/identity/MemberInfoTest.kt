@@ -7,7 +7,7 @@ import net.corda.v5.membership.conversion.parse
 import net.corda.v5.membership.conversion.parseList
 import net.corda.v5.membership.conversion.parseOrNull
 import net.corda.membership.conversion.PropertyConverterImpl
-import net.corda.membership.conversion.toKeyValuePairList
+import net.corda.membership.conversion.toWire
 import net.corda.membership.identity.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEYS
 import net.corda.membership.identity.MemberInfoExtension.Companion.IDENTITY_KEYS_KEY
@@ -183,8 +183,8 @@ class MemberInfoTest {
         )
         val dataFileWriter: DataFileWriter<SignedMemberInfo> = DataFileWriter(userDatumWriter)
         val signedMemberInfo = SignedMemberInfo(
-            memberInfo?.memberProvidedContext?.toKeyValuePairList(),
-            memberInfo?.mgmProvidedContext?.toKeyValuePairList(),
+            memberInfo?.memberProvidedContext?.toWire(),
+            memberInfo?.mgmProvidedContext?.toWire(),
             signature,
             signature
         )

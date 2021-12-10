@@ -209,4 +209,4 @@ inline fun <reified T> LayeredPropertyMap.parseList(itemKeyPrefix: String): List
  * Extension function for converting the content of [KeyValueStore] to a list of [KeyValuePair].
  * This conversion is required, because of the avro serialization done on the P2P layer.
  */
-fun LayeredPropertyMap.toKeyValuePairList(): ByteBuffer = KeyValuePairList(entries.map { KeyValuePair(it.key, it.value) }).toByteBuffer()
+fun LayeredPropertyMap.toWire(): ByteBuffer = KeyValuePairList(entries.map { KeyValuePair(it.key, it.value) }).toByteBuffer()
