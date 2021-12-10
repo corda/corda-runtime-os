@@ -15,10 +15,6 @@ interface SerializationContext {
      */
     val encoding: SerializationEncoding?
     /**
-     * The class loader to use for deserialization.
-     */
-    val deserializationClassLoader: ClassLoader
-    /**
      * A whitelist that contains (mostly for security purposes) which classes can be serialized and deserialized.
      */
     val whitelist: ClassWhitelist

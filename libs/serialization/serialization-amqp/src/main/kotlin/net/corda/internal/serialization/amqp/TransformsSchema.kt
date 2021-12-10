@@ -1,7 +1,6 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.LocalTypeInformation
-import net.corda.serialization.SerializationContext
 import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefault
 import net.corda.v5.serialization.annotations.CordaSerializationTransformRename
 import org.apache.qpid.proton.amqp.DescribedType
@@ -261,10 +260,10 @@ data class TransformsSchema(val types: Map<String, EnumMap<TransformTypes, Mutab
          * @param schema should be a [Schema] generated for a serialised data structure
          * @param sf should be provided by the same serialization context that generated the schema
          */
-        fun build(schema: Schema, sf: LocalSerializerFactory, context: SerializationContext, metadata: Metadata): TransformsSchema {
+        fun build(schema: Schema, sf: LocalSerializerFactory, metadata: Metadata): TransformsSchema {
             val transformsMap = schema.types.asSequence().mapNotNull { type ->
                 val localTypeInformation = if(metadata.containsKey(type.name)) {
-                    sf.getTypeInformation(context, metadata, type.name)
+                    sf.getTypeInformation(metadata, type.name)
                 } else{
                     sf.getTypeInformation(type.name)
                 }
