@@ -83,6 +83,7 @@ internal class OutboundMessageHandler(
 
             val pendingRequests = events.mapNotNull { evt ->
                 evt.value?.let { peerMessage ->
+                    println("QQQ Got event: $peerMessage")
                     try {
                         val sni = SniCalculator.calculateSni(
                             peerMessage.header.destinationX500Name,

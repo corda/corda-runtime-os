@@ -71,6 +71,7 @@ internal class InboundMessageHandler(
      * A session init request has additional handling as the Gateway needs to generate a secret and share it
      */
     override fun onRequest(request: HttpRequest) {
+        println("QQQ Got request: $request")
         dominoTile.withLifecycleLock { handleRequest(request) }
     }
 
