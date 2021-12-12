@@ -5,7 +5,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verifyZeroInteractions
+import org.mockito.kotlin.verifyNoInteractions
 
 class SmartConfigObjectTest {
     val configString = """
@@ -43,7 +43,7 @@ class SmartConfigObjectTest {
     @Test
     fun `render never reveals secrets`() {
         println(configObject.render())
-        verifyZeroInteractions(secretsLookupService)
+        verifyNoInteractions(secretsLookupService)
     }
 
     @Test

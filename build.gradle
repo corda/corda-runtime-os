@@ -22,6 +22,7 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish'
     id 'maven-publish'
     id 'jacoco'
+    id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
 }
 
 wrapper {
@@ -318,5 +319,17 @@ subprojects {
             "javax.persistence.Embeddable",
             "javax.persistence.MappedSuperclass"
         )
+    }
+}
+
+// report updateble dependencies: gradle dependencyUpdates
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
+}
+tasks.named("dependencyUpdates").configure {
+    rejectVersionIf {
+        isNonStable(it.candidate.version) && !isNonStable(it.currentVersion)
     }
 }

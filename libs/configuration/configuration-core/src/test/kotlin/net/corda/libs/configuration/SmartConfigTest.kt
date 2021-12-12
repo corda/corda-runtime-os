@@ -9,7 +9,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyZeroInteractions
+import org.mockito.kotlin.verifyNoInteractions
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
@@ -83,13 +83,13 @@ class SmartConfigTest {
     @Test
     fun `toString never reveals secrets`() {
         println(smartConfig)
-        verifyZeroInteractions(secretsLookupService)
+        verifyNoInteractions(secretsLookupService)
     }
 
     @Test
     fun `render never reveals secrets`() {
         println(smartConfig.root().render())
-        verifyZeroInteractions(secretsLookupService)
+        verifyNoInteractions(secretsLookupService)
     }
 
     @Test
