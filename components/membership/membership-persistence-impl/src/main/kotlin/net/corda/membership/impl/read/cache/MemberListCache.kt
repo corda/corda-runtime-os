@@ -7,17 +7,23 @@ import net.corda.v5.membership.identity.MemberX500Name
  * Interface for storing the member lists in-memory including implementation class.
  */
 interface MemberListCache : MemberDataListCache<MemberInfo> {
+    /**
+     * Overload function allowing a single [MemberInfo] to be cached instead of a whole list.
+     *
+     * @param groupId The membership group ID as a [String].
+     * @param memberX500Name The [MemberX500Name] of the member who owns the cached data.
+     * @param data The data to cache
+     */
+    fun put(groupId: String, memberX500Name: MemberX500Name, data: MemberInfo) =
+        put(groupId, memberX500Name, listOf(data))
+
+    /**
+     * Simple in-memory member list cache implementation.
+     */
     class Impl : MemberListCache {
-        /**
-         * In-memory member list cache. Data is stored as a map from group ID to map of member name to list of visible
-         * members.
-         */
+
         private val cache: MutableMap<String, MutableMap<MemberX500Name, MutableList<MemberInfo>>> = mutableMapOf()
 
-        /**
-         * Gets the latest member list for a holding identity.
-         * This is a private function because it finds the mutable list.
-         */
         private fun getMemberList(groupId: String, memberX500Name: MemberX500Name): MutableList<MemberInfo> =
             cache.getOrPut(groupId) {
                 mutableMapOf()
@@ -35,11 +41,4 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
             }
         }
     }
-
-    /**
-     * Overload function for [put] on the main interface allowing a single [MemberInfo] to be cached instead of a whole
-     * list.
-     */
-    fun put(groupId: String, memberX500Name: MemberX500Name, data: MemberInfo) =
-        put(groupId, memberX500Name, listOf(data))
 }
