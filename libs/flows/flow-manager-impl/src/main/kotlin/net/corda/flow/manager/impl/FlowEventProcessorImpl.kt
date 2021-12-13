@@ -6,6 +6,7 @@ import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.manager.FlowEventContext
 import net.corda.flow.manager.FlowEventProcessor
 import net.corda.flow.manager.exceptions.FlowHospitalException
+import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import net.corda.flow.manager.impl.handlers.events.FlowEventHandler
 import net.corda.flow.manager.impl.handlers.requests.FlowRequestHandler
 import net.corda.flow.manager.impl.runner.FlowRunner
@@ -45,23 +46,16 @@ class FlowEventProcessorImpl(
             isNewFlow = state == null
         )
 
-        return FlowEventPipeline(context, getFlowEventHandler(flowEvent))
-            .eventPreProcessing()
-            .resumeOrContinue()
-            .requestPostProcessing()
-            .eventPostProcessing()
-            .toStateAndEventResponse()
-    }
-
-    private fun getFlowEventHandler(event: FlowEvent): FlowEventHandler<Any> {
-        return checkNotNull(flowEventHandlers[event.payload::class.java]) {
-            "${event.payload::class.java.name} does not have an associated flow event handler"
-        }
-    }
-
-    private fun getFlowRequestHandler(request: FlowIORequest<*>): FlowRequestHandler<FlowIORequest<*>> {
-        return checkNotNull(flowRequestHandlers[request::class.java]) {
-            "${request::class.java.name} does not have an associated flow request handler"
+        return try {
+            FlowEventPipeline(context, getFlowEventHandler(flowEvent))
+                .eventPreProcessing()
+                .resumeOrContinue()
+                .requestPostProcessing()
+                .eventPostProcessing()
+                .toStateAndEventResponse()
+        } catch (e: FlowProcessingException) {
+            log.error("Error processing flow event $event")
+            StateAndEventProcessor.Response(state, emptyList())
         }
     }
 
@@ -103,5 +97,19 @@ class FlowEventProcessorImpl(
     private fun FlowEventPipeline.toStateAndEventResponse(): StateAndEventProcessor.Response<Checkpoint> {
         log.info("Sending output records to message bus: ${context.outputRecords}")
         return StateAndEventProcessor.Response(context.checkpoint, context.outputRecords)
+    }
+
+    private fun getFlowEventHandler(event: FlowEvent): FlowEventHandler<Any> {
+        return when (val handler = flowEventHandlers[event.payload::class.java]) {
+            null -> throw FlowProcessingException("${event.payload::class.java.name} does not have an associated flow event handler")
+            else -> handler
+        }
+    }
+
+    private fun getFlowRequestHandler(request: FlowIORequest<*>): FlowRequestHandler<FlowIORequest<*>> {
+        return when (val handler = flowRequestHandlers[request::class.java]) {
+            null -> throw FlowProcessingException("${request::class.java.name} does not have an associated flow request handler")
+            else -> handler
+        }
     }
 }
