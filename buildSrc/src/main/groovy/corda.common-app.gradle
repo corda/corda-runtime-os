@@ -133,14 +133,12 @@ private def addSystemPackagesExtra(
 class DefineApplicationBundles extends DefaultTask {
     private final ConfigurableFileCollection includeBundles
     private final ConfigurableFileCollection excludeBundles
-    private final ConfigurableFileCollection applicationBundles
     private final RegularFileProperty applicationBundleFile
 
     @Inject
     DefineApplicationBundles(ObjectFactory objects) {
         includeBundles = objects.fileCollection()
         excludeBundles = objects.fileCollection()
-        applicationBundles = objects.fileCollection()
         applicationBundleFile = objects.fileProperty()
             .fileValue(new File(temporaryDir, 'application_bundles'))
         applicationBundleFile.disallowChanges()
@@ -158,9 +156,9 @@ class DefineApplicationBundles extends DefaultTask {
         return excludeBundles
     }
 
-    @OutputFiles
+    @Internal
     FileCollection getApplicationBundles() {
-        return applicationBundles
+        return includeBundles - excludeBundles
     }
 
     @OutputFile
@@ -170,9 +168,8 @@ class DefineApplicationBundles extends DefaultTask {
 
     @TaskAction
     void run() {
-        applicationBundles.setFrom(includeBundles - excludeBundles)
         applicationBundleFile.getAsFile().get().withWriter { writer ->
-            applicationBundles.forEach { file ->
+            getApplicationBundles().forEach { file ->
                 if (isJar(file) && isBundle(new JarFile(file))) {
                     writer.writeLine("bundles/${file.name}")
                 }
@@ -273,7 +270,9 @@ def appResolution = tasks.register('appResolution', AppResolution) {
 }
 
 def verifyApp = tasks.register('verifyApp', Resolve) {
-    bundles.from defineApplicationBundles.map { it.applicationBundles },
+    bundles.from defineApplicationBundles.map {
+        it.applicationBundles
+    },
             configurations.bootstrapClasspath
     bndrun = appResolution.flatMap { it.bndrunFile }
 
@@ -402,7 +401,9 @@ def appJar = tasks.register('appJar', Jar) {
     into('bundles') {
         from(defineApplicationBundles.map { it.applicationBundles }) {
             eachFile { FileCopyDetails fileCopyDetails ->
-                if(!isJar(new File(fileCopyDetails.sourcePath))) fileCopyDetails.exclude()
+                if(!isJar(new File(fileCopyDetails.sourcePath))) {
+                    fileCopyDetails.exclude()
+                }
             }
         }
     }
