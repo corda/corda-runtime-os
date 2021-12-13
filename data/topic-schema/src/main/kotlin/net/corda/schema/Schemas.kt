@@ -50,6 +50,7 @@ class Schemas {
          * ]
          */
         const val FLOW_EVENT_TOPIC = "flow.event.topic"
+        const val FLOW_MAPPER_EVENT_TOPIC = "flow.mapper.event.topic"
 
         fun getStateAndEventDLQTopic(topic: String) = "$topic.DLQ"
         fun getStateAndEventStateTopic(topic: String) = "$topic.state"
