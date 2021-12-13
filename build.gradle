@@ -322,7 +322,7 @@ subprojects {
     }
 }
 
-// report updateble dependencies: gradle dependencyUpdates
+// report updatable dependencies: gradle dependencyUpdates
 def isNonStable = { String version ->
     def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
     def regex = /^[0-9,.v-]+(-r)?$/
