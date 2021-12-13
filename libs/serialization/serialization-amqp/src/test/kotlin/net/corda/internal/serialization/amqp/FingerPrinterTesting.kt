@@ -3,6 +3,7 @@ package net.corda.internal.serialization.amqp
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
+import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.internal.serialization.model.ConfigurableLocalTypeModel
 import net.corda.internal.serialization.model.FingerPrinter
 import net.corda.internal.serialization.model.LocalTypeInformation
@@ -49,6 +50,7 @@ class FingerPrinterTestingTests {
         data class C(val a: Int, val b: Long)
 
         val factory = SerializerFactoryBuilder.build(AllWhitelist,
+                testSerializationContext.currentSandboxGroup(),
                 overrideFingerPrinter = FingerPrinterTesting())
 
         val blob = TestSerializationOutput(VERBOSE, factory).serializeAndReturnSchema(C(1, 2L))

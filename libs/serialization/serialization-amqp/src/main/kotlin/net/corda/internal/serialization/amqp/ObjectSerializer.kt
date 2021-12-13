@@ -7,6 +7,7 @@ import net.corda.internal.serialization.model.PropertyName
 import net.corda.internal.serialization.model.RemotePropertyInformation
 import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.serialization.MissingSerializerException
 import org.apache.qpid.proton.amqp.Symbol
@@ -206,8 +207,9 @@ class EvolutionObjectSerializer(
                  remoteTypeInformation: RemoteTypeInformation.Composable,
                  constructor: LocalConstructorInformation,
                  properties: Map<String, LocalPropertyInformation>,
-                 mustPreserveData: Boolean): EvolutionObjectSerializer {
-            val propertySerializers = makePropertySerializers(properties, remoteTypeInformation.properties)
+                 mustPreserveData: Boolean,
+                 sandboxGroup: SandboxGroup): EvolutionObjectSerializer {
+            val propertySerializers = makePropertySerializers(properties, remoteTypeInformation.properties, sandboxGroup)
             val reader = ComposableObjectReader(
                     localTypeInformation.typeIdentifier,
                     propertySerializers,
@@ -226,11 +228,12 @@ class EvolutionObjectSerializer(
         }
 
         private fun makePropertySerializers(localProperties: Map<String, LocalPropertyInformation>,
-                                            remoteProperties: Map<String, RemotePropertyInformation>): Map<String, PropertySerializer> =
+                                            remoteProperties: Map<String, RemotePropertyInformation>,
+                                            sandboxGroup: SandboxGroup): Map<String, PropertySerializer> =
                 remoteProperties.mapValues { (name, property) ->
                     val localProperty = localProperties[name]
                     val isCalculated = localProperty?.isCalculated ?: false
-                    val type = localProperty?.type?.observedType ?: property.type.typeIdentifier.getLocalType()
+                    val type = localProperty?.type?.observedType ?: property.type.typeIdentifier.getLocalType(sandboxGroup)
                     ComposableTypePropertySerializer.makeForEvolution(name, isCalculated, property.type.typeIdentifier, type)
                 }
     }

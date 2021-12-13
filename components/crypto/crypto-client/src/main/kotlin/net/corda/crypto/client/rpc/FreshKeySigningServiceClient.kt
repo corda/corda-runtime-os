@@ -1,6 +1,7 @@
 package net.corda.crypto.client.rpc
 
 import net.corda.crypto.FreshKeySigningService
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.WireNoContentValue
 import net.corda.data.crypto.wire.WirePublicKey
 import net.corda.data.crypto.wire.WirePublicKeys
@@ -130,7 +131,7 @@ class FreshKeySigningServiceClient(
         requestingComponent,
         Instant.now(),
         memberId,
-        emptyList()
+        KeyValuePairList(emptyList())
     )
 
     @Suppress("ThrowsCount", "UNCHECKED_CAST", "ComplexMethod")

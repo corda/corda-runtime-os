@@ -94,7 +94,7 @@ class DefaultEvolutionSerializerFactory(
         properties.asSequence().zip(localTypeInformation.properties.values.asSequence()).forEach { (remote, localProperty) ->
             val (name, remoteProperty) = remote
             val localClass = localProperty.type.observedType.asClass()
-            val remoteClass = remoteProperty.type.typeIdentifier.getLocalType().asClass()
+            val remoteClass = remoteProperty.type.typeIdentifier.getLocalType(localSerializerFactory.sandboxGroup).asClass()
 
             if (!localClass.isAssignableFrom(remoteClass) && remoteClass != primitiveTypes[localClass]) {
                 throw EvolutionSerializationException(this,
@@ -107,7 +107,7 @@ class DefaultEvolutionSerializerFactory(
     // provided property types.
     private fun findEvolverConstructor(constructors: List<EvolutionConstructorInformation>,
                                        properties: Map<String, RemotePropertyInformation>): EvolutionConstructorInformation? {
-        val propertyTypes = properties.mapValues { (_, info) -> info.type.typeIdentifier.getLocalType().asClass() }
+        val propertyTypes = properties.mapValues { (_, info) -> info.type.typeIdentifier.getLocalType(localSerializerFactory.sandboxGroup).asClass() }
 
         // Evolver constructors are listed in ascending version order, so we just want the last that matches.
         return constructors.lastOrNull { (_, evolverProperties) ->
@@ -196,5 +196,6 @@ class DefaultEvolutionSerializerFactory(
                     this,
                     constructor,
                     properties,
-                    mustPreserveDataWhenEvolving)
+                    mustPreserveDataWhenEvolving,
+                    localSerializerFactory.sandboxGroup)
 }

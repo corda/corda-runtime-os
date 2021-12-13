@@ -13,6 +13,7 @@ import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.TransformsSchema
+import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.serialization.SerializationEncoding
 import net.corda.utilities.copyTo
@@ -50,7 +51,7 @@ fun testDefaultFactory(
     descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
         DefaultDescriptorBasedSerializerRegistry()
 ) =
-    SerializerFactoryBuilder.build(AllWhitelist, descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry)
+    SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup(), descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry)
 
 @JvmOverloads
 fun testDefaultFactoryNoEvolution(
@@ -59,6 +60,7 @@ fun testDefaultFactoryNoEvolution(
 ): SerializerFactory =
     SerializerFactoryBuilder.build(
         AllWhitelist,
+        testSerializationContext.currentSandboxGroup(),
         descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
         allowEvolution = false
     )
@@ -68,7 +70,7 @@ fun testDefaultFactoryWithWhitelist(
     descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
         DefaultDescriptorBasedSerializerRegistry()
 ) =
-    SerializerFactoryBuilder.build(TestMutableWhiteList(), descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry)
+    SerializerFactoryBuilder.build(TestMutableWhiteList(),testSerializationContext.currentSandboxGroup(), descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry)
 
 class TestSerializationOutput(
     private val verbose: Boolean,

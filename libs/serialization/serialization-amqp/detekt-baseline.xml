@@ -3,7 +3,7 @@
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
     <ID>ComplexCondition:AMQPTypeIdentifierParser.kt$AMQPTypeIdentifierParser$c.isWhitespace() || c.isJavaIdentifierPart() || c.isJavaIdentifierStart() || c == '.' || c == ',' || c == '?' || c == '*'</ID>
-    <ID>ComplexCondition:DeserializationInput.kt$DeserializationInput$type != TypeIdentifier.UnknownType.getLocalType() &amp;&amp; serializer.type != type &amp;&amp; with(serializer.type) { !isSubClassOf(type) &amp;&amp; !materiallyEquivalentTo(type) }</ID>
+    <ID>ComplexCondition:DeserializationInput.kt$DeserializationInput$type != TypeIdentifier.UnknownType.getLocalType(sandboxGroup) &amp;&amp; serializer.type != type &amp;&amp; with(serializer.type) { !isSubClassOf(type) &amp;&amp; !materiallyEquivalentTo(type) }</ID>
     <ID>ComplexCondition:Schema.kt$obj == null || obj is DescribedType || obj is Binary || forGenericType(type).run { isPrimitive(this) || this == TopType }</ID>
     <ID>ComplexMethod:AMQPTypeIdentifierParser.kt$AMQPTypeIdentifierParser$// Make sure our inputs aren't designed to blow things up. private fun validate(typeString: String)</ID>
     <ID>ComplexMethod:LocalTypeInformationBuilder.kt$ private fun constructorForDeserialization(type: Type): KFunction&lt;Any&gt;?</ID>
@@ -24,20 +24,26 @@
     <ID>ForbiddenComment:TransformTypes.kt$TransformTypes$// TODO: annotated with some annotation</ID>
     <ID>ForbiddenComment:TransformTypes.kt$TransformTypes$// TODO: it would be awesome to auto build this list by scanning for transform annotations themselves</ID>
     <ID>FunctionNaming:SerializationOutput.kt$SerializationOutput$protected fun &lt;T : Any&gt; _serialize(obj: T, context: SerializationContext): SerializedBytes&lt;T&gt;</ID>
-    <ID>LongParameterList:AMQPSerializationScheme.kt$AbstractAMQPSerializationScheme$( private val cordappCustomSerializers: Set&lt;SerializationCustomSerializer&lt;*, *&gt;&gt;, private val cordappSerializationWhitelists: Set&lt;SerializationWhitelist&gt;, maybeNotConcurrentSerializerFactoriesForContexts: MutableMap&lt;SerializationFactoryCacheKey, SerializerFactory&gt;, cipherSchemeMetadata: CipherSchemeMetadata, val sff: SerializerFactoryFactory = createSerializerFactoryFactory(), internalCustomSerializerFactories: Set&lt;(factory: SerializerFactory) -&gt; InternalCustomSerializerRegistrationData&gt; = emptySet() )</ID>
     <ID>LongParameterList:AMQPSerializer.kt$AMQPSerializer$(obj: Any, data: Data, type: Type, output: SerializationOutput, context: SerializationContext, debugIndent: Int = 0)</ID>
-    <ID>LongParameterList:LocalSerializerFactory.kt$DefaultLocalSerializerFactory$( override val whitelist: ClassWhitelist, private val typeModel: LocalTypeModel, private val fingerPrinter: FingerPrinter, private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry, private val primitiveSerializerFactory: Function&lt;Class&lt;*&gt;, AMQPSerializer&lt;Any&gt;&gt;, private val isPrimitiveType: Predicate&lt;Class&lt;*&gt;&gt;, private val customSerializerRegistry: CustomSerializerRegistry, private val onlyCustomSerializers: Boolean)</ID>
+    <ID>LongParameterList:LocalSerializerFactory.kt$DefaultLocalSerializerFactory$( override val whitelist: ClassWhitelist, override val sandboxGroup: SandboxGroup, private val typeModel: LocalTypeModel, private val fingerPrinter: FingerPrinter, private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry, private val primitiveSerializerFactory: Function&lt;Class&lt;*&gt;, AMQPSerializer&lt;Any&gt;&gt;, private val isPrimitiveType: Predicate&lt;Class&lt;*&gt;&gt;, private val customSerializerRegistry: CustomSerializerRegistry, private val onlyCustomSerializers: Boolean)</ID>
     <ID>LongParameterList:LocalTypeModel.kt$BaseLocalTypes$( val collectionClass: Class&lt;*&gt;, val enumSetClass: Class&lt;*&gt;, val exceptionClass: Class&lt;*&gt;, val mapClass: Class&lt;*&gt;, val stringClass: Class&lt;*&gt;, val isEnum: Predicate&lt;Class&lt;*&gt;&gt;, val enumConstants: Function&lt;Class&lt;*&gt;, Array&lt;out Any&gt;&gt;, val enumConstantNames: Function&lt;Class&lt;*&gt;, List&lt;String&gt;&gt; )</ID>
     <ID>LongParameterList:ObjectSerializer.kt$ComposableObjectSerializer$( override val type: Type, override val typeDescriptor: Symbol, override val propertySerializers: Map&lt;PropertyName, PropertySerializer&gt;, override val fields: List&lt;Field&gt;, private val reader: ComposableObjectReader, private val writer: ComposableObjectWriter)</ID>
     <ID>LongParameterList:ObjectSerializer.kt$ComposableObjectWriter$( obj: Any, data: Data, @Suppress("UNUSED_PARAMETER") type: Type, output: SerializationOutput, context: SerializationContext, debugIndent: Int )</ID>
+    <ID>LongParameterList:ObjectSerializer.kt$EvolutionObjectSerializer.Companion$(localTypeInformation: LocalTypeInformation.Composable, remoteTypeInformation: RemoteTypeInformation.Composable, constructor: LocalConstructorInformation, properties: Map&lt;String, LocalPropertyInformation&gt;, mustPreserveData: Boolean, sandboxGroup: SandboxGroup)</ID>
     <ID>MatchingDeclarationName:SupportedTransforms.kt$SupportedTransform</ID>
+    <ID>MaxLineLength:AMQPRemoteTypeModel.kt$AMQPRemoteTypeModel$cache.getOrPut(typeDescriptor) { interpretationState.run { typeNotation.name.getTypeIdentifier(sandboxGroup).interpretIdentifier(sandboxGroup) } }</ID>
+    <ID>MaxLineLength:AMQPRemoteTypeModel.kt$AMQPRemoteTypeModel.InterpretationState$private</ID>
+    <ID>MaxLineLength:AMQPTestUtils.kt$SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup(), descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry)</ID>
+    <ID>MaxLineLength:AMQPTestUtils.kt$SerializerFactoryBuilder.build(TestMutableWhiteList(),testSerializationContext.currentSandboxGroup(), descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry)</ID>
     <ID>MaxLineLength:AMQPTypeIdentifierParser.kt$AMQPTypeIdentifierParser.ParseState.ParsingParameterList$data</ID>
-    <ID>MaxLineLength:AMQPTypeIdentifierParser.kt$AMQPTypeIdentifierParser.ParseState.ParsingRawType$data</ID>
     <ID>MaxLineLength:AllButBlacklisted.kt$AllButBlacklisted$throw IllegalStateException("The $matchType $aMatch of ${type.name} is blacklisted, so it cannot be used in serialization.")</ID>
     <ID>MaxLineLength:ClassWhitelists.kt$AbstractMutableClassWhitelist$sealed</ID>
     <ID>MaxLineLength:CollectionSerializer.kt$CollectionSerializer$private val typeNotation: TypeNotation = RestrictedType(AMQPTypeIdentifiers.nameForType(declaredType), null, emptyList(), "list", Descriptor(typeDescriptor), emptyList())</ID>
+    <ID>MaxLineLength:CollectionSerializer.kt$CollectionSerializer.Companion$fun</ID>
+    <ID>MaxLineLength:CollectionSerializer.kt$CollectionSerializer.Companion$private</ID>
     <ID>MaxLineLength:CustomSerializerRegistry.kt$CachingCustomSerializerRegistry$private val customSerializersCache: MutableMap&lt;CustomSerializerIdentifier, CustomSerializerLookupResult&gt; = DefaultCacheProvider.createCache()</ID>
     <ID>MaxLineLength:EnumEvolutionSerializer.kt$EnumEvolutionSerializer$val converted = conversions[enumName] ?: throw AMQPNotSerializableException(type, "No rule to evolve enum constant $type::$enumName")</ID>
+    <ID>MaxLineLength:EvolutionSerializerFactory.kt$DefaultEvolutionSerializerFactory$val propertyTypes = properties.mapValues { (_, info) -&gt; info.type.typeIdentifier.getLocalType(localSerializerFactory.sandboxGroup).asClass() }</ID>
     <ID>MaxLineLength:LocalPropertyInformation.kt$LocalPropertyInformation.CalculatedProperty$data</ID>
     <ID>MaxLineLength:LocalPropertyInformation.kt$LocalPropertyInformation.ConstructorPairedProperty$data</ID>
     <ID>MaxLineLength:LocalPropertyInformation.kt$LocalPropertyInformation.GetterSetterProperty$data</ID>
@@ -48,6 +54,7 @@
     <ID>MaxLineLength:LocalSerializerFactory.kt$DefaultLocalSerializerFactory$private</ID>
     <ID>MaxLineLength:LocalSerializerFactory.kt$DefaultLocalSerializerFactory$private val serializersByActualAndDeclaredType: MutableMap&lt;ActualAndDeclaredType, AMQPSerializer&lt;Any&gt;&gt; = DefaultCacheProvider.createCache()</ID>
     <ID>MaxLineLength:LocalTypeInformation.kt$LocalTypeInformation.ACollection$data</ID>
+    <ID>MaxLineLength:LocalTypeInformation.kt$LocalTypeInformation.AMap$fun</ID>
     <ID>MaxLineLength:LocalTypeInformation.kt$LocalTypeInformation.AnArray$data</ID>
     <ID>MaxLineLength:LocalTypeInformation.kt$LocalTypeInformation.Singleton$data</ID>
     <ID>MaxLineLength:LocalTypeInformationBuilder.kt$LocalTypeInformationBuilder$private</ID>
@@ -55,6 +62,7 @@
     <ID>MaxLineLength:LocalTypeInformationBuilder.kt$LocalTypeInformationBuilder$remedy = "Either ensure that the properties ${nonComposableProperties.keys} are serializable, or provide a custom serializer for this type"</ID>
     <ID>MaxLineLength:LocalTypeModel.kt$ConfigurableLocalTypeModel.BuilderLookup$override</ID>
     <ID>MaxLineLength:MapSerializer.kt$MapSerializer$private val typeNotation: TypeNotation = RestrictedType(AMQPTypeIdentifiers.nameForType(declaredType), null, emptyList(), "map", Descriptor(typeDescriptor), emptyList())</ID>
+    <ID>MaxLineLength:MapSerializer.kt$MapSerializer.Companion$fun</ID>
     <ID>MaxLineLength:ObjectSerializer.kt$AbstractObjectSerializer$override</ID>
     <ID>MaxLineLength:ObjectSerializer.kt$ComposableObjectSerializer$override</ID>
     <ID>MaxLineLength:ObjectSerializer.kt$EvolutionObjectSerializer$override</ID>
@@ -66,20 +74,13 @@
     <ID>MaxLineLength:Schema.kt$Field.Companion$return Field(list[0] as String, list[1] as String, uncheckedCast(list[2]), list[3] as? String, list[4] as? String, list[5] as Boolean, list[6] as Boolean)</ID>
     <ID>MaxLineLength:Schema.kt$RestrictedType.Companion$return RestrictedType(list[0] as String, list[1] as? String, uncheckedCast(list[2]), list[3] as String, list[4] as Descriptor, uncheckedCast(list[5]))</ID>
     <ID>MaxLineLength:Schema.kt$RestrictedType.Companion$return newInstance(listOf(list[0], list[1], list[2], list[3], Descriptor.get(list[4]!!), (list[5] as List&lt;*&gt;).map { Choice.get(it!!) }))</ID>
-    <ID>MaxLineLength:SerializationDefaults.kt$SerializationDefaults.Config$var p2pContext: () -&gt; SerializationContext = { throw CordaRuntimeException("SerializationDefault accessed before being set by node startup") }</ID>
-    <ID>MaxLineLength:SerializationDefaults.kt$SerializationDefaults.Config$var serializationFactory: () -&gt; SerializationFactory = { throw CordaRuntimeException("SerializationDefault accessed before being set by node startup") }</ID>
-    <ID>MaxLineLength:SerializationDefaults.kt$SerializationDefaults.Config$var storageContext: () -&gt; SerializationContext = { throw CordaRuntimeException("SerializationDefault accessed before being set by node startup") }</ID>
     <ID>MaxLineLength:SerializationEnvironment.kt$SerializationEnvironmentImpl$override val p2pSerialization: P2pSerializationService by lazy { P2pSerializationServiceImpl(SerializationServiceImpl(this, p2pContext)) }</ID>
-    <ID>MaxLineLength:SerializationHelpers.kt$context: SerializationContext = SerializationDefaults.currentOrDefaultContext(serializationFactory)</ID>
-    <ID>MaxLineLength:SerializationHelpers.kt$inline</ID>
+    <ID>MaxLineLength:SerializationOutput.kt$SerializationOutput$writeObject(obj, data, if (type == TypeIdentifier.UnknownType.getLocalType(context.currentSandboxGroup())) obj.javaClass else type, context, debugIndent)</ID>
     <ID>MaxLineLength:SerializationScheme.kt$SerializationFactoryImpl$private</ID>
-    <ID>MaxLineLength:SerializationScheme.kt$SerializationFactoryImpl$return asCurrent { withCurrentContext(context) { schemeFor(byteSequence, context.useCase).first.deserialize(byteSequence, clazz, context) } }</ID>
-    <ID>MaxLineLength:SerializationScheme.kt$SerializationFactoryImpl$return asCurrent { withCurrentContext(context) { schemeFor(context.preferredSerializationVersion, context.useCase).first.serialize(obj, context) } }</ID>
     <ID>MaxLineLength:SingletonSerializer.kt$SingletonSerializer$internal val typeNotation: TypeNotation = RestrictedType(type.typeName, "Singleton", generateProvides(), "boolean", Descriptor(typeDescriptor), emptyList())</ID>
     <ID>MaxLineLength:TypeIdentifier.kt$TypeIdentifier.Parameterised$data</ID>
     <ID>MaxLineLength:TypeParameterUtils.kt$private</ID>
     <ID>NestedBlockDepth:AllButBlacklisted.kt$AllButBlacklisted$ override fun hasListed(type: Class&lt;*&gt;): Boolean</ID>
-    <ID>NestedBlockDepth:ThrowableSerializer.kt$ThrowableSerializer$override fun fromProxy(proxy: ThrowableProxy): Throwable</ID>
     <ID>SpreadOperator:ObjectBuilder.kt$ConstructorCaller$(*parameters)</ID>
     <ID>SpreadOperator:ThrowableSerializer.kt$ThrowableSerializer$(*params.toTypedArray())</ID>
     <ID>ThrowsCount:AMQPTypeIdentifierParser.kt$AMQPTypeIdentifierParser$// Make sure our inputs aren't designed to blow things up. private fun validate(typeString: String)</ID>
@@ -90,12 +91,8 @@
     <ID>TooManyFunctions:PropertyDescriptor.kt$net.corda.internal.serialization.amqp.PropertyDescriptor.kt</ID>
     <ID>TooManyFunctions:SerializationHelper.kt$net.corda.internal.serialization.amqp.SerializationHelper.kt</ID>
     <ID>TooManyFunctions:TypeModellingFingerPrinter.kt$FingerPrintingState</ID>
-    <ID>TopLevelPropertyNaming:SerializationEnvironment.kt$val _allEnabledSerializationEnvs: List&lt;Pair&lt;String, SerializationEnvironment&gt;&gt; get() = serializationEnvFields.mapNotNull { it.get()?.let { env -&gt; Pair(it.name, env) } }</ID>
-    <ID>TopLevelPropertyNaming:SerializationEnvironment.kt$val _contextSerializationEnv = ThreadLocalToggleField&lt;SerializationEnvironment&gt;("contextSerializationEnv")</ID>
-    <ID>TopLevelPropertyNaming:SerializationEnvironment.kt$val _driverSerializationEnv = SimpleToggleField&lt;SerializationEnvironment&gt;("driverSerializationEnv")</ID>
     <ID>TopLevelPropertyNaming:SerializationFormat.kt$const val encodingNotPermittedFormat = "Encoding not permitted: %s"</ID>
     <ID>UnusedImports:SerializerFactory.kt$import java.io.NotSerializableException</ID>
     <ID>UnusedImports:TransformTypes.kt$import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefaults</ID>
-    <ID>WildcardImport:DeserializationInput.kt$import net.corda.internal.serialization.*</ID>
   </CurrentIssues>
 </SmellBaseline>
