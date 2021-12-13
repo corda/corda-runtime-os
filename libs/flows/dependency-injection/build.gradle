@@ -11,4 +11,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-base"
+    implementation project(":libs:flows:statemachine")
+    implementation project(":libs:virtual-node:sandbox-group-service")
 }

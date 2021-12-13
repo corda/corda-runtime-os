@@ -3,7 +3,7 @@
 kafka_topics='/opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092'
 create_kafka_topics="$kafka_topics --partitions 1 --replication-factor 1"
 
-topic_prefix='rpc.permissions'
+topic_prefix='http.rpc.permissions'
 
 if [[ "$*" == "delete" ]]
   then

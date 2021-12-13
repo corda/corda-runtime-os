@@ -25,8 +25,7 @@ class InMemorySessionReplayer(
     configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
-    private val networkMap: LinkManagerNetworkMap,
-    instanceId: Int
+    private val networkMap: LinkManagerNetworkMap
 ): LifecycleWithDominoTile {
 
     companion object {
@@ -38,7 +37,7 @@ class InMemorySessionReplayer(
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         coordinatorFactory,
-        PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, instanceId),
+        PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID),
         configuration
     )
 
@@ -73,6 +72,10 @@ class InMemorySessionReplayer(
 
     fun removeMessageFromReplay(uniqueId: String) {
         replayScheduler.removeFromReplay(uniqueId)
+    }
+
+    fun removeAllMessagesFromReplay() {
+        replayScheduler.removeAllMessagesFromReplay()
     }
 
     private fun replayMessage(

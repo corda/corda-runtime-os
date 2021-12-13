@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp;
 
+import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
 import net.corda.v5.serialization.SerializedBytes;
 import net.corda.v5.serialization.annotations.ConstructorForDeserialization;
-import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
 import org.apache.qpid.proton.codec.DecoderImpl;
 import org.apache.qpid.proton.codec.EncoderImpl;
 import org.junit.jupiter.api.Test;

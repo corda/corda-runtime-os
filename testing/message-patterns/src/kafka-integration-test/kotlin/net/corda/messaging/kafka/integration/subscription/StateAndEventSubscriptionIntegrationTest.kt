@@ -160,7 +160,7 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getDemoRecords(EVENT_TOPIC1, 5, 2)).forEach { it.get() }
 
-        assertTrue(stateAndEventLatch.await(40, TimeUnit.SECONDS))
+        assertTrue(stateAndEventLatch.await(60, TimeUnit.SECONDS))
 
         stateEventSub1.stop()
         stateEventSub2.stop()
@@ -188,7 +188,7 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getDemoRecords(EVENT_TOPIC2, 5, 2)).forEach { it.get() }
 
-        assertTrue(onNextLatch1.await(30, TimeUnit.SECONDS))
+        assertTrue(onNextLatch1.await(60, TimeUnit.SECONDS))
         stateEventSub1.stop()
 
         val durableLatch = CountDownLatch(10)
@@ -221,7 +221,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         stateEventSub1.start()
 
-        assertTrue(onNextLatch1.await(30, TimeUnit.SECONDS))
+        assertTrue(onNextLatch1.await(60, TimeUnit.SECONDS))
         stateEventSub1.stop()
 
         val durableLatch = CountDownLatch(2)
@@ -285,7 +285,7 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher.publish(getDemoRecords(EVENT_TOPIC4, 5, 6)).forEach { it.get() }
 
         stateEventSub2.start()
-        assertTrue(onNextLatch2.await(40, TimeUnit.SECONDS))
+        assertTrue(onNextLatch2.await(50, TimeUnit.SECONDS))
 
         stateEventSub1.start()
 
@@ -379,8 +379,8 @@ class StateAndEventSubscriptionIntegrationTest {
 
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC6-group", EVENT_TOPIC6, 1),
-            TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT6, 6000),
-            shortIntervalTimeoutConfig, TestStateAndEventListenerStrings(expectedCommitStates, onCommitLatch, 5500)
+            TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT6, 5000),
+            shortIntervalTimeoutConfig, TestStateAndEventListenerStrings(expectedCommitStates, onCommitLatch, 5000)
         )
         stateEventSub1.start()
 
@@ -394,8 +394,8 @@ class StateAndEventSubscriptionIntegrationTest {
         )
         durableSub.start()
 
-        assertTrue(stateAndEventLatch.await(40, TimeUnit.SECONDS))
-        assertTrue(durableLatch.await(30, TimeUnit.SECONDS))
+        assertTrue(stateAndEventLatch.await(60, TimeUnit.SECONDS))
+        assertTrue(durableLatch.await(60, TimeUnit.SECONDS))
 
         durableSub.stop()
         stateEventSub1.stop()

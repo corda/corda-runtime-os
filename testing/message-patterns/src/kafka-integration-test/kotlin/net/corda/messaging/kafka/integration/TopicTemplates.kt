@@ -25,8 +25,8 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val DURABLE_TOPIC1  = "DurableTopic1"
-        const val DURABLE_TOPIC1_TEMPLATE = """topics = [ 
+        const val DURABLE_TOPIC1 = "DurableTopic1"
+        val DURABLE_TOPIC1_TEMPLATE = """topics = [ 
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$DURABLE_TOPIC1" 
                         numPartitions = 2 
@@ -37,7 +37,7 @@ class TopicTemplates {
         const val PUBLISHER_TEST_DURABLE_TOPIC1  = "PublisherTestDurableTopic1"
         const val PUBLISHER_TEST_DURABLE_TOPIC1_TEMPLATE = """topics = [ 
                     { 
-                        topicName = "$TEST_TOPIC_PREFIX$DURABLE_TOPIC1" 
+                        topicName = "$TEST_TOPIC_PREFIX$PUBLISHER_TEST_DURABLE_TOPIC1" 
                         numPartitions = 2 
                         replicationFactor = 3 
                     } 
@@ -65,8 +65,8 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val EVENT_TOPIC2  = "EventTopic2"
-        const val EVENT_TOPIC2_TEMPLATE = """topics = [ 
+        const val EVENT_TOPIC2 = "EventTopic2"
+        val EVENT_TOPIC2_TEMPLATE = """topics = [ 
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$EVENT_TOPIC2" 
                         numPartitions = 2 
@@ -87,8 +87,8 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val EVENT_TOPIC3  = "EventTopic3"
-        const val EVENT_TOPIC3_TEMPLATE = """topics = [ 
+        const val EVENT_TOPIC3 = "EventTopic3"
+        val EVENT_TOPIC3_TEMPLATE = """topics = [ 
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$EVENT_TOPIC3" 
                         numPartitions = 1 
@@ -109,8 +109,8 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val EVENT_TOPIC4  = "EventTopic4"
-        const val EVENT_TOPIC4_TEMPLATE = """topics = [ 
+        const val EVENT_TOPIC4 = "EventTopic4"
+        val EVENT_TOPIC4_TEMPLATE = """topics = [ 
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$EVENT_TOPIC4" 
                         numPartitions = 2 
@@ -131,8 +131,8 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val EVENT_TOPIC5  = "EventTopic5"
-        const val EVENT_TOPIC5_TEMPLATE = """topics = [ 
+        const val EVENT_TOPIC5 = "EventTopic5"
+        val EVENT_TOPIC5_TEMPLATE = """topics = [ 
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$EVENT_TOPIC5" 
                         numPartitions = 2 
@@ -153,8 +153,8 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val EVENT_TOPIC6  = "EventTopic6"
-        const val EVENT_TOPIC6_TEMPLATE = """topics = [ 
+        const val EVENT_TOPIC6 = "EventTopic6"
+        val EVENT_TOPIC6_TEMPLATE = """topics = [ 
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$EVENT_TOPIC6" 
                         numPartitions = 2 
@@ -197,8 +197,8 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val RPC_TOPIC  = "RPCTopic"
-        const val RPC_TOPIC_TEMPLATE = """topics = [
+        const val RPC_TOPIC = "RPCTopic"
+        val RPC_TOPIC_TEMPLATE = """topics = [
                     {
                         topicName = "$TEST_TOPIC_PREFIX$RPC_TOPIC" 
                         numPartitions = 1
@@ -209,8 +209,8 @@ class TopicTemplates {
                     }
                 ]"""
 
-        const val RPC_RESPONSE_TOPIC  = "RPCTopic.resp"
-        const val RPC_RESPONSE_TOPIC_TEMPLATE = """topics = [
+        const val RPC_RESPONSE_TOPIC = "RPCTopic.resp"
+        val RPC_RESPONSE_TOPIC_TEMPLATE = """topics = [
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$RPC_RESPONSE_TOPIC"
                         numPartitions = 1

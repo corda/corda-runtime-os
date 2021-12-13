@@ -74,15 +74,13 @@ open class SessionManagerImpl(
     private val configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
-    instanceId: Int,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
     private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
         publisherFactory,
         configurationReaderService,
         coordinatorFactory,
         configuration,
-        networkMap,
-        instanceId
+        networkMap
     )
 ) : SessionManager {
 
@@ -92,6 +90,7 @@ open class SessionManagerImpl(
             val us = message.header.source.toHoldingIdentity()
             return SessionKey(us, peer)
         }
+        private const val SESSION_MANAGER_CLIENT_ID = "session-manager"
     }
 
     private val pendingOutboundSessions = ConcurrentHashMap<String, Pair<SessionKey, AuthenticationProtocolInitiator>>()
@@ -114,8 +113,14 @@ open class SessionManagerImpl(
         coordinatorFactory,
         configuration,
         networkMap,
-        ::destroyOutboundSession,
-        instanceId
+        ::destroyOutboundSession
+    )
+
+    private val publisher = PublisherWithDominoLogic(
+        publisherFactory,
+        coordinatorFactory,
+        PublisherConfig(SESSION_MANAGER_CLIENT_ID),
+        configuration
     )
 
     override val dominoTile = DominoTile(
@@ -123,7 +128,7 @@ open class SessionManagerImpl(
         coordinatorFactory,
         children = setOf(
             heartbeatManager.dominoTile, sessionReplayer.dominoTile, networkMap.dominoTile, cryptoService.dominoTile,
-            pendingOutboundSessionMessageQueues.dominoTile
+            pendingOutboundSessionMessageQueues.dominoTile, publisher.dominoTile
         ),
         configurationChangeHandler = SessionManagerConfigChangeHandler()
     )
@@ -226,20 +231,43 @@ open class SessionManagerImpl(
     }
 
     private fun destroyAllSessions() {
+        sessionReplayer.removeAllMessagesFromReplay()
+        heartbeatManager.stopTrackingAllSessions()
+        val tombstoneRecords = (activeOutboundSessionsById.keys + pendingOutboundSessions.keys + activeInboundSessions.keys
+                + pendingInboundSessions.keys).map { Record(Schema.SESSION_OUT_PARTITIONS, it, null) }
         activeOutboundSessions.clear()
+        activeOutboundSessionsById.clear()
         pendingOutboundSessions.clear()
         pendingOutboundSessionKeys.clear()
+
+        activeInboundSessions.clear()
+        pendingInboundSessions.clear()
         //This is suboptimal we could instead restart session negotiation
         pendingOutboundSessionMessageQueues.destroyAllQueues()
+        if (tombstoneRecords.isNotEmpty()) {
+            publisher.publish(tombstoneRecords)
+        }
     }
 
     private fun destroyOutboundSession(sessionKey: SessionKey, sessionId: String) {
         sessionNegotiationLock.write {
+            sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId))
+            sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId))
             activeOutboundSessions.remove(sessionKey)
+            activeOutboundSessionsById.remove(sessionId)
             pendingOutboundSessions.remove(sessionId)
             pendingOutboundSessionKeys.remove(sessionKey)
             pendingOutboundSessionMessageQueues.destroyQueue(sessionKey)
+            publisher.publish(listOf(Record(Schema.SESSION_OUT_PARTITIONS, sessionId, null)))
         }
+    }
+
+    private fun initiatorHelloUniqueId(sessionId: String): String {
+        return sessionId + "_" + InitiatorHelloMessage::class.java.simpleName
+    }
+
+    private fun initiatorHandshakeUniqueId(sessionId: String): String {
+        return sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName
     }
 
     private fun getSessionInitMessage(sessionKey: SessionKey): Pair<String, LinkOutMessage>? {
@@ -277,9 +305,8 @@ open class SessionManagerImpl(
         logger.info("Local identity (${sessionKey.ourId}) initiating new session $sessionId with remote identity ${sessionKey.responderId}")
 
         val sessionInitPayload = session.generateInitiatorHello()
-        val initiatorHelloUniqueId = "${sessionId}_${sessionInitPayload::class.java.simpleName}"
         sessionReplayer.addMessageForReplay(
-            initiatorHelloUniqueId,
+            initiatorHelloUniqueId(sessionId),
             InMemorySessionReplayer.SessionMessageReplay(
                 sessionInitPayload,
                 sessionId,
@@ -342,13 +369,11 @@ open class SessionManagerImpl(
             return null
         }
 
-        val initiatorHelloUniqueId = "${message.header.sessionId}_${InitiatorHelloMessage::class.java.simpleName}"
-        sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId)
+        sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(message.header.sessionId))
         heartbeatManager.messageAcknowledged(message.header.sessionId)
 
-        val initiatorHandshakeUniqueId = "${message.header.sessionId}_${payload::class.java.simpleName}"
         sessionReplayer.addMessageForReplay(
-            initiatorHandshakeUniqueId,
+            initiatorHandshakeUniqueId(message.header.sessionId),
             InMemorySessionReplayer.SessionMessageReplay(
                 payload,
                 message.header.sessionId,
@@ -393,8 +418,7 @@ open class SessionManagerImpl(
             return null
         }
         val authenticatedSession = session.getSession()
-        val initiatorHandshakeUniqueId = message.header.sessionId + "_" + InitiatorHandshakeMessage::class.java.simpleName
-        sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId)
+        sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(message.header.sessionId))
         heartbeatManager.messageAcknowledged(message.header.sessionId)
         sessionNegotiationLock.write {
             activeOutboundSessions[sessionInfo] = authenticatedSession
@@ -520,8 +544,7 @@ open class SessionManagerImpl(
         coordinatorFactory: LifecycleCoordinatorFactory,
         configuration: SmartConfig,
         private val networkMap: LinkManagerNetworkMap,
-        private val destroySession: (key: SessionKey, sessionId: String) -> Any,
-        instanceId: Int
+        private val destroySession: (key: SessionKey, sessionId: String) -> Any
     ) : LifecycleWithDominoTile {
 
         companion object {
@@ -576,7 +599,7 @@ open class SessionManagerImpl(
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID, instanceId),
+            PublisherConfig(HEARTBEAT_MANAGER_CLIENT_ID),
             configuration
         )
 
@@ -604,6 +627,10 @@ open class SessionManagerImpl(
             @Volatile
             var sendingHeartbeats: Boolean = false
         )
+
+        fun stopTrackingAllSessions() {
+            trackedSessions.clear()
+        }
 
         fun sessionMessageSent(key: SessionKey, sessionId: String) {
             dominoTile.withLifecycleLock {

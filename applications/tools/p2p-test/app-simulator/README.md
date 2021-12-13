@@ -50,7 +50,8 @@ In the sender mode, the configuration file should have the following form:
         peerGroupId: "group-1",
         ourX500Name: "O=Bob,L=London,C=GB",
         ourGroupId: "group-1",
-        loadGenerationType: "CONTINUOUS", 
+        loadGenerationType: "CONTINUOUS",  
+        // totalNumberOfMessages: 1000 - only required when loadGenerationType = ONE_OFF
         batchSize: 10,
         interBatchDelay: 0ms,
         messageSizeBytes: 10000

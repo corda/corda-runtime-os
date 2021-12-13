@@ -104,14 +104,14 @@ class DurableSubscriptionIntegrationTest {
         //long delay to not allow sub to to try rejoin group after rebalance
         val durableSub2 = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC1-group", DURABLE_TOPIC1, 2),
-            TestDurableProcessor(latch),
+            TestDurableProcessor(latch, "", 70000),
             triggerRebalanceQuicklyConfig,
             null
         )
         durableSub1.start()
         durableSub2.start()
 
-        assertTrue(latch.await(70, TimeUnit.SECONDS))
+        assertTrue(latch.await(60, TimeUnit.SECONDS))
         durableSub1.stop()
         durableSub2.stop()
     }
@@ -230,7 +230,7 @@ class DurableSubscriptionIntegrationTest {
 
         durableSub1.start()
         durableSub2.start()
-        assertTrue(latch.await(20, TimeUnit.SECONDS))
+        assertTrue(latch.await(60, TimeUnit.SECONDS))
         durableSub1.stop()
         durableSub2.stop()
         publisher.close()

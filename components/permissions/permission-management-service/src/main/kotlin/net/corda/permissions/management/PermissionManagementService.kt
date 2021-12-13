@@ -1,5 +1,6 @@
 package net.corda.permissions.management
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.factory.PermissionManagerFactory
 import net.corda.lifecycle.Lifecycle
@@ -21,10 +22,17 @@ class PermissionManagementService @Activate constructor(
     @Reference(service = PermissionCacheService::class)
     private val permissionCacheService: PermissionCacheService,
     @Reference(service = PermissionManagerFactory::class)
-    private val permissionManagerFactory: PermissionManagerFactory
+    private val permissionManagerFactory: PermissionManagerFactory,
+    @Reference(service = ConfigurationReadService::class)
+    private val configurationReadService: ConfigurationReadService,
 ) : Lifecycle {
 
-    private val handler = PermissionManagementServiceEventHandler(publisherFactory, permissionCacheService, permissionManagerFactory)
+    private val handler = PermissionManagementServiceEventHandler(
+        publisherFactory,
+        permissionCacheService,
+        permissionManagerFactory,
+        configurationReadService
+    )
     private val coordinator = coordinatorFactory.createCoordinator<PermissionManagementService>(handler)
 
     val permissionManager: PermissionManager

@@ -16,6 +16,7 @@ import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.serialization.SerializationContext
 import net.corda.sandbox.SandboxException
+import net.corda.sandbox.SandboxGroup
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -114,10 +115,11 @@ class AMQPwithOSGiSerializationTests {
     }
 
     @JvmOverloads
-    fun testDefaultFactoryNoEvolution(descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
+    fun testDefaultFactoryNoEvolution(sandboxGroup: SandboxGroup, descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
                                               DefaultDescriptorBasedSerializerRegistry()): SerializerFactory =
             SerializerFactoryBuilder.build(
                     AllWhitelist,
+                    sandboxGroup,
                     descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
                     allowEvolution = false)
 
@@ -146,8 +148,8 @@ class AMQPwithOSGiSerializationTests {
             assertThat(sandboxGroup).isNotNull
 
             // Initialised two serialisation factories to avoid having successful tests due to caching
-            val factory1 = testDefaultFactoryNoEvolution()
-            val factory2 = testDefaultFactoryNoEvolution()
+            val factory1 = testDefaultFactoryNoEvolution(sandboxGroup)
+            val factory2 = testDefaultFactoryNoEvolution(sandboxGroup)
 
             // Initialise the serialisation context
             val testSerializationContext = SerializationContextImpl(
@@ -219,7 +221,7 @@ class AMQPwithOSGiSerializationTests {
         val cpi = assembleCPI(listOf(cpk))
         val cpks = installService.getCpb(cpi.metadata.id)!!.cpks
         val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks)
-        val factory = testDefaultFactoryNoEvolution()
+        val factory = testDefaultFactoryNoEvolution(sandboxGroup)
         val context = SerializationContextImpl(
             preferredSerializationVersion = amqpMagic,
             whitelist = AllWhitelist,

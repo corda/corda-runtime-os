@@ -96,8 +96,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        configuration,
-        instanceId
+        configuration
     )
 
     private val sessionManager = SessionManagerImpl(
@@ -107,8 +106,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         publisherFactory,
         configurationReaderService,
         lifecycleCoordinatorFactory,
-        configuration,
-        instanceId
+        configuration
     )
 
     private val outboundMessageProcessor = OutboundMessageProcessor(
@@ -388,6 +386,34 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return messages
         }
 
+        private fun checkIdentityBeforeProcessing(
+            sessionKey: SessionKey,
+            innerMessage: AuthenticatedMessageAndKey,
+            session: Session,
+            messages: MutableList<Record<*, *>>
+        )
+        {
+            val sessionSource = sessionKey.responderId.toHoldingIdentity()
+            val sessionDestination = sessionKey.ourId.toHoldingIdentity()
+            val messageDestination = innerMessage.message.header.destination
+            val messageSource = innerMessage.message.header.source
+            if(sessionSource == messageSource && sessionDestination == messageDestination) {
+                logger.debug { "Processing message ${innerMessage.message.header.messageId} " +
+                        "of type ${innerMessage.message.javaClass} from session ${session.sessionId}" }
+                messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
+                makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
+                sessionManager.inboundSessionEstablished(session.sessionId)
+            } else if(sessionSource != messageSource) {
+                logger.warn("The identity in the message's source header ($messageSource)" +
+                        " does not match the session's source identity ($sessionSource)," +
+                        " which indicates a spoofing attempt! The message was discarded.")
+            } else {
+                logger.warn("The identity in the message's destination header ($messageDestination)" +
+                        " does not match the session's destination identity ($sessionDestination)," +
+                        " which indicates a spoofing attempt! The message was discarded")
+            }
+        }
+
         private fun processLinkManagerPayload(
             sessionKey: SessionKey,
             session: Session,
@@ -398,15 +424,15 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             extractPayload(session, sessionId, message, DataMessagePayload::fromByteBuffer)?.let {
                 when (val innerMessage = it.message) {
                     is HeartbeatMessage -> {
-                        logger.debug { "Processing heartbeat message from session ${session.sessionId}" }
+                        logger.debug {"Processing heartbeat message from session $sessionId"}
                         makeAckMessageForHeartbeatMessage(sessionKey, session)?.let { ack -> messages.add(ack) }
                     }
                     is AuthenticatedMessageAndKey -> {
-                        logger.debug { "Processing message ${innerMessage.message.header.messageId} " +
-                                "of type ${innerMessage.message.javaClass} from session ${session.sessionId}" }
-                        messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
-                        makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
-                        sessionManager.inboundSessionEstablished(sessionId)
+                        checkIdentityBeforeProcessing(
+                            sessionKey,
+                            innerMessage,
+                            session,
+                            messages)
                     }
                     else -> logger.warn("Unknown incoming message type: ${innerMessage.javaClass}. The message was discarded.")
                 }
@@ -480,8 +506,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     class PendingSessionMessageQueuesImpl(
         publisherFactory: PublisherFactory,
         coordinatorFactory: LifecycleCoordinatorFactory,
-        configuration: SmartConfig,
-        instanceId: Int
+        configuration: SmartConfig
     ): PendingSessionMessageQueues, LifecycleWithDominoTile {
 
         companion object {
@@ -492,7 +517,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, instanceId),
+            PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID),
             configuration
         )
         override val dominoTile = publisher.dominoTile

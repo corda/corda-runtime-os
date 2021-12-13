@@ -38,6 +38,7 @@ dependencies {
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:serialization:serialization-kryo")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
+    runtimeOnly project(":libs:application:application-impl")
 
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
