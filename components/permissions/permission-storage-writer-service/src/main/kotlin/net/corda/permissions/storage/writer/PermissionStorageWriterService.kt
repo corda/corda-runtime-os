@@ -11,25 +11,15 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.internal.PermissionStorageWriterServiceEventHandler
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import javax.persistence.EntityManagerFactory
 
-@Component(service = [PermissionStorageWriterService::class])
-class PermissionStorageWriterService @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
+class PermissionStorageWriterService(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = EntityManagerFactory::class)
     entityManagerFactory: EntityManagerFactory,
-    @Reference(service = SubscriptionFactory::class)
     subscriptionFactory: SubscriptionFactory,
-    @Reference(service = PermissionStorageWriterProcessorFactory::class)
     permissionStorageWriterProcessorFactory: PermissionStorageWriterProcessorFactory,
-    @Reference(service = SmartConfig::class)
-    private val nodeConfig: SmartConfig,
-    @Reference(service = PermissionStorageReaderService::class)
-    private val readerService: PermissionStorageReaderService
+    nodeConfig: SmartConfig,
+    readerService: PermissionStorageReaderService
 ) : Lifecycle {
 
     private val coordinator = coordinatorFactory.createCoordinator<PermissionStorageWriterService>(

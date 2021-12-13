@@ -55,7 +55,7 @@ class OSGiFrameworkMain {
          * * `build/resources/main` in a gradle project;
          * * the root of the fat executable `.jar`.
          */
-        const val SYSTEM_BUNDLES = "system_bundles"
+        const val APPLICATION_BUNDLES = "application_bundles"
 
         /**
          * Location of the file listing the extra system packages exposed from the JDK to the framework.
@@ -127,7 +127,7 @@ class OSGiFrameworkMain {
                     })
                     osgiFrameworkWrap
                         .start()
-                        .install(SYSTEM_BUNDLES)
+                        .install(APPLICATION_BUNDLES)
                         .activate()
                         .startApplication(NO_TIMEOUT, args)
                         .waitForStop(NO_TIMEOUT)

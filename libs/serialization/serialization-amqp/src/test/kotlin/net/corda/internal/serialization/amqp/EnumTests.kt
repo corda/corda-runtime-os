@@ -7,6 +7,7 @@ import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvel
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.amqp.testutils.testName
+import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.serialization.ClassWhitelist
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.SerializedBytes
@@ -220,7 +221,7 @@ class EnumTests {
         }
 
         val whitelist = WL(classTestName("C"))
-        val factory = SerializerFactoryBuilder.build(whitelist)
+        val factory = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
 
         Assertions.assertThatThrownBy {
             TestSerializationOutput(VERBOSE, factory).serialize(C(Bras.UNDERWIRE))
@@ -239,7 +240,7 @@ class EnumTests {
         }
 
         val whitelist = WL()
-        val factory = SerializerFactoryBuilder.build(whitelist)
+        val factory = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
 
         // if it all works, this won't explode
         TestSerializationOutput(VERBOSE, factory).serialize(C(Bras.UNDERWIRE))
@@ -254,7 +255,7 @@ class EnumTests {
         }
 
         val whitelist = WL()
-        val factory = SerializerFactoryBuilder.build(whitelist)
+        val factory = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
 
         // if it all works, this won't explode
         TestSerializationOutput(VERBOSE, factory).serialize(C(AnnotatedBras.UNDERWIRE))
@@ -275,13 +276,13 @@ class EnumTests {
                 "net.corda.internal.serialization.amqp.EnumTests\$Bras"
             )
         )
-        val factory = SerializerFactoryBuilder.build(whitelist)
+        val factory = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
         val bytes = TestSerializationOutput(VERBOSE, factory).serialize(C(Bras.UNDERWIRE))
 
         // then take that serialised object and attempt to deserialize it in a context that
         // disallows the Bras enum
         val whitelist1 = WL(listOf(classTestName("C")))
-        val factory2 = SerializerFactoryBuilder.build(whitelist1)
+        val factory2 = SerializerFactoryBuilder.build(whitelist1, testSerializationContext.currentSandboxGroup())
 
         Assertions.assertThatThrownBy {
             DeserializationInput(factory2).deserialize(bytes)
@@ -291,10 +292,10 @@ class EnumTests {
     @Test
     fun deserializeCustomisedEnum() {
         val input = CustomEnumWrapper(CustomEnum.ONE)
-        val factory1 = SerializerFactoryBuilder.build(AlwaysEmptyWhitelist)
+        val factory1 = SerializerFactoryBuilder.build(AlwaysEmptyWhitelist, testSerializationContext.currentSandboxGroup())
         val serialized = TestSerializationOutput(VERBOSE, factory1).serialize(input)
 
-        val factory2 = SerializerFactoryBuilder.build(AlwaysEmptyWhitelist)
+        val factory2 = SerializerFactoryBuilder.build(AlwaysEmptyWhitelist, testSerializationContext.currentSandboxGroup())
         val output = DeserializationInput(factory2).deserialize(serialized)
 
         assertEquals(input, output)
