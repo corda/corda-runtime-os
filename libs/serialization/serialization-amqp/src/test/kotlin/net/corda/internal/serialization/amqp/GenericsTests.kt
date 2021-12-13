@@ -10,6 +10,7 @@ import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.amqp.testutils.testName
+import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -132,8 +133,8 @@ class GenericsTests {
         data class G(val a: Int)
         data class Wrapper<T : Any>(val a: Int, val b: SerializedBytes<T>)
 
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+        val factory2 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         val ser = SerializationOutput(factory)
 
         val gBytes = ser.serialize(G(1))
@@ -158,8 +159,8 @@ class GenericsTests {
         data class Container<T>(val b: T)
         data class Wrapper<T : Any>(val c: Container<T>)
 
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        val factories = listOf(factory, SerializerFactoryBuilder.build(AllWhitelist))
+        val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+        val factories = listOf(factory, SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup()))
         val ser = SerializationOutput(factory)
 
         ser.serialize(Wrapper(Container(InnerA(1)))).apply {
@@ -188,8 +189,8 @@ class GenericsTests {
         data class Wrapper<T : Any>(val c: Container<T>)
 
         val factorys = listOf(
-            SerializerFactoryBuilder.build(AllWhitelist),
-            SerializerFactoryBuilder.build(AllWhitelist)
+            SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup()),
+            SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         )
 
         val ser = SerializationOutput(factorys[0])
@@ -211,7 +212,7 @@ class GenericsTests {
 
     private fun forceWildcardSerialize(
         a: ForceWildcard<*>,
-        factory: SerializerFactory = SerializerFactoryBuilder.build(AllWhitelist)
+        factory: SerializerFactory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
     ): SerializedBytes<*> {
         val bytes = SerializationOutput(factory).serializeAndReturnSchema(a)
         bytes.printSchema()
@@ -221,7 +222,7 @@ class GenericsTests {
     @Suppress("UNCHECKED_CAST")
     private fun forceWildcardDeserializeString(
         bytes: SerializedBytes<*>,
-        factory: SerializerFactory = SerializerFactoryBuilder.build(AllWhitelist)
+        factory: SerializerFactory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
     ) {
         DeserializationInput(factory).deserialize(bytes as SerializedBytes<ForceWildcard<String>>)
     }
@@ -229,7 +230,7 @@ class GenericsTests {
     @Suppress("UNCHECKED_CAST")
     private fun forceWildcardDeserializeDouble(
         bytes: SerializedBytes<*>,
-        factory: SerializerFactory = SerializerFactoryBuilder.build(AllWhitelist)
+        factory: SerializerFactory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
     ) {
         DeserializationInput(factory).deserialize(bytes as SerializedBytes<ForceWildcard<Double>>)
     }
@@ -237,7 +238,7 @@ class GenericsTests {
     @Suppress("UNCHECKED_CAST")
     private fun forceWildcardDeserialize(
         bytes: SerializedBytes<*>,
-        factory: SerializerFactory = SerializerFactoryBuilder.build(AllWhitelist)
+        factory: SerializerFactory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
     ) {
         DeserializationInput(factory).deserialize(bytes as SerializedBytes<ForceWildcard<*>>)
     }
@@ -250,7 +251,7 @@ class GenericsTests {
 
     @Test
     fun forceWildcardSharedFactory() {
-        val f = SerializerFactoryBuilder.build(AllWhitelist)
+        val f = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         forceWildcardDeserializeString(forceWildcardSerialize(ForceWildcard("hello"), f), f)
         forceWildcardDeserializeDouble(forceWildcardSerialize(ForceWildcard(3.0), f), f)
     }
@@ -264,7 +265,7 @@ class GenericsTests {
 
     @Test
     fun forceWildcardDeserializeSharedFactory() {
-        val f = SerializerFactoryBuilder.build(AllWhitelist)
+        val f = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         forceWildcardDeserialize(forceWildcardSerialize(ForceWildcard("hello"), f), f)
         forceWildcardDeserialize(forceWildcardSerialize(ForceWildcard(10), f), f)
         forceWildcardDeserialize(forceWildcardSerialize(ForceWildcard(20.0), f), f)
@@ -306,14 +307,14 @@ class GenericsTests {
         // attempt at having a class loader without some of the derived non core types loaded and thus
         // possibly altering how we serialise things
 
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory2 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         val ser2 = TestSerializationOutput(VERBOSE, factory2).serializeAndReturnSchema(state)
 
         //  now deserialise those objects
         val factory3 = testDefaultFactory()
         DeserializationInput(factory3).deserializeAndReturnEnvelope(ser1.obj)
 
-        val factory4 = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory4 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         DeserializationInput(factory4).deserializeAndReturnEnvelope(ser2.obj)
     }
 

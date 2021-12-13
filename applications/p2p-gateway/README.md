@@ -52,7 +52,7 @@ You can configure the image using those environment variables:
 * `INSTANCE_ID` - The Gateway instance ID (default to random number)
 
 ### Example
-1. Before starting the application, run a kafka cluster. See examples in [here](../../../../testing/message-patterns/README.md).
+1. Before starting the application, run a kafka cluster. See examples in [here](../../testing/message-patterns/README.md).
 2. Build the docker image (see above)
 3. Run the docker image:
 ```bash
@@ -62,7 +62,7 @@ docker run \
 -e KAFKA_SERVERS="broker1:9093" \
 -p 3123:5603 \
 --hostname www.alice.net \
-engineering-docker-dev.software.r3.com/corda-os-p2p-gateway:5.0.0.0-SNAPSHOT
+corda-os-docker-dev.software.r3.com/corda-os-p2p-gateway:5.0.0.0-SNAPSHOT
 ```
 Please note:
 * The image need to be able to talk with the kafka broker, hence the network and `KAFKA_SERVERS` environment variable.

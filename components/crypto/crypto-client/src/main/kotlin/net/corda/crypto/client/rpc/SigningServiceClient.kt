@@ -1,7 +1,8 @@
 package net.corda.crypto.client.rpc
 
 import net.corda.crypto.SigningService
-import net.corda.data.WireKeyValuePair
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.WireNoContentValue
 import net.corda.data.crypto.wire.WirePublicKey
 import net.corda.data.crypto.wire.WireRequestContext
@@ -156,8 +157,10 @@ class SigningServiceClient(
         requestingComponent,
         Instant.now(),
         memberId,
-        listOf(
-            WireKeyValuePair(CATEGORY, category)
+        KeyValuePairList(
+            listOf(
+                KeyValuePair(CATEGORY, category)
+            )
         )
     )
 

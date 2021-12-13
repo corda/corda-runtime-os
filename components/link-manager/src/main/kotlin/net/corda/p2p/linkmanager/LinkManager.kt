@@ -51,6 +51,9 @@ import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema
 import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -93,8 +96,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     private val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        configuration,
-        instanceId
+        configuration
     )
 
     private val sessionManager = SessionManagerImpl(
@@ -104,8 +106,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         publisherFactory,
         configurationReaderService,
         lifecycleCoordinatorFactory,
-        configuration,
-        instanceId
+        configuration
     )
 
     private val outboundMessageProcessor = OutboundMessageProcessor(
@@ -221,6 +222,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
+            logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination.toHoldingIdentity()}." }
             return if (linkManagerHostingMap.isHostedLocally(message.header.destination.toHoldingIdentity())) {
                 listOf(Record(P2P_IN_TOPIC, generateKey(), AppMessage(message)))
             } else {
@@ -239,14 +241,28 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             messageAndKey: AuthenticatedMessageAndKey,
             isReplay: Boolean = false
         ): List<Record<String, *>> {
+            logger.trace{ "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
+                    "to ${messageAndKey.message.header.destination.toHoldingIdentity()}." }
             val isHostedLocally = linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toHoldingIdentity())
             return if (isHostedLocally) {
                 mutableListOf(Record(P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)))
             } else {
                 when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
-                    is SessionState.NewSessionNeeded -> recordsForNewSession(state)
-                    is SessionState.SessionEstablished -> recordsForSessionEstablished(state, messageAndKey)
-                    is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> emptyList()
+                    is SessionState.NewSessionNeeded -> {
+                        logger.trace { "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
+                                "Initiating a new one.." }
+                        recordsForNewSession(state)
+                    }
+                    is SessionState.SessionEstablished -> {
+                        logger.trace { "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
+                                " Using this to send outbound message." }
+                        recordsForSessionEstablished(state, messageAndKey)
+                    }
+                    is SessionState.SessionAlreadyPending, SessionState.CannotEstablishSession -> {
+                        logger.trace { "Session already pending with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
+                                "Message queued until session is established." }
+                        emptyList()
+                    }
                 }
             } + if (!isReplay) recordsForMarkers(messageAndKey, isHostedLocally) else emptyList()
         }
@@ -350,10 +366,14 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     extractPayload(sessionDirection.session, sessionId, message, MessageAck::fromByteBuffer)?.let {
                         when (val ack = it.ack) {
                             is AuthenticatedMessageAck -> {
+                                logger.debug { "Processing ack for message ${ack.messageId} from session $sessionId." }
                                 sessionManager.messageAcknowledged(sessionId)
                                 messages.add(makeMarkerForAckMessage(ack))
                             }
-                            is HeartbeatMessageAck -> sessionManager.messageAcknowledged(sessionId)
+                            is HeartbeatMessageAck -> {
+                                logger.debug { "Processing heartbeat ack from session $sessionId." }
+                                sessionManager.messageAcknowledged(sessionId)
+                            }
                             else -> logger.warn("Received an inbound message with unexpected type for SessionId = $sessionId.")
                         }
                     }
@@ -366,6 +386,34 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             return messages
         }
 
+        private fun checkIdentityBeforeProcessing(
+            sessionKey: SessionKey,
+            innerMessage: AuthenticatedMessageAndKey,
+            session: Session,
+            messages: MutableList<Record<*, *>>
+        )
+        {
+            val sessionSource = sessionKey.responderId.toHoldingIdentity()
+            val sessionDestination = sessionKey.ourId.toHoldingIdentity()
+            val messageDestination = innerMessage.message.header.destination
+            val messageSource = innerMessage.message.header.source
+            if(sessionSource == messageSource && sessionDestination == messageDestination) {
+                logger.debug { "Processing message ${innerMessage.message.header.messageId} " +
+                        "of type ${innerMessage.message.javaClass} from session ${session.sessionId}" }
+                messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
+                makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
+                sessionManager.inboundSessionEstablished(session.sessionId)
+            } else if(sessionSource != messageSource) {
+                logger.warn("The identity in the message's source header ($messageSource)" +
+                        " does not match the session's source identity ($sessionSource)," +
+                        " which indicates a spoofing attempt! The message was discarded.")
+            } else {
+                logger.warn("The identity in the message's destination header ($messageDestination)" +
+                        " does not match the session's destination identity ($sessionDestination)," +
+                        " which indicates a spoofing attempt! The message was discarded")
+            }
+        }
+
         private fun processLinkManagerPayload(
             sessionKey: SessionKey,
             session: Session,
@@ -376,14 +424,17 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             extractPayload(session, sessionId, message, DataMessagePayload::fromByteBuffer)?.let {
                 when (val innerMessage = it.message) {
                     is HeartbeatMessage -> {
+                        logger.debug {"Processing heartbeat message from session $sessionId"}
                         makeAckMessageForHeartbeatMessage(sessionKey, session)?.let { ack -> messages.add(ack) }
                     }
                     is AuthenticatedMessageAndKey -> {
-                        messages.add(Record(P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
-                        makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
-                        sessionManager.inboundSessionEstablished(sessionId)
+                        checkIdentityBeforeProcessing(
+                            sessionKey,
+                            innerMessage,
+                            session,
+                            messages)
                     }
-                    else -> logger.warn("The message was discarded.")
+                    else -> logger.warn("Unknown incoming message type: ${innerMessage.javaClass}. The message was discarded.")
                 }
             }
             return messages
@@ -455,14 +506,18 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     class PendingSessionMessageQueuesImpl(
         publisherFactory: PublisherFactory,
         coordinatorFactory: LifecycleCoordinatorFactory,
-        configuration: SmartConfig,
-        instanceId: Int
+        configuration: SmartConfig
     ): PendingSessionMessageQueues, LifecycleWithDominoTile {
+
+        companion object {
+            private val logger = contextLogger()
+        }
+
         private val queuedMessagesPendingSession = HashMap<SessionKey, Queue<AuthenticatedMessageAndKey>>()
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID, instanceId),
+            PublisherConfig(LINK_MANAGER_PUBLISHER_CLIENT_ID),
             configuration
         )
         override val dominoTile = publisher.dominoTile
@@ -497,6 +552,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 val records = mutableListOf<Record<String, *>>()
                 while (queuedMessages.isNotEmpty()) {
                     val message = queuedMessages.poll()
+                    logger.debug { "Sending queued message ${message.message.header.messageId} " +
+                            "to newly established session ${session.sessionId} with ${key.responderId}" }
                     records.addAll(recordsForSessionEstablished(sessionManager, networkMap, session, message))
                 }
                 publisher.publish(records)

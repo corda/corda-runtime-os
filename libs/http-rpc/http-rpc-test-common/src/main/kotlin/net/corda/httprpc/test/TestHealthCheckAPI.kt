@@ -12,7 +12,6 @@ import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.annotations.RPCSinceVersion
-import net.corda.v5.base.annotations.CordaSerializable
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.util.Date
@@ -72,16 +71,12 @@ interface TestHealthCheckAPI : RpcOps {
     @HttpRpcPOST(path = "parseuuid/{uuid}", description = "https://r3-cev.atlassian.net/browse/CORE-2404 coverage")
     fun parseUuid(@HttpRpcPathParameter uuid: String): UUID
 
-    @CordaSerializable
     data class TimeCallDto(val time: ZonedDateTime)
 
-    @CordaSerializable
     data class DateCallDto(val date: Date)
 
-    @CordaSerializable
     data class InstantCallDto(val instant: Instant)
 
-    @CordaSerializable
     class PingPongData(@JsonDeserialize(using = PingPongDataDeserializer::class) val str: String)
     class PingPongDataDeserializer : JsonDeserializer<String>() {
         override fun deserialize(p: JsonParser, ctxt: DeserializationContext): String {

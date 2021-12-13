@@ -27,10 +27,10 @@ import java.util.concurrent.atomic.AtomicInteger
  * This class tests the [OSGiFrameworkWrap] class.
  *
  * The `framework-app-tester` module applies the **Common App** plugin to build a test application (used in future tests),
- * a test OSGi bundle JAR, the `system_bundles` and `system_packages_extra` files to use in the tests of this class.
+ * a test OSGi bundle JAR, the `application_bundles` and `system_packages_extra` files to use in the tests of this class.
  *
  * The Gradle task `test` in this module is overridden to build first the OSGi bundle from the `framework-app-tester`
- * module, and to compile the `system_bundles` list.
+ * module, and to compile the `application_bundles` list.
  * The `system_packages_extra` is provided in the `test/resources` directory of the module.
  * These files are copied in the locations...
  *
@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger
  *           +--- test
  *           \___ bundles
  *                +--- framework-app-tester-<version>.jar
- *                +___ system_bundles
+ *                +___ application_bundles
  *                \___ system_packages_extra
  * ```
  *
@@ -64,9 +64,9 @@ internal class OSGiFrameworkWrapTest {
 
     companion object {
 
-        private const val NO_SYSTEM_BUNDLES = "no_system_bundles"
+        private const val NO_APPLICATION_BUNDLES = "no_application_bundles"
 
-        private const val SICK_SYSTEM_BUNDLES = "sick_system_bundles"
+        private const val SICK_APPLICATION_BUNDLES = "sick_application_bundles"
 
         private const val TEMP_DIR = "unit_test"
 
@@ -129,7 +129,7 @@ internal class OSGiFrameworkWrapTest {
         )
         OSGiFrameworkWrap(framework).use { frameworkWrap ->
             frameworkWrap.start()
-            frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
+            frameworkWrap.install(OSGiFrameworkMain.APPLICATION_BUNDLES)
             frameworkWrap.activate()
             framework.bundleContext.bundles.forEach { bundle ->
                 if (!OSGiFrameworkWrap.isFragment(bundle)) {
@@ -164,8 +164,8 @@ internal class OSGiFrameworkWrapTest {
         )
         OSGiFrameworkWrap(framework).use { frameworkWrap ->
             frameworkWrap.start()
-            frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
-            val bundleLocationList = readTextLines(OSGiFrameworkMain.SYSTEM_BUNDLES)
+            frameworkWrap.install(OSGiFrameworkMain.APPLICATION_BUNDLES)
+            val bundleLocationList = readTextLines(OSGiFrameworkMain.APPLICATION_BUNDLES)
             assertEquals(bundleLocationList.size, framework.bundleContext.bundles.size - 1)
             bundleLocationList.forEach { location ->
                 assertNotNull(framework.bundleContext.getBundle(location))
@@ -179,7 +179,7 @@ internal class OSGiFrameworkWrapTest {
         assertThrows<IllegalStateException> {
             val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
             OSGiFrameworkWrap(framework).use { frameworkWrap ->
-                frameworkWrap.install(OSGiFrameworkMain.SYSTEM_BUNDLES)
+                frameworkWrap.install(OSGiFrameworkMain.APPLICATION_BUNDLES)
             }
         }
     }
@@ -191,7 +191,7 @@ internal class OSGiFrameworkWrapTest {
             val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
             OSGiFrameworkWrap(framework).use { frameworkWrap ->
                 frameworkWrap.start()
-                frameworkWrap.install(NO_SYSTEM_BUNDLES)
+                frameworkWrap.install(NO_APPLICATION_BUNDLES)
             }
         }
     }
@@ -203,7 +203,7 @@ internal class OSGiFrameworkWrapTest {
             val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
             OSGiFrameworkWrap(framework).use { frameworkWrap ->
                 frameworkWrap.start()
-                frameworkWrap.install(SICK_SYSTEM_BUNDLES)
+                frameworkWrap.install(SICK_APPLICATION_BUNDLES)
             }
         }
     }
@@ -215,7 +215,7 @@ internal class OSGiFrameworkWrapTest {
             val framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkFactoryFQN, frameworkStorageDir)
             OSGiFrameworkWrap(framework).use { frameworkWrap ->
                 frameworkWrap.start()
-                frameworkWrap.install(NO_SYSTEM_BUNDLES)
+                frameworkWrap.install(NO_APPLICATION_BUNDLES)
             }
         }
     }
@@ -260,7 +260,7 @@ internal class OSGiFrameworkWrapTest {
     @AfterEach
     fun tearDown() {
         deletePath(frameworkStorageDir)
-        assertTrue { Files.notExists(frameworkStorageDir) }
+        assertTrue(Files.notExists(frameworkStorageDir))
         val fallBackStorageDir = FileSystems.getDefault().getPath(frameworkStorageDir.toString())
         if (Files.exists(fallBackStorageDir)) {
             deletePath(fallBackStorageDir)

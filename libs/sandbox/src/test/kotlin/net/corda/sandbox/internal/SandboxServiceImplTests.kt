@@ -260,7 +260,7 @@ class SandboxServiceImplTests {
 
         val sandboxOneBundles = startedBundles.filter { bundle -> sandboxOne.containsBundle(bundle) }
         val sandboxTwoBundles = startedBundles.filter { bundle -> sandboxTwo.containsBundle(bundle) }
-        val sandboxTwoPublicBundles = sandboxTwoBundles.filter { bundle -> bundle in sandboxTwo.publicBundles }
+        val sandboxTwoPublicBundles = sandboxTwoBundles.filterTo(HashSet()) { bundle -> bundle in sandboxTwo.publicBundles }
         val sandboxTwoPrivateBundles = sandboxTwoBundles - sandboxTwoPublicBundles
 
         sandboxOneBundles.forEach { sandboxOneBundle ->
@@ -439,7 +439,7 @@ class SandboxServiceImplTests {
     @Test
     fun `correctly indicates that two bundles in different sandboxes are not in the same sandbox`() {
         sandboxService.createSandboxGroup(setOf(cpkOne))
-        val bundlesFromSandboxGroupOne = startedBundles.toList()
+        val bundlesFromSandboxGroupOne = startedBundles.toSet()
 
         sandboxService.createSandboxGroup(setOf(cpkOne))
         val bundlesFromSandboxGroupTwo = startedBundles - bundlesFromSandboxGroupOne

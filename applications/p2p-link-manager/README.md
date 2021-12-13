@@ -39,7 +39,7 @@ You can configure the image using those environment variables:
 * `INSTANCE_ID` - The Link Manager instance ID (default to random number)
 
 ### Example
-1. Before starting the application, run a kafka cluster. See examples in [here](../../../../testing/message-patterns/README.md).
+1. Before starting the application, run a kafka cluster. See examples in [here](../../testing/message-patterns/README.md).
 2. Build the docker image (see above)
 3. Run the docker image:
 ```bash

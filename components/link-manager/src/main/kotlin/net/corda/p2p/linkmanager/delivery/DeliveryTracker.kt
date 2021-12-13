@@ -25,6 +25,8 @@ import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.schema.Schema
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
@@ -46,7 +48,6 @@ class DeliveryTracker(
         coordinatorFactory,
         publisherFactory,
         configuration,
-        instanceId,
         processAuthenticatedMessage
     )
     private val replayScheduler = ReplayScheduler(
@@ -86,18 +87,18 @@ class DeliveryTracker(
         coordinatorFactory: LifecycleCoordinatorFactory,
         publisherFactory: PublisherFactory,
         configuration: SmartConfig,
-        instanceId: Int,
         private val processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>
     ): LifecycleWithDominoTile {
 
         companion object {
             const val MESSAGE_REPLAYER_CLIENT_ID = "message-replayer-client"
+            private val logger = contextLogger()
         }
 
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
             coordinatorFactory,
-            PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, instanceId),
+            PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID),
             configuration
         )
 
@@ -110,6 +111,7 @@ class DeliveryTracker(
                 }
 
                 val records = processAuthenticatedMessage(message)
+                logger.debug { "Replaying data message ${message.message.header.messageId}." }
                 publisher.publish(records)
             }
         }

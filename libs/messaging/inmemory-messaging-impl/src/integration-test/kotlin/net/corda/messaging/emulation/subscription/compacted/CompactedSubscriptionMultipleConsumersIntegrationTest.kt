@@ -92,13 +92,12 @@ class CompactedSubscriptionMultipleConsumersIntegrationTest {
     fun `test more than one consumer with compacted data`() {
         createSnapshot()
 
-        val config1 = SubscriptionConfig("group", topic, 1)
-        val config2 = SubscriptionConfig("group", topic, 2)
+        val config = SubscriptionConfig("group", topic)
         val processor1 = Processor()
         val processor2 = Processor()
 
-        val subscriber1 = subscriptionFactory.createCompactedSubscription(config1, processor1)
-        val subscriber2 = subscriptionFactory.createCompactedSubscription(config2, processor2)
+        val subscriber1 = subscriptionFactory.createCompactedSubscription(config, processor1)
+        val subscriber2 = subscriptionFactory.createCompactedSubscription(config, processor2)
         subscriber1.start()
         subscriber2.start()
 

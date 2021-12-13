@@ -27,16 +27,19 @@ internal class SandboxGroupImpl(
 
     override val cpks = cpkSandboxes.map(CpkSandbox::cpk)
 
-    override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
-        val klass = cpkSandboxes.mapNotNull { sandbox ->
+    override fun loadClassFromMainBundles(className: String): Class<*> {
+        return cpkSandboxes.mapNotNullTo(HashSet()) { sandbox ->
             try {
                 sandbox.loadClassFromMainBundle(className)
             } catch (e: SandboxException) {
                 null
             }
-        }.firstOrNull()
+        }.singleOrNull()
             ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
+    }
 
+    override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
+        val klass = loadClassFromMainBundles(className)
         return try {
             klass.asSubclass(type)
         } catch (e: ClassCastException) {
@@ -57,7 +60,7 @@ internal class SandboxGroupImpl(
         return when (classTag.classType) {
             ClassType.NonBundleClass -> {
                 try {
-                    ClassLoader.getSystemClassLoader().loadClass(className)
+                    bundleUtils.loadClassFromSystemBundle(className)
                 } catch (e: ClassNotFoundException) {
                     throw SandboxException(
                         "Class $className was not from a bundle, and could not be found in the system classloader."

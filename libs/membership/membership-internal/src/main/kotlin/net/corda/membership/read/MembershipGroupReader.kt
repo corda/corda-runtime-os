@@ -53,11 +53,4 @@ interface MembershipGroupReader {
      * @param name MemberX500Name of the member to lookup.
      */
     fun lookup(name: MemberX500Name): MemberInfo?
-
-    /**
-     * Looks up a historic group parameters version. Returns null if the version is unknown.
-     *
-     * @param version group parameters version to retrieve.
-     */
-    fun getHistoricGroupParameters(version: String): GroupParameters?
 }

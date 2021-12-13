@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.osgi.framework.FrameworkUtil
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.service.resolver.Resolver
@@ -25,9 +26,13 @@ class SandboxServiceIsolationTest {
         // This flow returns all services visible to this bundle.
         val serviceClasses = runFlow<List<Class<*>>>(sandboxLoader.group1, SERVICES_FLOW_CPK_1)
 
+        val cpk1FlowClass = sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1)
         val expectedServices = setOf(
-            sandboxLoader.group1.loadClassFromMainBundles(LIBRARY_QUERY_CLASS, Any::class.java),
-            sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1, Any::class.java)
+            cpk1FlowClass,
+
+            // This class belongs to one of CPK1's library bundles,
+            // but still has a bundle wiring to the main bundle.
+            FrameworkUtil.getBundle(cpk1FlowClass).loadClass(LIBRARY_QUERY_CLASS)
         )
 
         expectedServices.forEach { serviceClass ->
@@ -40,7 +45,7 @@ class SandboxServiceIsolationTest {
         // This flow returns all services visible to this bundle.
         val serviceClasses = runFlow<List<Class<*>>>(sandboxLoader.group1, SERVICES_FLOW_CPK_1)
 
-        val expectedService = sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_2, Any::class.java)
+        val expectedService = sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_2)
 
         assertTrue(serviceClasses.any { service -> expectedService.isAssignableFrom(service) })
     }
@@ -70,7 +75,7 @@ class SandboxServiceIsolationTest {
         val serviceClasses = runFlow<List<Class<*>>>(sandboxLoader.group1, SERVICES_FLOW_CPK_1)
 
         val mainBundleInOtherSandboxGroupService =
-            sandboxLoader.group2.loadClassFromMainBundles(SERVICES_FLOW_CPK_3, Any::class.java)
+            sandboxLoader.group2.loadClassFromMainBundles(SERVICES_FLOW_CPK_3)
 
         assertFalse(serviceClasses.any { service ->
             mainBundleInOtherSandboxGroupService.isAssignableFrom(service)

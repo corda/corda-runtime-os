@@ -51,7 +51,7 @@ class SandboxClassTagTests {
 
     @Test
     fun `can create class tags for a CPK main bundle class and use them to retrieve the class`() {
-        val cpkClass = sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1, Any::class.java)
+        val cpkClass = sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1)
         val staticTag = sandboxLoader.group1.getStaticTag(cpkClass)
         val evolvableTag = sandboxLoader.group1.getEvolvableTag(cpkClass)
 
@@ -61,7 +61,8 @@ class SandboxClassTagTests {
 
     @Test
     fun `can create static tag for a CPK library class and use it to retrieve the class`() {
-        val cpkLibClass = sandboxLoader.group1.loadClassFromMainBundles(LIBRARY_QUERY_CLASS, Any::class.java)
+        val cpkFlowClass = sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1)
+        val cpkLibClass = FrameworkUtil.getBundle(cpkFlowClass).loadClass(LIBRARY_QUERY_CLASS)
         val staticTag = sandboxLoader.group1.getStaticTag(cpkLibClass)
 
         assertEquals(cpkLibClass, sandboxLoader.group1.getClass(cpkLibClass.name, staticTag))
@@ -69,10 +70,11 @@ class SandboxClassTagTests {
 
     @Test
     fun `throws if attempted to create evolvable tag for a CPK library class`() {
-        val cpkClass = sandboxLoader.group1.loadClassFromMainBundles(LIBRARY_QUERY_CLASS, Any::class.java)
+        val cpkFlowClass = sandboxLoader.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1)
+        val cpkLibClass = FrameworkUtil.getBundle(cpkFlowClass).loadClass(LIBRARY_QUERY_CLASS)
 
         assertThrows<SandboxException> {
-            sandboxLoader.group1.getEvolvableTag(cpkClass)
+            sandboxLoader.group1.getEvolvableTag(cpkLibClass)
         }
     }
 

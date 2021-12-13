@@ -20,7 +20,8 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
     private val subscriptionConfig: SubscriptionConfig,
     internal val processor: CompactedProcessor<K, V>,
     private val topicService: TopicService,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val clientIdCounter: String
 ) : CompactedSubscription<K, V> {
 
     private val knownValues = ConcurrentHashMap<K, V>()
@@ -46,7 +47,8 @@ class InMemoryCompactedSubscription<K : Any, V : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "${subscriptionConfig.groupName}-CompactedSubscription-${subscriptionConfig.eventTopic}",
-            subscriptionConfig.instanceId.toString()
+            //we use clientIdCounter here instead of instanceId as this subscription is readOnly
+            clientIdCounter
         )
     ) { _, _ -> }
 

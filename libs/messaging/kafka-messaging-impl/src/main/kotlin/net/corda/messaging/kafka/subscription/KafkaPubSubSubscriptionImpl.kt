@@ -34,7 +34,6 @@ import kotlin.concurrent.withLock
  * After connection is successful subscription will attempt to poll and process records until subscription is stopped.
  * Records are processed using the [executor] if it is not null. Otherwise they are processed on the same thread.
  * [executor] will be shutdown when the subscription is stopped.
- * @property subscriptionConfig Describes what topic to poll from and what the consumer group name should be.
  * @property config kafka configuration
  * @property consumerBuilder builder to generate a kafka consumer.
  * @property processor processes records from kafka topic. Does not produce any outputs.
@@ -66,7 +65,8 @@ class KafkaPubSubSubscriptionImpl<K : Any, V : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaPubSubSubscription-$topic",
-            config.getString(ConfigProperties.INSTANCE_ID)
+            //we use clientIdCounter here instead of instanceId as this subscription is readOnly
+            config.getString(ConfigProperties.CLIENT_ID_COUNTER)
         )
     ) { _, _ -> }
     private val errorMsg = "PubSubConsumer failed to create and subscribe consumer for group $groupName, topic $topic."

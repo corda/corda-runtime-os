@@ -4,24 +4,13 @@
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
         </Console>
-        <RollingFile name="App" fileName="logs/app.log"
-                     filePattern="logs/app-%d{yyyy-MM-dd}-%i.log">
-            <PatternLayout>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</pattern>
-            </PatternLayout>
-            <Policies>
-                <SizeBasedTriggeringPolicy size="100MB"/>
-                <OnStartupTriggeringPolicy />
-            </Policies>
-            <DefaultRolloverStrategy max="10"/>
-        </RollingFile>
     </Appenders>
     <Loggers>
         <logger name="Console">
             <AppenderRef ref="Console" level="info"/>
         </logger>
         <root level="debug">
-            <appender-ref ref="App" level="info"/>
+            <appender-ref ref="Console" level="info"/>
         </root>
     </Loggers>
 </Configuration>

@@ -48,7 +48,8 @@ class InMemoryCompactedSubscriptionTest {
         subscriptionConfig,
         processor,
         topic,
-        lifecycleCoordinatorFactory
+        lifecycleCoordinatorFactory,
+        "0"
     )
 
 
@@ -202,7 +203,8 @@ class InMemoryCompactedSubscriptionTest {
             subscriptionConfig,
             processor,
             topic,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            "0"
         )
         subscription.start()
 

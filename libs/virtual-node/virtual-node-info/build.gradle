@@ -1,0 +1,21 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description "Virtual Node Info Interfaces"
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    api "net.corda:corda-packaging"
+    api "net.corda:corda-avro-schema"
+
+    implementation "net.corda:corda-packaging-avro-converters"
+
+    runtimeOnly project(':libs:crypto:crypto-impl')
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

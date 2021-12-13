@@ -50,7 +50,7 @@ internal class InboundMessageHandler(
     private var p2pInPublisher = PublisherWithDominoLogic(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        PublisherConfig("inbound-message-handler", instanceId),
+        PublisherConfig("inbound-message-handler"),
         nodeConfiguration
     )
     private val sessionPartitionMapper = SessionPartitionMapperImpl(
@@ -81,7 +81,6 @@ internal class InboundMessageHandler(
             return
         }
 
-        logger.debug("Processing request message from ${request.source}")
         val (gatewayMessage, p2pMessage) = try {
             val gatewayMessage = GatewayMessage.fromByteBuffer(ByteBuffer.wrap(request.payload))
             gatewayMessage to LinkInMessage(gatewayMessage.payload)
@@ -92,7 +91,7 @@ internal class InboundMessageHandler(
             return
         }
 
-        logger.debug("Received message of type ${p2pMessage.schema.name}")
+        logger.debug("Received and processing message ${gatewayMessage.id} of type ${p2pMessage.payload.javaClass} from ${request.source}")
         val response = GatewayResponse(gatewayMessage.id)
         when (p2pMessage.payload) {
             is UnauthenticatedMessage -> {

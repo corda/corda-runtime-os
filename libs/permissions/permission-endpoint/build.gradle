@@ -1,0 +1,22 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Endpoint API for management of the role-based access control (RBAC) permission system.'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "net.corda:corda-base"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    api project(":libs:http-rpc:http-rpc")
+    implementation project(":libs:permissions:permission-manager")
+    implementation project(":libs:lifecycle:lifecycle")
+
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

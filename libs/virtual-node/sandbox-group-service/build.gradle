@@ -14,5 +14,5 @@ dependencies {
     implementation "net.corda:corda-packaging"
 
     api project(":libs:sandbox")
-    api project(":libs:virtual-node:virtual-node-context")
+    api project(":libs:virtual-node:virtual-node-info")
 }

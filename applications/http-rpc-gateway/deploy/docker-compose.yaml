@@ -1,0 +1,111 @@
+services:
+  zookeeper:
+    container_name: zookeeper
+    # https://hub.docker.com/r/bitnami/zookeeper
+    image: "bitnami/zookeeper:latest"
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka:
+    container_name: kafka
+    # https://hub.docker.com/r/bitnami/kafka
+    image: "bitnami/kafka:latest"
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093
+      - KAFKA_INTER_BROKER_LISTENER_NAME=CLIENT
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=false
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --list" ]
+      interval: 5s
+      timeout: 20s
+      retries: 15
+  init-kafka:
+    container_name: init-kafka
+    image: "bitnami/kafka:latest"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      echo -e 'Creating kafka topics'
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.management
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.management.resp
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.user --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.group --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.role --config "cleanup.policy=compact"
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics.sh --bootstrap-server kafka:9092 --list
+      "
+  kafdrop:
+    container_name: kafdrop
+    image: obsidiandynamics/kafdrop
+    restart: "no"
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: "kafka:9092"
+      JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
+    depends_on:
+      kafka:
+        condition: service_healthy
+  app-db:
+    container_name: app-db
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: "dbworker"
+      POSTGRES_USER: "user"
+      POSTGRES_PASSWORD: "password"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user -d dbworker" ]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+  http-rpc-gw:
+    container_name: http-rpc-gw
+    image: "corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest"
+    ports:
+      - "8888:8888"
+      - "5005:5005"
+    environment:
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -DinstanceId=1 \
+        -Dbootstrap.servers=kafka:9092 -Dconfig.topic.name=ConfigTopic -Dmessaging.topic.prefix=http."
+    depends_on:
+      init-kafka:
+        condition: service_completed_successfully
+  db-worker-proto:
+    container_name: db-worker-proto
+    image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker-prototype:latest"
+    depends_on:
+      init-kafka:
+        condition: service_completed_successfully
+      app-db:
+        condition: service_healthy
+    ports:
+      - "5006:5006"
+    environment:
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006 -DinstanceId=1 \
+        -Dbootstrap.servers=kafka:9092 -Dconfig.topic.name=ConfigTopic -Dmessaging.topic.prefix=http."
+    command:
+      - --kafka
+      - kafka:9092
+      - --jdbc-url
+      - jdbc:postgresql://app-db:5432/dbworker
+      - --db-user
+      - user
+      - --db-password
+      - password

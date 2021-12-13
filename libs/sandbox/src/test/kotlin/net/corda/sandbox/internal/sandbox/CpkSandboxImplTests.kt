@@ -12,22 +12,24 @@ import org.osgi.framework.Bundle
 import java.util.UUID.randomUUID
 
 class CpkSandboxImplTests {
+    class Example
+
     @Test
     fun `can load class from main bundles in CPK sandbox`() {
-        val mainBundle = mockBundle(klass = String::class.java)
+        val mainBundle = mockBundle(klass = Example::class.java)
         val sandbox = CpkSandboxImpl(randomUUID(), mock(), mainBundle, emptySet())
 
-        assertEquals(String::class.java, sandbox.loadClassFromMainBundle(String::class.java.name))
+        assertEquals(Example::class.java, sandbox.loadClassFromMainBundle(Example::class.java.name))
     }
 
     @Test
     fun `cannot load class from other bundles in CPK sandbox`() {
         val mainBundle = mockBundle()
-        val otherBundle = mockBundle(klass = Int::class.java)
+        val otherBundle = mockBundle(klass = Example::class.java)
         val sandbox = CpkSandboxImpl(randomUUID(), mock(), mainBundle, setOf(otherBundle))
 
         assertThrows<SandboxException> {
-            sandbox.loadClassFromMainBundle(Int::class.java.name)
+            sandbox.loadClassFromMainBundle(Example::class.java.name)
         }
     }
 
@@ -39,7 +41,7 @@ class CpkSandboxImplTests {
         val sandbox = CpkSandboxImpl(randomUUID(), mock(), mainBundle, emptySet())
 
         assertThrows<SandboxException> {
-            sandbox.loadClassFromMainBundle(Int::class.java.name)
+            sandbox.loadClassFromMainBundle(Example::class.java.name)
         }
     }
 }

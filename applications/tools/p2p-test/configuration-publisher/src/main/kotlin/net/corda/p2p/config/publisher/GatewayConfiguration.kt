@@ -9,8 +9,6 @@ import net.corda.v5.base.util.toBase64
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
-import java.net.InetAddress
-import java.net.UnknownHostException
 import java.time.Duration
 
 @Command(
@@ -20,62 +18,46 @@ import java.time.Duration
     showDefaultValues = true,
 )
 class GatewayConfiguration : ConfigProducer() {
-    companion object {
-        private fun getDefaultHostname(): String {
-            return try {
-                InetAddress.getLocalHost().hostName
-            } catch (e: UnknownHostException) {
-                // getLocalHost might fail if the local host name can not be
-                // resolved (for example, when custom hosts file is used)
-                return try {
-                    ProcessBuilder()
-                        .command("hostname")
-                        .start()
-                        .inputStream
-                        .bufferedReader()
-                        .readText()
-                } catch (e: Exception) {
-                    "localhost"
-                }
-            }
-        }
-    }
-
     @Option(
-        names = ["--host"],
-        description = ["The name of the HTTP host"]
+        names = ["--hostAddress"],
+        description = ["The host name or IP address where the HTTP server will bind"]
     )
-    var hostname = getDefaultHostname()
+    var hostAddress: String = "0.0.0.0"
 
     @Option(
         names = ["--port"],
-        description = ["The HTTP port"]
+        description = ["The HTTP port"],
+        required = true
     )
-    var port = 80
+    var port: Int = 0
 
     @Option(
         names = ["--keyStore"],
-        description = ["The key store file"]
+        description = ["The path to the key store file"],
+        required = true
     )
-    var keyStoreFile = File("keystore.jks")
+    lateinit var keyStoreFile: File
 
     @Option(
         names = ["--keyStorePassword"],
-        description = ["The key store password"]
+        description = ["The key store password"],
+        required = true
     )
-    var keyStorePassword = "password"
+    lateinit var keyStorePassword: String
 
     @Option(
         names = ["--trustStore"],
-        description = ["The trust store file"]
+        description = ["The path to the trust store file"],
+        required = true
     )
-    var trustStoreFile = File("truststore.jks")
+    lateinit var trustStoreFile: File
 
     @Option(
         names = ["--trustStorePassword"],
-        description = ["The trust store password"]
+        description = ["The trust store password"],
+        required = true
     )
-    var trustStorePassword = "password"
+    lateinit var trustStorePassword: String
 
     @Option(
         names = ["--revocationCheck"],
@@ -117,7 +99,7 @@ class GatewayConfiguration : ConfigProducer() {
         ConfigFactory.empty()
             .withValue(
                 "hostAddress",
-                ConfigValueFactory.fromAnyRef(hostname)
+                ConfigValueFactory.fromAnyRef(hostAddress)
             )
             .withValue(
                 "hostPort",

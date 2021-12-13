@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp;
 
 import com.google.common.collect.ImmutableList;
-import net.corda.v5.serialization.SerializedBytes;
 import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
+import net.corda.v5.serialization.SerializedBytes;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;

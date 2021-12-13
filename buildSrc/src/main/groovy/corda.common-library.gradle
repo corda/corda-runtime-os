@@ -40,6 +40,7 @@ tasks.named('jar', Jar) {
     archiveBaseName = "corda-${project.name}"
     bundle {
         bnd '''\
+-fixupmessages "Export [^,]++,\\\\s++has (\\\\d++),\\\\s++private references "; restrict:=warning; is:=error
 Bundle-Name: \${project.description}
 Bundle-SymbolicName: \${project.group}.\${project.name}
 '''
