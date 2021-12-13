@@ -1,6 +1,6 @@
 package net.corda.messagebus.api.consumer.listener
 
-import net.corda.messagebus.api.TopicPartition
+import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory
 class PubSubConsumerRebalanceListener<K : Any, V : Any>(
     topic: String,
     groupName: String,
-    private val consumer: CordaConsumer<K, V>
+    val consumer: CordaConsumer<K, V>
 ) : LoggingConsumerRebalanceListener(topic, groupName) {
 
     override val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-$topic-$groupName")
@@ -18,7 +18,7 @@ class PubSubConsumerRebalanceListener<K : Any, V : Any>(
      * The consumer will not read any messages produced to the topic between the last poll and latest
      * subscription or rebalance.
      */
-    override fun onPartitionsAssigned(partitions: Collection<TopicPartition>) {
+    override fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>) {
         super.onPartitionsAssigned(partitions)
         consumer.seekToEnd(partitions)
     }

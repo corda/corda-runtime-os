@@ -6,7 +6,7 @@ import net.corda.messagebus.api.producer.CordaProducer
 /**
  * Producer Builder Interface for creating Producers.
  */
-interface ProducerBuilder {
+interface CordaProducerBuilder {
 
     /**
     * Generate kafka producer with given properties.

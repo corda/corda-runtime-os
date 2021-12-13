@@ -1,6 +1,6 @@
 package net.corda.messagebus.api.consumer
 
-import net.corda.messagebus.api.TopicPartition
+import net.corda.messagebus.api.CordaTopicPartition
 
 /**
  * A callback interface that the user can implement to trigger custom actions when the set of partitions assigned to the
@@ -14,7 +14,7 @@ interface CordaConsumerRebalanceListener {
      * @param partitions The list of partitions that were assigned to the consumer and now need to be revoked (may not
      *                   include all currently assigned partitions, i.e. there may still be some partitions left)
      */
-    fun onPartitionsRevoked(partitions: Collection<TopicPartition>)
+    fun onPartitionsRevoked(partitions: Collection<CordaTopicPartition>)
 
     /**
      * This method will be called after the partition re-assignment completes and before the
@@ -25,7 +25,7 @@ interface CordaConsumerRebalanceListener {
      * @param partitions The list of partitions that are now assigned to the consumer (previously owned partitions will
      *                   NOT be included, i.e. this list will only include newly added partitions)
      */
-    fun onPartitionsAssigned(partitions: Collection<TopicPartition>);
+    fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>);
 
     /**
      * This method will not be called during normal execution as the owned partitions would
@@ -38,5 +38,5 @@ interface CordaConsumerRebalanceListener {
      *                   previously assigned partitions, but this may change in future protocols (ie there would still
      *                   be some partitions left)
      */
-    fun onPartitionsLost(partitions: Collection<TopicPartition>) = onPartitionsRevoked(partitions)
+    fun onPartitionsLost(partitions: Collection<CordaTopicPartition>) = onPartitionsRevoked(partitions)
 }

@@ -19,16 +19,6 @@ class ConfigProperties {
 
         const val MESSAGING_KAFKA = "messaging.kafka"
 
-        const val PATTERN_PUBLISHER = "messaging.pattern.publisher"
-        const val PATTERN_PUBSUB = "messaging.pattern.pubsub"
-        const val PATTERN_DURABLE = "messaging.pattern.durable"
-        const val PATTERN_COMPACTED = "messaging.pattern.compacted"
-        const val PATTERN_STATEANDEVENT = "messaging.pattern.stateAndEvent"
-        const val PATTERN_EVENTLOG = "messaging.pattern.eventLog"
-        const val PATTERN_RANDOMACCESS = "messaging.pattern.randomAccess"
-        const val PATTERN_RPC_SENDER = "messaging.pattern.rpcSender"
-        const val PATTERN_RPC_RESPONDER = "messaging.pattern.rpcResponder"
-
         const val CLOSE_TIMEOUT = "close.timeout"
         const val PRODUCER_CLOSE_TIMEOUT = "producer.$CLOSE_TIMEOUT"
         const val CONSUMER_CLOSE_TIMEOUT = "consumer.$CLOSE_TIMEOUT"
@@ -42,6 +32,7 @@ class ConfigProperties {
         const val SUBSCRIBE_MAX_RETRIES = "subscribe.retries"
         const val COMMIT_OFFSET_MAX_RETRIES = "commit.retries"
 
+        const val GROUP_ID = "consumer.id"
         const val GROUP_INSTANCE_ID = "group.instance.id"
         const val PRODUCER_CLIENT_ID = "producer.client.id"
         const val CONSUMER_GROUP_ID = "consumer.group.id"

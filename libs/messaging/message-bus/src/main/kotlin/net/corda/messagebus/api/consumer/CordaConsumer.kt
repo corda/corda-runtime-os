@@ -1,6 +1,6 @@
 package net.corda.messagebus.api.consumer
 
-import net.corda.messagebus.api.TopicPartition
+import net.corda.messagebus.api.CordaTopicPartition
 import java.time.Duration
 
 
@@ -36,7 +36,7 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      *
      * @param partitions The list of partitions to assign this consumer
      */
-    fun assign(partitions: Collection<TopicPartition>)
+    fun assign(partitions: Collection<CordaTopicPartition>)
 
     /**
      * Get the set of partitions currently assigned to this consumer. If subscription happened by directly assigning
@@ -47,7 +47,7 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      *
      * @return The set of partitions currently assigned to this consumer
      */
-    fun assignment(): Set<TopicPartition>
+    fun assignment(): Set<CordaTopicPartition>
 
     /**
      * Get the offset of the <i>next record</i> that will be fetched (if a record with that offset exists).
@@ -55,7 +55,7 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      * @param partition The partition to get the position for
      * @return The current position of the consumer (that is, the offset of the next record to be fetched)
      */
-    fun position(partition: TopicPartition): Long
+    fun position(partition: CordaTopicPartition): Long
 
     /**
      * Overrides the fetch offsets that the consumer will use on the next [poll] of the given [partition].
@@ -63,7 +63,7 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      * @param partition the partition which will be returned to the first offset
      * @param offset the new offset of the partition the consumer will use
      */
-    fun seek(partition: TopicPartition, offset: Long)
+    fun seek(partition: CordaTopicPartition, offset: Long)
 
     /**
      * Seek to the first offset for each of the given [partitions]. This function evaluates lazily, seeking to the
@@ -72,7 +72,7 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      *
      * @param partitions the partitions which will be returned to the first offset
      */
-    fun seekToBeginning(partitions: Collection<TopicPartition>)
+    fun seekToBeginning(partitions: Collection<CordaTopicPartition>)
 
     /**
      * Seek to the last offset for each of the given [partitions]. This function evaluates lazily, seeking to the
@@ -81,7 +81,7 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      *
      * @param partitions the partitions which will be returned to the last offset
      */
-    fun seekToEnd(partitions: Collection<TopicPartition>)
+    fun seekToEnd(partitions: Collection<CordaTopicPartition>)
 
     /**
      * Get the first offset for the given [partitions].
@@ -90,7 +90,7 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      * @param partitions the partitions to get the earliest offsets
      * @return The earliest available offsets for the given partitions
      */
-    fun beginningOffsets(partitions: Collection<TopicPartition>): Map<TopicPartition, Long>
+    fun beginningOffsets(partitions: Collection<CordaTopicPartition>): Map<CordaTopicPartition, Long>
 
     /**
      * Get end offsets for the given [partitions].
@@ -99,7 +99,7 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      * @param partitions the partitions to get the end offsets.
      * @return The end offsets for the given partitions.
      */
-    fun endOffsets(partitions: Collection<TopicPartition>): Map<TopicPartition, Long>
+    fun endOffsets(partitions: Collection<CordaTopicPartition>): Map<CordaTopicPartition, Long>
 
     /**
      * Resume specified [partitions] which have been paused with [pause]. New calls to
@@ -108,7 +108,7 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      *
      * @param partitions The partitions which should be resumed
      */
-    fun resume(partitions: Collection<TopicPartition>)
+    fun resume(partitions: Collection<CordaTopicPartition>)
 
     /**
      * Suspend fetching from the requested [partitions]. Future calls to [poll] will not return
@@ -116,12 +116,12 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      *
      * @param partitions The partitions which should be paused
      */
-    fun pause(partitions: Collection<TopicPartition>)
+    fun pause(partitions: Collection<CordaTopicPartition>)
 
     /**
      * Get the set of partitions that were previously paused by a call to [pause].
      */
-    fun paused(): Set<TopicPartition>
+    fun paused(): Set<CordaTopicPartition>
 
     /**
      * Poll records from the consumer and sort them by timestamp
@@ -156,9 +156,9 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      * @param topic The topic to get partition metadata for
      * @param timeout The maximum of time to await topic metadata
      *
-     * @return The list of [TopicPartition]s
+     * @return The list of [CordaTopicPartition]s
      */
-    fun getPartitions(topic: String, timeout: Duration): List<TopicPartition>
+    fun getPartitions(topic: String, timeout: Duration): List<CordaTopicPartition>
 
     /**
      * Tries to close the consumer cleanly within the specified timeout. This method waits up to
@@ -170,4 +170,9 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      *                non-negative. Specifying a timeout of zero means do not wait for pending requests to complete.
      */
     fun close(timeout: Duration)
+
+    /**
+     * 
+     */
+    fun setDefaultRebalanceListener(defaultListener: CordaConsumerRebalanceListener)
 }
