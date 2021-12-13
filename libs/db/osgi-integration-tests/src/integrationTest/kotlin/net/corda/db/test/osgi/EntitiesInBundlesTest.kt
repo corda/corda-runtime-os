@@ -6,7 +6,7 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.testkit.DbUtils.getEntityManagerConfiguration
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
-import net.corda.orm.utils.commit
+import net.corda.orm.utils.transaction
 import net.corda.test.util.LoggingUtils.emphasise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -108,7 +108,7 @@ class EntitiesInBundlesTest {
                 listOf(catClass, ownerClass, dogClass),
                 dbConfig
             )
-            emf.commit { em ->
+            emf.transaction { em ->
                 em.persist(dog)
                 em.persist(owner)
                 em.persist(cat)

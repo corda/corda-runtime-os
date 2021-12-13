@@ -7,8 +7,8 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
-import net.corda.orm.utils.commit
 import net.corda.orm.utils.transaction
+import net.corda.orm.utils.use
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.GroupProperty
@@ -121,8 +121,8 @@ class RpcRbacEntitiesTest {
             null,
             null
         )
-        emf.commit { em -> em.persist(user) }
-        emf.transaction { em ->
+        emf.transaction { em -> em.persist(user) }
+        emf.use { em ->
             val retrievedUser = em.createQuery("from User where id = '$id'", user.javaClass).singleResult
             Assertions.assertThat(retrievedUser).isEqualTo(user)
         }

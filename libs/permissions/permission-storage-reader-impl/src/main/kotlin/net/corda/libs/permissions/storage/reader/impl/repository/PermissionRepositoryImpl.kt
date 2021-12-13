@@ -2,6 +2,7 @@ package net.corda.libs.permissions.storage.reader.impl.repository
 
 import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
 import net.corda.orm.utils.transaction
+import net.corda.orm.utils.use
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.User
@@ -34,13 +35,15 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
     }
 
     private inline fun <reified T> findAll(qlString: String): List<T> {
-        return entityManagerFactory.transaction { entityManager ->
+        return entityManagerFactory.use { entityManager ->
+            entityManager.transaction.begin()
             entityManager.createQuery(qlString, T::class.java).resultList
         }
     }
 
     private inline fun <reified T> findAll(qlString: String, ids: List<String>): List<T> {
-        return entityManagerFactory.transaction { entityManager ->
+        return entityManagerFactory.use { entityManager ->
+            entityManager.transaction.begin()
             ids.chunked(100) { chunkedIds ->
                 entityManager.createQuery(qlString, T::class.java)
                     .setParameter("ids", chunkedIds)

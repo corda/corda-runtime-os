@@ -5,7 +5,7 @@ import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
-import net.corda.orm.utils.commit
+import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.RPCPermissionOperation
@@ -43,7 +43,7 @@ class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: Ent
 
         log.debug { "Received request to create new user: $loginName" }
 
-        return entityManagerFactory.commit { entityManager ->
+        return entityManagerFactory.transaction { entityManager ->
 
             requireNewUser(entityManager, loginName)
 

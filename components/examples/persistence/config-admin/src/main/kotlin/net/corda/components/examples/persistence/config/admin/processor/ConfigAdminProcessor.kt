@@ -5,7 +5,7 @@ import net.corda.data.config.Configuration
 import net.corda.data.poc.persistence.ConfigAdminEvent
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.orm.utils.commit
+import net.corda.orm.utils.transaction
 import org.slf4j.Logger
 import javax.persistence.EntityManagerFactory
 
@@ -27,7 +27,7 @@ class ConfigAdminProcessor(
             return emptyList()
 
         logger.info("Update config values")
-        entityManagerFactory.commit { em ->
+        entityManagerFactory.transaction { em ->
 
             for (event in events) {
                 val eventKey = event.key
