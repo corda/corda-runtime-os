@@ -26,8 +26,3 @@ interface MemberDataCache<T> {
      */
     fun put(groupId: String, memberX500Name: MemberX500Name, data: T)
 }
-
-/**
- * An extension of [MemberDataCache] which is used when the data to be cached for a member is a list of data.
- */
-interface MemberDataListCache<T> : MemberDataCache<List<T>>

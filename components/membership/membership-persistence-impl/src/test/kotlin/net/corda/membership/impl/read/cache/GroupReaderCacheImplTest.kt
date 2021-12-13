@@ -41,9 +41,7 @@ class GroupReaderCacheImplTest {
 
     @Test
     fun `Cache for one member and lookup for a different member`() {
-        addToCacheWithDefaults(
-            lookUpMember = memberName1
-        )
+        addToCacheWithDefaults(lookUpMember = memberName1)
         assertNull(lookupWithDefaults())
     }
 
