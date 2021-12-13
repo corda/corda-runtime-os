@@ -89,15 +89,6 @@ public class SerializationAPIJavaApiTest {
         }
 
         @Test
-        public void getDeserializationClassLoader() {
-            when(serializationContext.getDeserializationClassLoader()).thenReturn(classLoader);
-            var result = serializationContext.getDeserializationClassLoader();
-
-            assertThat(result).isNotNull();
-            assertThat(result).isEqualTo(classLoader);
-        }
-
-        @Test
         public void getWhitelist() {
             when(serializationContext.getWhitelist()).thenReturn(classWhitelist);
             var result = serializationContext.getWhitelist();

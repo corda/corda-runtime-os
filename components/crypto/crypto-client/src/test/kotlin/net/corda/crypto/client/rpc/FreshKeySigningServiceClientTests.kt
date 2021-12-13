@@ -91,7 +91,7 @@ class FreshKeySigningServiceClientTests {
             requests.firstValue.context.requestTimestamp.epochSecond,
             allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
         )
-        assertThat(requests.firstValue.context.other, empty())
+        assertThat(requests.firstValue.context.other.items, empty())
         assertThat(requests.firstValue.request, instanceOf(WireFreshKeysEnsureWrappingKey::class.java))
     }
 
@@ -120,14 +120,14 @@ class FreshKeySigningServiceClientTests {
             requests.firstValue.context.requestTimestamp.epochSecond,
             allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
         )
-        assertThat(requests.firstValue.context.other, empty())
+        assertThat(requests.firstValue.context.other.items, empty())
         assertThat(requests.firstValue.request, instanceOf(WireFreshKeysFreshKey::class.java))
         assertNull((requests.firstValue.request as WireFreshKeysFreshKey).externalId)
-        assertEquals(2, (requests.firstValue.request as WireFreshKeysFreshKey).context.size)
-        assertTrue((requests.firstValue.request as WireFreshKeysFreshKey).context.any {
+        assertEquals(2, (requests.firstValue.request as WireFreshKeysFreshKey).context.items.size)
+        assertTrue((requests.firstValue.request as WireFreshKeysFreshKey).context.items.any {
             it.key == "someId" && it.value == context["someId"]
         })
-        assertTrue((requests.firstValue.request as WireFreshKeysFreshKey).context.any {
+        assertTrue((requests.firstValue.request as WireFreshKeysFreshKey).context.items.any {
             it.key == "reason" && it.value == context["reason"]
         })
         assertEquals(keyPair.public, result)
@@ -159,14 +159,14 @@ class FreshKeySigningServiceClientTests {
             requests.firstValue.context.requestTimestamp.epochSecond,
             allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
         )
-        assertThat(requests.firstValue.context.other, empty())
+        assertThat(requests.firstValue.context.other.items, empty())
         assertThat(requests.firstValue.request, instanceOf(WireFreshKeysFreshKey::class.java))
         assertEquals(externalId, UUID.fromString((requests.firstValue.request as WireFreshKeysFreshKey).externalId))
-        assertEquals(2, (requests.firstValue.request as WireFreshKeysFreshKey).context.size)
-        assertTrue((requests.firstValue.request as WireFreshKeysFreshKey).context.any {
+        assertEquals(2, (requests.firstValue.request as WireFreshKeysFreshKey).context.items.size)
+        assertTrue((requests.firstValue.request as WireFreshKeysFreshKey).context.items.any {
             it.key == "someId" && it.value == context["someId"]
         })
-        assertTrue((requests.firstValue.request as WireFreshKeysFreshKey).context.any {
+        assertTrue((requests.firstValue.request as WireFreshKeysFreshKey).context.items.any {
             it.key == "reason" && it.value == context["reason"]
         })
         assertEquals(keyPair.public, result)
@@ -200,18 +200,18 @@ class FreshKeySigningServiceClientTests {
             requests.firstValue.context.requestTimestamp.epochSecond,
             allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
         )
-        assertThat(requests.firstValue.context.other, empty())
+        assertThat(requests.firstValue.context.other.items, empty())
         assertThat(requests.firstValue.request, instanceOf(WireFreshKeysSign::class.java))
         assertArrayEquals(
             schemeMetadata.encodeAsByteArray(keyPair.public),
             (requests.firstValue.request as WireFreshKeysSign).publicKey.array()
         )
         assertArrayEquals(data, (requests.firstValue.request as WireFreshKeysSign).bytes .array())
-        assertEquals(2, (requests.firstValue.request as WireFreshKeysSign).context.size)
-        assertTrue((requests.firstValue.request as WireFreshKeysSign).context.any {
+        assertEquals(2, (requests.firstValue.request as WireFreshKeysSign).context.items.size)
+        assertTrue((requests.firstValue.request as WireFreshKeysSign).context.items.any {
             it.key == "someId" && it.value == context["someId"]
         })
-        assertTrue((requests.firstValue.request as WireFreshKeysSign).context.any {
+        assertTrue((requests.firstValue.request as WireFreshKeysSign).context.items.any {
             it.key == "reason" && it.value == context["reason"]
         })
         assertEquals(keyPair.public, result.by)
@@ -247,7 +247,7 @@ class FreshKeySigningServiceClientTests {
             requests.firstValue.context.requestTimestamp.epochSecond,
             allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
         )
-        assertThat(requests.firstValue.context.other, empty())
+        assertThat(requests.firstValue.context.other.items, empty())
         assertThat(requests.firstValue.request, instanceOf(WireFreshKeysSignWithSpec::class.java))
         assertArrayEquals(
             schemeMetadata.encodeAsByteArray(keyPair.public),
@@ -262,11 +262,11 @@ class FreshKeySigningServiceClientTests {
             "SHA-256",
             (requests.firstValue.request as WireFreshKeysSignWithSpec).signatureSpec.customDigestName
         )
-        assertEquals(2, (requests.firstValue.request as WireFreshKeysSignWithSpec).context.size)
-        assertTrue((requests.firstValue.request as WireFreshKeysSignWithSpec).context.any {
+        assertEquals(2, (requests.firstValue.request as WireFreshKeysSignWithSpec).context.items.size)
+        assertTrue((requests.firstValue.request as WireFreshKeysSignWithSpec).context.items.any {
             it.key == "someId" && it.value == context["someId"]
         })
-        assertTrue((requests.firstValue.request as WireFreshKeysSignWithSpec).context.any {
+        assertTrue((requests.firstValue.request as WireFreshKeysSignWithSpec).context.items.any {
             it.key == "reason" && it.value == context["reason"]
         })
         assertEquals(keyPair.public, result.by)
@@ -298,7 +298,7 @@ class FreshKeySigningServiceClientTests {
             requests.firstValue.context.requestTimestamp.epochSecond,
             allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
         )
-        assertThat(requests.firstValue.context.other, empty())
+        assertThat(requests.firstValue.context.other.items, empty())
         assertThat(requests.firstValue.request, instanceOf(WireFreshKeysFilterMyKeys::class.java))
         assertEquals(3, (requests.firstValue.request as WireFreshKeysFilterMyKeys).keys.size)
         assertTrue((requests.firstValue.request as WireFreshKeysFilterMyKeys).keys.any {
@@ -337,7 +337,7 @@ class FreshKeySigningServiceClientTests {
             requests.firstValue.context.requestTimestamp.epochSecond,
             allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
         )
-        assertThat(requests.firstValue.context.other, empty())
+        assertThat(requests.firstValue.context.other.items, empty())
         assertThat(requests.firstValue.request, instanceOf(WireFreshKeysFilterMyKeys::class.java))
         assertEquals(2, (requests.firstValue.request as WireFreshKeysFilterMyKeys).keys.size)
         assertTrue((requests.firstValue.request as WireFreshKeysFilterMyKeys).keys.any {
@@ -495,7 +495,7 @@ class FreshKeySigningServiceClientTests {
             requests.firstValue.context.requestTimestamp.epochSecond,
             allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
         )
-        assertThat(requests.firstValue.context.other, empty())
+        assertThat(requests.firstValue.context.other.items, empty())
         assertThat(requests.firstValue.request, instanceOf(WireFreshKeysEnsureWrappingKey::class.java))
     }
 

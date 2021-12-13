@@ -18,6 +18,8 @@ dependencies {
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:permissions:permission-endpoint')
     implementation project(':libs:permissions:permission-manager')
+    implementation project(":libs:http-rpc:http-rpc-common")
+
     implementation project(':components:permissions:permission-service')
 
     implementation project(":libs:lifecycle:lifecycle")

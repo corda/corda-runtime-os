@@ -3,10 +3,8 @@ package net.corda.internal.serialization.model
 import com.google.common.reflect.TypeToken
 import net.corda.internal.serialization.amqp.Metadata
 import net.corda.internal.serialization.amqp.asClass
-import net.corda.internal.serialization.osgi.TypeResolver
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.SerializationContext
 import java.io.NotSerializableException
 import java.lang.reflect.GenericArrayType
 import java.lang.reflect.ParameterizedType
@@ -42,23 +40,24 @@ sealed class TypeIdentifier {
     /**
      * Obtain the local type matching this identifier.
      *
+     * @param sandboxGroup The current serialisation context.
      * @throws ClassNotFoundException if the type or any of its parameters cannot be loaded.
      * @throws IncompatibleTypeIdentifierException if the type identifier is incompatible with the locally-defined type
      * to which it refers.
      */
-    abstract fun getLocalType(): Type
+    abstract fun getLocalType(sandboxGroup: SandboxGroup): Type
 
     /**
      * Obtain the local type matching this identifier. The CPK associated with the type is
      * provided through the metadata associated with the serialised blob.
      *
-     * @param context The current serialisation context.
+     * @param sandboxGroup The current serialisation context.
      * @param metadata The metadata associated with the serialised blob.
      * @throws ClassNotFoundException if the type or any of its parameters cannot be loaded.
      * @throws IncompatibleTypeIdentifierException if the type identifier is incompatible with the locally-defined type
      * to which it refers.
      */
-    abstract fun getLocalType(context: SerializationContext, metadata: Metadata): Type
+    abstract fun getLocalType(sandboxGroup: SandboxGroup, metadata: Metadata): Type
 
     open val erased: TypeIdentifier get() = this
 
@@ -127,12 +126,12 @@ sealed class TypeIdentifier {
      */
     object TopType : TypeIdentifier() {
         override val name get() = "*"
-        override fun getLocalType(): Type = Any::class.java
-        override fun getLocalType(context: SerializationContext, metadata: Metadata): Type = Any::class.java
+        override fun getLocalType(sandboxGroup: SandboxGroup): Type = Any::class.java
+        override fun getLocalType(sandboxGroup: SandboxGroup, metadata: Metadata): Type = Any::class.java
         override fun toString() = "TopType"
     }
 
-    private object UnboundedWildcardType : WildcardType {
+    internal object UnboundedWildcardType : WildcardType {
         override fun getLowerBounds(): Array<Type> = emptyArray()
         override fun getUpperBounds(): Array<Type> = arrayOf(Any::class.java)
         override fun toString() = "?"
@@ -143,8 +142,8 @@ sealed class TypeIdentifier {
      */
     object UnknownType : TypeIdentifier() {
         override val name get() = "?"
-        override fun getLocalType(): Type = UnboundedWildcardType
-        override fun getLocalType(context: SerializationContext, metadata: Metadata): Type = UnboundedWildcardType
+        override fun getLocalType(sandboxGroup: SandboxGroup): Type = UnboundedWildcardType
+        override fun getLocalType(sandboxGroup: SandboxGroup, metadata: Metadata): Type = UnboundedWildcardType
         override fun toString() = "UnknownType"
     }
 
@@ -168,9 +167,10 @@ sealed class TypeIdentifier {
         }
         val isPrimitive get() = name in primitives
 
-        override fun getLocalType(): Type = primitives[name] ?: TypeResolver.resolve(name, this::class.java.classLoader)
-        override fun getLocalType(context: SerializationContext, metadata: Metadata): Type {
-            return primitives[name] ?: loadTypeFromMetadata(context, metadata)
+        override fun getLocalType(sandboxGroup: SandboxGroup): Type =
+            primitives[name] ?: sandboxGroup.loadClassFromMainBundles(name)
+        override fun getLocalType(sandboxGroup: SandboxGroup, metadata: Metadata): Type {
+            return primitives[name] ?: loadTypeFromMetadata(sandboxGroup, metadata)
         }
         override fun toString() = "Unparameterised($name)"
     }
@@ -180,10 +180,12 @@ sealed class TypeIdentifier {
      * because they have been erased.
      */
     data class Erased(override val name: String, val erasedParameterCount: Int) : TypeIdentifier() {
-        override fun getLocalType(): Type = TypeResolver.resolve(name, this::class.java.classLoader)
-        override fun getLocalType(context: SerializationContext, metadata: Metadata): Type {
-            return loadTypeFromMetadata(context, metadata)
-        }
+
+        override fun getLocalType(sandboxGroup: SandboxGroup): Type =
+            sandboxGroup.loadClassFromMainBundles(name)
+        override fun getLocalType(sandboxGroup: SandboxGroup, metadata: Metadata): Type =
+            loadTypeFromMetadata(sandboxGroup, metadata)
+
         override fun toString() = "Erased($name)"
         fun toParameterized(parameters: List<TypeIdentifier>): TypeIdentifier {
             if (parameters.size != erasedParameterCount) throw IncompatibleTypeIdentifierException(
@@ -209,16 +211,16 @@ sealed class TypeIdentifier {
     data class ArrayOf(val componentType: TypeIdentifier) : TypeIdentifier() {
         override val name get() = componentType.name + "[]"
 
-        override fun getLocalType(): Type {
-            val component = componentType.getLocalType()
+        override fun getLocalType(sandboxGroup: SandboxGroup): Type {
+            val component = componentType.getLocalType(sandboxGroup)
             return when (componentType) {
                 is Parameterised -> ReconstitutedGenericArrayType(component)
                 else -> java.lang.reflect.Array.newInstance(component.asClass(), 0).javaClass
             }
         }
 
-        override fun getLocalType(context: SerializationContext, metadata: Metadata): Type {
-            val component = componentType.getLocalType(context, metadata)
+        override fun getLocalType(sandboxGroup: SandboxGroup, metadata: Metadata): Type {
+            val component = componentType.getLocalType(sandboxGroup, metadata)
             return when (componentType) {
                 is Parameterised -> ReconstitutedGenericArrayType(component)
                 else -> java.lang.reflect.Array.newInstance(component.asClass(), 0).javaClass
@@ -239,8 +241,8 @@ sealed class TypeIdentifier {
          */
         override val erased: TypeIdentifier get() = Erased(name, parameters.size)
 
-        override fun getLocalType(): Type {
-            val rawType = TypeResolver.resolve(name, this::class.java.classLoader)
+        override fun getLocalType(sandboxGroup: SandboxGroup): Type {
+            val rawType = sandboxGroup.loadClassFromMainBundles(name)
             if (rawType.typeParameters.size != parameters.size) {
                 throw IncompatibleTypeIdentifierException(
                         "Class $rawType expects ${rawType.typeParameters.size} type arguments, " +
@@ -248,12 +250,12 @@ sealed class TypeIdentifier {
             }
             return ReconstitutedParameterizedType(
                     rawType,
-                    owner?.getLocalType(),
-                    parameters.map { it.getLocalType() }.toTypedArray())
+                    owner?.getLocalType(sandboxGroup),
+                    parameters.map { it.getLocalType(sandboxGroup) }.toTypedArray())
         }
 
-        override fun getLocalType(context: SerializationContext, metadata: Metadata): Type {
-            val rawType = loadTypeFromMetadata(context, metadata)
+        override fun getLocalType(sandboxGroup: SandboxGroup, metadata: Metadata): Type {
+            val rawType = loadTypeFromMetadata(sandboxGroup, metadata)
             if (rawType.typeParameters.size != parameters.size) {
                 throw IncompatibleTypeIdentifierException(
                         "Class $rawType expects ${rawType.typeParameters.size} type arguments, " +
@@ -261,24 +263,24 @@ sealed class TypeIdentifier {
             }
             return ReconstitutedParameterizedType(
                     rawType,
-                    owner?.getLocalType(context, metadata),
-                    parameters.map { it.getLocalType(context, metadata) }.toTypedArray())
+                    owner?.getLocalType(sandboxGroup, metadata),
+                    parameters.map { it.getLocalType(sandboxGroup, metadata) }.toTypedArray())
         }
 
         override fun toString() = "Parameterised(${prettyPrint()})"
     }
 
-    protected fun loadTypeFromMetadata(context: SerializationContext, metadata: Metadata): Class<*> {
+    protected fun loadTypeFromMetadata(sandboxGroup: SandboxGroup, metadata: Metadata): Class<*> {
         return if (metadata.containsKey(name)) {
             val serializedClassTag = metadata.getValue(name) as String
             try {
-                (context.sandboxGroup as? SandboxGroup)?.getClass(name, serializedClassTag) as Class<*>
+                sandboxGroup.getClass(name, serializedClassTag)
             } catch (ex: SandboxException) {
                 throw ClassNotFoundException("Unable to load CPK type $name", ex)
             }
         } else {
             // Must be a Platform type as these are not attached to the metadata
-            TypeResolver.resolve(name, this::class.java.classLoader)
+            sandboxGroup.loadClassFromMainBundles(name)
         }
     }
 }

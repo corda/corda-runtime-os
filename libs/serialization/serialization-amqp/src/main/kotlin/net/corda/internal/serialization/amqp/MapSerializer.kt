@@ -2,6 +2,7 @@ package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.TypeIdentifier
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.util.uncheckedCast
 import org.apache.qpid.proton.amqp.Symbol
@@ -50,21 +51,21 @@ class MapSerializer(private val declaredType: ParameterizedType, factory: LocalS
             return supportedTypes[clazz] ?: throw AMQPNotSerializableException(clazz, "Unsupported map type $clazz.")
         }
 
-        fun resolveDeclared(declaredTypeInformation: LocalTypeInformation.AMap): LocalTypeInformation.AMap {
+        fun resolveDeclared(declaredTypeInformation: LocalTypeInformation.AMap, sandboxGroup: SandboxGroup): LocalTypeInformation.AMap {
             declaredTypeInformation.observedType.asClass().checkSupportedMapType()
             if (supportedTypeIdentifiers.contains(declaredTypeInformation.typeIdentifier.erased))
                 return if (!declaredTypeInformation.isErased) declaredTypeInformation
-                else declaredTypeInformation.withParameters(LocalTypeInformation.Unknown, LocalTypeInformation.Unknown)
+                else declaredTypeInformation.withParameters(LocalTypeInformation.Unknown, LocalTypeInformation.Unknown, sandboxGroup)
 
             throw NotSerializableException("Cannot derive map type for declared type " +
                     declaredTypeInformation.prettyPrint(false))
         }
 
-        fun resolveActual(actualClass: Class<*>, declaredTypeInformation: LocalTypeInformation.AMap): LocalTypeInformation.AMap {
+        fun resolveActual(actualClass: Class<*>, declaredTypeInformation: LocalTypeInformation.AMap, sandboxGroup: SandboxGroup): LocalTypeInformation.AMap {
             declaredTypeInformation.observedType.asClass().checkSupportedMapType()
             if (supportedTypeIdentifiers.contains(declaredTypeInformation.typeIdentifier.erased)) {
                 return if (!declaredTypeInformation.isErased) declaredTypeInformation
-                else declaredTypeInformation.withParameters(LocalTypeInformation.Unknown, LocalTypeInformation.Unknown)
+                else declaredTypeInformation.withParameters(LocalTypeInformation.Unknown, LocalTypeInformation.Unknown, sandboxGroup)
             }
 
             val mapClass = findMostSuitableMapType(actualClass)
@@ -76,8 +77,9 @@ class MapSerializer(private val declaredType: ParameterizedType, factory: LocalS
             return when(declaredTypeInformation.typeIdentifier) {
                 is TypeIdentifier.Parameterised -> erasedInformation.withParameters(
                         declaredTypeInformation.keyType,
-                        declaredTypeInformation.valueType)
-                else -> erasedInformation.withParameters(LocalTypeInformation.Unknown, LocalTypeInformation.Unknown)
+                        declaredTypeInformation.valueType,
+                        sandboxGroup)
+                else -> erasedInformation.withParameters(LocalTypeInformation.Unknown, LocalTypeInformation.Unknown, sandboxGroup)
             }
         }
 
@@ -90,9 +92,9 @@ class MapSerializer(private val declaredType: ParameterizedType, factory: LocalS
     private val typeNotation: TypeNotation = RestrictedType(AMQPTypeIdentifiers.nameForType(declaredType), null, emptyList(), "map", Descriptor(typeDescriptor), emptyList())
 
     private val inboundKeyType = declaredType.actualTypeArguments[0]
-    private val outboundKeyType = resolveTypeVariables(inboundKeyType, null)
+    private val outboundKeyType = resolveTypeVariables(inboundKeyType, null, factory.sandboxGroup)
     private val inboundValueType = declaredType.actualTypeArguments[1]
-    private val outboundValueType = resolveTypeVariables(inboundValueType, null)
+    private val outboundValueType = resolveTypeVariables(inboundValueType, null, factory.sandboxGroup)
 
     override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) = ifThrowsAppend({ declaredType.typeName }) {
         if (output.writeTypeNotations(typeNotation)) {

@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.AllWhitelist
+import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.internal.serialization.model.ConfigurableLocalTypeModel
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.TypeModellingFingerPrinter
@@ -15,7 +16,7 @@ class TypeModellingFingerPrinterTests {
 
     val descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry()
     val customRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
-    val fingerprinter = TypeModellingFingerPrinter(customRegistry, true)
+    val fingerprinter = TypeModellingFingerPrinter(customRegistry, testSerializationContext.currentSandboxGroup(),true)
 
     // See https://r3-cev.atlassian.net/browse/CORDA-2266
     @Test

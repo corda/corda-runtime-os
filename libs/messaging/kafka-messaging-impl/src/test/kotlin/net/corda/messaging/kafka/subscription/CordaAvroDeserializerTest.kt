@@ -6,7 +6,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyZeroInteractions
 import org.mockito.kotlin.whenever
 import net.corda.data.crypto.SecureHash
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -14,6 +13,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.common.serialization.StringSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.verifyNoInteractions
 import java.nio.ByteBuffer
 
 internal class CordaAvroDeserializerTest {
@@ -29,8 +29,8 @@ internal class CordaAvroDeserializerTest {
         val win = deserializer.deserialize("", kafkaSerializer.serialize("","Win!"))
 
         assertThat(win).isEqualTo("Win!")
-        verifyZeroInteractions(schemaRegistry)
-        verifyZeroInteractions(callback)
+        verifyNoInteractions(schemaRegistry)
+        verifyNoInteractions(callback)
     }
 
     @Test
@@ -41,8 +41,8 @@ internal class CordaAvroDeserializerTest {
         val win = deserializer.deserialize("", "Win!".toByteArray())
 
         assertThat(win).isEqualTo("Win!".toByteArray())
-        verifyZeroInteractions(schemaRegistry)
-        verifyZeroInteractions(callback)
+        verifyNoInteractions(schemaRegistry)
+        verifyNoInteractions(callback)
     }
 
     @Test
@@ -58,7 +58,7 @@ internal class CordaAvroDeserializerTest {
         val win = deserializer.deserialize("", ByteArray(1))
 
         assertThat(win).isEqualTo(secureHash)
-        verifyZeroInteractions(callback)
+        verifyNoInteractions(callback)
     }
 
     @Test

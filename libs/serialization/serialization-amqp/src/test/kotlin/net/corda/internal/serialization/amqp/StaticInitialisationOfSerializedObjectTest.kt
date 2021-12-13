@@ -2,6 +2,7 @@ package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.testutils.deserialize
+import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.serialization.ClassWhitelist
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -51,7 +52,7 @@ class StaticInitialisationOfSerializedObjectTest {
 	fun kotlinObjectWithCompanionObject() {
         data class D(val c: C)
 
-        val sf = SerializerFactoryBuilder.build(AllWhitelist)
+        val sf = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
 
         val typeMap = sf::class.java.getDeclaredField("serializersByType")
         typeMap.isAccessible = true
@@ -91,7 +92,7 @@ class StaticInitialisationOfSerializedObjectTest {
         }
 
         val whitelist = WL()
-        val sf2 = SerializerFactoryBuilder.build(whitelist)
+        val sf2 = SerializerFactoryBuilder.build(whitelist, testSerializationContext.currentSandboxGroup())
         val bytes = url.readBytes()
 
         assertThatThrownBy {

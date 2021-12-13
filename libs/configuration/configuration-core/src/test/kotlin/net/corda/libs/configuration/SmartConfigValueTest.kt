@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verifyZeroInteractions
+import org.mockito.kotlin.verifyNoInteractions
 
 class SmartConfigValueTest {
     val configString = """
@@ -71,7 +71,7 @@ class SmartConfigValueTest {
     @Test
     fun `render never reveals secrets`() {
         println(configValue.render())
-        verifyZeroInteractions(secretsLookupService)
+        verifyNoInteractions(secretsLookupService)
     }
 
     @Test
