@@ -13,6 +13,7 @@ import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.internal.PermissionStorageWriterServiceEventHandler
 import javax.persistence.EntityManagerFactory
 
+@Suppress("LongParameterList")
 class PermissionStorageWriterService(
     coordinatorFactory: LifecycleCoordinatorFactory,
     entityManagerFactory: EntityManagerFactory,

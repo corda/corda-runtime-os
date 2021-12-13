@@ -13,6 +13,7 @@ import net.corda.permissions.cache.PermissionCacheService
 import net.corda.permissions.storage.reader.internal.PermissionStorageReaderServiceEventHandler
 import javax.persistence.EntityManagerFactory
 
+@Suppress("LongParameterList")
 class PermissionStorageReaderService(
     permissionCacheService: PermissionCacheService,
     permissionStorageReaderFactory: PermissionStorageReaderFactory,
