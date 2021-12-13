@@ -47,10 +47,12 @@ abstract class InvokeSender : Runnable {
     private var messageSizeBytes = 10000L
 
     @Option(
-        names = ["-t", "--total-number-of-messages"],
-        description = ["Total number of messages (for one ofe case)"]
+        names = ["-c", "--clients", "--clients-count"],
+        description = ["number of parallel clients"]
     )
-    private var totalNumberOfMessages = 50L
+    private var clientCount = 1L
+
+    abstract val totalNumberOfMessages: Long
 
     private val loadGenerationParams by lazy {
         val peerAnnotations = getNamespaceAnnotation(peer)
@@ -75,7 +77,7 @@ abstract class InvokeSender : Runnable {
 
     override fun run() {
         val parameters = mapOf(
-            "parallelClients" to 1,
+            "parallelClients" to clientCount,
             "simulatorMode" to "SENDER",
             "loadGenerationParams" to loadGenerationParams,
         )

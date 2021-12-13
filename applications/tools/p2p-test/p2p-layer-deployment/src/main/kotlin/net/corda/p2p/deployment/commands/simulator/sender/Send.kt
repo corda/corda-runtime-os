@@ -1,6 +1,7 @@
 package net.corda.p2p.deployment.commands.simulator.sender
 
 import picocli.CommandLine.Command
+import picocli.CommandLine.Option
 
 @Command(
     name = "send",
@@ -10,4 +11,9 @@ import picocli.CommandLine.Command
 )
 class Send : InvokeSender() {
     override val oneOff = true
+    @Option(
+        names = ["-t", "--total-number-of-messages"],
+        description = ["Total number of messages"]
+    )
+    override var totalNumberOfMessages = 50L
 }

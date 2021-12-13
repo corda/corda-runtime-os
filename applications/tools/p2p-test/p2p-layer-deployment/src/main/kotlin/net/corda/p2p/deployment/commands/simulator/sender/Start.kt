@@ -10,4 +10,5 @@ import picocli.CommandLine.Command
 )
 class Start : InvokeSender() {
     override val oneOff = false
+    override val totalNumberOfMessages = 1L
 }
