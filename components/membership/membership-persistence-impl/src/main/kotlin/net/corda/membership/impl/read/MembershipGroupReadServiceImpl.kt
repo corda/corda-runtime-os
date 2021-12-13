@@ -15,6 +15,7 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.identity.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
@@ -33,29 +34,46 @@ class MembershipGroupReadServiceImpl @Activate constructor(
 ) : MembershipGroupReadService, Lifecycle, MembershipLifecycleComponent {
 
     private companion object {
+        const val ACCESSED_TOO_EARLY =
+            "Tried to read group data but the MembershipGroupReadService is not running."
+
         // TEMPORARY VALUES
         const val consumerGroup = "PLACEHOLDER"
         const val memberListTopic = "membership.members"
     }
 
+    /**
+     * Subscriptions
+     */
+
     private var memberListSubscription: CompactedSubscription<String, SignedMemberInfo>? = null
 
-    /**
-     * List of all subscriptions owned by this service
-     */
     private val subscriptions
         get() = listOf(
             memberListSubscription
         )
 
-    private var memberListCache: MemberListCache? = null
-    private var groupReaderCache: GroupReaderCache? = null
-
     /**
-     * Check all subscriptions are running
+     * Data caches.
      */
+
+    private var _memberListCache: MemberListCache? = null
+    private val memberListCache: MemberListCache
+        get() = _memberListCache ?: throw CordaRuntimeException(ACCESSED_TOO_EARLY)
+
+    private var _groupReaderCache: GroupReaderCache? = null
+    private val groupReaderCache: GroupReaderCache
+        get() = _groupReaderCache ?: throw CordaRuntimeException(ACCESSED_TOO_EARLY)
+
+    private val caches
+        get() = listOf(
+            _memberListCache,
+            _groupReaderCache
+        )
+
     override val isRunning: Boolean
         get() = subscriptions.all { it?.isRunning ?: false }
+                && caches.all { it != null }
 
     override fun start() {
         createCaches()
@@ -64,21 +82,31 @@ class MembershipGroupReadServiceImpl @Activate constructor(
 
     override fun stop() {
         stopSubscriptions()
-        closeCaches()
+        removeCaches()
     }
 
     override fun getGroupReader(
         groupId: String,
         memberX500Name: MemberX500Name
-    ): MembershipGroupReader = groupReaderCache?.get(groupId, memberX500Name)
-        ?: MembershipGroupReaderImpl(
-            groupId,
-            memberX500Name,
-            getGroupPolicy(groupId, memberX500Name),
-            memberListCache!!
-        ).also {
-            groupReaderCache?.put(groupId, memberX500Name, it)
-        }
+    ) = groupReaderCache.get(groupId, memberX500Name)
+        ?: createGroupReader(groupId, memberX500Name)
+
+    override fun handleConfigEvent(config: MembershipConfig) {
+        stop()
+        start()
+    }
+
+    private fun createGroupReader(
+        groupId: String,
+        memberX500Name: MemberX500Name
+    ): MembershipGroupReader = MembershipGroupReaderImpl(
+        groupId,
+        memberX500Name,
+        getGroupPolicy(groupId, memberX500Name),
+        memberListCache
+    ).apply {
+        groupReaderCache.put(groupId, memberX500Name, this)
+    }
 
     /**
      * Retrieves the GroupPolicy JSON string from the CPI metadata and parses it into a [GroupPolicy] object.
@@ -87,11 +115,10 @@ class MembershipGroupReadServiceImpl @Activate constructor(
         groupId: String,
         memberX500Name: MemberX500Name
     ): GroupPolicy {
-        val groupPolicyJson = virtualNodeInfoReader.get(
-            HoldingIdentity(groupId, memberX500Name.toString())
-        )?.cpi?.let { cpiIdentifier ->
-            cpiInfoReader.get(cpiIdentifier)?.groupPolicy
-        }
+        val holdingIdentity = HoldingIdentity(groupId, memberX500Name.toString())
+        val groupPolicyJson = virtualNodeInfoReader.get(holdingIdentity)
+            ?.cpi
+            ?.let { cpiInfoReader.get(it)?.groupPolicy }
         requireNotNull(groupPolicyJson)
         return parseGroupPolicy(groupPolicyJson)
     }
@@ -103,26 +130,20 @@ class MembershipGroupReadServiceImpl @Activate constructor(
         return GroupPolicyImpl(emptyMap())
     }
 
-    override fun handleConfigEvent(config: MembershipConfig) {
-        stop()
-        // ADD CONFIG HANDLING IMPLEMENTATION HERE
-        start()
-    }
-
     private fun createCaches() {
-        memberListCache = MemberListCache.Impl()
-        groupReaderCache = GroupReaderCache.Impl()
+        _memberListCache = MemberListCache.Impl()
+        _groupReaderCache = GroupReaderCache.Impl()
     }
 
-    private fun closeCaches() {
-        memberListCache = null
-        groupReaderCache = null
+    private fun removeCaches() {
+        _memberListCache = null
+        _groupReaderCache = null
     }
 
     private fun startSubscriptions() {
         memberListSubscription = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(consumerGroup, memberListTopic),
-            MemberListProcessor(memberListCache!!)
+            MemberListProcessor(memberListCache)
         ).also {
             it.start()
         }
