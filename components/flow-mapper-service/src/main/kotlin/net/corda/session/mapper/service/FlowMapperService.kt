@@ -73,7 +73,6 @@ class FlowMapperService @Activate constructor(
                     )
             }
             is RegistrationStatusChangeEvent -> {
-                // No need to check what registration this is as there is only one.
                 if (event.status == LifecycleStatus.UP) {
                     configHandle = configurationReadService.registerForUpdates(::onConfigChange)
                 } else {
