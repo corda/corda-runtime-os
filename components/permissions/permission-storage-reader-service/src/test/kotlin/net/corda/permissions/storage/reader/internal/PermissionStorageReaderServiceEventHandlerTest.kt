@@ -44,7 +44,8 @@ class PermissionStorageReaderServiceEventHandlerTest {
         permissionCacheService,
         permissionStorageReaderFactory,
         mock(),
-        publisherFactory
+        publisherFactory,
+        mock()
     )
 
     @Test
