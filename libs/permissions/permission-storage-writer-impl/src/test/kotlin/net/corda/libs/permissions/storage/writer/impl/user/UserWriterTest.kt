@@ -6,7 +6,9 @@ import javax.persistence.EntityTransaction
 import javax.persistence.Query
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.libs.permissions.storage.writer.impl.user.impl.UserWriterImpl
+import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
+import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.User
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -17,7 +19,9 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -36,6 +40,7 @@ internal class UserWriterTest {
         parentGroupId = "parent1"
     }
 
+    private val requestUserId = "requestUserId"
     private val entityTransaction = mock<EntityTransaction>()
     private val entityManager = mock<EntityManager>()
     private val entityManagerFactory = mock<EntityManagerFactory>()
@@ -58,7 +63,7 @@ internal class UserWriterTest {
         whenever(query.singleResult).thenReturn(1L)
 
         val e = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
-            userWriter.createUser(createUserRequest)
+            userWriter.createUser(createUserRequest, requestUserId)
         }
 
         verify(entityTransaction).begin()
@@ -67,20 +72,22 @@ internal class UserWriterTest {
 
     @Test
     fun `receiving CreateUserRequest specifying a parent group that exists persists a new user to the database`() {
-
-        val userCapture = argumentCaptor<User>()
+        val capture = argumentCaptor<Any>()
 
         whenever(query.setParameter(any<String>(), any())).thenReturn(query)
         whenever(query.singleResult).thenReturn(0L)
         whenever(entityManager.createQuery(any<String>())).thenReturn(query)
         whenever(entityManager.find(eq(Group::class.java), eq("parent1"))).thenReturn(group)
 
-        userWriter.createUser(createUserRequestWithParentGroup)
+        userWriter.createUser(createUserRequestWithParentGroup, requestUserId)
 
-        verify(entityManager).persist(userCapture.capture())
-        verify(entityTransaction).begin()
+        inOrder(entityTransaction, entityManager) {
+            verify(entityTransaction).begin()
+            verify(entityManager, times(2)).persist(capture.capture())
+            verify(entityTransaction).commit()
+        }
 
-        val persistedUser = userCapture.firstValue
+        val persistedUser = capture.firstValue as User
         assertNotNull(persistedUser)
         assertNotNull(persistedUser.id)
         assertNotNull(persistedUser.updateTimestamp)
@@ -90,27 +97,38 @@ internal class UserWriterTest {
         assertNull(persistedUser.hashedPassword)
         assertNull(persistedUser.passwordExpiry)
         assertEquals(group, persistedUser.parentGroup)
+
+        val audit = capture.secondValue as ChangeAudit
+        assertNotNull(audit)
+        assertEquals(RPCPermissionOperation.USER_INSERT, audit.changeType)
+        assertEquals(requestUserId, audit.actorUser)
     }
 
     @Test
     fun `create a user successfully persists the user`() {
-
-        val userCapture = argumentCaptor<User>()
+        val capture = argumentCaptor<Any>()
 
         whenever(entityManager.createQuery(any<String>())).thenReturn(query)
         whenever(query.setParameter(eq("loginName"), eq("lankydan"))).thenReturn(query)
         whenever(query.singleResult).thenReturn(0L)
 
-        userWriter.createUser(createUserRequest)
+        userWriter.createUser(createUserRequest, requestUserId)
 
-        verify(entityManager).persist(userCapture.capture())
-        verify(entityTransaction).begin()
-        verify(entityTransaction).commit()
+        inOrder(entityTransaction, entityManager) {
+            verify(entityTransaction).begin()
+            verify(entityManager, times(2)).persist(capture.capture())
+            verify(entityTransaction).commit()
+        }
 
-        val persistedUser = userCapture.firstValue
+        val persistedUser = capture.firstValue as User
         assertNotNull(persistedUser)
         assertEquals("Dan Newton", persistedUser.fullName)
         assertEquals("lankydan", persistedUser.loginName)
         assertTrue(persistedUser.enabled)
+
+        val audit = capture.secondValue as ChangeAudit
+        assertNotNull(audit)
+        assertEquals(RPCPermissionOperation.USER_INSERT, audit.changeType)
+        assertEquals(requestUserId, audit.actorUser)
     }
 }

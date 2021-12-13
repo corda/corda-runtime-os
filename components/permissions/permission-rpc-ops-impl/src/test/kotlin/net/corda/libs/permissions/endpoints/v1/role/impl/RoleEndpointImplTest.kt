@@ -3,7 +3,9 @@ package net.corda.libs.permissions.endpoints.v1.role.impl
 import java.time.Instant
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleRequestType
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.RpcAuthContext
+import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.CreateRoleRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
@@ -14,6 +16,7 @@ import net.corda.permissions.service.PermissionServiceComponent
 import net.corda.v5.base.util.Try
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -24,7 +27,7 @@ import org.mockito.kotlin.whenever
 internal class RoleEndpointImplTest {
 
     private val now = Instant.now()
-    private val createRoleRequestType = CreateRoleRequestType("roleName", null)
+    private val createRoleType = CreateRoleType("roleName", null)
 
     private val mockTry = mock<Try<RoleResponseDto>>()
     private val roleResponseDto = RoleResponseDto("uuid", 0, now, "roleName", null, emptyList())
@@ -40,6 +43,14 @@ internal class RoleEndpointImplTest {
 
     private val endpoint = RoleEndpointImpl(lifecycleCoordinatorFactory, permissionService)
 
+    @BeforeEach
+    fun beforeEach() {
+        val authContext = mock<RpcAuthContext>().apply {
+            whenever(principal).thenReturn("anRpcUser")
+        }
+        CURRENT_RPC_CONTEXT.set(authContext)
+    }
+
     @Test
     fun getProtocolVersion() {
         assertEquals(1, endpoint.protocolVersion)
@@ -54,7 +65,7 @@ internal class RoleEndpointImplTest {
         whenever(mockTry.getOrThrow()).thenReturn(roleResponseDto)
 
         endpoint.start()
-        val responseType = endpoint.createRole(createRoleRequestType)
+        val responseType = endpoint.createRole(createRoleType)
 
         assertEquals("uuid", responseType.id)
         assertEquals(0, responseType.version)
@@ -68,7 +79,7 @@ internal class RoleEndpointImplTest {
         whenever(permissionManager.isRunning).thenReturn(false)
 
         val e = assertThrows<HttpApiException> {
-            endpoint.createRole(createRoleRequestType)
+            endpoint.createRole(createRoleType)
         }
         assertEquals(500, e.statusCode)
     }
@@ -76,7 +87,7 @@ internal class RoleEndpointImplTest {
     @Test
     fun `create a role throws with status 500 when this service is not running`() {
         val e = assertThrows<HttpApiException> {
-            endpoint.createRole(createRoleRequestType)
+            endpoint.createRole(createRoleType)
         }
         assertEquals(500, e.statusCode)
     }

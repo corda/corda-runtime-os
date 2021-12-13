@@ -1,8 +1,8 @@
 package net.corda.libs.permissions.endpoints.v1.converter
 
 import java.time.Instant
-import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleRequestType
-import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserRequestType
+import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
+import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
 class TypeConverterUtilTest {
     @Test
     fun `convert CreateRoleType to CreateRoleRequestDto`() {
-        val type = CreateRoleRequestType("role1", "group1")
+        val type = CreateRoleType("role1", "group1")
 
         val dto = type.convertToDto("me")
 
@@ -27,7 +27,7 @@ class TypeConverterUtilTest {
     @Test
     fun `convert CreateUserType to CreateUserRequestDto`() {
         val now = Instant.now()
-        val type = CreateUserRequestType("name1", "login1", true, "pass", now, "group1")
+        val type = CreateUserType("name1", "login1", true, "pass", now, "group1")
 
         val dto = type.convertToDto("me")
 

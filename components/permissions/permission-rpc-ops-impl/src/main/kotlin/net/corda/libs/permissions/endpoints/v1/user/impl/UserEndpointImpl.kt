@@ -8,7 +8,7 @@ import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
 import net.corda.libs.permissions.endpoints.v1.converter.convertToEndpointType
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
-import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserRequestType
+import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.lifecycle.Lifecycle
@@ -38,11 +38,14 @@ class UserEndpointImpl @Activate constructor(
         PermissionEndpointEventHandler("User")
     )
 
-    override fun createUser(createUserRequestType: CreateUserRequestType): UserResponseType {
+    override fun createUser(createUserType: CreateUserType): UserResponseType {
         validatePermissionManager()
 
+        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val principal = rpcContext.principal
+
         val createUserResult = permissionServiceComponent.permissionManager.createUser(
-            createUserRequestType.convertToDto("todo")
+            createUserType.convertToDto(principal)
         )
 
         return createUserResult.getOrThrow().convertToEndpointType()
@@ -50,8 +53,10 @@ class UserEndpointImpl @Activate constructor(
 
     override fun getUser(loginName: String): UserResponseType {
         validatePermissionManager()
+
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
+
         val userResponseDto = permissionServiceComponent.permissionManager.getUser(
             GetUserRequestDto(principal, loginName)
         )
@@ -68,31 +73,6 @@ class UserEndpointImpl @Activate constructor(
         if (!permissionServiceComponent.isRunning) {
             throw HttpApiException("Permission manager must be running.", 500)
         }
-    }
-
-    private fun UserResponseDto.convertToUserType(): UserResponseType {
-        return UserResponseType(
-            id,
-            version,
-            lastUpdatedTimestamp,
-            fullName,
-            loginName,
-            enabled,
-            passwordExpiry,
-            parentGroup
-        )
-    }
-
-    private fun convertFromUserType(createUserType: CreateUserType): CreateUserRequestDto {
-        return CreateUserRequestDto(
-            "todo", // the endpoint needs more context to get the request user name
-            createUserType.fullName,
-            createUserType.loginName,
-            createUserType.enabled,
-            createUserType.initialPassword,
-            createUserType.passwordExpiry,
-            createUserType.parentGroup,
-        )
     }
 
     override val isRunning: Boolean

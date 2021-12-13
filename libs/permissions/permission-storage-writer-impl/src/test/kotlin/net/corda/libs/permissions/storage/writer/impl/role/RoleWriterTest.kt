@@ -6,7 +6,9 @@ import javax.persistence.EntityTransaction
 import javax.persistence.Query
 import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.libs.permissions.storage.writer.impl.role.impl.RoleWriterImpl
+import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
+import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.Role
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -17,12 +19,15 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class RoleWriterTest {
 
+    private val requestUserId = "requestor"
     private val createRoleRequest = CreateRoleRequest("role1", null)
     private val createRoleRequestWithGroupVis = CreateRoleRequest("role2", "group1")
 
@@ -48,7 +53,7 @@ class RoleWriterTest {
         whenever(query.singleResult).thenReturn(1L)
 
         val e = assertThrows<IllegalArgumentException> {
-            roleWriter.createRole(createRoleRequest)
+            roleWriter.createRole(createRoleRequest, requestUserId)
         }
 
         verify(entityTransaction).begin()
@@ -65,7 +70,7 @@ class RoleWriterTest {
         whenever(entityManager.find(eq(Group::class.java), eq("group1"))).thenReturn(null)
 
         val e = assertThrows<IllegalArgumentException> {
-            roleWriter.createRole(createRoleRequestWithGroupVis)
+            roleWriter.createRole(createRoleRequestWithGroupVis, requestUserId)
         }
 
         verify(entityTransaction).begin()
@@ -73,32 +78,37 @@ class RoleWriterTest {
     }
 
     @Test
-    fun `create a role without groupVisibility successfully persists the role setting groupVisibility to null`() {
-
-        val roleCapture = argumentCaptor<Role>()
+    fun `create a role without groupVisibility successfully persists the role and audit log`() {
+        val capture = argumentCaptor<Any>()
 
         whenever(entityManager.createQuery(any<String>())).thenReturn(query)
         whenever(query.setParameter(eq("roleName"), eq("role1"))).thenReturn(query)
         whenever(query.singleResult).thenReturn(0L)
 
-        roleWriter.createRole(createRoleRequest)
+        roleWriter.createRole(createRoleRequest, requestUserId)
 
-        verify(entityManager).persist(roleCapture.capture())
-        verify(entityTransaction).begin()
-        verify(entityTransaction).commit()
+        inOrder(entityTransaction, entityManager) {
+            verify(entityTransaction).begin()
+            verify(entityManager, times(2)).persist(capture.capture())
+            verify(entityTransaction).commit()
+        }
 
-        val persistedRole = roleCapture.firstValue
+        val persistedRole = capture.firstValue as Role
         assertNotNull(persistedRole)
         assertNotNull(persistedRole.id)
         assertNotNull(persistedRole.updateTimestamp)
         assertEquals("role1", persistedRole.name)
         assertNull(persistedRole.groupVisibility)
+
+        val audit = capture.secondValue as ChangeAudit
+        assertNotNull(audit)
+        assertEquals(RPCPermissionOperation.ROLE_INSERT, audit.changeType)
+        assertEquals(requestUserId, audit.actorUser)
     }
 
     @Test
-    fun `create a role with groupVisibility successfully persists the role setting groupVisibility`() {
-
-        val roleCapture = argumentCaptor<Role>()
+    fun `create a role with groupVisibility successfully persists the role and writes audit log`() {
+        val capture = argumentCaptor<Any>()
 
         whenever(entityManager.createQuery(any<String>())).thenReturn(query)
         whenever(query.setParameter(any<String>(), any())).thenReturn(query)
@@ -106,17 +116,24 @@ class RoleWriterTest {
 
         whenever(entityManager.find(eq(Group::class.java), eq("group1"))).thenReturn(group)
 
-        roleWriter.createRole(createRoleRequestWithGroupVis)
+        roleWriter.createRole(createRoleRequestWithGroupVis, requestUserId)
 
-        verify(entityManager).persist(roleCapture.capture())
-        verify(entityTransaction).begin()
-        verify(entityTransaction).commit()
+        inOrder(entityTransaction, entityManager) {
+            verify(entityTransaction).begin()
+            verify(entityManager, times(2)).persist(capture.capture())
+            verify(entityTransaction).commit()
+        }
 
-        val persistedRole = roleCapture.firstValue
+        val persistedRole = capture.firstValue as Role
         assertNotNull(persistedRole)
         assertNotNull(persistedRole.id)
         assertNotNull(persistedRole.updateTimestamp)
         assertEquals("role2", persistedRole.name)
         assertEquals(group, persistedRole.groupVisibility)
+
+        val audit = capture.secondValue as ChangeAudit
+        assertNotNull(audit)
+        assertEquals(RPCPermissionOperation.ROLE_INSERT, audit.changeType)
+        assertEquals(requestUserId, audit.actorUser)
     }
 }

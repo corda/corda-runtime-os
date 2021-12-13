@@ -3,7 +3,7 @@ package net.corda.libs.permissions.endpoints.v1.role.types
 /**
  * Request type for creating a Role in the permission system.
  */
-data class CreateRoleRequestType(
+data class CreateRoleType(
 
     /**
      * Name of the Role.

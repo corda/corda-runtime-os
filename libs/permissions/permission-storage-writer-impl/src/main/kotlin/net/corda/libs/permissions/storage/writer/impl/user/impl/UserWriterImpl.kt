@@ -7,10 +7,13 @@ import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.libs.permissions.storage.writer.impl.common.toAvroUser
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
+import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
+import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.User
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.data.permissions.User as AvroUser
 
 class UserWriterImpl(
     private val entityManagerFactory: EntityManagerFactory
@@ -20,7 +23,7 @@ class UserWriterImpl(
         val log = contextLogger()
     }
 
-    override fun createUser(request: CreateUserRequest): net.corda.data.permissions.User {
+    override fun createUser(request: CreateUserRequest, requestUserId: String): AvroUser {
         val loginName = request.loginName
 
         log.debug { "Received request to create new user: $loginName" }
@@ -40,6 +43,7 @@ class UserWriterImpl(
                 null
             }
 
+            val updateTimestamp = Instant.now()
             val user = User(
                 id = UUID.randomUUID().toString(),
                 fullName = request.fullName,
@@ -49,11 +53,22 @@ class UserWriterImpl(
                 hashedPassword = request.initialHashedPassword,
                 passwordExpiry = request.passwordExpiry,
                 parentGroup = parentGroup,
-                updateTimestamp = Instant.now()
+                updateTimestamp = updateTimestamp
             )
             user.version = 0
 
             entityManager.persist(user)
+
+            val auditLog = ChangeAudit(
+                id = UUID.randomUUID().toString(),
+                updateTimestamp = updateTimestamp,
+                actorUser = requestUserId,
+                changeType = RPCPermissionOperation.USER_INSERT,
+                details = "User '${user.loginName}' created by '$requestUserId'."
+            )
+
+            entityManager.persist(auditLog)
+
             entityManager.transaction.commit()
 
             log.info("Successfully created new user: $loginName.")

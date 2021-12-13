@@ -5,7 +5,7 @@ import java.time.Instant
 /**
  * Request type for creating a User in the permission system.
  */
-data class CreateUserRequestType(
+data class CreateUserType(
 
     /**
      * Full name of the User.

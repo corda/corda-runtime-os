@@ -6,7 +6,7 @@ import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleRequestType
+import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
 
 /**
@@ -25,7 +25,7 @@ interface RoleEndpoint : RpcOps {
     @HttpRpcPOST(description = "Create a Role", path = "createRole")
     fun createRole(
         @HttpRpcRequestBodyParameter(description = "Details of the role to be created", required = true)
-        createRoleRequestType: CreateRoleRequestType
+        createRoleType: CreateRoleType
     ): RoleResponseType
 
     /**

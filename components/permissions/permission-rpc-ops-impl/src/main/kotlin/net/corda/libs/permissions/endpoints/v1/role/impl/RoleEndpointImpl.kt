@@ -3,11 +3,12 @@ package net.corda.libs.permissions.endpoints.v1.role.impl
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
 import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
 import net.corda.libs.permissions.endpoints.v1.converter.convertToEndpointType
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
-import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleRequestType
+import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.lifecycle.Lifecycle
@@ -37,11 +38,14 @@ class RoleEndpointImpl @Activate constructor(
         PermissionEndpointEventHandler("RoleEndpoint")
     )
 
-    override fun createRole(createRoleRequestType: CreateRoleRequestType): RoleResponseType {
+    override fun createRole(createRoleType: CreateRoleType): RoleResponseType {
         validatePermissionManager()
 
+        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val principal = rpcContext.principal
+
         val createRoleResult = permissionServiceComponent.permissionManager.createRole(
-            createRoleRequestType.convertToDto("todo")
+            createRoleType.convertToDto(principal)
         )
 
         return createRoleResult.getOrThrow().convertToEndpointType()
@@ -49,11 +53,12 @@ class RoleEndpointImpl @Activate constructor(
 
     override fun getRole(name: String): RoleResponseType {
         validatePermissionManager()
+
+        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val principal = rpcContext.principal
+
         val roleResponseDto = permissionServiceComponent.permissionManager.getRole(
-            GetRoleRequestDto(
-                "todo", // the endpoint needs more context to get the request user name
-                name
-            )
+            GetRoleRequestDto(principal, name)
         )
 
         return roleResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("Role", name)

@@ -7,10 +7,13 @@ import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.libs.permissions.storage.writer.impl.common.toAvroRole
 import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
+import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
+import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.Role
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.data.permissions.Role as AvroRole
 
 class RoleWriterImpl(
     private val entityManagerFactory: EntityManagerFactory
@@ -20,7 +23,7 @@ class RoleWriterImpl(
         val log = contextLogger()
     }
 
-    override fun createRole(request: CreateRoleRequest): net.corda.data.permissions.Role {
+    override fun createRole(request: CreateRoleRequest, requestUserId: String): AvroRole {
         val roleName = request.roleName
 
         log.debug { "Received request to create new role: $roleName." }
@@ -40,15 +43,27 @@ class RoleWriterImpl(
                 null
             }
 
+            val updateTimestamp = Instant.now()
             val role = Role(
                 id = UUID.randomUUID().toString(),
-                updateTimestamp = Instant.now(),
+                updateTimestamp = updateTimestamp,
                 name = request.roleName,
                 groupVisibility = groupVisibility
             )
             role.version = 0
 
             entityManager.persist(role)
+
+            val auditLog = ChangeAudit(
+                id = UUID.randomUUID().toString(),
+                updateTimestamp = updateTimestamp,
+                actorUser = requestUserId,
+                changeType = RPCPermissionOperation.ROLE_INSERT,
+                details = "Role '${role.name}' created by '$requestUserId'."
+            )
+
+            entityManager.persist(auditLog)
+
             entityManager.transaction.commit()
 
             log.info("Successfully created new role: $roleName.")

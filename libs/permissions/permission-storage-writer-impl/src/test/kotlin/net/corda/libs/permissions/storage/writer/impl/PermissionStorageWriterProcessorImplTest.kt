@@ -44,13 +44,13 @@ class PermissionStorageWriterProcessorImplTest {
             respFuture = future
         )
         assertThrows<IllegalArgumentException> { future.getOrThrow() }
-        verify(userWriter, never()).createUser(any())
-        verify(roleWriter, never()).createRole(any())
+        verify(userWriter, never()).createUser(any(), creatorUserId)
+        verify(roleWriter, never()).createRole(any(), creatorUserId)
     }
 
     @Test
     fun `receiving CreateUserRequest calls userWriter to create user and completes future`() {
-        whenever(userWriter.createUser(createUserRequest)).thenReturn(avroUser)
+        whenever(userWriter.createUser(createUserRequest, creatorUserId)).thenReturn(avroUser)
 
         val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
@@ -69,7 +69,7 @@ class PermissionStorageWriterProcessorImplTest {
 
     @Test
     fun `receiving CreateUserRequest calls userWriter and catches exception and completes future exceptionally`() {
-        whenever(userWriter.createUser(createUserRequest)).thenThrow(IllegalArgumentException("Entity manager error."))
+        whenever(userWriter.createUser(createUserRequest, creatorUserId)).thenThrow(IllegalArgumentException("Entity manager error."))
 
         val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
