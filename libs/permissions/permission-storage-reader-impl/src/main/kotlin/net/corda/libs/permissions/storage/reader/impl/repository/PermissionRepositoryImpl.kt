@@ -1,12 +1,13 @@
 package net.corda.libs.permissions.storage.reader.impl.repository
 
 import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
+import net.corda.orm.utils.transaction
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.User
 import javax.persistence.EntityManagerFactory
 
-class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFactory): PermissionRepository {
+class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFactory) : PermissionRepository {
 
     override fun findAllUsers(): List<User> {
         return findAll("SELECT u from User u")
@@ -33,26 +34,18 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
     }
 
     private inline fun <reified T> findAll(qlString: String): List<T> {
-        val entityManager = entityManagerFactory.createEntityManager()
-        return try {
-            entityManager.transaction.begin()
+        return entityManagerFactory.transaction { entityManager ->
             entityManager.createQuery(qlString, T::class.java).resultList
-        } finally {
-            entityManager.close()
         }
     }
 
     private inline fun <reified T> findAll(qlString: String, ids: List<String>): List<T> {
-        val entityManager = entityManagerFactory.createEntityManager()
-        return try {
-            entityManager.transaction.begin()
+        return entityManagerFactory.transaction { entityManager ->
             ids.chunked(100) { chunkedIds ->
                 entityManager.createQuery(qlString, T::class.java)
                     .setParameter("ids", chunkedIds)
                     .resultList
             }.flatten()
-        } finally {
-            entityManager.close()
         }
     }
 }
