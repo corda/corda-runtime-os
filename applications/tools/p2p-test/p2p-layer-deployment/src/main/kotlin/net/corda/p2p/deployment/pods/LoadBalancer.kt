@@ -1,7 +1,6 @@
 package net.corda.p2p.deployment.pods
 
 class LoadBalancer(
-    override val hosts: Collection<String>,
     servers: Collection<String>,
 ) : Pod() {
     override val app = "load-balancer"

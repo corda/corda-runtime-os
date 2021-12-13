@@ -22,17 +22,6 @@ abstract class Pod {
             createService(namespaceName)
     }
 
-    private fun hostAliases() = if (hosts == null) {
-        emptyList()
-    } else {
-        listOf(
-            mapOf(
-                "ip" to "0.0.0.0",
-                "hostnames" to hosts
-            )
-        )
-    }
-
     private val resourceRequestYaml by lazy {
         resourceRequest?.let { resourceRequest ->
             val memory = resourceRequest.memory?.let {
@@ -97,7 +86,6 @@ abstract class Pod {
                     ),
                     "volumes" to
                         rawData.map { it.createVolume(app) },
-                    "hostAliases" to hostAliases()
                 )
             ),
         )

@@ -7,7 +7,6 @@ class Gateway(
 ) : P2pPod(kafkaServers, index, details) {
     companion object {
         fun gateways(
-            hostNames: Collection<String>,
             kafkaServers: String,
             details: P2PDeploymentDetails,
         ): Collection<Pod> {
@@ -15,7 +14,6 @@ class Gateway(
                 Gateway(it, kafkaServers, details)
             }
             val balancer = LoadBalancer(
-                hostNames,
                 gateways.map { it.app }
             )
             return gateways + balancer

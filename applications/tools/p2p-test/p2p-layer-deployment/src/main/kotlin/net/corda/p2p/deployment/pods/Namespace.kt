@@ -77,7 +77,6 @@ class Namespace(
 
     val p2pPods by lazy {
         Gateway.gateways(
-            listOf(identifier.hostName),
             kafkaServers,
             p2pDeployment,
         ) +
