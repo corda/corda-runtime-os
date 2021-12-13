@@ -170,9 +170,16 @@ class DefineApplicationBundles extends DefaultTask {
 
     @TaskAction
     void run() {
+        println("QQQ 1")
+        println("QQQ 2 $includeBundles")
+        println("QQQ 3 $excludeBundles")
         applicationBundles.setFrom(includeBundles - excludeBundles)
+        println("QQQ 4 $applicationBundleFile")
         applicationBundleFile.getAsFile().get().withWriter { writer ->
             applicationBundles.forEach { file ->
+                println("QQQ 5 file = $file")
+                println("QQQ 5 isJar(file) = ${isJar(file)}")
+                println("QQQ 5 isBundle(new JarFile(file)) = ${isBundle(new JarFile(file))}")
                 if (isJar(file) && isBundle(new JarFile(file))) {
                     writer.writeLine("bundles/${file.name}")
                 }
