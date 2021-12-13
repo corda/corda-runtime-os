@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -40,20 +40,21 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
 
     @Test
     fun `states and events going to the same partition`() {
-        val subscriptionConfig = SubscriptionConfig(
-            eventTopic = "event.topic.state.and.events.one",
-            groupName = "group"
-        )
 
         val publisherConfig = PublisherConfig("client")
         val count = 10
         val records = (1..count).map {
-            Record(subscriptionConfig.eventTopic, Key(it), Event.CREATE_STATE)
+            Record("event.topic.state.and.events.one", Key(it), Event.CREATE_STATE)
         }
         val countDown = CountDownLatch(count)
         val states = ConcurrentHashMap<Int, Int>()
 
         val subscriptions = (1..4).map {
+            val subscriptionConfig = SubscriptionConfig(
+                eventTopic = "event.topic.state.and.events.one",
+                groupName = "group",
+                instanceId = it
+            )
             val processor = object : StateAndEventProcessor<Key, State, Event> {
                 override fun onNext(state: State?, event: Record<Key, Event>): StateAndEventProcessor.Response<State> {
                     if ((state != null) && (event.value == Event.STOP)) {

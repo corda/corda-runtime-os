@@ -5,7 +5,8 @@ import net.corda.crypto.CryptoCategories
 import net.corda.crypto.SigningService
 import net.corda.crypto.service.CryptoFactory
 import net.corda.crypto.testkit.CryptoMocks
-import net.corda.data.WireKeyValuePair
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.WireNoContentValue
 import net.corda.data.crypto.wire.WirePublicKey
 import net.corda.data.crypto.wire.WireRequestContext
@@ -162,10 +163,12 @@ class SigningServiceRpcProcessorTests {
             "test-component",
             Instant.now(),
             memberId,
-            listOf(
-                WireKeyValuePair(SigningServiceRpcProcessor.CATEGORY, CryptoCategories.LEDGER),
-                WireKeyValuePair("key1", "value1"),
-                WireKeyValuePair("key2", "value2")
+            KeyValuePairList(
+                listOf(
+                    KeyValuePair(SigningServiceRpcProcessor.CATEGORY, CryptoCategories.LEDGER),
+                    KeyValuePair("key1", "value1"),
+                    KeyValuePair("key2", "value2")
+                )
             )
         )
 
@@ -173,9 +176,11 @@ class SigningServiceRpcProcessorTests {
             "test-component",
             Instant.now(),
             memberId,
-            listOf(
-                WireKeyValuePair("key1", "value1"),
-                WireKeyValuePair("key2", "value2")
+            KeyValuePairList(
+                listOf(
+                    KeyValuePair("key1", "value1"),
+                    KeyValuePair("key2", "value2")
+                )
             )
         )
         private fun assertEquivalent(expected: WireRequestContext, actual: WireResponseContext) {
@@ -188,9 +193,9 @@ class SigningServiceRpcProcessorTests {
                 allOf(greaterThanOrEqualTo(expected.requestTimestamp.epochSecond), lessThanOrEqualTo(now.epochSecond))
             )
             assertTrue(
-                actual.other.size == expected.other.size &&
-                        actual.other.containsAll(expected.other) &&
-                        expected.other.containsAll(actual.other)
+                actual.other.items.size == expected.other.items.size &&
+                        actual.other.items.containsAll(expected.other.items) &&
+                        expected.other.items.containsAll(actual.other.items)
             )
         }
 
@@ -260,14 +265,14 @@ class SigningServiceRpcProcessorTests {
         // generate
         val context1 = getWireRequestContext()
         val operationContext = listOf(
-            WireKeyValuePair("someId", UUID.randomUUID().toString()),
-            WireKeyValuePair("reason", "Hello World!")
+            KeyValuePair("someId", UUID.randomUUID().toString()),
+            KeyValuePair("reason", "Hello World!")
         )
         val future1 = CompletableFuture<WireSigningResponse>()
         processor.onNext(
             WireSigningRequest(
                 context1,
-                WireSigningGenerateKeyPair(alias, operationContext)
+                WireSigningGenerateKeyPair(alias, KeyValuePairList(operationContext))
             ),
             future1
         )
@@ -311,14 +316,14 @@ class SigningServiceRpcProcessorTests {
         // generate
         val context1 = getWireRequestContext()
         val operationContext = listOf(
-            WireKeyValuePair("someId", UUID.randomUUID().toString()),
-            WireKeyValuePair("reason", "Hello World!")
+            KeyValuePair("someId", UUID.randomUUID().toString()),
+            KeyValuePair("reason", "Hello World!")
         )
         val future1 = CompletableFuture<WireSigningResponse>()
         processor.onNext(
             WireSigningRequest(
                 context1,
-                WireSigningGenerateKeyPair(alias, operationContext)
+                WireSigningGenerateKeyPair(alias, KeyValuePairList(operationContext))
             ),
             future1
         )
@@ -346,7 +351,7 @@ class SigningServiceRpcProcessorTests {
                         "BAD-SIGNATURE-ALGORITHM",
                         "BAD-DIGEST-ALGORITHM"),
                     ByteBuffer.wrap(data),
-                    emptyList()
+                    KeyValuePairList(emptyList())
                 )
             ),
             future3
@@ -430,8 +435,8 @@ class SigningServiceRpcProcessorTests {
         // sign using public key and default scheme
         val context2 = getWireRequestContext()
         val operationContext = listOf(
-            WireKeyValuePair("someId", UUID.randomUUID().toString()),
-            WireKeyValuePair("reason", "Hello World!")
+            KeyValuePair("someId", UUID.randomUUID().toString()),
+            KeyValuePair("reason", "Hello World!")
         )
         val future2 = CompletableFuture<WireSigningResponse>()
         processor.onNext(
@@ -440,7 +445,7 @@ class SigningServiceRpcProcessorTests {
                 WireSigningSign(
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     ByteBuffer.wrap(data),
-                    operationContext
+                    KeyValuePairList(operationContext)
                 )
             ),
             future2
@@ -467,7 +472,7 @@ class SigningServiceRpcProcessorTests {
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     WireSignatureSpec(signatureSpec3.signatureName, signatureSpec3.customDigestName?.name),
                     ByteBuffer.wrap(data),
-                    emptyList()
+                    KeyValuePairList(emptyList())
                 )
             ),
             future3
@@ -490,7 +495,7 @@ class SigningServiceRpcProcessorTests {
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
                     WireSignatureSpec(signatureSpec4!!.signatureName, signatureSpec4.customDigestName?.name),
                     ByteBuffer.wrap(data),
-                    emptyList()
+                    KeyValuePairList(emptyList())
                 )
             ),
             future4
@@ -507,8 +512,8 @@ class SigningServiceRpcProcessorTests {
         // sign using public key and default scheme
         val context2 = getWireRequestContext()
         val operationContext = listOf(
-            WireKeyValuePair("someId", UUID.randomUUID().toString()),
-            WireKeyValuePair("reason", "Hello World!")
+            KeyValuePair("someId", UUID.randomUUID().toString()),
+            KeyValuePair("reason", "Hello World!")
         )
         val future2 = CompletableFuture<WireSigningResponse>()
         processor.onNext(
@@ -517,7 +522,7 @@ class SigningServiceRpcProcessorTests {
                 WireSigningSignWithAlias(
                     alias,
                     ByteBuffer.wrap(data),
-                    operationContext
+                    KeyValuePairList(operationContext)
                 )
             ),
             future2
@@ -543,7 +548,7 @@ class SigningServiceRpcProcessorTests {
                     alias,
                     WireSignatureSpec(signatureSpec3.signatureName, signatureSpec3.customDigestName?.name),
                     ByteBuffer.wrap(data),
-                    emptyList()
+                    KeyValuePairList(emptyList())
                 )
             ),
             future3
@@ -565,7 +570,7 @@ class SigningServiceRpcProcessorTests {
                     alias,
                     WireSignatureSpec(signatureSpec4!!.signatureName, signatureSpec4.customDigestName?.name),
                     ByteBuffer.wrap(data),
-                    emptyList()
+                    KeyValuePairList(emptyList())
                 )
             ),
             future4

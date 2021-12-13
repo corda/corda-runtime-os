@@ -1,6 +1,5 @@
 package net.corda.httprpc.server.impl.rpcops
 
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
@@ -20,6 +19,5 @@ interface TestPingPongAPI : RpcOps {
         ) data: PingPongData?
     ): String
 
-    @CordaSerializable
     class PingPongData(val data: String)
 }

@@ -1,6 +1,8 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
@@ -31,12 +33,15 @@ import org.slf4j.LoggerFactory
  * @property partitionAssignmentListener a callback listener that reacts to reassignments of partitions.
  *
  */
+
+@Suppress("LongParameterList")
 class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     private val config: Config,
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val producerBuilder: ProducerBuilder,
     private val processor: DurableProcessor<K, V>,
-    private val partitionAssignmentListener: PartitionAssignmentListener?
+    private val partitionAssignmentListener: PartitionAssignmentListener?,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
@@ -44,7 +49,10 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
     )
 
     private val subscription = KafkaEventLogSubscriptionImpl(config, consumerBuilder, producerBuilder,
-        ForwardingEventLogProcessor(processor), partitionAssignmentListener)
+        ForwardingEventLogProcessor(processor), partitionAssignmentListener, lifecycleCoordinatorFactory)
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = subscription.subscriptionName
 
     override fun start() {
         subscription.start()
@@ -55,6 +63,10 @@ class KafkaDurableSubscriptionImpl<K : Any, V : Any>(
 
     override fun stop() {
         subscription.stop()
+    }
+
+    override fun close() {
+        subscription.close()
     }
 
     /**

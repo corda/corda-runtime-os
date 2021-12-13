@@ -1,5 +1,7 @@
 package net.corda.messaging.db.subscription
 
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -15,7 +17,10 @@ import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
+import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.sql.SQLNonTransientException
@@ -58,11 +63,21 @@ class DBRandomAccessSubscriptionTest {
         }
     }
 
+    private val lifecycleCoordinator: LifecycleCoordinator = mock()
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
+        on { createCoordinator(any(), any()) } doReturn lifecycleCoordinator
+    }
+
     private val subscriptionConfig = SubscriptionConfig("group-1", topic)
     private val randomAccessSubscription =
         DBRandomAccessSubscription(
-            subscriptionConfig, avroSchemaRegistry,
-            offsetTrackersManager, dbAccessProvider, String::class.java, String::class.java
+            subscriptionConfig,
+            avroSchemaRegistry,
+            offsetTrackersManager,
+            dbAccessProvider,
+            lifecycleCoordinatorFactory,
+            String::class.java,
+            String::class.java
         )
 
     @Test
@@ -84,7 +99,13 @@ class DBRandomAccessSubscriptionTest {
 
     @Test
     fun `when recoverable exception is thrown, a transient exception is thrown to the client`() {
-        `when`(dbAccessProvider.getRecord(anyString(), anyInt(), anyLong())).thenAnswer { throw SQLTransientException() }
+        `when`(
+            dbAccessProvider.getRecord(
+                anyString(),
+                anyInt(),
+                anyLong()
+            )
+        ).thenAnswer { throw SQLTransientException() }
 
         assertThatThrownBy { randomAccessSubscription.getRecord(1, 2) }
             .isInstanceOf(CordaMessageAPIIntermittentException::class.java)
@@ -92,7 +113,13 @@ class DBRandomAccessSubscriptionTest {
 
     @Test
     fun `when non-recoverable exception is thrown, a fatal exception is thrown to the client`() {
-        `when`(dbAccessProvider.getRecord(anyString(), anyInt(), anyLong())).thenAnswer { throw SQLNonTransientException() }
+        `when`(
+            dbAccessProvider.getRecord(
+                anyString(),
+                anyInt(),
+                anyLong()
+            )
+        ).thenAnswer { throw SQLNonTransientException() }
 
         assertThatThrownBy { randomAccessSubscription.getRecord(1, 2) }
             .isInstanceOf(CordaMessageAPIFatalException::class.java)

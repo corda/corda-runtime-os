@@ -1,8 +1,9 @@
 package net.corda.flow.service.stubs
 
-import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.data.flow.state.Checkpoint
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import java.util.concurrent.CountDownLatch
 
@@ -20,4 +21,7 @@ class StateAndEventSubscriptionStub(private val startLatch: CountDownLatch,priva
     override fun stop() {
         stopLatch.countDown()
     }
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = LifecycleCoordinatorName("StateAndEventSubscriptionStub")
 }

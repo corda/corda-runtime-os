@@ -30,7 +30,6 @@ object SnappyEncodingWhitelist : EncodingWhitelist {
 
 data class SerializationContextImpl @JvmOverloads constructor(
     override val preferredSerializationVersion: SerializationMagic,
-    override val deserializationClassLoader: ClassLoader = SerializationContextImpl::class.java.classLoader,
     override val whitelist: ClassWhitelist,
     override val properties: Map<Any, Any>,
     override val objectReferencesEnabled: Boolean,

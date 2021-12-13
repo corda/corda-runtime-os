@@ -27,16 +27,19 @@ internal class SandboxGroupImpl(
 
     override val cpks = cpkSandboxes.map(CpkSandbox::cpk)
 
-    override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
-        val klass = cpkSandboxes.mapNotNull { sandbox ->
+    override fun loadClassFromMainBundles(className: String): Class<*> {
+        return cpkSandboxes.mapNotNullTo(HashSet()) { sandbox ->
             try {
                 sandbox.loadClassFromMainBundle(className)
             } catch (e: SandboxException) {
                 null
             }
-        }.firstOrNull()
+        }.singleOrNull()
             ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
+    }
 
+    override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
+        val klass = loadClassFromMainBundles(className)
         return try {
             klass.asSubclass(type)
         } catch (e: ClassCastException) {
@@ -57,7 +60,7 @@ internal class SandboxGroupImpl(
         return when (classTag.classType) {
             ClassType.NonBundleClass -> {
                 try {
-                    ClassLoader.getSystemClassLoader().loadClass(className)
+                    bundleUtils.loadClassFromSystemBundle(className)
                 } catch (e: ClassNotFoundException) {
                     throw SandboxException(
                         "Class $className was not from a bundle, and could not be found in the system classloader."
@@ -107,10 +110,12 @@ internal class SandboxGroupImpl(
      * Returns the serialised `ClassTag` for a given [klass].
      *
      * If [isStaticTag] is true, a serialised [StaticTag] is returned. Otherwise, a serialised [EvolvableTag] is
-     * returned.
+     * returned. For classed defined in CPKs, [EvolvableTag]s are only available if [klass] is defined in CPK's
+     * main bundle.
      *
-     * Throws [SandboxException] if the class is not contained in any bundle, or if the class is contained in a bundle
-     * that does not have a symbolic name.
+     * @throws [SandboxException] if the class is not contained in any bundle, if the class is contained in a bundle
+     * that does not have a symbolic name, or if an [EvolvableTag] is requested for class defined in a CPK's private
+     * bundle.
      */
     private fun getClassTag(klass: Class<*>, isStaticTag: Boolean): String {
         val bundle = bundleUtils.getBundle(klass)

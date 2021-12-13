@@ -38,14 +38,12 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
     lateinit var publisherFactory: PublisherFactory
 
     private val published = ConcurrentHashMap.newKeySet<Record<String, String>>()
-    private val consumed = ConcurrentHashMap<String, MutableMap<Record<String, String>, EventLogRecord<String, String>>>()
+    private val consumed =
+        ConcurrentHashMap<String, MutableMap<Record<String, String>, EventLogRecord<String, String>>>()
     private val subscriptions = ConcurrentHashMap.newKeySet<Lifecycle>()
     private val publishedLatch = CountDownLatch(numberOfPublisher)
     private val consumerLatch = CountDownLatch(
-        numberOfPublisher *
-            sizeOfBatch *
-            numberOfBatchesRecordsToPublish *
-            numberOfConsumerGroups
+        numberOfPublisher * sizeOfBatch * numberOfBatchesRecordsToPublish * numberOfConsumerGroups
     )
 
     private val issues = CopyOnWriteArrayList<Exception>()
@@ -77,6 +75,7 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
             }
         }
     }
+
     private fun consume() {
         (1..numberOfTopics).forEach { topicId ->
             val topicName = "topic.$topicId"
@@ -100,11 +99,14 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
                         }
                         return emptyList()
                     }
+
                     override val keyClass = String::class.java
                     override val valueClass = String::class.java
                 }
-                val config = SubscriptionConfig(groupName = groupName, eventTopic = topicName)
+
                 (1..numberOfConsumerInGroups).forEach { consumerNumber ->
+                    val config =
+                        SubscriptionConfig(groupName = groupName, eventTopic = topicName, instanceId = consumerNumber)
                     val listener = object : PartitionAssignmentListener {
                         private val myAssignments = ConcurrentHashMap.newKeySet<Int>()
                         override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {

@@ -5,12 +5,16 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
@@ -36,7 +40,8 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val consumerBuilder: ConsumerBuilder<String, RPCRequest>,
     private val responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>,
     private val serializer: CordaAvroSerializer<RESPONSE>,
-    private val deserializer: CordaAvroDeserializer<REQUEST>
+    private val deserializer: CordaAvroDeserializer<REQUEST>,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : RPCSubscription<REQUEST, RESPONSE> {
 
     private val log = LoggerFactory.getLogger(
@@ -46,6 +51,13 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "$groupName-KafkaRPCSubscription-$topic",
+            //we use instanceId here as transactionality is a concern in this subscription
+            config.getString(ConfigProperties.INSTANCE_ID)
+        )
+    ) { _, _ -> }
 
     private val errorMsg = "Failed to read records from group $groupName, topic $topic"
 
@@ -57,11 +69,15 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     override val isRunning: Boolean
         get() = !stopped
 
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
+
     override fun start() {
         log.debug { "Starting subscription with config:\n${config.render()}" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
+                lifecycleCoordinator.start()
                 consumeLoopThread = thread(
                     start = true,
                     isDaemon = true,
@@ -76,14 +92,26 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
     override fun stop() {
         if (!stopped) {
-            val thread = lock.withLock {
-                stopped = true
-                val threadTmp = consumeLoopThread
-                consumeLoopThread = null
-                threadTmp
-            }
-            thread?.join(consumerThreadStopTimeout)
+            stopConsumeLoop()
+            lifecycleCoordinator.stop()
         }
+    }
+
+    override fun close() {
+        if (!stopped) {
+            stopConsumeLoop()
+            lifecycleCoordinator.close()
+        }
+    }
+
+    private fun stopConsumeLoop() {
+        val thread = lock.withLock {
+            stopped = true
+            val threadTmp = consumeLoopThread
+            consumeLoopThread = null
+            threadTmp
+        }
+        thread?.join(consumerThreadStopTimeout)
     }
 
     private fun runConsumeLoop() {
@@ -98,6 +126,7 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     RPCRequest::class.java
                 ).use {
                     it.subscribeToTopic()
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
@@ -108,11 +137,13 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     }
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
+                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
                         stop()
                     }
                 }
             }
         }
+        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<String, RPCRequest>) {

@@ -1,6 +1,8 @@
 package net.corda.messaging.db.performance
 
 import com.codahale.metrics.MetricRegistry
+import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
+import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
@@ -71,12 +73,11 @@ class PerformanceTests {
             StandardCharsets.UTF_8.decode(bytes).toString()
         }
     }
+    private val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
     private val partitionAssignor = PartitionAssignor()
     private lateinit var partitionAllocator: PartitionAllocator
 
     private val publisherConfig = PublisherConfig("client-id")
-
-    private val subscriptionConfigTopic = SubscriptionConfig("group-1", topic1)
 
     private val metrics = MetricRegistry()
 
@@ -163,6 +164,7 @@ class PerformanceTests {
         val processedRecordKeys = ConcurrentHashMap.newKeySet<String>()
         val processor = CopyingProcessor(processedRecordKeys, String::class.java, String::class.java, topic2)
         val subscriptions = (1..numberOfSubscriptions).map {
+            val subscriptionConfigTopic = SubscriptionConfig("group-1", topic1, it)
             DBDurableSubscription(
                 subscriptionConfigTopic,
                 processor,
@@ -172,6 +174,7 @@ class PerformanceTests {
                 partitionAllocator,
                 partitionAssignor,
                 dbAccessProvider,
+                lifecycleCoordinatorFactory,
                 subscriptionPollTimeout,
                 subscriptionBatchSize
             )

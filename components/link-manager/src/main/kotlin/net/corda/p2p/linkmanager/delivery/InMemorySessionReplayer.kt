@@ -15,6 +15,7 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.messaging.MessageConverter
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.schema.Schema
+import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -24,8 +25,7 @@ class InMemorySessionReplayer(
     configurationReaderService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
     configuration: SmartConfig,
-    private val networkMap: LinkManagerNetworkMap,
-    instanceId: Int
+    private val networkMap: LinkManagerNetworkMap
 ): LifecycleWithDominoTile {
 
     companion object {
@@ -37,7 +37,7 @@ class InMemorySessionReplayer(
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         coordinatorFactory,
-        PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID, instanceId),
+        PublisherConfig(MESSAGE_REPLAYER_CLIENT_ID),
         configuration
     )
 
@@ -74,6 +74,10 @@ class InMemorySessionReplayer(
         replayScheduler.removeFromReplay(uniqueId)
     }
 
+    fun removeAllMessagesFromReplay() {
+        replayScheduler.removeAllMessagesFromReplay()
+    }
+
     private fun replayMessage(
         messageReplay: SessionMessageReplay,
     ) {
@@ -93,6 +97,7 @@ class InMemorySessionReplayer(
         }
 
         val message = MessageConverter.createLinkOutMessage(messageReplay.message, memberInfo, networkType)
+        logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
         publisher.publish(listOf(Record(Schema.LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
         messageReplay.sentSessionMessageCallback(
             SessionManager.SessionKey(messageReplay.source, messageReplay.dest),

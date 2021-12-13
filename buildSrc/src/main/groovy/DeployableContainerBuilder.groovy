@@ -46,7 +46,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     private final String projectDir = project.projectDir
     private final String buildDir = project.buildDir
     private final String version = project.version
-    private String targetRepo="engineering-docker-dev.software.r3.com/corda-os-${projectName}"
+    private String targetRepo="corda-os-docker-dev.software.r3.com/corda-os-${projectName}"
     private def gitTask
 
     @Inject
@@ -135,7 +135,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
                 " ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with '${projectName}.jar', from base '${baseImageName.get()}:${targetImageTag.get()}'")
 
         if (releaseCandidate.get()) {
-            targetRepo = "engineering-docker-release.software.r3.com/corda-os-${projectName}"
+            targetRepo = "corda-os-docker.software.r3.com/corda-os-${projectName}"
         }
         if (!remotePublish.get()) {
             tagContainerForLocal(builder, targetImageTag.get())

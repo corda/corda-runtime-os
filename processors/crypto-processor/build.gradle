@@ -1,0 +1,15 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Crypto Processor'
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:osgi.annotation"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':libs:configuration:configuration-core')
+    implementation 'net.corda:corda-base'
+}

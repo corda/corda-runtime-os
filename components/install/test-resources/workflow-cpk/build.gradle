@@ -3,10 +3,6 @@ plugins {
     id 'net.corda.plugins.cordapp-cpb'
 }
 
-ext {
-    cordaDevPreviewVersion = '5.0.0-DevPreview-1.0'
-}
-
 configurations {
     libFolderDependencies
     implementation.extendsFrom(libFolderDependencies)
@@ -15,12 +11,11 @@ configurations {
 dependencies {
     cordaProvided platform(group: "net.corda", name: "corda-api", version: cordaApiVersion)
     cordaProvided group: 'net.corda', name: 'corda-application'
-    cordaProvided group: 'net.corda', name: 'corda-flows'
 
     cordaProvided group: 'net.corda.kotlin', name: 'kotlin-stdlib-jdk8-osgi'
 
     cordapp project(':components:install:test-resources:contract-cpk')
-    cordapp "net.corda:corda-flows:$cordaDevPreviewVersion"
+    cordapp project(':components:install:test-resources:system-cpk')
 
     //The whole point of this is to have a jar in "lib" folder of the cpk, it can be happily swapped with anything
     libFolderDependencies "com.typesafe:config:$typeSafeConfigVersion"

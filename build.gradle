@@ -22,6 +22,7 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3ArtifactoryPublish'
     id 'maven-publish'
     id 'jacoco'
+    id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
 }
 
 wrapper {
@@ -41,11 +42,17 @@ allprojects {
         ext.cordaArtifactoryPassword = System.getenv('CORDA_ARTIFACTORY_PASSWORD')
     }
 
+    pluginManager.withPlugin('java') {
+        java {
+            toolchain {
+                languageVersion = of(javaVersion.majorVersion.toInteger())
+            }
+        }
+    }
+
     apply plugin: 'org.jetbrains.kotlin.jvm'
 
     tasks.withType(JavaCompile).configureEach {
-        sourceCompatibility = javaVersion
-        targetCompatibility = javaVersion
         options.encoding = 'UTF-8'
         options.compilerArgs += [ '-XDenableSunApiLintControl', '-parameters' ]
     }
@@ -245,8 +252,8 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
 
 subprojects {
     buildscript {
-        configurations.all {
-            // FORCE Gradle to use latest dynamic versions.
+        configurations.classpath {
+            // FORCE Gradle to use latest dynamic-version plugins.
             resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'
         }
     }
@@ -295,6 +302,9 @@ subprojects {
     configurations {
         all {
             resolutionStrategy {
+                // FORCE Gradle to use latest dynamic versions.
+                cacheDynamicVersionsFor 0, 'seconds'
+
                 dependencySubstitution {
                     substitute module("antlr:antlr") using module("antlr:antlr.osgi:$antlrVersion")
                     substitute module("org.dom4j:dom4j") using module("org.apache.servicemix.bundles:org.apache.servicemix.bundles.dom4j:$dom4jOsgiVersion")
@@ -309,5 +319,17 @@ subprojects {
             "javax.persistence.Embeddable",
             "javax.persistence.MappedSuperclass"
         )
+    }
+}
+
+// report updatable dependencies: gradle dependencyUpdates
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
+}
+tasks.named("dependencyUpdates").configure {
+    rejectVersionIf {
+        isNonStable(it.candidate.version) && !isNonStable(it.currentVersion)
     }
 }

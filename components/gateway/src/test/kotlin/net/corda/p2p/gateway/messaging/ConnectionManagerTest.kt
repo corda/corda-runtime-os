@@ -10,11 +10,13 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mockConstruction
 import org.mockito.Mockito.timeout
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.net.URI
+import java.util.concurrent.TimeUnit
 
 class ConnectionManagerTest {
     private val sslConfiguration = mock<SslConfiguration>()
@@ -93,7 +95,7 @@ class ConnectionManagerTest {
     fun `close will clear the pool the clients`() {
         val terminationFuture = mock<Future<*>>()
         val loop = mock<NioEventLoopGroup> {
-            on { terminationFuture() } doReturn terminationFuture
+            on { shutdownGracefully(any<Long>(), any<Long>(), any<TimeUnit>()) } doReturn terminationFuture
         }
         val connectionManager = ConnectionManager(sslConfiguration, connectionConfiguration) { loop }
         val client1 = connectionManager
@@ -122,7 +124,7 @@ class ConnectionManagerTest {
     fun `close will close the clients`() {
         val terminationFuture = mock<Future<*>>()
         val loop = mock<NioEventLoopGroup> {
-            on { terminationFuture() } doReturn terminationFuture
+            on { shutdownGracefully(any<Long>(), any<Long>(), any<TimeUnit>()) } doReturn terminationFuture
         }
         val connectionManager = ConnectionManager(sslConfiguration, connectionConfiguration) { loop }
         connectionManager
@@ -142,12 +144,12 @@ class ConnectionManagerTest {
     fun `close will close the event loops`() {
         val terminationFuture = mock<Future<*>>()
         val loop = mock<NioEventLoopGroup> {
-            on { terminationFuture() } doReturn terminationFuture
+            on { shutdownGracefully(any<Long>(), any<Long>(), any<TimeUnit>()) } doReturn terminationFuture
         }
         val connectionManager = ConnectionManager(sslConfiguration, connectionConfiguration) { loop }
         connectionManager.close()
 
-        verify(loop, times(2)).shutdownGracefully()
+        verify(loop, times(2)).shutdownGracefully(any(), any(), any())
         verify(terminationFuture, times(2)).sync()
     }
 }

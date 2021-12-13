@@ -167,11 +167,11 @@ class SigningServiceClientTests {
         validatePassedRequestContext(requests, nowBefore, nowAfter)
         assertThat(requests.firstValue.request, instanceOf(WireSigningGenerateKeyPair::class.java))
         assertEquals(alias, (requests.firstValue.request as WireSigningGenerateKeyPair).alias)
-        assertEquals(2, (requests.firstValue.request as WireSigningGenerateKeyPair).context.size)
-        assertTrue((requests.firstValue.request as WireSigningGenerateKeyPair).context.any {
+        assertEquals(2, (requests.firstValue.request as WireSigningGenerateKeyPair).context.items.size)
+        assertTrue((requests.firstValue.request as WireSigningGenerateKeyPair).context.items.any {
             it.key == "someId" && it.value == context["someId"]
         })
-        assertTrue((requests.firstValue.request as WireSigningGenerateKeyPair).context.any {
+        assertTrue((requests.firstValue.request as WireSigningGenerateKeyPair).context.items.any {
             it.key == "reason" && it.value == context["reason"]
         })
         assertEquals(keyPair.public, result)
@@ -209,11 +209,11 @@ class SigningServiceClientTests {
             data,
             (requests.firstValue.request as WireSigningSign).bytes .array()
         )
-        assertEquals(2, (requests.firstValue.request as WireSigningSign).context.size)
-        assertTrue((requests.firstValue.request as WireSigningSign).context.any {
+        assertEquals(2, (requests.firstValue.request as WireSigningSign).context.items.size)
+        assertTrue((requests.firstValue.request as WireSigningSign).context.items.any {
             it.key == "someId" && it.value == context["someId"]
         })
-        assertTrue((requests.firstValue.request as WireSigningSign).context.any {
+        assertTrue((requests.firstValue.request as WireSigningSign).context.items.any {
             it.key == "reason" && it.value == context["reason"]
         })
         assertEquals(keyPair.public, result.by)
@@ -261,11 +261,11 @@ class SigningServiceClientTests {
             "SHA-256",
             (requests.firstValue.request as WireSigningSignWithSpec).signatureSpec.customDigestName
         )
-        assertEquals(2, (requests.firstValue.request as WireSigningSignWithSpec).context.size)
-        assertTrue((requests.firstValue.request as WireSigningSignWithSpec).context.any {
+        assertEquals(2, (requests.firstValue.request as WireSigningSignWithSpec).context.items.size)
+        assertTrue((requests.firstValue.request as WireSigningSignWithSpec).context.items.any {
             it.key == "someId" && it.value == context["someId"]
         })
-        assertTrue((requests.firstValue.request as WireSigningSignWithSpec).context.any {
+        assertTrue((requests.firstValue.request as WireSigningSignWithSpec).context.items.any {
             it.key == "reason" && it.value == context["reason"]
         })
         assertEquals(keyPair.public, result.by)
@@ -301,11 +301,11 @@ class SigningServiceClientTests {
             data,
             (requests.firstValue.request as WireSigningSignWithAlias).bytes .array()
         )
-        assertEquals(2, (requests.firstValue.request as WireSigningSignWithAlias).context.size)
-        assertTrue((requests.firstValue.request as WireSigningSignWithAlias).context.any {
+        assertEquals(2, (requests.firstValue.request as WireSigningSignWithAlias).context.items.size)
+        assertTrue((requests.firstValue.request as WireSigningSignWithAlias).context.items.any {
             it.key == "someId" && it.value == context["someId"]
         })
-        assertTrue((requests.firstValue.request as WireSigningSignWithAlias).context.any {
+        assertTrue((requests.firstValue.request as WireSigningSignWithAlias).context.items.any {
             it.key == "reason" && it.value == context["reason"]
         })
         assertArrayEquals(signature, result)
@@ -349,11 +349,11 @@ class SigningServiceClientTests {
             "SHA-256",
             (requests.firstValue.request as WireSigningSignWithAliasSpec).signatureSpec.customDigestName
         )
-        assertEquals(2, (requests.firstValue.request as WireSigningSignWithAliasSpec).context.size)
-        assertTrue((requests.firstValue.request as WireSigningSignWithAliasSpec).context.any {
+        assertEquals(2, (requests.firstValue.request as WireSigningSignWithAliasSpec).context.items.size)
+        assertTrue((requests.firstValue.request as WireSigningSignWithAliasSpec).context.items.any {
             it.key == "someId" && it.value == context["someId"]
         })
-        assertTrue((requests.firstValue.request as WireSigningSignWithAliasSpec).context.any {
+        assertTrue((requests.firstValue.request as WireSigningSignWithAliasSpec).context.items.any {
             it.key == "reason" && it.value == context["reason"]
         })
         assertArrayEquals(signature, result)
@@ -549,8 +549,8 @@ class SigningServiceClientTests {
             requests.firstValue.context.requestTimestamp.epochSecond,
             allOf(greaterThanOrEqualTo(nowBefore.epochSecond), lessThanOrEqualTo(nowAfter.epochSecond))
         )
-        assertEquals(1, requests.firstValue.context.other.size)
-        assertEquals("category", requests.firstValue.context.other[0].key)
-        assertEquals(CryptoCategories.LEDGER, requests.firstValue.context.other[0].value)
+        assertEquals(1, requests.firstValue.context.other.items.size)
+        assertEquals("category", requests.firstValue.context.other.items[0].key)
+        assertEquals(CryptoCategories.LEDGER, requests.firstValue.context.other.items[0].value)
     }
 }

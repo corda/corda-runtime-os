@@ -23,6 +23,8 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
 
+    testImplementation project(":libs:lifecycle:registry")
+    integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
     integrationTestImplementation project(":libs:utilities")
     integrationTestImplementation "com.h2database:h2:$h2Version"
     integrationTestImplementation "org.postgresql:postgresql:$postgresDriverVersion"

@@ -6,6 +6,7 @@ import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.amqpMagic
+import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.amqp.custom.BigDecimalSerializer
 import net.corda.internal.serialization.amqp.custom.BigIntegerSerializer
 import net.corda.internal.serialization.amqp.custom.BitSetSerializer
@@ -112,7 +113,7 @@ abstract class AbstractAMQPSerializationScheme private constructor(
     }
 
     fun getSerializerFactory(context: SerializationContext): SerializerFactory {
-        val sandboxGroup = context.sandboxGroup as? SandboxGroup
+        val sandboxGroup = context.currentSandboxGroup()
         val key = SerializationFactoryCacheKey(context.whitelist, sandboxGroup, context.preventDataLoss, context.customSerializers)
         // ConcurrentHashMap.get() is lock free, but computeIfAbsent is not, even if the key is in the map already.
         return serializerFactoriesForContexts[key] ?: serializerFactoriesForContexts.computeIfAbsent(key) {

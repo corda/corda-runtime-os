@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.delivery
 
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -84,6 +85,10 @@ class DeliveryTrackerTest {
             isRunning = true
             return
         }
+
+        override val subscriptionName: LifecycleCoordinatorName
+            get() = LifecycleCoordinatorName("MockStateAndEventSubscription")
+
     }
 
     private fun createTracker(

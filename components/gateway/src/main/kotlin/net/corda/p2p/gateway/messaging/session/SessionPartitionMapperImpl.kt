@@ -74,7 +74,7 @@ class SessionPartitionMapperImpl(
         val resourceFuture = CompletableFuture<Unit>()
         future.set(resourceFuture)
         sessionPartitionSubscription.start()
-        resources.keep(sessionPartitionSubscription)
+        resources.keep { sessionPartitionSubscription.stop() }
         return resourceFuture
     }
 }

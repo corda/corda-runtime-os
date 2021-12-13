@@ -4,6 +4,12 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -37,6 +43,10 @@ import net.corda.messaging.kafka.integration.processors.TestStateEventProcessorS
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_MAX_POLL_INTERVAL
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_PROCESSOR_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.MESSAGING_KAFKA
+import net.corda.test.util.eventually
+import net.corda.v5.base.util.millis
+import net.corda.v5.base.util.seconds
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -74,6 +84,10 @@ class StateAndEventSubscriptionIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var topicAdmin: KafkaTopicAdmin
 
+    @InjectService(timeout = 4000)
+    lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+
+
     @BeforeEach
     fun beforeEach() {
         kafkaConfig = SmartConfigImpl.empty()
@@ -98,17 +112,59 @@ class StateAndEventSubscriptionIntegrationTest {
             kafkaConfig
         )
 
+        val coordinator1 =
+            lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName("stateAndEventTest1"))
+            { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
+                when (event) {
+                    is RegistrationStatusChangeEvent -> {
+                        if (event.status == LifecycleStatus.UP) {
+                            coordinator.updateStatus(LifecycleStatus.UP)
+                        } else {
+                            coordinator.updateStatus(LifecycleStatus.DOWN)
+                        }
+                    }
+                }
+            }
+        val coordinator2 =
+            lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName("stateAndEventTest2"))
+            { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
+                when (event) {
+                    is RegistrationStatusChangeEvent -> {
+                        if (event.status == LifecycleStatus.UP) {
+                            coordinator.updateStatus(LifecycleStatus.UP)
+                        } else {
+                            coordinator.updateStatus(LifecycleStatus.DOWN)
+                        }
+                    }
+                }
+            }
+        coordinator1.start()
+        coordinator2.start()
+
+        coordinator1.followStatusChangesByName(setOf(stateEventSub1.subscriptionName))
+        coordinator2.followStatusChangesByName(setOf(stateEventSub2.subscriptionName))
+
         stateEventSub1.start()
         stateEventSub2.start()
+
+        eventually(duration = 10.seconds, waitBetween = 200.millis) {
+            Assertions.assertEquals(LifecycleStatus.UP, coordinator1.status)
+            Assertions.assertEquals(LifecycleStatus.UP, coordinator2.status)
+        }
 
         publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getDemoRecords(EVENT_TOPIC1, 5, 2)).forEach { it.get() }
 
-        assertTrue(stateAndEventLatch.await(40, TimeUnit.SECONDS))
+        assertTrue(stateAndEventLatch.await(60, TimeUnit.SECONDS))
 
         stateEventSub1.stop()
         stateEventSub2.stop()
+
+        eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
+            Assertions.assertEquals(LifecycleStatus.DOWN, coordinator1.status)
+            Assertions.assertEquals(LifecycleStatus.DOWN, coordinator2.status)
+        }
     }
 
     @Test
@@ -128,7 +184,7 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getDemoRecords(EVENT_TOPIC2, 5, 2)).forEach { it.get() }
 
-        assertTrue(onNextLatch1.await(30, TimeUnit.SECONDS))
+        assertTrue(onNextLatch1.await(60, TimeUnit.SECONDS))
         stateEventSub1.stop()
 
         val durableLatch = CountDownLatch(10)
@@ -161,7 +217,7 @@ class StateAndEventSubscriptionIntegrationTest {
 
         stateEventSub1.start()
 
-        assertTrue(onNextLatch1.await(30, TimeUnit.SECONDS))
+        assertTrue(onNextLatch1.await(60, TimeUnit.SECONDS))
         stateEventSub1.stop()
 
         val durableLatch = CountDownLatch(2)
@@ -225,7 +281,7 @@ class StateAndEventSubscriptionIntegrationTest {
         publisher.publish(getDemoRecords(EVENT_TOPIC4, 5, 6)).forEach { it.get() }
 
         stateEventSub2.start()
-        assertTrue(onNextLatch2.await(40, TimeUnit.SECONDS))
+        assertTrue(onNextLatch2.await(50, TimeUnit.SECONDS))
 
         stateEventSub1.start()
 
@@ -319,8 +375,8 @@ class StateAndEventSubscriptionIntegrationTest {
 
         val stateEventSub1 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC6-group", EVENT_TOPIC6, 1),
-            TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT6, 6000),
-            shortIntervalTimeoutConfig, TestStateAndEventListenerStrings(expectedCommitStates, onCommitLatch, 5500)
+            TestStateEventProcessorStrings(stateAndEventLatch, true, false, EVENTSTATE_OUTPUT6, 5000),
+            shortIntervalTimeoutConfig, TestStateAndEventListenerStrings(expectedCommitStates, onCommitLatch, 5000)
         )
         stateEventSub1.start()
 
@@ -334,8 +390,8 @@ class StateAndEventSubscriptionIntegrationTest {
         )
         durableSub.start()
 
-        assertTrue(stateAndEventLatch.await(40, TimeUnit.SECONDS))
-        assertTrue(durableLatch.await(30, TimeUnit.SECONDS))
+        assertTrue(stateAndEventLatch.await(60, TimeUnit.SECONDS))
+        assertTrue(durableLatch.await(60, TimeUnit.SECONDS))
 
         durableSub.stop()
         stateEventSub1.stop()

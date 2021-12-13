@@ -126,6 +126,33 @@ class ReplaySchedulerTest {
     }
 
     @Test
+    fun `The ReplayScheduler stops replaying messages after removeAllMessages`() {
+        val messages = 9
+
+        val tracker = TrackReplayedMessages(messages)
+        val replayManager = ReplayScheduler(coordinatorFactory, service, REPLAY_PERIOD_KEY, tracker::replayMessage) { 0 }
+        setRunning()
+        createResources(resourcesHolder)
+        configHandler.applyNewConfiguration(replayPeriod, null, configResourcesHolder)
+
+        for (i in 0 until messages) {
+            val messageId = UUID.randomUUID().toString()
+            replayManager.addForReplay(
+                0,
+                messageId,
+                messageId
+            )
+        }
+        tracker.await()
+        replayManager.removeAllMessagesFromReplay()
+        val totalMessagesAfterRemoveAll = tracker.numberOfReplays
+        Thread.sleep(5 * replayPeriod.toMillis())
+
+        assertThat(tracker.numberOfReplays).isEqualTo(totalMessagesAfterRemoveAll)
+        replayManager.stop()
+    }
+
+    @Test
     fun `The ReplayScheduler doesn't replay removed messages`() {
         val messages = 8
 

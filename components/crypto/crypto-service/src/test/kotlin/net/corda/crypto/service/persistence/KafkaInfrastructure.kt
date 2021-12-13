@@ -7,6 +7,8 @@ import net.corda.crypto.impl.config.publicKeys
 import net.corda.crypto.impl.persistence.IHaveMemberId
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -20,6 +22,9 @@ import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFacto
 import net.corda.messaging.emulation.topic.service.TopicService
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
@@ -98,8 +103,14 @@ class KafkaInfrastructure {
 
     private val topicService: TopicService = TopicServiceImpl()
     private val rpcTopicService: RPCTopicService = RPCTopicServiceImpl()
-    val subscriptionFactory: SubscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService)
-    val publisherFactory: PublisherFactory = CordaPublisherFactory(topicService, rpcTopicService)
+    private var lifecycleCoordinator: LifecycleCoordinator = mock()
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
+        on { createCoordinator(any(), any()) } doReturn lifecycleCoordinator
+    }
+    val subscriptionFactory: SubscriptionFactory =
+        InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
+    val publisherFactory: PublisherFactory =
+        CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
 
     fun createFactory(config: CryptoLibraryConfig, snapshot: (() -> Unit)? = null): KafkaKeyValuePersistenceFactory {
         if(snapshot != null) {

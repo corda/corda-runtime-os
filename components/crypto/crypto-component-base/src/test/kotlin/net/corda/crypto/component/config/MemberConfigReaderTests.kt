@@ -4,6 +4,8 @@ import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.config.DefaultConfigConsts
 import net.corda.crypto.impl.config.memberConfig
 import net.corda.data.crypto.config.CryptoConfigurationRecord
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -139,13 +142,17 @@ class MemberConfigReaderTests {
     private lateinit var subscriptionFactory: SubscriptionFactory
     private lateinit var publisherFactory: PublisherFactory
     private lateinit var reader: MemberConfigReaderImpl
+    private var lifecycleCoordinator: LifecycleCoordinator = mock()
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
+        on { createCoordinator(any(), any()) } doReturn lifecycleCoordinator
+    }
 
     @BeforeEach
     fun setup() {
         topicService = TopicServiceImpl()
         rpcTopicService = RPCTopicServiceImpl(Executors.newCachedThreadPool())
-        subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService)
-        publisherFactory = CordaPublisherFactory(topicService, rpcTopicService)
+        subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
+        publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         reader = MemberConfigReaderImpl(
             subscriptionFactory
         )

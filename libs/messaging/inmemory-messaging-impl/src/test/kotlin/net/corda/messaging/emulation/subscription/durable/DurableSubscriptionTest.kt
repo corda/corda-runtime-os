@@ -1,5 +1,7 @@
 package net.corda.messaging.emulation.subscription.durable
 
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
@@ -34,7 +36,12 @@ class DurableSubscriptionTest {
     private val topicService = mock<TopicService> {
         on { createConsumption(any()) } doReturn runningConsumption
     }
-    private val subscription = DurableSubscription(subscriptionConfig, processor, null, topicService)
+    private val lifecycleCoordinator: LifecycleCoordinator = mock()
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
+        on { createCoordinator(any(), any()) } doReturn lifecycleCoordinator
+    }
+    private val subscription =
+        DurableSubscription(subscriptionConfig, processor, null, topicService, lifecycleCoordinatorFactory)
 
     @Test
     fun `first start will start a consumption`() {

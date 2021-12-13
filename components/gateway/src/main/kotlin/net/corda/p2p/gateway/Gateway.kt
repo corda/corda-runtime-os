@@ -53,8 +53,6 @@ class Gateway(
     override val dominoTile = DominoTile(this::class.java.simpleName, lifecycleCoordinatorFactory, children = children)
 
     companion object {
-        const val CONSUMER_GROUP_ID = "gateway"
-        const val PUBLISHER_ID = "gateway"
         const val CONFIG_KEY = "p2p.gateway"
     }
 }

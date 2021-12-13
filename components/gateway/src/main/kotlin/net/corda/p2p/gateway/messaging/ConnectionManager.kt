@@ -6,6 +6,7 @@ import io.netty.channel.nio.NioEventLoopGroup
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import java.net.URI
+import java.util.concurrent.TimeUnit
 
 /**
  * The [ConnectionManager] is responsible for creating an HTTP connection and caching it. If a connection to the requested
@@ -29,7 +30,7 @@ class ConnectionManager(
 
     private val clientPool = Caffeine.newBuilder()
         .maximumSize(connectionConfiguration.maxClientConnections)
-        .removalListener( RemovalListener<URI, HttpClient> { _, value, _ -> value?.stop() } )
+        .removalListener(RemovalListener<URI, HttpClient> { _, value, _ -> value?.stop() })
         .expireAfterAccess(connectionConfiguration.connectionIdleTimeout)
         .build<URI, HttpClient>()
     private var writeGroup = nioEventLoopGroupFactory(NUM_CLIENT_WRITE_THREADS)
@@ -55,10 +56,10 @@ class ConnectionManager(
 
     override fun close() {
         clientPool.invalidateAll()
-        writeGroup.shutdownGracefully()
-        writeGroup.terminationFuture().sync()
-        nettyGroup.shutdownGracefully()
-        nettyGroup.terminationFuture().sync()
+        // Using short quiet period (100 ms) - all the clients had been closed.
+        val shutdownWriteGroup = writeGroup.shutdownGracefully(100, 15000, TimeUnit.MILLISECONDS)
+        val shutdownNettyGroup = nettyGroup.shutdownGracefully(100, 15000, TimeUnit.MILLISECONDS)
+        shutdownWriteGroup.sync()
+        shutdownNettyGroup.sync()
     }
-
 }

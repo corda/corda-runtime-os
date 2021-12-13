@@ -23,6 +23,8 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import net.corda.data.permissions.PermissionAssociation
+import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.Role as AvroRole
@@ -51,7 +53,7 @@ class PermissionStorageReaderImplTest {
         val avroPermission = AvroPermission(
             permission.id,
             -1,
-            ChangeDetails(permission.updateTimestamp, "Need to get the changed by user from somewhere"),
+            ChangeDetails(permission.updateTimestamp),
             permission.virtualNode,
             permission.permissionString,
             net.corda.data.permissions.PermissionType.ALLOW
@@ -92,17 +94,27 @@ class PermissionStorageReaderImplTest {
         val avroRole = AvroRole(
             role.id,
             -1,
-            ChangeDetails(role.updateTimestamp, "Need to get the changed by user from somewhere"),
+            ChangeDetails(role.updateTimestamp),
             role.name,
-            listOf(avroPermission)
+            listOf(
+                PermissionAssociation(
+                    ChangeDetails(role.rolePermAssociations.first().updateTimestamp),
+                    avroPermission
+                )
+            )
         )
 
         val avroRole2 = AvroRole(
             role2.id,
             -1,
-            ChangeDetails(role2.updateTimestamp, "Need to get the changed by user from somewhere"),
+            ChangeDetails(role2.updateTimestamp),
             role2.name,
-            listOf(avroPermission)
+            listOf(
+                PermissionAssociation(
+                    ChangeDetails(role2.rolePermAssociations.first().updateTimestamp),
+                    avroPermission
+                )
+            )
         )
 
         val group = Group(
@@ -150,37 +162,37 @@ class PermissionStorageReaderImplTest {
         val avroGroup = AvroGroup(
             group.id,
             -1,
-            ChangeDetails(group.updateTimestamp, "Need to get the changed by user from somewhere"),
+            ChangeDetails(group.updateTimestamp),
             group.name,
             parentGroup.id,
             listOf(
                 net.corda.data.permissions.Property(
                     groupProperty.id,
                     -1,
-                    ChangeDetails(groupProperty.updateTimestamp, "Need to get the changed by user from somewhere"),
+                    ChangeDetails(groupProperty.updateTimestamp),
                     groupProperty.key,
                     groupProperty.value
                 )
             ),
-            listOf(role.id)
+            listOf(RoleAssociation(ChangeDetails(group.roleGroupAssociations.first().updateTimestamp), role.id))
         )
 
         val avroGroup2 = AvroGroup(
             group2.id,
             -1,
-            ChangeDetails(group2.updateTimestamp, "Need to get the changed by user from somewhere"),
+            ChangeDetails(group2.updateTimestamp),
             group2.name,
             parentGroup.id,
             listOf(
                 net.corda.data.permissions.Property(
                     groupProperty.id,
                     -1,
-                    ChangeDetails(groupProperty.updateTimestamp, "Need to get the changed by user from somewhere"),
+                    ChangeDetails(groupProperty.updateTimestamp),
                     groupProperty.key,
                     groupProperty.value
                 )
             ),
-            listOf(role.id)
+            listOf(RoleAssociation(ChangeDetails(Instant.now()), role.id))
         )
 
         val user = User(
@@ -228,29 +240,43 @@ class PermissionStorageReaderImplTest {
         val avroUser = AvroUser(
             user.id,
             -1,
-            ChangeDetails(user.updateTimestamp, "Need to get the changed by user from somewhere"),
+            ChangeDetails(user.updateTimestamp),
+            user.loginName,
             user.fullName,
             user.enabled,
             user.hashedPassword,
             user.saltValue,
+            user.passwordExpiry,
             true,
             group.id,
             emptyList(),
-            listOf(role.id)
+            listOf(
+                RoleAssociation(
+                    ChangeDetails(user.roleUserAssociations.first().updateTimestamp),
+                    user.roleUserAssociations.first().role.id
+                )
+            )
         )
 
         val avroUser2 = AvroUser(
             user2.id,
             -1,
-            ChangeDetails(user2.updateTimestamp, "Need to get the changed by user from somewhere"),
+            ChangeDetails(user2.updateTimestamp),
+            user2.loginName,
             user2.fullName,
             user2.enabled,
             user2.hashedPassword,
             user2.saltValue,
+            user2.passwordExpiry,
             true,
             group.id,
             emptyList(),
-            listOf(role.id)
+            listOf(
+                RoleAssociation(
+                    ChangeDetails(user2.roleUserAssociations.first().updateTimestamp),
+                    user2.roleUserAssociations.first().role.id
+                )
+            )
         )
     }
 

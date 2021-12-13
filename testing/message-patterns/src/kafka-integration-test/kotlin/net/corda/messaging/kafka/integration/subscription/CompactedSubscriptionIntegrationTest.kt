@@ -4,6 +4,12 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -18,7 +24,11 @@ import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC
 import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.processors.TestCompactedProcessor
+import net.corda.test.util.eventually
+import net.corda.v5.base.util.millis
+import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -46,6 +56,9 @@ class CompactedSubscriptionIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var subscriptionFactory: SubscriptionFactory
 
+    @InjectService(timeout = 4000)
+    lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+
 
     @InjectService(timeout = 4000)
     lateinit var topicAdmin: KafkaTopicAdmin
@@ -65,6 +78,21 @@ class CompactedSubscriptionIntegrationTest {
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
         publisher.publish(getDemoRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
 
+        val coordinator =
+            lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName("compactedTest"))
+            { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
+                when (event) {
+                    is RegistrationStatusChangeEvent -> {
+                        if (event.status == LifecycleStatus.UP) {
+                            coordinator.updateStatus(LifecycleStatus.UP)
+                        } else {
+                            coordinator.updateStatus(LifecycleStatus.DOWN)
+                        }
+                    }
+                }
+            }
+        coordinator.start()
+
         val onNextLatch = CountDownLatch(5)
         val snapshotLatch = CountDownLatch(1)
         val compactedSub = subscriptionFactory.createCompactedSubscription(
@@ -72,8 +100,12 @@ class CompactedSubscriptionIntegrationTest {
             TestCompactedProcessor(snapshotLatch, onNextLatch),
             kafkaConfig
         )
+        coordinator.followStatusChangesByName(setOf(compactedSub.subscriptionName))
         compactedSub.start()
 
+        eventually(duration = 5.seconds, waitBetween = 200.millis) {
+            assertEquals(LifecycleStatus.UP, coordinator.status)
+        }
         assertTrue(snapshotLatch.await(10, TimeUnit.SECONDS))
         assertThat(onNextLatch.count).isEqualTo(5)
         publisher.publish(getDemoRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
@@ -82,5 +114,9 @@ class CompactedSubscriptionIntegrationTest {
         assertThat(snapshotLatch.count).isEqualTo(0)
 
         compactedSub.stop()
+        eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
+            assertEquals(LifecycleStatus.DOWN, coordinator.status)
+        }
+        coordinator.stop()
     }
 }

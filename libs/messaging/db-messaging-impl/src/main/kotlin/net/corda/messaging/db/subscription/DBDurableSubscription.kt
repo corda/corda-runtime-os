@@ -1,6 +1,8 @@
 package net.corda.messaging.db.subscription
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
@@ -17,20 +19,33 @@ import net.corda.v5.base.util.seconds
 import java.time.Duration
 
 @Suppress("LongParameterList")
-class DBDurableSubscription<K: Any, V: Any>(subscriptionConfig: SubscriptionConfig,
-                                            durableProcessor: DurableProcessor<K, V>,
-                                            partitionAssignmentListener: PartitionAssignmentListener?,
-                                            avroSchemaRegistry: AvroSchemaRegistry,
-                                            offsetTrackersManager: OffsetTrackersManager,
-                                            partitionAllocator: PartitionAllocator,
-                                            partitionAssignor: PartitionAssignor,
-                                            dbAccessProvider: DBAccessProvider,
-                                            pollingTimeout: Duration = 1.seconds,
-                                            batchSize: Int = 100): Subscription<K, V>, Lifecycle {
+class DBDurableSubscription<K : Any, V : Any>(
+    subscriptionConfig: SubscriptionConfig,
+    durableProcessor: DurableProcessor<K, V>,
+    partitionAssignmentListener: PartitionAssignmentListener?,
+    avroSchemaRegistry: AvroSchemaRegistry,
+    offsetTrackersManager: OffsetTrackersManager,
+    partitionAllocator: PartitionAllocator,
+    partitionAssignor: PartitionAssignor,
+    dbAccessProvider: DBAccessProvider,
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    pollingTimeout: Duration = 1.seconds,
+    batchSize: Int = 100
+) : Subscription<K, V>, Lifecycle {
 
-    private val eventLogSubscription = DBEventLogSubscription(subscriptionConfig,
-        ForwardingEventLogProcessor(durableProcessor), partitionAssignmentListener, avroSchemaRegistry,
-        offsetTrackersManager, partitionAllocator, partitionAssignor, dbAccessProvider, pollingTimeout, batchSize)
+    private val eventLogSubscription = DBEventLogSubscription(
+        subscriptionConfig,
+        ForwardingEventLogProcessor(durableProcessor),
+        partitionAssignmentListener,
+        avroSchemaRegistry,
+        offsetTrackersManager,
+        partitionAllocator,
+        partitionAssignor,
+        dbAccessProvider,
+        lifecycleCoordinatorFactory,
+        pollingTimeout,
+        batchSize
+    )
 
     override fun start() {
         eventLogSubscription.start()
@@ -46,7 +61,8 @@ class DBDurableSubscription<K: Any, V: Any>(subscriptionConfig: SubscriptionConf
     /**
      * A simple processor that forwards events to the underlying durable processor.
      */
-    class ForwardingEventLogProcessor<K: Any, V: Any>(private val durableProcessor: DurableProcessor<K, V>): EventLogProcessor<K, V> {
+    class ForwardingEventLogProcessor<K : Any, V : Any>(private val durableProcessor: DurableProcessor<K, V>) :
+        EventLogProcessor<K, V> {
         override fun onNext(events: List<EventLogRecord<K, V>>): List<Record<*, *>> {
             val records = events.map { Record(it.topic, it.key, it.value) }
             return durableProcessor.onNext(records)
@@ -58,4 +74,7 @@ class DBDurableSubscription<K: Any, V: Any>(subscriptionConfig: SubscriptionConf
             get() = durableProcessor.valueClass
 
     }
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = eventLogSubscription.subscriptionName
 }

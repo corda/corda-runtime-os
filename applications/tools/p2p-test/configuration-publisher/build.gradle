@@ -31,6 +31,7 @@ dependencies {
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
     implementation project(":libs:configuration:configuration-write")
     runtimeOnly project(":libs:configuration:configuration-write-impl")
+    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
 }
 
 tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {

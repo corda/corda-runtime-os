@@ -9,6 +9,7 @@ data class StateAndEventConfig(
     val eventTopic: String,
     val stateTopic: String,
     val eventGroupName: String,
+    val instanceId: String,
     val loggerName: String,
     val producerClientId: String,
     val consumerThreadStopTimeout: Long,
@@ -28,6 +29,7 @@ data class StateAndEventConfig(
             val eventTopic = config.getString(ConfigProperties.TOPIC_NAME)
             val stateTopic = config.getString(ConfigProperties.STATE_TOPIC_NAME)
             val eventGroupID = config.getString(ConfigProperties.EVENT_GROUP_ID)
+            val instanceId = config.getString(ConfigProperties.INSTANCE_ID)
             val loggerName = "$eventGroupID.${config.getString(ConfigProperties.PRODUCER_TRANSACTIONAL_ID)}"
             val producerClientId: String = config.getString(ConfigProperties.PRODUCER_CLIENT_ID)
             val consumerThreadStopTimeout = config.getLong(ConfigProperties.EVENT_CONSUMER_THREAD_STOP_TIMEOUT)
@@ -46,6 +48,7 @@ data class StateAndEventConfig(
                 eventTopic,
                 stateTopic,
                 eventGroupID,
+                instanceId,
                 loggerName,
                 producerClientId,
                 consumerThreadStopTimeout,

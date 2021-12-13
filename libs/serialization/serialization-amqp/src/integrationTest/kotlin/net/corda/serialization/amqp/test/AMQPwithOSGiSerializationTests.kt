@@ -16,6 +16,7 @@ import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.serialization.SerializationContext
 import net.corda.sandbox.SandboxException
+import net.corda.sandbox.SandboxGroup
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -114,10 +115,11 @@ class AMQPwithOSGiSerializationTests {
     }
 
     @JvmOverloads
-    fun testDefaultFactoryNoEvolution(descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
+    fun testDefaultFactoryNoEvolution(sandboxGroup: SandboxGroup, descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
                                               DefaultDescriptorBasedSerializerRegistry()): SerializerFactory =
             SerializerFactoryBuilder.build(
                     AllWhitelist,
+                    sandboxGroup,
                     descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
                     allowEvolution = false)
 
@@ -146,8 +148,8 @@ class AMQPwithOSGiSerializationTests {
             assertThat(sandboxGroup).isNotNull
 
             // Initialised two serialisation factories to avoid having successful tests due to caching
-            val factory1 = testDefaultFactoryNoEvolution()
-            val factory2 = testDefaultFactoryNoEvolution()
+            val factory1 = testDefaultFactoryNoEvolution(sandboxGroup)
+            val factory2 = testDefaultFactoryNoEvolution(sandboxGroup)
 
             // Initialise the serialisation context
             val testSerializationContext = SerializationContextImpl(
@@ -162,24 +164,24 @@ class AMQPwithOSGiSerializationTests {
             )
 
             // Serialise our object
-            val cashClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle1.Cash", Any::class.java)
+            val cashClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle1.Cash")
             val cashInstance = cashClass.getConstructor(Int::class.java).newInstance(100)
 
-            val obligationClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle3.Obligation", Any::class.java)
+            val obligationClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle3.Obligation")
 
             val obligationInstance = obligationClass.getConstructor(
                 cashInstance.javaClass
             ).newInstance(cashInstance)
 
-            val documentClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle2.Document", Any::class.java)
+            val documentClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle2.Document")
             val content = "This is a transfer document"
             val documentInstance = documentClass.getConstructor(String::class.java).newInstance(content)
 
             // Container is used to test amqp serialization works for OSGi bundled generic types.
-            val containerClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle5.Container", Any::class.java)
+            val containerClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle5.Container")
             val containerInstance = containerClass.getConstructor(Object::class.java).newInstance(5)
 
-            val transferClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle4.Transfer", Any::class.java)
+            val transferClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle4.Transfer")
 
             val transferInstance = transferClass.getConstructor(
                 obligationInstance.javaClass, documentInstance.javaClass, containerInstance.javaClass
@@ -219,7 +221,7 @@ class AMQPwithOSGiSerializationTests {
         val cpi = assembleCPI(listOf(cpk))
         val cpks = installService.getCpb(cpi.metadata.id)!!.cpks
         val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks)
-        val factory = testDefaultFactoryNoEvolution()
+        val factory = testDefaultFactoryNoEvolution(sandboxGroup)
         val context = SerializationContextImpl(
             preferredSerializationVersion = amqpMagic,
             whitelist = AllWhitelist,
@@ -231,7 +233,7 @@ class AMQPwithOSGiSerializationTests {
             sandboxGroup = sandboxGroup
         )
 
-        val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle.MainBundleItem", Any::class.java)
+        val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle.MainBundleItem")
         val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
 
         assertThrows<SandboxException>(

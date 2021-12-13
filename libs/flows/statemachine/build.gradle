@@ -15,6 +15,5 @@ dependencies {
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-avro-schema"
 
-    implementation project(':libs:flows:dependency-injection')
     implementation project(':libs:serialization:checkpoint-serialization-api')
 }

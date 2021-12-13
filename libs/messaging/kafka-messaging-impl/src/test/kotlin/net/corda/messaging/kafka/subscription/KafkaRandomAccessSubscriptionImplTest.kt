@@ -1,6 +1,8 @@
 package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.ConfigValueFactory
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_RANDOMACCESS
@@ -27,13 +29,16 @@ class KafkaRandomAccessSubscriptionImplTest {
 
     private val topic = "test.topic"
     private val partitions = 10
-    val topicPartitions = (1..partitions).map { TopicPartition(topic, it) }
+    private val topicPartitions = (1..partitions).map { TopicPartition(topic, it) }
 
     private val config = createStandardTestConfig().getConfig(PATTERN_RANDOMACCESS)
         .withValue(ConfigProperties.TOPIC_NAME, ConfigValueFactory.fromAnyRef(topic))
     private val consumer: CordaKafkaConsumer<String, String> = mock()
+
     @Suppress("UNCHECKED_CAST")
     private val consumerBuilder: ConsumerBuilder<String, String> = mock()
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
+    private val lifecycleCoordinator: LifecycleCoordinator = mock()
 
     private lateinit var randomAccessSubscription: KafkaRandomAccessSubscriptionImpl<String, String>
 
@@ -41,8 +46,16 @@ class KafkaRandomAccessSubscriptionImplTest {
     fun setup() {
         doReturn(topicPartitions).whenever(consumer).getPartitions(topic, 5.seconds)
         doReturn(consumer).whenever(consumerBuilder).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
+        doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
 
-        randomAccessSubscription = KafkaRandomAccessSubscriptionImpl(config, consumerBuilder, String::class.java, String::class.java)
+        randomAccessSubscription =
+            KafkaRandomAccessSubscriptionImpl(
+                config,
+                consumerBuilder,
+                String::class.java,
+                String::class.java,
+                lifecycleCoordinatorFactory
+            )
         randomAccessSubscription.start()
     }
 
@@ -62,7 +75,8 @@ class KafkaRandomAccessSubscriptionImplTest {
         assertThat(record!!.key).isEqualTo("key")
         assertThat(record.value).isEqualTo("value")
         val resumedPartition = TopicPartition(topic, 1)
-        val pausedPartitions = (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
+        val pausedPartitions =
+            (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
         verify(consumer, times(1)).pause(pausedPartitions)
         verify(consumer, times(1)).resume(listOf(resumedPartition))
         verify(consumer, times(1)).seek(resumedPartition, 4)
@@ -77,7 +91,8 @@ class KafkaRandomAccessSubscriptionImplTest {
 
         assertThat(record).isNull()
         val resumedPartition = TopicPartition(topic, 1)
-        val pausedPartitions = (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
+        val pausedPartitions =
+            (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
         verify(consumer, times(1)).pause(pausedPartitions)
         verify(consumer, times(1)).resume(listOf(resumedPartition))
         verify(consumer, times(1)).seek(resumedPartition, 4)
@@ -91,7 +106,8 @@ class KafkaRandomAccessSubscriptionImplTest {
 
         assertThat(record).isNull()
         val resumedPartition = TopicPartition(topic, 1)
-        val pausedPartitions = (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
+        val pausedPartitions =
+            (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
         verify(consumer, times(1)).pause(pausedPartitions)
         verify(consumer, times(1)).resume(listOf(resumedPartition))
         verify(consumer, times(1)).seek(resumedPartition, 4)
@@ -107,7 +123,8 @@ class KafkaRandomAccessSubscriptionImplTest {
             .hasMessageContaining("Multiple records located")
 
         val resumedPartition = TopicPartition(topic, 1)
-        val pausedPartitions = (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
+        val pausedPartitions =
+            (1..partitions).filter { it != resumedPartition.partition() }.map { TopicPartition(topic, it) }
         verify(consumer, times(1)).pause(pausedPartitions)
         verify(consumer, times(1)).resume(listOf(resumedPartition))
         verify(consumer, times(1)).seek(resumedPartition, 4)

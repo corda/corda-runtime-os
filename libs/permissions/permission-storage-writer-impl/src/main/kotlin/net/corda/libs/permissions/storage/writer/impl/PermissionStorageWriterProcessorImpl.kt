@@ -4,8 +4,11 @@ import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.CreateUserRequest
+import net.corda.data.permissions.User as AvroUser
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
+import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
+import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.User
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -24,7 +27,7 @@ class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: Ent
     override fun onNext(request: PermissionManagementRequest, respFuture: CompletableFuture<PermissionManagementResponse>) {
         try {
             val response = when (val permissionRequest = request.request) {
-                is CreateUserRequest -> createUser(permissionRequest)
+                is CreateUserRequest -> createUser(permissionRequest, request.requestUserId)
                 else -> throw IllegalArgumentException("Received invalid permission request type")
             }
             respFuture.complete(PermissionManagementResponse(response))
@@ -34,7 +37,7 @@ class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: Ent
         }
     }
 
-    private fun createUser(request: CreateUserRequest): net.corda.data.permissions.User {
+    private fun createUser(request: CreateUserRequest, requestUserId: String): AvroUser {
         val loginName = request.loginName
 
         log.debug { "Received request to create new user: $loginName" }
@@ -68,6 +71,17 @@ class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: Ent
             user.version = 0
 
             entityManager.persist(user)
+
+            val auditLog = ChangeAudit(
+                id = UUID.randomUUID().toString(),
+                updateTimestamp = user.updateTimestamp,
+                actorUser = requestUserId,
+                changeType = RPCPermissionOperation.USER_INSERT,
+                details = "User '${user.loginName}' created by '$requestUserId'."
+            )
+
+            entityManager.persist(auditLog)
+
             entityManager.transaction.commit()
 
             log.info("Successfully created new user: $loginName")
@@ -80,22 +94,24 @@ class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: Ent
 
     private fun requireNewUser(entityManager: EntityManager, loginName: String) {
         val result = entityManager
-            .createQuery("SELECT count(1) from users where users.loginName = :loginName")
+            .createQuery("SELECT count(1) FROM User WHERE loginName = :loginName")
             .setParameter("loginName", loginName)
-            .singleResult as Int
+            .singleResult as Long
 
-        require(result == 0) { "Failed to create new user: $loginName as they already exist" }
+        require(result == 0L) { "Failed to create new user: $loginName as they already exist" }
     }
 
-    private fun User.toAvroUser(): net.corda.data.permissions.User {
-        return net.corda.data.permissions.User(
+    private fun User.toAvroUser(): AvroUser {
+        return AvroUser(
             id,
             version,
-            ChangeDetails(updateTimestamp, "Need to get the changed by user from somewhere"),
+            ChangeDetails(updateTimestamp),
+            loginName,
             fullName,
             enabled,
             hashedPassword,
             saltValue,
+            passwordExpiry,
             false,
             parentGroup?.id,
             emptyList(),

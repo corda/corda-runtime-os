@@ -98,6 +98,10 @@ class ReplayScheduler<M>(
         removedFuture?.cancel(false)
     }
 
+    fun removeAllMessagesFromReplay() {
+        replayFutures.keys.forEach { removeFromReplay(it) }
+    }
+
     private fun replay(message: M, uniqueId: String) {
         try {
             replayMessage(message)

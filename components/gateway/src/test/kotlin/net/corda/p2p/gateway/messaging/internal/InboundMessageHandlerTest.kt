@@ -2,6 +2,8 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.p2p.gateway.GatewayMessage
+import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -13,7 +15,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.LinkInMessage
-import net.corda.p2p.app.HoldingIdentity
+import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.crypto.AuthenticatedDataMessage
@@ -26,8 +28,6 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
-import net.corda.data.p2p.gateway.GatewayMessage
-import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
@@ -96,7 +96,7 @@ class InboundMessageHandlerTest {
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
-                payload = LinkInMessage(authenticatedP2PMessage(sessionId)).toByteBuffer().array(),
+                payload = LinkInMessage(authenticatedP2PDataMessage(sessionId)).toByteBuffer().array(),
                 destination = InetSocketAddress("www.r3.com", 344),
             )
 
@@ -133,7 +133,7 @@ class InboundMessageHandlerTest {
         val sessionId = "aaa"
         whenever(sessionPartitionMapper.constructed().first().getPartitions(sessionId)).doReturn(listOf(1, 2, 3))
         val msgId = "msg-id"
-        val p2pMessage = authenticatedP2PMessage(sessionId)
+        val p2pMessage = authenticatedP2PDataMessage(sessionId)
         val gatewayMessage = GatewayMessage(msgId, p2pMessage)
         val gatewayResponse = GatewayResponse(msgId)
         handler.onRequest(
@@ -209,7 +209,7 @@ class InboundMessageHandlerTest {
         whenever(sessionPartitionMapper.constructed().first().getPartitions(sessionId)).doReturn(listOf(7, 10, 20))
         whenever(p2pInPublisher.constructed().first().publishToPartition(published.capture())).doReturn(mock())
         setRunning()
-        val p2pMessage = authenticatedP2PMessage(sessionId)
+        val p2pMessage = authenticatedP2PDataMessage(sessionId)
         val gatewayMessage = GatewayMessage("msg-id", p2pMessage)
         val linkInMessage = LinkInMessage(p2pMessage)
         handler.onRequest(
@@ -230,11 +230,35 @@ class InboundMessageHandlerTest {
     }
 
     @Test
+    fun `onMessage session initiator hello message is published when no session exists yet`() {
+        val published = argumentCaptor<List<Record<*, *>>>()
+        val sessionId = "aaa"
+        whenever(p2pInPublisher.constructed().first().publish(published.capture())).doReturn(mock())
+        setRunning()
+        val p2pMessage = authenticatedP2PInitiatorHelloMessage(sessionId)
+        val gatewayMessage = GatewayMessage("msg-id", p2pMessage)
+        val linkInMessage = LinkInMessage(p2pMessage)
+        handler.onRequest(
+            HttpRequest(
+                source = InetSocketAddress("www.r3.com", 1231),
+                payload = gatewayMessage.toByteBuffer().array(),
+                destination = InetSocketAddress("www.r3.com", 344),
+            )
+
+        )
+
+        assertThat(published.firstValue).hasSize(1)
+            .anyMatch { record ->
+                (record.topic == LINK_IN_TOPIC) && (record.value == linkInMessage)
+            }
+    }
+
+    @Test
     fun `onMessage authenticated message with no partition will reply with an error`() {
         whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
         setRunning()
         val msgId = "msg-id"
-        val gatewayMessage = GatewayMessage(msgId, authenticatedP2PMessage(""))
+        val gatewayMessage = GatewayMessage(msgId, authenticatedP2PDataMessage(""))
         handler.onRequest(
             HttpRequest(
                 source = InetSocketAddress("www.r3.com", 1231),
@@ -337,31 +361,6 @@ class InboundMessageHandlerTest {
     }
 
     @Test
-    fun `onMessage use the correct session ID from InitiatorHelloMessage payload`() {
-        val sessionId = "id"
-        setRunning()
-        val payload = InitiatorHelloMessage.newBuilder()
-            .apply {
-                header = CommonHeader(MessageType.DATA, 0, sessionId, 1, 1)
-                initiatorPublicKey = ByteBuffer.wrap(byteArrayOf())
-                supportedModes = emptyList()
-                source = InitiatorHandshakeIdentity(ByteBuffer.wrap(byteArrayOf()), "")
-            }.build()
-        val gatewayMessage = GatewayMessage("msg-id", payload)
-        whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(null)
-
-        handler.onRequest(
-            HttpRequest(
-                source = InetSocketAddress("www.r3.com", 1231),
-                payload = gatewayMessage.toByteBuffer().array(),
-                destination = InetSocketAddress("www.r3.com", 344),
-            )
-        )
-
-        verify(sessionPartitionMapper.constructed().first()).getPartitions(sessionId)
-    }
-
-    @Test
     fun `onMessage use the correct session ID from InitiatorHandshakeMessage payload`() {
         val sessionId = "id"
         setRunning()
@@ -441,11 +440,19 @@ class InboundMessageHandlerTest {
         handler.start()
     }
 
-    private fun authenticatedP2PMessage(sessionId: String) = AuthenticatedDataMessage.newBuilder().apply {
+    private fun authenticatedP2PDataMessage(sessionId: String) = AuthenticatedDataMessage.newBuilder().apply {
         header = CommonHeader(MessageType.DATA, 0, sessionId, 1, 1)
         payload = ByteBuffer.wrap(byteArrayOf())
         authTag = ByteBuffer.wrap(byteArrayOf())
     }.build()
+
+    private fun authenticatedP2PInitiatorHelloMessage(sessionId: String) = InitiatorHelloMessage.newBuilder().apply {
+        header = CommonHeader(MessageType.INITIATOR_HELLO, 0, sessionId, 1, 1)
+        initiatorPublicKey = ByteBuffer.wrap(byteArrayOf())
+        supportedModes = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY)
+        source = InitiatorHandshakeIdentity(ByteBuffer.wrap(byteArrayOf()), "some-group")
+    }.build()
+
     private fun unauthenticatedP2PMessage(content: String) = UnauthenticatedMessage.newBuilder().apply {
         header = UnauthenticatedMessageHeader(
             HoldingIdentity("A", "B"),

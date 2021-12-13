@@ -1,0 +1,26 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Permission Service'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "net.corda:corda-base"
+
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:lifecycle:lifecycle")
+    api project(':libs:permissions:permission-validation')
+    api project(':libs:permissions:permission-manager')
+    implementation project(':components:permissions:permission-cache-service')
+    implementation project(':components:permissions:permission-management-service')
+    implementation project(':components:permissions:permission-validation-service')
+
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

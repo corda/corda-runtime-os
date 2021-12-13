@@ -98,11 +98,11 @@ class FreshKeysServiceRpcProcessor(
         private val freshKeysService: FreshKeySigningService,
         private val cipherSchemeMetadata: CipherSchemeMetadata
     ) : CryptoRpcHandler<WireRequestContext, WireFreshKeysFreshKey> {
-        override fun handle(context: WireRequestContext, request: WireFreshKeysFreshKey): Any? {
+        override fun handle(context: WireRequestContext, request: WireFreshKeysFreshKey): Any {
             val publicKey = if(request.externalId.isNullOrBlank()) {
-                freshKeysService.freshKey(request.context.toMap())
+                freshKeysService.freshKey(request.context.items.toMap())
             } else {
-                freshKeysService.freshKey(UUID.fromString(request.externalId), request.context.toMap())
+                freshKeysService.freshKey(UUID.fromString(request.externalId), request.context.items.toMap())
             }
             return WirePublicKey(ByteBuffer.wrap(cipherSchemeMetadata.encodeAsByteArray(publicKey)))
         }
@@ -123,7 +123,7 @@ class FreshKeysServiceRpcProcessor(
     ) : CryptoRpcHandler<WireRequestContext, WireFreshKeysSign> {
         override fun handle(context: WireRequestContext, request: WireFreshKeysSign): Any {
             val publicKey = cipherSchemeMetadata.decodePublicKey(request.publicKey.array())
-            val signature = freshKeysService.sign(publicKey, request.bytes.array(), request.context.toMap())
+            val signature = freshKeysService.sign(publicKey, request.bytes.array(), request.context.items.toMap())
             return WireSignatureWithKey(
                 ByteBuffer.wrap(cipherSchemeMetadata.encodeAsByteArray(signature.by)),
                 ByteBuffer.wrap(signature.bytes)
@@ -145,7 +145,7 @@ class FreshKeysServiceRpcProcessor(
                     DigestAlgorithmName(request.signatureSpec.customDigestName)
                 }
             )
-            val signature = freshKeysService.sign(publicKey, spec, request.bytes.array(), request.context.toMap())
+            val signature = freshKeysService.sign(publicKey, spec, request.bytes.array(), request.context.items.toMap())
             return WireSignatureWithKey(
                 ByteBuffer.wrap(cipherSchemeMetadata.encodeAsByteArray(signature.by)),
                 ByteBuffer.wrap(signature.bytes)

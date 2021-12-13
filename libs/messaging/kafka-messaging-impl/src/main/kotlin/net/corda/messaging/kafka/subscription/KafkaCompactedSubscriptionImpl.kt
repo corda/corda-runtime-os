@@ -1,10 +1,14 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
@@ -27,6 +31,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     private val mapFactory: SubscriptionMapFactory<K, V>,
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val processor: CompactedProcessor<K, V>,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : CompactedSubscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
@@ -43,21 +48,40 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "$groupName-KafkaCompactedSubscription-$topic",
+            //we use clientIdCounter here instead of instanceId as this subscription is readOnly
+            config.getString(ConfigProperties.CLIENT_ID_COUNTER)
+        )
+    ) { _, _ -> }
 
     private var latestValues: MutableMap<K, V>? = null
 
     override fun stop() {
         if (!stopped) {
-            val thread = lock.withLock {
-                stopped = true
-                latestValues?.apply { mapFactory.destroyMap(this) }
-                latestValues = null
-                val threadTmp = consumeLoopThread
-                consumeLoopThread = null
-                threadTmp
-            }
-            thread?.join(consumerThreadStopTimeout)
+            stopConsumeLoop()
+            lifecycleCoordinator.stop()
         }
+    }
+
+    override fun close() {
+        if (!stopped) {
+            stopConsumeLoop()
+            lifecycleCoordinator.close()
+        }
+    }
+
+    private fun stopConsumeLoop() {
+        val thread = lock.withLock {
+            stopped = true
+            latestValues?.apply { mapFactory.destroyMap(this) }
+            latestValues = null
+            val threadTmp = consumeLoopThread
+            consumeLoopThread = null
+            threadTmp
+        }
+        thread?.join(consumerThreadStopTimeout)
     }
 
     override fun start() {
@@ -65,6 +89,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
+                lifecycleCoordinator.start()
                 consumeLoopThread = thread(
                     start = true,
                     isDaemon = true,
@@ -79,6 +104,9 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
 
     override val isRunning: Boolean
         get() = !stopped
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
 
     override fun getValue(key: K): V? = latestValues?.get(key)
 
@@ -98,6 +126,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                         Duration.ofSeconds(consumerThreadStopTimeout)
                     )
                     it.assign(partitions)
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                     pollAndProcessSnapshot(it)
                     pollAndProcessRecords(it)
                 }
@@ -109,11 +138,13 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                     }
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
+                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
                         stop()
                     }
                 }
             }
         }
+        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     private fun getLatestValues(): MutableMap<K, V> {

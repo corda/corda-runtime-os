@@ -4,6 +4,12 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -15,12 +21,16 @@ import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion
 import net.corda.messaging.kafka.integration.TopicTemplates
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.DURABLE_TOPIC1
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
-import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.getDemoRecords
+import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
 import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.MESSAGING_KAFKA
+import net.corda.test.util.eventually
+import net.corda.v5.base.util.millis
+import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -54,6 +64,9 @@ class DurableSubscriptionIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var topicAdmin: KafkaTopicAdmin
 
+    @InjectService(timeout = 4000)
+    lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+
     @BeforeEach
     fun beforeEach() {
         kafkaConfig = SmartConfigImpl.empty()
@@ -80,18 +93,21 @@ class DurableSubscriptionIntegrationTest {
         )
 
         val triggerRebalanceQuicklyConfig = kafkaConfig
-            .withValue("$MESSAGING_KAFKA.${ConfigProperties.CONSUMER_MAX_POLL_INTERVAL}", ConfigValueFactory.fromAnyRef(1000))
+            .withValue(
+                "$MESSAGING_KAFKA.${ConfigProperties.CONSUMER_MAX_POLL_INTERVAL}",
+                ConfigValueFactory.fromAnyRef(1000)
+            )
         //long delay to not allow sub to to try rejoin group after rebalance
         val durableSub2 = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC1-group", DURABLE_TOPIC1, 2),
-            TestDurableProcessor(latch),
+            TestDurableProcessor(latch, "", 70000),
             triggerRebalanceQuicklyConfig,
             null
         )
         durableSub1.start()
         durableSub2.start()
 
-        assertTrue(latch.await(70, TimeUnit.SECONDS))
+        assertTrue(latch.await(60, TimeUnit.SECONDS))
         durableSub1.stop()
         durableSub2.stop()
     }
@@ -105,6 +121,21 @@ class DurableSubscriptionIntegrationTest {
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
         publisher.close()
 
+        val coordinator =
+            lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName("durableTest"))
+            { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
+                when (event) {
+                    is RegistrationStatusChangeEvent -> {
+                        if (event.status == LifecycleStatus.UP) {
+                            coordinator.updateStatus(LifecycleStatus.UP)
+                        } else {
+                            coordinator.updateStatus(LifecycleStatus.DOWN)
+                        }
+                    }
+                }
+            }
+        coordinator.start()
+
         val latch = CountDownLatch(10)
         val durableSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC2-group", DURABLE_TOPIC2, 1),
@@ -112,10 +143,19 @@ class DurableSubscriptionIntegrationTest {
             kafkaConfig,
             null
         )
+        coordinator.followStatusChangesByName(setOf(durableSub.subscriptionName))
         durableSub.start()
+
+        eventually(duration = 5.seconds, waitBetween = 200.millis) {
+            assertEquals(LifecycleStatus.UP, coordinator.status)
+        }
 
         assertTrue(latch.await(5, TimeUnit.SECONDS))
         durableSub.stop()
+
+        eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
+            assertEquals(LifecycleStatus.DOWN, coordinator.status)
+        }
     }
 
     @Test
@@ -150,7 +190,7 @@ class DurableSubscriptionIntegrationTest {
 
         durableSub1.start()
         durableSub2.start()
-        assertTrue(latch.await(20, TimeUnit.SECONDS))
+        assertTrue(latch.await(60, TimeUnit.SECONDS))
         durableSub1.stop()
         durableSub2.stop()
         publisher.close()

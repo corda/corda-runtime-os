@@ -1,0 +1,14 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Data Sync Implementation'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-avro-schema'
+}
