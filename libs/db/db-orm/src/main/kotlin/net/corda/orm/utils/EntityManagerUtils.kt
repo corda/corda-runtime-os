@@ -68,6 +68,7 @@ inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R 
  * @see use
  */
 inline fun <R> EntityManager.transaction(block: (EntityManager) -> R): R {
+    val transaction = this.transaction
     transaction.begin()
     return try {
         block(this)
