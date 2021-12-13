@@ -1,0 +1,18 @@
+---
+apiVersion: "acid.zalan.do/v1"
+kind: postgresql
+metadata:
+  name: corda-postgres
+spec:
+  teamId: "corda"
+  volume:
+    size: 1Gi
+  numberOfInstances: 2
+  users:
+    corda:  # database owner
+      - superuser
+      - createdb
+  databases:
+    corda: corda  # dbname: owner
+  postgresql:
+    version: "14"

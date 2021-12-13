@@ -1,0 +1,11 @@
+---
+apiVersion: skaffold/v2beta26
+kind: Config
+deploy:
+  helm:
+    releases:
+      - chartPath: .
+        name: corda-common
+        setValueTemplates:
+          configuration.kubernetes.imagePullSecret.username: "{{.CORDA_ARTIFACTORY_USERNAME}}"
+          configuration.kubernetes.imagePullSecret.password: "{{.CORDA_ARTIFACTORY_PASSWORD}}"

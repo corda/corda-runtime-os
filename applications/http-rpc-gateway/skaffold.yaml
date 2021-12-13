@@ -1,0 +1,23 @@
+---
+apiVersion: skaffold/v2beta26
+kind: Config
+deploy:
+  kubectl:
+    manifests:
+      - manifest/*
+profiles:
+  - name: http-rpc-gateway
+    build:
+      tagPolicy:
+        gitCommit:
+          ignoreChanges: true
+      local:
+        push: false
+      artifacts:
+        - image: corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway
+          context: ../..
+          custom:
+            buildCommand: gradlew :applications:http-rpc-gateway:clean && gradlew :applications:http-rpc-gateway:publishOSGiImage
+            dependencies:
+              paths:
+                - ./**

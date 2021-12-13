@@ -1,0 +1,29 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: http-rpc-gateway
+  annotations:
+    # TODO: 4. http-rpc-gate - as least in the stubs implementation: https://github.com/corda/corda-runtime-os/tree/76119c50daafa5900ba9bf3120bef9794cc7b1a7/libs/http-rpc/http-rpc-stubs-impl
+    # requires that SSL terminates at the server (rather than at the loadbalancer). Enabling SSL pass through here - to support that.
+    # Note: https://kubernetes.github.io/ingress-nginx/user-guide/tls/#ssl-passthrough see the big amber warning here.
+    # tl;dr non-negligible performance penalty
+    ingress.kubernetes.io/ssl-passthrough: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: p2p-gateway.domain.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: http-rpc-gateway
+                port:
+                  name: https
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - p2p-gateway.domain.com

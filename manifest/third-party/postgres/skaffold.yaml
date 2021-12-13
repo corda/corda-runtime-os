@@ -1,0 +1,12 @@
+---
+apiVersion: skaffold/v2beta26
+kind: Config
+deploy:
+  helm:
+    releases:
+      - repo: https://opensource.zalando.com/postgres-operator/charts/postgres-operator/
+        remoteChart: postgres-operator
+        name: postgres-operator
+  kubectl:
+    manifests:
+      - manifest/*

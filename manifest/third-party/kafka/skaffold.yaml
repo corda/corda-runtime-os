@@ -1,0 +1,12 @@
+---
+apiVersion: skaffold/v2beta26
+kind: Config
+deploy:
+  helm:
+    releases:
+      - repo: https://strimzi.io/charts/
+        remoteChart: strimzi-kafka-operator
+        name: kafka-operator
+  kubectl:
+    manifests:
+      - manifest/*

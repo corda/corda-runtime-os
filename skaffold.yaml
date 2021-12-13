@@ -1,0 +1,10 @@
+---
+apiVersion: skaffold/v2beta26
+kind: Config
+requires:
+  - path: ./manifest/third-party/ingress-controller
+  - path: ./manifest/third-party/kafka
+  - path: ./manifest/third-party/postgres
+  - path: ./manifest/common
+  - path: ./applications/http-rpc-gateway
+  - path: ./applications/p2p-gateway

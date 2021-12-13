@@ -1,0 +1,23 @@
+apiVersion: skaffold/v2beta26
+kind: Config
+deploy:
+  kubectl:
+    manifests:
+      - manifest/*
+profiles:
+  - name: p2p-gateway
+    build:
+      tagPolicy:
+        gitCommit:
+          ignoreChanges: true
+      local:
+        push: false
+      artifacts:
+        - image: corda-os-docker-dev.software.r3.com/corda-os-p2p-gateway
+          context: ../..
+          custom:
+            buildCommand: gradlew :applications:p2p-gateway:clean && gradlew :applications:p2p-gateway:publishOSGiImage
+            dependencies:
+              paths:
+                - ./**
+
