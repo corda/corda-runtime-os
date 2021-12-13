@@ -10,9 +10,8 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 
 class FlowMapperMessageProcessor(
-    private val flowMapperEventExecutorFactory: FlowMapperEventExecutorFactory,
-    private val flowMapperTopics: FlowMapperTopics,
-) : StateAndEventProcessor<String, FlowMapperState, FlowMapperEvent> {
+    private val flowMapperEventExecutorFactory: FlowMapperEventExecutorFactory
+    ) : StateAndEventProcessor<String, FlowMapperState, FlowMapperEvent> {
 
     companion object {
         private val logger = contextLogger()
@@ -25,7 +24,7 @@ class FlowMapperMessageProcessor(
         val key = event.key
         logger.trace { "Received event: key: $key event: $event "}
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
-        val executor = flowMapperEventExecutorFactory.create(key, value, state, flowMapperTopics)
+        val executor = flowMapperEventExecutorFactory.create(key, value, state)
         val result = executor.execute()
 
         return StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)

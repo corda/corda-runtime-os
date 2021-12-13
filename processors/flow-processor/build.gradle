@@ -34,7 +34,6 @@ dependencies {
     runtimeOnly project(":libs:flows:flow-manager-impl")
     runtimeOnly project(":libs:flows:statemachine-impl")
     runtimeOnly project(":libs:flows:dependency-injection-impl")
-   // runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:serialization:serialization-kryo")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")

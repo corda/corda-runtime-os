@@ -3,7 +3,6 @@ package net.corda.session.mapper.service
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
-import net.corda.flow.mapper.FlowMapperTopics
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
@@ -22,6 +21,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.schema.Schemas.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
@@ -52,9 +52,6 @@ class FlowMapperService @Activate constructor(
     private companion object {
         private val logger = contextLogger()
         private const val INSTANCE_ID = "instance-id"
-        private const val FLOWMAPPER_EVENT_TOPIC = "mapper.topic.flowMapperEvent"
-        private const val P2P_OUT_TOPIC = "mapper.topic.p2pout"
-        private const val FLOW_EVENT_TOPIC = "consumer.topic"
         private const val CONSUMER_GROUP = "mapper.consumer.group"
     }
 
@@ -116,17 +113,12 @@ class FlowMapperService @Activate constructor(
             mutableMapOf()
         )
         stateAndEventSub = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig(consumerGroup, config.getString(FLOWMAPPER_EVENT_TOPIC), config.getInt(INSTANCE_ID)),
+            SubscriptionConfig(consumerGroup, FLOW_MAPPER_EVENT_TOPIC, config.getInt(INSTANCE_ID)),
             FlowMapperMessageProcessor(
-                flowMapperEventExecutorFactory,
-                FlowMapperTopics(
-                    config.getString(P2P_OUT_TOPIC),
-                    config.getString(FLOWMAPPER_EVENT_TOPIC),
-                    config.getString(FLOW_EVENT_TOPIC)
-                )
+                flowMapperEventExecutorFactory
             ),
             config,
-            FlowMapperListener(scheduledTaskState!!, config.getString(FLOWMAPPER_EVENT_TOPIC))
+            FlowMapperListener(scheduledTaskState!!)
         )
         stateAndEventSub?.start()
     }
