@@ -77,7 +77,7 @@ class HttpRpcGateway private constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        log.info("Starting lifecycle coordinator for RBAC permission system.")
+        log.info("Starting lifecycle coordinator")
         coordinator.start()
     }
 

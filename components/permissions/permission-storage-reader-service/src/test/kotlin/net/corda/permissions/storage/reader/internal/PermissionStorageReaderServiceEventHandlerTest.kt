@@ -12,7 +12,8 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.cache.PermissionCacheService
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -50,32 +51,32 @@ class PermissionStorageReaderServiceEventHandlerTest {
 
     @Test
     fun `processing a start event starts the publisher`() {
-        Assertions.assertNull(handler.publisher)
+        assertNull(handler.publisher)
 
         handler.processEvent(StartEvent(), coordinator)
 
-        Assertions.assertNotNull(handler.publisher)
+        assertNotNull(handler.publisher)
 
         verify(publisher).start()
     }
 
     @Test
     fun `processing a start event causes the service to follow permission cache status changes`() {
-        Assertions.assertNull(handler.registrationHandle)
+        assertNull(handler.registrationHandle)
 
         handler.processEvent(StartEvent(), coordinator)
 
-        Assertions.assertNotNull(handler.registrationHandle)
+        assertNotNull(handler.registrationHandle)
     }
 
     @Test
     fun `processing an UP event from the permission cache when the service is started starts the storage reader`() {
-        Assertions.assertNull(handler.permissionStorageReader)
+        assertNull(handler.permissionStorageReader)
 
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
-        Assertions.assertNotNull(handler.permissionStorageReader)
+        assertNotNull(handler.permissionStorageReader)
         verify(permissionStorageReader).start()
     }
 
@@ -98,11 +99,11 @@ class PermissionStorageReaderServiceEventHandlerTest {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
-        Assertions.assertNotNull(handler.permissionStorageReader)
+        assertNotNull(handler.permissionStorageReader)
 
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), coordinator)
 
-        Assertions.assertNull(handler.permissionStorageReader)
+        assertNull(handler.permissionStorageReader)
         verify(permissionStorageReader).stop()
     }
 
@@ -119,15 +120,15 @@ class PermissionStorageReaderServiceEventHandlerTest {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
-        Assertions.assertNotNull(handler.registrationHandle)
-        Assertions.assertNotNull(handler.permissionStorageReader)
-        Assertions.assertNotNull(handler.publisher)
+        assertNotNull(handler.registrationHandle)
+        assertNotNull(handler.permissionStorageReader)
+        assertNotNull(handler.publisher)
 
         handler.processEvent(StopEvent(), coordinator)
 
-        Assertions.assertNull(handler.registrationHandle)
-        Assertions.assertNull(handler.permissionStorageReader)
-        Assertions.assertNull(handler.publisher)
+        assertNull(handler.registrationHandle)
+        assertNull(handler.permissionStorageReader)
+        assertNull(handler.publisher)
 
         verify(registrationHandle).close()
         verify(permissionStorageReader).stop()
