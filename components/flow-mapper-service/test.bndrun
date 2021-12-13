@@ -1,7 +1,8 @@
 -tester: biz.aQute.tester.junit-platform
 -runfw: org.apache.felix.framework;
 -runee: JavaSE-11
-#-runjdb: 5005
+#
+-runjdb: 5005
 -runtrace: true
 -runproperties: \
     org.slf4j.simpleLogger.defaultLogLevel=info,\

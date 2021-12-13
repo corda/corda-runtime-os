@@ -28,7 +28,6 @@ import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-
 @ExtendWith(ServiceExtension::class)
 class FlowMapperServiceIntegrationTest {
 

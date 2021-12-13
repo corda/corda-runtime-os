@@ -33,8 +33,7 @@ class FlowMapperIntegrationTest {
     private val FLOW_MAPPER_TOPIC = "FlowMapperTopic"
     private val FLOW_EVENT_TOPIC = "FlowEventTopic"
     private val flowMapperTopics = FlowMapperTopics(P2P_OUT, FLOW_MAPPER_TOPIC, FLOW_EVENT_TOPIC)
-
-
+    
     @InjectService(timeout = 4000)
     lateinit var executorFactory: FlowMapperEventExecutorFactory
 
