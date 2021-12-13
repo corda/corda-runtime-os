@@ -1,5 +1,7 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.amqp.standard.EnumEvolutionSerializer
+import net.corda.internal.serialization.amqp.standard.EvolutionObjectSerializer
 import net.corda.internal.serialization.model.BaseLocalTypes
 import net.corda.internal.serialization.model.EvolutionConstructorInformation
 import net.corda.internal.serialization.model.LocalConstructorInformation
@@ -188,14 +190,16 @@ class DefaultEvolutionSerializerFactory(
         } else convertedOrdinals.any { (ordinal, name) -> localOrdinals[name] != ordinal }
 
     private fun RemoteTypeInformation.Composable.buildComposableEvolutionSerializer(
-            localTypeInformation: LocalTypeInformation.Composable,
-            constructor: LocalConstructorInformation,
-            properties: Map<String, LocalPropertyInformation>): AMQPSerializer<Any> =
+        localTypeInformation: LocalTypeInformation.Composable,
+        constructor: LocalConstructorInformation,
+        properties: Map<String, LocalPropertyInformation>
+    ): AMQPSerializer<Any> =
         EvolutionObjectSerializer.make(
-                    localTypeInformation,
-                    this,
-                    constructor,
-                    properties,
-                    mustPreserveDataWhenEvolving,
-                    localSerializerFactory.sandboxGroup)
+            localTypeInformation,
+            this,
+            constructor,
+            properties,
+            mustPreserveDataWhenEvolving,
+            localSerializerFactory.sandboxGroup
+        )
 }

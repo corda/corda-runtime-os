@@ -1,9 +1,24 @@
-package net.corda.internal.serialization.amqp
+package net.corda.internal.serialization.amqp.standard
 
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.TypeIdentifier
-import net.corda.sandbox.SandboxGroup
+import net.corda.internal.serialization.amqp.LocalSerializerFactory
+import net.corda.internal.serialization.amqp.AMQPSerializer
+import net.corda.internal.serialization.amqp.AMQPNotSerializableException
+import net.corda.internal.serialization.amqp.asClass
+import net.corda.internal.serialization.amqp.TypeNotation
+import net.corda.internal.serialization.amqp.RestrictedType
+import net.corda.internal.serialization.amqp.Descriptor
+import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers
+import net.corda.internal.serialization.amqp.resolveTypeVariables
+import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.ifThrowsAppend
+import net.corda.internal.serialization.amqp.withDescribed
+import net.corda.internal.serialization.amqp.SerializationSchemas
+import net.corda.internal.serialization.amqp.Metadata
+import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.serialization.SerializationContext
+import net.corda.sandbox.SandboxGroup
 import net.corda.v5.base.util.uncheckedCast
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
@@ -89,7 +104,14 @@ class MapSerializer(private val declaredType: ParameterizedType, factory: LocalS
 
     private val concreteBuilder: MapCreationFunction = findConcreteType(declaredType.rawType as Class<*>)
 
-    private val typeNotation: TypeNotation = RestrictedType(AMQPTypeIdentifiers.nameForType(declaredType), null, emptyList(), "map", Descriptor(typeDescriptor), emptyList())
+    private val typeNotation: TypeNotation = RestrictedType(
+        AMQPTypeIdentifiers.nameForType(declaredType),
+        null,
+        emptyList(),
+        "map",
+        Descriptor(typeDescriptor),
+        emptyList()
+    )
 
     private val inboundKeyType = declaredType.actualTypeArguments[0]
     private val outboundKeyType = resolveTypeVariables(inboundKeyType, null, factory.sandboxGroup)
