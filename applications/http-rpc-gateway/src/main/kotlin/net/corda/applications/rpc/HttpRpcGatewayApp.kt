@@ -28,9 +28,10 @@ import kotlin.math.absoluteValue
 import kotlin.random.Random
 import net.corda.applications.rpc.internal.HttpRpcGatewayAppEventHandler
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.permissions.cache.PermissionCacheService
 
 @Component(service = [Application::class], immediate = true)
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "UNUSED")
 class HttpRpcGatewayApp @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -42,6 +43,8 @@ class HttpRpcGatewayApp @Activate constructor(
     private val httpRpcGateway: HttpRpcGateway,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
+    @Reference(service = PermissionCacheService::class)
+    private val permissionCacheService: PermissionCacheService
 ) : Application {
 
     private companion object {
@@ -85,10 +88,14 @@ class HttpRpcGatewayApp @Activate constructor(
 
             log.info("Starting life cycle coordinator")
             lifeCycleCoordinator!!.start()
+
+            log.info("Starting PermissionCacheService")
+            permissionCacheService.start()
         }
     }
 
     override fun close() {
+        permissionCacheService.stop()
         lifeCycleCoordinator?.stop()
         super.close()
     }

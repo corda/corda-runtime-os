@@ -143,6 +143,9 @@ class DbWorkerPrototypeApp @Activate constructor(
             configurationReadService.start()
             configurationReadService.bootstrapConfig(bootstrapConfig)
 
+            log.info("Starting PermissionCacheService")
+            permissionCacheService.start()
+
             log.info("Creating and starting PermissionStorageReaderService")
             val localPermissionStorageReaderService = PermissionStorageReaderService(
                 permissionCacheService,
@@ -253,6 +256,7 @@ class DbWorkerPrototypeApp @Activate constructor(
         permissionStorageReaderService = null
         permissionStorageWriterService?.stop()
         permissionStorageWriterService = null
+        permissionCacheService.stop()
     }
 }
 

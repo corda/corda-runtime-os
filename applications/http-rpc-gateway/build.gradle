@@ -19,6 +19,7 @@ dependencies {
     implementation project(":osgi-framework-api")
 
     implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:permissions:permission-cache-service")
 
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
@@ -37,7 +38,6 @@ dependencies {
     runtimeOnly project(":libs:permissions:permission-manager-impl")
     runtimeOnly project(":libs:permissions:permission-cache-impl")
 
-    runtimeOnly project(":components:permissions:permission-cache-service")
     runtimeOnly project(":components:permissions:permission-validation-service")
     runtimeOnly project(":components:permissions:permission-management-service")
     runtimeOnly project(":components:permissions:permission-rpc-ops-impl")
