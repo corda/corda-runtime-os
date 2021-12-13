@@ -35,8 +35,8 @@ import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.Executors
 
 @Suppress("LongParameterList")
-@Component(service = [FlowMapperComponent::class])
-class FlowMapperComponent @Activate constructor(
+@Component(service = [FlowMapperService::class])
+class FlowMapperService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
@@ -54,11 +54,11 @@ class FlowMapperComponent @Activate constructor(
         private const val INSTANCE_ID = "instance-id"
         private const val FLOWMAPPER_EVENT_TOPIC = "mapper.topic.flowMapperEvent"
         private const val P2P_OUT_TOPIC = "mapper.topic.p2pout"
-        private const val FLOW_EVENT_TOPIC = "mapper.topic.flowEvent"
-        private const val CONSUMER_GROUP = "mapper.consumer.groupName"
+        private const val FLOW_EVENT_TOPIC = "consumer.topic"
+        private const val CONSUMER_GROUP = "mapper.consumer.group"
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<FlowMapperComponent>(::eventHandler)
+    private val coordinator = coordinatorFactory.createCoordinator<FlowMapperService>(::eventHandler)
     private var registration: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
     private var stateAndEventSub: StateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>? = null
@@ -120,13 +120,13 @@ class FlowMapperComponent @Activate constructor(
             FlowMapperMessageProcessor(
                 flowMapperEventExecutorFactory,
                 FlowMapperTopics(
-                    P2P_OUT_TOPIC,
-                    FLOWMAPPER_EVENT_TOPIC,
-                    FLOW_EVENT_TOPIC
+                    config.getString(P2P_OUT_TOPIC),
+                    config.getString(FLOWMAPPER_EVENT_TOPIC),
+                    config.getString(FLOW_EVENT_TOPIC)
                 )
             ),
             config,
-            FlowMapperListener(scheduledTaskState!!, FLOWMAPPER_EVENT_TOPIC)
+            FlowMapperListener(scheduledTaskState!!, config.getString(FLOWMAPPER_EVENT_TOPIC))
         )
         stateAndEventSub?.start()
     }

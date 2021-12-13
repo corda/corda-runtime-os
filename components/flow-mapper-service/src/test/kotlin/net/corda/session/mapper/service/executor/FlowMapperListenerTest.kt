@@ -69,6 +69,24 @@ class FlowMapperListenerTest {
 
 
     @Test
+    fun testOnPartitionsAssignedClosingStatesNoExpiryTime() {
+        val publisher: Publisher = mock()
+        val clock: Clock = mock()
+        val scheduledKeys = listOf("1", "2", "3")
+        whenever(clock.millis()).thenReturn(999)
+        val states = scheduledKeys.associateBy({ it }, { FlowMapperState(null, null, FlowMapperStateType
+            .CLOSING) })
+        val scheduledTaskState = generateScheduledTaskState(publisher, emptyList())
+        assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
+
+        FlowMapperListener(scheduledTaskState, eventTopic, clock).onPartitionSynced(states)
+
+        verify(publisher, times(0)).publish(any())
+        assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
+        scheduledTaskState.close()
+    }
+
+    @Test
     fun testOnPartitionsCommitted() {
         val publisher: Publisher = mock()
         val clock: Clock = mock()
@@ -84,6 +102,40 @@ class FlowMapperListenerTest {
         assertThat(scheduledTaskState.tasks.size).isEqualTo(3)
         scheduledTaskState.close()
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
+    }
+
+    @Test
+    fun testOnPartitionsCommittedClosingStateNoExpiryTimer() {
+        val publisher: Publisher = mock()
+        val clock: Clock = mock()
+        val scheduledKeys = listOf("1", "2", "3")
+        val states = scheduledKeys.associateBy({ it }, { FlowMapperState(null, null, FlowMapperStateType
+            .CLOSING) })
+        val scheduledTaskState = generateScheduledTaskState(publisher, emptyList())
+        assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
+
+        FlowMapperListener(scheduledTaskState, eventTopic, clock).onPostCommit(states)
+
+        verify(publisher, times(0)).publish(any())
+        assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
+        scheduledTaskState.close()
+    }
+
+    @Test
+    fun testOnPartitionsCommittedOpenState() {
+        val publisher: Publisher = mock()
+        val clock: Clock = mock()
+        val scheduledKeys = listOf("1", "2", "3")
+        val states = scheduledKeys.associateBy({ it }, { FlowMapperState(null, null, FlowMapperStateType
+            .OPEN) })
+        val scheduledTaskState = generateScheduledTaskState(publisher, emptyList())
+        assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
+
+        FlowMapperListener(scheduledTaskState, eventTopic, clock).onPostCommit(states)
+
+        verify(publisher, times(0)).publish(any())
+        assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
+        scheduledTaskState.close()
     }
 
     private fun generateScheduledTaskState(publisher: Publisher, scheduledKeys: List<String>): ScheduledTaskState {
