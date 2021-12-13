@@ -38,13 +38,12 @@ class FlowProcessorImpl @Activate constructor(
         val log: Logger = contextLogger()
     }
 
-    private var bootstrapConfig: SmartConfig? = null
     private val lifeCycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(::eventHandler)
 
     override fun start(instanceId: Int, topicPrefix: String, config: SmartConfig) {
         log.info("Flow processor starting.")
-        bootstrapConfig = config
         lifeCycleCoordinator.start()
+        lifeCycleCoordinator.postEvent(BootConfigEvent(config))
     }
 
     override fun stop() {
@@ -58,13 +57,15 @@ class FlowProcessorImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 configurationReadService.start()
-                configurationReadService.bootstrapConfig(bootstrapConfig!!)
                 flowService.start()
                 flowMapperService.start()
                 // HACK: This needs to change when we have the proper sandbox group service
                 // for now we need to start this version of the service as it hosts the new
                 // api we use elsewhere
                 sandboxService.start()
+            }
+            is BootConfigEvent -> {
+                configurationReadService.bootstrapConfig(event.config)
             }
             is StopEvent -> {
                 configurationReadService.stop()
@@ -78,3 +79,5 @@ class FlowProcessorImpl @Activate constructor(
         }
     }
 }
+
+data class BootConfigEvent(val config: SmartConfig) : LifecycleEvent
