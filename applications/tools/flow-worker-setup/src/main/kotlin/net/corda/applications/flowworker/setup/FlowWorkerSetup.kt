@@ -100,18 +100,7 @@ class FlowWorkerSetup @Activate constructor(
                 setupPublisher(coordinator)
             }
             is RegistrationStatusChangeEvent -> {
-                if (event.status == LifecycleStatus.UP) {
-                    consoleLogger.info("Publishing RPCRecord")
-                    if (!scheduleCleanup) {
-                        publisher?.publishRecords(listOf(getHelloWorldRPCEventRecord()))?.forEach { it.get() }
-                    } else {
-                        publisher?.publishRecords(listOf(getHelloWorldScheduleCleanupEvent()))?.forEach { it.get() }
-                    }
-                    consoleLogger.info("Published RPCRecord")
-                    shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
-                } else {
-                    publisher?.close()
-                }
+                handleRegistrationChange(event)
             }
             is StopEvent -> {
                 publisher?.close()
@@ -119,6 +108,21 @@ class FlowWorkerSetup @Activate constructor(
             else -> {
                 log.error("$event unexpected!")
             }
+        }
+    }
+
+    private fun handleRegistrationChange(event: RegistrationStatusChangeEvent) {
+        if (event.status == LifecycleStatus.UP) {
+            consoleLogger.info("Publishing RPCRecord")
+            if (!scheduleCleanup) {
+                publisher?.publishRecords(listOf(getHelloWorldRPCEventRecord()))?.forEach { it.get() }
+            } else {
+                publisher?.publishRecords(listOf(getHelloWorldScheduleCleanupEvent()))?.forEach { it.get() }
+            }
+            consoleLogger.info("Published RPCRecord")
+            shutDownService.shutdown(FrameworkUtil.getBundle(this::class.java))
+        } else {
+            publisher?.close()
         }
     }
 
