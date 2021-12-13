@@ -24,6 +24,10 @@
       "type": "string"
     },
     {
+      "name": "groupVisibility",
+      "type": [ "null", "string" ]
+    },
+    {
       "name": "type",
       "type": {
         "type": "enum",

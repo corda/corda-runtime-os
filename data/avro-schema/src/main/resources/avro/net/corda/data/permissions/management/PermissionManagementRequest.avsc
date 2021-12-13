@@ -19,7 +19,8 @@
     {
       "name": "request",
       "type": [
-        "net.corda.data.permissions.management.user.CreateUserRequest"
+        "net.corda.data.permissions.management.user.CreateUserRequest",
+        "net.corda.data.permissions.management.role.CreateRoleRequest"
       ]
     }
   ]

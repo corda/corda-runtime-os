@@ -20,6 +20,10 @@
       "type": "string"
     },
     {
+      "name": "groupVisibility",
+      "type": [ "null", "string" ]
+    },
+    {
       "name": "permissions",
       "type": {
         "type": "array",

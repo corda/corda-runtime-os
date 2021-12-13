@@ -8,7 +8,8 @@
       "type": [
         "boolean",
         "net.corda.data.ExceptionEnvelope",
-        "net.corda.data.permissions.User"
+        "net.corda.data.permissions.User",
+        "net.corda.data.permissions.Role"
       ]
     }
   ]

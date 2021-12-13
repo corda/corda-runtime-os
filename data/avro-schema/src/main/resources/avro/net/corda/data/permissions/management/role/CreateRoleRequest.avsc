@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "CreateRoleRequest",
+  "namespace": "net.corda.data.permissions.management.role",
+  "fields": [
+    {
+      "name": "roleName",
+      "type": "string"
+    },
+    {
+      "name": "groupVisibility",
+      "type": [ "null", "string" ]
+    }
+  ]
+}
