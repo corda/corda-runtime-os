@@ -2,7 +2,6 @@ package net.corda.session.mapper.service.executor
 
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
-import net.corda.flow.mapper.FlowMapperTopics
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
