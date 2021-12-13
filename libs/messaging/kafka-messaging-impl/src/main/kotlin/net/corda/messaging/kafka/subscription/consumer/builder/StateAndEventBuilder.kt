@@ -6,6 +6,7 @@ import net.corda.messaging.kafka.subscription.consumer.wrapper.StateAndEventCons
 import net.corda.messaging.kafka.types.StateAndEventConfig
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 
+@Suppress("LongParameterList")
 interface StateAndEventBuilder<K : Any, S : Any, E : Any> {
     fun createProducer(config: StateAndEventConfig): CordaKafkaProducer
     fun createStateEventConsumerAndRebalanceListener(
