@@ -21,6 +21,7 @@ plugins {
     id 'jacoco' // test coverage
     id 'com.dorongold.task-tree' // utility to visualise Gradle task DAG
     id 'org.jetbrains.dokka'
+    id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
 }
 
 def rootProjectDir = rootDir
@@ -241,6 +242,18 @@ subprojects {
         group = "verification"
 
         task.dependsOn tasks.withType(AbstractCompile)
+    }
+}
+
+// report updatable dependencies: gradle dependencyUpdates
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
+}
+tasks.named("dependencyUpdates").configure {
+    rejectVersionIf {
+        isNonStable(it.candidate.version) && !isNonStable(it.currentVersion)
     }
 }
 

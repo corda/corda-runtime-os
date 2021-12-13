@@ -16,8 +16,6 @@ import net.corda.v5.ledger.services.vault.RelevancyStatus
 import net.corda.v5.ledger.services.vault.StateStatus
 import net.corda.v5.ledger.transactions.MAX_NUMBER_OF_KEYS_IN_SIGNATURE_CONSTRAINT
 import net.corda.v5.persistence.MappedSchema
-import org.hibernate.annotations.Immutable
-import org.hibernate.annotations.Type
 import java.io.Serializable
 import java.time.Instant
 import java.util.UUID
@@ -86,10 +84,12 @@ object VaultSchemaV1 : MappedSchema(
     @Entity
     @Table(
         name = "vault_state",
-        indexes = [Index(name = "state_status_idx", columnList = "state_status"), Index(
-            name = "lock_id_idx",
-            columnList = "lock_id, state_status"
-        )]
+        indexes = [
+            Index(name = "state_status_idx", columnList = "state_status"), Index(
+                name = "lock_id_idx",
+                columnList = "lock_id, state_status"
+            )
+        ]
     )
     class VaultState(
         /** NOTE: serialized transaction state (including contract state) is now resolved from transaction store */
@@ -132,8 +132,10 @@ object VaultSchemaV1 : MappedSchema(
         var constraintType: ConstraintInfo.Type,
 
         /** associated constraint type data (if any) */
+        // TODO: remove org.hibernate.annotations in API
+        @Suppress("DEPRECATION", "ForbiddenComment")
         @Column(name = "constraint_data", length = MAX_CONSTRAINT_DATA_SIZE, nullable = true)
-        @Type(type = "corda-wrapper-binary")
+        @org.hibernate.annotations.Type(type = "corda-wrapper-binary")
         var constraintData: ByteArray? = null
     ) : PersistentState()
 
@@ -142,6 +144,7 @@ object VaultSchemaV1 : MappedSchema(
         name = "vault_linear_state",
         indexes = [Index(name = "external_id_index", columnList = "external_id"), Index(name = "uuid_index", columnList = "uuid")]
     )
+    @Suppress("ForbiddenComment")
     class VaultLinearState(
         /** [net.corda.v5.ledger.contracts.ContractState] attributes */
 
@@ -151,8 +154,10 @@ object VaultSchemaV1 : MappedSchema(
         @Column(name = "external_id", nullable = true)
         var externalId: String?,
 
+        // TODO: remove org.hibernate.annotations in API
+        @Suppress("DEPRECATION")
         @Column(name = "uuid", nullable = false)
-        @Type(type = "uuid-char")
+        @org.hibernate.annotations.Type(type = "uuid-char")
         var uuid: UUID
     ) : PersistentState() {
         constructor(uid: UniqueIdentifier) : this(externalId = uid.externalId, uuid = uid.id)
@@ -190,9 +195,12 @@ object VaultSchemaV1 : MappedSchema(
     }
 
     @Embeddable
-    @Immutable
-    data class PersistentStateRefAndKey(/* Foreign key. */ @Embedded override var stateRef: PersistentStateRef?,
-                                                           @Column(name = "public_key_hash", nullable = false) var publicKeyHash: String?
+    @Suppress("ForbiddenComment")
+    // TODO: remove org.hibernate.annotations in API
+    @org.hibernate.annotations.Immutable
+    data class PersistentStateRefAndKey(/* Foreign key. */
+        @Embedded override var stateRef: PersistentStateRef?,
+        @Column(name = "public_key_hash", nullable = false) var publicKeyHash: String?
     ) : DirectStatePersistable, Serializable {
         constructor() : this(null, null)
     }
@@ -206,19 +214,23 @@ object VaultSchemaV1 : MappedSchema(
         @Column(name = "x500_name", nullable = true)
         var x500Name: AbstractParty? = null
     ) : IndirectStatePersistable<PersistentStateRefAndKey> {
-        constructor(stateRef: PersistentStateRef, abstractParty: AbstractParty)
-                : this(PersistentStateRefAndKey(stateRef, abstractParty.owningKey.toStringShort()), abstractParty)
+        constructor(stateRef: PersistentStateRef, abstractParty: AbstractParty) :
+            this(PersistentStateRefAndKey(stateRef, abstractParty.owningKey.toStringShort()), abstractParty)
     }
 
     @Entity
-    @Immutable
+    @Suppress("ForbiddenComment")
+    // TODO: remove org.hibernate.annotations in API
+    @org.hibernate.annotations.Immutable
     @Table(name = "v_pkey_hash_ex_id_map")
     class StateToExternalId(
         @EmbeddedId
         override val compositeKey: PersistentStateRefAndKey,
 
+        // TODO: remove org.hibernate.annotations in API
+        @Suppress("DEPRECATION", "ForbiddenComment")
         @Column(name = "external_id")
-        @Type(type = "uuid-char")
+        @org.hibernate.annotations.Type(type = "uuid-char")
         val externalId: UUID
     ) : IndirectStatePersistable<PersistentStateRefAndKey>
 
