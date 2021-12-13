@@ -21,6 +21,7 @@ import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.COMPACTED_TOPIC1
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.COMPACTED_TOPIC1_TEMPLATE
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
+import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.getStringRecords
 import net.corda.messaging.kafka.integration.processors.TestCompactedProcessor
@@ -70,55 +71,55 @@ class CompactedSubscriptionIntegrationTest {
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }
 
-//    @Test
-//    fun `create compacted topic, publish records, start compacted sub, publish again`() {
-//        topicAdmin.createTopics(kafkaProperties, COMPACTED_TOPIC1_TEMPLATE)
-//
-//        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC1)
-//        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-//        publisher.publish(getDemoRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
-//
-//        val coordinator =
-//            lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName("compactedTest"))
-//            { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
-//                when (event) {
-//                    is RegistrationStatusChangeEvent -> {
-//                        if (event.status == LifecycleStatus.UP) {
-//                            coordinator.updateStatus(LifecycleStatus.UP)
-//                        } else {
-//                            coordinator.updateStatus(LifecycleStatus.DOWN)
-//                        }
-//                    }
-//                }
-//            }
-//        coordinator.start()
-//
-//        val onNextLatch = CountDownLatch(5)
-//        val snapshotLatch = CountDownLatch(1)
-//        val compactedSub = subscriptionFactory.createCompactedSubscription(
-//            SubscriptionConfig("$COMPACTED_TOPIC1-group", COMPACTED_TOPIC1, 1),
-//            TestCompactedProcessor(snapshotLatch, onNextLatch),
-//            kafkaConfig
-//        )
-//        coordinator.followStatusChangesByName(setOf(compactedSub.subscriptionName))
-//        compactedSub.start()
-//
-//        eventually(duration = 5.seconds, waitBetween = 200.millis) {
-//            assertEquals(LifecycleStatus.UP, coordinator.status)
-//        }
-//        assertTrue(snapshotLatch.await(10, TimeUnit.SECONDS))
-//        assertThat(onNextLatch.count).isEqualTo(5)
-//        publisher.publish(getDemoRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
-//        publisher.close()
-//        assertTrue(onNextLatch.await(5, TimeUnit.SECONDS))
-//        assertThat(snapshotLatch.count).isEqualTo(0)
-//
-//        compactedSub.stop()
-//        eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
-//            assertEquals(LifecycleStatus.DOWN, coordinator.status)
-//        }
-//        coordinator.stop()
-//    }
+    @Test
+    fun `create compacted topic, publish records, start compacted sub, publish again`() {
+        topicAdmin.createTopics(kafkaProperties, COMPACTED_TOPIC1_TEMPLATE)
+
+        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC1)
+        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+        publisher.publish(getDemoRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
+
+        val coordinator =
+            lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName("compactedTest"))
+            { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
+                when (event) {
+                    is RegistrationStatusChangeEvent -> {
+                        if (event.status == LifecycleStatus.UP) {
+                            coordinator.updateStatus(LifecycleStatus.UP)
+                        } else {
+                            coordinator.updateStatus(LifecycleStatus.DOWN)
+                        }
+                    }
+                }
+            }
+        coordinator.start()
+
+        val onNextLatch = CountDownLatch(5)
+        val snapshotLatch = CountDownLatch(1)
+        val compactedSub = subscriptionFactory.createCompactedSubscription(
+            SubscriptionConfig("$COMPACTED_TOPIC1-group", COMPACTED_TOPIC1, 1),
+            TestCompactedProcessor(snapshotLatch, onNextLatch),
+            kafkaConfig
+        )
+        coordinator.followStatusChangesByName(setOf(compactedSub.subscriptionName))
+        compactedSub.start()
+
+        eventually(duration = 5.seconds, waitBetween = 200.millis) {
+            assertEquals(LifecycleStatus.UP, coordinator.status)
+        }
+        assertTrue(snapshotLatch.await(10, TimeUnit.SECONDS))
+        assertThat(onNextLatch.count).isEqualTo(5)
+        publisher.publish(getDemoRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
+        publisher.close()
+        assertTrue(onNextLatch.await(5, TimeUnit.SECONDS))
+        assertThat(snapshotLatch.count).isEqualTo(0)
+
+        compactedSub.stop()
+        eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
+            assertEquals(LifecycleStatus.DOWN, coordinator.status)
+        }
+        coordinator.stop()
+    }
 
     @Test
     fun `create compacted topic, publish wrong records, start compacted sub`() {
