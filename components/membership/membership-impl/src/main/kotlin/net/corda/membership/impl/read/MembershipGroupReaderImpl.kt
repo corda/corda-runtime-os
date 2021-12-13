@@ -16,7 +16,7 @@ class MembershipGroupReaderImpl(
 ) : MembershipGroupReader {
 
     private val memberList: List<MemberInfo>
-        get() = memberListCache.get(groupId, owningMember)
+        get() = memberListCache.get(groupId, owningMember)!!
 
     override val groupParameters: GroupParameters
         get() = TODO("Not yet implemented")

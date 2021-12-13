@@ -25,11 +25,6 @@ interface MemberDataCache<T> {
      * @param data The data to cache
      */
     fun put(groupId: String, memberX500Name: MemberX500Name, data: T)
-
-    /**
-     * Clear all in-memory data.
-     */
-    fun clear()
 }
 
 /**
