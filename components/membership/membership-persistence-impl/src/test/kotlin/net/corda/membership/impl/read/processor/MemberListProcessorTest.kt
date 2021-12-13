@@ -2,7 +2,6 @@ package net.corda.membership.impl.read.processor
 
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.membership.impl.read.cache.MemberListCache
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
