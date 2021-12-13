@@ -1,6 +1,5 @@
 package net.corda.membership.impl.read.cache
 
-import net.corda.membership.read.MembershipGroupReader
 import net.corda.v5.membership.identity.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -9,33 +8,37 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 
-class GroupReaderCacheImplTest {
+/**
+ * Test the member data cache
+ */
+class MemberDataCacheTest {
 
-    private lateinit var groupReaderCache: GroupReaderCache
+    interface MemberData
+    private lateinit var memberDataCache: MemberDataCache<MemberData>
 
     private val groupId1 = "GROUP_ID1"
     private val groupId2 = "GROUP_ID2"
     private val lookUpMemberName = MemberX500Name("Alice", "London", "GB")
     private val memberName1 = MemberX500Name("Bob", "London", "GB")
-    private val groupReader1 = mock<MembershipGroupReader>()
-    private val groupReader2 = mock<MembershipGroupReader>()
+    private val memberData1 = mock<MemberData>()
+    private val memberData2 = mock<MemberData>()
 
     @BeforeEach
     fun setUp() {
-        groupReaderCache = GroupReaderCache.Impl()
+        memberDataCache = MemberDataCache.Impl()
     }
 
     @Test
-    fun `Get group reader before any data is cached`() {
-        assertNull(groupReaderCache.get(groupId1, lookUpMemberName))
+    fun `Get member data before any data is cached`() {
+        assertNull(memberDataCache.get(groupId1, lookUpMemberName))
     }
 
     @Test
-    fun `Add group reader to cache then read same group reader from cache`() {
+    fun `Add member data to cache then read same member data from cache`() {
         addToCacheWithDefaults()
         with(lookupWithDefaults()) {
             assertNotNull(this)
-            assertEquals(groupReader1, this)
+            assertEquals(memberData1, this)
         }
     }
 
@@ -56,17 +59,17 @@ class GroupReaderCacheImplTest {
         addToCacheWithDefaults()
         addToCacheWithDefaults(
             groupId = groupId2,
-            groupReader = groupReader2
+            memberData = memberData2
         )
 
         with(lookupWithDefaults()) {
             assertNotNull(this)
-            assertEquals(groupReader1, this)
+            assertEquals(memberData1, this)
         }
 
         with(lookupWithDefaults(groupId = groupId2)) {
             assertNotNull(this)
-            assertEquals(groupReader2, this)
+            assertEquals(memberData2, this)
         }
     }
 
@@ -75,32 +78,32 @@ class GroupReaderCacheImplTest {
         addToCacheWithDefaults()
         addToCacheWithDefaults(
             lookUpMember = memberName1,
-            groupReader = groupReader2
+            memberData = memberData2
         )
 
         with(lookupWithDefaults()) {
             assertNotNull(this)
-            assertEquals(groupReader1, this)
+            assertEquals(memberData1, this)
         }
 
         with(lookupWithDefaults(lookUpMember = memberName1)) {
             assertNotNull(this)
-            assertEquals(groupReader2, this)
+            assertEquals(memberData2, this)
         }
     }
 
     private fun lookupWithDefaults(
         groupId: String = groupId1,
         lookUpMember: MemberX500Name = lookUpMemberName,
-    ): MembershipGroupReader? {
-        return groupReaderCache.get(groupId, lookUpMember)
+    ): MemberData? {
+        return memberDataCache.get(groupId, lookUpMember)
     }
 
     private fun addToCacheWithDefaults(
         groupId: String = groupId1,
         lookUpMember: MemberX500Name = lookUpMemberName,
-        groupReader: MembershipGroupReader = groupReader1
+        memberData: MemberData = memberData1
     ) {
-        groupReaderCache.put(groupId, lookUpMember, groupReader)
+        memberDataCache.put(groupId, lookUpMember, memberData)
     }
 }

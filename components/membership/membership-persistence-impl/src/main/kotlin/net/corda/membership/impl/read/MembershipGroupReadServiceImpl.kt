@@ -6,7 +6,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.membership.GroupPolicy
 import net.corda.membership.config.MembershipConfig
 import net.corda.membership.impl.GroupPolicyImpl
-import net.corda.membership.impl.read.cache.GroupReaderCache
+import net.corda.membership.impl.read.cache.MemberDataCache
 import net.corda.membership.impl.read.cache.MemberListCache
 import net.corda.membership.impl.read.processor.MemberListProcessor
 import net.corda.membership.lifecycle.MembershipLifecycleComponent
@@ -61,8 +61,8 @@ class MembershipGroupReadServiceImpl @Activate constructor(
     private val memberListCache: MemberListCache
         get() = _memberListCache ?: throw CordaRuntimeException(ACCESSED_TOO_EARLY)
 
-    private var _groupReaderCache: GroupReaderCache? = null
-    private val groupReaderCache: GroupReaderCache
+    private var _groupReaderCache: MemberDataCache<MembershipGroupReader>? = null
+    private val groupReaderCache: MemberDataCache<MembershipGroupReader>
         get() = _groupReaderCache ?: throw CordaRuntimeException(ACCESSED_TOO_EARLY)
 
     private val caches
@@ -132,7 +132,7 @@ class MembershipGroupReadServiceImpl @Activate constructor(
 
     private fun createCaches() {
         _memberListCache = MemberListCache.Impl()
-        _groupReaderCache = GroupReaderCache.Impl()
+        _groupReaderCache = MemberDataCache.Impl()
     }
 
     private fun removeCaches() {
@@ -142,8 +142,13 @@ class MembershipGroupReadServiceImpl @Activate constructor(
 
     private fun startSubscriptions() {
         memberListSubscription = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(consumerGroup, memberListTopic),
-            MemberListProcessor(memberListCache)
+            SubscriptionConfig(
+                consumerGroup,
+                memberListTopic
+            ),
+            MemberListProcessor(
+                memberListCache
+            )
         ).also {
             it.start()
         }
