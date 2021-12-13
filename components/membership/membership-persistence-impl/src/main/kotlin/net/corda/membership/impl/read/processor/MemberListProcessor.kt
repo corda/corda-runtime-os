@@ -11,7 +11,7 @@ import net.corda.messaging.api.records.Record
  */
 class MemberListProcessor(
     private val memberListCache: MemberListCache
-): CompactedProcessor<String, SignedMemberInfo> {
+) : CompactedProcessor<String, SignedMemberInfo> {
     override val keyClass: Class<String>
         get() = String::class.java
     override val valueClass: Class<SignedMemberInfo>

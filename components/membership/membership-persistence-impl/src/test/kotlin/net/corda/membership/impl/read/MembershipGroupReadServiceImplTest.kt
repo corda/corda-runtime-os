@@ -35,7 +35,7 @@ class MembershipGroupReadServiceImplTest {
     private val memberName = MemberX500Name("Alice", "London", "GB")
 
     private lateinit var cpiInfoReader: CpiInfoReader
-    private lateinit var virtualNodeInfoReader : VirtualNodeInfoReaderComponent
+    private lateinit var virtualNodeInfoReader: VirtualNodeInfoReaderComponent
     private lateinit var subscriptionFactory: SubscriptionFactory
 
     @BeforeEach
