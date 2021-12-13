@@ -7,10 +7,10 @@ import net.corda.v5.membership.identity.MemberX500Name
  * Interface for storing the member lists in-memory including implementation class.
  */
 interface MemberListCache : MemberDataListCache<MemberInfo> {
-
     class Impl : MemberListCache {
         /**
-         * In-memory member list cache. Data is stored as a map from group ID to map of member name to list of visible members.
+         * In-memory member list cache. Data is stored as a map from group ID to map of member name to list of visible
+         * members.
          */
         private val cache: MutableMap<String, MutableMap<MemberX500Name, MutableList<MemberInfo>>> = mutableMapOf()
 
@@ -36,6 +36,10 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
         }
     }
 
+    /**
+     * Overload function for [put] on the main interface allowing a single [MemberInfo] to be cached instead of a whole
+     * list.
+     */
     fun put(groupId: String, memberX500Name: MemberX500Name, data: MemberInfo) =
         put(groupId, memberX500Name, listOf(data))
 }

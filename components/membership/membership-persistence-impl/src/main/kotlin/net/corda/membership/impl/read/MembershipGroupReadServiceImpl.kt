@@ -149,9 +149,5 @@ class MembershipGroupReadServiceImpl @Activate constructor(
         }
     }
 
-    private fun stopSubscriptions() {
-        subscriptions.forEach {
-            it?.stop()
-        }
-    }
+    private fun stopSubscriptions() = subscriptions.forEach { it?.stop() }
 }

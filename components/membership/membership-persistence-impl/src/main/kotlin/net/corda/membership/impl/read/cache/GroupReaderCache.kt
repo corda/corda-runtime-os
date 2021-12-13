@@ -15,8 +15,8 @@ interface GroupReaderCache : MemberDataCache<MembershipGroupReader> {
         private val cache: MutableMap<String, MutableMap<MemberX500Name, MembershipGroupReader>> = mutableMapOf()
 
         /**
-         * Gets the latest map of group reader services for a group which can be updated or read from depending on the use
-         * case. This is a private function since it allows modification of the map.
+         * Gets the latest map of group reader services for a group which can be updated or read from depending on the
+         * use case. This is a private function since it allows modification of the map.
          */
         private fun getGroupReaders(groupId: String): MutableMap<MemberX500Name, MembershipGroupReader> =
             cache.getOrPut(groupId) { mutableMapOf() }

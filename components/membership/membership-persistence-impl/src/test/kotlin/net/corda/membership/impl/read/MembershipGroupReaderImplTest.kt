@@ -5,6 +5,8 @@ import net.corda.membership.impl.read.cache.MemberListCache
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.v5.membership.identity.MemberX500Name
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.eq
@@ -39,12 +41,12 @@ class MembershipGroupReaderImplTest {
     @Test
     fun `lookup known member based on name`() {
         mockMemberList(listOf(memberInfo))
-        Assertions.assertEquals(memberInfo, membershipGroupReaderImpl.lookup(memberName))
+        assertEquals(memberInfo, membershipGroupReaderImpl.lookup(memberName))
     }
 
     @Test
     fun `lookup non-existing member based on name`() {
         mockMemberList(emptyList())
-        Assertions.assertNull(membershipGroupReaderImpl.lookup(memberName))
+        assertNull(membershipGroupReaderImpl.lookup(memberName))
     }
 }

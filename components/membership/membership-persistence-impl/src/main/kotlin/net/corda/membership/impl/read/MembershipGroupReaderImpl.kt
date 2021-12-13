@@ -27,8 +27,5 @@ class MembershipGroupReaderImpl(
         TODO("Not yet implemented")
     }
 
-    override fun lookup(name: MemberX500Name): MemberInfo? =
-        memberList.singleOrNull {
-            it.name == name
-        }
+    override fun lookup(name: MemberX500Name) = memberList.singleOrNull { it.name == name }
 }
