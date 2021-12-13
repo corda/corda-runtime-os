@@ -175,6 +175,28 @@ class TopicTemplates {
                     } 
                 ]"""
 
+        const val EVENT_TOPIC7  = "EventTopic7"
+        const val EVENT_TOPIC7_TEMPLATE = """topics = [ 
+                    { 
+                        topicName = "$TEST_TOPIC_PREFIX$EVENT_TOPIC7" 
+                        numPartitions = 2 
+                        replicationFactor = 3 
+                    },
+                    { 
+                        topicName = "$TEST_TOPIC_PREFIX$EVENT_TOPIC7$DLQ_SUFFIX" 
+                        numPartitions = 2 
+                        replicationFactor = 3 
+                    },
+                    { 
+                        topicName = "$TEST_TOPIC_PREFIX$EVENT_TOPIC7.state" 
+                        numPartitions = 2 
+                        replicationFactor = 3 
+                        config { 
+                            cleanup.policy=compact 
+                        } 
+                    } 
+                ]"""
+
         const val RPC_TOPIC  = "RPCTopic"
         const val RPC_TOPIC_TEMPLATE = """topics = [
                     {

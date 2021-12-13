@@ -8,7 +8,7 @@
     --add-opens, 'java.base/java.net=ALL-UNNAMED'
 
 #uncomment to remote debug
--runjdb: 5005
+#-runjdb: 5005
 
 -runproperties: \
     org.slf4j.simpleLogger.defaultLogLevel=info,\

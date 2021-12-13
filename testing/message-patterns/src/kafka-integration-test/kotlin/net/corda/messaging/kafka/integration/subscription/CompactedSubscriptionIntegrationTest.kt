@@ -153,7 +153,7 @@ class CompactedSubscriptionIntegrationTest {
         coordinator.followStatusChangesByName(setOf(compactedSub.subscriptionName))
         compactedSub.start()
 
-        eventually(duration = 500.seconds, waitBetween = 200.millis) {
+        eventually(duration = 10.seconds, waitBetween = 200.millis) {
             assertEquals(LifecycleStatus.UP, coordinator.status)
         }
         assertTrue(snapshotLatch.await(10, TimeUnit.SECONDS))
@@ -161,7 +161,7 @@ class CompactedSubscriptionIntegrationTest {
 
         publisher.close()
         compactedSub.stop()
-        eventually(duration = 500.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
+        eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             assertEquals(LifecycleStatus.DOWN, coordinator.status)
         }
         coordinator.stop()

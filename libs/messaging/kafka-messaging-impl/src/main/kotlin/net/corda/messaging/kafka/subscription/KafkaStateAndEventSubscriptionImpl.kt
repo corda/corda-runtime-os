@@ -24,10 +24,10 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
-import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Clock
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -140,17 +140,36 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     processor.keyClass,
                     processor.stateValueClass,
                     processor.eventValueClass,
-                    stateAndEventListener
-                ) { topic, data ->
-                    log.error("Failed to deserialize record from $topic")
-                    producer.send(
-                        ProducerRecord(
-                            topic + config.deadLetterQueueSuffix,
-                            null,
-                            data
-                        ), null
-                    )
-                }
+                    stateAndEventListener,
+                    { topic, data ->
+                        log.error("Failed to deserialize state record from $topic")
+                        producer.beginTransaction()
+                        producer.sendRecords(
+                            listOf(
+                                Record(
+                                    this.eventTopic + deadLetterQueueSuffix,
+                                    UUID.randomUUID().toString(),
+                                    data
+                                )
+                            )
+                        )
+                        producer.commitTransaction()
+                    },
+                    { topic, data ->
+                        log.error("Failed to deserialize event record from $topic")
+                        producer.beginTransaction()
+                        producer.sendRecords(
+                            listOf(
+                                Record(
+                                    this.eventTopic + deadLetterQueueSuffix,
+                                    UUID.randomUUID().toString(),
+                                    data
+                                )
+                            )
+                        )
+                        producer.commitTransaction()
+                    }
+                )
                 stateAndEventConsumer = stateAndEventConsumerTmp
                 eventConsumer = stateAndEventConsumer.eventConsumer
                 eventConsumer.subscribeToTopic(rebalanceListener)

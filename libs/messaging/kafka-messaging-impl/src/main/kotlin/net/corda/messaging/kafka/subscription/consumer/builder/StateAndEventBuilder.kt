@@ -14,6 +14,7 @@ interface StateAndEventBuilder<K : Any, S : Any, E : Any> {
         sClazz: Class<S>,
         eClazz: Class<E>,
         stateAndEventListener: StateAndEventListener<K, S>? = null,
-        onError: (String, ByteArray) -> Unit
+        onStateError: (String, ByteArray) -> Unit,
+        onEventError: (String, ByteArray) -> Unit
     ): Pair<StateAndEventConsumer<K, S,E>, ConsumerRebalanceListener>
 }

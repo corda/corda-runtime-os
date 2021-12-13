@@ -7,6 +7,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.EventLogProcessor
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
@@ -29,7 +30,6 @@ import net.corda.messaging.kafka.utils.toEventLogRecord
 import net.corda.v5.base.util.debug
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
-import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.locks.ReentrantLock
@@ -176,20 +176,39 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                         processor.valueClass,
                         { topic, data ->
                             log.error("Failed to deserialize record from $topic")
-                            producer.send(
-                                ProducerRecord(
-                                    topic + config.getString(DEAD_LETTER_QUEUE_SUFFIX),
-                                    null,
-                                    data
-                                ), null
+                            producer.beginTransaction()
+                            producer.sendRecords(
+                                listOf(
+                                    Record(
+                                        this.topic + config.getString(DEAD_LETTER_QUEUE_SUFFIX),
+                                        UUID.randomUUID().toString(),
+                                        data
+                                    )
+                                )
                             )
+                            producer.commitTransaction()
                         },
                         consumerRebalanceListener = rebalanceListener
                     )
                 } else {
                     consumerBuilder.createDurableConsumer(
                         config.getConfig(KAFKA_CONSUMER),
-                        processor.keyClass, processor.valueClass
+                        processor.keyClass,
+                        processor.valueClass,
+                        { topic, data ->
+                            log.error("Failed to deserialize record from $topic")
+                            producer.beginTransaction()
+                            producer.sendRecords(
+                                listOf(
+                                    Record(
+                                        this.topic + config.getString(DEAD_LETTER_QUEUE_SUFFIX),
+                                        UUID.randomUUID().toString(),
+                                        data
+                                    )
+                                )
+                            )
+                            producer.commitTransaction()
+                        }
                     )
                 }
                 consumer.use { cordaConsumer ->
