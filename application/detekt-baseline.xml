@@ -2,7 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>ForbiddenComment:FlowLogicRef.kt$FlowLogicRef$// TODO: align this with the existing [FlowRef] in the bank-side API (probably replace some of the API classes)</ID>
     <ID>SpreadOperator:CordaX500Name.kt$CordaX500Name.Companion$(*Locale.getISOCountries(), unspecifiedCountry)</ID>
   </CurrentIssues>
 </SmellBaseline>

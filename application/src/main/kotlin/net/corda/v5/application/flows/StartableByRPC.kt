@@ -3,9 +3,9 @@ package net.corda.v5.application.flows
 import kotlin.annotation.AnnotationTarget.CLASS
 
 /**
- * Any [FlowLogic] which is to be started by the RPC interface ([net.corda.core.messaging.CordaRPCOps.startFlowDynamic]
- * and [net.corda.core.messaging.CordaRPCOps.startTrackedFlowDynamic]) must have this annotation. If it's missing the
- * flow will not be allowed to start and an exception will be thrown.
+ * Allows a [Flow] to be started by RPC.
+ *
+ * If the annotation is missing, the flow will not be allowed to start via RPC and an exception will be thrown if done so.
  */
 @Target(CLASS)
 @MustBeDocumented
