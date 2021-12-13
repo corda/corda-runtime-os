@@ -1,5 +1,6 @@
 package net.corda.permissions.storage.reader
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.lifecycle.Lifecycle
@@ -17,7 +18,8 @@ class PermissionStorageReaderService(
     permissionStorageReaderFactory: PermissionStorageReaderFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
     entityManagerFactory: EntityManagerFactory,
-    publisherFactory: PublisherFactory
+    publisherFactory: PublisherFactory,
+    bootstrapConfig: SmartConfig
 ) : Lifecycle {
 
     val permissionStorageReader: PermissionStorageReader? get() = handler.permissionStorageReader
@@ -26,7 +28,8 @@ class PermissionStorageReaderService(
         permissionCacheService,
         permissionStorageReaderFactory,
         entityManagerFactory,
-        publisherFactory
+        publisherFactory,
+        bootstrapConfig
     )
 
     private val coordinator = coordinatorFactory.createCoordinator<PermissionStorageReaderService>(handler)

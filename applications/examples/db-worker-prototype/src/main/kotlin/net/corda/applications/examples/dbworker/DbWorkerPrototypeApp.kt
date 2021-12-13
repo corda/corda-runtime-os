@@ -145,8 +145,12 @@ class DbWorkerPrototypeApp @Activate constructor(
 
             log.info("Creating and starting PermissionStorageReaderService")
             val localPermissionStorageReaderService = PermissionStorageReaderService(
-                permissionCacheService, permissionStorageReaderFactory,
-                coordinatorFactory, emf, publisherFactory
+                permissionCacheService,
+                permissionStorageReaderFactory,
+                coordinatorFactory,
+                emf,
+                publisherFactory,
+                bootstrapConfig
             ).also { it.start() }
             permissionStorageReaderService = localPermissionStorageReaderService
 

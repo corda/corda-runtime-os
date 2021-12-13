@@ -24,7 +24,7 @@ class PermissionStorageWriterServiceEventHandler(
     private val entityManagerFactory: EntityManagerFactory,
     private val subscriptionFactory: SubscriptionFactory,
     private val permissionStorageWriterProcessorFactory: PermissionStorageWriterProcessorFactory,
-    private val nodeConfig: SmartConfig,
+    private val bootstrapConfig: SmartConfig,
     private val readerService: PermissionStorageReaderService
 ) : LifecycleEventHandler {
 
@@ -55,7 +55,7 @@ class PermissionStorageWriterServiceEventHandler(
                                 requestType = PermissionManagementRequest::class.java,
                                 responseType = PermissionManagementResponse::class.java
                             ),
-                            nodeConfig = nodeConfig,
+                            nodeConfig = bootstrapConfig,
                             responderProcessor = permissionStorageWriterProcessorFactory.create(
                                 entityManagerFactory,
                                 readerService.permissionStorageReader!!

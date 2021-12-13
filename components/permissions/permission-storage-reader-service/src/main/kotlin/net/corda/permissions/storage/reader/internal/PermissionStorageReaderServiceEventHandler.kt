@@ -1,6 +1,6 @@
 package net.corda.permissions.storage.reader.internal
 
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -24,7 +24,8 @@ class PermissionStorageReaderServiceEventHandler(
     private val permissionCacheService: PermissionCacheService,
     private val permissionStorageReaderFactory: PermissionStorageReaderFactory,
     private val entityManagerFactory: EntityManagerFactory,
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    private val bootstrapConfig: SmartConfig
 ) : LifecycleEventHandler {
 
     private companion object {
@@ -53,7 +54,7 @@ class PermissionStorageReaderServiceEventHandler(
 
                 publisherFactory.createPublisher(
                     publisherConfig = PublisherConfig(clientId = CLIENT_NAME),
-                    kafkaConfig = SmartConfigImpl.empty()
+                    kafkaConfig = bootstrapConfig
                 ).also {
                     this.publisher = it
                     it.start()

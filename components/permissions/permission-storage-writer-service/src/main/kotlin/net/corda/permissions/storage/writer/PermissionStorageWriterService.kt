@@ -18,7 +18,7 @@ class PermissionStorageWriterService(
     entityManagerFactory: EntityManagerFactory,
     subscriptionFactory: SubscriptionFactory,
     permissionStorageWriterProcessorFactory: PermissionStorageWriterProcessorFactory,
-    nodeConfig: SmartConfig,
+    bootstrapConfig: SmartConfig,
     readerService: PermissionStorageReaderService
 ) : Lifecycle {
 
@@ -27,7 +27,7 @@ class PermissionStorageWriterService(
             entityManagerFactory,
             subscriptionFactory,
             permissionStorageWriterProcessorFactory,
-            nodeConfig,
+            bootstrapConfig,
             readerService
         )
     ).also {
