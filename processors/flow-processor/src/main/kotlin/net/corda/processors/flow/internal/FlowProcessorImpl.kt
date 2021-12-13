@@ -38,40 +38,43 @@ class FlowProcessorImpl @Activate constructor(
         val log: Logger = contextLogger()
     }
 
-    private var lifeCycleCoordinator: LifecycleCoordinator? = null
+    private var bootstrapConfig: SmartConfig? = null
+    private val lifeCycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(::eventHandler)
 
     override fun start(instanceId: Int, topicPrefix: String, config: SmartConfig) {
         log.info("Flow processor starting.")
-        lifeCycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl> { event: LifecycleEvent, _:  LifecycleCoordinator ->
-            log.debug { "Flow Processor received: $event" }
-
-            when (event) {
-                is StartEvent -> {
-                    configurationReadService.start()
-                    configurationReadService.bootstrapConfig(config)
-                    flowService.start()
-                    flowMapperService.start()
-                    // HACK: This needs to change when we have the proper sandbox group service
-                    // for now we need to start this version of the service as it hosts the new
-                    // api we use elsewhere
-                    sandboxService.start()
-                }
-                is StopEvent -> {
-                    configurationReadService.stop()
-                    flowService.stop()
-                    flowMapperService.stop()
-                    sandboxService.stop()
-                }
-                else -> {
-                    log.error("$event unexpected!")
-                }
-            }
-        }
-        lifeCycleCoordinator?.start()
+        bootstrapConfig = config
+        lifeCycleCoordinator.start()
     }
 
     override fun stop() {
         log.info("Stopping application")
-        lifeCycleCoordinator?.stop()
+        lifeCycleCoordinator.stop()
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        log.debug { "Flow Processor received: $event" }
+        when (event) {
+            is StartEvent -> {
+                configurationReadService.start()
+                configurationReadService.bootstrapConfig(bootstrapConfig!!)
+                flowService.start()
+                flowMapperService.start()
+                // HACK: This needs to change when we have the proper sandbox group service
+                // for now we need to start this version of the service as it hosts the new
+                // api we use elsewhere
+                sandboxService.start()
+            }
+            is StopEvent -> {
+                configurationReadService.stop()
+                flowService.stop()
+                flowMapperService.stop()
+                sandboxService.stop()
+            }
+            else -> {
+                log.error("$event unexpected!")
+            }
+        }
     }
 }
