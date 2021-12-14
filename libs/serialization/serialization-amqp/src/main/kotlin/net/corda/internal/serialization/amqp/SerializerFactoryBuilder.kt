@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp
 
 import com.google.common.primitives.Primitives
+import net.corda.internal.serialization.amqp.standard.AMQPPrimitiveSerializer
 import net.corda.internal.serialization.model.ClassTypeLoader
 import net.corda.internal.serialization.model.ConfigurableLocalTypeModel
 import net.corda.internal.serialization.model.FingerPrinter

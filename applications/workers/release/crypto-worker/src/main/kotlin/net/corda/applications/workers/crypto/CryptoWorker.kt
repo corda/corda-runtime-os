@@ -2,7 +2,7 @@ package net.corda.applications.workers.crypto
 
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.HealthMonitor
-import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getAdditionalConfig
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
@@ -42,7 +42,7 @@ class CryptoWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, CryptoWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val config = getAdditionalConfig(params.defaultParams, smartConfigFactory)
+        val config = getBootstrapConfig(params.defaultParams, smartConfigFactory)
         processor.start(params.defaultParams.instanceId, params.defaultParams.topicPrefix, config)
     }
 

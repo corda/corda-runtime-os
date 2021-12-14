@@ -7,6 +7,7 @@ import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.toAvroUser
 import net.corda.data.permissions.User as AvroUser
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
+import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.RPCPermissionOperation
@@ -46,10 +47,7 @@ class PermissionStorageWriterProcessorImpl(
 
         log.debug { "Received request to create new user: $loginName" }
 
-        val entityManager = entityManagerFactory.createEntityManager()
-
-        return try {
-            entityManager.transaction.begin()
+        return entityManagerFactory.transaction { entityManager ->
 
             requireNewUser(entityManager, loginName)
 
@@ -86,17 +84,12 @@ class PermissionStorageWriterProcessorImpl(
 
             entityManager.persist(auditLog)
 
-            entityManager.transaction.commit()
-
+            user.toAvroUser()
+        }.also {
             log.info("Successfully created new user: $loginName")
-
-            user.toAvroUser().also {
-                // At this time of publishing the User is successfully committed into the DB with no conflicts like
-                // login name clash.
-                reader.publishNewUser(it)
-            }
-        } finally {
-            entityManager.close()
+            // At this time of publishing the User is successfully committed into the DB with no conflicts like
+            // login name clash.
+            reader.publishNewUser(this)
         }
     }
 

@@ -1,6 +1,5 @@
 package net.corda.virtualnode
 
-import net.corda.applications.common.ConfigHelper
 import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.cpiinfo.write.CpiInfoWriterComponent
@@ -13,6 +12,11 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.packaging.CPI
+import net.corda.schema.Schemas.Companion.CONFIG_TOPIC
+import net.corda.tools.setup.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
+import net.corda.tools.setup.common.ConfigHelper.Companion.SYSTEM_ENV_CONFIG_TOPIC_PATH
+import net.corda.tools.setup.common.ConfigHelper.Companion.getBootstrapConfig
+import net.corda.tools.setup.common.ConfigHelper.Companion.getConfigValue
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -25,7 +29,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
-import java.util.Properties
+import java.util.*
 
 /**
  * Steps
@@ -87,7 +91,7 @@ class VirtualNodeCli @Activate constructor(
         topicTemplate = parameters.topicTemplate
 
         // Get a default, hard-coded config.  tl;dr returns bootstrap.servers = localhost:9092
-        bootstrapConfig = smartConfigFactory.create(ConfigHelper.getBootstrapConfig(instanceId))
+        bootstrapConfig = smartConfigFactory.create(getBootstrapConfig(instanceId))
 
         // Start the event handler loop.
         coordinator.start()
@@ -132,9 +136,9 @@ class VirtualNodeCli @Activate constructor(
             return
 
         configWriter.updateConfig(
-            ConfigHelper.getConfigValue(
-                ConfigHelper.SYSTEM_ENV_CONFIG_TOPIC_PATH,
-                ConfigHelper.DEFAULT_CONFIG_TOPIC_VALUE
+            getConfigValue(
+                SYSTEM_ENV_CONFIG_TOPIC_PATH,
+                CONFIG_TOPIC
             ),
             config,
             configurationFile!!.readText()
@@ -150,8 +154,8 @@ class VirtualNodeCli @Activate constructor(
             return
 
         val kafkaProperties = Properties().also {
-            it[ConfigHelper.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH] =
-                ConfigHelper.getConfigValue(ConfigHelper.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH, "localhost:9092")
+            it[SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH] =
+                getConfigValue(SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH, "localhost:9092")
         }
 
         topicAdmin.createTopics(kafkaProperties, topicTemplate!!.readText())

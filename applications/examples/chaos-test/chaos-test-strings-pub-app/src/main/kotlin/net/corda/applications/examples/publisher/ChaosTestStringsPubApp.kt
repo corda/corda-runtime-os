@@ -1,6 +1,5 @@
 package net.corda.applications.examples.testclients
 
-import net.corda.applications.common.ConfigHelper
 // import net.corda.applications.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
 import net.corda.components.examples.publisher.RunChaosTestStringsPub
 import net.corda.libs.configuration.SmartConfig
@@ -101,7 +100,7 @@ class ChaosTestStringsPubApp @Activate constructor(
     }
 
     private fun getBootstrapConfig(instanceId: Int?): SmartConfig {
-        return smartConfigFactory.create(ConfigHelper.Companion.getBootstrapConfig(instanceId))
+        return smartConfigFactory.create(getBootstrapConfig(instanceId))
     }
 }
 

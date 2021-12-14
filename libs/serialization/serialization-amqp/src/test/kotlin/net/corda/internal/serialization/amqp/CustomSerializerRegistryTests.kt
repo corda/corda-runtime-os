@@ -1,5 +1,6 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.amqp.standard.CustomSerializer
 import net.corda.serialization.BaseProxySerializer
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException

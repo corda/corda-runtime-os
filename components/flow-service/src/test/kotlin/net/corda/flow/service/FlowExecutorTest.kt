@@ -15,7 +15,6 @@ import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.sandbox.service.SandboxService
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -31,8 +30,7 @@ import java.util.concurrent.TimeUnit
 class FlowExecutorTest {
 
     companion object {
-        private const val GROUP_NAME_KEY = "consumer.group"
-        private const val TOPIC_KEY = "consumer.topic"
+        private const val GROUP_NAME_KEY = "manager.consumer.group"
         private const val INSTANCE_ID_KEY = "instance-id"
     }
 
@@ -41,13 +39,11 @@ class FlowExecutorTest {
         ConfigFactory.empty().withValue(
             INSTANCE_ID_KEY, ConfigValueFactory
                 .fromAnyRef(1)
-        ).withValue(TOPIC_KEY, ConfigValueFactory.fromAnyRef("Topic1"))
-        .withValue(GROUP_NAME_KEY, ConfigValueFactory.fromAnyRef("Group1"))
+        ).withValue(GROUP_NAME_KEY, ConfigValueFactory.fromAnyRef("Group1"))
     )
     private val subscriptionFactory: SubscriptionFactory = mock()
     private val flowMetaDataFactory: FlowMetaDataFactory = mock()
     private val flowEventExecutorFactory: FlowEventExecutorFactory = mock()
-    private val sandboxService: SandboxService = mock()
 
     @Test
     fun testFlowExecutor() {
