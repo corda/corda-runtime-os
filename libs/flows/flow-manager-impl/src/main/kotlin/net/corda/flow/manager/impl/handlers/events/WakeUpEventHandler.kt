@@ -1,7 +1,7 @@
 package net.corda.flow.manager.impl.handlers.events
 
 import net.corda.data.flow.event.Wakeup
-import net.corda.flow.manager.FlowEventContext
+import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.statemachine.FlowContinuation
 import org.osgi.service.component.annotations.Component
 import net.corda.data.flow.state.waiting.Wakeup as WaitingForWakeup

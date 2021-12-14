@@ -3,7 +3,6 @@ package net.corda.flow.manager.impl
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
-import net.corda.flow.manager.FlowEventContext
 import net.corda.flow.manager.FlowEventProcessor
 import net.corda.flow.manager.exceptions.FlowHospitalException
 import net.corda.flow.manager.impl.handlers.FlowProcessingException

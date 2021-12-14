@@ -1,4 +1,4 @@
-package net.corda.flow.manager
+package net.corda.flow.manager.impl
 
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.event.FlowEvent

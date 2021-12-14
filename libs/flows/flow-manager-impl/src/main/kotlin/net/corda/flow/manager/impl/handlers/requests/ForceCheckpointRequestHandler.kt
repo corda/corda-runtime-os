@@ -2,7 +2,7 @@ package net.corda.flow.manager.impl.handlers.requests
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
-import net.corda.flow.manager.FlowEventContext
+import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.statemachine.requests.FlowIORequest
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas

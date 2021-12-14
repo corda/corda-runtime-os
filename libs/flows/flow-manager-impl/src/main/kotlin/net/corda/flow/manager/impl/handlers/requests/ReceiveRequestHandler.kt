@@ -1,6 +1,6 @@
 package net.corda.flow.manager.impl.handlers.requests
 
-import net.corda.flow.manager.FlowEventContext
+import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.statemachine.requests.FlowIORequest
 import org.osgi.service.component.annotations.Component
 

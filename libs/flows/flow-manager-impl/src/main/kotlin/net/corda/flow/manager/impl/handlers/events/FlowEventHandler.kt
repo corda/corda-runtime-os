@@ -1,7 +1,7 @@
 package net.corda.flow.manager.impl.handlers.events
 
 import net.corda.data.flow.state.Checkpoint
-import net.corda.flow.manager.FlowEventContext
+import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import net.corda.flow.statemachine.FlowContinuation
 

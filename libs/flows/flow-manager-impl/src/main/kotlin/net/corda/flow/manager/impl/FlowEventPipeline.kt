@@ -1,6 +1,5 @@
 package net.corda.flow.manager.impl
 
-import net.corda.flow.manager.FlowEventContext
 import net.corda.flow.statemachine.FlowContinuation
 import net.corda.flow.manager.impl.handlers.events.FlowEventHandler
 import net.corda.flow.statemachine.requests.FlowIORequest

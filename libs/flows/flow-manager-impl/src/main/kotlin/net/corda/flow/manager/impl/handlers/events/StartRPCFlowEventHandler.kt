@@ -3,7 +3,7 @@ package net.corda.flow.manager.impl.handlers.events
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
-import net.corda.flow.manager.FlowEventContext
+import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import net.corda.flow.statemachine.FlowContinuation
 import net.corda.v5.base.util.contextLogger
