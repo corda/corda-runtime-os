@@ -14,6 +14,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
 
+    implementation project(":libs:db:db-orm")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:permissions:permission-datamodel')

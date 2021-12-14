@@ -4,8 +4,8 @@ import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.CreateUserRequest
-import net.corda.data.permissions.User as AvroUser
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
+import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.RPCPermissionOperation
@@ -17,6 +17,7 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import net.corda.data.permissions.User as AvroUser
 
 class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: EntityManagerFactory) : PermissionStorageWriterProcessor {
 
@@ -42,10 +43,7 @@ class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: Ent
 
         log.debug { "Received request to create new user: $loginName" }
 
-        val entityManager = entityManagerFactory.createEntityManager()
-
-        return try {
-            entityManager.transaction.begin()
+        return entityManagerFactory.transaction { entityManager ->
 
             requireNewUser(entityManager, loginName)
 
@@ -82,13 +80,9 @@ class PermissionStorageWriterProcessorImpl(private val entityManagerFactory: Ent
 
             entityManager.persist(auditLog)
 
-            entityManager.transaction.commit()
-
-            log.info("Successfully created new user: $loginName")
-
             user.toAvroUser()
-        } finally {
-            entityManager.close()
+        }.also {
+            log.info("Successfully created new user: $loginName")
         }
     }
 
