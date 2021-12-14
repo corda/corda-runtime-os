@@ -10,6 +10,9 @@ open class LoggingConsumerRebalanceListener(
     private val groupName: String,
 ) : CordaConsumerRebalanceListener {
 
+    /**
+     * In derived classes, override the [log] with the more specific log name for that class.
+     */
     open val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-$topic-$groupName")
 
     /**

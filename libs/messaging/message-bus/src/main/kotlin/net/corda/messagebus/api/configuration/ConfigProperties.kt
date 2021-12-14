@@ -12,8 +12,6 @@ class ConfigProperties {
         const val INSTANCE_ID = "instanceId"
         const val CLIENT_ID_COUNTER = "clientIdCounter"
 
-        const val RESPONSE_TOPIC = "responseTopic"
-
         const val CORDA_PRODUCER = "producer"
         const val CORDA_CONSUMER = "consumer"
 

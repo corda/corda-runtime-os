@@ -66,6 +66,18 @@ interface CordaProducer : AutoCloseable {
 
     /**
      * Should be called before the start of each new transaction.
+     *
+     * All messages sent between the beginTransaction() and commitTransaction() calls will be part of a single
+     * transaction. When the transactional.id is specified, all messages sent by the producer must
+     * be part of a transaction.
+     *
+     * The transactional producer uses exceptions to communicate error states. In particular, it is not
+     * required to specify callbacks for producer.send() or to call .get() on the returned
+     * Future: an exception will be thrown if any of the producer.send() or transactional calls hit
+     * an irrecoverable error during a transaction.
+     *
+     * By calling producer.abortTransaction() upon receiving a KafkaException we can ensure that any successful
+     * writes are marked as aborted, hence keeping the transactional guarantees.
      */
     fun beginTransaction()
 

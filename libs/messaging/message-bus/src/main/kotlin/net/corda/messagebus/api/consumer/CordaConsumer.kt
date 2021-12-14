@@ -172,7 +172,8 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
     fun close(timeout: Duration)
 
     /**
-     * 
+     * Sets the default [CordaConsumerRebalanceListener] for this [CordaConsumer], if one is desired.
+     * When the default listener isn't set one can still be supplied via [subscribe].
      */
     fun setDefaultRebalanceListener(defaultListener: CordaConsumerRebalanceListener)
 }
