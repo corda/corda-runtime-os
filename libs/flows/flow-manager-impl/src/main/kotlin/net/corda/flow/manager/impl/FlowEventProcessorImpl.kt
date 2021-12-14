@@ -42,8 +42,7 @@ class FlowEventProcessorImpl(
             checkpoint = state,
             inputEvent = flowEvent,
             inputEventPayload = flowEvent.payload,
-            outputRecords = emptyList(),
-            isNewFlow = state == null
+            outputRecords = emptyList()
         )
 
         return try {
@@ -55,7 +54,7 @@ class FlowEventProcessorImpl(
                 .eventPostProcessing()
                 .toStateAndEventResponse()
         } catch (e: FlowProcessingException) {
-            log.error("Error processing flow event $event")
+            log.error("Error processing flow event $event", e)
             StateAndEventProcessor.Response(state, emptyList())
         }
     }

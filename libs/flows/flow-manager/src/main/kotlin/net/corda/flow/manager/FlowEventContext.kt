@@ -9,5 +9,4 @@ data class FlowEventContext<T>(
     val inputEvent: FlowEvent,
     val inputEventPayload: T,
     val outputRecords: List<Record<*, *>>,
-    val isNewFlow: Boolean
 )
