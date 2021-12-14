@@ -1,6 +1,7 @@
 CREATE TABLE sent_messages (
     sender_id varchar(512) NOT NULL,
     message_id varchar(512) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY(sender_id, message_id)
 );
 

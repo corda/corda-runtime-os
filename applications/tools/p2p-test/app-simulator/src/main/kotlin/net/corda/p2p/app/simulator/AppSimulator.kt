@@ -23,6 +23,7 @@ import java.sql.DriverManager
 import java.time.Duration
 import java.time.Instant
 import java.util.Properties
+import kotlin.concurrent.thread
 
 @Component(immediate = true)
 class AppSimulator @Activate constructor(
@@ -79,6 +80,12 @@ class AppSimulator @Activate constructor(
                 consoleLogger.error("Could not run: ${e.message}")
             }
         }
+
+        Runtime.getRuntime().addShutdownHook(
+            thread(start = false) {
+                println("QQQ in shutdown hook!")
+            }
+        )
     }
 
     private fun runSimulator(parameters: CliParameters, kafkaServers: String) {
@@ -195,6 +202,7 @@ class AppSimulator @Activate constructor(
     }
 
     override fun shutdown() {
+        println("QQQ in shutdown!")
         logger.info("Shutting down application simulator tool")
         dbConnection?.close()
         resources.forEach { it.close() }
