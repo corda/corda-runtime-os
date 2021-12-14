@@ -10,7 +10,7 @@ profiles:
         paths:
           - kustomize/base
 
-  - name: build and deploy
+  - name: build-and-deploy
     activation:
       - command: dev
       - command: debug
@@ -35,7 +35,7 @@ profiles:
         paths:
           - kustomize/base
 
-  - name: overlay-ingress
+  - name: enable-ingress
     deploy:
       kustomize:
         paths:

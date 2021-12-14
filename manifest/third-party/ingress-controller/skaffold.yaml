@@ -1,13 +1,15 @@
 ---
 apiVersion: skaffold/v2beta25
 kind: Config
-deploy:
-  helm:
-    releases:
-      - repo: https://kubernetes.github.io/ingress-nginx
-        remoteChart: ingress-nginx
-        name: ingress-nginx
-        namespace: ingress-nginx
-        createNamespace: true
-        setValues:
-          controller.extraArgs.enable-ssl-passthrough: ""
+profiles:
+  - name: enable-ingress
+    deploy:
+      helm:
+        releases:
+          - repo: https://kubernetes.github.io/ingress-nginx
+            remoteChart: ingress-nginx
+            name: ingress-nginx
+            namespace: ingress-nginx
+            createNamespace: true
+            setValues:
+              controller.extraArgs.enable-ssl-passthrough: ""
