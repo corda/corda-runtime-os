@@ -9,6 +9,7 @@ import net.corda.internal.serialization.amqp.ifThrowsAppend
 import net.corda.internal.serialization.model.TypeIdentifier.ArrayOf
 import net.corda.internal.serialization.model.TypeIdentifier.Parameterised
 import net.corda.internal.serialization.model.TypeIdentifier.UnknownType
+import net.corda.sandbox.SandboxGroup
 import java.lang.reflect.ParameterizedType
 
 /**
@@ -34,6 +35,7 @@ interface FingerPrinter {
  */
 class TypeModellingFingerPrinter(
         private val customTypeDescriptorLookup: CustomSerializerRegistry,
+        private val sandboxGroup: SandboxGroup,
         private val debugEnabled: Boolean = false) : FingerPrinter {
 
     private val cache: MutableMap<TypeIdentifier, String> = DefaultCacheProvider.createCache()
@@ -45,7 +47,7 @@ class TypeModellingFingerPrinter(
          * the Fingerprinter cannot guarantee that.
          */
         cache.getOrPut(typeInformation.typeIdentifier) {
-            FingerPrintingState(customTypeDescriptorLookup, FingerprintWriter(debugEnabled))
+            FingerPrintingState(customTypeDescriptorLookup, sandboxGroup, FingerprintWriter(debugEnabled))
                     .fingerprint(typeInformation)
         }
 }
@@ -98,6 +100,7 @@ internal class FingerprintWriter(debugEnabled: Boolean = false) {
  */
 private class FingerPrintingState(
         private val customSerializerRegistry: CustomSerializerRegistry,
+        private val sandboxGroup: SandboxGroup,
         private val writer: FingerprintWriter) {
 
     companion object {
@@ -242,7 +245,7 @@ private class FingerPrintingState(
         val observedGenericType = if (observedType !is ParameterizedType
                 && type.typeIdentifier is Parameterised
                 && observedClass != Class::class.java) {
-            type.typeIdentifier.getLocalType()
+            type.typeIdentifier.getLocalType(sandboxGroup)
         } else {
             observedType
         }

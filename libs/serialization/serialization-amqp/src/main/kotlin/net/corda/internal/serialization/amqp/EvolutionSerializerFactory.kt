@@ -1,5 +1,7 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.amqp.standard.EnumEvolutionSerializer
+import net.corda.internal.serialization.amqp.standard.EvolutionObjectSerializer
 import net.corda.internal.serialization.model.BaseLocalTypes
 import net.corda.internal.serialization.model.EvolutionConstructorInformation
 import net.corda.internal.serialization.model.LocalConstructorInformation
@@ -94,7 +96,7 @@ class DefaultEvolutionSerializerFactory(
         properties.asSequence().zip(localTypeInformation.properties.values.asSequence()).forEach { (remote, localProperty) ->
             val (name, remoteProperty) = remote
             val localClass = localProperty.type.observedType.asClass()
-            val remoteClass = remoteProperty.type.typeIdentifier.getLocalType().asClass()
+            val remoteClass = remoteProperty.type.typeIdentifier.getLocalType(localSerializerFactory.sandboxGroup).asClass()
 
             if (!localClass.isAssignableFrom(remoteClass) && remoteClass != primitiveTypes[localClass]) {
                 throw EvolutionSerializationException(this,
@@ -107,7 +109,7 @@ class DefaultEvolutionSerializerFactory(
     // provided property types.
     private fun findEvolverConstructor(constructors: List<EvolutionConstructorInformation>,
                                        properties: Map<String, RemotePropertyInformation>): EvolutionConstructorInformation? {
-        val propertyTypes = properties.mapValues { (_, info) -> info.type.typeIdentifier.getLocalType().asClass() }
+        val propertyTypes = properties.mapValues { (_, info) -> info.type.typeIdentifier.getLocalType(localSerializerFactory.sandboxGroup).asClass() }
 
         // Evolver constructors are listed in ascending version order, so we just want the last that matches.
         return constructors.lastOrNull { (_, evolverProperties) ->
@@ -188,13 +190,16 @@ class DefaultEvolutionSerializerFactory(
         } else convertedOrdinals.any { (ordinal, name) -> localOrdinals[name] != ordinal }
 
     private fun RemoteTypeInformation.Composable.buildComposableEvolutionSerializer(
-            localTypeInformation: LocalTypeInformation.Composable,
-            constructor: LocalConstructorInformation,
-            properties: Map<String, LocalPropertyInformation>): AMQPSerializer<Any> =
+        localTypeInformation: LocalTypeInformation.Composable,
+        constructor: LocalConstructorInformation,
+        properties: Map<String, LocalPropertyInformation>
+    ): AMQPSerializer<Any> =
         EvolutionObjectSerializer.make(
-                    localTypeInformation,
-                    this,
-                    constructor,
-                    properties,
-                    mustPreserveDataWhenEvolving)
+            localTypeInformation,
+            this,
+            constructor,
+            properties,
+            mustPreserveDataWhenEvolving,
+            localSerializerFactory.sandboxGroup
+        )
 }

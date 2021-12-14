@@ -2,6 +2,7 @@ package net.corda.internal.serialization.amqp
 
 import com.google.common.reflect.TypeToken
 import net.corda.internal.serialization.MAX_TYPE_PARAM_DEPTH
+import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.internal.serialization.model.TypeIdentifier
 import org.apache.qpid.proton.amqp.UnsignedShort
 import org.junit.jupiter.api.Test
@@ -40,7 +41,7 @@ class AMQPTypeIdentifierParserTests {
 
         // We set a limit to the depth of arrays-of-arrays-of-arrays...
         assertFailsWith<IllegalTypeNameParserStateException> {
-            AMQPTypeIdentifierParser.parse("string" + "[]".repeat(33))
+            AMQPTypeIdentifierParser.parse("string" + "[]".repeat(33), testSerializationContext.currentSandboxGroup())
         }
     }
 
@@ -68,7 +69,10 @@ class AMQPTypeIdentifierParserTests {
 
         // We set a limit to the maximum depth of nested type parameters.
         assertFailsWith<IllegalTypeNameParserStateException> {
-            AMQPTypeIdentifierParser.parse("WithParameter<".repeat(33) + ">".repeat(33))
+            AMQPTypeIdentifierParser.parse(
+                "WithParameter<".repeat(33) + ">".repeat(33),
+                testSerializationContext.currentSandboxGroup()
+            )
         }
     }
 
@@ -197,7 +201,10 @@ class AMQPTypeIdentifierParserTests {
     }
 
     private inline fun <reified T> assertParseResult(typeString: String) {
-        assertEquals(TypeIdentifier.forGenericType(typeOf<T>()), AMQPTypeIdentifierParser.parse(typeString))
+        assertEquals(
+            TypeIdentifier.forGenericType(typeOf<T>()),
+            AMQPTypeIdentifierParser.parse(typeString, testSerializationContext.currentSandboxGroup())
+        )
     }
 
     private inline fun <reified T> typeOf() = object : TypeToken<T>() {}.type
@@ -214,7 +221,7 @@ class AMQPTypeIdentifierParserTests {
 
     private fun assertParsesTo(type: Type, expectedIdentifierPrettyPrint: String) {
         val nameForType = AMQPTypeIdentifiers.nameForType(type)
-        val parsedIdentifier = AMQPTypeIdentifierParser.parse(nameForType)
+        val parsedIdentifier = AMQPTypeIdentifierParser.parse(nameForType, testSerializationContext.currentSandboxGroup())
         assertEquals(expectedIdentifierPrettyPrint, parsedIdentifier.prettyPrint())
     }
 
@@ -223,7 +230,8 @@ class AMQPTypeIdentifierParserTests {
     }
 
     private fun verify(typeName: String) {
-        val type = AMQPTypeIdentifierParser.parse(typeName).getLocalType()
+        val sandboxGroup = testSerializationContext.currentSandboxGroup()
+        val type = AMQPTypeIdentifierParser.parse(typeName, sandboxGroup).getLocalType(sandboxGroup)
         assertEquals(normalise(typeName), normalise(type.typeName))
     }
 }

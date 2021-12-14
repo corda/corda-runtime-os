@@ -7,6 +7,8 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.orm.utils.transaction
+import net.corda.orm.utils.use
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.GroupProperty
@@ -107,20 +109,22 @@ class RpcRbacEntitiesTest {
 
     @Test
     fun `test user creation`() {
-        val em = emf.createEntityManager()
-        try {
-            em.transaction.begin()
-            val id = UUID.randomUUID().toString()
-            val user = User(
-                id, Instant.now(), "fullName", "loginName-$id", true,
-                "saltValue", "hashedPassword", null, null)
-            em.persist(user)
-            em.transaction.commit()
-
+        val id = UUID.randomUUID().toString()
+        val user = User(
+            id,
+            Instant.now(),
+            "fullName",
+            "loginName-$id",
+            true,
+            "saltValue",
+            "hashedPassword",
+            null,
+            null
+        )
+        emf.transaction { em -> em.persist(user) }
+        emf.use { em ->
             val retrievedUser = em.createQuery("from User where id = '$id'", user.javaClass).singleResult
             Assertions.assertThat(retrievedUser).isEqualTo(user)
-        } finally {
-            em.close()
         }
     }
 }
