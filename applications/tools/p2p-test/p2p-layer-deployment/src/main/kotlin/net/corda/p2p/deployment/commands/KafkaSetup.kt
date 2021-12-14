@@ -7,13 +7,14 @@ import java.lang.Integer.min
 class KafkaSetup(
     private val namespaceName: String,
     private val kafkaBrokersCount: Int,
+    private val defaultPartitionsCount: Int,
 ) : Runnable {
     override fun run() {
         println("Setting up kafka topics...")
         val topics = listOf("ConfigTopic", "session.out.partitions", "p2p.out.markers.state").map {
             mapOf(
                 "topicName" to it,
-                "numPartitions" to 10,
+                "numPartitions" to defaultPartitionsCount,
                 "replicationFactor" to min(3, kafkaBrokersCount),
                 "config" to mapOf(
                     "cleanup" to mapOf("policy" to "compact"),
@@ -30,7 +31,7 @@ class KafkaSetup(
             )
         } + mapOf(
             "topicName" to "p2p.out.markers",
-            "numPartitions" to 10,
+            "numPartitions" to defaultPartitionsCount,
             "replicationFactor" to min(3, kafkaBrokersCount),
             "config" to mapOf(
                 "cleanup" to mapOf("policy" to "delete"),
