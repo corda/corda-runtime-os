@@ -1,6 +1,5 @@
 package net.corda.membership.grouppolicy
 
-import net.corda.cpiinfo.CpiInfoListener
 import net.corda.cpiinfo.read.CpiInfoReaderComponent
 import net.corda.membership.GroupPolicy
 import net.corda.packaging.CPI
@@ -66,7 +65,6 @@ class GroupPolicyProviderImplTest {
     val cpiIdentifier4: CPI.Identifier = mock()
 
     var virtualNodeListener: VirtualNodeInfoListener? = null
-    var cpiInfoListener: CpiInfoListener? = null
 
     val virtualNodeInfoReader: VirtualNodeInfoReaderComponent = mock<VirtualNodeInfoReaderComponent>().apply {
         doReturn(VirtualNodeInfo(holdingIdentity1, cpiIdentifier1)).whenever(this).get(eq(holdingIdentity1))
@@ -86,18 +84,11 @@ class GroupPolicyProviderImplTest {
         doReturn(cpiMetadata2).whenever(this).get(cpiIdentifier2)
         doReturn(cpiMetadata3).whenever(this).get(cpiIdentifier3)
         doReturn(cpiMetadata4).whenever(this).get(cpiIdentifier4)
-        doAnswer {
-            cpiInfoListener = it.arguments[0] as CpiInfoListener
-            mock<AutoCloseable>()
-        }
-            .whenever(this)
-            .registerCallback(any())
     }
 
     @BeforeEach
     fun setUp() {
         virtualNodeListener = null
-        cpiInfoListener = null
         groupPolicyProvider = GroupPolicyProviderImpl(virtualNodeInfoReader, cpiInfoReader)
     }
 
