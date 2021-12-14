@@ -65,10 +65,10 @@ class Deploy : Runnable {
     private var disableKafkaUi = false
 
     @Option(
-        names = ["-p", "--partitions", "--default-kafka-partition-count"],
-        description = ["Number of Kafka partition in a topic by default"]
+        names = ["-p", "--partitions", "--kafka-partition-count"],
+        description = ["Number of Kafka partition in each topic"]
     )
-    private var defaultPartitionsCount = 10
+    private var partitionsCount = 10
 
     @Option(
         names = ["-z", "--zoo-keepers-count"],
