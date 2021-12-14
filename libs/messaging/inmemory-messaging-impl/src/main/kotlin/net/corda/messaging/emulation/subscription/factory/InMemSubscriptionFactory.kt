@@ -11,7 +11,6 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -121,15 +120,6 @@ class InMemSubscriptionFactory @Activate constructor(
             topicService,
             lifecycleCoordinatorFactory
         )
-    }
-
-    override fun <K : Any, V : Any> createRandomAccessSubscription(
-        subscriptionConfig: SubscriptionConfig,
-        nodeConfig: SmartConfig,
-        keyClass: Class<K>,
-        valueClass: Class<V>
-    ): RandomAccessSubscription<K, V> {
-        TODO("Not yet implemented")
     }
 
     override fun <REQUEST : Any, RESPONSE : Any> createRPCSubscription(

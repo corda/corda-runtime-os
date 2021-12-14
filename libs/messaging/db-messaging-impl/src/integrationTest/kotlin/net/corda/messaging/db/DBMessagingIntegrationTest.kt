@@ -17,7 +17,6 @@ import net.corda.messaging.db.persistence.DBType
 import net.corda.messaging.db.publisher.DBPublisher
 import net.corda.messaging.db.subscription.DBDurableSubscription
 import net.corda.messaging.db.subscription.DBEventLogSubscription
-import net.corda.messaging.db.subscription.DBRandomAccessSubscription
 import net.corda.messaging.db.sync.OffsetTrackersManager
 import net.corda.messaging.db.util.DbUtils.Companion.createOffsetsTableStmt
 import net.corda.messaging.db.util.DbUtils.Companion.createTopicRecordsTableStmt
@@ -241,34 +240,6 @@ class DBMessagingIntegrationTest {
         subscriptionTopic1.stop()
         subscriptionTopic2.stop()
         publisher.stop()
-    }
-
-    @Test
-    fun `published messages can be retrieved individually using a random access subscription`() {
-        val randomAccessSubscription = DBRandomAccessSubscription(
-            subscriptionConfigTopic1,
-            avroSchemaRegistry,
-            offsetTrackersManager,
-            dbAccessProvider,
-            lifecycleCoordinatorFactory,
-            String::class.java,
-            String::class.java
-        )
-        val publisher =
-            DBPublisher(publisherConfig, avroSchemaRegistry, dbAccessProvider, offsetTrackersManager, partitionAssignor)
-        publisher.start()
-        randomAccessSubscription.start()
-
-        val records = (1..10).map { 1 to Record(topic1, "key-$it", "value-$it") }
-        publisher.publishToPartition(records).map { it.get() }
-
-        eventually(5.seconds, 5.millis) {
-            val record = randomAccessSubscription.getRecord(1, 5)
-            assertThat(record).isNotNull
-            assertThat(record!!.topic).isEqualTo(topic1)
-            assertThat(record.key).contains("key-5")
-            assertThat(record.value).contains("value-5")
-        }
     }
 
     @Test

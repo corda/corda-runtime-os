@@ -17,7 +17,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.RandomAccessSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -30,7 +29,6 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_C
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_DURABLE
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_EVENTLOG
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_PUBSUB
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_RANDOMACCESS
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_RPC_RESPONDER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_STATEANDEVENT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
@@ -41,7 +39,6 @@ import net.corda.messaging.kafka.subscription.KafkaDurableSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaEventLogSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaPubSubSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaRPCSubscriptionImpl
-import net.corda.messaging.kafka.subscription.KafkaRandomAccessSubscriptionImpl
 import net.corda.messaging.kafka.subscription.KafkaStateAndEventSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.CordaKafkaConsumerBuilderImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.impl.StateAndEventBuilderImpl
@@ -226,30 +223,6 @@ class KafkaSubscriptionFactory @Activate constructor(
             producerBuilder,
             processor,
             partitionAssignmentListener,
-            lifecycleCoordinatorFactory
-        )
-    }
-
-    override fun <K : Any, V : Any> createRandomAccessSubscription(
-        subscriptionConfig: SubscriptionConfig,
-        nodeConfig: SmartConfig,
-        keyClass: Class<K>,
-        valueClass: Class<V>
-    ): RandomAccessSubscription<K, V> {
-        val config = resolveSubscriptionConfiguration(
-            subscriptionConfig.toConfig(),
-            nodeConfig,
-            clientIdCounter.getAndIncrement(),
-            PATTERN_RANDOMACCESS
-        )
-        val consumerBuilder = CordaKafkaConsumerBuilderImpl<K, V>(avroSchemaRegistry)
-
-
-        return KafkaRandomAccessSubscriptionImpl(
-            config,
-            consumerBuilder,
-            keyClass,
-            valueClass,
             lifecycleCoordinatorFactory
         )
     }
