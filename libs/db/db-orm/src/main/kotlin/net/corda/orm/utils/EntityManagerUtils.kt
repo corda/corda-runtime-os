@@ -68,15 +68,15 @@ inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R 
  * @see use
  */
 inline fun <R> EntityManager.transaction(block: (EntityManager) -> R): R {
-    val transaction = this.transaction
-    transaction.begin()
+    val currentTransaction = transaction
+    currentTransaction.begin()
     return try {
         block(this)
     } finally {
-        if (!transaction.rollbackOnly) {
-            transaction.commit()
+        if (!currentTransaction.rollbackOnly) {
+            currentTransaction.commit()
         } else {
-            transaction.rollback()
+            currentTransaction.rollback()
         }
         close()
     }
