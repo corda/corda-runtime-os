@@ -1,9 +1,9 @@
-package net.corda.processors.db.internal.config.writer
+package net.corda.configuration.write.impl
 
+import net.corda.configuration.write.ConfigWriteException
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
-import net.corda.libs.configuration.read.ConfigReader
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -26,7 +26,7 @@ internal class ConfigWriterProcessor(
     /**
      * For each [request], the processor attempts to commit the updated config to the cluster database using [dbUtils].
      * If successful, the updated config is then published by the [publisher] to the [TOPIC_CONFIG] topic for
-     * consumption using a [ConfigReader].
+     * consumption using a `ConfigReader`.
      *
      * If both steps succeed, [respFuture] is completed to indicate success. Otherwise, it is completed exceptionally.
      */
@@ -48,14 +48,12 @@ internal class ConfigWriterProcessor(
         request: ConfigurationManagementRequest,
         respFuture: CompletableFuture<ConfigurationManagementResponse>
     ): Boolean {
-        // TODO - Joel - If this works, switch to actual Int in avro.
         val configEntity = ConfigEntity(request.section, request.configuration, request.version)
 
         return try {
             dbUtils.writeEntity(setOf(configEntity))
             true
         } catch (e: Exception) {
-            logger.debug("Config $configEntity couldn't be written to the database. Cause: $e.")
             respFuture.completeExceptionally(
                 ConfigWriteException("Config $configEntity couldn't be written to the database.", e)
             )

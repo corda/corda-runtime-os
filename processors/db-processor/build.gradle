@@ -10,36 +10,26 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':components:configuration:configuration-write-service')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:lifecycle:lifecycle')
-    implementation project(':libs:db:db-orm')
-    implementation project(':libs:db:db-core')
-    implementation project(':libs:db:db-admin')
-    implementation project(':libs:db:db-admin-impl')
-    implementation project(":libs:messaging:messaging")
     implementation 'net.corda:corda-base'
-    implementation 'net.corda:corda-avro-schema'
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    runtimeOnly project(':libs:db:db-orm-impl')
+    runtimeOnly project(':components:configuration:configuration-write-service-impl')
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
-    runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
     // TODO - Joel - Below are dependencies required by `KafkaDriver`. Remove in the future.
     compileOnly 'org.osgi:osgi.core'
     implementation project(':libs:configuration:configuration-read')
+    implementation project(":libs:messaging:messaging")
     implementation project(":libs:schema-registry:schema-registry")
+    implementation 'net.corda:corda-avro-schema'
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "io.javalin:javalin-osgi:$javalinVersion"
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly project(":libs:configuration:configuration-read-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"
-}
-
-tasks.named('jar', Jar) {
-    bnd '''\
-DynamicImport-Package: org.hibernate.proxy
-'''
 }

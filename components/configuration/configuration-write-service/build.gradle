@@ -1,0 +1,17 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description "Configuration Write Service"
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+}

@@ -1,5 +1,6 @@
-package net.corda.processors.db.internal.config.writer
+package net.corda.configuration.write.impl
 
+import net.corda.configuration.write.ConfigWriteService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.core.HikariDataSourceFactory
 import net.corda.libs.configuration.SmartConfig

@@ -1,6 +1,7 @@
-package net.corda.processors.db.internal.config.writer
+package net.corda.configuration.write.impl
 
 import com.typesafe.config.ConfigException
+import net.corda.configuration.write.ConfigWriteException
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles

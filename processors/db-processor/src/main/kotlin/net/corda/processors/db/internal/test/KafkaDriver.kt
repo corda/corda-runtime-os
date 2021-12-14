@@ -9,7 +9,6 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
-import net.corda.processors.db.internal.config.writer.TOPIC_CONFIG_MANAGEMENT_REQUEST
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
@@ -48,7 +47,7 @@ class KafkaDriver @Activate constructor(
         RPCConfig(
             "random_group_name",
             "random_client_name",
-            TOPIC_CONFIG_MANAGEMENT_REQUEST,
+            "config-management-request.topic",
             ConfigurationManagementRequest::class.java,
             ConfigurationManagementResponse::class.java
         ),
@@ -81,9 +80,7 @@ class KafkaDriver @Activate constructor(
                 configurationString,
                 1
             )
-            publisher.sendRequest(req)
-
-            Thread.sleep(3000)
+            publisher.sendRequest(req).get()
 
             logger.info("JJJ - Existing entries: $currentConfig")
             val readBackTimestamp = currentConfig[section]?.getString("timestamp")

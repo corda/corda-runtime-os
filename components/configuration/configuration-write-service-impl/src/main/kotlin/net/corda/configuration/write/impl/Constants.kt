@@ -1,4 +1,4 @@
-package net.corda.processors.db.internal.config.writer
+package net.corda.configuration.write.impl
 
 import net.corda.data.config.ConfigurationManagementResponse
 import java.util.concurrent.CompletableFuture

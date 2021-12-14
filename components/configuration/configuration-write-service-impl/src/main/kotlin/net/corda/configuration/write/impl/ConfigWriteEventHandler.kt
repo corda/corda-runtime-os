@@ -1,5 +1,6 @@
-package net.corda.processors.db.internal.config.writer
+package net.corda.configuration.write.impl
 
+import net.corda.configuration.write.ConfigWriteException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
