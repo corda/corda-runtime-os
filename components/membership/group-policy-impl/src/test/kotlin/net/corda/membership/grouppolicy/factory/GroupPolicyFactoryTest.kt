@@ -1,9 +1,5 @@
 package net.corda.membership.grouppolicy.factory
 
-import net.corda.membership.grouppolicy.factory.TestGroupPolicies.Companion.emptyString
-import net.corda.membership.grouppolicy.factory.TestGroupPolicies.Companion.fullGroupPolicy
-import net.corda.membership.grouppolicy.factory.TestGroupPolicies.Companion.invalidFormatGroupPolicy
-import net.corda.membership.grouppolicy.factory.TestGroupPolicies.Companion.whitespaceString
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -15,6 +11,12 @@ import org.junit.jupiter.api.assertThrows
  * Unit tests for [GroupPolicyFactory]
  */
 class GroupPolicyFactoryTest {
+
+    companion object {
+        const val emptyString = ""
+        const val whitespaceString = "                  "
+        const val invalidFormatGroupPolicy = "{{[{[{[{[{[{[ \"groupId\": \"ABC123\" }"
+    }
 
     private lateinit var groupPolicyFactory: GroupPolicyFactory
     private val testGroupId = "ABC123"
@@ -59,7 +61,7 @@ class GroupPolicyFactoryTest {
      */
     @Test
     fun `Parse group policy - verify interface properties`() {
-        val result = groupPolicyFactory.createGroupPolicy(fullGroupPolicy)
+        val result = groupPolicyFactory.createGroupPolicy(getSampleGroupPolicy())
         assertEquals(testGroupId, result.groupId)
     }
 
@@ -69,7 +71,7 @@ class GroupPolicyFactoryTest {
      */
     @Test
     fun `Parse group policy - verify internal map`() {
-        val result = groupPolicyFactory.createGroupPolicy(fullGroupPolicy)
+        val result = groupPolicyFactory.createGroupPolicy(getSampleGroupPolicy())
 
         // Top level properties
         assertEquals(1, result["fileFormatVersion"])
@@ -104,113 +106,10 @@ class GroupPolicyFactoryTest {
         val staticMemberTemplate = result["staticMemberTemplate"] as List<*>
         assertEquals(3, staticMemberTemplate.size)
     }
-}
 
-private class TestGroupPolicies {
-    companion object {
-        const val emptyString = ""
-        const val whitespaceString = "                  "
-        const val invalidFormatGroupPolicy = "{{[{[{[{[{[{[ \"groupId\": \"ABC123\" }"
-        const val fullGroupPolicy = """
-{
-  "fileFormatVersion": 1,
-  "groupId": "ABC123",
-  "registrationProtocolFactory": "net.corda.v5.mgm.MGMRegistrationProtocolFactory",
-  "synchronisationProtocolFactory": "net.corda.v5.mgm.MGMSynchronisationProtocolFactory",
-  "protocolParameters": {
-    "identityTrustStore": [
-      "-----BEGIN CERTIFICATE-----\nMIICCDCJDBZFSiI=\n-----END CERTIFICATE-----\n",
-      "-----BEGIN CERTIFICATE-----\nMIIFPDCzIlifT20M\n-----END CERTIFICATE-----"
-    ],
-    "tlsTrustStore": [
-      "-----BEGIN CERTIFICATE-----\nMIIDxTCCE6N36B9K\n-----END CERTIFICATE-----\n",
-      "-----BEGIN CERTIFICATE-----\nMIIDdTCCKSZp4A==\n-----END CERTIFICATE-----",
-      "-----BEGIN CERTIFICATE-----\nMIIFPDCCIlifT20M\n-----END CERTIFICATE-----"
-    ],
-    "mgmInfo": {
-      "x500Name": "C=GB, L=London, O=Corda Network, OU=MGM, CN=Corda Network MGM",
-      "sessionKey": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHK+B3YGgcIALw==\n-----END PUBLIC KEY-----\n",
-      "certificate": [
-        "-----BEGIN CERTIFICATE-----\nMIICxjCCRG11cu1\n-----END CERTIFICATE-----\n",
-        "-----BEGIN CERTIFICATE-----\nMIIB/TCCDJOIjhJ\n-----END CERTIFICATE-----\n",
-        "-----BEGIN CERTIFICATE-----\nMIICCDCCDZFSiI=\n-----END CERTIFICATE-----\n",
-        "-----BEGIN CERTIFICATE-----\nMIIFPDCClifT20M\n-----END CERTIFICATE-----"
-      ],
-      "ecdhKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDH8Tc=\n-----END PUBLIC KEY-----\n",
-      "keys": [
-        "-----BEGIN PUBLIC KEY-----\nMFkwEwYHgcIALw==\n-----END PUBLIC KEY-----\n"
-      ],
-      "endpoints": [
-        {
-          "url": "https://mgm.corda5.r3.com:10000",
-          "protocolVersion": 1
-        },
-        {
-          "url": "https://mgm-dr.corda5.r3.com:10000",
-          "protocolVersion": 1
-        }
-      ],
-      "platformVersion": 1,
-      "softwareVersion": "5.0.0",
-      "serial": 1
-    },
-    "identityPKI": "Standard",
-    "identityKeyPolicy": "Combined",
-    "cipherSuite": {
-      "corda.provider": "default",
-      "corda.signature.provider": "default",
-      "corda.signature.default": "ECDSA_SECP256K1_SHA256",
-      "corda.signature.FRESH_KEYS": "ECDSA_SECP256K1_SHA256",
-      "corda.digest.default": "SHA256",
-      "corda.cryptoservice.provider": "default"
-    },
-    "roles" : {
-      "default" : {
-        "validator" : "net.corda.v5.mgm.DefaultMemberInfoValidator",
-        "requiredMemberInfo" : [
-        ],
-        "optionalMemberInfo" : [
-        ]
-      },
-      "notary" : {
-        "validator" : "net.corda.v5.mgm.NotaryMemberInfoValidator",
-        "requiredMemberInfo" : [
-          "notaryServiceParty"
-        ],
-        "optionalMemberInfo" : [
-        ]
-      }
-    }
-  },
-  "staticMemberTemplate": [
-    {
-      "x500Name": "C=GB, L=London, O=Alice", // party name
-      "keyAlias": "alice-alias", // current party identity key
-      "rotatedKeyAlias-1": "alice-historic-alias-1", // Used to force old keys no longer in use (i.e. rotated key)
-      "memberStatus": "ACTIVE", // Member status usually set by the MGM
-      "endpointUrl-1": "https://alice.corda5.r3.com:10000", // Endpoint url & protocol. Iterable.
-      "endpointProtocol-1": 1                                //(uses incrementing postfix for repeating elements)
-    },
-    {
-      "x500Name": "C=GB, L=London, O=Bob",
-      "keyAlias": "bob-alias",
-      "rotatedKeyAlias-1": "bob-historic-alias-1",
-      "rotatedKeyAlias-2": "bob-historic-alias-2",
-      "memberStatus": "ACTIVE",
-      "endpointUrl-1": "https://bob.corda5.r3.com:10000",
-      "endpointProtocol-1": 1
-    },
-    {
-      "x500Name": "C=GB, L=London, O=Charlie",
-      "keyAlias": "charlie-alias",
-      "memberStatus": "SUSPENDED",
-      "endpointUrl-1": "https://charlie.corda5.r3.com:10000",
-      "endpointProtocol-1": 1,
-      "endpointUrl-2": "https://charlie-dr.corda5.r3.com:10001",
-      "endpointProtocol-2": 1
-    }
-  ]
-}
-        """
+    fun getSampleGroupPolicy(): String {
+        val url = this::class.java.getResource("/SampleGroupPolicy.json")
+        requireNotNull(url)
+        return url.readText()
     }
 }
