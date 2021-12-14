@@ -71,19 +71,20 @@ class Sender(private val publisherFactory: PublisherFactory,
                             Record(sendTopic, messageId, message)
                         }
                         stopLock.read {
-                            println("QQQ ($client) Publishing ${records.size}")
+                            val name = "${records.firstOrNull()?.key}->${records.lastOrNull()?.key}"
+                            println("QQQ ($client) Publishing $name")
                             val futures = publisher.publish(records)
 
                             if (dbConnection != null) {
                                 val messageSentEvents = messageWithIds.map { (messageId, _) ->
                                     MessageSentEvent(senderId, messageId)
                                 }
-                                println("QQQ ($client) Saving ${records.size}")
+                                println("QQQ ($client) Saving $name")
                                 writeSentMessagesToDb(messageSentEvents)
-                                println("QQQ ($client) Saved ${records.size}")
+                                println("QQQ ($client) Saved $name")
                             }
                             futures.forEach { it.get() }
-                            println("QQQ ($client) published ${records.size}")
+                            println("QQQ ($client) published $name")
                         }
                         messagesSent += loadGenParams.batchSize
 
@@ -129,7 +130,7 @@ class Sender(private val publisherFactory: PublisherFactory,
                               destinationIdentity: HoldingIdentity,
                               srcIdentity: HoldingIdentity,
                               messageSize: Int): Pair<String, AppMessage> {
-        val messageId = senderId.replace("-", "") + index.incrementAndGet()
+        val messageId = senderId.replace("-", "") +":" + index.incrementAndGet()
         val messageHeader = AuthenticatedMessageHeader(
             destinationIdentity,
             srcIdentity,
