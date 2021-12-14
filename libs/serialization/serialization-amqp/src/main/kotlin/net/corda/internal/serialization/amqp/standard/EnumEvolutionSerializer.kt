@@ -1,5 +1,13 @@
-package net.corda.internal.serialization.amqp
+package net.corda.internal.serialization.amqp.standard
 
+import net.corda.internal.serialization.amqp.LocalSerializerFactory
+import net.corda.internal.serialization.amqp.AMQPSerializer
+import net.corda.internal.serialization.amqp.SerializationSchemas
+import net.corda.internal.serialization.amqp.Metadata
+import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.AMQPNotSerializableException
+import net.corda.internal.serialization.amqp.asClass
+import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.model.BaseLocalTypes
 import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.codec.Data
@@ -32,11 +40,11 @@ import java.lang.reflect.Type
  * @property ordinals Convenience mapping of constant to ordinality
  */
 class EnumEvolutionSerializer(
-        override val type: Type,
-        factory: LocalSerializerFactory,
-        private val baseLocalTypes: BaseLocalTypes,
-        private val conversions: Map<String, String>,
-        private val ordinals: Map<String, Int>) : AMQPSerializer<Any> {
+    override val type: Type,
+    factory: LocalSerializerFactory,
+    private val baseLocalTypes: BaseLocalTypes,
+    private val conversions: Map<String, String>,
+    private val ordinals: Map<String, Int>) : AMQPSerializer<Any> {
     override val typeDescriptor = factory.createDescriptor(type)
 
     override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,

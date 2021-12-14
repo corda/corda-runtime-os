@@ -1,5 +1,20 @@
-package net.corda.internal.serialization.amqp
+package net.corda.internal.serialization.amqp.standard
 
+import net.corda.internal.serialization.amqp.LocalSerializerFactory
+import net.corda.internal.serialization.amqp.AMQPSerializer
+import net.corda.internal.serialization.amqp.AMQPNotSerializableException
+import net.corda.internal.serialization.amqp.TypeNotation
+import net.corda.internal.serialization.amqp.RestrictedType
+import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers
+import net.corda.internal.serialization.amqp.Descriptor
+import net.corda.internal.serialization.amqp.resolveTypeVariables
+import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.withDescribed
+import net.corda.internal.serialization.amqp.withList
+import net.corda.internal.serialization.amqp.SerializationSchemas
+import net.corda.internal.serialization.amqp.Metadata
+import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.ifThrowsAppend
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.sandbox.SandboxGroup
@@ -17,7 +32,8 @@ import java.util.TreeSet
 /**
  * Serialization / deserialization of predefined set of supported [Collection] types covering mostly [List]s and [Set]s.
  */
-class CollectionSerializer(private val declaredType: ParameterizedType, factory: LocalSerializerFactory) : AMQPSerializer<Any> {
+class CollectionSerializer(private val declaredType: ParameterizedType, factory: LocalSerializerFactory) :
+    AMQPSerializer<Any> {
     override val type: Type = declaredType
 
     override val typeDescriptor: Symbol by lazy {
