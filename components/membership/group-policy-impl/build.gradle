@@ -1,0 +1,26 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+description 'Group policy provider component'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-membership-identity"
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:membership:membership-impl")
+    implementation project(":libs:membership:membership-internal")
+    implementation project(":libs:virtual-node:cpi-info-service")
+    implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(":libs:virtual-node:virtual-node-info-service")
+    implementation project(":components:virtual-node:cpi-info-service-reader")
+    implementation project(":components:virtual-node:virtual-node-info-service-reader")
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}
