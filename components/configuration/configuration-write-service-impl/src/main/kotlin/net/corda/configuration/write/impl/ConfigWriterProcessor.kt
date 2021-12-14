@@ -17,8 +17,8 @@ import java.util.concurrent.CompletableFuture
  */
 internal class ConfigWriterProcessor(
     private val config: SmartConfig,
-    private val dbUtils: DBUtils,
-    private val publisher: Publisher
+    private val publisher: Publisher,
+    private val dbUtils: DBUtils
 ) : RPCResponderProcessor<ConfigurationManagementRequest, ConfigurationManagementResponse> {
 
     private companion object {
@@ -26,9 +26,9 @@ internal class ConfigWriterProcessor(
     }
 
     /**
-     * For each [request], the processor attempts to commit the updated config to the cluster database using [dbUtils].
-     * If successful, the updated config is then published by the [publisher] to the [TOPIC_CONFIG] topic for
-     * consumption using a `ConfigReader`.
+     * For each [request], the processor attempts to commit the updated config to the cluster database. If successful,
+     * the updated config is then published by the [publisher] to the [TOPIC_CONFIG] topic for consumption using a
+     * `ConfigReader`.
      *
      * If both steps succeed, [respFuture] is completed to indicate success. Otherwise, it is completed exceptionally.
      */
@@ -53,7 +53,7 @@ internal class ConfigWriterProcessor(
         val configEntity = ConfigEntity(request.section, request.configuration, request.version)
 
         return try {
-            dbUtils.writeEntity(config, setOf(configEntity))
+            dbUtils.writeEntity(setOf(configEntity), config)
             true
         } catch (e: Exception) {
             respFuture.completeExceptionally(

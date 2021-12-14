@@ -11,10 +11,7 @@ import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigWriteServiceImpl]. */
-class ConfigWriteEventHandler(
-    private val configWriterSubscriptionFactory: ConfigWriterSubscriptionFactory,
-    private val dbUtils: DBUtils
-) : LifecycleEventHandler {
+class ConfigWriteEventHandler(private val configWriterFactory: ConfigWriterFactory) : LifecycleEventHandler {
 
     private companion object {
         val logger = contextLogger()
@@ -39,11 +36,7 @@ class ConfigWriteEventHandler(
                 }
 
                 try {
-                    dbUtils.checkClusterDatabaseConnection(event.config)
-                    dbUtils.migrateClusterDatabase(event.config)
-
-                    subscriptionHandle =
-                        configWriterSubscriptionFactory.create(event.config, event.instanceId, dbUtils)
+                    subscriptionHandle = configWriterFactory.create(event.config, event.instanceId)
                     coordinator.updateStatus(LifecycleStatus.UP)
                 } catch (e: Exception) {
                     logger.debug("Subscribing to config management requests failed. Cause: $e.")

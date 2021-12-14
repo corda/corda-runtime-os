@@ -5,22 +5,30 @@ import net.corda.configuration.write.ConfigWriteException
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
-import net.corda.db.core.DataSourceFactory
+import net.corda.db.core.HikariDataSourceFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import java.sql.SQLException
 import javax.persistence.EntityManager
 import javax.persistence.RollbackException
 import javax.sql.DataSource
 
 /** Encapsulates database-related functionality, so that it can be stubbed during tests. */
+@Component(service = [DBUtils::class])
 class DBUtils(
-    private val managedEntities: Iterable<Class<*>>,
-    private val dataSourceFactory: DataSourceFactory,
+    @Reference(service = LiquibaseSchemaMigrator::class)
     private val schemaMigrator: LiquibaseSchemaMigrator,
+    @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory
 ) {
+    companion object {
+        private val managedEntities = setOf(ConfigEntity::class.java)
+        private val dataSourceFactory = HikariDataSourceFactory()
+    }
+
     /**
      * Checks the connection to the cluster database.
      *
@@ -60,7 +68,10 @@ class DBUtils(
      * @throws IllegalStateException/IllegalArgumentException/TransactionRequiredException If writing the entities
      *  fails for any other reason.
      */
-    fun writeEntity(config: SmartConfig, entities: Iterable<Any>) {
+    fun writeEntity(
+        entities: Iterable<Any>,
+        config: SmartConfig
+    ) {
         val entityManager = createEntityManager(config)
 
         try {
@@ -74,6 +85,16 @@ class DBUtils(
         }
     }
 
+    /** Creates an entity manager. */
+    private fun createEntityManager(
+        config: SmartConfig
+    ): EntityManager {
+        val dataSource = createDataSource(config)
+        return entityManagerFactoryFactory.create(
+            PERSISTENCE_UNIT_NAME, managedEntities.toList(), DbEntityManagerConfiguration(dataSource)
+        ).createEntityManager()
+    }
+
     /** Creates a [DataSource] for the cluster database. */
     private fun createDataSource(config: SmartConfig): DataSource {
         val driver = getConfigStringOrDefault(config, CONFIG_DB_DRIVER, CONFIG_DB_DRIVER_DEFAULT)
@@ -82,14 +103,6 @@ class DBUtils(
         val password = getConfigStringOrDefault(config, CONFIG_DB_PASS, CONFIG_DB_PASS_DEFAULT)
 
         return dataSourceFactory.create(driver, jdbcUrl, username, password, false, MAX_POOL_SIZE)
-    }
-
-    /** Creates an entity manager. */
-    private fun createEntityManager(config: SmartConfig): EntityManager {
-        val dataSource = createDataSource(config)
-        return entityManagerFactoryFactory.create(
-            PERSISTENCE_UNIT_NAME, managedEntities.toList(), DbEntityManagerConfiguration(dataSource)
-        ).createEntityManager()
     }
 
     /** Returns [path] from [config], or default if [path] does not exist. */

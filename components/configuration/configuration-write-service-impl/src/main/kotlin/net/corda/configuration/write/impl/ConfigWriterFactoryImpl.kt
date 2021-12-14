@@ -13,21 +13,27 @@ import org.osgi.service.component.annotations.Reference
 import java.io.Closeable
 
 /**
- * An implementation of [ConfigWriterSubscriptionFactory] that creates an `RPCSubscription` for processing new config
+ * An implementation of [ConfigWriterFactory] that creates an `RPCSubscription` for processing new config
  * requests and a `Publisher` for publishing the updated config for use by the rest of the cluster.
  *
  * Processing is delegated to [ConfigWriterProcessor].
  */
 @Suppress("Unused")
-@Component(service = [ConfigWriterSubscriptionFactory::class])
-class ConfigWriterSubscriptionFactoryImpl @Activate constructor(
+@Component(service = [ConfigWriterFactory::class])
+class ConfigWriterFactoryImpl @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
-) : ConfigWriterSubscriptionFactory {
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = DBUtils::class)
+    private val dbUtils: DBUtils
+) : ConfigWriterFactory {
 
-    override fun create(config: SmartConfig, instanceId: Int, dbUtils: DBUtils): Closeable {
+    override fun create(config: SmartConfig, instanceId: Int): Closeable {
+        // TODO - Joel - Move these checks.
+        dbUtils.checkClusterDatabaseConnection(config)
+        dbUtils.migrateClusterDatabase(config)
+
         val publisher = let {
             val publisherConfig = PublisherConfig(CLIENT_NAME_DB, instanceId)
             publisherFactory.createPublisher(publisherConfig, config)
@@ -39,7 +45,7 @@ class ConfigWriterSubscriptionFactoryImpl @Activate constructor(
             RPCConfig(GROUP_NAME, CLIENT_NAME_RPC, TOPIC_CONFIG_MANAGEMENT_REQUEST, requestClass, responseClass, instanceId)
         }
 
-        val processor = ConfigWriterProcessor(config, dbUtils, publisher)
+        val processor = ConfigWriterProcessor(config, publisher, dbUtils)
         val subscription = subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
 
         publisher.start()
