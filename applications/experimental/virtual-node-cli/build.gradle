@@ -25,7 +25,7 @@ dependencies {
     implementation project(":components:virtual-node:virtual-node-info-service-writer")
     implementation project(":components:virtual-node:cpi-info-service-writer")
     implementation project(':components:kafka-topic-admin')
-    implementation project(":applications:common")
+    implementation project(":applications:tools:common-setup")
     implementation project(':components:configuration:configuration-write-service-impl')
 
     implementation "net.corda:corda-packaging"

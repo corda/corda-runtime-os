@@ -4,7 +4,7 @@ import com.google.common.reflect.TypeToken
 import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.AMQPSerializer
 import net.corda.internal.serialization.amqp.CachingCustomSerializerRegistry
-import net.corda.internal.serialization.amqp.CustomSerializer
+import net.corda.internal.serialization.amqp.standard.CustomSerializer
 import net.corda.internal.serialization.amqp.CustomSerializerRegistry
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.SerializerFactory

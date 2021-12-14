@@ -1,6 +1,6 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.MapSerializer
+import net.corda.internal.serialization.amqp.standard.MapSerializer
 import net.corda.serialization.BaseProxySerializer
 import net.corda.v5.base.util.uncheckedCast
 import java.util.EnumSet

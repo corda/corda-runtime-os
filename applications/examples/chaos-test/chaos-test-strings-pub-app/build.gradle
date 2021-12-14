@@ -15,7 +15,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'
 
-    implementation project(":applications:common")
+    implementation project(":applications:tools:common-setup")
     implementation project(":osgi-framework-api")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
