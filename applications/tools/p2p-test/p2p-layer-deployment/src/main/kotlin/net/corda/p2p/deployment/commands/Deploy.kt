@@ -65,6 +65,12 @@ class Deploy : Runnable {
     private var disableKafkaUi = false
 
     @Option(
+        names = ["-p", "--partitions", "--default-kafka-partition-count"],
+        description = ["Number of Kafka partition in a topic by default"]
+    )
+    private var defaultPartitionsCount = 10
+
+    @Option(
         names = ["-z", "--zoo-keepers-count"],
         description = ["Number of Zoo Keepers in the cluster"]
     )
@@ -175,6 +181,7 @@ class Deploy : Runnable {
                     kafkaBrokerMemory,
                     kafkaBrokerCpu,
                 ),
+                defaultPartitionsCount,
             )
         )
         val writer = ObjectMapper(YAMLFactory()).writer()
@@ -196,7 +203,7 @@ class Deploy : Runnable {
             DeployPods(namespaceName, namespace.infrastructurePods).run()
 
             println("Creating/alerting kafka topics...")
-            KafkaSetup(namespaceName, kafkaBrokerCount).run()
+            KafkaSetup(namespaceName, kafkaBrokerCount, defaultPartitionsCount).run()
 
             DeployPods(namespaceName, namespace.p2pPods).run()
 
