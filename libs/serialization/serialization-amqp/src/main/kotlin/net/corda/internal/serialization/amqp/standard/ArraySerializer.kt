@@ -1,6 +1,23 @@
-package net.corda.internal.serialization.amqp
+package net.corda.internal.serialization.amqp.standard
 
 import net.corda.internal.serialization.model.resolveAgainst
+import net.corda.internal.serialization.amqp.LocalSerializerFactory
+import net.corda.internal.serialization.amqp.AMQPSerializer
+import net.corda.internal.serialization.amqp.componentType
+import net.corda.internal.serialization.amqp.isArray
+import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers
+import net.corda.internal.serialization.amqp.asClass
+import net.corda.internal.serialization.amqp.TypeNotation
+import net.corda.internal.serialization.amqp.RestrictedType
+import net.corda.internal.serialization.amqp.Descriptor
+import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.withDescribed
+import net.corda.internal.serialization.amqp.withList
+import net.corda.internal.serialization.amqp.SerializationSchemas
+import net.corda.internal.serialization.amqp.Metadata
+import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.redescribe
+import net.corda.internal.serialization.amqp.AMQPNotSerializableException
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug

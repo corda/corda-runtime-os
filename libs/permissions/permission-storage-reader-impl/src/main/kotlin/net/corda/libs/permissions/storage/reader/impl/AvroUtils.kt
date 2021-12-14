@@ -76,6 +76,7 @@ fun Role.toAvroRole(): AvroRole {
         version,
         AvroChangeDetails(updateTimestamp),
         name,
+        groupVisibility?.id,
         rolePermAssociations.map { rolePermissionAssociation ->
             AvroPermissionAssociation(
                 AvroChangeDetails(rolePermissionAssociation.updateTimestamp),
@@ -85,6 +86,7 @@ fun Role.toAvroRole(): AvroRole {
                     AvroChangeDetails(rolePermissionAssociation.permission.updateTimestamp),
                     rolePermissionAssociation.permission.virtualNode,
                     rolePermissionAssociation.permission.permissionString,
+                    rolePermissionAssociation.permission.groupVisibility?.id,
                     rolePermissionAssociation.permission.permissionType.toAvroPermissionType()
                 )
             )

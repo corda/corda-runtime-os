@@ -1,5 +1,18 @@
-package net.corda.internal.serialization.amqp
+package net.corda.internal.serialization.amqp.standard
 
+import net.corda.internal.serialization.amqp.SerializerFactory
+import net.corda.internal.serialization.amqp.AMQPSerializer
+import net.corda.internal.serialization.amqp.SerializerFor
+import net.corda.internal.serialization.amqp.AMQPNotSerializableException
+import net.corda.internal.serialization.amqp.typeDescriptorFor
+import net.corda.internal.serialization.amqp.Descriptor
+import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.withDescribed
+import net.corda.internal.serialization.amqp.withList
+import net.corda.internal.serialization.amqp.SerializationSchemas
+import net.corda.internal.serialization.amqp.Metadata
+import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.asClass
 import net.corda.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.apache.qpid.proton.amqp.Symbol
@@ -75,9 +88,9 @@ class CorDappCustomSerializer(
     }
 
     override val typeDescriptor: Symbol = typeDescriptorFor(type)
-    val descriptor: Descriptor = Descriptor(typeDescriptor)
-
     override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {}
+
+    val descriptor: Descriptor = Descriptor(typeDescriptor)
 
     override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
                              context: SerializationContext, debugIndent: Int

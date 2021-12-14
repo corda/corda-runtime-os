@@ -32,6 +32,7 @@ class PermissionValidatorImplTest {
             ChangeDetails(Instant.now()),
             virtualNode,
             permissionString,
+            "group1",
             PermissionType.ALLOW)
 
         private val permissionDenied = Permission(
@@ -39,12 +40,14 @@ class PermissionValidatorImplTest {
             ChangeDetails(Instant.now()),
             virtualNode,
             permissionString,
+            "group1",
             PermissionType.DENY)
 
         private val role = Role(
             "roleId1", 1,
             ChangeDetails(Instant.now()),
             "STARTFLOW-MYFLOW",
+            "group1",
             listOf(
                 PermissionAssociation(
                     ChangeDetails(Instant.now()),
@@ -57,6 +60,7 @@ class PermissionValidatorImplTest {
             1,
             ChangeDetails(Instant.now()),
             "STARTFLOW-MYFLOW",
+            "group1",
             listOf(PermissionAssociation(ChangeDetails(Instant.now()), permissionDenied))
         )
         private val user = User(
