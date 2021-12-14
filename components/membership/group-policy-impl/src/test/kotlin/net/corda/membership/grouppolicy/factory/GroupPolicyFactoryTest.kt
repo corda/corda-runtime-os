@@ -1,9 +1,9 @@
-package net.corda.membership.impl
+package net.corda.membership.grouppolicy.factory
 
-import net.corda.membership.impl.TestGroupPolicies.Companion.emptyString
-import net.corda.membership.impl.TestGroupPolicies.Companion.fullGroupPolicy
-import net.corda.membership.impl.TestGroupPolicies.Companion.invalidFormatGroupPolicy
-import net.corda.membership.impl.TestGroupPolicies.Companion.whitespaceString
+import net.corda.membership.grouppolicy.factory.TestGroupPolicies.Companion.emptyString
+import net.corda.membership.grouppolicy.factory.TestGroupPolicies.Companion.fullGroupPolicy
+import net.corda.membership.grouppolicy.factory.TestGroupPolicies.Companion.invalidFormatGroupPolicy
+import net.corda.membership.grouppolicy.factory.TestGroupPolicies.Companion.whitespaceString
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -12,16 +12,16 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 /**
- * Unit tests for [GroupPolicyFactoryImpl]
+ * Unit tests for [GroupPolicyFactory]
  */
 class GroupPolicyFactoryTest {
 
-    private lateinit var groupPolicyFactory: GroupPolicyFactoryImpl
+    private lateinit var groupPolicyFactory: GroupPolicyFactory
     private val testGroupId = "ABC123"
 
     @BeforeEach
     fun setUp() {
-        groupPolicyFactory = GroupPolicyFactoryImpl()
+        groupPolicyFactory = GroupPolicyFactory()
     }
 
     /**

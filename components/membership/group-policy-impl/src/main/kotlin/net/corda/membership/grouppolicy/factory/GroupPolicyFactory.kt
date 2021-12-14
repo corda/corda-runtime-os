@@ -1,21 +1,21 @@
-package net.corda.membership.impl
+package net.corda.membership.grouppolicy.factory
 
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.corda.membership.GroupPolicy
-import net.corda.membership.GroupPolicyFactory
+import net.corda.membership.impl.GroupPolicyImpl
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 
-class GroupPolicyFactoryImpl : GroupPolicyFactory {
+class GroupPolicyFactory {
     companion object {
         private val logger = contextLogger()
     }
 
-    override fun createGroupPolicy(groupPolicyJson: String): GroupPolicy {
+    fun createGroupPolicy(groupPolicyJson: String?): GroupPolicy {
         return GroupPolicyImpl(
             try {
-                if (groupPolicyJson.isBlank()) {
+                if (groupPolicyJson.isNullOrBlank()) {
                     logger.info("Group policy file is empty.")
                     emptyMap()
                 } else {
