@@ -89,7 +89,7 @@ class PermissionStorageWriterProcessorImpl(
             log.info("Successfully created new user: $loginName")
             // At this time of publishing the User is successfully committed into the DB with no conflicts like
             // login name clash.
-            reader.publishNewUser(this)
+            reader.publishNewUser(it)
         }
     }
 
