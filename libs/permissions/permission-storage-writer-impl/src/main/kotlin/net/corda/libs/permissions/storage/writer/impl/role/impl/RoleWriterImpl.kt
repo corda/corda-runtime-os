@@ -5,7 +5,7 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.management.role.CreateRoleRequest
-import net.corda.libs.permissions.storage.writer.impl.common.toAvroRole
+import net.corda.libs.permissions.storage.common.converter.toAvroRole
 import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
 import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit

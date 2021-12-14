@@ -5,7 +5,7 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.management.user.CreateUserRequest
-import net.corda.libs.permissions.storage.writer.impl.common.toAvroUser
+import net.corda.libs.permissions.storage.common.converter.toAvroUser
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
 import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit

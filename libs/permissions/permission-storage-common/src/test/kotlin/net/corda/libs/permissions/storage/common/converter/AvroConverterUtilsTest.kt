@@ -1,11 +1,13 @@
-package net.corda.libs.permissions.storage.writer.impl.common
+package net.corda.libs.permissions.storage.common.converter
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import net.corda.data.permissions.PermissionType as AvroPermissionType
+import net.corda.permissions.model.Group
+import net.corda.permissions.model.GroupProperty
 import net.corda.permissions.model.Permission
 import net.corda.permissions.model.PermissionType
 import net.corda.permissions.model.Role
+import net.corda.permissions.model.RoleGroupAssociation
 import net.corda.permissions.model.RolePermissionAssociation
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
@@ -14,8 +16,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import net.corda.data.permissions.PermissionType as AvroPermissionType
 
-internal class ModelConverterUtilTest {
+internal class AvroConverterUtilsTest {
 
     @Test
     fun `convert User to Avro User`() {
@@ -148,14 +151,53 @@ internal class ModelConverterUtilTest {
     }
 
     @Test
-    fun toAvroPermissionAssociation() {
-    }
+    fun `convert model group to avro group`() {
+        val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+        val later = Instant.now().truncatedTo(ChronoUnit.MILLIS)
 
-    @Test
-    fun toAvroPermission() {
-    }
+        val group = Group(
+            "group1",
+            now,
+            "groupName1",
+            null
+        )
+        val role = Role(
+            "role1",
+            now,
+            "roleName1",
+            group,
+        )
+        val roleGroupAssociation = RoleGroupAssociation(
+            "rga1",
+            role,
+            group,
+            later
+        )
+        val groupProperty = GroupProperty(
+            "groupProp1",
+            now,
+            group,
+            "gkey1",
+            "gval1"
+        )
+        group.roleGroupAssociations.add(roleGroupAssociation)
+        group.groupProperties.add(groupProperty)
 
-    @Test
-    fun toAvroPermissionType() {
+        val avroGroup = group.toAvroGroup()
+
+        assertEquals("group1", avroGroup.id)
+        assertEquals(now, avroGroup.lastChangeDetails.updateTimestamp)
+        assertEquals("groupName1", avroGroup.name)
+        assertNull(avroGroup.parentGroupId)
+
+        assertEquals(1, avroGroup.roleAssociations.size)
+        assertEquals("role1", avroGroup.roleAssociations[0].roleId)
+        assertEquals(later, avroGroup.roleAssociations[0].changeDetails.updateTimestamp)
+
+        assertEquals(1, avroGroup.properties.size)
+        assertEquals("groupProp1", avroGroup.properties[0].id)
+        assertEquals(now, avroGroup.properties[0].lastChangeDetails.updateTimestamp)
+        assertEquals("gkey1", avroGroup.properties[0].key)
+        assertEquals("gval1", avroGroup.properties[0].value)
     }
 }

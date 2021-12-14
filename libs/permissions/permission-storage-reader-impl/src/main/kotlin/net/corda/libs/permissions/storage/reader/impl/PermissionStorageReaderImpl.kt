@@ -3,9 +3,9 @@ package net.corda.libs.permissions.storage.reader.impl
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
-import net.corda.libs.permissions.storage.reader.toAvroGroup
-import net.corda.libs.permissions.storage.reader.toAvroRole
-import net.corda.libs.permissions.storage.reader.toAvroUser
+import net.corda.libs.permissions.storage.common.converter.toAvroGroup
+import net.corda.libs.permissions.storage.common.converter.toAvroRole
+import net.corda.libs.permissions.storage.common.converter.toAvroUser
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.permissions.model.Group
