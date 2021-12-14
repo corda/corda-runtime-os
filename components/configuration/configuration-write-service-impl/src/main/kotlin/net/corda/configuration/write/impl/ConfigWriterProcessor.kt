@@ -4,6 +4,7 @@ import net.corda.configuration.write.ConfigWriteException
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -15,6 +16,7 @@ import java.util.concurrent.CompletableFuture
  * [ConfigurationManagementResponse].
  */
 internal class ConfigWriterProcessor(
+    private val config: SmartConfig,
     private val dbUtils: DBUtils,
     private val publisher: Publisher
 ) : RPCResponderProcessor<ConfigurationManagementRequest, ConfigurationManagementResponse> {
@@ -51,7 +53,7 @@ internal class ConfigWriterProcessor(
         val configEntity = ConfigEntity(request.section, request.configuration, request.version)
 
         return try {
-            dbUtils.writeEntity(setOf(configEntity))
+            dbUtils.writeEntity(config, setOf(configEntity))
             true
         } catch (e: Exception) {
             respFuture.completeExceptionally(

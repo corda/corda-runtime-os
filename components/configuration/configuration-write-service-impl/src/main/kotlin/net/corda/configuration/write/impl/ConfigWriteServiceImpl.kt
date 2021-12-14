@@ -26,13 +26,15 @@ class ConfigWriteServiceImpl @Activate constructor(
 ) : ConfigWriteService {
 
     private val coordinator = let {
-        val eventHandler = ConfigWriteEventHandler(configWriterSubscriptionFactory)
+        val dbUtils = DBUtils(
+            setOf(ConfigEntity::class.java), HikariDataSourceFactory(), schemaMigrator, entityManagerFactoryFactory,
+        )
+        val eventHandler = ConfigWriteEventHandler(configWriterSubscriptionFactory, dbUtils)
         coordinatorFactory.createCoordinator<ConfigWriteService>(eventHandler)
     }
 
     override fun bootstrapConfig(config: SmartConfig, instanceId: Int) {
-        val dbUtils = createDbUtils(config)
-        val subscribeEvent = SubscribeEvent(config, instanceId, dbUtils)
+        val subscribeEvent = SubscribeEvent(config, instanceId)
         coordinator.postEvent(subscribeEvent)
     }
 
@@ -41,10 +43,4 @@ class ConfigWriteServiceImpl @Activate constructor(
     override fun start() = coordinator.start()
 
     override fun stop() = coordinator.stop()
-
-    /** Creates a [DBUtils] instance for the given [config]. */
-    private fun createDbUtils(config: SmartConfig): DBUtils {
-        val managedEntities = setOf(ConfigEntity::class.java)
-        return DBUtils(config, schemaMigrator, HikariDataSourceFactory(), entityManagerFactoryFactory, managedEntities)
-    }
 }

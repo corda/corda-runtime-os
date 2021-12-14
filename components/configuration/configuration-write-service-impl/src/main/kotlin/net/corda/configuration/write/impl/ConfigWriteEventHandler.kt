@@ -11,8 +11,10 @@ import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigWriteServiceImpl]. */
-class ConfigWriteEventHandler(private val configWriterSubscriptionFactory: ConfigWriterSubscriptionFactory) :
-    LifecycleEventHandler {
+class ConfigWriteEventHandler(
+    private val configWriterSubscriptionFactory: ConfigWriterSubscriptionFactory,
+    private val dbUtils: DBUtils
+) : LifecycleEventHandler {
 
     private companion object {
         val logger = contextLogger()
@@ -31,18 +33,17 @@ class ConfigWriteEventHandler(private val configWriterSubscriptionFactory: Confi
         when (event) {
             is StartEvent -> Unit // We cannot start until we have the required bootstrap config.
 
-            // TODO - Joel - Errors that happen in the processor should also be reflected in the coordinator status.
             is SubscribeEvent -> {
                 if (subscriptionHandle != null) {
                     throw ConfigWriteException("An attempt was made to subscribe twice.")
                 }
 
                 try {
-                    event.dbUtils.checkClusterDatabaseConnection()
-                    event.dbUtils.migrateClusterDatabase()
+                    dbUtils.checkClusterDatabaseConnection(event.config)
+                    dbUtils.migrateClusterDatabase(event.config)
 
                     subscriptionHandle =
-                        configWriterSubscriptionFactory.create(event.config, event.instanceId, event.dbUtils)
+                        configWriterSubscriptionFactory.create(event.config, event.instanceId, dbUtils)
                     coordinator.updateStatus(LifecycleStatus.UP)
                 } catch (e: Exception) {
                     logger.debug("Subscribing to config management requests failed. Cause: $e.")

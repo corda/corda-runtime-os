@@ -39,7 +39,7 @@ class ConfigWriterSubscriptionFactoryImpl @Activate constructor(
             RPCConfig(GROUP_NAME, CLIENT_NAME_RPC, TOPIC_CONFIG_MANAGEMENT_REQUEST, requestClass, responseClass, instanceId)
         }
 
-        val processor = ConfigWriterProcessor(dbUtils, publisher)
+        val processor = ConfigWriterProcessor(config, dbUtils, publisher)
         val subscription = subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
 
         publisher.start()

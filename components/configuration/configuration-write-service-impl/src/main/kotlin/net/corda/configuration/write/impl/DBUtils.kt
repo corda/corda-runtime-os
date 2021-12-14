@@ -16,19 +16,18 @@ import javax.sql.DataSource
 
 /** Encapsulates database-related functionality, so that it can be stubbed during tests. */
 class DBUtils(
-    private val config: SmartConfig,
-    private val schemaMigrator: LiquibaseSchemaMigrator,
+    private val managedEntities: Iterable<Class<*>>,
     private val dataSourceFactory: DataSourceFactory,
-    private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    private val managedEntities: Iterable<Class<*>>
+    private val schemaMigrator: LiquibaseSchemaMigrator,
+    private val entityManagerFactoryFactory: EntityManagerFactoryFactory
 ) {
     /**
      * Checks the connection to the cluster database.
      *
      * @throws ConfigWriteException If the cluster database cannot be connected to.
      */
-    fun checkClusterDatabaseConnection() {
-        val dataSource = createDataSource()
+    fun checkClusterDatabaseConnection(config: SmartConfig) {
+        val dataSource = createDataSource(config)
         try {
             dataSource.connection.close()
         } catch (e: SQLException) {
@@ -41,13 +40,13 @@ class DBUtils(
      *
      * This is a temporary measure. Migrations will be applied by a different code-path in the future.
      */
-    fun migrateClusterDatabase() {
+    fun migrateClusterDatabase(config: SmartConfig) {
         val changeLogResourceFiles = managedEntities.mapTo(LinkedHashSet()) { entity ->
             ChangeLogResourceFiles(entity.packageName, listOf(MIGRATION_FILE_LOCATION), entity.classLoader)
         }
         val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
 
-        createDataSource().connection.use { connection ->
+        createDataSource(config).connection.use { connection ->
             schemaMigrator.updateDb(connection, dbChange, LiquibaseSchemaMigrator.PUBLIC_SCHEMA)
         }
     }
@@ -61,8 +60,8 @@ class DBUtils(
      * @throws IllegalStateException/IllegalArgumentException/TransactionRequiredException If writing the entities
      *  fails for any other reason.
      */
-    fun writeEntity(entities: Iterable<Any>) {
-        val entityManager = createEntityManager()
+    fun writeEntity(config: SmartConfig, entities: Iterable<Any>) {
+        val entityManager = createEntityManager(config)
 
         try {
             entityManager.transaction.begin()
@@ -76,25 +75,25 @@ class DBUtils(
     }
 
     /** Creates a [DataSource] for the cluster database. */
-    private fun createDataSource(): DataSource {
-        val driver = getConfigStringOrDefault(CONFIG_DB_DRIVER, CONFIG_DB_DRIVER_DEFAULT)
-        val jdbcUrl = getConfigStringOrDefault(CONFIG_JDBC_URL, CONFIG_JDBC_URL_DEFAULT)
-        val username = getConfigStringOrDefault(CONFIG_DB_USER, CONFIG_DB_USER_DEFAULT)
-        val password = getConfigStringOrDefault(CONFIG_DB_PASS, CONFIG_DB_PASS_DEFAULT)
+    private fun createDataSource(config: SmartConfig): DataSource {
+        val driver = getConfigStringOrDefault(config, CONFIG_DB_DRIVER, CONFIG_DB_DRIVER_DEFAULT)
+        val jdbcUrl = getConfigStringOrDefault(config, CONFIG_JDBC_URL, CONFIG_JDBC_URL_DEFAULT)
+        val username = getConfigStringOrDefault(config, CONFIG_DB_USER, CONFIG_DB_USER_DEFAULT)
+        val password = getConfigStringOrDefault(config, CONFIG_DB_PASS, CONFIG_DB_PASS_DEFAULT)
 
         return dataSourceFactory.create(driver, jdbcUrl, username, password, false, MAX_POOL_SIZE)
     }
 
     /** Creates an entity manager. */
-    private fun createEntityManager(): EntityManager {
-        val dataSource = createDataSource()
+    private fun createEntityManager(config: SmartConfig): EntityManager {
+        val dataSource = createDataSource(config)
         return entityManagerFactoryFactory.create(
             PERSISTENCE_UNIT_NAME, managedEntities.toList(), DbEntityManagerConfiguration(dataSource)
         ).createEntityManager()
     }
 
     /** Returns [path] from [config], or default if [path] does not exist. */
-    private fun getConfigStringOrDefault(path: String, default: String) = try {
+    private fun getConfigStringOrDefault(config: SmartConfig, path: String, default: String) = try {
         config.getString(path)
     } catch (e: ConfigException.Missing) {
         default
