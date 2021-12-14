@@ -56,6 +56,7 @@ class PermissionStorageReaderImplTest {
             ChangeDetails(permission.updateTimestamp),
             permission.virtualNode,
             permission.permissionString,
+            parentGroup.id,
             net.corda.data.permissions.PermissionType.ALLOW
         )
 
@@ -96,6 +97,7 @@ class PermissionStorageReaderImplTest {
             -1,
             ChangeDetails(role.updateTimestamp),
             role.name,
+            parentGroup.id,
             listOf(
                 PermissionAssociation(
                     ChangeDetails(role.rolePermAssociations.first().updateTimestamp),
@@ -109,6 +111,7 @@ class PermissionStorageReaderImplTest {
             -1,
             ChangeDetails(role2.updateTimestamp),
             role2.name,
+            parentGroup.id,
             listOf(
                 PermissionAssociation(
                     ChangeDetails(role2.rolePermAssociations.first().updateTimestamp),
