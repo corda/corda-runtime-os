@@ -202,9 +202,11 @@ class PermissionCacheService @Activate constructor(
 
     override fun start() {
         coordinator.start()
+        coordinator.postEvent(StartEvent())
     }
 
     override fun stop() {
+        coordinator.postEvent(StopEvent())
         coordinator.stop()
     }
 }

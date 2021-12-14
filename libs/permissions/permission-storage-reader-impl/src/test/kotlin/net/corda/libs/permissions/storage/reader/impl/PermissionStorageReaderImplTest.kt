@@ -335,12 +335,11 @@ class PermissionStorageReaderImplTest {
 
     @Test
     fun `publishUsers finds the specified users and publishes them`() {
-        val userIds = listOf("user id")
 
         whenever(permissionCache.users).thenReturn(emptyMap())
-        whenever(permissionRepository.findAllUsers(userIds)).thenReturn(listOf(user))
+        whenever(permissionRepository.findAllUsers()).thenReturn(listOf(user))
 
-        processor.publishUsers(userIds)
+        processor.start()
 
         val userRecord = Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, avroUser)
 
@@ -377,12 +376,10 @@ class PermissionStorageReaderImplTest {
 
     @Test
     fun `publishUsers diffs the permission cache and removes any specified user records that were deleted`() {
-        val userIds = listOf("user id")
-
         whenever(permissionCache.users).thenReturn(mapOf(user.loginName to avroUser))
-        whenever(permissionRepository.findAllUsers(userIds)).thenReturn(emptyList())
+        whenever(permissionRepository.findAllUsers()).thenReturn(emptyList())
 
-        processor.publishUsers(userIds)
+        processor.start()
 
         val userRecord = Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, value = null)
 
@@ -419,12 +416,11 @@ class PermissionStorageReaderImplTest {
 
     @Test
     fun `publishUsers allows users to be updated and removed at the same time`() {
-        val userIds = listOf("user id")
 
         whenever(permissionCache.users).thenReturn(mapOf(user.loginName to avroUser, user2.loginName to avroUser2))
-        whenever(permissionRepository.findAllUsers(userIds)).thenReturn(listOf(user))
+        whenever(permissionRepository.findAllUsers()).thenReturn(listOf(user))
 
-        processor.publishUsers(userIds)
+        processor.start()
 
         val userRecords = listOf(
             Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, avroUser),

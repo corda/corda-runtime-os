@@ -1,4 +1,4 @@
-package net.corda.permissions.storage.reader
+package net.corda.permissions.storage.reader.internal
 
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
@@ -45,7 +45,8 @@ class PermissionStorageReaderServiceEventHandlerTest {
         permissionCacheService,
         permissionStorageReaderFactory,
         mock(),
-        publisherFactory
+        publisherFactory,
+        mock()
     )
 
     @Test

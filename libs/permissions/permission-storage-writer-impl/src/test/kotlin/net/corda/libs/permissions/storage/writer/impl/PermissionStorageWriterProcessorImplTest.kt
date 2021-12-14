@@ -47,7 +47,7 @@ class PermissionStorageWriterProcessorImplTest {
     }
     private val query = mock<Query>()
 
-    private val processor = PermissionStorageWriterProcessorImpl(entityManagerFactory)
+    private val processor = PermissionStorageWriterProcessorImpl(entityManagerFactory, mock())
 
     @Test
     fun `receiving invalid request completes exceptionally`() {

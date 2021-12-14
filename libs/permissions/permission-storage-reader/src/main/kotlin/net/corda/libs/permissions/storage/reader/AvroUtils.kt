@@ -1,4 +1,4 @@
-package net.corda.libs.permissions.storage.reader.impl
+package net.corda.libs.permissions.storage.reader
 
 import net.corda.data.permissions.ChangeDetails as AvroChangeDetails
 import net.corda.data.permissions.PermissionAssociation as AvroPermissionAssociation
