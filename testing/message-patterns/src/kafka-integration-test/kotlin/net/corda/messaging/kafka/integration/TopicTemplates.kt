@@ -25,6 +25,18 @@ class TopicTemplates {
                     } 
                 ]"""
 
+        const val COMPACTED_TOPIC2  = "CompactedTopic2"
+        const val COMPACTED_TOPIC2_TEMPLATE = """topics = [ 
+                    { 
+                        topicName = "$TEST_TOPIC_PREFIX$COMPACTED_TOPIC2" 
+                        numPartitions = 1 
+                        replicationFactor = 3 
+                        config { 
+                            cleanup.policy=compact 
+                        } 
+                    } 
+                ]"""
+
         const val DURABLE_TOPIC1 = "DurableTopic1"
         val DURABLE_TOPIC1_TEMPLATE = """topics = [ 
                     { 

@@ -20,6 +20,8 @@ import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.COMPACTED_TOPIC1
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.COMPACTED_TOPIC1_TEMPLATE
+import net.corda.messaging.kafka.integration.TopicTemplates.Companion.COMPACTED_TOPIC2
+import net.corda.messaging.kafka.integration.TopicTemplates.Companion.COMPACTED_TOPIC2_TEMPLATE
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.getKafkaProperties
@@ -123,11 +125,11 @@ class CompactedSubscriptionIntegrationTest {
 
     @Test
     fun `create compacted topic, publish wrong records, start compacted sub`() {
-        topicAdmin.createTopics(kafkaProperties, COMPACTED_TOPIC1_TEMPLATE)
+        topicAdmin.createTopics(kafkaProperties, COMPACTED_TOPIC2_TEMPLATE)
 
-        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC1)
+        publisherConfig = PublisherConfig(CLIENT_ID + COMPACTED_TOPIC2)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        publisher.publish(getStringRecords(COMPACTED_TOPIC1, 1, 5)).forEach { it.get() }
+        publisher.publish(getStringRecords(COMPACTED_TOPIC2, 1, 5)).forEach { it.get() }
 
         val coordinator =
             lifecycleCoordinatorFactory.createCoordinator(LifecycleCoordinatorName("compactedTest2"))
@@ -147,7 +149,7 @@ class CompactedSubscriptionIntegrationTest {
         val onNextLatch = CountDownLatch(5)
         val snapshotLatch = CountDownLatch(1)
         val compactedSub = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig("$COMPACTED_TOPIC1-group", COMPACTED_TOPIC1, 1),
+            SubscriptionConfig("$COMPACTED_TOPIC2-group", COMPACTED_TOPIC2, 1),
             TestCompactedProcessor(snapshotLatch, onNextLatch),
             kafkaConfig
         )
