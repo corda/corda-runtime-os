@@ -1,2 +1,15 @@
 resources:
   - ingress.yaml
+
+configMapGenerator:
+  - name: http-rpc-gateway-ingress-configmap
+    literals:
+      - INGRESS_DOMAIN=corda.minikube
+vars:
+  - name: INGRESS_DOMAIN
+    objref:
+      apiVersion: v1
+      kind: ConfigMap
+      name: http-rpc-gateway-ingress-configmap
+    fieldref:
+      fieldpath: data.INGRESS_DOMAIN

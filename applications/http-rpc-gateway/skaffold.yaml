@@ -35,3 +35,10 @@ profiles:
       kustomize:
         paths:
           - kustomize/base
+
+  - name: overlay-ingress
+    deploy:
+      kustomize:
+        paths:
+          - kustomize/base
+          - kustomize/overlays/ingress

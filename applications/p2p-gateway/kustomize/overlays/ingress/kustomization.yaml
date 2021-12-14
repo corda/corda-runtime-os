@@ -1,2 +1,15 @@
 resources:
   - ingress.yaml
+
+configMapGenerator:
+  - name: p2p-gateway-ingress-configmap
+    literals:
+      - INGRESS_DOMAIN=corda.minikube
+vars:
+  - name: INGRESS_DOMAIN
+    objref:
+      apiVersion: v1
+      kind: ConfigMap
+      name: p2p-gateway-ingress-configmap
+    fieldref:
+      fieldpath: data.INGRESS_DOMAIN
