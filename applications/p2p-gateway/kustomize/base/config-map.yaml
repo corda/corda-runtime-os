@@ -3,6 +3,6 @@ kind: ConfigMap
 metadata:
   name: p2p-gateway
 data:
-  BOOTSTRAP_SERVER: kafka-kafka-bootstrap
-  CONFIG_TOPIC_NAME: config-topic
-  MESSAGE_TOPIC_PREFIX: http-rpc-gateway
+  KAFKA_SERVERS: kafka-kafka-bootstrap.default.svc.cluster.local:9092
+  CONFIG_TOPIC: config-topic
+  TOPIC_PREFIX: p2p-gateway

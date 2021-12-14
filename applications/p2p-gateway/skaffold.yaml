@@ -24,12 +24,11 @@ profiles:
         - image: corda-os-docker-dev.software.r3.com/corda-os-p2p-gateway
           context: ../..
           custom:
-            buildCommand: gradlew :applications:p2p-gateway:clean && gradlew :applications:p2p-gateway:publishOSGiImage
+            buildCommand: gradlew :applications:p2p-gateway:clean -q && gradlew :applications:p2p-gateway:publishOSGiImage -q
             dependencies:
               paths:
                 - ./**/*.kt
                 - ./**/*.java
-                - ./**/*.yaml
     deploy:
       kustomize:
         paths:
