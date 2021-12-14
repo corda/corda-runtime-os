@@ -1,0 +1,3 @@
+images:
+  - name: corda-os-docker-dev.software.r3.com/corda-os-p2p-gateway
+    newTag: ${IMAGE_TAG}

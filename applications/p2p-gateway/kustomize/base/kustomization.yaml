@@ -1,0 +1,7 @@
+commonLabels:
+  app: corda
+  component: p2p-gateway
+resources:
+  - config-map.yaml
+  - deployment.yaml
+  - service.yaml

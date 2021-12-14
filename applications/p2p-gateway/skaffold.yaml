@@ -1,11 +1,19 @@
-apiVersion: skaffold/v2beta26
+apiVersion: skaffold/v2beta25
 kind: Config
-deploy:
-  kubectl:
-    manifests:
-      - manifest/*
 profiles:
-  - name: p2p-gateway
+  - name: deploy
+    activation:
+      - command: run
+    deploy:
+      kustomize:
+        paths:
+          - kustomize/base
+
+  - name: build and deploy
+    activation:
+      - command: dev
+      - command: debug
+      - kubeContext: minikube
     build:
       tagPolicy:
         gitCommit:
@@ -19,5 +27,10 @@ profiles:
             buildCommand: gradlew :applications:p2p-gateway:clean && gradlew :applications:p2p-gateway:publishOSGiImage
             dependencies:
               paths:
-                - ./**
-
+                - ./**/*.kt
+                - ./**/*.java
+                - ./**/*.yaml
+    deploy:
+      kustomize:
+        paths:
+          - kustomize/base

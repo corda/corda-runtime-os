@@ -1,0 +1,36 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: http-rpc-gateway
+  labels:
+    app: http-rpc-gateway
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: http-rpc-gateway
+      labels:
+        app: http-rpc-gateway
+    spec:
+      imagePullSecrets:
+        - name: "image-pull-secret"
+      containers:
+        - name: http-rpc-gateway
+          image: corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: http-rpc-gateway
+          command: [
+              "java", "-jar",
+              "-Dbootstrap.servers=$BOOTSTRAP_SERVER",
+              "-Dconfig.topic.name=$CONFIG_TOPIC_NAME",
+              "-Dmessaging.topic.prefix=$MESSAGE_TOPIC_PREFIX",
+              "/opt/override/http-rpc-gateway.jar",
+          ]
+          args: ["--instanceId=0", ]
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: http-rpc-gateway

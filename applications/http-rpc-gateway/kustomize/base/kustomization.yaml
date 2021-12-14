@@ -1,0 +1,7 @@
+commonLabels:
+  app: corda
+  component: http-rpc-gateway
+resources:
+  - config-map.yaml
+  - deployment.yaml
+  - service.yaml

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: http-rpc-gateway
+data:
+  BOOTSTRAP_SERVER: kafka-kafka-bootstrap
+  CONFIG_TOPIC_NAME: config-topic
+  MESSAGE_TOPIC_PREFIX: http-rpc-gateway

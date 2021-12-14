@@ -1,8 +1,0 @@
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: corda
-data:
-  BOOTSTRAP_SERVER: {{ .Values.configuration.corda.kafka.bootstrapAddress }}
-  CONFIG_TOPIC_NAME: {{ .Values.configuration.corda.kafka.configTopic }}

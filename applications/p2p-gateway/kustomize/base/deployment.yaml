@@ -1,0 +1,35 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: p2p-gateway
+  labels:
+    app: p2p-gateway
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: p2p-gateway
+      labels:
+        app: p2p-gateway
+    spec:
+      imagePullSecrets:
+        - name: "image-pull-secret"
+      containers:
+        - name: p2p-gateway
+          image: corda-os-docker-dev.software.r3.com/corda-os-p2p-gateway:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: p2p-gateway
+          command: [
+              "java", "-jar",
+              "-Dbootstrap.servers=$BOOTSTRAP_SERVER",
+              "-Dconfig.topic.name=$CONFIG_TOPIC_NAME",
+              "-Dmessaging.topic.prefix=$MESSAGE_TOPIC_PREFIX",
+              "/opt/override/p2p-gateway.jar",
+          ]
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: p2p-gateway

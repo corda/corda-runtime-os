@@ -1,5 +1,5 @@
 ---
-apiVersion: skaffold/v2beta26
+apiVersion: skaffold/v2beta25
 kind: Config
 requires:
   - path: ./manifest/third-party/ingress-controller

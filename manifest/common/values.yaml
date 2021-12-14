@@ -1,9 +1,4 @@
 configuration:
-  corda:
-    kafka:
-      bootstrapAddress: kafka-kafka-bootstrap
-      configTopic: config-topic
-
   kubernetes:
     imagePullSecret:
       username: dummy
