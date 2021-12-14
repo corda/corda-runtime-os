@@ -181,7 +181,7 @@ class Deploy : Runnable {
                     kafkaBrokerMemory,
                     kafkaBrokerCpu,
                 ),
-                defaultPartitionsCount,
+                partitionsCount,
             )
         )
         val writer = ObjectMapper(YAMLFactory()).writer()
@@ -203,7 +203,7 @@ class Deploy : Runnable {
             DeployPods(namespaceName, namespace.infrastructurePods).run()
 
             println("Creating/alerting kafka topics...")
-            KafkaSetup(namespaceName, kafkaBrokerCount, defaultPartitionsCount).run()
+            KafkaSetup(namespaceName, kafkaBrokerCount, partitionsCount).run()
 
             DeployPods(namespaceName, namespace.p2pPods).run()
 
