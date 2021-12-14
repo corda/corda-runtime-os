@@ -29,7 +29,7 @@ class RoleWriterImpl(
 
         log.debug { "Received request to create new role: $roleName." }
 
-        val role = entityManagerFactory.transaction { entityManager ->
+        return entityManagerFactory.transaction { entityManager ->
             requireRoleNotExists(entityManager, roleName)
 
             val groupVisibility = if (request.groupVisibility != null) {
@@ -63,10 +63,8 @@ class RoleWriterImpl(
 
             log.info("Successfully created new role: $roleName.")
 
-            role
+            role.toAvroRole()
         }
-
-        return role.toAvroRole()
     }
 
     private fun requireRoleNotExists(entityManager: EntityManager, roleName: String) {

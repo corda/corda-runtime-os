@@ -47,6 +47,10 @@ class PermissionStorageReaderImpl(
         publisher.publish(listOf(Record(RPC_PERM_USER_TOPIC, key = user.loginName, value = user))).single().getOrThrow()
     }
 
+    override fun publishNewRole(role: AvroRole) {
+        publisher.publish(listOf(Record(RPC_PERM_ROLE_TOPIC, key = role.id, value = role))).single().getOrThrow()
+    }
+
     override fun publishGroups(ids: List<String>) {
         publisher.publish(createGroupRecords(permissionRepository.findAllGroups(ids)))
     }

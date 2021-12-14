@@ -29,7 +29,7 @@ class UserWriterImpl(
 
         log.debug { "Received request to create new user: $loginName" }
 
-        val user = entityManagerFactory.transaction { entityManager ->
+        return entityManagerFactory.transaction { entityManager ->
             requireNewUser(entityManager, loginName)
 
             val parentGroup = if (request.parentGroupId != null) {
@@ -68,9 +68,8 @@ class UserWriterImpl(
 
             log.info("Successfully created new user: $loginName.")
 
-            user
+            user.toAvroUser()
         }
-        return user.toAvroUser()
     }
 
     private fun requireNewUser(entityManager: EntityManager, loginName: String) {

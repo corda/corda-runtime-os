@@ -12,7 +12,7 @@ import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
 import net.corda.v5.base.util.contextLogger
 
 class PermissionStorageWriterProcessorImpl(
-    private val reader: PermissionStorageReader,
+    private val permissionStorageReader: PermissionStorageReader,
     private val userWriter: UserWriter,
     private val roleWriter: RoleWriter
 ) : PermissionStorageWriterProcessor {
@@ -24,8 +24,16 @@ class PermissionStorageWriterProcessorImpl(
     override fun onNext(request: PermissionManagementRequest, respFuture: CompletableFuture<PermissionManagementResponse>) {
         try {
             val response = when (val permissionRequest = request.request) {
-                is CreateUserRequest -> userWriter.createUser(permissionRequest, request.requestUserId)
-                is CreateRoleRequest -> roleWriter.createRole(permissionRequest, request.requestUserId)
+                is CreateUserRequest -> {
+                    val avroUser = userWriter.createUser(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishNewUser(avroUser)
+                    avroUser
+                }
+                is CreateRoleRequest -> {
+                    val avroRole = roleWriter.createRole(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishNewRole(avroRole)
+                    avroRole
+                }
                 else -> throw IllegalArgumentException("Received invalid permission request type")
             }
             respFuture.complete(PermissionManagementResponse(response))

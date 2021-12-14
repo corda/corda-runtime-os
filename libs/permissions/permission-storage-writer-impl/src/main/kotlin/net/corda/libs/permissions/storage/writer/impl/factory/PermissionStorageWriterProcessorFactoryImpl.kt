@@ -14,8 +14,9 @@ class PermissionStorageWriterProcessorFactoryImpl : PermissionStorageWriterProce
 
     override fun create(entityManagerFactory: EntityManagerFactory, reader: PermissionStorageReader): PermissionStorageWriterProcessor {
         return PermissionStorageWriterProcessorImpl(
-            UserWriterImpl(entityManagerFactory, reader),
-            RoleWriterImpl(entityManagerFactory, reader)
+            reader,
+            UserWriterImpl(entityManagerFactory),
+            RoleWriterImpl(entityManagerFactory)
         )
     }
 }
