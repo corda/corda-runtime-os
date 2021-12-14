@@ -21,6 +21,8 @@ import java.sql.Connection
 import java.time.Instant
 import java.util.Random
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 
 @Suppress("LongParameterList")
@@ -41,8 +43,7 @@ class Sender(private val publisherFactory: PublisherFactory,
             "VALUES (?, ?) on conflict do nothing")
 
     private val writerThreads = mutableListOf<Thread>()
-    @Volatile
-    private var stopped = false
+    private val stopping = AtomicReference<CompletableFuture<Unit>>()
 
     fun start() {
         val senderId = UUID.randomUUID().toString()
@@ -97,13 +98,19 @@ class Sender(private val publisherFactory: PublisherFactory,
     }
 
     fun stop() {
-        stopped = true
+        stopping.updateAndGet {
+            CompletableFuture()
+        }.join()
     }
 
     private fun moreMessagesToSend(messagesSent: Int, loadGenerationParams: LoadGenerationParams): Boolean {
+        stopping.get()?.also {
+            it.complete(Unit)
+            return false
+        }
         return when(loadGenerationParams.loadGenerationType) {
-            LoadGenerationType.ONE_OFF -> (messagesSent < loadGenerationParams.totalNumberOfMessages!!) && !stopped
-            LoadGenerationType.CONTINUOUS -> !stopped
+            LoadGenerationType.ONE_OFF -> (messagesSent < loadGenerationParams.totalNumberOfMessages!!)
+            LoadGenerationType.CONTINUOUS -> true
         }
     }
 

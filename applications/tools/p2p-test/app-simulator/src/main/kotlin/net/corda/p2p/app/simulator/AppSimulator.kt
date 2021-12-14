@@ -80,12 +80,6 @@ class AppSimulator @Activate constructor(
                 consoleLogger.error("Could not run: ${e.message}")
             }
         }
-
-        Runtime.getRuntime().addShutdownHook(
-            thread(start = false) {
-                println("QQQ in shutdown hook!")
-            }
-        )
     }
 
     private fun runSimulator(parameters: CliParameters, kafkaServers: String) {
@@ -204,8 +198,8 @@ class AppSimulator @Activate constructor(
     override fun shutdown() {
         println("QQQ in shutdown!")
         logger.info("Shutting down application simulator tool")
-        dbConnection?.close()
         resources.forEach { it.close() }
+        dbConnection?.close()
     }
 
     private fun shutdownOSGiFramework() {
