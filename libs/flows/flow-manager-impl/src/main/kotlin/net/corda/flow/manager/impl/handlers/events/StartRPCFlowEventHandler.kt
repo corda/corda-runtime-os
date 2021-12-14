@@ -1,9 +1,8 @@
 package net.corda.flow.manager.impl.handlers.events
 
+import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.state.StateMachineState
-import net.corda.data.flow.event.StartRPCFlow
-import net.corda.data.flow.request.FlowIORequest
 import net.corda.flow.manager.FlowEventContext
 import net.corda.flow.statemachine.FlowContinuation
 import net.corda.v5.base.util.contextLogger
@@ -28,7 +27,8 @@ class StartRPCFlowEventHandler : FlowEventHandler<StartRPCFlow> {
                 .setSuspendCount(0)
                 .setIsKilled(false)
                 .setInitiatedBy(ByteBuffer.wrap(context.inputEventPayload.clientId.toByteArray()))
-                .setFlowIORequest(FlowIORequest())
+                .setWaitingFor(null)
+                .setSuspendedOn(null)
                 .setFlowClassName(context.inputEventPayload.flowClassName)
                 .build()
             val checkpoint = Checkpoint.newBuilder()

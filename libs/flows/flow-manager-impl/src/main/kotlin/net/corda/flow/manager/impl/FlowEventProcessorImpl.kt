@@ -50,6 +50,7 @@ class FlowEventProcessorImpl(
             FlowEventPipeline(context, getFlowEventHandler(flowEvent))
                 .eventPreProcessing()
                 .resumeOrContinue()
+                .setCheckpointSuspendedOn()
                 .requestPostProcessing()
                 .eventPostProcessing()
                 .toStateAndEventResponse()
@@ -77,6 +78,11 @@ class FlowEventProcessorImpl(
             }
             is FlowContinuation.Continue -> copy(input = outcome)
         }
+    }
+
+    private fun FlowEventPipeline.setCheckpointSuspendedOn() : FlowEventPipeline {
+        context.checkpoint!!.flowState.suspendedOn = output!!::class.qualifiedName
+        return this
     }
 
     private fun FlowEventPipeline.requestPostProcessing(): FlowEventPipeline {

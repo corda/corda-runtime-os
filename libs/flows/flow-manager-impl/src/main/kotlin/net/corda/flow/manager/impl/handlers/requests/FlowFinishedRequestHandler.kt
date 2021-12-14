@@ -1,8 +1,6 @@
 package net.corda.flow.manager.impl.handlers.requests
 
 import net.corda.flow.manager.FlowEventContext
-import net.corda.flow.manager.impl.handlers.requests.FlowRequestHandler
-import net.corda.flow.manager.impl.handlers.requests.setCheckpointFlowIORequest
 import net.corda.flow.statemachine.requests.FlowIORequest
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
@@ -19,7 +17,7 @@ class FlowFinishedRequestHandler : FlowRequestHandler<FlowIORequest.FlowFinished
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.FlowFinished): FlowEventContext<Any> {
         val checkpoint = context.checkpoint!!
         log.info("Flow [${checkpoint.flowKey.flowId}] completed successfully")
-        context.setCheckpointFlowIORequest(null)
+        context.setCheckpointWaitingFor(null)
         // Needs to go to a different topic, but currently sends to the flow event topic
         // The commented out code should be added + changed when this is resolved.
 //        val result = RPCFlowResult.newBuilder()

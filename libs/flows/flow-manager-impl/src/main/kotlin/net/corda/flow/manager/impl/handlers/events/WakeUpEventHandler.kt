@@ -1,12 +1,10 @@
 package net.corda.flow.manager.impl.handlers.events
 
 import net.corda.data.flow.event.Wakeup
-import net.corda.data.flow.request.ForceCheckpointRequest
 import net.corda.flow.manager.FlowEventContext
-import net.corda.flow.manager.impl.handlers.events.FlowEventHandler
-import net.corda.flow.manager.impl.handlers.events.requireCheckpoint
 import net.corda.flow.statemachine.FlowContinuation
 import org.osgi.service.component.annotations.Component
+import net.corda.data.flow.state.waiting.Wakeup as WaitingForWakeup
 
 @Component(service = [FlowEventHandler::class])
 class WakeUpEventHandler : FlowEventHandler<Wakeup> {
@@ -20,7 +18,7 @@ class WakeUpEventHandler : FlowEventHandler<Wakeup> {
 
     override fun resumeOrContinue(context: FlowEventContext<Wakeup>): FlowContinuation {
         val checkpoint = requireCheckpoint(context.checkpoint)
-        return if (checkpoint.flowState.flowIORequest.request is ForceCheckpointRequest) {
+        return if (checkpoint.flowState.waitingFor.value is WaitingForWakeup) {
             FlowContinuation.Run(Unit)
         } else {
             FlowContinuation.Continue
