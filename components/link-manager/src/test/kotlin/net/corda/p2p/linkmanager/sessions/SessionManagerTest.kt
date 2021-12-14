@@ -854,6 +854,7 @@ class SessionManagerTest {
 
     @Test
     fun `when responder hello is received, the session is pending, if no response is received, the session times out`() {
+        val resourceHolder = ResourcesHolder()
         val sessionManager = SessionManagerImpl(
             networkMap,
             cryptoService,
@@ -871,9 +872,9 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
-            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock()) }
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourceHolder)
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourceHolder) }
+            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(resourceHolder) }
         }
         sessionManager.start()
 
@@ -890,6 +891,7 @@ class SessionManagerTest {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         sessionManager.stop()
+        resourceHolder.close()
     }
 
     @Test
@@ -912,9 +914,9 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourceHolder)
             createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourceHolder) }
-            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(mock()) }
+            createResourcesCallbacks[PublisherWithDominoLogic::class.java.simpleName]?.let { it(resourceHolder) }
         }
         sessionManager.start()
 
@@ -969,7 +971,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
             createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourcesHolder) }
         }
         @Suppress("UNCHECKED_CAST")
@@ -1072,7 +1074,7 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
 
-        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(5), 5.millis) {
+        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(10), 5.millis) {
             assertThat(messages.size).isGreaterThanOrEqualTo(2)
         }
 
@@ -1083,12 +1085,12 @@ class SessionManagerTest {
         heartbeatConfigHandler.applyNewConfiguration(configFasterHeartbeat, null, mock())
         var messagesSentSoFar: Int? = null
 
-        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(5), 5.millis) {
+        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(10), 5.millis) {
             assertThat(messages.size).isGreaterThanOrEqualTo(3)
             messagesSentSoFar = messages.size
         }
 
-        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(5), 5.millis) {
+        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(10), 5.millis) {
             assertThat(messages.size).isGreaterThan(messagesSentSoFar!!)
         }
 
@@ -1099,7 +1101,7 @@ class SessionManagerTest {
     @Test
     fun `when a data message is sent, heartbeats are sent, this stops if the session manager gets a new config`() {
         var linkOutMessages = 0
-
+        val resourcesHolder = ResourcesHolder()
         fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
             for (record in records) {
                 if (record.topic == Schema.LINK_OUT_TOPIC) {
@@ -1130,8 +1132,8 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configVeryLongTimeout, null, mock())
-            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(mock()) }
+            heartbeatConfigHandler.applyNewConfiguration(configVeryLongTimeout, null, resourcesHolder)
+            createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourcesHolder) }
         }
         @Suppress("UNCHECKED_CAST")
         publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
@@ -1162,14 +1164,14 @@ class SessionManagerTest {
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionEstablished)
         sessionManager.dataMessageSent(authenticatedSession)
 
-        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(5), 5.millis) {
+        eventually(configVeryLongTimeout.heartbeatPeriod.multipliedBy(10), 5.millis) {
             assertThat(linkOutMessages).isGreaterThanOrEqualTo(2)
         }
 
         configHandler.applyNewConfiguration(
             SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, setOf(ProtocolMode.AUTHENTICATION_ONLY)),
             null,
-            mock(),
+            resourcesHolder,
         )
         val messagesSentSoFar = linkOutMessages
 
@@ -1178,6 +1180,7 @@ class SessionManagerTest {
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
             .publish(listOf(Record(Schema.SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
 
+        resourcesHolder.close()
         sessionManager.stop()
     }
     @Test
@@ -1219,7 +1222,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, resourcesHolder)
             createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourcesHolder) }
         }
         publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
@@ -1297,7 +1300,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configLongTimeout, null, mock())
+            heartbeatConfigHandler.applyNewConfiguration(configLongTimeout, null, resourcesHolder)
             createResourcesCallbacks[SessionManagerImpl.HeartbeatManager::class.java.simpleName]?.let { it(resourcesHolder) }
         }
         publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
