@@ -21,9 +21,11 @@ import java.sql.Connection
 import java.time.Instant
 import java.util.Random
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
 import kotlin.concurrent.thread
+import kotlin.concurrent.write
 
 @Suppress("LongParameterList")
 class Sender(private val publisherFactory: PublisherFactory,
@@ -32,6 +34,8 @@ class Sender(private val publisherFactory: PublisherFactory,
              private val sendTopic: String,
              private val kafkaServers: String,
              private val clients: Int): Closeable {
+
+    private val index = AtomicLong(0)
 
     companion object {
         private val logger = contextLogger()
@@ -43,7 +47,9 @@ class Sender(private val publisherFactory: PublisherFactory,
             "VALUES (?, ?) on conflict do nothing")
 
     private val writerThreads = mutableListOf<Thread>()
-    private val stopping = AtomicReference<CompletableFuture<Unit>>()
+    private val stopLock = ReentrantReadWriteLock()
+    @Volatile
+    private var stop = false
 
     fun start() {
         val senderId = UUID.randomUUID().toString()
@@ -64,15 +70,21 @@ class Sender(private val publisherFactory: PublisherFactory,
                         val records = messageWithIds.map { (messageId, message) ->
                             Record(sendTopic, messageId, message)
                         }
-                        val futures = publisher.publish(records)
+                        stopLock.read {
+                            println("QQQ ($client) Publishing ${records.size}")
+                            val futures = publisher.publish(records)
 
-                        if (dbConnection != null) {
-                            val messageSentEvents = messageWithIds.map { (messageId, _) ->
-                                MessageSentEvent(senderId, messageId)
+                            if (dbConnection != null) {
+                                val messageSentEvents = messageWithIds.map { (messageId, _) ->
+                                    MessageSentEvent(senderId, messageId)
+                                }
+                                println("QQQ ($client) Saving ${records.size}")
+                                writeSentMessagesToDb(messageSentEvents)
+                                println("QQQ ($client) Saved ${records.size}")
                             }
-                            writeSentMessagesToDb(messageSentEvents)
+                            futures.forEach { it.get() }
+                            println("QQQ ($client) published ${records.size}")
                         }
-                        futures.forEach { it.get() }
                         messagesSent += loadGenParams.batchSize
 
                         Thread.sleep(loadGenParams.interBatchDelay.toMillis())
@@ -98,14 +110,13 @@ class Sender(private val publisherFactory: PublisherFactory,
     }
 
     fun stop() {
-        stopping.updateAndGet {
-            CompletableFuture()
-        }.join()
+        stopLock.write {
+            stop = true
+        }
     }
 
     private fun moreMessagesToSend(messagesSent: Int, loadGenerationParams: LoadGenerationParams): Boolean {
-        stopping.get()?.also {
-            it.complete(Unit)
+        if(stop) {
             return false
         }
         return when(loadGenerationParams.loadGenerationType) {
@@ -118,7 +129,7 @@ class Sender(private val publisherFactory: PublisherFactory,
                               destinationIdentity: HoldingIdentity,
                               srcIdentity: HoldingIdentity,
                               messageSize: Int): Pair<String, AppMessage> {
-        val messageId = UUID.randomUUID().toString()
+        val messageId = senderId.replace("-", "") + index.incrementAndGet()
         val messageHeader = AuthenticatedMessageHeader(
             destinationIdentity,
             srcIdentity,
