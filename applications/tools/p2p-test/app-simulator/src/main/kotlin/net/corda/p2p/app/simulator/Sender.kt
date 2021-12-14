@@ -64,29 +64,33 @@ class Sender(private val publisherFactory: PublisherFactory,
                 val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator"), kafkaConfig)
                 publisher.use {
                     while (moreMessagesToSend(messagesSent, loadGenParams)) {
-                        val messageWithIds = (1..loadGenParams.batchSize).map {
-                            createMessage(senderId, loadGenParams.peer, loadGenParams.ourIdentity, loadGenParams.messageSizeBytes)
-                        }
-                        val records = messageWithIds.map { (messageId, message) ->
-                            Record(sendTopic, messageId, message)
-                        }
-                        stopLock.read {
-                            val name = "${records.firstOrNull()?.key}->${records.lastOrNull()?.key}"
-                            println("QQQ ($client) Publishing $name")
-                            val futures = publisher.publish(records)
-
-                            if (dbConnection != null) {
-                                val messageSentEvents = messageWithIds.map { (messageId, _) ->
-                                    MessageSentEvent(senderId, messageId)
-                                }
-                                println("QQQ ($client) Saving $name")
-                                writeSentMessagesToDb(messageSentEvents)
-                                println("QQQ ($client) Saved $name")
+                        try {
+                            val messageWithIds = (1..loadGenParams.batchSize).map {
+                                createMessage(senderId, loadGenParams.peer, loadGenParams.ourIdentity, loadGenParams.messageSizeBytes)
                             }
-                            futures.forEach { it.get() }
-                            println("QQQ ($client) published $name")
+                            val records = messageWithIds.map { (messageId, message) ->
+                                Record(sendTopic, messageId, message)
+                            }
+                            stopLock.read {
+                                val name = "${records.firstOrNull()?.key}->${records.lastOrNull()?.key}"
+                                println("QQQ ($client) Publishing $name")
+                                val futures = publisher.publish(records)
+
+                                if (dbConnection != null) {
+                                    val messageSentEvents = messageWithIds.map { (messageId, _) ->
+                                        MessageSentEvent(senderId, messageId)
+                                    }
+                                    println("QQQ ($client) Saving $name")
+                                    writeSentMessagesToDb(messageSentEvents)
+                                    println("QQQ ($client) Saved $name")
+                                }
+                                futures.forEach { it.get() }
+                                println("QQQ ($client) published $name")
+                            }
+                            messagesSent += loadGenParams.batchSize
+                        } catch (e: Exception) {
+                            logger.warn("Ooops", e)
                         }
-                        messagesSent += loadGenParams.batchSize
 
                         Thread.sleep(loadGenParams.interBatchDelay.toMillis())
                     }
