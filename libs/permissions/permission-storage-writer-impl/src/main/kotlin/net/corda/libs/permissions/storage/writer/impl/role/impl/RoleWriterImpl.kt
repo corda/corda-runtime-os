@@ -7,6 +7,7 @@ import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.libs.permissions.storage.writer.impl.common.toAvroRole
 import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
+import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.RPCPermissionOperation
@@ -28,11 +29,7 @@ class RoleWriterImpl(
 
         log.debug { "Received request to create new role: $roleName." }
 
-        val entityManager = entityManagerFactory.createEntityManager()
-
-        return try {
-            entityManager.transaction.begin()
-
+        val role = entityManagerFactory.transaction { entityManager ->
             requireRoleNotExists(entityManager, roleName)
 
             val groupVisibility = if (request.groupVisibility != null) {
@@ -64,14 +61,12 @@ class RoleWriterImpl(
 
             entityManager.persist(auditLog)
 
-            entityManager.transaction.commit()
-
             log.info("Successfully created new role: $roleName.")
 
-            role.toAvroRole()
-        } finally {
-            entityManager.close()
+            role
         }
+
+        return role.toAvroRole()
     }
 
     private fun requireRoleNotExists(entityManager: EntityManager, roleName: String) {

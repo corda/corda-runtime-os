@@ -7,6 +7,7 @@ import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.libs.permissions.storage.writer.impl.common.toAvroUser
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
+import net.corda.orm.utils.transaction
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.RPCPermissionOperation
@@ -28,11 +29,7 @@ class UserWriterImpl(
 
         log.debug { "Received request to create new user: $loginName" }
 
-        val entityManager = entityManagerFactory.createEntityManager()
-
-        return try {
-            entityManager.transaction.begin()
-
+        val user = entityManagerFactory.transaction { entityManager ->
             requireNewUser(entityManager, loginName)
 
             val parentGroup = if (request.parentGroupId != null) {
@@ -69,14 +66,11 @@ class UserWriterImpl(
 
             entityManager.persist(auditLog)
 
-            entityManager.transaction.commit()
-
             log.info("Successfully created new user: $loginName.")
 
-            user.toAvroUser()
-        } finally {
-            entityManager.close()
+            user
         }
+        return user.toAvroUser()
     }
 
     private fun requireNewUser(entityManager: EntityManager, loginName: String) {
