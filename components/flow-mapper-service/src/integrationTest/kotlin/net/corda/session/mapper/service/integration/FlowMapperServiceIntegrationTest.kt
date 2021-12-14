@@ -17,6 +17,12 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.schema.Schemas.Companion.CONFIG_TOPIC
+import net.corda.schema.Schemas.Companion.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Companion.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Companion.P2P_OUT_TOPIC
+import net.corda.schema.configuration.ConfigKeys.Companion.FLOW_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 import net.corda.session.mapper.service.FlowMapperService
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -32,9 +38,6 @@ import java.util.concurrent.TimeUnit
 class FlowMapperServiceIntegrationTest {
 
     private companion object {
-        const val flowMapperTopic = "flow.mapper.event.topic"
-        const val flowEventTopic = "flow.event.topic"
-        const val p2pOut = "p2p.out"
         const val clientId = "clientId"
         const val inputRecordKey = "key"
     }
@@ -56,17 +59,19 @@ class FlowMapperServiceIntegrationTest {
     @Test
     fun testFlowMapperService() {
         val publisher = publisherFactory.createPublisher(PublisherConfig(clientId))
-        publisher.publish(listOf(Record(flowMapperTopic, inputRecordKey, FlowMapperEvent(MessageDirection.INBOUND, StartRPCFlow("", "", "",
+        publisher.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, inputRecordKey, FlowMapperEvent(MessageDirection.INBOUND, StartRPCFlow("",
+            "",
+            "",
             HoldingIdentity("", ""), Instant.now(), "")))))
 
-        publisher.publish(listOf(Record(flowMapperTopic, inputRecordKey, FlowMapperEvent(MessageDirection.OUTBOUND, SessionEvent(currentTimeMillis(), 3, SessionData())))))
+        publisher.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, inputRecordKey, FlowMapperEvent(MessageDirection.OUTBOUND, SessionEvent(currentTimeMillis(), 3, SessionData())))))
 
         setupConfig(publisher)
 
         flowMapperService.start()
 
-        validateOutputTopic(flowEventTopic)
-        validateOutputTopic(p2pOut)
+        validateOutputTopic(FLOW_EVENT_TOPIC)
+        validateOutputTopic(P2P_OUT_TOPIC)
 
         flowMapperService.stop()
         configService.stop()
@@ -86,8 +91,8 @@ class FlowMapperServiceIntegrationTest {
 
     private fun setupConfig(publisher: Publisher) {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(bootConf))
-        publisher.publish(listOf(Record("config.topic", "corda.flow", Configuration(flowConf, "1"))))
-        publisher.publish(listOf(Record("config.topic", "corda.messaging", Configuration(messagingConf, "1"))))
+        publisher.publish(listOf(Record(CONFIG_TOPIC, FLOW_CONFIG, Configuration(flowConf, "1"))))
+        publisher.publish(listOf(Record(CONFIG_TOPIC, MESSAGING_CONFIG, Configuration(messagingConf, "1"))))
         configService.start()
         configService.bootstrapConfig(bootConfig)
     }

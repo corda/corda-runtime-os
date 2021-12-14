@@ -79,7 +79,7 @@ class FlowMapperListenerTest {
         val scheduledTaskState = generateScheduledTaskState(publisher, emptyList())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
 
-        FlowMapperListener(scheduledTaskState, eventTopic, clock).onPartitionSynced(states)
+        FlowMapperListener(scheduledTaskState, clock).onPartitionSynced(states)
 
         verify(publisher, times(0)).publish(any())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
@@ -114,7 +114,7 @@ class FlowMapperListenerTest {
         val scheduledTaskState = generateScheduledTaskState(publisher, emptyList())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
 
-        FlowMapperListener(scheduledTaskState, eventTopic, clock).onPostCommit(states)
+        FlowMapperListener(scheduledTaskState, clock).onPostCommit(states)
 
         verify(publisher, times(0)).publish(any())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
@@ -131,7 +131,7 @@ class FlowMapperListenerTest {
         val scheduledTaskState = generateScheduledTaskState(publisher, emptyList())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
 
-        FlowMapperListener(scheduledTaskState, eventTopic, clock).onPostCommit(states)
+        FlowMapperListener(scheduledTaskState, clock).onPostCommit(states)
 
         verify(publisher, times(0)).publish(any())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
