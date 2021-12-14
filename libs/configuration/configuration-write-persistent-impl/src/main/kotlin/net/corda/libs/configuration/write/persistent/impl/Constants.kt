@@ -1,4 +1,4 @@
-package net.corda.configuration.write.impl
+package net.corda.libs.configuration.write.persistent.impl
 
 import net.corda.data.config.ConfigurationManagementResponse
 import java.util.concurrent.CompletableFuture

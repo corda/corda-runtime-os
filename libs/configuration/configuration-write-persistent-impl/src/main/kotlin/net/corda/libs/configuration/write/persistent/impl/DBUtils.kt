@@ -1,7 +1,6 @@
-package net.corda.configuration.write.impl
+package net.corda.libs.configuration.write.persistent.impl
 
 import com.typesafe.config.ConfigException
-import net.corda.configuration.write.ConfigWriteException
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
@@ -9,6 +8,7 @@ import net.corda.db.core.HikariDataSourceFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.sql.SQLException
@@ -18,7 +18,7 @@ import javax.sql.DataSource
 
 /** Encapsulates database-related functionality, so that it can be stubbed during tests. */
 @Component(service = [DBUtils::class])
-class DBUtils(
+class DBUtils @Activate constructor(
     @Reference(service = LiquibaseSchemaMigrator::class)
     private val schemaMigrator: LiquibaseSchemaMigrator,
     @Reference(service = EntityManagerFactoryFactory::class)
@@ -32,14 +32,14 @@ class DBUtils(
     /**
      * Checks the connection to the cluster database.
      *
-     * @throws ConfigWriteException If the cluster database cannot be connected to.
+     * @throws ConfigWriterException If the cluster database cannot be connected to.
      */
     fun checkClusterDatabaseConnection(config: SmartConfig) {
         val dataSource = createDataSource(config)
         try {
             dataSource.connection.close()
         } catch (e: SQLException) {
-            throw ConfigWriteException("Could not connect to cluster database.", e)
+            throw ConfigWriterException("Could not connect to cluster database.", e)
         }
     }
 

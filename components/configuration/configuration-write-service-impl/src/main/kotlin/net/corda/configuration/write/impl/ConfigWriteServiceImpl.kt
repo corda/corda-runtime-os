@@ -1,8 +1,8 @@
 package net.corda.configuration.write.impl
 
 import net.corda.configuration.write.ConfigWriteService
-import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.write.persistent.ConfigWriterFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import org.osgi.service.component.annotations.Activate

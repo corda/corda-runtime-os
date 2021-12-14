@@ -1,4 +1,4 @@
-package net.corda.configuration.write.impl
+package net.corda.libs.configuration.write.persistent.impl
 
 import javax.persistence.Column
 import javax.persistence.Entity

@@ -1,6 +1,7 @@
 package net.corda.configuration.write.impl
 
-import net.corda.configuration.write.ConfigWriteException
+import net.corda.configuration.write.ConfigWriteServiceException
+import net.corda.libs.configuration.write.persistent.ConfigWriterFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
@@ -23,7 +24,7 @@ class ConfigWriteEventHandler(private val configWriterFactory: ConfigWriterFacto
     /**
      * Upon [SubscribeEvent], starts processing new config requests. Upon [StopEvent], stops processing them.
      *
-     * @throws ConfigWriteException If an event type other than [StartEvent]/[SubscribeEvent]/[StopEvent] is received,
+     * @throws ConfigWriteServiceException If an event type other than [StartEvent]/[SubscribeEvent]/[StopEvent] is received,
      * if multiple [SubscribeEvent]s are received, or if the creation of the subscription fails.
      */
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -32,7 +33,7 @@ class ConfigWriteEventHandler(private val configWriterFactory: ConfigWriterFacto
 
             is SubscribeEvent -> {
                 if (subscriptionHandle != null) {
-                    throw ConfigWriteException("An attempt was made to subscribe twice.")
+                    throw ConfigWriteServiceException("An attempt was made to subscribe twice.")
                 }
 
                 try {

@@ -1,8 +1,6 @@
-package net.corda.configuration.write.impl
+package net.corda.libs.configuration.write.persistent
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import java.io.Closeable
 
 /** Creates listeners that process new config requests. */
@@ -15,8 +13,8 @@ interface ConfigWriterFactory {
      *
      * @return A handle for closing the subscription.
      *
-     * @throws CordaMessageAPIFatalException For non-recoverable errors setting up the subscription.
-     * @throws CordaMessageAPIIntermittentException For recoverable errors setting up the subscription.
+     * @throws `CordaMessageAPIFatalException` For non-recoverable errors setting up the subscription.
+     * @throws `CordaMessageAPIIntermittentException` For recoverable errors setting up the subscription.
      */
     fun create(config: SmartConfig, instanceId: Int): Closeable
 }

@@ -1,8 +1,9 @@
-package net.corda.configuration.write.impl
+package net.corda.libs.configuration.write.persistent.impl
 
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.write.persistent.ConfigWriterFactory
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -30,7 +31,7 @@ class ConfigWriterFactoryImpl @Activate constructor(
 ) : ConfigWriterFactory {
 
     override fun create(config: SmartConfig, instanceId: Int): Closeable {
-        // TODO - Joel - Move these checks.
+        // TODO - Joel - Move these checks to event handler?
         dbUtils.checkClusterDatabaseConnection(config)
         dbUtils.migrateClusterDatabase(config)
 

@@ -1,6 +1,5 @@
-package net.corda.configuration.write.impl
+package net.corda.libs.configuration.write.persistent.impl
 
-import net.corda.configuration.write.ConfigWriteException
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
@@ -57,7 +56,7 @@ internal class ConfigWriterProcessor(
             true
         } catch (e: Exception) {
             respFuture.completeExceptionally(
-                ConfigWriteException("Config $configEntity couldn't be written to the database.", e)
+                ConfigWriterException("Config $configEntity couldn't be written to the database.", e)
             )
             false
         }
@@ -91,7 +90,7 @@ internal class ConfigWriterProcessor(
             val cause = failedFutures[0]
             logger.debug("Record $record was written to the database, but couldn't be published. Cause: $cause.")
             respFuture.completeExceptionally(
-                ConfigWriteException("Record $record was written to the database, but couldn't be published.", cause)
+                ConfigWriterException("Record $record was written to the database, but couldn't be published.", cause)
             )
         }
     }
