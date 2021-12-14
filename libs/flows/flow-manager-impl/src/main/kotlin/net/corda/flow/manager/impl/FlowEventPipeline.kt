@@ -1,22 +1,76 @@
 package net.corda.flow.manager.impl
 
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
+import net.corda.flow.manager.impl.handlers.FlowProcessingException
+import net.corda.flow.manager.impl.handlers.events.FlowEventHandler
+import net.corda.flow.manager.impl.handlers.requests.FlowRequestHandler
+import net.corda.flow.manager.impl.runner.FlowRunner
+import net.corda.flow.statemachine.FlowContinuation
+import net.corda.flow.statemachine.requests.FlowIORequest
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.v5.base.util.contextLogger
 
-interface FlowEventPipeline {
+data class FlowEventPipeline(
+    val flowEventHandler: FlowEventHandler<Any>,
+    val flowRequestHandlers: Map<Class<FlowIORequest<*>>, FlowRequestHandler<FlowIORequest<*>>>,
+    val flowRunner: FlowRunner,
+    val context: FlowEventContext<Any>,
+    val input: FlowContinuation = FlowContinuation.Continue,
+    val output: FlowIORequest<*>? = null
+) {
+    private companion object {
+        val log = contextLogger()
+    }
 
-    fun start(checkpoint: Checkpoint?, event: FlowEvent) : FlowEventPipelineContext
+    fun eventPreProcessing(): FlowEventPipeline {
+        log.info("Preprocessing of ${context.inputEventPayload::class.java.name} using ${flowEventHandler::class.java.name}")
+        return copy(context = flowEventHandler.preProcess(context))
+    }
 
-    fun eventPreProcessing(pipelineContext: FlowEventPipelineContext): FlowEventPipelineContext
+    fun runOrContinue(): FlowEventPipeline {
+        log.info("Should resume or continue after receiving ${context.inputEventPayload::class.java.name} using ${flowEventHandler::class.java.name}")
+        return when (val outcome = flowEventHandler.resumeOrContinue(context)) {
+            is FlowContinuation.Run, is FlowContinuation.Error -> {
+                val (checkpoint, output) = flowRunner.runFlow(
+                    context.checkpoint!!,
+                    context.inputEvent,
+                    outcome
+                ).waitForCheckpoint()
+                copy(context = context.copy(checkpoint = checkpoint), input = outcome, output = output)
+            }
+            is FlowContinuation.Continue -> copy(input = outcome)
+        }
+    }
 
-    fun runOrContinue(pipelineContext: FlowEventPipelineContext): FlowEventPipelineContext
+    fun setCheckpointSuspendedOn(): FlowEventPipeline {
+        context.checkpoint!!.flowState.suspendedOn = output!!::class.qualifiedName
+        return this
+    }
 
-    fun setCheckpointSuspendedOn(pipelineContext: FlowEventPipelineContext): FlowEventPipelineContext
+    fun requestPostProcessing(): FlowEventPipeline {
+        // If the flow fiber did not run or resume then there is no request post processing to execute.
+        return if (input == FlowContinuation.Continue) {
+            this
+        } else {
+            log.info("Postprocessing of $output")
+            copy(context = getFlowRequestHandler(output!!).postProcess(context, output))
+        }
+    }
 
-    fun requestPostProcessing(pipelineContext: FlowEventPipelineContext): FlowEventPipelineContext
+    fun eventPostProcessing(): FlowEventPipeline {
+        log.info("Postprocessing of ${context.inputEventPayload::class.java.name} using ${flowEventHandler::class.java.name}")
+        return copy(context = flowEventHandler.postProcess(context))
+    }
 
-    fun eventPostProcessing(pipelineContext: FlowEventPipelineContext): FlowEventPipelineContext
+    fun toStateAndEventResponse(): StateAndEventProcessor.Response<Checkpoint> {
+        log.info("Sending output records to message bus: ${context.outputRecords}")
+        return StateAndEventProcessor.Response(context.checkpoint, context.outputRecords)
+    }
 
-    fun toStateAndEventResponse(pipelineContext: FlowEventPipelineContext): StateAndEventProcessor.Response<Checkpoint>
+    private fun getFlowRequestHandler(request: FlowIORequest<*>): FlowRequestHandler<FlowIORequest<*>> {
+        return when (val handler = flowRequestHandlers[request::class.java]) {
+            null -> throw FlowProcessingException("${request::class.java.name} does not have an associated flow request handler")
+            else -> handler
+        }
+    }
 }

@@ -2,7 +2,6 @@ package net.corda.flow.manager.impl.factory
 
 import net.corda.flow.manager.FlowEventProcessor
 import net.corda.flow.manager.factory.FlowEventProcessorFactory
-import net.corda.flow.manager.impl.FlowEventPipelineImpl
 import net.corda.flow.manager.impl.FlowEventProcessorImpl
 import net.corda.flow.manager.impl.handlers.events.FlowEventHandler
 import net.corda.flow.manager.impl.handlers.requests.FlowRequestHandler
@@ -34,6 +33,6 @@ class FlowEventProcessorFactoryImpl(
     ) : this(flowRunner, mutableListOf(), mutableListOf())
 
     override fun create(): FlowEventProcessor {
-        return FlowEventProcessorImpl(FlowEventPipelineImpl(flowRunner, flowEventHandlers, flowRequestHandlers))
+        return FlowEventProcessorImpl(flowRunner, flowEventHandlers, flowRequestHandlers)
     }
 }
