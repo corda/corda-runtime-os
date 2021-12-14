@@ -25,7 +25,6 @@ dependencies {
     implementation project(":components:flow-mapper-service")
     implementation project(":components:sandbox:sandbox-service")
 
-    runtimeOnly project(":libs:sandbox")
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
     runtimeOnly project(":libs:crypto:crypto-impl")
     runtimeOnly project(":libs:configuration:configuration-write-impl")
