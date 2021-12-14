@@ -1,12 +1,22 @@
 package net.corda.flow.manager.impl
 
-import net.corda.flow.statemachine.FlowContinuation
-import net.corda.flow.manager.impl.handlers.events.FlowEventHandler
-import net.corda.flow.statemachine.requests.FlowIORequest
+import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.state.Checkpoint
+import net.corda.messaging.api.processor.StateAndEventProcessor
 
-data class FlowEventPipeline(
-    val context: FlowEventContext<Any>,
-    val handler: FlowEventHandler<Any>,
-    val input: FlowContinuation = FlowContinuation.Continue,
-    val output: FlowIORequest<*>? = null
-)
+interface FlowEventPipeline {
+
+    fun start(checkpoint: Checkpoint?, event: FlowEvent) : FlowEventPipelineContext
+
+    fun eventPreProcessing(pipelineContext: FlowEventPipelineContext): FlowEventPipelineContext
+
+    fun runOrContinue(pipelineContext: FlowEventPipelineContext): FlowEventPipelineContext
+
+    fun setCheckpointSuspendedOn(pipelineContext: FlowEventPipelineContext): FlowEventPipelineContext
+
+    fun requestPostProcessing(pipelineContext: FlowEventPipelineContext): FlowEventPipelineContext
+
+    fun eventPostProcessing(pipelineContext: FlowEventPipelineContext): FlowEventPipelineContext
+
+    fun toStateAndEventResponse(pipelineContext: FlowEventPipelineContext): StateAndEventProcessor.Response<Checkpoint>
+}
