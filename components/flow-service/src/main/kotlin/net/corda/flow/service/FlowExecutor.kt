@@ -1,10 +1,9 @@
 package net.corda.flow.service
 
+import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.state.Checkpoint
-import net.corda.flow.manager.FlowEventExecutorFactory
-import net.corda.flow.manager.FlowMetaDataFactory
+import net.corda.flow.manager.factory.FlowEventProcessorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -24,8 +23,7 @@ class FlowExecutor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val config: SmartConfig,
     private val subscriptionFactory: SubscriptionFactory,
-    private val flowMetaDataFactory: FlowMetaDataFactory,
-    private val flowEventExecutorFactory: FlowEventExecutorFactory
+    private val flowEventProcessorFactory: FlowEventProcessorFactory
 ) : Lifecycle {
 
     companion object {
@@ -44,10 +42,9 @@ class FlowExecutor(
                 logger.debug { "Starting the flow executor" }
                 val groupName = config.getString(GROUP_NAME_KEY)
                 val instanceId = config.getInt(INSTANCE_ID_KEY)
-                val processor = FlowMessageProcessor(flowMetaDataFactory, flowEventExecutorFactory)
                 messagingSubscription = subscriptionFactory.createStateAndEventSubscription(
                     SubscriptionConfig(groupName, FLOW_EVENT_TOPIC, instanceId),
-                    processor,
+                    flowEventProcessorFactory.create(),
                     config
                 )
                 messagingSubscription?.start()
