@@ -2,6 +2,8 @@ package net.corda.cli.application
 
 import net.corda.cli.api.CordaCliPlugin
 import net.corda.cli.api.serviceUsers.HttpServiceUser
+import net.corda.cli.application.commands.SetCurrentNodeCommand
+import net.corda.cli.application.services.Files
 import net.corda.cli.application.services.HttpRpcService
 import org.pf4j.CompoundPluginDescriptorFinder
 import org.pf4j.DefaultPluginManager
@@ -12,11 +14,12 @@ import java.nio.file.Paths
 import kotlin.system.exitProcess
 
 fun main(vararg args: String) {
-    Boot.runDemo(*args)
+    Boot.run(*args)
 }
 
 @CommandLine.Command(
-    name = "corda"
+    name = "corda",
+    subcommands = [SetCurrentNodeCommand::class]
 )
 class App
 
@@ -31,7 +34,11 @@ object Boot {
         }
     }
 
-    fun runDemo(vararg args: String) {
+    fun run(vararg args: String) {
+
+        //create storage dir if it doesn't exist
+        Files.cliHomeDir.mkdirs()
+        Files.profile.createNewFile()
 
         //create http service
         val httpService = HttpRpcService()

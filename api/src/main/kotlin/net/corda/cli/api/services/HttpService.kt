@@ -1,9 +1,13 @@
 package net.corda.cli.api.services
 
-interface HttpService : CliService {
-    fun get(): String
-    fun put(): String
-    fun patch(): String
-    fun post(): String
-    fun delete(): String
+interface HttpService {
+    fun get(endpoint: String)
+    fun put(endpoint: String, jsonBody: String)
+    fun patch(endpoint: String, jsonBody: String)
+    fun post(endpoint: String, jsonBody: String)
+    fun delete(endpoint: String)
+
+    var username: String?
+    var password: String?
+    var url: String?
 }

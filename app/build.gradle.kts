@@ -16,6 +16,9 @@ dependencies {
     implementation ("org.pf4j:pf4j:${pf4jVersion}")
     implementation ("org.apache.commons:commons-lang3:3.5")
     api("info.picocli:picocli:4.5.2")
+    implementation("org.yaml:snakeyaml:1.29")
+    implementation("com.github.kittinunf.fuel:fuel:2.3.1")
+    implementation("com.github.kittinunf.fuel:fuel-json:2.3.1")
 }
 
 application {

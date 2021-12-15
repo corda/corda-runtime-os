@@ -28,18 +28,21 @@ class ExamplePluginOneWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     @Extension
-    @CommandLine.Command(name = "pluginOne", description = ["Example Plugin one using function based subcommands, and services"])
+    @CommandLine.Command(name = "plugin-one", description = ["Example Plugin one using function based subcommands, and services"])
     class ExamplePluginOne : CordaCliPlugin, HttpServiceUser {
+
+        @CommandLine.Mixin
         override lateinit var service: HttpService
 
-        @CommandLine.Command(name = "basicExample", description = ["A basic subcommand that doesnt use services."])
+        @CommandLine.Command(name = "basic-example", description = ["A basic subcommand that doesnt use services."])
         fun exampleSubCommand() {
             println("Hello from plugin one!")
+            println(System.getProperty("user.home"))
         }
 
-        @CommandLine.Command(name = "serviceExample", description = ["A subcommand that uses a service supplied by the host."])
+        @CommandLine.Command(name = "service-example", description = ["A subcommand that uses a service supplied by the host."])
         fun exampleServiceSubCommand() {
-            println(service.get())
+            service.get("message")
         }
     }
 }

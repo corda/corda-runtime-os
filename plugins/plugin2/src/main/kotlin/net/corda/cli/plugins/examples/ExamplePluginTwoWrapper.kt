@@ -27,7 +27,7 @@ class ExamplePluginTwoWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
 
     @Extension
     @CommandLine.Command(
-        name = "pluginTwo",
+        name = "plugin-two",
         subcommands = [SubCommandOne::class],
         description = ["Example Plugin two using class based subcommands"]
     )
