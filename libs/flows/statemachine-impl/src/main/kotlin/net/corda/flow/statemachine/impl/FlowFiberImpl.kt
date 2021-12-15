@@ -27,11 +27,8 @@ class TransientReference<out A>(@Transient val value: A)
 
 @Suppress("TooManyFunctions", "ComplexMethod", "LongParameterList")
 class FlowFiberImpl<R>(
-    private val clientId: String?,
     private val id: FlowKey,
     override val logic: Flow<R>,
-    private val cpiId: String,
-    private val flowName: String,
     scheduler: FiberScheduler
 ) : Fiber<Unit>(id.toString(), scheduler), FlowFiber<R> {
 

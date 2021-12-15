@@ -8,24 +8,10 @@ import net.corda.flow.statemachine.impl.FlowFiberImpl
 import net.corda.v5.application.flows.Flow
 import org.osgi.service.component.annotations.Component
 
-@Component
+@Component(service = [FlowFiberFactory::class])
 class FlowFiberFactoryImpl : FlowFiberFactory {
 
-    override fun createFlowFiber(
-        clientId: String?,
-        id: FlowKey,
-        logic: Flow<*>,
-        cpiId: String,
-        flowName: String,
-        scheduler: FiberScheduler
-    ): FlowFiber<Any?> {
-        return FlowFiberImpl(
-            clientId,
-            id,
-            logic,
-            cpiId,
-            flowName,
-            scheduler
-        )
+    override fun createFlowFiber(id: FlowKey, logic: Flow<*>, scheduler: FiberScheduler): FlowFiber<Any?> {
+        return FlowFiberImpl(id, logic, scheduler)
     }
 }
