@@ -65,6 +65,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val consumerPollAndProcessMaxRetries = config.consumerPollAndProcessMaxRetries
     private val processorTimeout = config.processorTimeout
     private val deadLetterQueueSuffix = config.deadLetterQueueSuffix
+    private lateinit var deadLetterRecords: MutableList<ByteArray>
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaStateAndEventSubscription-$stateTopic.$eventTopic",
@@ -143,31 +144,11 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     stateAndEventListener,
                     { topic, data ->
                         log.error("Failed to deserialize state record from $topic")
-                        producer.beginTransaction()
-                        producer.sendRecords(
-                            listOf(
-                                Record(
-                                    this.eventTopic + deadLetterQueueSuffix,
-                                    UUID.randomUUID().toString(),
-                                    data
-                                )
-                            )
-                        )
-                        producer.commitTransaction()
+                        deadLetterRecords.add(data)
                     },
                     { topic, data ->
                         log.error("Failed to deserialize event record from $topic")
-                        producer.beginTransaction()
-                        producer.sendRecords(
-                            listOf(
-                                Record(
-                                    this.eventTopic + deadLetterQueueSuffix,
-                                    UUID.randomUUID().toString(),
-                                    data
-                                )
-                            )
-                        )
-                        producer.commitTransaction()
+                        deadLetterRecords.add(data)
                     }
                 )
                 stateAndEventConsumer = stateAndEventConsumerTmp
@@ -243,6 +224,13 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         producer.beginTransaction()
         producer.sendRecords(outputRecords)
+        producer.sendRecords(deadLetterRecords.map {
+            Record(
+                eventTopic + deadLetterQueueSuffix,
+                UUID.randomUUID().toString(),
+                it
+            )
+        })
         producer.sendRecordOffsetsToTransaction(eventConsumer, events.map { it })
         producer.commitTransaction()
         log.debug { "Processing of events(size: ${events.size}) complete" }

@@ -12,10 +12,10 @@ import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
+import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.DEAD_LETTER_QUEUE_SUFFIX
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.INSTANCE_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_PRODUCER
@@ -75,6 +75,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
     private val topic = config.getString(TOPIC_NAME)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val producerClientId: String = config.getString(PRODUCER_CLIENT_ID)
+    private lateinit var deadLetterRecords: MutableList<ByteArray>
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaDurableSubscription-$topic",
@@ -165,6 +166,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 log.debug { "Attempt: $attempts" }
+                deadLetterRecords = mutableListOf()
                 producer = producerBuilder.createProducer(config.getConfig(KAFKA_PRODUCER))
                 consumer = if (partitionAssignmentListener != null) {
                     val consumerGroup = config.getString(CONSUMER_GROUP_ID)
@@ -176,17 +178,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                         processor.valueClass,
                         { topic, data ->
                             log.error("Failed to deserialize record from $topic")
-                            producer.beginTransaction()
-                            producer.sendRecords(
-                                listOf(
-                                    Record(
-                                        this.topic + config.getString(DEAD_LETTER_QUEUE_SUFFIX),
-                                        UUID.randomUUID().toString(),
-                                        data
-                                    )
-                                )
-                            )
-                            producer.commitTransaction()
+                            deadLetterRecords.add(data)
                         },
                         consumerRebalanceListener = rebalanceListener
                     )
@@ -197,17 +189,7 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
                         processor.valueClass,
                         { topic, data ->
                             log.error("Failed to deserialize record from $topic")
-                            producer.beginTransaction()
-                            producer.sendRecords(
-                                listOf(
-                                    Record(
-                                        this.topic + config.getString(DEAD_LETTER_QUEUE_SUFFIX),
-                                        UUID.randomUUID().toString(),
-                                        data
-                                    )
-                                )
-                            )
-                            producer.commitTransaction()
+                            deadLetterRecords.add(data)
                         }
                     )
                 }
@@ -320,6 +302,13 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
         try {
             producer.beginTransaction()
             producer.sendRecords(processor.onNext(consumerRecords.map { it.toEventLogRecord() }))
+            producer.sendRecords(deadLetterRecords.map {
+                Record(
+                    topic + config.getString(ConfigProperties.DEAD_LETTER_QUEUE_SUFFIX),
+                    UUID.randomUUID().toString(),
+                    it
+                )
+            })
             producer.sendAllOffsetsToTransaction(consumer)
             producer.commitTransaction()
         } catch (ex: Exception) {

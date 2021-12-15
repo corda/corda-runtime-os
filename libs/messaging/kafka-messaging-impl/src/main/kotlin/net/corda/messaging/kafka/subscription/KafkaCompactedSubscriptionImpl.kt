@@ -119,8 +119,8 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                 consumerBuilder.createCompactedConsumer(
                     config.getConfig(KAFKA_CONSUMER),
                     processor.keyClass,
-                    processor.valueClass
-                ) { topic, _ -> log.error("Failed to deserialize record from $topic") }.use {
+                    processor.valueClass, ::onError
+                ).use {
                     val partitions = it.getPartitions(
                         topic,
                         Duration.ofSeconds(consumerThreadStopTimeout)
@@ -145,6 +145,10 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
             }
         }
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+    }
+
+    private fun onError(topic: String, bytes: ByteArray) {
+        log.error("Failed to deserialize record from $topic")
     }
 
     private fun getLatestValues(): MutableMap<K, V> {
