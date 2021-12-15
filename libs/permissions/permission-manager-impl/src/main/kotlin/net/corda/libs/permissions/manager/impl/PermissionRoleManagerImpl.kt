@@ -24,17 +24,17 @@ class PermissionRoleManagerImpl(
 ) : PermissionRoleManager {
 
     private companion object {
-        const val REMOTE_WRITER_TIMEOUT_PATH = "permission.management.remoteWriterTimeoutMs"
-        const val DEFAULT_WRITER_TIMEOUT_MS = 10000L
+        const val ENDPOINT_TIMEOUT_PATH = "endpointTimeoutMs"
+        const val DEFAULT_ENDPOINT_TIMEOUT_MS = 10000L
     }
 
     private val writerTimeout = initializeEndpointTimeoutDuration(config)
 
     private fun initializeEndpointTimeoutDuration(config: SmartConfig): Duration {
-        return if (config.hasPath(REMOTE_WRITER_TIMEOUT_PATH)) {
-            Duration.ofMillis(config.getLong(REMOTE_WRITER_TIMEOUT_PATH))
+        return if (config.hasPath(ENDPOINT_TIMEOUT_PATH)) {
+            Duration.ofMillis(config.getLong(ENDPOINT_TIMEOUT_PATH))
         } else {
-            Duration.ofMillis(DEFAULT_WRITER_TIMEOUT_MS)
+            Duration.ofMillis(DEFAULT_ENDPOINT_TIMEOUT_MS)
         }
     }
 

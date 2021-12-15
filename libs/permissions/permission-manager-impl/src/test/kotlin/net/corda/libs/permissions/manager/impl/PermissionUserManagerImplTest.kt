@@ -208,16 +208,21 @@ class PermissionUserManagerImplTest {
     @Test
     fun `creating permission user manager will use the remote writer timeout set in the config`() {
         val config = SmartConfigImpl.empty()
-            .withValue("permission.management.remoteWriterTimeoutMs", ConfigValueFactory.fromAnyRef(12345L))
+            .withValue("endpointTimeoutMs", ConfigValueFactory.fromAnyRef(12345L))
 
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
         whenever(passwordService.saltAndHash(eq("mypassword"))).thenReturn(PasswordHash("randomSalt", "hashedPass"))
-        whenever(future.getOrThrow(Duration.ofSeconds(12345L))).thenReturn(permissionManagementResponse)
+        whenever(future.getOrThrow(Duration.ofMillis(12345L))).thenReturn(permissionManagementResponse)
 
         val manager = PermissionUserManagerImpl(config, rpcSender, permissionCache, passwordService)
 
-        manager.createUser(createUserRequestDto)
+        val result = manager.createUser(createUserRequestDto)
+
+        verify(future, times(1)).getOrThrow(Duration.ofMillis(12345L))
+
+        assertTrue(result.isSuccess)
+        assertEquals(avroUser.id, result.getOrThrow().id)
     }
 }
