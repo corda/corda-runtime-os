@@ -1,7 +1,6 @@
 {
   "type": "record",
   "name": "Wakeup",
-  "namespace": "net.corda.data.flow.event",
+  "namespace": "net.corda.data.flow.state.waiting",
   "fields": []
 }
-

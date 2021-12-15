@@ -12,7 +12,7 @@
       "type": "string"
     },
     {
-      "name": "flowName",
+      "name": "flowClassName",
       "type": "string"
     },
     {

@@ -5,7 +5,10 @@
   "fields": [
     {
       "name": "clientId",
-      "type": ["null", "string"]
+      "type": [
+        "null",
+        "string"
+      ]
     },
     {
       "name": "suspendCount",
@@ -20,11 +23,22 @@
       "type": "bytes"
     },
     {
-      "name": "eventQueue",
-      "type": {
-        "type": "array",
-        "items": "net.corda.data.flow.event.FlowEvent"
-      }
+      "name": "suspendedOn",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "waitingFor",
+      "type": [
+        "null",
+        "net.corda.data.flow.state.waiting.WaitingFor"
+      ]
+    },
+    {
+      "name": "flowClassName",
+      "type": "string"
     }
   ]
 }
