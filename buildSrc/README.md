@@ -420,34 +420,86 @@ See [The bootable JAR](#the_bootable_jar) section to know how is made the intern
 
 ## Create Docker Image Custom Gradle Task
 A custom Gradle task has been provided to allow for the containerization of deployable Jars in the Corda-runtime-os project.
-An example of how to apply this task to a project can be seen in the applications/http-rpc-gateway application. 
+This is applied once in the root build.gradle, any projects in applications:workers:release will automatically inherit this task.
+Projects which require a docker image but are not in this location should update the array variable nonWorkerImages also in root build.gradle
 
 ``` groovy
-tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
-    description "Builds the docker image for the deployable OSGi application"
+        tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
+            if (project.hasProperty('jibRemotePublish')) {
+                remotePublish = jibRemotePublish.toBoolean()
+            }
 
-    if (project.hasProperty('jibRemotePublish')) {
-        remotePublish = jibRemotePublish.toBoolean()
-    }
+            if (project.hasProperty('isReleaseCandidate')) {
+                releaseCandidate = isReleaseCandidate.toBoolean()
+            }
 
-    if (project.hasProperty('releaseCandidate')) {
-        releaseCandidate = releaseCandidate.toBoolean()
-    }
-}
+            if (project.hasProperty('isNightly')) {
+                nightlyBuild = isNightly.toBoolean()
+            }
+
+            if (project.hasProperty('isPreTest')) {
+                preTest = isPreTest.toBoolean()
+            }
+        }
 ```
 
-Once triggered this task will produce a docker image tagging it with the following labels.
-- latest
-- the project version
-- git revision
+Depending on where this task is triggered from it will produce different docker tags, for full details see design doc here
+https://github.com/corda/platform-eng-design/blob/master/core/corda-5/corda-5.1/build-Infrastructure/overview.md#Containerization
+
+If ran locally the task will produce an image tagged :latest-local along with the version number
 
 If ran locally with no Gradle properties passed the task will publish images to the local Docker Daemon. 
 
-if jibRemotePublish is true images will be published to artifactory under:
+CI builds will automatically publish to the remote repo tagging is as follows for various build types
 
-    corda-os-docker-dev.software.r3.com/corda-os-${projectName}
+```
+Release Tag Builds
+-Repo:corda-os-docker-stable
+-Tags: 
+    latest
+    Version
 
-CI builds will automatically publish to the remote repo.
+Release branch builds 'main'
+-Repo:corda-os-docker-unstable
+-Tags: 
+    unstable
+    Version
+    ShortGitHash
+
+Feature branchs / PRs
+-Repo:corda-os-docker-dev
+-Tags: 
+    version
+    ShortGitHash
+
+Nightlys 'main' branch
+-Repo:corda-os-docker-nightly
+-Tags: 
+    nightly
+    nightly-date
+
+
+Nightlys feature branch
+-Repo:corda-os-docker-nightly
+-Tags: 
+    nightly-jiraTicket
+    nightly-jiraTicket-date
+    nightly-jiraTickt-ShortGitHash
+
+Pre test (to be used in infrastructre based testing in pipelines)
+-Repo:corda-os-docker-pre-test
+-Tags: 
+    preTest-version
+    preTest-ShortGitHash
+
+Local Machine
+-Repo:corda-os-docker-dev (wont be pushed)
+-Tags: 
+    latest-local
+    Version
+    ShortGitHash
+```
+
 
 Optionally an 'arguments' array may be provided to the task which will bake parameters into the image to be passed to the java -jar command.
 Unless necessary this should be avoided and use environment variable JAVA_TOOL_OPTIONS to pass properties at run time instead, as follows:
