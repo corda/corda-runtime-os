@@ -12,7 +12,6 @@ data class HousekeepingState(
     val checkpoint: Checkpoint,
     val input: FlowContinuation,
     val output: FlowIORequest<*>? = null,
-    // Has to be in the constructor due to calling [copy] on [HouseKeepingState]
     val suspended: CompletableFuture<ByteArray?> = CompletableFuture()
 ) : KryoSerializable {
 

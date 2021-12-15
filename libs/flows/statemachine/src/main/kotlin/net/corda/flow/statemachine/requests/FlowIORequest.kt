@@ -74,7 +74,7 @@ interface FlowIORequest<out R> {
     // TODOs: consider using an empty FlowAsyncOperation instead
     object ForceCheckpoint : FlowIORequest<Unit>
 
-    class FlowFinished(val result: Any?): FlowIORequest<Any?>
+    data class FlowFinished(val result: Any?) : FlowIORequest<Any?>
 
-    class FlowFailed(val exception: Throwable): FlowIORequest<Unit>
+    data class FlowFailed(val exception: Throwable) : FlowIORequest<Unit>
 }

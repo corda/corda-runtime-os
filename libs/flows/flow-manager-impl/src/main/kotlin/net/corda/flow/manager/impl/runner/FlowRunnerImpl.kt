@@ -3,9 +3,9 @@ package net.corda.flow.manager.impl.runner
 import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberExecutorScheduler
-import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartRPCFlow
+import net.corda.data.flow.state.Checkpoint
 import net.corda.dependency.injection.FlowDependencyInjector
 import net.corda.flow.manager.FlowSandboxContextTypes
 import net.corda.flow.manager.FlowSandboxService

@@ -2,8 +2,6 @@ package net.corda.flow.statemachine
 
 import co.paralleluniverse.fibers.Fiber
 import net.corda.data.flow.state.Checkpoint
-import net.corda.data.flow.FlowKey
-import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.statemachine.requests.FlowIORequest
 import net.corda.v5.application.flows.Destination
 import net.corda.v5.application.flows.Flow

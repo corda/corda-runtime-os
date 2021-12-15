@@ -2,8 +2,8 @@ package net.corda.flow.statemachine.impl
 
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
-import net.corda.data.flow.state.Checkpoint
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.statemachine.FlowContinuation
 import net.corda.flow.statemachine.FlowFiber
 import net.corda.flow.statemachine.HousekeepingState
@@ -35,8 +35,8 @@ class FlowFiberImpl<R>(
     scheduler: FiberScheduler
 ) : Fiber<Unit>(id.toString(), scheduler), FlowFiber<R> {
 
-    companion object {
-        private val log: Logger = contextLogger()
+    private companion object {
+        val log: Logger = contextLogger()
     }
 
     private var nonSerializableStateReference: TransientReference<NonSerializableState>? = null
