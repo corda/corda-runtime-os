@@ -18,7 +18,6 @@ data class ConfigEntity(
     @Id
     @Column
     val section: String,
-    // TODO - Joel - Currently defined as a VARCHAR(255) which makes no sense.
     @Column
     val configuration: String,
     // TODO - Joel - Mark this with the `@Version` annotation to enable optimistic locking.

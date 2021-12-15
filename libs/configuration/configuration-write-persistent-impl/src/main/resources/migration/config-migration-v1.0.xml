@@ -8,7 +8,7 @@
             <column name="section" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="configuration" type="VARCHAR(255)">
+            <column name="configuration" type="TEXT">
                 <constraints nullable="false"/>
             </column>
             <column name="version" type="INT">
