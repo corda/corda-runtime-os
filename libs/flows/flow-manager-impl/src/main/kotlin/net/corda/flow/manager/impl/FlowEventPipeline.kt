@@ -15,7 +15,6 @@ data class FlowEventPipeline(
     val flowRequestHandlers: Map<Class<FlowIORequest<*>>, FlowRequestHandler<FlowIORequest<*>>>,
     val flowRunner: FlowRunner,
     val context: FlowEventContext<Any>,
-    val input: FlowContinuation = FlowContinuation.Continue,
     val output: FlowIORequest<*>? = null
 ) {
     private companion object {
@@ -29,32 +28,33 @@ data class FlowEventPipeline(
 
     fun runOrContinue(): FlowEventPipeline {
         log.info("Should resume or continue after receiving ${context.inputEventPayload::class.java.name} using ${flowEventHandler::class.java.name}")
-        return when (val outcome = flowEventHandler.resumeOrContinue(context)) {
+        return when (val continuation = flowEventHandler.resumeOrContinue(context)) {
             is FlowContinuation.Run, is FlowContinuation.Error -> {
                 val (checkpoint, output) = flowRunner.runFlow(
                     context.checkpoint!!,
                     context.inputEvent,
-                    outcome
+                    continuation
                 ).waitForCheckpoint()
-                copy(context = context.copy(checkpoint = checkpoint), input = outcome, output = output)
+                copy(context = context.copy(checkpoint = checkpoint), output = output)
             }
-            is FlowContinuation.Continue -> copy(input = outcome)
+            is FlowContinuation.Continue -> this
         }
     }
 
     fun setCheckpointSuspendedOn(): FlowEventPipeline {
-        context.checkpoint!!.flowState.suspendedOn = output!!::class.qualifiedName
+        // If the flow fiber did not run or resume then there is no `suspendedOn` to change to.
+        output?.let {
+            context.checkpoint!!.flowState.suspendedOn = it::class.qualifiedName
+        }
         return this
     }
 
     fun requestPostProcessing(): FlowEventPipeline {
         // If the flow fiber did not run or resume then there is no request post processing to execute.
-        return if (input == FlowContinuation.Continue) {
-            this
-        } else {
+        return output?.let {
             log.info("Postprocessing of $output")
-            copy(context = getFlowRequestHandler(output!!).postProcess(context, output))
-        }
+            copy(context = getFlowRequestHandler(it).postProcess(context, it))
+        } ?: this
     }
 
     fun eventPostProcessing(): FlowEventPipeline {
