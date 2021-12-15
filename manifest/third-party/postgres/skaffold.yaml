@@ -10,9 +10,10 @@ deploy:
   kubectl:
     manifests:
       - manifest/*
-    hooks:
-      after:
-        - host:
-            # Stand-in for readiness check of operator managed resource. TODO: Add linux/darwin
-            command: [ "cmd.exe", "/C", "kubectl wait --for=condition=Ready pods -l cluster-name=corda-postgres" ]
-            os: [windows]
+#    TODO: This needs a little work...
+#    hooks:
+#      after:
+#        - host:
+#            # Stand-in for readiness check of operator managed resource. TODO: Add linux/darwin
+#            command: [ "cmd.exe", "/C", "kubectl wait --for=condition=Ready pods -l cluster-name=corda-postgres" ]
+#            os: [windows]

@@ -1,20 +1,16 @@
 ---
 apiVersion: skaffold/v2beta25
 kind: Config
-profiles:
-  - name: deploy
-    activation:
-      - command: run
-    deploy:
-      kustomize:
-        paths:
-          - kustomize/base
+deploy:
+  kustomize:
+    paths:
+      - kustomize/base
 
+profiles:
   - name: build-and-deploy
     activation:
       - command: dev
       - command: debug
-      - kubeContext: minikube
     build:
       tagPolicy:
         gitCommit:
@@ -30,14 +26,9 @@ profiles:
               paths:
                 - ./**/*.kt
                 - ./**/*.java
-    deploy:
-      kustomize:
-        paths:
-          - kustomize/base
 
   - name: enable-ingress
     deploy:
       kustomize:
         paths:
-          - kustomize/base
           - kustomize/overlays/ingress
