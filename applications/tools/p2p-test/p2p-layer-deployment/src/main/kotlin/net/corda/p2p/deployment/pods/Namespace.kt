@@ -27,6 +27,7 @@ data class InfrastructureDetails(
     val zooKeeperCount: Int,
     val disableKafkaUi: Boolean,
     val kafkaBrokerResourceRequest: ResourceRequest,
+    val defaultPartitionsCount: Int,
 )
 
 class Namespace(
@@ -68,10 +69,7 @@ class Namespace(
     val infrastructurePods by lazy {
         KafkaBroker.kafka(
             identifier.namespaceName,
-            infrastructureDetails.zooKeeperCount,
-            infrastructureDetails.kafkaBrokerCount,
-            !infrastructureDetails.disableKafkaUi,
-            infrastructureDetails.kafkaBrokerResourceRequest,
+            infrastructureDetails,
         )
     }
 

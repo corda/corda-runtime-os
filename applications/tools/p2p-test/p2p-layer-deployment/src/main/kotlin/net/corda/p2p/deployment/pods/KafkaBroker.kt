@@ -6,8 +6,7 @@ class KafkaBroker(
     index: Int,
     clusterName: String,
     zookeeperConnectString: String,
-    replicationFactor: Int,
-    override val resourceRequest: ResourceRequest?,
+    details: InfrastructureDetails,
 ) : Pod() {
     companion object {
         fun kafkaServers(namespace: String, brokersCount: Int) =
@@ -17,25 +16,21 @@ class KafkaBroker(
 
         fun kafka(
             clusterName: String,
-            zookeepersCount: Int,
-            brokersCount: Int,
-            kafkaUi: Boolean,
-            resourceRequest: ResourceRequest?
+            details: InfrastructureDetails,
         ): Collection<Pod> {
-            val zookeepers = ZooKeeper.zookeepers(zookeepersCount)
-            val zookeeperConnectString = zookeepers.map {
+            val zookeepers = ZooKeeper.zookeepers(details.zooKeeperCount)
+            val zookeeperConnectString = zookeepers.joinToString(",") {
                 "${it.app}:${Port.ZooKeeperClientPort.port}"
-            }.joinToString(",")
-            val brokers = (1..brokersCount).map {
+            }
+            val brokers = (1..details.kafkaBrokerCount).map {
                 KafkaBroker(
                     it,
                     clusterName,
                     zookeeperConnectString,
-                    min(3, brokersCount),
-                    resourceRequest,
+                    details,
                 )
             }
-            val ui = if (kafkaUi) {
+            val ui = if (!details.disableKafkaUi) {
                 listOf(
                     KafkaUi(
                         clusterName,
@@ -76,9 +71,11 @@ class KafkaBroker(
             "CLIENT://$app:${Port.KafkaClientBroker.port}," +
             "EXTERNAL://$app.$clusterName:${Port.KafkaExternalBroker.port}",
         "KAFKA_MIN_INSYNC_REPLICAS" to "1",
-        "KAFKA_DEFAULT_REPLICATION_FACTOR" to replicationFactor.toString(),
-        "KAFKA_NUM_PARTITIONS" to "5",
+        "KAFKA_DEFAULT_REPLICATION_FACTOR" to min(3, details.kafkaBrokerCount).toString(),
+        "KAFKA_NUM_PARTITIONS" to details.defaultPartitionsCount.toString(),
     )
+
+    override val resourceRequest: ResourceRequest = details.kafkaBrokerResourceRequest
 
     override val readyLog = ".*started \\(kafka.server.KafkaServer\\).*".toRegex()
 }
