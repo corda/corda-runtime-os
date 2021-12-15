@@ -1,0 +1,44 @@
+{
+  "type": "record",
+  "name": "CryptoResponseContext",
+  "namespace": "net.corda.data.crypto.wire",
+  "doc": "Defines over-the-wire response context (mostly copied from the corresponding request context) such as timestamp, requesting component, tenant id, and other.",
+  "fields": [
+    {
+      "name": "requestingComponent",
+      "type": "string",
+      "doc": "Name of the component which requested the operation, copied from the corresponding request."
+    },
+    {
+      "name": "requestTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds of the request, copied from the corresponding request."
+    },
+    {
+      "name": "requestId",
+      "type": "string",
+      "doc": "Request id which can be used to track the request progress."
+    },
+    {
+      "name": "responseTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds of the response."
+    },
+    {
+      "name": "tenantId",
+      "type": "string",
+      "doc": "Tenant id on which behalf the request is made, copied from the corresponding request."
+    },
+    {
+      "name": "other",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "Any other list of context's key-values."
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "CryptoSignatureSpec",
+  "namespace": "net.corda.data.crypto.wire",
+  "doc": "Internal over-the-wire signature spec for crypto services",
+  "fields": [
+    {
+      "name": "signatureName",
+      "type": "string",
+      "doc": "A signature-scheme name as required to create [Signature] objects (e.g. \"SHA256withECDSA\")"
+    },
+    {
+      "name": "customDigestName",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "An optional digest algorithm name, set to non null value if the hash should be precalculated before passing to the provider (e.g. \"SHA512\"), note that the signatureName should not contain the digest (e.g. \"NONEwithECDSA\")."
+    }
+  ]
+}

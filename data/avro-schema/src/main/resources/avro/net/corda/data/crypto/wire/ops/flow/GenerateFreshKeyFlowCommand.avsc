@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "GenerateFreshKeyFlowCommand",
+  "namespace": "net.corda.data.crypto.wire.ops.flow",
+  "doc": "Internal over-the-wire request to generate new wrapped key (fresh key) pair.",
+  "fields": [
+    {
+      "name": "externalId",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "If provided then the key will be associated with that id."
+    },
+    {
+      "name": "context",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "The optional key/value operation specific context."
+    }
+  ]
+}

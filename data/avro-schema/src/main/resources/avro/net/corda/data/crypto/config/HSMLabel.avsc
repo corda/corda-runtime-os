@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "HSMLabel",
+  "namespace": "net.corda.data.crypto.config",
+  "doc": "Defines complete persistent record for the HSM configuration.",
+  "fields": [
+    {
+      "name": "hsmConfigId",
+      "type": "string",
+      "doc": "HSM configuration id."
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "doc": "Label associated with HSM worker, see HSMInfo for more details."
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "HSMConfig",
+  "namespace": "net.corda.data.crypto.config",
+  "doc": "Defines complete persistent record for the HSM configuration.",
+  "fields": [
+    {
+      "name": "info",
+      "type": "HSMInfo",
+      "doc": "Common configuration parameters."
+    },
+    {
+      "name": "serviceConfig",
+      "type": "bytes",
+      "doc": "Serialised and encrypted (as it may contain credentials) HSM specific configuration, the underlying type is JSON serialised Map<String, Any?> where it's expected that the values are of simple types, like int, string, etc."
+    }
+  ]
+}

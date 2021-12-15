@@ -1,0 +1,83 @@
+{
+  "type": "record",
+  "name": "HSMInfo",
+  "namespace": "net.corda.data.crypto.config",
+  "doc": "Defines persistent record for the HSM common configuration parameters.",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "doc": "Configuration id."
+    },
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds when the record was updated or added."
+    },
+    {
+      "name": "version",
+      "type": "int",
+      "doc": "Ever increasing on each update version of the record, the initial value is 1."
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "doc": "Label associated with HSM worker to partition for HSMs which don't support more than one HSM per process/VM. The default value is 'default'."
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "doc": "The human readable description of the HSM instance, like 'HSM on the first floor' or anything which helps tp understand what HSM is allocated."
+    },
+    {
+      "name": "serviceName",
+      "type": "string",
+      "doc": "Name of the CryptoServiceProvider which is sued to create interface to the HSM."
+    },
+    {
+      "name": "byoTenantId",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "The tenant id which owns the HSM instance. That HSM can be made available only for that tenant."
+    },
+    {
+      "name": "categories",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "Categories, like TLS, LEDGER, FRESH_KEYS, etc., the HSM can be used for."
+    },
+    {
+      "name": "retries",
+      "type": "int",
+      "doc": "Number of retries when calling the HSM."
+    },
+    {
+      "name": "timeoutMills",
+      "type": "long",
+      "doc": "For how long to wait for a response in milliseconds."
+    },
+    {
+      "name": "supportedSignatureSchemes",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "List of supported signature scheme codes, must be a subset of schemes defined in the cipher suite."
+    },
+    {
+      "name": "supportedWrappedSignatureSchemes",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "List of supported signature scheme codes for wrapped keys, must be a subset of schemes defined in the cipher suite."
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "SupportedSchemesRpcQuery",
+  "namespace": "net.corda.data.crypto.wire.ops.rpc",
+  "doc": "Internal over-the-wire request which signature schemes are supported by the service instance.",
+  "fields": [
+    {
+      "name": "category",
+      "type": "string",
+      "doc": "Category like TLS, LEDGER, FRESH_KEY, etc."
+    }
+  ]
+}

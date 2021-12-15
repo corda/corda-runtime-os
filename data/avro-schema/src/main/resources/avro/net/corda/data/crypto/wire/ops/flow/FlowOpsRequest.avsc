@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "FlowOpsRequest",
+  "namespace": "net.corda.data.crypto.wire.ops.flow",
+  "doc": "Internal over-the-wire crypto flow operations request envelope.",
+  "fields": [
+    {
+      "name": "context",
+      "type": "net.corda.data.crypto.wire.CryptoRequestContext",
+      "doc": "Request context, tenant id, timestamp, etc."
+    },
+    {
+      "name": "request",
+      "type": [
+        "SignFlowCommand",
+        "SignWithSpecFlowCommand",
+        "GenerateFreshKeyFlowCommand",
+        "FilterMyKeysFlowQuery"
+      ],
+      "doc": "Request's payload, depends on the requested operation."
+    }
+  ]
+}

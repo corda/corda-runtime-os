@@ -1,0 +1,17 @@
+{
+  "type": "record",
+  "name": "PublicKeyRpcQuery",
+  "namespace": "net.corda.data.crypto.wire.ops.rpc",
+  "doc": "Internal over-the-wire request to find public matching the alias, if the key is not found it returns null.",
+  "fields": [
+    {
+      "name": "category",
+      "type": "string",
+      "doc": "Category like TLS, LEDGER, FRESH_KEY, etc."
+    },
+    {
+      "name": "alias",
+      "type": "string"
+    }
+  ]
+}

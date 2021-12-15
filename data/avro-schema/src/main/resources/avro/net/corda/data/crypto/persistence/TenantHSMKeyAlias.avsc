@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "TenantHSMKeyAlias",
+  "namespace": "net.corda.data.crypto.persistence",
+  "doc": "Defines association of a tenant defined key alias to the actual which is used by particular HSM.",
+  "fields": [
+    {
+      "name": "tenantId",
+      "type": "string",
+      "doc": "Tenant id."
+    },
+    {
+      "name": "hsmConfigId",
+      "type": "string",
+      "doc": "HSM configuration id."
+    },
+    {
+      "name": "tenantAlias",
+      "type": "string",
+      "doc": "Alias which is assigned by the tenant."
+    },
+    {
+      "name": "hsmAlias",
+      "type": "string",
+      "doc": "Alias which is used by the HSM."
+    }
+  ]
+}

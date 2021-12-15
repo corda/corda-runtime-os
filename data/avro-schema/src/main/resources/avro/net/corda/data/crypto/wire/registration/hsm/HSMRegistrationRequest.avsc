@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "HSMRegistrationRequest",
+  "namespace": "net.corda.data.crypto.wire.registration.hsm",
+  "doc": "Internal over-the-wire HSM registration request envelope.",
+  "fields": [
+    {
+      "name": "context",
+      "type": "net.corda.data.crypto.wire.CryptoRequestContext",
+      "doc": "Request context, tenant id, timestamp, etc."
+    },
+    {
+      "name": "request",
+      "type": [
+        "AddHSMCommand",
+        "AssignHSMCommand",
+        "AssignSoftHSMCommand"
+      ],
+      "doc": "Request's payload, depends on the requested operation."
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "type": "record",
+  "name": "RpcOpsRequest",
+  "namespace": "net.corda.data.crypto.wire.ops.rpc",
+  "doc": "Internal over-the-wire crypto RPC operations request envelope.",
+  "fields": [
+    {
+      "name": "context",
+      "type": "net.corda.data.crypto.wire.CryptoRequestContext",
+      "doc": "Request context, tenant id, timestamp, etc."
+    },
+    {
+      "name": "request",
+      "type": [
+        "SignRpcCommand",
+        "SignWithAliasRpcCommand",
+        "SignWithAliasSpecRpcCommand",
+        "SignWithSpecRpcCommand",
+        "GenerateFreshKeyRpcCommand",
+        "PublicKeyRpcQuery",
+        "FilterMyKeysRpcQuery",
+        "SupportedSchemesRpcQuery",
+        "AssignedHSMRpcQuery",
+        "HSMAliasRpcQuery"
+      ],
+      "doc": "Request's payload, depends on the requested operation."
+    }
+  ]
+}

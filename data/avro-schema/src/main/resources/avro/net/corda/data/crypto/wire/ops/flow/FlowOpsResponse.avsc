@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "FlowOpsResponse",
+  "namespace": "net.corda.data.crypto.wire.ops.flow",
+  "doc": "Internal over-the-wire response for crypto's flow operations envelope",
+  "fields": [
+    {
+      "name": "context",
+      "type": "net.corda.data.crypto.wire.CryptoResponseContext",
+      "doc": "Response context, tenant id, timestamp, etc."
+    },
+    {
+      "name": "response",
+      "type": [
+        "net.corda.data.crypto.wire.CryptoPublicKey",
+        "net.corda.data.crypto.wire.CryptoPublicKeys",
+        "net.corda.data.crypto.wire.CryptoSignatureWithKey"
+      ],
+      "doc": "Response's payload, depends on the requested operation"
+    }
+  ]
+}

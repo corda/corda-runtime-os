@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "SignWithSpecFlowCommand",
+  "namespace": "net.corda.data.crypto.wire.ops.flow",
+  "doc": "Internal over-the-wire request to sign using public key and signature scheme override",
+  "fields": [
+    {
+      "name": "publicKey",
+      "type": "bytes",
+      "doc": "It's used to look up the matching private key information and sign the data"
+    },
+    {
+      "name": "signatureSpec",
+      "type": "net.corda.data.crypto.wire.WireSignatureSpec",
+      "doc": "Overrides the default signature scheme, otherwise the default scheme is used"
+    },
+    {
+      "name": "bytes",
+      "type": "bytes",
+      "doc": "The data to sign"
+    },
+    {
+      "name": "context",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "The optional key/value operation specific context"
+    }
+  ]
+}

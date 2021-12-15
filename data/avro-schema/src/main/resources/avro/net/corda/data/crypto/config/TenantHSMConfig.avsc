@@ -1,0 +1,33 @@
+{
+  "type": "record",
+  "name": "TenantHSMConfig",
+  "namespace": "net.corda.data.crypto.config",
+  "doc": "Defines association of a tenant with a particular HSM.",
+  "fields": [
+    {
+      "name": "tenantId",
+      "type": "string",
+      "doc": "Tenant id."
+    },
+    {
+      "name": "hsmConfigId",
+      "type": "string",
+      "doc": "HSM configuration id."
+    },
+    {
+      "name": "category",
+      "type": "string",
+      "doc": "Which category, like TLS, LEDGER, FRESH_KEY, etc., the association is made for."
+    },
+    {
+      "name": "defaultSignatureScheme",
+      "type": "string",
+      "doc": "The default signature scheme code which should be used for the tenant."
+    },
+    {
+      "name": "wrappingKeyAlias",
+      "type": "string",
+      "doc": "The name of the wrapping key if the HSM requires it for wrapped keys, note that some HSMs use builtin wrapping key."
+    }
+  ]
+}

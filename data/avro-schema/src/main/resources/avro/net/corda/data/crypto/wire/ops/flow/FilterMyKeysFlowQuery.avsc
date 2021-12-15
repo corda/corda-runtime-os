@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "FilterMyKeysFlowQuery",
+  "namespace": "net.corda.data.crypto.wire.ops.flow",
+  "doc": "Internal over-the-wire request to filter out keys from the provided collection which don't belong to the member",
+  "fields": [
+    {
+      "name": "keys",
+      "type": {
+        "type": "array",
+        "items": "bytes"
+      },
+      "doc": "Candidate keys"
+    }
+  ]
+}

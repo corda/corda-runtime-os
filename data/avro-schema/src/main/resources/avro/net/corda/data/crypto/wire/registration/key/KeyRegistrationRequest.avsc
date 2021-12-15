@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "KeyRegistrationRequest",
+  "namespace": "net.corda.data.crypto.wire.registration.key",
+  "doc": "Internal over-the-wire key registration request envelope.",
+  "fields": [
+    {
+      "name": "context",
+      "type": "net.corda.data.crypto.wire.CryptoRequestContext",
+      "doc": "Request context, tenant id, timestamp, etc."
+    },
+    {
+      "name": "request",
+      "type": [
+        "GenerateKeyPairCommand"
+      ],
+      "doc": "Request's payload, depends on the requested operation."
+    }
+  ]
+}

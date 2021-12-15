@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "AddHSMCommand",
+  "namespace": "net.corda.data.crypto.wire.registration.hsm",
+  "doc": "Internal over-the-wire request to add new HSM configuration.",
+  "fields": [
+    {
+      "name": "config",
+      "type": "net.corda.data.crypto.config.HSMConfig",
+      "doc": "The HSM configuration"
+    },
+    {
+      "name": "context",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "The optional key/value operation specific context"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "SignFlowCommand",
+  "namespace": "net.corda.data.crypto.wire.ops.flow",
+  "doc": "Internal over-the-wire request to sign using public key and default signature spec.",
+  "fields": [
+    {
+      "name": "publicKey",
+      "type": "bytes",
+      "doc": "It's used to look up the matching private key information and sign the data."
+    },
+    {
+      "name": "bytes",
+      "type": "bytes",
+      "doc": "The data to sign."
+    },
+    {
+      "name": "context",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "The optional key/value operation specific context."
+    }
+  ]
+}

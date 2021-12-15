@@ -1,0 +1,33 @@
+{
+  "type": "record",
+  "name": "SignWithAliasSpecRpcCommand",
+  "namespace": "net.corda.data.crypto.wire.ops.rpc",
+  "doc": "Internal over-the-wire request to sign using alias and signature spec override",
+  "fields": [
+    {
+      "name": "category",
+      "type": "string",
+      "doc": "Category like TLS, LEDGER, FRESH_KEY, etc."
+    },
+    {
+      "name": "alias",
+      "type": "string",
+      "doc": "If provided then it's used to look up the matching private key information and sign the data"
+    },
+    {
+      "name": "signatureSpec",
+      "type": "net.corda.data.crypto.wire.WireSignatureSpec",
+      "doc": "Overrides the default signature scheme, otherwise the default scheme is used"
+    },
+    {
+      "name": "bytes",
+      "type": "bytes",
+      "doc": "The data to sign"
+    },
+    {
+      "name": "context",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "The optional key/value operation specific context"
+    }
+  ]
+}

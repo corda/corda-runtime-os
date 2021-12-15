@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "CryptoPublicKeys",
+  "namespace": "net.corda.data.crypto.wire",
+  "doc": "Internal over-the-wire collection of public keys serialised as byte arrays for crypto services",
+  "fields": [
+    {
+      "name": "keys",
+      "type": {
+        "type": "array",
+        "items": "bytes"
+      },
+      "doc": "Collection of encoded public key"
+    }
+  ]
+}
