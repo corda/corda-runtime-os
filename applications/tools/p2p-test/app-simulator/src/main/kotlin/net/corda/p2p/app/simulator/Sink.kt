@@ -20,7 +20,7 @@ import java.sql.Connection
 import java.sql.Timestamp
 
 class Sink(private val subscriptionFactory: SubscriptionFactory,
-           private val connectionFactory: ()->Connection?,
+           dbParams: DBParams?,
            private val kafkaServers: String,
            private val clients: Int): Closeable {
 
@@ -28,14 +28,11 @@ class Sink(private val subscriptionFactory: SubscriptionFactory,
         private val logger = contextLogger()
     }
 
-    private val dbConnection = ThreadLocal.withInitial {
-        connectionFactory()
-    }
-    private val writeReceivedStmt = ThreadLocal.withInitial {
-        dbConnection.get()?.prepareStatement("INSERT INTO received_messages " +
-        "(sender_id, message_id, sent_timestamp, received_timestamp, delivery_latency_ms) " +
+    private val dbConnection = DbConnection(
+        dbParams,
+        "INSERT INTO received_messages " +
+                "(sender_id, message_id, sent_timestamp, received_timestamp, delivery_latency_ms) " +
                 "VALUES (?, ?, ?, ?, ?) on conflict do nothing")
-    }
     private val objectMapper = ObjectMapper().registerKotlinModule().registerModule(JavaTimeModule())
     private val subscriptions = mutableListOf<Subscription<*, *>>()
 
@@ -54,6 +51,7 @@ class Sink(private val subscriptionFactory: SubscriptionFactory,
 
     override fun close() {
         subscriptions.forEach { it.stop() }
+        dbConnection.close()
     }
 
     private inner class DBSinkProcessor: EventLogProcessor<String, String> {
@@ -74,18 +72,16 @@ class Sink(private val subscriptionFactory: SubscriptionFactory,
         }
 
         private fun writeReceivedMessagesToDB(messages: List<MessageReceivedEvent>) {
-            val dbConnection = dbConnection.get()!!
-            val writeReceivedStmt = writeReceivedStmt.get()!!
             messages.forEach { messageReceivedEvent ->
-                writeReceivedStmt.setString(1, messageReceivedEvent.sender)
-                writeReceivedStmt.setString(2, messageReceivedEvent.messageId)
-                writeReceivedStmt.setTimestamp(3, Timestamp.from(messageReceivedEvent.sendTimestamp))
-                writeReceivedStmt.setTimestamp(4, Timestamp.from(messageReceivedEvent.receiveTimestamp))
-                writeReceivedStmt.setLong(5, messageReceivedEvent.deliveryLatency.toMillis())
-                writeReceivedStmt.addBatch()
+                dbConnection.statement?.setString(1, messageReceivedEvent.sender)
+                dbConnection.statement?.setString(2, messageReceivedEvent.messageId)
+                dbConnection.statement?.setTimestamp(3, Timestamp.from(messageReceivedEvent.sendTimestamp))
+                dbConnection.statement?.setTimestamp(4, Timestamp.from(messageReceivedEvent.receiveTimestamp))
+                dbConnection.statement?.setLong(5, messageReceivedEvent.deliveryLatency.toMillis())
+                dbConnection.statement?.addBatch()
             }
-            writeReceivedStmt.executeBatch()
-            dbConnection.commit()
+            dbConnection.statement?.executeBatch()
+            dbConnection.connection?.commit()
         }
 
     }

@@ -85,18 +85,17 @@ class AppSimulator @Activate constructor(
         val receiveTopic = parameters.receiveTopic ?: Schema.P2P_IN_TOPIC
         val simulatorConfig = ConfigFactory.parseFile(parameters.simulatorConfig).withFallback(DEFAULT_CONFIG)
         val clients = simulatorConfig.getInt(PARALLEL_CLIENTS_KEY)
-        val connectionDetails = readDbParams(simulatorConfig)
 
         val simulatorMode = simulatorConfig.getEnum(SimulationMode::class.java, "simulatorMode")
         when (simulatorMode) {
             SimulationMode.SENDER -> {
-                runSender(simulatorConfig, publisherFactory, {connectionDetails?.let { connectToDb(it) }}, sendTopic, kafkaServers, clients)
+                runSender(simulatorConfig, publisherFactory, sendTopic, kafkaServers, clients)
             }
             SimulationMode.RECEIVER -> {
                 runReceiver(subscriptionFactory, receiveTopic, kafkaServers, clients)
             }
             SimulationMode.DB_SINK -> {
-                runSink(subscriptionFactory, {connectionDetails?.let { connectToDb(it) }}, kafkaServers, clients)
+                runSink(simulatorConfig, subscriptionFactory, kafkaServers, clients)
             }
             else -> throw IllegalStateException("Invalid value for simulator mode: $simulatorMode")
         }
@@ -106,13 +105,13 @@ class AppSimulator @Activate constructor(
     private fun runSender(
         simulatorConfig: Config,
         publisherFactory: PublisherFactory,
-        dbConnection: ()->Connection?,
         sendTopic: String,
         kafkaServers: String,
         clients: Int
     ) {
+        val connectionDetails = readDbParams(simulatorConfig)
         val loadGenerationParams = readLoadGenParams(simulatorConfig)
-        val sender = Sender(publisherFactory, dbConnection, loadGenerationParams, sendTopic, kafkaServers, clients)
+        val sender = Sender(publisherFactory, connectionDetails, loadGenerationParams, sendTopic, kafkaServers, clients)
         sender.start()
         resources.add(sender)
         // If it's one-off we wait until all messages have been sent.
@@ -129,30 +128,21 @@ class AppSimulator @Activate constructor(
         resources.add(receiver)
     }
 
-    private fun runSink(subscriptionFactory: SubscriptionFactory, dbConnection: ()->Connection?, kafkaServers: String, clients: Int) {
-        if (dbConnection == null) {
+    private fun runSink(
+        simulatorConfig: Config,
+        subscriptionFactory: SubscriptionFactory,
+        kafkaServers: String,
+        clients: Int
+    ) {
+        val connectionDetails = readDbParams(simulatorConfig)
+        if (connectionDetails == null) {
             consoleLogger.error("dbParams configuration option is mandatory for sink mode.")
             shutdownOSGiFramework()
             return
         }
-        val sink = Sink(subscriptionFactory, dbConnection, kafkaServers, clients)
+        val sink = Sink(subscriptionFactory, connectionDetails, kafkaServers, clients)
         sink.start()
         resources.add(sink)
-    }
-
-    private fun connectToDb(dbParams: DBParams): Connection {
-        val properties = Properties()
-        properties.setProperty("user", dbParams.username)
-        properties.setProperty("password", dbParams.password)
-        // DriverManager uses internally Class.forName(), which doesn't work within OSGi by default.
-        // This is why we force-load the driver here. For example, see:
-        // http://hwellmann.blogspot.com/2009/04/jdbc-drivers-in-osgi.html
-        // https://stackoverflow.com/questions/54292876/how-to-use-mysql-in-osgi-application-with-maven
-        org.postgresql.Driver()
-        return DriverManager.getConnection("jdbc:postgresql://${dbParams.host}/${dbParams.db}", properties).also {
-            resources.add(it)
-            it.autoCommit = false
-        }
     }
 
     private fun readDbParams(config: Config): DBParams? {
