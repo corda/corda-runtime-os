@@ -1023,4 +1023,32 @@ class LinkManagerTest {
                     " which indicates a spoofing attempt! The message was discarded"
         )
     }
+
+    @Test
+    fun `DRAFTOutboundMessageProcessor produces only a LinkManagerSentMarker if partitions empty`() {
+        val mockSessionManager = Mockito.mock(SessionManager::class.java)
+        val sessionInitMessage = LinkOutMessage()
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(
+            SessionManager.SessionState.NewSessionNeeded(SESSION_ID, sessionInitMessage)
+        )
+
+        val processor = LinkManager.OutboundMessageProcessor(
+            mockSessionManager,
+            hostingMap,
+            netMap,
+            assignedListener(listOf(1)),
+        )
+        val messages = listOf(EventLogRecord(TOPIC, KEY, AppMessage(authenticatedMessage(
+            FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID)), 0, 0)
+        )
+        val records = processor.onNext(messages)
+
+        assertThat(records).hasSize(messages.size)
+
+        assertThat(records).filteredOn { it.topic == P2P_OUT_MARKERS }.hasSize(messages.size)
+            .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
+            .extracting<AppMessageMarker> { it.value as AppMessageMarker }
+            .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
+    }
+
 }
