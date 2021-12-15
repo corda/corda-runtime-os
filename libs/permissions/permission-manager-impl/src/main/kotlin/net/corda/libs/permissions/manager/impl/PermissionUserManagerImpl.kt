@@ -1,6 +1,5 @@
 package net.corda.libs.permissions.manager.impl
 
-import java.time.Duration
 import net.corda.data.permissions.User
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
@@ -16,7 +15,7 @@ import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.permissions.password.PasswordService
 import net.corda.v5.base.concurrent.getOrThrow
-import net.corda.v5.base.util.Try
+import java.time.Duration
 
 class PermissionUserManagerImpl(
     config: SmartConfig,
@@ -40,36 +39,34 @@ class PermissionUserManagerImpl(
         }
     }
 
-    override fun createUser(createUserRequestDto: CreateUserRequestDto): Try<UserResponseDto> {
-        return Try.on {
-            val saltAndHash = createUserRequestDto.initialPassword?.let {
-                passwordService.saltAndHash(it)
-            }
+    override fun createUser(createUserRequestDto: CreateUserRequestDto): UserResponseDto {
+        val saltAndHash = createUserRequestDto.initialPassword?.let {
+            passwordService.saltAndHash(it)
+        }
 
-            val future = rpcSender.sendRequest(
-                PermissionManagementRequest(
-                    createUserRequestDto.requestedBy,
-                    "cluster",
-                    CreateUserRequest(
-                        createUserRequestDto.fullName,
-                        createUserRequestDto.loginName,
-                        createUserRequestDto.enabled,
-                        saltAndHash?.value,
-                        saltAndHash?.salt,
-                        createUserRequestDto.passwordExpiry,
-                        createUserRequestDto.parentGroup
-                    )
+        val future = rpcSender.sendRequest(
+            PermissionManagementRequest(
+                createUserRequestDto.requestedBy,
+                "cluster",
+                CreateUserRequest(
+                    createUserRequestDto.fullName,
+                    createUserRequestDto.loginName,
+                    createUserRequestDto.enabled,
+                    saltAndHash?.value,
+                    saltAndHash?.salt,
+                    createUserRequestDto.passwordExpiry,
+                    createUserRequestDto.parentGroup
                 )
             )
+        )
 
-            val futureResponse = future.getOrThrow(writerTimeout)
+        val futureResponse = future.getOrThrow(writerTimeout)
 
-            val result = futureResponse.response
-            if (result !is User)
-                throw PermissionManagerException("Unknown response for Create User operation: $result")
+        val result = futureResponse.response
+        if (result !is User)
+            throw PermissionManagerException("Unknown response for Create User operation: $result")
 
-            result.convertToResponseDto()
-        }
+        return result.convertToResponseDto()
     }
 
     override fun getUser(userRequestDto: GetUserRequestDto): UserResponseDto? {
