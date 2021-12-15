@@ -5,7 +5,7 @@ import net.corda.httprpc.client.HttpRpcClient
 import net.corda.httprpc.client.config.HttpRpcClientConfig
 import java.util.concurrent.atomic.AtomicInteger
 
-class TestHttpInterfaceImpl(private val testCaseClass: Class<Any>, private val baseAddress: String) : TestHttpInterface {
+class TestToolkitImpl(private val testCaseClass: Class<Any>, private val baseAddress: String) : TestToolkit {
 
     private val counter = AtomicInteger()
 
@@ -18,7 +18,7 @@ class TestHttpInterfaceImpl(private val testCaseClass: Class<Any>, private val b
     override val uniqueName: String
         get() = "${testCaseClass.simpleName}-${counter.incrementAndGet()}-${System.currentTimeMillis()}"
 
-    override fun <I : RpcOps> clientFor(rpcOpsClass: Class<I>, userName: String, password: String): HttpRpcClient<I> {
+    override fun <I : RpcOps> httpClientFor(rpcOpsClass: Class<I>, userName: String, password: String): HttpRpcClient<I> {
         return HttpRpcClient(
             baseAddress, rpcOpsClass, HttpRpcClientConfig()
                 .enableSSL(true)

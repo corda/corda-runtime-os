@@ -3,7 +3,10 @@ package net.corda.applications.rpc.http
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.HttpRpcClient
 
-interface TestHttpInterface {
+/**
+ * Toolkit for HTTP RPC E2E tests execution
+ */
+interface TestToolkit {
 
     /**
      * Creates easily attributable to a testcase unique name
@@ -13,6 +16,6 @@ interface TestHttpInterface {
     /**
      * Creates the [HttpRpcClient] for a given [RpcOps] class.
      */
-    fun <I : RpcOps> clientFor(rpcOpsClass: Class<I>, userName: String = "admin", password: String = "admin"):
+    fun <I : RpcOps> httpClientFor(rpcOpsClass: Class<I>, userName: String = "admin", password: String = "admin"):
             HttpRpcClient<I>
 }

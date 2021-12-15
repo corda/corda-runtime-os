@@ -1,6 +1,6 @@
 package net.corda.applications.rpc
 
-import net.corda.applications.rpc.http.TestHttpInterfaceProperty
+import net.corda.applications.rpc.http.TestToolkitProperty
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
@@ -12,12 +12,12 @@ import java.time.temporal.ChronoUnit.DAYS
 
 class CreateUserE2eTest {
 
-    private val httpInterface by TestHttpInterfaceProperty()
+    private val testToolkit by TestToolkitProperty()
 
     @Test
     fun testCreateAndGet() {
-        httpInterface.clientFor(UserEndpoint::class.java).use { client ->
-            val userName = httpInterface.uniqueName
+        testToolkit.httpClientFor(UserEndpoint::class.java).use { client ->
+            val userName = testToolkit.uniqueName
             val proxy = client.start().proxy
 
             // Check the user does not exist yet
@@ -25,7 +25,7 @@ class CreateUserE2eTest {
                 .hasMessageContaining("$userName not found")
 
             // Create user
-            val password = httpInterface.uniqueName
+            val password = testToolkit.uniqueName
             val passwordExpirySet = Instant.now().plus(1, DAYS).truncatedTo(DAYS)
             with(proxy.createUser(
                     CreateUserType(userName, userName, true, password, passwordExpirySet, null))) {
