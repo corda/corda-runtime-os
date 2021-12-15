@@ -10,8 +10,8 @@ import javax.inject.Inject
 
 import static org.osgi.framework.Constants.BUNDLE_MANIFESTVERSION
 import static org.osgi.framework.Constants.EXPORT_PACKAGE
-import static DefineApplicationBundles.isBundle
-import static DefineApplicationBundles.isJar
+import static CreateApplicationBundlesFile.isBundle
+import static CreateApplicationBundlesFile.isJar
 
 plugins {
     id 'corda.common-library'
@@ -130,20 +130,17 @@ private def addSystemPackagesExtra(
 }
 
 @CompileStatic
+@UntrackedTask(because = 'We must always calculate application bundles.')
 class DefineApplicationBundles extends DefaultTask {
     private final ConfigurableFileCollection includeBundles
     private final ConfigurableFileCollection excludeBundles
     private final ConfigurableFileCollection applicationBundles
-    private final RegularFileProperty applicationBundleFile
 
     @Inject
     DefineApplicationBundles(ObjectFactory objects) {
         includeBundles = objects.fileCollection()
         excludeBundles = objects.fileCollection()
         applicationBundles = objects.fileCollection()
-        applicationBundleFile = objects.fileProperty()
-            .fileValue(new File(temporaryDir, 'application_bundles'))
-        applicationBundleFile.disallowChanges()
     }
 
     @PathSensitive(PathSensitivity.RELATIVE)
@@ -163,6 +160,31 @@ class DefineApplicationBundles extends DefaultTask {
         return applicationBundles
     }
 
+    @TaskAction
+    void run() {
+        applicationBundles.setFrom(includeBundles - excludeBundles)
+    }
+}
+
+@CompileStatic
+class CreateApplicationBundlesFile extends DefaultTask {
+    private final ConfigurableFileCollection applicationBundles
+    private final RegularFileProperty applicationBundleFile
+
+    @Inject
+    CreateApplicationBundlesFile(ObjectFactory objects) {
+        applicationBundles = objects.fileCollection()
+        applicationBundleFile = objects.fileProperty()
+            .fileValue(new File(temporaryDir, 'application_bundles'))
+        applicationBundleFile.disallowChanges()
+    }
+
+    @PathSensitive(PathSensitivity.RELATIVE)
+    @InputFiles
+    ConfigurableFileCollection getApplicationBundles() {
+        return applicationBundles
+    }
+
     @OutputFile
     RegularFileProperty getApplicationBundleFile() {
         return applicationBundleFile
@@ -170,7 +192,6 @@ class DefineApplicationBundles extends DefaultTask {
 
     @TaskAction
     void run() {
-        applicationBundles.setFrom(includeBundles - excludeBundles)
         applicationBundleFile.getAsFile().get().withWriter { writer ->
             applicationBundles.forEach { file ->
                 if (isJar(file) && isBundle(new JarFile(file))) {
@@ -196,6 +217,10 @@ class DefineApplicationBundles extends DefaultTask {
 def defineApplicationBundles = tasks.register('defineApplicationBundles', DefineApplicationBundles) {
     includeBundles.from jarTask, configurations.runtimeClasspath
     excludeBundles.from configurations.systemPackages
+}
+
+def createApplicationBundlesFile = tasks.register('createApplicationBundlesFile', CreateApplicationBundlesFile) {
+    applicationBundles.from defineApplicationBundles.map { it.applicationBundles }
 }
 
 def cordaAssembleSystemPackagesExtraTask = tasks.register("createSystemPackagesExtraFile") {
@@ -276,6 +301,7 @@ def verifyApp = tasks.register('verifyApp', Resolve) {
     bundles.from defineApplicationBundles.map { it.applicationBundles },
             configurations.bootstrapClasspath
     bndrun = appResolution.flatMap { it.bndrunFile }
+    writeOnChanges = false
 
     //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
     System.setProperty('bnd.home.dir', "$rootDir/bnd/")
@@ -396,13 +422,15 @@ def appJar = tasks.register('appJar', Jar) {
         from(javaAgentFileTask)
     }
     from{ configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
-    from(defineApplicationBundles.flatMap { it.applicationBundleFile })
+    from(createApplicationBundlesFile.flatMap { it.applicationBundleFile })
     from(cordaAssembleSystemPackagesExtraTask)
     from(writeFrameworkPropertyFile)
     into('bundles') {
         from(defineApplicationBundles.map { it.applicationBundles }) {
             eachFile { FileCopyDetails fileCopyDetails ->
-                if(!isJar(new File(fileCopyDetails.sourcePath))) fileCopyDetails.exclude()
+                if (!isJar(new File(fileCopyDetails.sourcePath))) {
+                    fileCopyDetails.exclude()
+                }
             }
         }
     }
