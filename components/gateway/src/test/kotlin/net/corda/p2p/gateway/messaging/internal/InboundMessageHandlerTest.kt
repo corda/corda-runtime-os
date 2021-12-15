@@ -478,7 +478,7 @@ class InboundMessageHandlerTest {
 
         verify(server.constructed().first())
             .writeResponse(
-                HttpResponseStatus.NOT_FOUND,
+                HttpResponseStatus.GONE,
                 InetSocketAddress("www.r3.com", 1231),
                 GatewayResponse(msgId).toByteBuffer().array()
             )
