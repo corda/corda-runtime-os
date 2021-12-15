@@ -116,7 +116,11 @@ internal class InboundMessageHandler(
         return if (partitions == null) {
             logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
             HttpResponseStatus.GONE
-        } else {
+        } else if (partitions.isEmpty()) {
+            logger.warn("No partitions exist for session ($sessionId), discarding the message and returning an error.")
+            HttpResponseStatus.GONE
+        }
+        else {
             // this is simplistic (stateless) load balancing amongst the partitions owned by the LM that "hosts" the session.
             val selectedPartition = partitions.random()
             val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
