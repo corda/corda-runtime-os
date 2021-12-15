@@ -27,7 +27,8 @@ class CreateUserE2eTest {
             // Create user
             val password = httpInterface.uniqueName
             val passwordExpirySet = Instant.now().plus(1, DAYS).truncatedTo(DAYS)
-            with(proxy.createUser(CreateUserType(userName, userName, true, password, passwordExpirySet, null))) {
+            with(proxy.createUser(
+                    CreateUserType(userName, userName, true, password, passwordExpirySet, null))) {
                 assertSoftly {
                     it.assertThat(loginName).isEqualTo(userName)
                     it.assertThat(passwordExpiry).isEqualTo(passwordExpirySet)
