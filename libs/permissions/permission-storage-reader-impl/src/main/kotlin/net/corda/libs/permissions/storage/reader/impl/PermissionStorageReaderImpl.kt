@@ -2,8 +2,10 @@ package net.corda.libs.permissions.storage.reader.impl
 
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
-import net.corda.libs.permissions.storage.reader.impl.repository.PermissionRepositoryImpl
 import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
+import net.corda.libs.permissions.storage.reader.toAvroGroup
+import net.corda.libs.permissions.storage.reader.toAvroRole
+import net.corda.libs.permissions.storage.reader.toAvroUser
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.permissions.model.Group
@@ -12,7 +14,8 @@ import net.corda.permissions.model.User
 import net.corda.rpc.schema.Schema.Companion.RPC_PERM_GROUP_TOPIC
 import net.corda.rpc.schema.Schema.Companion.RPC_PERM_ROLE_TOPIC
 import net.corda.rpc.schema.Schema.Companion.RPC_PERM_USER_TOPIC
-import javax.persistence.EntityManagerFactory
+import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.v5.base.util.contextLogger
 import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Role as AvroRole
 import net.corda.data.permissions.User as AvroUser
@@ -23,11 +26,9 @@ class PermissionStorageReaderImpl(
     private val publisher: Publisher,
 ) : PermissionStorageReader {
 
-    constructor(
-        permissionCache: PermissionCache,
-        publisher: Publisher,
-        entityManagerFactory: EntityManagerFactory
-    ) : this(permissionCache, PermissionRepositoryImpl(entityManagerFactory), publisher)
+    private companion object {
+        val log = contextLogger()
+    }
 
     override val isRunning: Boolean get() = !stopped
 
@@ -42,8 +43,8 @@ class PermissionStorageReaderImpl(
         stopped = true
     }
 
-    override fun publishUsers(ids: List<String>) {
-        publisher.publish(createUserRecords(permissionRepository.findAllUsers(ids)))
+    override fun publishNewUser(user: AvroUser) {
+        publisher.publish(listOf(Record(RPC_PERM_USER_TOPIC, key = user.loginName, value = user))).single().getOrThrow()
     }
 
     override fun publishGroups(ids: List<String>) {
@@ -55,6 +56,7 @@ class PermissionStorageReaderImpl(
     }
 
     private fun publishOnStartup() {
+        log.info("Publishing on start-up")
         publisher.publish(createUserRecords(permissionRepository.findAllUsers()))
         publisher.publish(createGroupRecords(permissionRepository.findAllGroups()))
         publisher.publish(createRoleRecords(permissionRepository.findAllRoles()))

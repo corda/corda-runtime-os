@@ -10,14 +10,14 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.mapper.FlowMapperResult
-import net.corda.flow.mapper.FlowMapperTopics
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.Companion.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Companion.P2P_OUT_TOPIC
 import net.corda.v5.base.util.contextLogger
 
 class SessionEventExecutor(
     private val eventKey: String,
-    private val flowMapperTopics: FlowMapperTopics,
     private val messageDirection: MessageDirection,
     private val sessionEvent: SessionEvent,
     private val flowMapperState: FlowMapperState?,
@@ -28,7 +28,7 @@ class SessionEventExecutor(
     }
 
     private val flowKeyGenerator = FlowKeyGenerator()
-    private val outputTopic = getSessionEventOutputTopic(flowMapperTopics, messageDirection)
+    private val outputTopic = getSessionEventOutputTopic(messageDirection)
 
     override fun execute(): FlowMapperResult {
         return when (val sessionEventPayload = sessionEvent.payload) {
@@ -143,11 +143,11 @@ class SessionEventExecutor(
      * Inbound records should be directed to the flow event topic.
      * Outbound records should be directed to the p2p out topic.
      */
-    private fun getSessionEventOutputTopic(flowMapperTopics: FlowMapperTopics, messageDirection: MessageDirection): String {
+    private fun getSessionEventOutputTopic(messageDirection: MessageDirection): String {
         return if (messageDirection == MessageDirection.INBOUND) {
-            flowMapperTopics.flowEventTopic
+            FLOW_EVENT_TOPIC
         } else {
-            flowMapperTopics.p2pOutTopic
+            P2P_OUT_TOPIC
         }
     }
 

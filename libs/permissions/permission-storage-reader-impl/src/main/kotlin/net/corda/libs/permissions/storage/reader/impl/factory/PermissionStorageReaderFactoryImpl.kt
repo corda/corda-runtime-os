@@ -4,6 +4,7 @@ import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.libs.permissions.storage.reader.impl.PermissionStorageReaderImpl
+import net.corda.libs.permissions.storage.reader.impl.repository.PermissionRepositoryImpl
 import net.corda.messaging.api.publisher.Publisher
 import org.osgi.service.component.annotations.Component
 import javax.persistence.EntityManagerFactory
@@ -16,6 +17,6 @@ class PermissionStorageReaderFactoryImpl : PermissionStorageReaderFactory {
         publisher: Publisher,
         entityManagerFactory: EntityManagerFactory
     ): PermissionStorageReader {
-        return PermissionStorageReaderImpl(permissionCache, publisher, entityManagerFactory)
+        return PermissionStorageReaderImpl(permissionCache, PermissionRepositoryImpl(entityManagerFactory), publisher)
     }
 }

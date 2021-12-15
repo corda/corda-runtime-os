@@ -3,7 +3,6 @@ package net.corda.session.mapper.service
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
-import net.corda.flow.mapper.FlowMapperTopics
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
@@ -22,6 +21,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.schema.Schemas.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
@@ -34,9 +34,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.Executors
 
-@Suppress("LongParameterList")
-@Component(service = [FlowMapperComponent::class])
-class FlowMapperComponent @Activate constructor(
+@Component(service = [FlowMapperService::class])
+class FlowMapperService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
@@ -52,13 +51,10 @@ class FlowMapperComponent @Activate constructor(
     private companion object {
         private val logger = contextLogger()
         private const val INSTANCE_ID = "instance-id"
-        private const val FLOWMAPPER_EVENT_TOPIC = "mapper.topic.flowMapperEvent"
-        private const val P2P_OUT_TOPIC = "mapper.topic.p2pout"
-        private const val FLOW_EVENT_TOPIC = "mapper.topic.flowEvent"
-        private const val CONSUMER_GROUP = "mapper.consumer.groupName"
+        private const val CONSUMER_GROUP = "mapper.consumer.group"
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<FlowMapperComponent>(::eventHandler)
+    private val coordinator = coordinatorFactory.createCoordinator<FlowMapperService>(::eventHandler)
     private var registration: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
     private var stateAndEventSub: StateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>? = null
@@ -77,7 +73,6 @@ class FlowMapperComponent @Activate constructor(
                     )
             }
             is RegistrationStatusChangeEvent -> {
-                // No need to check what registration this is as there is only one.
                 if (event.status == LifecycleStatus.UP) {
                     configHandle = configurationReadService.registerForUpdates(::onConfigChange)
                 } else {
@@ -116,17 +111,12 @@ class FlowMapperComponent @Activate constructor(
             mutableMapOf()
         )
         stateAndEventSub = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig(consumerGroup, config.getString(FLOWMAPPER_EVENT_TOPIC), config.getInt(INSTANCE_ID)),
+            SubscriptionConfig(consumerGroup, FLOW_MAPPER_EVENT_TOPIC, config.getInt(INSTANCE_ID)),
             FlowMapperMessageProcessor(
-                flowMapperEventExecutorFactory,
-                FlowMapperTopics(
-                    P2P_OUT_TOPIC,
-                    FLOWMAPPER_EVENT_TOPIC,
-                    FLOW_EVENT_TOPIC
-                )
+                flowMapperEventExecutorFactory
             ),
             config,
-            FlowMapperListener(scheduledTaskState!!, FLOWMAPPER_EVENT_TOPIC)
+            FlowMapperListener(scheduledTaskState!!)
         )
         stateAndEventSub?.start()
     }
