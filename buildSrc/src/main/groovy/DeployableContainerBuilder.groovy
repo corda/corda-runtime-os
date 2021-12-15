@@ -49,7 +49,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     private String targetRepo
     private def gitTask
     private def gitLogTask
-    private def releaseVersion
+    private def releaseType
 
 
     @Inject
@@ -114,8 +114,9 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         gitLogTask = project.tasks.register("gitMessageTask", getLatestGitCommitMessage.class)
         super.dependsOn(gitLogTask)
 
-        if (System.getenv("RELEASE_VERSION")?.trim()) {
-            releaseVersion = System.getenv("RELEASE_VERSION")
+        if (System.getenv("RELEASE_TYPE")?.trim()) {
+            releaseType = System.getenv("RELEASE_TYPE")
+            logger.quiet("Using Release Type : '${releaseType}")
         }
     }
 
@@ -149,25 +150,26 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         builder.setProgramArguments(javaArgs)
         builder.setEntrypoint("java", "-jar", CONTAINER_LOCATION + projectName +".jar")
 
+
         if (preTest.get()) {
             targetRepo = "corda-os-docker-pre-test.software.r3.com/corda-os-${projectName}"
             gitAndVersionTag(builder, gitRevision)
-        } else if (releaseVersion == 'RC' || releaseVersion == 'GA') {
+        } else if (releaseType == 'RC' || releaseType == 'GA') {
             targetRepo = "corda-os-docker-stable.software.r3.com/corda-os-${projectName}"
             tagContainer(builder, "latest")
             tagContainer(builder, version)
-        } else if (releaseVersion == 'BETA' && !nightlyBuild.get()) {
+        } else if (releaseType == 'BETA' && !nightlyBuild.get()) {
             targetRepo = "corda-os-docker-unstable.software.r3.com/corda-os-${projectName}"
             tagContainer(builder, "unstable")
             gitAndVersionTag(builder, gitRevision)
-        } else if (releaseVersion == 'ALPHA' && !nightlyBuild.get()) {
+        } else if (releaseType == 'ALPHA' && !nightlyBuild.get()) {
             targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${projectName}"
             gitAndVersionTag(builder, gitRevision)
-        } else if (releaseVersion == 'BETA' && nightlyBuild.get()){
+        } else if (releaseType == 'BETA' && nightlyBuild.get()){
             targetRepo = "corda-os-docker-nightly.software.r3.com/corda-os-${projectName}"
             tagContainer(builder, "nightly")
             tagContainer(builder, "nightly" + "-" + timeStamp)
-        } else if (releaseVersion == 'ALPHA' && nightlyBuild.get()) {
+        } else if (releaseType == 'ALPHA' && nightlyBuild.get()) {
             targetRepo = "corda-os-docker-nightly.software.r3.com/corda-os-${projectName}"
             if (!jiraTicket.isEmpty()) {
                 tagContainer(builder, "nightly-" + jiraTicket)
