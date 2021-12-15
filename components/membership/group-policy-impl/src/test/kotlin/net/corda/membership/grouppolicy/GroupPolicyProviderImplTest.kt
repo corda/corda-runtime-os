@@ -31,8 +31,8 @@ import org.mockito.kotlin.whenever
 class GroupPolicyProviderImplTest {
     lateinit var groupPolicyProvider: GroupPolicyProviderImpl
 
-    val GROUP_ID_KEY = "groupId"
-    val TEST_ATTR_KEY = "testAttribute"
+    val groupIdKey = "groupId"
+    val testAttrKey = "testAttribute"
 
     val groupId1 = "ABC123"
     val groupId2 = "DEF456"
@@ -44,9 +44,9 @@ class GroupPolicyProviderImplTest {
     val alice = MemberX500Name("Alice", "London", "GB")
     val bob = MemberX500Name("Bob", "London", "GB")
 
-    val groupPolicy1 = "{\"$TEST_ATTR_KEY\": \"$testAttr1\", \"$GROUP_ID_KEY\": \"$groupId1\"}"
-    val groupPolicy2 = "{\"$TEST_ATTR_KEY\": \"$testAttr2\", \"$GROUP_ID_KEY\": \"$groupId1\"}"
-    val groupPolicy3 = "{\"$TEST_ATTR_KEY\": \"$testAttr3\", \"$GROUP_ID_KEY\": \"$groupId2\"}"
+    val groupPolicy1 = "{\"$testAttrKey\": \"$testAttr1\", \"$groupIdKey\": \"$groupId1\"}"
+    val groupPolicy2 = "{\"$testAttrKey\": \"$testAttr2\", \"$groupIdKey\": \"$groupId1\"}"
+    val groupPolicy3 = "{\"$testAttrKey\": \"$testAttr3\", \"$groupIdKey\": \"$groupId2\"}"
     val groupPolicy4: String? = null
 
     val holdingIdentity1 = HoldingIdentity(alice.toString(), groupId1)
@@ -99,8 +99,8 @@ class GroupPolicyProviderImplTest {
         expectedSize: Int = 2
     ) {
         assertEquals(expectedSize, groupPolicy.size)
-        assertEquals(groupId, groupPolicy[GROUP_ID_KEY])
-        assertEquals(testAttr, groupPolicy[TEST_ATTR_KEY])
+        assertEquals(groupId, groupPolicy[groupIdKey])
+        assertEquals(testAttr, groupPolicy[testAttrKey])
     }
 
     @Test
