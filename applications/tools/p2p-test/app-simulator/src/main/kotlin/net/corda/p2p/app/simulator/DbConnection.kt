@@ -1,6 +1,8 @@
 package net.corda.p2p.app.simulator
 
+import java.sql.Connection
 import java.sql.DriverManager
+import java.sql.PreparedStatement
 import java.util.Properties
 import java.util.concurrent.ConcurrentLinkedDeque
 
@@ -33,12 +35,10 @@ class DbConnection(
         }
     }
 
-    val connection by lazy {
-        connections.get()
-    }
-    val statement by lazy {
-        statements.get()
-    }
+    val connection
+        get() = connections.get()
+    val statement
+        get() = statements.get()
 
     override fun close() {
         resources.forEach {
