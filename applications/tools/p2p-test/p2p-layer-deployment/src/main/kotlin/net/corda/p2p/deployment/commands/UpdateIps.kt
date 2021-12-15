@@ -61,22 +61,19 @@ class UpdateIps : Runnable {
 
     @Suppress("UNCHECKED_CAST")
     private fun namespaces(): Collection<Namespace> {
-        return ProcessRunner.execute(
-            "kubectl",
-            "get",
+        return ProcessRunner.kubeCtlGet(
             "namespace",
-            "-l",
-            "namespace-type=p2p-deployment,creator=${MyUserName.userName}",
-            "-o",
-            "jsonpath={range .items[*]}{.metadata.name}{\",\"}{.metadata.annotations.host}{\"\\n\"}{end}",
-        ).lines()
-            .filter {
-                it.contains(",")
-            }
-            .map { line ->
-                val split = line.split(",")
-                Namespace(split[0], split[1])
-            }
+            listOf(
+                "-l",
+                "namespace-type=p2p-deployment,creator=${MyUserName.userName}",
+            ),
+            listOf(
+                "metadata.name",
+                "metadata.annotations.host",
+            )
+        ).map { split ->
+            Namespace(split[0], split[1])
+        }
     }
 
     override fun run() {

@@ -28,18 +28,19 @@ class Db {
         val defaultName = "${MyUserName.userName}-p2p-db".replace('.', '-')
 
         fun getDbStatus(namespace: String): DbStatus? {
-            val statusLine = ProcessRunner.execute(
-                "kubectl",
-                "get", "pods",
-                "-n", namespace,
-                "-l", "app=db",
-                "--output", "jsonpath={range .items[*]}{.status.phase}{\"|\"}{.spec.containers[].env}{\"\\n\"}{end}"
-            ).lines().firstOrNull()
-            if ((statusLine == null) || (statusLine.isBlank())) {
+            val statusLine = ProcessRunner.kubeCtlGet(
+                "pods",
+                listOf(
+                    "-n", namespace,
+                    "-l", "app=db",
+                ),
+                listOf("status.phase", "spec.containers[].env")
+            ).firstOrNull()
+            if ((statusLine == null) || (statusLine.isEmpty())) {
                 return null
             }
-            val status = statusLine.substringBefore('|')
-            val json = statusLine.substringAfter('|')
+            val status = statusLine[0]
+            val json = statusLine[1]
             val reader = ObjectMapper().reader()
             @Suppress("UNCHECKED_CAST")
             val env = reader.readValue(json, List::class.java) as Collection<Yaml>

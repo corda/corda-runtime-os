@@ -28,23 +28,24 @@ class GetSimulatorStatus(
 ) : () -> Collection<JobStatus> {
 
     override fun invoke(): Collection<JobStatus> {
-        return ProcessRunner.execute(
-            "kubectl",
-            "get", "job",
-            "-n", namespaceName,
-            "-l", "mode=$mode",
-            "-o", "jsonpath={range .items[*]}{.metadata.name}{\",\"}{.metadata.labels.db}{\",\"}{.status.completionTime}{\"\\n\"}{end}"
-        ).lines()
-            .filter { it.contains(',') }
-            .map {
-                it.split(",")
-            }.map {
-                val completedAt = if (it[2].isNotBlank()) {
-                    Instant.parse(it[2])
-                } else {
-                    null
-                }
-                JobStatus(it[0], it[1], completedAt)
-            }.toList()
+        return ProcessRunner.kubeCtlGet(
+            "job",
+            listOf(
+                "-n", namespaceName,
+                "-l", "mode=$mode"
+            ),
+            listOf(
+                "metadata.name",
+                "metadata.labels.db",
+                "status.completionTime",
+            )
+        ).map {
+            val completedAt = if (it[2].isNotBlank()) {
+                Instant.parse(it[2])
+            } else {
+                null
+            }
+            JobStatus(it[0], it[1], completedAt)
+        }.toList()
     }
 }

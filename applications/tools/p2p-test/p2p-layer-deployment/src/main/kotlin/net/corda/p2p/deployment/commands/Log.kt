@@ -69,21 +69,12 @@ class Log : Runnable {
 
     @Suppress("UNCHECKED_CAST", "ThrowsCount")
     private fun getAllPods(): Map<String, String> {
-        val pods = ProcessRunner.execute(
-            "kubectl",
-            "get",
+        return ProcessRunner.kubeCtlGet(
             "pod",
-            "-n", namespaceName,
-            "--output",
-            "jsonpath={range .items[*]}{.metadata.name}{\",\"}{.spec.containers[].name}{\"\\n\"}{end}"
-        )
-        return pods
-            .lines()
-            .filter { it.contains(',') }
-            .map {
-                it.split(",")
-            }.associate {
-                it[1] to it[0]
-            }
+            listOf("-n", namespaceName),
+            listOf("metadata.name", "spec.containers[].name")
+        ).associate {
+            it[1] to it[0]
+        }
     }
 }

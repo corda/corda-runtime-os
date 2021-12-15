@@ -38,21 +38,14 @@ class ConfigureAll : Runnable {
 
     @Suppress("UNCHECKED_CAST")
     private val namespaces by lazy {
-        ProcessRunner.execute(
-            "kubectl",
-            "get",
+        ProcessRunner.kubeCtlGet(
             "namespace",
-            "-l",
-            "namespace-type=p2p-deployment,creator=${MyUserName.userName}",
-            "-o",
-            "jsonpath={range .items[*]}{.metadata.name}{\"|\"}{.metadata.annotations}{\"\\n\"}{end}",
-        ).lines()
-            .filter {
-                it.contains('|')
-            }
+            listOf("-l", "namespace-type=p2p-deployment,creator=${MyUserName.userName}"),
+            listOf("metadata.name", "metadata.annotations")
+        )
             .associate { line ->
-                val name = line.substringBefore('|')
-                val annotations = line.substringAfter('|')
+                val name = line[0]
+                val annotations = line[1]
                 name to jsonReader.readValue(annotations, Map::class.java)
             }
     }

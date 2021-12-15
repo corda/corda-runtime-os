@@ -28,6 +28,30 @@ object ProcessRunner {
         return process.waitFor() == 0
     }
 
+    fun kubeCtlGet(type: String, where: Collection<String>, what: Collection<String>): Collection<List<String>> {
+        val (separator, newLine) = if (System.getProperty("os.name", "generic").startsWith("Windows")) {
+            "{\\\"|\\\"}" to "{\\\"\\n\\\"}"
+        } else {
+            "{\"|\"}" to "{\"\\n\"}"
+        }
+
+        val jsonpath = "jsonpath={range .items[*]}${what.joinToString(separator) { "{.$it}" }}$newLine{end}"
+        val baseCommand = arrayOf(
+            "kubectl",
+            "get",
+            type
+        ) + where.toTypedArray() + arrayOf(
+            "-o",
+            jsonpath
+        )
+        @Suppress("SpreadOperator")
+        return execute(*baseCommand).lines()
+            .filter { it.contains("|") }
+            .map {
+                it.split("|")
+            }
+    }
+
     fun runWithInputs(command: List<String>, inputs: ByteArray) {
         val process = ProcessBuilder()
             .command(command)

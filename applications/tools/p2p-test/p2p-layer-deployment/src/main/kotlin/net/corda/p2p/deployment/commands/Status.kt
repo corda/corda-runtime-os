@@ -18,22 +18,19 @@ import java.time.Instant
 class Status : Runnable {
     override fun run() {
         val now = Instant.now()
-        val nameSpaces = ProcessRunner.execute(
-            "kubectl", "get", "ns",
-            "-l", "namespace-type=p2p-deployment",
-            "-o",
-            "jsonpath={range .items[*]}" +
-                "{.metadata.name}{\"\\t\"}" +
-                "{.metadata.annotations.host}{\"\\t\"}" +
-                "{.metadata.annotations.debug}{\"\\t\"}" +
-                "{.metadata.annotations.group-id}{\"\\t\"}" +
-                "{.metadata.creationTimestamp}{\"\\t\"}" +
-                "{.metadata.labels.creator}{\"\\t\"}" +
-                "{.metadata.annotations.x500-name}{\"\\n\"}" +
-                "{end}"
-        ).lines().map {
-            it.split("\t")
-        }.filter {
+        val nameSpaces = ProcessRunner.kubeCtlGet(
+            "ns",
+            listOf("-l", "namespace-type=p2p-deployment"),
+            listOf(
+                "metadata.name",
+                "metadata.annotations.host",
+                "metadata.annotations.debug",
+                "metadata.annotations.group-id",
+                "metadata.creationTimestamp",
+                "metadata.labels.creator",
+                "metadata.annotations.x500-name",
+            )
+        ).filter {
             it.size > 6
         }
             .associate {
@@ -51,20 +48,18 @@ class Status : Runnable {
                 data + NamespaceStatusGetter(name).getInfo()
             }
 
-        val dbs = ProcessRunner.execute(
-            "kubectl", "get", "ns",
-            "-l", "namespace-type=p2p-deployment-db",
-            "-o",
-            "jsonpath={range .items[*]}" +
-                "{.metadata.name}{\"\\t\"}" +
-                "{.metadata.creationTimestamp}{\"\\t\"}" +
-                "{.metadata.labels.creator}{\"\\n\"}" +
-                "{end}"
-        ).lines().map {
-            it.split("\t")
-        }.filter {
-            it.size > 2
-        }
+        val dbs = ProcessRunner.kubeCtlGet(
+            "ns",
+            listOf("-l", "namespace-type=p2p-deployment-db"),
+            listOf(
+                "metadata.name",
+                "metadata.creationTimestamp",
+                "metadata.labels.creator"
+            )
+        )
+            .filter {
+                it.size > 2
+            }
             .associate {
                 val duration = Duration.between(Instant.parse(it[1]), now)
                 it[0] to mapOf(
