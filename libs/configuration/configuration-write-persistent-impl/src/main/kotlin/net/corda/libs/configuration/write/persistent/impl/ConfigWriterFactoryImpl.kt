@@ -31,7 +31,6 @@ class ConfigWriterFactoryImpl @Activate constructor(
 ) : ConfigWriterFactory {
 
     override fun create(config: SmartConfig, instanceId: Int): Closeable {
-        // TODO - Joel - Move these checks to event handler?
         dbUtils.checkClusterDatabaseConnection(config)
         dbUtils.migrateClusterDatabase(config)
 
