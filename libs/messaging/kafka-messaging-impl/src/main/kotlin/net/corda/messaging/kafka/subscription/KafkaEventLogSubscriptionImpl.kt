@@ -302,13 +302,15 @@ class KafkaEventLogSubscriptionImpl<K : Any, V : Any>(
         try {
             producer.beginTransaction()
             producer.sendRecords(processor.onNext(consumerRecords.map { it.toEventLogRecord() }))
-            producer.sendRecords(deadLetterRecords.map {
-                Record(
-                    topic + config.getString(ConfigProperties.DEAD_LETTER_QUEUE_SUFFIX),
-                    UUID.randomUUID().toString(),
-                    it
-                )
-            })
+            if(deadLetterRecords.isNotEmpty()) {
+                producer.sendRecords(deadLetterRecords.map {
+                    Record(
+                        topic + config.getString(ConfigProperties.DEAD_LETTER_QUEUE_SUFFIX),
+                        UUID.randomUUID().toString(),
+                        it
+                    )
+                })
+            }
             producer.sendAllOffsetsToTransaction(consumer)
             producer.commitTransaction()
         } catch (ex: Exception) {

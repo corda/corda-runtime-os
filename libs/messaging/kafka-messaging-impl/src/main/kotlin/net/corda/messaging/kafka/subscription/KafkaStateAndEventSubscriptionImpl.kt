@@ -135,6 +135,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         while (!stopped) {
             attempts++
             try {
+                deadLetterRecords = mutableListOf()
                 producer = builder.createProducer(config)
                 val (stateAndEventConsumerTmp, rebalanceListener) = builder.createStateEventConsumerAndRebalanceListener(
                     config,
@@ -224,13 +225,16 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         producer.beginTransaction()
         producer.sendRecords(outputRecords)
-        producer.sendRecords(deadLetterRecords.map {
-            Record(
-                eventTopic + deadLetterQueueSuffix,
-                UUID.randomUUID().toString(),
-                it
-            )
-        })
+        if(deadLetterRecords.isNotEmpty())
+        {
+            producer.sendRecords(deadLetterRecords.map {
+                Record(
+                    eventTopic + deadLetterQueueSuffix,
+                    UUID.randomUUID().toString(),
+                    it
+                )
+            })
+        }
         producer.sendRecordOffsetsToTransaction(eventConsumer, events.map { it })
         producer.commitTransaction()
         log.debug { "Processing of events(size: ${events.size}) complete" }

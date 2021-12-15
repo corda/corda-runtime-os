@@ -119,7 +119,8 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
                 consumerBuilder.createCompactedConsumer(
                     config.getConfig(KAFKA_CONSUMER),
                     processor.keyClass,
-                    processor.valueClass, ::onError
+                    processor.valueClass,
+                    ::onError
                 ).use {
                     val partitions = it.getPartitions(
                         topic,
@@ -148,7 +149,7 @@ class KafkaCompactedSubscriptionImpl<K : Any, V : Any>(
     }
 
     private fun onError(topic: String, bytes: ByteArray) {
-        log.error("Failed to deserialize record from $topic")
+        log.error("Failed to deserialize record from $topic with bytes $bytes")
     }
 
     private fun getLatestValues(): MutableMap<K, V> {
