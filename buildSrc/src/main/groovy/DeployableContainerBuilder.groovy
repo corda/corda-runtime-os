@@ -154,7 +154,6 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         if (preTest.get()) {
             targetRepo = "corda-os-docker-pre-test.software.r3.com/corda-os-${projectName}"
             tagContainer(builder, "preTest-"+version)
-            tagContainer(builder, "preTest-"+version + "-" + gitRevision)
             tagContainer(builder, "preTest-"+gitRevision)
         } else if (releaseType == 'RC' || releaseType == 'GA') {
             targetRepo = "corda-os-docker-stable.software.r3.com/corda-os-${projectName}"
@@ -189,7 +188,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     }
 
     private void gitAndVersionTag(JibContainerBuilder builder, String gitRevision) {
-        tagContainer(builder, version + "-" + gitRevision)
+        tagContainer(builder, version )
         tagContainer(builder, gitRevision)
     }
 
