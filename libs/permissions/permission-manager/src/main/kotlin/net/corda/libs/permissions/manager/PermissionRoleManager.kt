@@ -15,7 +15,7 @@ interface PermissionRoleManager {
     fun createRole(createRoleRequestDto: CreateRoleRequestDto): Try<RoleResponseDto>
 
     /**
-     * Get a role in the RBAC Permission System identified by its name.
+     * Get a role in the RBAC Permission System identified by its ID.
      */
     fun getRole(roleRequestDto: GetRoleRequestDto): RoleResponseDto?
 }

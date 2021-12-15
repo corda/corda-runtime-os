@@ -9,7 +9,7 @@ data class GetRoleRequestDto(
      */
     val requestedBy: String,
     /**
-     * Name of the role to be found.
+     * ID of the role to be found.
      */
-    val roleName: String
+    val roleId: String
 )

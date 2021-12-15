@@ -62,7 +62,7 @@ class PermissionRoleManagerImpl(
     }
 
     override fun getRole(roleRequestDto: GetRoleRequestDto): RoleResponseDto? {
-        val cachedRole: Role = permissionCache.getRole(roleRequestDto.roleName) ?: return null
+        val cachedRole: Role = permissionCache.getRole(roleRequestDto.roleId) ?: return null
         return cachedRole.convertToResponseDto()
     }
 }

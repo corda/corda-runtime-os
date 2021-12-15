@@ -79,25 +79,25 @@ class PermissionStorageReaderImpl(
     }
 
     private fun createGroupRecords(groups: List<Group>): List<Record<String, AvroGroup>> {
-        val groupNames = groups.map { it.name }.toHashSet()
+        val groupIds = groups.map { it.id }.toHashSet()
         val updated = groups.map { group ->
-            Record(RPC_PERM_GROUP_TOPIC, key = group.name, value = group.toAvroGroup())
+            Record(RPC_PERM_GROUP_TOPIC, key = group.id, value = group.toAvroGroup())
         }
         val removed: List<Record<String, AvroGroup>> = permissionCache.groups
-            .filterKeys { name -> name !in groupNames }
-            .map { (name, _) -> Record(RPC_PERM_GROUP_TOPIC, key = name, value = null) }
+            .filterKeys { id -> id !in groupIds }
+            .map { (id, _) -> Record(RPC_PERM_GROUP_TOPIC, key = id, value = null) }
 
         return updated + removed
     }
 
     private fun createRoleRecords(roles: List<Role>): List<Record<String, AvroRole>> {
-        val roleNames = roles.map { it.name }.toHashSet()
+        val roleIds = roles.map { it.id }.toHashSet()
         val updated = roles.map { role ->
-            Record(RPC_PERM_ROLE_TOPIC, key = role.name, value = role.toAvroRole())
+            Record(RPC_PERM_ROLE_TOPIC, key = role.id, value = role.toAvroRole())
         }
         val removed: List<Record<String, AvroRole>> = permissionCache.roles
-            .filterKeys { name -> name !in roleNames }
-            .map { (name, _) -> Record(RPC_PERM_ROLE_TOPIC, key = name, value = null) }
+            .filterKeys { id -> id !in roleIds }
+            .map { (id, _) -> Record(RPC_PERM_ROLE_TOPIC, key = id, value = null) }
 
         return updated + removed
     }

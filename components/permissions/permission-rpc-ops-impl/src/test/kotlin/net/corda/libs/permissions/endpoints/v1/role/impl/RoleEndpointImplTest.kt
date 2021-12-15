@@ -30,7 +30,7 @@ internal class RoleEndpointImplTest {
     private val createRoleType = CreateRoleType("roleName", null)
 
     private val mockTry = mock<Try<RoleResponseDto>>()
-    private val roleResponseDto = RoleResponseDto("uuid", 0, now, "roleName", null, emptyList())
+    private val roleResponseDto = RoleResponseDto("roleId", 0, now, "roleName", null, emptyList())
 
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().also {
@@ -67,7 +67,7 @@ internal class RoleEndpointImplTest {
         endpoint.start()
         val responseType = endpoint.createRole(createRoleType)
 
-        assertEquals("uuid", responseType.id)
+        assertEquals("roleId", responseType.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
         assertEquals("roleName", responseType.roleName)
@@ -100,10 +100,10 @@ internal class RoleEndpointImplTest {
         whenever(permissionManager.getRole(getRoleRequestDtoCapture.capture())).thenReturn(roleResponseDto)
 
         endpoint.start()
-        val responseType = endpoint.getRole("roleName")
+        val responseType = endpoint.getRole("roleId")
 
         Assertions.assertNotNull(responseType)
-        assertEquals("uuid", responseType.id)
+        assertEquals("roleId", responseType.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
         assertEquals("roleName", responseType.roleName)
@@ -140,6 +140,6 @@ internal class RoleEndpointImplTest {
         }
         assertEquals(null, e.statusCode, "Resource not found exception should not override any status codes.")
         assertEquals("Role abc not found.", e.message)
-        assertEquals("abc", getRoleRequestDtoCapture.firstValue.roleName)
+        assertEquals("abc", getRoleRequestDtoCapture.firstValue.roleId)
     }
 }

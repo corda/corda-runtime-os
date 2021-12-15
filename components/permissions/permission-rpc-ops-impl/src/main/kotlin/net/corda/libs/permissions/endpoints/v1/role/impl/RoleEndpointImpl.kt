@@ -51,17 +51,17 @@ class RoleEndpointImpl @Activate constructor(
         return createRoleResult.getOrThrow().convertToEndpointType()
     }
 
-    override fun getRole(name: String): RoleResponseType {
+    override fun getRole(id: String): RoleResponseType {
         validatePermissionManager()
 
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
         val roleResponseDto = permissionServiceComponent.permissionManager.getRole(
-            GetRoleRequestDto(principal, name)
+            GetRoleRequestDto(principal, id)
         )
 
-        return roleResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("Role", name)
+        return roleResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("Role", id)
     }
 
     @Suppress("ThrowsCount")
