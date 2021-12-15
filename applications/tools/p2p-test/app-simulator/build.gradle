@@ -37,12 +37,12 @@ dependencies {
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
 }
-tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
-    if (project.hasProperty('jibRemotePublish')) {
-        remotePublish = jibRemotePublish.toBoolean()
-    }
-
-    if (project.hasProperty('releaseCandidate')) {
-        releaseCandidate = releaseCandidate.toBoolean()
-    }
-}
+//tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
+//    if (project.hasProperty('jibRemotePublish')) {
+//        remotePublish = jibRemotePublish.toBoolean()
+//    }
+//
+//    if (project.hasProperty('releaseCandidate')) {
+//        releaseCandidate = releaseCandidate.toBoolean()
+//    }
+//}

@@ -8,6 +8,18 @@ buildscript {
             cacheDynamicVersionsFor 0, 'seconds'
         }
     }
+
+    buildscript {
+        dependencies.constraints {
+                classpath("org.apache.logging.log4j:log4j-core") {
+                    version {
+                        strictly("[2.15, 3[")
+                        prefer("2.15.0")
+                    }
+                    because("CVE-2021-44228: Log4j vulnerable to remote code execution")
+                }
+            }
+    }
 }
 
 plugins {
@@ -319,6 +331,29 @@ subprojects {
             "javax.persistence.Embeddable",
             "javax.persistence.MappedSuperclass"
         )
+    }
+
+    // apply docker publishing to workers and select testing applications
+    def nonWorkerImages = ['p2p-gateway', 'p2p-link-manager', 'http-rpc-gateway', 'app-simulator', 'configuration-publisher']
+    if (it.toString().contains(":applications:workers:release:") || nonWorkerImages.contains(it.name)) {
+
+        tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
+            if (project.hasProperty('jibRemotePublish')) {
+                remotePublish = jibRemotePublish.toBoolean()
+            }
+
+            if (project.hasProperty('isReleaseCandidate')) {
+                releaseCandidate = isReleaseCandidate.toBoolean()
+            }
+
+            if (project.hasProperty('isNightly')) {
+                nightlyBuild = isNightly.toBoolean()
+            }
+
+            if (project.hasProperty('isPreTest')) {
+                preTest = isPreTest.toBoolean()
+            }
+        }
     }
 }
 

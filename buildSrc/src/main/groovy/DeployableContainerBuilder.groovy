@@ -21,10 +21,10 @@ import com.google.cloud.tools.jib.api.RegistryImage
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath
 import com.google.cloud.tools.jib.api.Containerizer
 import com.google.cloud.tools.jib.api.DockerDaemonImage
+import java.text.SimpleDateFormat
 
 import javax.inject.Inject
 import java.nio.file.StandardCopyOption
-
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.Instant
@@ -46,8 +46,11 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     private final String projectDir = project.projectDir
     private final String buildDir = project.buildDir
     private final String version = project.version
-    private String targetRepo="corda-os-docker-dev.software.r3.com/corda-os-${projectName}"
+    private String targetRepo
     private def gitTask
+    private def gitLogTask
+    private def releaseVersion
+
 
     @Inject
     protected abstract ProviderFactory getProviderFactory()
@@ -80,6 +83,15 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     @Input
     final Property<Boolean> releaseCandidate =
             getObjects().property(Boolean).convention(false)
+
+    @Input
+    final Property<Boolean> nightlyBuild =
+            getObjects().property(Boolean).convention(false)
+
+    @Input
+    final Property<Boolean> preTest =
+            getObjects().property(Boolean).convention(false)
+
     @Input
     final Property<String> baseImageName =
             getObjects().property(String).convention('azul/zulu-openjdk-alpine')
@@ -92,21 +104,28 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     final ListProperty<String> arguments =
             getObjects().listProperty(String)
 
-    @Input
-    final Property<String> targetImageTag =
-            getObjects().property(String).convention('latest')
-
     DeployableContainerBuilder() {
         description = 'Creates a new "corda-dev" image with the file specified in "overrideFilePath".'
         group = 'publishing'
-        gitTask = project.tasks.register("gitVersion", GetGitRevision.class)
+
+        gitTask = project.tasks.register("gitVersion", GetLatestGitRevision.class)
         super.dependsOn(gitTask)
+
+        gitLogTask = project.tasks.register("gitMessageTask", getLatestGitCommitMessage.class)
+        super.dependsOn(gitLogTask)
+
+        if (System.getenv("RELEASE_VERSION")?.trim()) {
+            releaseVersion = System.getenv("RELEASE_VERSION")
+        }
     }
 
     @TaskAction
     def updateImage() {
 
         String gitRevision = gitTask.flatMap { it.revision }.get()
+        def jiraTicket = hasJiraTicket()
+        def timeStamp =  new SimpleDateFormat("ddMMyy").format(new Date())
+
         String jarLocation = "${buildDir}/tmp/containerization/${projectName}.jar"
         Files.createDirectories(Paths.get("${buildDir}/tmp/containerization/"))
         Files.copy(Paths.get(overrideFile.getAsFile().get().getPath()), Paths.get(jarLocation), StandardCopyOption.REPLACE_EXISTING)
@@ -128,48 +147,115 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         }
 
         builder.setProgramArguments(javaArgs)
-
         builder.setEntrypoint("java", "-jar", CONTAINER_LOCATION + projectName +".jar")
 
-        logger.quiet("Publishing '${targetRepo}:${targetImageTag.get()}' and '${targetRepo}:${version}'" +
-                " ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with '${projectName}.jar', from base '${baseImageName.get()}:${targetImageTag.get()}'")
-
-        if (releaseCandidate.get()) {
-            targetRepo = "corda-os-docker.software.r3.com/corda-os-${projectName}"
+        if (preTest.get()) {
+            targetRepo = "corda-os-docker-pre-test.software.r3.com/corda-os-${projectName}"
+            gitAndVersionTag(builder, gitRevision)
+        } else if (releaseVersion == 'RC' || releaseVersion == 'GA') {
+            targetRepo = "corda-os-docker-stable.software.r3.com/corda-os-${projectName}"
+            tagContainer(builder, "latest")
+            tagContainer(builder, version)
+        } else if (releaseVersion == 'BETA' && !nightlyBuild.get()) {
+            targetRepo = "corda-os-docker-unstable.software.r3.com/corda-os-${projectName}"
+            tagContainer(builder, "unstable")
+            gitAndVersionTag(builder, gitRevision)
+        } else if (releaseVersion == 'ALPHA' && !nightlyBuild.get()) {
+            targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${projectName}"
+            gitAndVersionTag(builder, gitRevision)
+        } else if (releaseVersion == 'BETA' && nightlyBuild.get()){
+            targetRepo = "corda-os-docker-nightly.software.r3.com/corda-os-${projectName}"
+            tagContainer(builder, "nightly")
+            tagContainer(builder, "nightly" + "-" + timeStamp)
+        } else if (releaseVersion == 'ALPHA' && nightlyBuild.get()) {
+            targetRepo = "corda-os-docker-nightly.software.r3.com/corda-os-${projectName}"
+            if (!jiraTicket.isEmpty()) {
+                tagContainer(builder, "nightly-" + jiraTicket)
+                tagContainer(builder, "nightly" + "-" + jiraTicket + "-" + timeStamp)
+                tagContainer(builder, "nightly" + "-" + jiraTicket + "-" + gitRevision)
+            }else{
+                gitAndVersionTag(builder, "nightly-" + version)
+                gitAndVersionTag(builder, "nightly-" + gitRevision)
+            }
+        } else{
+            targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${projectName}"
+            tagContainer(builder, "latest-local")
+            gitAndVersionTag(builder, gitRevision)
         }
-        if (!remotePublish.get()) {
-            tagContainerForLocal(builder, targetImageTag.get())
-            tagContainerForLocal(builder, version)
-            tagContainerForLocal(builder, gitRevision)
+    }
+
+    private void gitAndVersionTag(JibContainerBuilder builder, String gitRevision) {
+        tagContainer(builder, version + "-" + gitRevision)
+        tagContainer(builder, gitRevision)
+    }
+
+    /**
+     *  Publish images either to local docker daemon or to the remote repository depending on the
+     *  value of remotePublish, CI jobs set this to true by default
+     */
+    private JibContainer tagContainer(JibContainerBuilder builder, String tag) {
+        if (remotePublish.get()) {
+            builder.containerize(
+                    Containerizer.to(RegistryImage.named("${targetRepo}:${tag}")
+                            .addCredential(registryUsername.get(), registryPassword.get())))
         } else {
-            tagContainerForRemote(builder, targetImageTag.get())
-            tagContainerForRemote(builder, version)
-            tagContainerForRemote(builder, gitRevision)
+            builder.containerize(
+                    Containerizer.to(DockerDaemonImage.named("${targetRepo}:${tag}"))
+            )
+        }
+
+        logger.quiet("Publishing '${targetRepo}:${tag}' ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with '${projectName}.jar', from base '${baseImageName.get()}:${baseImageTag}'")
+    }
+
+    /**
+     * Helper method to retrieve the Jira ticket from last git commit if it exists
+     * Returns: the Jira ID, empty String otherwise, used in tagging of nightly Alphas
+     */
+    def hasJiraTicket() {
+        def JiraTicket
+        String gitLogMessage = gitLogTask.flatMap { it.message }.get()
+        if (gitLogMessage =~ /(^(CORDA|EG|ENT|INFRA|CORE)-\d+|^NOTICK)/) {
+            JiraTicket = (gitLogMessage =~ /(^(CORDA|EG|ENT|INFRA|CORE)-\d+|^NOTICK)/)[0][0]
+        }
+        if (JiraTicket != null) {
+            return JiraTicket
+        } else {
+            return ""
         }
     }
 
-    private JibContainer tagContainerForLocal(JibContainerBuilder builder, String tag) {
-        builder.containerize(
-                Containerizer.to(DockerDaemonImage.named("${targetRepo}:${tag}"))
-        )
-    }
-
-    private JibContainer tagContainerForRemote(JibContainerBuilder builder, String tag) {
-        builder.containerize(
-                Containerizer.to(RegistryImage.named("${targetRepo}:${tag}")
-                        .addCredential(registryUsername.get(), registryPassword.get())))
-    }
-
-    static class GetGitRevision extends Exec {
+    /**
+     * Helper task to retrieve get the latest git hash
+     */
+    static class GetLatestGitRevision extends Exec {
         @Internal
         final Property<String> revision
 
         @Inject
-        GetGitRevision(ObjectFactory objects, ProviderFactory providers) {
+        GetLatestGitRevision(ObjectFactory objects, ProviderFactory providers) {
             executable 'git'
             args 'rev-parse', '--verify', '--short', 'HEAD'
             standardOutput = new ByteArrayOutputStream()
             revision = objects.property(String).value(
+                    providers.provider { standardOutput.toString() }
+            )
+        }
+    }
+
+    /**
+     * Helper task to retrieve the latest git log message
+     */
+    static class getLatestGitCommitMessage extends Exec {
+        @Internal
+        final Property<String> message
+
+        @Inject
+        getLatestGitCommitMessage(ObjectFactory objects, ProviderFactory providers) {
+            executable 'git'
+            args 'log', '-1', '--oneline', '--format=%s'
+
+            standardOutput = new ByteArrayOutputStream()
+            message = objects.property(String).value(
                     providers.provider { standardOutput.toString() }
             )
         }
