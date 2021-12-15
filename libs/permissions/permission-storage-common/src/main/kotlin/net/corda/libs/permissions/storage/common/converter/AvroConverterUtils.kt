@@ -38,7 +38,7 @@ fun User.toAvroUser(): AvroUser {
         hashedPassword,
         saltValue,
         passwordExpiry,
-        false,
+        hashedPassword == null,
         parentGroup?.id,
         userProperties.map { it.toAvroUserProperty() },
         roleUserAssociations.map { it.toAvroRoleAssociation() }
