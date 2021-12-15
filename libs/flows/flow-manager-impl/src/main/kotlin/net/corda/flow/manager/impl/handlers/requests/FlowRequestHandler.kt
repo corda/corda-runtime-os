@@ -2,7 +2,7 @@ package net.corda.flow.manager.impl.handlers.requests
 
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.manager.impl.FlowEventContext
-import net.corda.flow.statemachine.requests.FlowIORequest
+import net.corda.flow.fiber.requests.FlowIORequest
 
 interface FlowRequestHandler<T : FlowIORequest<*>> {
 

@@ -12,7 +12,7 @@ dependencies {
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-avro-schema"
 
-    implementation project(':libs:flows:statemachine')
+    implementation project(':libs:flows:flow-fiber')
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"

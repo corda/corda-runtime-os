@@ -1,7 +1,7 @@
 package net.corda.dependency.injection.impl
 
 import net.corda.dependency.injection.InjectableFactory
-import net.corda.flow.statemachine.FlowFiber
+import net.corda.flow.fiber.FlowFiber
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.injection.CordaInject

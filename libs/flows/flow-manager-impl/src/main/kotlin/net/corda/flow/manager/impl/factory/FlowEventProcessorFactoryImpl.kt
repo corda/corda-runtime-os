@@ -6,7 +6,7 @@ import net.corda.flow.manager.impl.FlowEventProcessorImpl
 import net.corda.flow.manager.impl.handlers.events.FlowEventHandler
 import net.corda.flow.manager.impl.handlers.requests.FlowRequestHandler
 import net.corda.flow.manager.impl.runner.FlowRunner
-import net.corda.flow.statemachine.requests.FlowIORequest
+import net.corda.flow.fiber.requests.FlowIORequest
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

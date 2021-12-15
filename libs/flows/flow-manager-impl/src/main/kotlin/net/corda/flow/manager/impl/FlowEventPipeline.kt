@@ -5,8 +5,8 @@ import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import net.corda.flow.manager.impl.handlers.events.FlowEventHandler
 import net.corda.flow.manager.impl.handlers.requests.FlowRequestHandler
 import net.corda.flow.manager.impl.runner.FlowRunner
-import net.corda.flow.statemachine.FlowContinuation
-import net.corda.flow.statemachine.requests.FlowIORequest
+import net.corda.flow.fiber.FlowContinuation
+import net.corda.flow.fiber.requests.FlowIORequest
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.v5.base.util.contextLogger
 
