@@ -298,6 +298,7 @@ subprojects {
     }
 
     task allDependencyInsight(type: DependencyInsightReportTask) {}
+    task allDependencies(type: DependencyReportTask) {}
 
     configurations {
         all {
