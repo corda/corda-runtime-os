@@ -9,6 +9,8 @@ class Simulator(
     simulatorConfig: String,
     override val labels: Map<String, String>
 ) : Job() {
+    private val instanceId = Random.nextInt()
+    private val mode = labels["mode"]?:Random.nextInt().toString()
     override val pullSecrets = listOf(CordaOsDockerDevSecret.name)
     override val image by lazy {
         "${CordaOsDockerDevSecret.host}/corda-os-app-simulator:$tag"
@@ -30,11 +32,11 @@ class Simulator(
     override val environmentVariables by lazy {
         mapOf(
             "KAFKA_SERVERS" to kafkaServers,
-            "INSTANCE_ID" to simulatorConfig.hashCode().toString(),
+            "INSTANCE_ID" to instanceId.toString(),
         )
     }
 
     override val app by lazy {
-        "simulator-${System.nanoTime() % 3600000}-${Random.nextInt()}"
+        "simulator-$mode-$instanceId"
     }
 }

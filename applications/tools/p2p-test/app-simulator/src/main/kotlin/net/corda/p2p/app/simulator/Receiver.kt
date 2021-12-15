@@ -35,11 +35,12 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
     private val subscriptions = mutableListOf<Subscription<*, *>>()
 
     fun start() {
+        val instanceId = System.getenv("INSTANCE_ID")?:""
         (1..clients).forEach { client ->
             val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", receiveTopic, client)
             val kafkaConfig = SmartConfigImpl.empty()
                 .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaServers))
-                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-receiver-$client"))
+                .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-receiver-$instanceId-$client"))
             val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
                 InboundMessageProcessor(metadataTopic), kafkaConfig, null)
             subscription.start()

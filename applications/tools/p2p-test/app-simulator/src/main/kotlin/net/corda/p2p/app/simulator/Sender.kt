@@ -17,7 +17,6 @@ import net.corda.p2p.app.simulator.AppSimulator.Companion.PRODUCER_CLIENT_ID
 import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 import java.nio.ByteBuffer
-import java.sql.Connection
 import java.time.Instant
 import java.util.Random
 import java.util.UUID
@@ -55,13 +54,14 @@ class Sender(private val publisherFactory: PublisherFactory,
     fun start() {
         val senderId = UUID.randomUUID().toString()
         logger.info("Using sender ID: $senderId")
+        val instanceId = System.getenv("INSTANCE_ID")?:""
 
         val threads = (1..clients).map { client ->
             thread(isDaemon = true) {
                 var messagesSent = 0
                 val kafkaConfig = SmartConfigImpl.empty()
                     .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaServers))
-                    .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-sender-$client"))
+                    .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-sender-$instanceId-$client"))
                 val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator"), kafkaConfig)
                 publisher.use {
                     while (moreMessagesToSend(messagesSent, loadGenParams)) {
