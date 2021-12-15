@@ -20,7 +20,7 @@ import java.sql.Connection
 import java.sql.Timestamp
 
 class Sink(private val subscriptionFactory: SubscriptionFactory,
-           private val dbConnection: Connection,
+           private val connectionFactory: ()->Connection?,
            private val kafkaServers: String,
            private val clients: Int): Closeable {
 
@@ -28,9 +28,14 @@ class Sink(private val subscriptionFactory: SubscriptionFactory,
         private val logger = contextLogger()
     }
 
-    private val writeReceivedStmt = dbConnection.prepareStatement("INSERT INTO received_messages " +
-            "(sender_id, message_id, sent_timestamp, received_timestamp, delivery_latency_ms) " +
-            "VALUES (?, ?, ?, ?, ?) on conflict do nothing")
+    private val dbConnection = ThreadLocal.withInitial {
+        connectionFactory()
+    }
+    private val writeReceivedStmt = ThreadLocal.withInitial {
+        dbConnection.get()?.prepareStatement("INSERT INTO received_messages " +
+        "(sender_id, message_id, sent_timestamp, received_timestamp, delivery_latency_ms) " +
+                "VALUES (?, ?, ?, ?, ?) on conflict do nothing")
+    }
     private val objectMapper = ObjectMapper().registerKotlinModule().registerModule(JavaTimeModule())
     private val subscriptions = mutableListOf<Subscription<*, *>>()
 
@@ -69,6 +74,8 @@ class Sink(private val subscriptionFactory: SubscriptionFactory,
         }
 
         private fun writeReceivedMessagesToDB(messages: List<MessageReceivedEvent>) {
+            val dbConnection = dbConnection.get()!!
+            val writeReceivedStmt = writeReceivedStmt.get()!!
             messages.forEach { messageReceivedEvent ->
                 writeReceivedStmt.setString(1, messageReceivedEvent.sender)
                 writeReceivedStmt.setString(2, messageReceivedEvent.messageId)
@@ -77,7 +84,7 @@ class Sink(private val subscriptionFactory: SubscriptionFactory,
                 writeReceivedStmt.setLong(5, messageReceivedEvent.deliveryLatency.toMillis())
                 writeReceivedStmt.addBatch()
             }
-            writeReceivedStmt!!.executeBatch()
+            writeReceivedStmt.executeBatch()
             dbConnection.commit()
         }
 

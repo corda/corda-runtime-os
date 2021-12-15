@@ -29,7 +29,7 @@ import kotlin.concurrent.write
 
 @Suppress("LongParameterList")
 class Sender(private val publisherFactory: PublisherFactory,
-             private val dbConnection: Connection?,
+             private val connectionFactory: ()->Connection?,
              private val loadGenParams: LoadGenerationParams,
              private val sendTopic: String,
              private val kafkaServers: String,
@@ -43,8 +43,13 @@ class Sender(private val publisherFactory: PublisherFactory,
 
     private val random = Random()
     private val objectMapper = ObjectMapper().registerKotlinModule().registerModule(JavaTimeModule())
-    private val writeSentStmt = dbConnection?.prepareStatement("INSERT INTO sent_messages (sender_id, message_id) " +
-            "VALUES (?, ?) on conflict do nothing")
+    private val dbConnection = ThreadLocal.withInitial {
+        connectionFactory()
+    }
+    private val writeSentStmt = ThreadLocal.withInitial {
+        dbConnection.get()?.prepareStatement("INSERT INTO sent_messages (sender_id, message_id) " +
+                "VALUES (?, ?) on conflict do nothing")
+    }
 
     private val writerThreads = mutableListOf<Thread>()
     private val stopLock = ReentrantReadWriteLock()
@@ -76,7 +81,7 @@ class Sender(private val publisherFactory: PublisherFactory,
                                 println("QQQ ($client) Publishing $name")
                                 val futures = publisher.publish(records)
 
-                                if (dbConnection != null) {
+                                if (dbConnection.get() != null) {
                                     val messageSentEvents = messageWithIds.map { (messageId, _) ->
                                         MessageSentEvent(senderId, messageId)
                                     }
@@ -152,13 +157,15 @@ class Sender(private val publisherFactory: PublisherFactory,
     }
 
     private fun writeSentMessagesToDb(messages: List<MessageSentEvent>) {
+        val dbConnection = dbConnection.get()!!
+        val writeSentStmt = writeSentStmt.get()!!
         messages.forEach { messageSentEvent ->
-            writeSentStmt!!.setString(1, messageSentEvent.sender)
+            writeSentStmt.setString(1, messageSentEvent.sender)
             writeSentStmt.setString(2, messageSentEvent.messageId)
             writeSentStmt.addBatch()
+            writeSentStmt.executeBatch()
         }
-        writeSentStmt!!.executeBatch()
-        dbConnection!!.commit()
+        dbConnection.commit()
     }
 
 
