@@ -6,6 +6,7 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.core.HikariDataSourceFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.write.persistent.PersistentConfigWriterException
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import org.osgi.service.component.annotations.Activate
@@ -24,29 +25,26 @@ class DBUtils @Activate constructor(
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory
 ) {
-    companion object {
-        private val managedEntities = setOf(ConfigEntity::class.java)
-        private val dataSourceFactory = HikariDataSourceFactory()
-    }
+    private val dataSourceFactory = HikariDataSourceFactory()
+    private val managedEntities = setOf(ConfigEntity::class.java)
 
     /**
-     * Checks the connection to the cluster database.
+     * Checks that it's possible to connect to the cluster database using the [config].
      *
-     * @throws ConfigWriterException If the cluster database cannot be connected to.
+     * @throws PersistentConfigWriterException If the cluster database cannot be connected to.
      */
     fun checkClusterDatabaseConnection(config: SmartConfig) {
         val dataSource = createDataSource(config)
         try {
             dataSource.connection.close()
         } catch (e: SQLException) {
-            throw ConfigWriterException("Could not connect to cluster database.", e)
+            throw PersistentConfigWriterException("Could not connect to cluster database.", e)
         }
     }
 
     /**
-     * Connects to the cluster database, and applies the Liquibase schema migrations for the [managedEntities].
-     *
-     * This is a temporary measure. Migrations will be applied by a different code-path in the future.
+     * Connects to the cluster database using the [config], and applies the Liquibase schema migrations for each of the
+     * [managedEntities].
      */
     fun migrateClusterDatabase(config: SmartConfig) {
         val changeLogResourceFiles = managedEntities.mapTo(LinkedHashSet()) { entity ->
@@ -60,7 +58,7 @@ class DBUtils @Activate constructor(
     }
 
     /**
-     * Writes all the [entities] to the cluster database.
+     * Connects to the cluster database using the [config] and writes all the [entities] to the cluster database.
      *
      * Each of the [entities] must be an instance of a class annotated with `@Entity`.
      *
@@ -68,34 +66,28 @@ class DBUtils @Activate constructor(
      * @throws IllegalStateException/IllegalArgumentException/TransactionRequiredException If writing the entities
      *  fails for any other reason.
      */
-    fun writeEntity(
-        entities: Iterable<Any>,
-        config: SmartConfig
-    ) {
+    fun writeEntity(config: SmartConfig, entities: Iterable<Any>) {
         val entityManager = createEntityManager(config)
 
         try {
             entityManager.transaction.begin()
-            entities.forEach { entity ->
-                entityManager.merge(entity)
-            }
+            entities.forEach(entityManager::merge)
             entityManager.transaction.commit()
+
         } finally {
             entityManager.close()
         }
     }
 
-    /** Creates an entity manager. */
-    private fun createEntityManager(
-        config: SmartConfig
-    ): EntityManager {
+    /** Connects to the cluster database using the [config] and creates an [EntityManager]. */
+    private fun createEntityManager(config: SmartConfig): EntityManager {
         val dataSource = createDataSource(config)
         return entityManagerFactoryFactory.create(
             PERSISTENCE_UNIT_NAME, managedEntities.toList(), DbEntityManagerConfiguration(dataSource)
         ).createEntityManager()
     }
 
-    /** Creates a [DataSource] for the cluster database. */
+    /** Creates a [DataSource] for the cluster database using the [config]. */
     private fun createDataSource(config: SmartConfig): DataSource {
         val driver = getConfigStringOrDefault(config, CONFIG_DB_DRIVER, CONFIG_DB_DRIVER_DEFAULT)
         val jdbcUrl = getConfigStringOrDefault(config, CONFIG_JDBC_URL, CONFIG_JDBC_URL_DEFAULT)

@@ -16,6 +16,7 @@ import org.slf4j.Logger
  * Kafka implementation of the [ConfigWriter]
  * @property topicName the topic configurations will be published to
  */
+@Deprecated("Use `PersistentConfigWriterImpl` instead.")
 class ConfigWriterImpl(
     private val topicName: String,
     private val publisher: Publisher

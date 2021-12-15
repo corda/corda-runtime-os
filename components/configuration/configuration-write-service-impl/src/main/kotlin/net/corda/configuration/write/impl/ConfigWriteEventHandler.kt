@@ -1,7 +1,8 @@
 package net.corda.configuration.write.impl
 
 import net.corda.configuration.write.ConfigWriteServiceException
-import net.corda.libs.configuration.write.persistent.ConfigWriterFactory
+import net.corda.libs.configuration.write.persistent.PersistentConfigWriter
+import net.corda.libs.configuration.write.persistent.PersistentConfigWriterFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
@@ -9,44 +10,38 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.v5.base.util.contextLogger
-import java.io.Closeable
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigWriteServiceImpl]. */
-class ConfigWriteEventHandler(private val configWriterFactory: ConfigWriterFactory) : LifecycleEventHandler {
-
-    private companion object {
-        val logger = contextLogger()
-    }
-
-    // A handle for stopping the processing of new config requests.
-    private var subscriptionHandle: Closeable? = null
+class ConfigWriteEventHandler(private val configWriterFactory: PersistentConfigWriterFactory) : LifecycleEventHandler {
+    private var configWriter: PersistentConfigWriter? = null
 
     /**
-     * Upon [SubscribeEvent], starts processing new config requests. Upon [StopEvent], stops processing them.
+     * Upon [StartProcessingEvent], starts processing cluster configuration updates. Upon [StopEvent], stops processing
+     * them.
      *
-     * @throws ConfigWriteServiceException If an event type other than [StartEvent]/[SubscribeEvent]/[StopEvent] is received,
-     * if multiple [SubscribeEvent]s are received, or if the creation of the subscription fails.
+     * @throws ConfigWriteServiceException If an event type other than [StartEvent]/[StartProcessingEvent]/[StopEvent]
+     * is received, if multiple [StartProcessingEvent]s are received, or if the creation of the subscription fails.
      */
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
-            is StartEvent -> Unit // We cannot start until we have the required bootstrap config.
+            is StartEvent -> Unit // We cannot start processing updates until we have the required service config.
 
-            is SubscribeEvent -> {
-                if (subscriptionHandle != null) {
+            is StartProcessingEvent -> {
+                if (configWriter != null) {
                     throw ConfigWriteServiceException("An attempt was made to subscribe twice.")
                 }
 
                 try {
-                    subscriptionHandle = configWriterFactory.create(event.config, event.instanceId)
+                    configWriter = configWriterFactory.create(event.config, event.instanceId).apply { start() }
                     coordinator.updateStatus(LifecycleStatus.UP)
                 } catch (e: Exception) {
-                    logger.debug("Subscribing to config management requests failed. Cause: $e.")
                     coordinator.updateStatus(LifecycleStatus.ERROR)
+                    throw ConfigWriteServiceException("Subscribing to config management requests failed. Cause: $e.")
                 }
             }
 
             is StopEvent -> {
-                subscriptionHandle?.close()
+                configWriter?.stop()
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }

@@ -14,6 +14,7 @@ import org.osgi.service.component.annotations.Reference
  * Kafka implementation for [ConfigWriterFactory].
  * @property publisherFactory
  */
+@Deprecated("Use `PersistentConfigWriterFactoryImpl` instead.")
 @Component(immediate = true, service = [ConfigWriterFactory::class])
 class ConfigWriterFactoryImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)

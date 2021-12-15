@@ -15,14 +15,11 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = ConfigWriteService::class)
     private val configWriteService: ConfigWriteService
 ) : DBProcessor {
-    private companion object {
-        val logger = contextLogger()
-    }
 
     override fun start(instanceId: Int, topicPrefix: String, config: SmartConfig) {
         configWriteService.start()
         // TODO - Joel - Use atKey/atPath to stuff topic prefix into config.
-        configWriteService.bootstrapConfig(config, instanceId)
+        configWriteService.startProcessing(config, instanceId)
     }
 
     override fun stop() {

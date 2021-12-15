@@ -2,6 +2,8 @@ package net.corda.libs.configuration.write
 
 import com.typesafe.config.Config
 
+@Suppress("Deprecation")
+@Deprecated("Use `PersistentConfigWriter` instead.")
 interface ConfigWriter {
     /**
      * When appending, the storage layer is checked for existing configuration for the given [configKey].

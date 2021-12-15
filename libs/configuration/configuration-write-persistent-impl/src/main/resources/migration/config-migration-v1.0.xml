@@ -5,16 +5,16 @@
 
     <changeSet author="R3.Corda" id="config-migration-v1.0">
         <createTable tableName="config">
-            <column name="name" type="VARCHAR(255)">
+            <column name="section" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="value" type="VARCHAR(255)">
+            <column name="configuration" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
             <column name="version" type="INT">
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey columnNames="name" constraintName="config_pk" tableName="config"/>
+        <addPrimaryKey columnNames="section" constraintName="config_pk" tableName="config"/>
     </changeSet>
 </databaseChangeLog>

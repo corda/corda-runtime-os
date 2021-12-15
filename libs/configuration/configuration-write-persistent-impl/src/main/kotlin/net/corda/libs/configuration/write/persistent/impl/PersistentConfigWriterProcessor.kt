@@ -4,6 +4,9 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.write.persistent.PersistentConfigWriterException
+import net.corda.libs.configuration.write.persistent.TOPIC_CONFIG
+import net.corda.libs.configuration.write.persistent.TOPIC_CONFIG_MGMT_REQUEST
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -11,10 +14,12 @@ import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.CompletableFuture
 
 /**
- * Responds to RPC requests of type [ConfigurationManagementRequest] with a response of type
- * [ConfigurationManagementResponse].
+ * An RPC responder processor that handles configuration management requests.
+ *
+ * Listens for configuration management requests on [TOPIC_CONFIG_MGMT_REQUEST]. Persists the updated
+ * configuration to the cluster database and publishes the updated configuration to [TOPIC_CONFIG].
  */
-internal class ConfigWriterProcessor(
+internal class PersistentConfigWriterProcessor(
     private val config: SmartConfig,
     private val publisher: Publisher,
     private val dbUtils: DBUtils
@@ -52,11 +57,11 @@ internal class ConfigWriterProcessor(
         val configEntity = ConfigEntity(request.section, request.configuration, request.version)
 
         return try {
-            dbUtils.writeEntity(setOf(configEntity), config)
+            dbUtils.writeEntity(config, setOf(configEntity))
             true
         } catch (e: Exception) {
             respFuture.completeExceptionally(
-                ConfigWriterException("Config $configEntity couldn't be written to the database.", e)
+                PersistentConfigWriterException("Config $configEntity couldn't be written to the database.", e)
             )
             false
         }
@@ -90,7 +95,9 @@ internal class ConfigWriterProcessor(
             val cause = failedFutures[0]
             logger.debug("Record $record was written to the database, but couldn't be published. Cause: $cause.")
             respFuture.completeExceptionally(
-                ConfigWriterException("Record $record was written to the database, but couldn't be published.", cause)
+                PersistentConfigWriterException(
+                    "Record $record was written to the database, but couldn't be published.", cause
+                )
             )
         }
     }

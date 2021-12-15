@@ -8,6 +8,8 @@ import javax.naming.ConfigurationException
  * @property major Major version
  * @property minor Minor version
  */
+@Suppress("Deprecation")
+@Deprecated("Deprecated in line with the deprecation of `ConfigWriter`.")
 class ConfigVersionNumber(val major: Int, val minor: Int) :
     Comparable<ConfigVersionNumber> {
     companion object {

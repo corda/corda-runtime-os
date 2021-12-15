@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package net.corda.comp.kafka.config.write
 
 import com.typesafe.config.Config
@@ -14,6 +16,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
+@Deprecated("Use `ConfigWriteServiceImpl` instead.")
 @Component(immediate = true, service = [KafkaConfigWrite::class])
 class KafkaConfigWrite @Activate constructor(
     @Reference(service = ConfigWriterFactory::class)
