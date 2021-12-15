@@ -48,9 +48,11 @@ class FlowRunnerImpl @Activate constructor(
     }
 
     private fun startFlow(checkpoint: Checkpoint, startFlowEvent: StartRPCFlow, flowContinuation: FlowContinuation): FlowFiber<*> {
-        log.info("start new flow clientId: ${checkpoint.flowState.clientId} flowClassName: ${startFlowEvent.flowClassName} args ${startFlowEvent.jsonArgs}")
+        val flowClassName = startFlowEvent.flowClassName
+        val jsonArgs = startFlowEvent.jsonArgs
+        log.info("start new flow clientId: ${checkpoint.flowState.clientId} flowClassName: $flowClassName args $jsonArgs")
         val sandbox = getSandbox(checkpoint)
-        val flow = getOrCreate(sandbox.sandboxGroup, startFlowEvent.flowClassName, startFlowEvent.jsonArgs)
+        val flow = getOrCreate(sandbox.sandboxGroup, flowClassName, jsonArgs)
         val flowFiber = flowFiberFactory.createFlowFiber(checkpoint.flowKey, flow, scheduler)
         return flowFiber.apply {
             setHousekeepingState(checkpoint, flowContinuation)

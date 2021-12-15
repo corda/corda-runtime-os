@@ -22,12 +22,11 @@ data class FlowEventPipeline(
     }
 
     fun eventPreProcessing(): FlowEventPipeline {
-        log.info("Preprocessing of ${context.inputEventPayload::class.java.name} using ${flowEventHandler::class.java.name}")
+        log.info("Preprocessing of ${context.inputEventPayload::class.qualifiedName} using ${flowEventHandler::class.qualifiedName}")
         return copy(context = flowEventHandler.preProcess(context))
     }
 
     fun runOrContinue(): FlowEventPipeline {
-        log.info("Should resume or continue after receiving ${context.inputEventPayload::class.java.name} using ${flowEventHandler::class.java.name}")
         return when (val continuation = flowEventHandler.resumeOrContinue(context)) {
             is FlowContinuation.Run, is FlowContinuation.Error -> {
                 val (checkpoint, output) = flowRunner.runFlow(
@@ -58,7 +57,7 @@ data class FlowEventPipeline(
     }
 
     fun eventPostProcessing(): FlowEventPipeline {
-        log.info("Postprocessing of ${context.inputEventPayload::class.java.name} using ${flowEventHandler::class.java.name}")
+        log.info("Postprocessing of ${context.inputEventPayload::class.qualifiedName} using ${flowEventHandler::class.qualifiedName}")
         return copy(context = flowEventHandler.postProcess(context))
     }
 
@@ -69,7 +68,7 @@ data class FlowEventPipeline(
 
     private fun getFlowRequestHandler(request: FlowIORequest<*>): FlowRequestHandler<FlowIORequest<*>> {
         return when (val handler = flowRequestHandlers[request::class.java]) {
-            null -> throw FlowProcessingException("${request::class.java.name} does not have an associated flow request handler")
+            null -> throw FlowProcessingException("${request::class.qualifiedName} does not have an associated flow request handler")
             else -> handler
         }
     }
