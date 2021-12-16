@@ -36,6 +36,7 @@ class StartRPCFlowEventHandler : FlowEventHandler<StartRPCFlow> {
             .setCpiId(context.inputEventPayload.cpiId)
             .setFlowState(state)
             .setSessions(emptyList())
+            .setFlowStackItems(mutableListOf())
             .build()
         return context.copy(checkpoint = checkpoint)
     }
