@@ -31,17 +31,18 @@ import java.lang.reflect.Type
  * Serialization / deserialization of arrays.
  */
 open class ArraySerializer(override val type: Type, factory: LocalSerializerFactory) : AMQPSerializer<Any> {
+
     companion object {
+        private val logger = contextLogger()
+
         fun make(type: Type, factory: LocalSerializerFactory) : AMQPSerializer<Any> {
-            contextLogger().debug { "Making array serializer, typename=${type.typeName}" }
+            logger.debug { "Making array serializer, typename=${type.typeName}" }
             return when (type) {
                 Array<Char>::class.java -> CharArraySerializer(factory)
                 else -> ArraySerializer(type, factory)
             }
         }
     }
-
-    private val logger = loggerFor<ArraySerializer>()
 
     // because this might be an array of array of primitives (to any recursive depth) and
     // because we care that the lowest type is unboxed we can't rely on the inbuilt type
