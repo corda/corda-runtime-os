@@ -274,7 +274,7 @@ class AppResolution extends DefaultTask {
 -resolve.effective: resolve,active
 -runrequires:\
     bnd.identity;id='\${project.group}.\${project.name}',\
-    osgi.service;filter:='(objectClass=net.corda.osgi.api.Application)';effective:=active
+    osgi.service;filter:='(objectClass=net.corda.osgi.api.Application)'
 -runstartlevel: order=sortbynameversion,begin=-1
 '''
             // Our launcher creates the Shutdown service dynamically, so
