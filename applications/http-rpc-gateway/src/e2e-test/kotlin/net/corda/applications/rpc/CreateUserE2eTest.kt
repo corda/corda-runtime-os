@@ -25,7 +25,7 @@ class CreateUserE2eTest {
 
             // Check the user does not exist yet
             assertThatThrownBy { proxy.getUser(userName) }.isInstanceOf(MissingRequestedResourceException::class.java)
-                .hasMessageContaining("$userName not found")
+                .hasMessageContaining("User $userName not found")
 
             // Create user
             val password = testToolkit.uniqueName
