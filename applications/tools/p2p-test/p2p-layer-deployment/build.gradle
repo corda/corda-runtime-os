@@ -16,33 +16,3 @@ dependencies {
 application {
     mainClass = 'net.corda.p2p.deployment.GoKt'
 }
-
-def binaryProjects = [
-        'p2p-test:network-map-creator',
-        'p2p-test:configuration-publisher',
-        'p2p-test:cryptoservice-key-creator',
-        'kafka-setup'
-]
-
-binaryProjects.forEach {name->
-    def shortName = name.split(':').last()
-    def copyJars = tasks.register("copyJars$shortName", Copy) {
-        def project = ":applications:tools:$name"
-        def task = rootProject.findProject(project).tasks.getByName('appJar')
-        dependsOn(task)
-        from task.outputs.files.first()
-        into "$buildDir/jars/"
-        rename {
-            "${shortName}.jar"
-        }
-    }
-    processResources.dependsOn(copyJars)
-}
-
-sourceSets {
-    main {
-        resources {
-            srcDirs "$buildDir/jars"
-        }
-    }
-}
