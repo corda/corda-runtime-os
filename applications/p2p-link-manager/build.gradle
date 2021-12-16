@@ -35,13 +35,3 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":components:configuration:configuration-read-service")
 }
-
-tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
-    if (project.hasProperty('jibRemotePublish')) {
-        remotePublish = jibRemotePublish.toBoolean()
-    }
-
-    if (project.hasProperty('isReleaseCandidate')) {
-        releaseCandidate = isReleaseCandidate.toBoolean()
-    }
-}
