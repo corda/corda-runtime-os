@@ -23,7 +23,7 @@ class CreateRoleE2eTest {
 
             // Check the role does not exist yet
             assertThatThrownBy { proxy.getRole("fakeId") }.isInstanceOf(MissingRequestedResourceException::class.java)
-                .hasMessageContaining("Role fake not found")
+                .hasMessageContaining("Role fakeId not found")
 
             // Create role
             val createRoleType = CreateRoleType(name, null)
