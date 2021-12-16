@@ -2,6 +2,7 @@ package net.corda.applications.rpc
 
 import net.corda.applications.rpc.http.TestToolkitProperty
 import net.corda.httprpc.client.exceptions.InternalErrorException
+import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.test.util.eventually
@@ -15,10 +16,14 @@ class CreateRoleE2eTest {
     private val testToolkit by TestToolkitProperty()
 
     @Test
-    fun testCreateAndGet() {
+    fun `test getRole and createRole HTTP APIs including validation`() {
         testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
             val name = testToolkit.uniqueName
             val proxy = client.start().proxy
+
+            // Check the role does not exist yet
+            assertThatThrownBy { proxy.getRole("fakeId") }.isInstanceOf(MissingRequestedResourceException::class.java)
+                .hasMessageContaining("Role fake not found")
 
             // Create role
             val createRoleType = CreateRoleType(name, null)
