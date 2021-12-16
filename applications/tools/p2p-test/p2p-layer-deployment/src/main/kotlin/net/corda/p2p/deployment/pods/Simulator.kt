@@ -10,7 +10,7 @@ class Simulator(
     override val labels: Map<String, String>
 ) : Job() {
     private val instanceId = Random.nextInt()
-    private val mode = labels["mode"]?:Random.nextInt().toString()
+    private val mode = labels["mode"]?.toLowerCase()?:Random.nextInt().toString()
     override val pullSecrets = listOf(CordaOsDockerDevSecret.name)
     override val image by lazy {
         "${CordaOsDockerDevSecret.host}/corda-os-app-simulator:$tag"
