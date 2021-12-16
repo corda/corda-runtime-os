@@ -5,8 +5,8 @@ import net.corda.data.poc.persistence.ConfigAdminEvent
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import javax.persistence.EntityManagerFactory

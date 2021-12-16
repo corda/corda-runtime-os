@@ -10,8 +10,8 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.rpc.schema.Schema.Companion.RPC_PERM_MGMT_REQ_TOPIC
 import net.corda.v5.base.annotations.VisibleForTesting
 import javax.persistence.EntityManagerFactory

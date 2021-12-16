@@ -5,7 +5,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.emulation.rpc.RPCTopicService
 
 class RPCSubscriptionImpl<REQUEST, RESPONSE>(

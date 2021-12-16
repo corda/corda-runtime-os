@@ -13,8 +13,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.BOOTSTRAP_SERVERS_VALUE
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.KAFKA_COMMON_BOOTSTRAP_SERVER
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
@@ -40,8 +40,6 @@ import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessorStrings
 import net.corda.messaging.kafka.integration.processors.TestStateEventProcessor
 import net.corda.messaging.kafka.integration.processors.TestStateEventProcessorStrings
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_MAX_POLL_INTERVAL
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_PROCESSOR_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.MESSAGING_KAFKA
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
@@ -72,6 +70,8 @@ class StateAndEventSubscriptionIntegrationTest {
         const val EVENTSTATE_OUTPUT4 = "EventStateOutputTopic4"
         const val EVENTSTATE_OUTPUT5 = "EventStateOutputTopic5"
         const val EVENTSTATE_OUTPUT6 = "EventStateOutputTopic6"
+        const val CONSUMER_PROCESSOR_TIMEOUT = "consumer.processor.timeout"
+        const val CONSUMER_MAX_POLL_INTERVAL = "consumer.max.poll.interval.ms"
     }
 
     @InjectService(timeout = 4000)
