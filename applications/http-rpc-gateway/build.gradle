@@ -80,6 +80,7 @@ dependencies {
 
     e2eTestImplementation project(":libs:http-rpc:http-rpc-client")
     e2eTestImplementation project(":libs:permissions:permission-endpoint")
+    e2eTestImplementation project(":testing:test-utilities")
 }
 
 tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
