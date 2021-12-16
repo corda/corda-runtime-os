@@ -16,13 +16,9 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import java.io.Closeable
 import java.io.File
-import java.sql.Connection
-import java.sql.DriverManager
 import java.time.Duration
 import java.time.Instant
-import java.util.Properties
 
 @Component(immediate = true)
 class AppSimulator @Activate constructor(
@@ -54,8 +50,7 @@ class AppSimulator @Activate constructor(
         )
     }
 
-    private val resources = mutableListOf<Closeable>()
-    private var dbConnection: Connection? = null
+    private val resources = mutableListOf<AutoCloseable>()
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
@@ -86,18 +81,17 @@ class AppSimulator @Activate constructor(
         val receiveTopic = parameters.receiveTopic ?: Schema.P2P_IN_TOPIC
         val simulatorConfig = ConfigFactory.parseFile(parameters.simulatorConfig).withFallback(DEFAULT_CONFIG)
         val clients = simulatorConfig.getInt(PARALLEL_CLIENTS_KEY)
-        val dbConnection = readDbParams(simulatorConfig)?.let { connectToDb(it) }
 
         val simulatorMode = simulatorConfig.getEnum(SimulationMode::class.java, "simulatorMode")
         when (simulatorMode) {
             SimulationMode.SENDER -> {
-                runSender(simulatorConfig, publisherFactory, dbConnection, sendTopic, kafkaServers, clients)
+                runSender(simulatorConfig, publisherFactory, sendTopic, kafkaServers, clients)
             }
             SimulationMode.RECEIVER -> {
                 runReceiver(subscriptionFactory, receiveTopic, kafkaServers, clients)
             }
             SimulationMode.DB_SINK -> {
-                runSink(subscriptionFactory, dbConnection, kafkaServers, clients)
+                runSink(simulatorConfig, subscriptionFactory, kafkaServers, clients)
             }
             else -> throw IllegalStateException("Invalid value for simulator mode: $simulatorMode")
         }
@@ -107,13 +101,13 @@ class AppSimulator @Activate constructor(
     private fun runSender(
         simulatorConfig: Config,
         publisherFactory: PublisherFactory,
-        dbConnection: Connection?,
         sendTopic: String,
         kafkaServers: String,
         clients: Int
     ) {
+        val connectionDetails = readDbParams(simulatorConfig)
         val loadGenerationParams = readLoadGenParams(simulatorConfig)
-        val sender = Sender(publisherFactory, dbConnection, loadGenerationParams, sendTopic, kafkaServers, clients)
+        val sender = Sender(publisherFactory, connectionDetails, loadGenerationParams, sendTopic, kafkaServers, clients)
         sender.start()
         resources.add(sender)
         // If it's one-off we wait until all messages have been sent.
@@ -130,29 +124,21 @@ class AppSimulator @Activate constructor(
         resources.add(receiver)
     }
 
-    private fun runSink(subscriptionFactory: SubscriptionFactory, dbConnection: Connection?, kafkaServers: String, clients: Int) {
-        if (dbConnection == null) {
+    private fun runSink(
+        simulatorConfig: Config,
+        subscriptionFactory: SubscriptionFactory,
+        kafkaServers: String,
+        clients: Int
+    ) {
+        val connectionDetails = readDbParams(simulatorConfig)
+        if (connectionDetails == null) {
             consoleLogger.error("dbParams configuration option is mandatory for sink mode.")
             shutdownOSGiFramework()
             return
         }
-        val sink = Sink(subscriptionFactory, dbConnection, kafkaServers, clients)
+        val sink = Sink(subscriptionFactory, connectionDetails, kafkaServers, clients)
         sink.start()
         resources.add(sink)
-    }
-
-    private fun connectToDb(dbParams: DBParams): Connection {
-        val properties = Properties()
-        properties.setProperty("user", dbParams.username)
-        properties.setProperty("password", dbParams.password)
-        // DriverManager uses internally Class.forName(), which doesn't work within OSGi by default.
-        // This is why we force-load the driver here. For example, see:
-        // http://hwellmann.blogspot.com/2009/04/jdbc-drivers-in-osgi.html
-        // https://stackoverflow.com/questions/54292876/how-to-use-mysql-in-osgi-application-with-maven
-        org.postgresql.Driver()
-        dbConnection = DriverManager.getConnection("jdbc:postgresql://${dbParams.host}/${dbParams.db}", properties)
-        dbConnection!!.autoCommit = false
-        return dbConnection!!
     }
 
     private fun readDbParams(config: Config): DBParams? {
@@ -196,7 +182,6 @@ class AppSimulator @Activate constructor(
 
     override fun shutdown() {
         logger.info("Shutting down application simulator tool")
-        dbConnection?.close()
         resources.forEach { it.close() }
     }
 
