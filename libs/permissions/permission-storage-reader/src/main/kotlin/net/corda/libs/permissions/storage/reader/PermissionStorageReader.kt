@@ -3,6 +3,7 @@ package net.corda.libs.permissions.storage.reader
 import net.corda.lifecycle.Lifecycle
 
 import net.corda.data.permissions.User as AvroUser
+import net.corda.data.permissions.Role as AvroRole
 
 /**
  * The [PermissionStorageReader] reads permission data from storage and pushes them into a compacted topic in the message bus.
@@ -14,9 +15,18 @@ import net.corda.data.permissions.User as AvroUser
 interface PermissionStorageReader : Lifecycle {
 
     /**
-     * Given new user created broadcasts this fact onto Kafka Bus
+     * Broadcasts a new user onto the messaging bus.
+     *
+     * @param user The user to be published.
      */
     fun publishNewUser(user: AvroUser)
+
+    /**
+     * Broadcasts a new role onto the messaging bus.
+     *
+     * @param role The role to be published.
+     */
+    fun publishNewRole(role: AvroRole)
 
     /**
      * Reads updated groups based on the ids passed into this method and publishes them to the message bus.

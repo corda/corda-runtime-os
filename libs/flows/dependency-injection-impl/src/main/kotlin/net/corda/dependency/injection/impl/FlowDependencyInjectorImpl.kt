@@ -2,7 +2,7 @@ package net.corda.dependency.injection.impl
 
 import net.corda.dependency.injection.FlowDependencyInjector
 import net.corda.dependency.injection.InjectableFactory
-import net.corda.flow.statemachine.FlowStateMachine
+import net.corda.flow.fiber.FlowFiber
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.injection.CordaInject
@@ -32,7 +32,7 @@ class FlowDependencyInjectorImpl(
 
     private val singletonList = mutableSetOf<SingletonSerializeAsToken>()
 
-    override fun injectServices(flow: Flow<*>, flowStateMachine: FlowStateMachine<*>) {
+    override fun injectServices(flow: Flow<*>, flowFiber: FlowFiber<*>) {
         val requiredFields = flow::class.getFieldsForInjection()
         val mismatchedFields = requiredFields.filter { !serviceTypeMap.containsKey(it.type) }
         if (mismatchedFields.any()) {
@@ -47,7 +47,7 @@ class FlowDependencyInjectorImpl(
             if (field.get(flow) == null) {
                 field.set(
                     flow,
-                    serviceTypeMap[field.type]!!.create(flowStateMachine, sandboxGroup)
+                    serviceTypeMap[field.type]!!.create(flowFiber, sandboxGroup)
                 )
             }
         }

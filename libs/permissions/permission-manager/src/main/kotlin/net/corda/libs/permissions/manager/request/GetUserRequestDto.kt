@@ -1,7 +1,7 @@
 package net.corda.libs.permissions.manager.request
 
 /**
- * Request object for listing Users in the permission system.
+ * Request object for getting a User in the permission system.
  */
 data class GetUserRequestDto(
     /**

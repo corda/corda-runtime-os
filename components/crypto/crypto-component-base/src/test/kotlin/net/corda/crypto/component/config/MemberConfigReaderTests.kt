@@ -25,6 +25,7 @@ import org.hamcrest.Matchers.contains
 import org.hamcrest.Matchers.empty
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.Mockito
@@ -225,6 +226,7 @@ class MemberConfigReaderTests {
 
     @Test
     @Timeout(5)
+    @Disabled("Unstable test, the implementation will be changed soon so it'll be addressed then.")
     fun `Should load snapshot then update and get new configuration value`() {
         publish(customConfig, "123" to cryptoMemberConfig, "789" to cryptoMemberConfig3)
         reader.start()
