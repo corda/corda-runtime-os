@@ -52,11 +52,11 @@ class Sender(private val publisherFactory: PublisherFactory,
     private val stopLock = ReentrantReadWriteLock()
     @Volatile
     private var stop = false
+    private val instanceId = System.getenv("INSTANCE_ID") ?: random.nextInt().toString()
 
     fun start() {
         val senderId = UUID.randomUUID().toString()
         logger.info("Using sender ID: $senderId")
-        val instanceId = System.getenv("INSTANCE_ID")?:""
 
         val threads = (1..clients).map { client ->
             thread(isDaemon = true) {
@@ -144,7 +144,7 @@ class Sender(private val publisherFactory: PublisherFactory,
                               destinationIdentity: HoldingIdentity,
                               srcIdentity: HoldingIdentity,
                               messageSize: Int): Pair<String, AppMessage> {
-        val messageId = senderId.replace("-", "") +":" + Thread.currentThread().id + ":" + index.get().incrementAndGet()
+        val messageId = instanceId +":" + Thread.currentThread().id + ":" + index.get().incrementAndGet()
         val messageHeader = AuthenticatedMessageHeader(
             destinationIdentity,
             srcIdentity,
