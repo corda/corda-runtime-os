@@ -12,7 +12,6 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:permissions:permission-cache")
-    implementation project(':libs:permissions:permission-datamodel')
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "javax.persistence:javax.persistence-api"

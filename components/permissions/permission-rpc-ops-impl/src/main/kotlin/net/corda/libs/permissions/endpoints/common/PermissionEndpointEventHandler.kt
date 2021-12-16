@@ -1,4 +1,4 @@
-package net.corda.libs.permissions.endpoints.v1.user.impl
+package net.corda.libs.permissions.endpoints.common
 
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -14,7 +14,7 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 
-internal class UserEndpointImplEventHandler : LifecycleEventHandler {
+internal class PermissionEndpointEventHandler(private val endpointName: String) : LifecycleEventHandler {
 
     private companion object {
         val log = contextLogger()
@@ -24,18 +24,18 @@ internal class UserEndpointImplEventHandler : LifecycleEventHandler {
     internal var registration: RegistrationHandle? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        log.debug { "Received event: $event" }
+        log.debug { "${endpointName}: Received event: $event" }
         when (event) {
             is StartEvent -> {
-                log.info("Received start event, following PermissionServiceComponent for status updates.")
+                log.info("${endpointName}: Received start event, following PermissionServiceComponent for status updates.")
                 followServicesForStatusUpdates(coordinator)
             }
             is RegistrationStatusChangeEvent -> {
-                log.info("Received status update from PermissionServiceComponent: ${event.status}.")
+                log.info("${endpointName}: Received status update from PermissionServiceComponent: ${event.status}.")
                 coordinator.updateStatus(event.status)
             }
             is StopEvent -> {
-                log.info("Received stop event, closing dependencies and setting status to DOWN.")
+                log.info("${endpointName}: Received stop event, closing dependencies and setting status to DOWN.")
                 registration?.close()
                 registration = null
                 coordinator.updateStatus(LifecycleStatus.DOWN)

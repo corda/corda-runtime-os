@@ -1,5 +1,6 @@
 package net.corda.libs.permissions.manager.impl
 
+import com.typesafe.config.ConfigValueFactory
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -11,6 +12,8 @@ import net.corda.data.permissions.User
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.CreateUserRequest
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.manager.exception.PermissionManagerException
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
@@ -66,9 +69,9 @@ class PermissionUserManagerImplTest {
 
     private val permissionManagementResponse = PermissionManagementResponse(avroUser)
     private val permissionManagementResponseWithoutPassword = PermissionManagementResponse(avroUserWithoutPassword)
+    private val config = mock<SmartConfig>()
 
-
-    private val manager = PermissionUserManagerImpl(rpcSender, permissionCache, passwordService)
+    private val manager = PermissionUserManagerImpl(config, rpcSender, permissionCache, passwordService)
 
     @Test
     fun `create a user sends rpc request and converts result`() {
@@ -200,5 +203,26 @@ class PermissionUserManagerImplTest {
         val result = manager.getUser(getUserRequestDto)
 
         assertNull(result)
+    }
+
+    @Test
+    fun `creating permission user manager will use the remote writer timeout set in the config`() {
+        val config = SmartConfigImpl.empty()
+            .withValue("endpointTimeoutMs", ConfigValueFactory.fromAnyRef(12345L))
+
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        val requestCaptor = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
+        whenever(passwordService.saltAndHash(eq("mypassword"))).thenReturn(PasswordHash("randomSalt", "hashedPass"))
+        whenever(future.getOrThrow(Duration.ofMillis(12345L))).thenReturn(permissionManagementResponse)
+
+        val manager = PermissionUserManagerImpl(config, rpcSender, permissionCache, passwordService)
+
+        val result = manager.createUser(createUserRequestDto)
+
+        verify(future, times(1)).getOrThrow(Duration.ofMillis(12345L))
+
+        assertTrue(result.isSuccess)
+        assertEquals(avroUser.id, result.getOrThrow().id)
     }
 }

@@ -38,6 +38,11 @@ data class UserResponseType(
     val enabled: Boolean,
 
     /**
+     * Whether this user uses SSO Authentication.
+     */
+    val ssoAuth: Boolean,
+
+    /**
      * If the User account used basic authentication, the time in which it expires.
      */
     val passwordExpiry: Instant?,
@@ -45,5 +50,10 @@ data class UserResponseType(
     /**
      * The group to which the User belongs.
      */
-    val parentGroup: String?
+    val parentGroup: String?,
+
+    /**
+     * User properties.
+     */
+    val properties: List<PropertyResponseType>
 )
