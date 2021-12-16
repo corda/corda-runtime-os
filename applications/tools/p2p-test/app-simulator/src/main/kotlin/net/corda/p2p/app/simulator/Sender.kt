@@ -34,7 +34,9 @@ class Sender(private val publisherFactory: PublisherFactory,
              private val kafkaServers: String,
              private val clients: Int): Closeable {
 
-    private val index = AtomicLong(0)
+    private val index = ThreadLocal.withInitial {
+        AtomicLong(0)
+    }
 
     companion object {
         private val logger = contextLogger()
@@ -73,20 +75,23 @@ class Sender(private val publisherFactory: PublisherFactory,
                                 Record(sendTopic, messageId, message)
                             }
                             stopLock.read {
-                                val name = "${records.firstOrNull()?.key}->${records.lastOrNull()?.key}"
-                                println("QQQ ($client) Publishing $name")
-                                val futures = publisher.publish(records)
+                                println("QQQ In send loop ($client), stop - $stop ")
+                                if(!stop) {
+                                    val name = "${records.firstOrNull()?.key}->${records.lastOrNull()?.key}"
+                                    println("QQQ ($client) Publishing $name")
+                                    val futures = publisher.publish(records)
 
-                                if (dbConnection.connection != null) {
-                                    val messageSentEvents = messageWithIds.map { (messageId, _) ->
-                                        MessageSentEvent(senderId, messageId)
+                                    if (dbConnection.connection != null) {
+                                        val messageSentEvents = messageWithIds.map { (messageId, _) ->
+                                            MessageSentEvent(senderId, messageId)
+                                        }
+                                        println("QQQ ($client) Saving $name")
+                                        writeSentMessagesToDb(messageSentEvents)
+                                        println("QQQ ($client) Saved $name")
                                     }
-                                    println("QQQ ($client) Saving $name")
-                                    writeSentMessagesToDb(messageSentEvents)
-                                    println("QQQ ($client) Saved $name")
+                                    futures.forEach { it.get() }
                                 }
-                                futures.forEach { it.get() }
-                                println("QQQ ($client) published $name")
+                                println("QQQ ($client) published $name $stop")
                             }
                             messagesSent += loadGenParams.batchSize
                         } catch (e: Exception) {
@@ -116,9 +121,12 @@ class Sender(private val publisherFactory: PublisherFactory,
     }
 
     fun stop() {
+        println("QQQ In stop before lock")
         stopLock.write {
+            println("QQQ In stop within lock")
             stop = true
             dbConnection.close()
+            println("QQQ Stopped")
         }
     }
 
@@ -136,7 +144,7 @@ class Sender(private val publisherFactory: PublisherFactory,
                               destinationIdentity: HoldingIdentity,
                               srcIdentity: HoldingIdentity,
                               messageSize: Int): Pair<String, AppMessage> {
-        val messageId = senderId.replace("-", "") +":" + index.incrementAndGet()
+        val messageId = senderId.replace("-", "") +":" + Thread.currentThread().id + ":" + index.get().incrementAndGet()
         val messageHeader = AuthenticatedMessageHeader(
             destinationIdentity,
             srcIdentity,
