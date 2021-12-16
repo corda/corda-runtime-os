@@ -251,10 +251,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                     is SessionState.NewSessionNeeded -> {
                         logger.trace { "No existing session with ${messageAndKey.message.header.destination.toHoldingIdentity()}. " +
                                 "Initiating a new one.." }
-                        recordsForNewSession(state).ifEmpty {
-                            logger.warn("No partitions exist")
-                            emptyList()
-                        }
+                        recordsForNewSession(state)
                     }
                     is SessionState.SessionEstablished -> {
                         logger.trace { "Session already established with ${messageAndKey.message.header.destination.toHoldingIdentity()}." +
@@ -275,6 +272,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
             records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage))
             val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
             return if(partitions.isEmpty()) {
+                logger.warn("No partitions exist")
                 emptyList()
             } else {
                 records.add(Record(Schema.SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions)))
