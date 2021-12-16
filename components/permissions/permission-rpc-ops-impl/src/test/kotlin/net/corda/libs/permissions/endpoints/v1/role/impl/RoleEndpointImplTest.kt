@@ -1,7 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.role.impl
 
 import java.time.Instant
-import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
@@ -74,25 +73,6 @@ internal class RoleEndpointImplTest {
     }
 
     @Test
-    fun `create a role throws with status 500 when permission manager is not running`() {
-        endpoint.start()
-        whenever(permissionManager.isRunning).thenReturn(false)
-
-        val e = assertThrows<HttpApiException> {
-            endpoint.createRole(createRoleType)
-        }
-        assertEquals(500, e.statusCode)
-    }
-
-    @Test
-    fun `create a role throws with status 500 when this service is not running`() {
-        val e = assertThrows<HttpApiException> {
-            endpoint.createRole(createRoleType)
-        }
-        assertEquals(500, e.statusCode)
-    }
-
-    @Test
     fun `get a role successfully`() {
         val getRoleRequestDtoCapture = argumentCaptor<GetRoleRequestDto>()
         whenever(lifecycleCoordinator.isRunning).thenReturn(true)
@@ -107,25 +87,6 @@ internal class RoleEndpointImplTest {
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
         assertEquals("roleName", responseType.roleName)
-    }
-
-    @Test
-    fun `get a role throws with status 500 when permission manager is not running`() {
-        endpoint.start()
-        whenever(permissionManager.isRunning).thenReturn(false)
-
-        val e = assertThrows<HttpApiException> {
-            endpoint.getRole("abc")
-        }
-        assertEquals(500, e.statusCode)
-    }
-
-    @Test
-    fun `get a role throws with status 500 when this service is not running`() {
-        val e = assertThrows<HttpApiException> {
-            endpoint.getRole("abc")
-        }
-        assertEquals(500, e.statusCode)
     }
 
     @Test

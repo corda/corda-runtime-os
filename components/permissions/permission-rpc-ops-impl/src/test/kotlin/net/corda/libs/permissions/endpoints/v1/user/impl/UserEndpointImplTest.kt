@@ -1,7 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
-import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
@@ -96,25 +95,6 @@ internal class UserEndpointImplTest {
     }
 
     @Test
-    fun `create a user throws with status 500 when permission manager is not running`() {
-        endpoint.start()
-        whenever(permissionManager.isRunning).thenReturn(false)
-
-        val e = assertThrows<HttpApiException> {
-            endpoint.createUser(createUserType)
-        }
-        assertEquals(500, e.statusCode)
-    }
-
-    @Test
-    fun `create a user throws with status 500 when this service is not running`() {
-        val e = assertThrows<HttpApiException> {
-            endpoint.createUser(createUserType)
-        }
-        assertEquals(500, e.statusCode)
-    }
-
-    @Test
     fun `get a user successfully`() {
         val getUserRequestDtoCapture = argumentCaptor<GetUserRequestDto>()
         whenever(lifecycleCoordinator.isRunning).thenReturn(true)
@@ -133,25 +113,6 @@ internal class UserEndpointImplTest {
         assertEquals(true, responseType.enabled)
         assertEquals(now, responseType.passwordExpiry)
         assertEquals("parentGroupId", responseType.parentGroup)
-    }
-
-    @Test
-    fun `get a user throws with status 500 when permission manager is not running`() {
-        endpoint.start()
-        whenever(permissionManager.isRunning).thenReturn(false)
-
-        val e = assertThrows<HttpApiException> {
-            endpoint.getUser("abc")
-        }
-        assertEquals(500, e.statusCode)
-    }
-
-    @Test
-    fun `get a user throws with status 500 when this service is not running`() {
-        val e = assertThrows<HttpApiException> {
-            endpoint.getUser("abc")
-        }
-        assertEquals(500, e.statusCode)
     }
 
     @Test

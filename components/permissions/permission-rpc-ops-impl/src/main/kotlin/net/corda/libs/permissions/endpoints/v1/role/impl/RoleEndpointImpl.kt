@@ -1,7 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.role.impl
 
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
@@ -39,8 +38,6 @@ class RoleEndpointImpl @Activate constructor(
     )
 
     override fun createRole(createRoleType: CreateRoleType): RoleResponseType {
-        validatePermissionManager()
-
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
@@ -52,8 +49,6 @@ class RoleEndpointImpl @Activate constructor(
     }
 
     override fun getRole(id: String): RoleResponseType {
-        validatePermissionManager()
-
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
@@ -62,17 +57,6 @@ class RoleEndpointImpl @Activate constructor(
         )
 
         return roleResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("Role", id)
-    }
-
-    @Suppress("ThrowsCount")
-    private fun validatePermissionManager() {
-        if (!isRunning) {
-            throw HttpApiException("Role Endpoint must be started.", 500)
-        }
-
-        if (!permissionServiceComponent.isRunning) {
-            throw HttpApiException("Permission manager must be running.", 500)
-        }
     }
 
     override val isRunning: Boolean
