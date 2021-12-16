@@ -67,18 +67,20 @@ class KafkaDriver @Activate constructor(
         start()
     }
 
+    private val section = "corda.db"
+    private var version = 1
+
     private val server = Javalin
         .create()
         .apply { startServer(this) }
         .get("/sendMessage") { context ->
-            val section = "corda.db"
             val configurationString = """{"timestamp": "${Instant.now()}"}"""
             val req = ConfigurationManagementRequest(
                 "joel-user",
                 Instant.now().toEpochMilli(),
                 section,
                 configurationString,
-                1
+                version++
             )
             publisher.sendRequest(req).get()
 

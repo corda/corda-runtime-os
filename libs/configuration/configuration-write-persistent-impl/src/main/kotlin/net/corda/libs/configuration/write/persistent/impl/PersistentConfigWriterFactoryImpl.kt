@@ -43,6 +43,7 @@ class PersistentConfigWriterFactoryImpl @Activate constructor(
             val rpcConfig =
                 RPCConfig(GROUP_NAME, CLIENT_NAME_RPC, TOPIC_CONFIG_MGMT_REQUEST, reqClass, respClass, instanceId)
 
+            // TODO - Joel - Don't do anything blocking in processor.
             val processor = PersistentConfigWriterProcessor(config, publisher, dbUtils)
 
             subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)

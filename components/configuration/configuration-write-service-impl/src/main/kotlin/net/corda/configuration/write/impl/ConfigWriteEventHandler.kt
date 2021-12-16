@@ -32,6 +32,8 @@ class ConfigWriteEventHandler(private val configWriterFactory: PersistentConfigW
                 }
 
                 try {
+                    // TODO - Joel - I should be pulling this config out of the DB.
+                    // TODO - Joel - Checking diff with stuff from config read at startup.
                     configWriter = configWriterFactory.create(event.config, event.instanceId).apply { start() }
                     coordinator.updateStatus(LifecycleStatus.UP)
                 } catch (e: Exception) {
