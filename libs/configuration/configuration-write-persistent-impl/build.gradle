@@ -16,6 +16,7 @@ dependencies {
     implementation project(':libs:db:db-admin-impl')
     implementation project(':libs:db:db-core')
     implementation project(':libs:db:db-orm')
+    implementation project(':libs:http-rpc:json-serialization')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
     implementation "com.typesafe:config:$typeSafeConfigVersion"

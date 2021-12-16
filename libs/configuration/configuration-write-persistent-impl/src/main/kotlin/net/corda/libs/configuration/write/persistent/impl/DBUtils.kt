@@ -62,6 +62,15 @@ class DBUtils @Activate constructor(
         }
     }
 
+    /**
+     * Connects to the cluster database using the [config] and reads the [ConfigEntity] for the specified [section].
+     * Returns null if no config exists for the specified section.
+     *
+     * @throws IllegalStateException If the entity manager cannot be created.
+     */
+    fun readConfigEntity(config: SmartConfig, section: String): ConfigEntity? =
+        createEntityManager(config).find(ConfigEntity::class.java, section)
+
     /** Connects to the cluster database using the [config] and creates an [EntityManager]. */
     private fun createEntityManager(config: SmartConfig): EntityManager {
         val dataSource = createDataSource(config)

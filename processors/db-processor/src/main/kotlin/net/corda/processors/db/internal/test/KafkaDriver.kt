@@ -1,7 +1,9 @@
 package net.corda.processors.db.internal.test
 
+import com.google.gson.Gson
 import com.typesafe.config.ConfigFactory
 import io.javalin.Javalin
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfig
@@ -61,28 +63,39 @@ class KafkaDriver @Activate constructor(
     private val reader = configReaderFactory.createReader(kafkaConfig).apply {
         logger.info("JJJ starting reader.")
         registerCallback { _, snapshot ->
-            logger.info("JJJ in snapshot ${snapshot.keys} ${snapshot.values}")
             currentConfig = snapshot
         }
         start()
     }
 
     private val section = "corda.db"
-    private var version = 1
 
     private val server = Javalin
         .create()
         .apply { startServer(this) }
         .get("/sendMessage") { context ->
-            val configurationString = """{"timestamp": "${Instant.now()}"}"""
             val req = ConfigurationManagementRequest(
                 "joel-user",
                 Instant.now().toEpochMilli(),
                 section,
-                configurationString,
-                version++
+                """{"timestamp": "${Instant.now()}"}""",
+                1
             )
-            publisher.sendRequest(req).get()
+
+            val response = publisher.sendRequest(req).get()
+            if (response.response is ExceptionEnvelope) {
+                val currentConfig = Gson().fromJson(response.currentConfiguration, Map::class.java)
+                val currentVersion = (currentConfig["version"] as Double).toInt()
+                logger.info("---***&&& - JJJ sending again with updated version $currentVersion -***&&& ---")
+                val newRequest = ConfigurationManagementRequest(
+                    "joel-user",
+                    Instant.now().toEpochMilli(),
+                    section,
+                    """{"timestamp": "${Instant.now()}"}""",
+                    currentVersion
+                )
+                publisher.sendRequest(newRequest).get()
+            }
 
             logger.info("JJJ - Existing entries: $currentConfig")
             val readBackTimestamp = currentConfig[section]?.getString("timestamp")

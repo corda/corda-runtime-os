@@ -1,10 +1,11 @@
 package net.corda.libs.configuration.write.persistent.impl
 
+import net.corda.common.json.serialization.formatAsJson
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.write.persistent.PersistentConfigWriterException
 import net.corda.libs.configuration.write.persistent.TOPIC_CONFIG
 import net.corda.libs.configuration.write.persistent.TOPIC_CONFIG_MGMT_REQUEST
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -59,10 +60,14 @@ internal class PersistentConfigWriterProcessor(
         return try {
             dbUtils.writeEntity(config, setOf(configEntity))
             true
+
         } catch (e: Exception) {
             val errMsg = "Entity $configEntity couldn't be written to the database."
             logger.debug("$errMsg Cause: $e.")
-            respFuture.completeExceptionally(PersistentConfigWriterException(errMsg, e))
+
+            val currentConfigJson = dbUtils.readConfigEntity(config, request.section)?.formatAsJson() ?: EMPTY_JSON
+            val exceptionEnvelope = ExceptionEnvelope(e.javaClass.name, errMsg)
+            respFuture.complete(ConfigurationManagementResponse(exceptionEnvelope, currentConfigJson))
             false
         }
     }
@@ -79,20 +84,20 @@ internal class PersistentConfigWriterProcessor(
     ) {
         val record =
             Record(TOPIC_CONFIG, request.section, Configuration(request.configuration, request.version.toString()))
+        val currentConfigJson = ConfigEntity(request.section, request.configuration, request.version).formatAsJson()
 
         val future = publisher.publish(listOf(record)).first()
-
         try {
             future.get()
-            respFuture.complete(ConfigurationManagementResponse(true))
+            respFuture.complete(ConfigurationManagementResponse(true, currentConfigJson))
+
         } catch (e: Exception) {
             // TODO - Joel - Correct behaviour is to keep retrying publication, e.g. background reconciliation, but being careful not to overwrite new written config. Raise separate JIRA.
             val errMsg = "Record $record was written to the database, but couldn't be published."
             logger.debug("$errMsg Cause: $e.")
-            respFuture.completeExceptionally(
-                // TODO - Joel - Return current version. Extend `ExceptionEnvelope` with new fields.
-                PersistentConfigWriterException(errMsg, e)
-            )
+
+            val exceptionEnvelope = ExceptionEnvelope(e.javaClass.name, errMsg)
+            respFuture.complete(ConfigurationManagementResponse(exceptionEnvelope, currentConfigJson))
         }
     }
 }
