@@ -16,7 +16,6 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.service.cm.ConfigurationAdmin
-import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
@@ -37,9 +36,6 @@ class CustomCryptoDigestTests {
 
         @InjectService
         lateinit var connector: RuntimeRegistration
-
-        @InjectService
-        lateinit var scr: ServiceComponentRuntime
 
         lateinit var service: IntegrationTestService
 
@@ -72,9 +68,7 @@ class CustomCryptoDigestTests {
      */
     @AfterEach
     private fun teardown() {
-        sandboxGroupsPerTest.forEach {
-            sandboxCreationService.unloadSandboxGroup(it)
-        }
+        sandboxGroupsPerTest.forEach(sandboxCreationService::unloadSandboxGroup)
         sandboxGroupsPerTest.clear()
         for (cpi in cpis) {
             cpi.close()
@@ -89,7 +83,7 @@ class CustomCryptoDigestTests {
         cpis.add(cpi)
 
         //  Instantiate -  load the cpi (its cpks) into the process, and allow OSGi to wire up things.
-        val sandboxGroup = service.createSandboxGroupFor(cpks)
+        val sandboxGroup = service.createSandboxGroupFor(cpks.toSet())
 
         // "preExecute" or "postInstantiate" "configure" up various per-CPI services.
         service.registerCrypto(sandboxGroup)
