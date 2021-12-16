@@ -52,6 +52,15 @@ class CreateRoleE2eTest {
             assertThatThrownBy { proxy.createRole(CreateRoleType(name, null)) }
                 .isInstanceOf(InternalErrorException::class.java)
                 .hasMessageContaining("Failed to create new role: $name as they already exist")
+
+            val groupName = "non-existing-group"
+            val name2 = testToolkit.uniqueName
+
+            // Try to create a role with the same name again and verify that it fails
+            assertThatThrownBy { proxy.createRole(CreateRoleType(name2, groupName)) }
+                .isInstanceOf(InternalErrorException::class.java)
+                .hasMessageContaining("Failed to create new Role: $name2 as the specified group visibility: $groupName does not exist.")
+
         }
     }
 }
