@@ -6,7 +6,8 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import java.util.concurrent.CompletableFuture
 
 internal typealias ConfigManagementResponseFuture = CompletableFuture<ConfigurationManagementResponse>
-internal typealias ConfigManagementRPCSubscription = RPCSubscription<ConfigurationManagementRequest, ConfigurationManagementResponse>
+internal typealias ConfigManagementRPCSubscription =
+        RPCSubscription<ConfigurationManagementRequest, ConfigurationManagementResponse>
 
 internal const val DB_TABLE_CONFIG = "config"
 internal const val GROUP_NAME = "config.management"

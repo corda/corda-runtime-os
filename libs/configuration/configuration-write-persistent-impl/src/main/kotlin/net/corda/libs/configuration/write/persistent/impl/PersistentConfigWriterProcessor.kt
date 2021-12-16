@@ -20,8 +20,8 @@ import java.util.concurrent.CompletableFuture
  * configuration to the cluster database and publishes the updated configuration to [TOPIC_CONFIG].
  */
 internal class PersistentConfigWriterProcessor(
-    private val config: SmartConfig,
     private val publisher: Publisher,
+    private val config: SmartConfig,
     private val dbUtils: DBUtils
 ) : RPCResponderProcessor<ConfigurationManagementRequest, ConfigurationManagementResponse> {
 
