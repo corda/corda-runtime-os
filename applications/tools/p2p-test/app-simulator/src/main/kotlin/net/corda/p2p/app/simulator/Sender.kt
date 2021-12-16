@@ -76,8 +76,8 @@ class Sender(private val publisherFactory: PublisherFactory,
                             }
                             stopLock.read {
                                 println("QQQ In send loop ($client), stop - $stop ")
+                                val name = "${records.firstOrNull()?.key}->${records.lastOrNull()?.key}"
                                 if(!stop) {
-                                    val name = "${records.firstOrNull()?.key}->${records.lastOrNull()?.key}"
                                     println("QQQ ($client) Publishing $name")
                                     val futures = publisher.publish(records)
 
