@@ -86,8 +86,7 @@ internal class PersistentConfigWriterProcessor(
             future.get()
             respFuture.complete(ConfigurationManagementResponse(true))
         } catch (e: Exception) {
-            // TODO - Joel - Correct behaviour is to keep retrying publication, e.g. background reconciliation.
-            //  But being careful not to overwrite new written config.
+            // TODO - Joel - Correct behaviour is to keep retrying publication, e.g. background reconciliation, but being careful not to overwrite new written config. Raise separate JIRA.
             val errMsg = "Record $record was written to the database, but couldn't be published."
             logger.debug("$errMsg Cause: $e.")
             respFuture.completeExceptionally(

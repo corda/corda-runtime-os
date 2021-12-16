@@ -36,8 +36,7 @@ class ConfigWriteEventHandler(
                 dbUtils.checkClusterDatabaseConnection(event.config)
 
                 try {
-                    // TODO - Joel - I should be pulling this config out of the DB.
-                    // TODO - Joel - Checking diff with stuff from config read at startup.
+                    // TODO - Joel - I should be pulling this config out of the DB, and check diff with stuff from config read at startup. Raise separate JIRA.
                     configWriter = configWriterFactory.create(event.config, event.instanceId).apply { start() }
                 } catch (e: Exception) {
                     coordinator.updateStatus(LifecycleStatus.ERROR)

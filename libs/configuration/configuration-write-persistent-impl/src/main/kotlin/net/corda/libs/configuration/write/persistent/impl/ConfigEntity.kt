@@ -21,7 +21,7 @@ data class ConfigEntity(
     val section: String,
     @Column
     val configuration: String,
-    @Version
+//    @Version // TODO - Joel - Reenable.
     @Column
     val version: Int
 )
