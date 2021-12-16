@@ -83,17 +83,6 @@ dependencies {
     e2eTestImplementation project(":testing:test-utilities")
 }
 
-tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
-    description "Builds the docker image for the deployable OSGi application"
-
-    if (project.hasProperty('jibRemotePublish')) {
-        remotePublish = jibRemotePublish.toBoolean()
-    }
-
-    if (project.hasProperty('releaseCandidate')) {
-        releaseCandidate = releaseCandidate.toBoolean()
-    }
-}
 
 tasks.register('e2eTest', Test) {
     description = "Runs E2E tests."
