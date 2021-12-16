@@ -5,11 +5,6 @@
   "doc": "Internal over-the-wire request to get HSM alias.",
   "fields": [
     {
-      "name": "category",
-      "type": "string",
-      "doc": "Category like TLS, LEDGER, FRESH_KEY, etc."
-    },
-    {
       "name": "alias",
       "type": "string",
       "doc": "Tenant provided alias."

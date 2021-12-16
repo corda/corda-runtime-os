@@ -10,14 +10,14 @@
       "doc": "Tenant id."
     },
     {
-      "name": "hsmConfigId",
-      "type": "string",
-      "doc": "HSM configuration id."
-    },
-    {
       "name": "tenantAlias",
       "type": "string",
       "doc": "Alias which is assigned by the tenant."
+    },
+    {
+      "name": "hsmConfigId",
+      "type": "string",
+      "doc": "HSM configuration id."
     },
     {
       "name": "hsmAlias",
