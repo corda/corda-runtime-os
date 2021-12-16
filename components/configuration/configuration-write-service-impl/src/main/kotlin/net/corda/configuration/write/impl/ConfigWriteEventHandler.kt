@@ -9,10 +9,12 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.v5.base.util.contextLogger
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigWriteServiceImpl]. */
-class ConfigWriteEventHandler(private val configWriterFactory: PersistentConfigWriterFactory) : LifecycleEventHandler {
+class ConfigWriteEventHandler(
+    private val configWriterFactory: PersistentConfigWriterFactory,
+    private val dbUtils: DBUtils
+) : LifecycleEventHandler {
     private var configWriter: PersistentConfigWriter? = null
 
     /**
@@ -31,15 +33,18 @@ class ConfigWriteEventHandler(private val configWriterFactory: PersistentConfigW
                     throw ConfigWriteServiceException("An attempt was made to subscribe twice.")
                 }
 
+                dbUtils.checkClusterDatabaseConnection(event.config)
+
                 try {
                     // TODO - Joel - I should be pulling this config out of the DB.
                     // TODO - Joel - Checking diff with stuff from config read at startup.
                     configWriter = configWriterFactory.create(event.config, event.instanceId).apply { start() }
-                    coordinator.updateStatus(LifecycleStatus.UP)
                 } catch (e: Exception) {
                     coordinator.updateStatus(LifecycleStatus.ERROR)
                     throw ConfigWriteServiceException("Subscribing to config management requests failed. Cause: $e.")
                 }
+
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
 
             is StopEvent -> {

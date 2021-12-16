@@ -27,8 +27,6 @@ class PersistentConfigWriterFactoryImpl @Activate constructor(
 ) : PersistentConfigWriterFactory {
 
     override fun create(config: SmartConfig, instanceId: Int): PersistentConfigWriter {
-        // TODO - Joel - Hoist this check into the service.
-        dbUtils.checkClusterDatabaseConnection(config)
         // This is temporary. In the future, migrations will be applied by a different codepath.
         dbUtils.migrateClusterDatabase(config)
 

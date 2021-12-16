@@ -6,13 +6,11 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.core.HikariDataSourceFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.write.persistent.PersistentConfigWriterException
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.sql.SQLException
 import javax.persistence.EntityManager
 import javax.persistence.RollbackException
 import javax.sql.DataSource
@@ -27,20 +25,6 @@ class DBUtils @Activate constructor(
 ) {
     private val dataSourceFactory = HikariDataSourceFactory()
     private val managedEntities = setOf(ConfigEntity::class.java)
-
-    /**
-     * Checks that it's possible to connect to the cluster database using the [config].
-     *
-     * @throws PersistentConfigWriterException If the cluster database cannot be connected to.
-     */
-    fun checkClusterDatabaseConnection(config: SmartConfig) {
-        val dataSource = createDataSource(config)
-        try {
-            dataSource.connection.close()
-        } catch (e: SQLException) {
-            throw PersistentConfigWriterException("Could not connect to cluster database.", e)
-        }
-    }
 
     /**
      * Connects to the cluster database using the [config], and applies the Liquibase schema migrations for each of the

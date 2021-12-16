@@ -52,8 +52,7 @@ internal class PersistentConfigWriterProcessor(
      */
     private fun publishConfigToDB(
         request: ConfigurationManagementRequest,
-        // TODO - Joel - Use my alias for this.
-        respFuture: CompletableFuture<ConfigurationManagementResponse>
+        respFuture: ConfigManagementResponseFuture
     ): Boolean {
         val configEntity = ConfigEntity(request.section, request.configuration, request.version)
 
@@ -61,10 +60,9 @@ internal class PersistentConfigWriterProcessor(
             dbUtils.writeEntity(config, setOf(configEntity))
             true
         } catch (e: Exception) {
-            // TODO - Joel - Log error.
-            respFuture.completeExceptionally(
-                PersistentConfigWriterException("Config $configEntity couldn't be written to the database.", e)
-            )
+            val errMsg = "Entity $configEntity couldn't be written to the database."
+            logger.debug("$errMsg Cause: $e.")
+            respFuture.completeExceptionally(PersistentConfigWriterException(errMsg, e))
             false
         }
     }
@@ -82,29 +80,19 @@ internal class PersistentConfigWriterProcessor(
         val record =
             Record(TOPIC_CONFIG, request.section, Configuration(request.configuration, request.version.toString()))
 
-        val failedFutures = publisher.publish(listOf(record)).mapNotNull { future ->
-            try {
-                future.get()
-                null
-            } catch (e: Exception) {
-                e
-            }
-        }
+        val future = publisher.publish(listOf(record)).first()
 
-        // TODO - Joel - Correct behaviour is to keep retrying publication, e.g. background reconciliation.
-        //  But being careful not to overwrite new written config.
-
-        if (failedFutures.isEmpty()) {
+        try {
+            future.get()
             respFuture.complete(ConfigurationManagementResponse(true))
-        } else {
-            // TODO - Joel - Report all failures.
-            val cause = failedFutures[0]
-            logger.debug("Record $record was written to the database, but couldn't be published. Cause: $cause.")
+        } catch (e: Exception) {
+            // TODO - Joel - Correct behaviour is to keep retrying publication, e.g. background reconciliation.
+            //  But being careful not to overwrite new written config.
+            val errMsg = "Record $record was written to the database, but couldn't be published."
+            logger.debug("$errMsg Cause: $e.")
             respFuture.completeExceptionally(
                 // TODO - Joel - Return current version. Extend `ExceptionEnvelope` with new fields.
-                PersistentConfigWriterException(
-                    "Record $record was written to the database, but couldn't be published.", cause
-                )
+                PersistentConfigWriterException(errMsg, e)
             )
         }
     }
