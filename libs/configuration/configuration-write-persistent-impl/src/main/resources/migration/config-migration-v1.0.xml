@@ -8,10 +8,16 @@
             <column name="section" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="configuration" type="TEXT">
+            <column name="config" type="TEXT">
                 <constraints nullable="false"/>
             </column>
             <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_actor" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
         </createTable>

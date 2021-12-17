@@ -74,11 +74,13 @@ class KafkaDriver @Activate constructor(
         .create()
         .apply { startServer(this) }
         .get("/sendMessage") { context ->
+            val config = """{"timestamp": "${Instant.now()}"}"""
+
             val req = ConfigurationManagementRequest(
                 "joel-user",
                 Instant.now().toEpochMilli(),
                 section,
-                """{"timestamp": "${Instant.now()}"}""",
+                config,
                 1
             )
 
@@ -91,7 +93,7 @@ class KafkaDriver @Activate constructor(
                     "joel-user",
                     Instant.now().toEpochMilli(),
                     section,
-                    """{"timestamp": "${Instant.now()}"}""",
+                    config,
                     currentVersion
                 )
                 publisher.sendRequest(newRequest).get()

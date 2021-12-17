@@ -26,6 +26,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
 
     runtimeOnly project(':libs:db:db-orm-impl')
+    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
 }
 
