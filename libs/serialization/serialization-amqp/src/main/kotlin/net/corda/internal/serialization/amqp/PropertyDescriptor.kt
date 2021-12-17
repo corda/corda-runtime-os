@@ -69,7 +69,7 @@ private fun Class<*>.boxesOrIsAssignableFrom(other: Class<*>) =
 private fun Type.isSupertypeOf(that: Type) = TypeToken.of(this).isSupertypeOf(that)
 
 // match an uppercase letter that also has a corresponding lower case equivalent
-private val propertyMethodRegex = Regex("(?<type>get|set|is)(?<var>\\p{Lu}.*)")
+private val propertyMethodRegex get() = Regex("(?<type>get|set|is)(?<var>\\p{Lu}.*)")
 
 /**
  * Collate the properties of a class and match them with their getter and setter
