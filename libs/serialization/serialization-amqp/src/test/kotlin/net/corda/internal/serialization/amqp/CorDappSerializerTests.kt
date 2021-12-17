@@ -18,11 +18,14 @@ import kotlin.test.assertEquals
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 class CorDappSerializerTests {
+
+    val serializerFactoryBuilder = SerializerFactoryBuilder()
+
     data class NeedsProxy(val a: String)
 
     private fun proxyFactory(
             serializers: List<SerializationCustomSerializer<*, *>>
-    ) = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup()).apply {
+    ) = serializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup()).apply {
         serializers.forEach {
             registerExternal(it, this)
         }
@@ -97,7 +100,7 @@ class CorDappSerializerTests {
 	fun testWithWhitelistNotAllowed() {
         data class A(val a: Int, val b: NeedsProxy)
 
-        val factory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        val factory = serializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
         factory.registerExternal(NeedsProxyProxySerializer(), factory)
 
         val tv1 = 100

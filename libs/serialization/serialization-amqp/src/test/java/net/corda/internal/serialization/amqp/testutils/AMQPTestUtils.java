@@ -9,7 +9,7 @@ import java.util.Objects;
 public class AMQPTestUtils {
 
     public static SerializerFactory testDefaultFactory() {
-        return SerializerFactoryBuilder.build(
+        return new SerializerFactoryBuilder().build(
                 (SandboxGroup) Objects.requireNonNull(TestSerializationContext.testSerializationContext.getSandboxGroup()));
     }
 }

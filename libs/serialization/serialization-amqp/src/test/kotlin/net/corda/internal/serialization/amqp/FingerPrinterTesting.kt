@@ -50,7 +50,7 @@ class FingerPrinterTestingTests {
         @CordaSerializable
         data class C(val a: Int, val b: Long)
 
-        val factory = SerializerFactoryBuilder.build(
+        val factory = SerializerFactoryBuilder().build(
                 testSerializationContext.currentSandboxGroup(),
                 overrideFingerPrinter = FingerPrinterTesting())
 

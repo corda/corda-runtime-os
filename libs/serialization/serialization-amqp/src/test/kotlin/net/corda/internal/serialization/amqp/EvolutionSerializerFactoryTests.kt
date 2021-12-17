@@ -16,13 +16,15 @@ import kotlin.test.assertTrue
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 class EvolutionSerializerFactoryTests {
 
-    private val nonStrictFactory = SerializerFactoryBuilder.build(
+    private val serializerFactoryBuilder = SerializerFactoryBuilder()
+
+    private val nonStrictFactory = serializerFactoryBuilder.build(
             testSerializationContext.currentSandboxGroup(),
             descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry(),
             mustPreserveDataWhenEvolving = false
     )
 
-    private val strictFactory = SerializerFactoryBuilder.build(
+    private val strictFactory = serializerFactoryBuilder.build(
             testSerializationContext.currentSandboxGroup(),
             descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry(),
             mustPreserveDataWhenEvolving = true

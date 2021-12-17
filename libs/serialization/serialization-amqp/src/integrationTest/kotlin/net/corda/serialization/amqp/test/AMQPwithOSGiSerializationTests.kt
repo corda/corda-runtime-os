@@ -112,7 +112,7 @@ class AMQPwithOSGiSerializationTests {
     @JvmOverloads
     fun testDefaultFactoryNoEvolution(sandboxGroup: SandboxGroup, descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
                                               DefaultDescriptorBasedSerializerRegistry()): SerializerFactory =
-            SerializerFactoryBuilder.build(
+            SerializerFactoryBuilder().build(
                     sandboxGroup,
                     descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
                     allowEvolution = false)

@@ -12,16 +12,37 @@ import net.corda.internal.serialization.model.TypeModellingFingerPrinter
 import net.corda.sandbox.SandboxGroup
 import java.io.NotSerializableException
 import java.lang.reflect.Method
-import java.util.Collections.unmodifiableMap
 
-object SerializerFactoryBuilder {
-    private const val FRAMEWORK_UTIL_CLASS_NAME = "org.osgi.framework.FrameworkUtil"
-    private const val BUNDLE_CONTEXT_CLASS_NAME = "org.osgi.framework.BundleContext"
-    private const val BUNDLE_CLASS_NAME = "org.osgi.framework.Bundle"
+class SerializerFactoryBuilder {
 
     private val getBundle: Method?
     private val getBundleContext: Method?
     private val getBundles: Method?
+
+    companion object {
+        private val FRAMEWORK_UTIL_CLASS_NAME get() = "org.osgi.framework.FrameworkUtil"
+        private val BUNDLE_CONTEXT_CLASS_NAME get() = "org.osgi.framework.BundleContext"
+        private val BUNDLE_CLASS_NAME get() = "org.osgi.framework.Bundle"
+
+        /**
+         * The standard mapping of Java object types to Java primitive types.
+         */
+        @Suppress("unchecked_cast")
+        private val javaPrimitiveTypes: Map<Class<*>, Class<*>>
+            get() = listOf(
+                Boolean::class,
+                Byte::class,
+                Char::class,
+                Double::class,
+                Float::class,
+                Int::class,
+                Long::class,
+                Short::class,
+                Void::class
+            ).associate { klazz ->
+                klazz.javaObjectType to klazz.javaPrimitiveType
+            } as Map<Class<*>, Class<*>>
+    }
 
     init {
         var getBundleMethod: Method?
@@ -70,25 +91,6 @@ object SerializerFactoryBuilder {
         return (bundles as Array<Any>).toList()
     }
 
-    /**
-     * The standard mapping of Java object types to Java primitive types.
-     */
-    @Suppress("unchecked_cast")
-    private val javaPrimitiveTypes: Map<Class<*>, Class<*>> = unmodifiableMap(listOf(
-        Boolean::class,
-        Byte::class,
-        Char::class,
-        Double::class,
-        Float::class,
-        Int::class,
-        Long::class,
-        Short::class,
-        Void::class
-    ).associate {
-        klazz -> klazz.javaObjectType to klazz.javaPrimitiveType
-    }) as Map<Class<*>, Class<*>>
-
-    @JvmStatic
     fun build(sandboxGroup: SandboxGroup): SerializerFactory {
         return makeFactory(
             sandboxGroup,
@@ -101,7 +103,6 @@ object SerializerFactoryBuilder {
     }
 
     @Suppress("LongParameterList")
-    @JvmStatic
     fun build(
             sandboxGroup: SandboxGroup,
             descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =

@@ -15,7 +15,7 @@ fun createSerializerFactoryFactory(): SerializerFactoryFactory = SerializerFacto
 
 open class SerializerFactoryFactoryImpl : SerializerFactoryFactory {
     override fun make(context: SerializationContext): SerializerFactory {
-        return SerializerFactoryBuilder.build(
+        return SerializerFactoryBuilder().build(
             context.currentSandboxGroup(),
             mustPreserveDataWhenEvolving = context.preventDataLoss
         )

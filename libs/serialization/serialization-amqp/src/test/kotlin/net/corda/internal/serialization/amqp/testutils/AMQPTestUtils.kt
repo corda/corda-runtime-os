@@ -46,17 +46,17 @@ class TestDescriptorBasedSerializerRegistry : DescriptorBasedSerializerRegistry 
 
 @JvmOverloads
 fun testDefaultFactory(
-    descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
-        DefaultDescriptorBasedSerializerRegistry()
+    descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry(),
+    serializerFactoryBuilder: SerializerFactoryBuilder = SerializerFactoryBuilder()
 ) =
-    SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup(), descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry)
+    serializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup(), descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry)
 
 @JvmOverloads
 fun testDefaultFactoryNoEvolution(
-    descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
-        DefaultDescriptorBasedSerializerRegistry()
+    descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry(),
+    serializerFactoryBuilder: SerializerFactoryBuilder = SerializerFactoryBuilder()
 ): SerializerFactory =
-    SerializerFactoryBuilder.build(
+    serializerFactoryBuilder.build(
         testSerializationContext.currentSandboxGroup(),
         descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
         allowEvolution = false

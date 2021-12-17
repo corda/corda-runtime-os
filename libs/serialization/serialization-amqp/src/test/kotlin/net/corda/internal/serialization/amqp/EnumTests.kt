@@ -220,7 +220,7 @@ class EnumTests {
     fun enumNotWhitelistedFails() {
         data class C(val c: Bras)
 
-        val factory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        val factory = SerializerFactoryBuilder().build(testSerializationContext.currentSandboxGroup())
 
         Assertions.assertThatThrownBy {
             TestSerializationOutput(VERBOSE, factory).serialize(C(Bras.UNDERWIRE))
@@ -231,7 +231,7 @@ class EnumTests {
     fun enumAnnotated() {
         @CordaSerializable data class C(val c: AnnotatedBras)
 
-        val factory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        val factory = SerializerFactoryBuilder().build(testSerializationContext.currentSandboxGroup())
 
         // if it all works, this won't explode
         TestSerializationOutput(VERBOSE, factory).serialize(C(AnnotatedBras.UNDERWIRE))
@@ -240,10 +240,10 @@ class EnumTests {
     @Test
     fun deserializeCustomisedEnum() {
         val input = CustomEnumWrapper(CustomEnum.ONE)
-        val factory1 = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        val factory1 = SerializerFactoryBuilder().build(testSerializationContext.currentSandboxGroup())
         val serialized = TestSerializationOutput(VERBOSE, factory1).serialize(input)
 
-        val factory2 = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        val factory2 = SerializerFactoryBuilder().build(testSerializationContext.currentSandboxGroup())
         val output = DeserializationInput(factory2).deserialize(serialized)
 
         assertEquals(input, output)
