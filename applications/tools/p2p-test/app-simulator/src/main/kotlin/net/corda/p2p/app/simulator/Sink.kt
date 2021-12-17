@@ -17,6 +17,7 @@ import net.corda.p2p.app.simulator.AppSimulator.Companion.PRODUCER_CLIENT_ID
 import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 import java.sql.Timestamp
+import kotlin.random.Random
 
 class Sink(private val subscriptionFactory: SubscriptionFactory,
            dbParams: DBParams?,
@@ -36,7 +37,7 @@ class Sink(private val subscriptionFactory: SubscriptionFactory,
     private val subscriptions = mutableListOf<Subscription<*, *>>()
 
     fun start() {
-        val instanceId = System.getenv("INSTANCE_ID")?:""
+        val instanceId = System.getenv("INSTANCE_ID") ?: Random.nextInt().toString()
         (1..clients).forEach { client ->
             val subscriptionConfig = SubscriptionConfig("app-simulator-sink", AppSimulator.DELIVERED_MSG_TOPIC, client)
             val kafkaConfig = SmartConfigImpl.empty()
