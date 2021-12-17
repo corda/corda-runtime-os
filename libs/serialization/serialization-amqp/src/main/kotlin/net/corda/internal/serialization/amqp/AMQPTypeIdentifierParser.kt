@@ -25,8 +25,10 @@ class IllegalTypeNameParserStateException(message: String): NotSerializableExcep
  */
 object AMQPTypeIdentifierParser {
 
-    internal const val MAX_TYPE_PARAM_DEPTH = 32
-    private const val MAX_ARRAY_DEPTH = 32
+    internal val MAX_TYPE_PARAM_DEPTH
+        get() = 32
+    private val MAX_ARRAY_DEPTH
+        get() = 32
 
     /**
      * Given a string representing a serialized AMQP type, construct a TypeIdentifier for that string.
@@ -171,7 +173,8 @@ object AMQPTypeIdentifierParser {
         }
     }
 
-    private val simplified = mapOf(
+    private val simplified
+        get() = mapOf(
             "string" to String::class,
             "boolean" to Boolean::class,
             "byte" to Byte::class,
