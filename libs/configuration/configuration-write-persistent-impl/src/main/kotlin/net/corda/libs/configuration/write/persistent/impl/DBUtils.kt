@@ -5,13 +5,14 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.core.HikariDataSourceFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.write.persistent.impl.entities.ConfigAuditEntity
+import net.corda.libs.configuration.write.persistent.impl.entities.ConfigEntity
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import javax.persistence.EntityManager
-import javax.persistence.RollbackException
 import javax.sql.DataSource
 
 /** Encapsulates database-related functionality, so that it can be stubbed during tests. */
@@ -23,7 +24,7 @@ class DBUtils @Activate constructor(
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory
 ) {
     private val dataSourceFactory = HikariDataSourceFactory()
-    private val managedEntities = setOf(ConfigEntity::class.java)
+    private val managedEntities = setOf(ConfigEntity::class.java, ConfigAuditEntity::class.java)
 
     /**
      * Connects to the cluster database using the [config], and applies the Liquibase schema migrations for each of the
@@ -40,39 +41,8 @@ class DBUtils @Activate constructor(
         }
     }
 
-    /**
-     * Connects to the cluster database using the [config] and writes all the [entities] to the cluster database.
-     *
-     * Each of the [entities] must be an instance of a class annotated with `@Entity`.
-     *
-     * @throws RollbackException If the database transaction cannot be committed.
-     * @throws IllegalStateException/IllegalArgumentException/TransactionRequiredException If writing the entities
-     *  fails for any other reason.
-     */
-    fun writeEntity(config: SmartConfig, entities: Iterable<Any>) {
-        val entityManager = createEntityManager(config)
-
-        try {
-            entityManager.transaction.begin()
-            entities.forEach(entityManager::merge)
-            entityManager.transaction.commit()
-
-        } finally {
-            entityManager.close()
-        }
-    }
-
-    /**
-     * Connects to the cluster database using the [config] and reads the [ConfigEntity] for the specified [section].
-     * Returns null if no config exists for the specified section.
-     *
-     * @throws IllegalStateException If the entity manager cannot be created.
-     */
-    fun readConfigEntity(config: SmartConfig, section: String): ConfigEntity? =
-        createEntityManager(config).find(ConfigEntity::class.java, section)
-
     /** Connects to the cluster database using the [config] and creates an [EntityManager]. */
-    private fun createEntityManager(config: SmartConfig): EntityManager {
+    fun createEntityManager(config: SmartConfig): EntityManager {
         val dataSource = createDataSource(config)
         return entityManagerFactoryFactory.create(
             PERSISTENCE_UNIT_NAME, managedEntities.toList(), DbEntityManagerConfiguration(dataSource)

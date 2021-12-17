@@ -7,12 +7,15 @@ import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.persistent.TOPIC_CONFIG
 import net.corda.libs.configuration.write.persistent.TOPIC_CONFIG_MGMT_REQUEST
+import net.corda.libs.configuration.write.persistent.impl.entities.ConfigAuditEntity
+import net.corda.libs.configuration.write.persistent.impl.entities.ConfigEntity
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
+import javax.persistence.RollbackException
 
 /**
  * An RPC responder processor that handles configuration management requests.
@@ -38,6 +41,7 @@ internal class PersistentConfigWriterProcessor(
      * If both steps succeed, [respFuture] is completed to indicate success. Otherwise, it is completed exceptionally.
      */
     override fun onNext(request: ConfigurationManagementRequest, respFuture: ConfigManagementResponseFuture) {
+        logger.info("JJJ in onNext")
         if (publishConfigToDB(request, respFuture)) {
             publishConfigToKafka(request, respFuture)
         }
@@ -56,20 +60,22 @@ internal class PersistentConfigWriterProcessor(
         respFuture: ConfigManagementResponseFuture
     ): Boolean {
         // TODO - Joel - Get DB to generate timestamp.
-        val newConfig = ConfigEntity(req.section, req.configuration, req.version, Instant.now(), req.userId)
+        val now = Instant.now()
+        val newConfig = ConfigEntity(req.section, req.version, req.configuration, now, req.updateActor)
+        val newConfigAudit = ConfigAuditEntity(req.section, req.version, req.configuration, now, req.updateActor)
 
         return try {
-            dbUtils.writeEntity(config, setOf(newConfig))
+            writeEntities(newConfig, newConfigAudit)
             true
 
         } catch (e: Exception) {
             val errMsg = "Entity $newConfig couldn't be written to the database."
             logger.debug("$errMsg Cause: $e.")
 
-            val currentConfig = dbUtils.readConfigEntity(config, req.section)
+            val currentConfig = readConfigEntity(req.section)
             val exceptionEnvelope = ExceptionEnvelope(e.javaClass.name, errMsg)
             respFuture.complete(
-                ConfigurationManagementResponse(exceptionEnvelope, currentConfig?.configuration, currentConfig?.version)
+                ConfigurationManagementResponse(exceptionEnvelope, currentConfig?.version, currentConfig?.configuration)
             )
             false
         }
@@ -90,7 +96,7 @@ internal class PersistentConfigWriterProcessor(
 
         try {
             future.get()
-            respFuture.complete(ConfigurationManagementResponse(true, req.configuration, req.version))
+            respFuture.complete(ConfigurationManagementResponse(true, req.version, req.configuration))
 
         } catch (e: Exception) {
             // TODO - Joel - Correct behaviour is to keep retrying publication, e.g. background reconciliation, but being careful not to overwrite new written config. Raise separate JIRA.
@@ -98,8 +104,44 @@ internal class PersistentConfigWriterProcessor(
             logger.debug("$errMsg Cause: $e.")
 
             val exceptionEnvelope = ExceptionEnvelope(e.javaClass.name, errMsg)
-            val response = ConfigurationManagementResponse(exceptionEnvelope, req.configuration, req.version)
+            val response = ConfigurationManagementResponse(exceptionEnvelope, req.version, req.configuration)
             respFuture.complete(response)
+        }
+    }
+
+    /**
+     * Writes [newConfig] and [newConfigAudit] to the cluster database in a single transaction.
+     *
+     * @throws RollbackException If the database transaction cannot be committed.
+     * @throws IllegalStateException/IllegalArgumentException/TransactionRequiredException If writing the entities
+     *  fails for any other reason.
+     */
+    private fun writeEntities(newConfig: ConfigEntity, newConfigAudit: ConfigAuditEntity) {
+        val entityManager = dbUtils.createEntityManager(config)
+
+        try {
+            entityManager.transaction.begin()
+            entityManager.merge(newConfig)
+            entityManager.persist(newConfigAudit)
+            entityManager.transaction.commit()
+
+        } finally {
+            entityManager.close()
+        }
+    }
+
+    /**
+     * Reads the [ConfigEntity] for the specified [section]. Returns null if no config exists for the specified section.
+     *
+     * @throws IllegalStateException If the entity manager cannot be created.
+     */
+    private fun readConfigEntity(section: String): ConfigEntity? {
+        val entityManager = dbUtils.createEntityManager(config)
+
+        return try {
+            entityManager.find(ConfigEntity::class.java, section)
+        } finally {
+            entityManager.close()
         }
     }
 }

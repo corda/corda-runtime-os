@@ -1,6 +1,5 @@
 package net.corda.processors.db.internal.test
 
-import com.google.gson.Gson
 import com.typesafe.config.ConfigFactory
 import io.javalin.Javalin
 import net.corda.data.ExceptionEnvelope
@@ -77,24 +76,24 @@ class KafkaDriver @Activate constructor(
             val config = """{"timestamp": "${Instant.now()}"}"""
 
             val req = ConfigurationManagementRequest(
-                "joel-user",
-                Instant.now().toEpochMilli(),
                 section,
+                1,
                 config,
-                1
+                Instant.now().toEpochMilli(),
+                "joel-user"
             )
 
             val response = publisher.sendRequest(req).get()
             if (response.response is ExceptionEnvelope) {
-                val currentConfig = Gson().fromJson(response.currentConfiguration, Map::class.java)
-                val currentVersion = (currentConfig["version"] as Double).toInt()
+                logger.info("JJJ - exception is ${(response.response as ExceptionEnvelope).errorMessage}")
+                val currentVersion = response.currentVersion
                 logger.info("---***&&& - JJJ sending again with updated version $currentVersion -***&&& ---")
                 val newRequest = ConfigurationManagementRequest(
-                    "joel-user",
-                    Instant.now().toEpochMilli(),
                     section,
+                    currentVersion,
                     config,
-                    currentVersion
+                    Instant.now().toEpochMilli(),
+                    "joel-user"
                 )
                 publisher.sendRequest(newRequest).get()
             }

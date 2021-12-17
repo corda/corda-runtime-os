@@ -1,5 +1,6 @@
-package net.corda.libs.configuration.write.persistent.impl
+package net.corda.libs.configuration.write.persistent.impl.entities
 
+import net.corda.libs.configuration.write.persistent.impl.DB_TABLE_CONFIG
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -13,8 +14,8 @@ import javax.persistence.Version
  * The entity for configuration entries in the cluster database.
  *
  * @param section The section of the configuration.
- * @param configuration The configuration in JSON or HOCON format.
  * @param version The version of the configuration. Used for optimistic locking.
+ * @param configuration The configuration in JSON or HOCON format.
  * @param updateTimestamp The last time this section of the configuration was changed.
  * @param updateActor The ID of the user that last updated this section of the configuration.
  */
@@ -24,11 +25,11 @@ data class ConfigEntity(
     @Id
     @Column(name = "section", nullable = false)
     val section: String,
-    @Column(name = "config", nullable = false)
-    val configuration: String,
     @Version
     @Column(name = "version", nullable = false)
-    val version: Int,
+    val version: Int = -1,
+    @Column(name = "config", nullable = false)
+    val configuration: String,
     @Column(name = "update_ts", nullable = false)
     val updateTimestamp: Instant,
     @Column(name = "update_actor", nullable = false)

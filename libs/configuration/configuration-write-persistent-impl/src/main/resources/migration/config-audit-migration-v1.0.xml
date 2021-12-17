@@ -3,8 +3,11 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
-    <changeSet author="R3.Corda" id="config-migration-v1.0">
-        <createTable tableName="config">
+    <changeSet author="R3.Corda" id="config-audit-migration-v1.0">
+        <createTable tableName="config_audit">
+            <column name="change_number" type="SERIAL">
+                <constraints nullable="false"/>
+            </column>
             <column name="section" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -21,6 +24,7 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey columnNames="section" constraintName="config_pk" tableName="config"/>
+        <addPrimaryKey columnNames="change_number" constraintName="config_audit_pk" tableName="config_audit"/>
+        <createSequence sequenceName="config_audit_id_seq"/>
     </changeSet>
 </databaseChangeLog>
