@@ -49,7 +49,7 @@ data class EnumTransforms(
             return EnumTransforms(defaults, renames, source).validate(constants)
         }
 
-        val empty = EnumTransforms(emptyMap(), emptyMap(), TransformsMap(TransformTypes::class.java))
+        val empty get() = EnumTransforms(emptyMap(), emptyMap(), TransformsMap(TransformTypes::class.java))
     }
 
     private fun validate(constants: Map<String, Int>): EnumTransforms {
