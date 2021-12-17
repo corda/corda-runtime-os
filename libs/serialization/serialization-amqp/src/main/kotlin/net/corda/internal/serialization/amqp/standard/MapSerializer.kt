@@ -46,7 +46,8 @@ class MapSerializer(private val declaredType: ParameterizedType, factory: LocalS
 
     companion object {
         // NB: Order matters in this map, the most specific classes should be listed at the end
-        private val supportedTypes: Map<Class<out Map<*, *>>, MapCreationFunction> = Collections.unmodifiableMap(linkedMapOf(
+        private val supportedTypes: Map<Class<out Map<*, *>>, MapCreationFunction>
+            get() = linkedMapOf(
                 // Interfaces
                 Map::class.java to { map -> Collections.unmodifiableMap(map) },
                 SortedMap::class.java to { map -> Collections.unmodifiableSortedMap(TreeMap(map)) },
@@ -54,13 +55,11 @@ class MapSerializer(private val declaredType: ParameterizedType, factory: LocalS
                 // concrete classes for user convenience
                 LinkedHashMap::class.java to { map -> LinkedHashMap(map) },
                 TreeMap::class.java to { map -> TreeMap(map) },
-                EnumMap::class.java to { map ->
-                    EnumMap(uncheckedCast<Map<*, *>, Map<EnumJustUsedForCasting, Any>>(map))
-                }
-        ))
+                EnumMap::class.java to { map -> EnumMap(uncheckedCast<Map<*, *>, Map<EnumJustUsedForCasting, Any>>(map)) }
+            )
 
-        private val supportedTypeIdentifiers = supportedTypes.keys.asSequence()
-                .map { TypeIdentifier.forGenericType(it) }.toSet()
+        private val supportedTypeIdentifiers
+            get() = supportedTypes.keys.asSequence().map { TypeIdentifier.forGenericType(it) }.toSet()
 
         private fun findConcreteType(clazz: Class<*>): MapCreationFunction {
             return supportedTypes[clazz] ?: throw AMQPNotSerializableException(clazz, "Unsupported map type $clazz.")
