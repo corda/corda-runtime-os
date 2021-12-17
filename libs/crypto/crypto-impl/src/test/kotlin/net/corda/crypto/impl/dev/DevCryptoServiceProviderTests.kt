@@ -1,6 +1,7 @@
 package net.corda.crypto.impl.dev
 
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.CryptoConsts
 import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
@@ -34,7 +35,7 @@ class DevCryptoServiceProviderTests {
     @Test
     @Timeout(30)
     fun `Should be able to create instance and use it to generate and sign using all supported schemes`() {
-        val cryptoService = createCryptoServiceProvider().createCryptoService(CryptoCategories.LEDGER)
+        val cryptoService = createCryptoServiceProvider().createCryptoService(CryptoConsts.CryptoCategories.LEDGER)
         cryptoService.supportedSchemes().forEach { signatureScheme ->
             val testData = UUID.randomUUID().toString().toByteArray()
             val badVerifyData = UUID.randomUUID().toString().toByteArray()
@@ -50,7 +51,7 @@ class DevCryptoServiceProviderTests {
     @Test
     @Timeout(30)
     fun `Should be able to create instance and use it to generate and sign using all supported wrapping schemes`() {
-        val cryptoService = createCryptoServiceProvider().createCryptoService(CryptoCategories.FRESH_KEYS)
+        val cryptoService = createCryptoServiceProvider().createCryptoService(CryptoConsts.CryptoCategories.FRESH_KEYS)
         cryptoService.createWrappingKey(masterKeyAlias, false)
         cryptoService.supportedWrappingSchemes().forEach { signatureScheme ->
             val testData = UUID.randomUUID().toString().toByteArray()
@@ -83,7 +84,7 @@ class DevCryptoServiceProviderTests {
             listOf(mock())
         )
         val exception = assertThrows<CryptoServiceLibraryException> {
-            provider.createCryptoService(CryptoCategories.FRESH_KEYS)
+            provider.createCryptoService(CryptoConsts.CryptoCategories.FRESH_KEYS)
         }
         assertFalse(exception.isRecoverable)
     }

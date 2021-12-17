@@ -1,6 +1,7 @@
 package net.corda.crypto.client.rpc
 
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.CryptoConsts
 import net.corda.crypto.client.generateKeyPair
 import net.corda.crypto.client.sign
 import net.corda.crypto.testkit.CryptoMocks
@@ -509,7 +510,7 @@ class SigningServiceClientTests {
     private fun createClient(): SigningServiceClient =
         SigningServiceClient(
             memberId = memberId,
-            category = CryptoCategories.LEDGER,
+            category = CryptoConsts.CryptoCategories.LEDGER,
             requestingComponent = requestingComponent,
             clientTimeout = Duration.ofSeconds(15),
             clientRetries = 1,
@@ -551,6 +552,6 @@ class SigningServiceClientTests {
         )
         assertEquals(1, requests.firstValue.context.other.items.size)
         assertEquals("category", requests.firstValue.context.other.items[0].key)
-        assertEquals(CryptoCategories.LEDGER, requests.firstValue.context.other.items[0].value)
+        assertEquals(CryptoConsts.CryptoCategories.LEDGER, requests.firstValue.context.other.items[0].value)
     }
 }

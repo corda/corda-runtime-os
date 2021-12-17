@@ -1,7 +1,6 @@
 package net.corda.crypto.service
 
 import net.corda.crypto.CryptoLibraryFactory
-import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.SigningService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException

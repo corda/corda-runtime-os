@@ -10,6 +10,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import org.slf4j.Logger
@@ -21,10 +22,6 @@ abstract class AbstractCryptoCoordinator(
     private val configurationReadService: ConfigurationReadService,
     private val subcomponents: List<Any>
 ) : Lifecycle {
-    companion object {
-        const val CRYPTO_CONFIG: String = "corda.cryptoLibrary"
-    }
-
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
     override val isRunning: Boolean
@@ -49,7 +46,7 @@ abstract class AbstractCryptoCoordinator(
             }
         }
         coordinator.stop()
-        configHandle?.close()
+        configHandle?.closeGracefully()
     }
 
     protected open fun handleEvent(event: LifecycleEvent) {
@@ -78,8 +75,8 @@ abstract class AbstractCryptoCoordinator(
     }
 
     private fun onConfigChange(keys: Set<String>, config: Map<String, SmartConfig>) {
-        if (CRYPTO_CONFIG in keys) {
-            val newConfig = config[CRYPTO_CONFIG]
+        if (ConfigKeys.CRYPTO_CONFIG in keys) {
+            val newConfig = config[ConfigKeys.CRYPTO_CONFIG]
             val libraryConfig = if(newConfig == null || newConfig.isEmpty) {
                 handleEmptyCryptoConfig()
             } else {
@@ -90,6 +87,6 @@ abstract class AbstractCryptoCoordinator(
     }
 
     protected open fun handleEmptyCryptoConfig(): CryptoLibraryConfig {
-        throw IllegalStateException("Configuration '$CRYPTO_CONFIG' missing from map")
+        throw IllegalStateException("Configuration '${ConfigKeys.CRYPTO_CONFIG}' missing from map")
     }
 }

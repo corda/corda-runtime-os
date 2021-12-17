@@ -1,6 +1,5 @@
 package net.corda.crypto.impl.persistence
 
-import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.SigningService
 import net.corda.crypto.impl.DefaultCryptoService
 

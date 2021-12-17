@@ -1,6 +1,6 @@
 package net.corda.crypto.client
 
-import net.corda.crypto.CryptoCategories
+import net.corda.crypto.CryptoConsts
 import net.corda.crypto.component.config.rpc
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.testkit.CryptoMocks
@@ -55,7 +55,7 @@ class CryptoLibraryClientsFactoryTests {
             "testComponent"
         )
         assertNotNull(factory.getFreshKeySigningService())
-        assertNotNull(factory.getSigningService(CryptoCategories.LEDGER))
+        assertNotNull(factory.getSigningService(CryptoConsts.CryptoCategories.LEDGER))
     }
 
     @Test
@@ -81,7 +81,7 @@ class CryptoLibraryClientsFactoryTests {
             "testComponent"
         )
         assertNotNull(factory.getFreshKeySigningService())
-        assertNotNull(factory.getSigningService(CryptoCategories.LEDGER))
+        assertNotNull(factory.getSigningService(CryptoConsts.CryptoCategories.LEDGER))
         provider.handleConfigEvent(config)
         factory = provider.get(
             "testComponent"
@@ -95,7 +95,7 @@ class CryptoLibraryClientsFactoryTests {
             }
             assertTrue(provider.isRunning)
             assertNotNull(factory.getFreshKeySigningService())
-            assertNotNull(factory.getSigningService(CryptoCategories.LEDGER))
+            assertNotNull(factory.getSigningService(CryptoConsts.CryptoCategories.LEDGER))
         }.runAndValidate()
         provider.stop()
         assertFalse(provider.isRunning)
@@ -117,7 +117,7 @@ class CryptoLibraryClientsFactoryTests {
             "testComponent"
         )
         assertNotNull(factory.getFreshKeySigningService())
-        assertNotNull(factory.getSigningService(CryptoCategories.LEDGER))
+        assertNotNull(factory.getSigningService(CryptoConsts.CryptoCategories.LEDGER))
         provider.handleConfigEvent(config)
         factory = provider.get(
             "testComponent"
@@ -130,7 +130,7 @@ class CryptoLibraryClientsFactoryTests {
                 )
             }
             assertNotNull(factory.getFreshKeySigningService())
-            assertNotNull(factory.getSigningService(CryptoCategories.LEDGER))
+            assertNotNull(factory.getSigningService(CryptoConsts.CryptoCategories.LEDGER))
         }.runAndValidate()
         provider.stop()
     }

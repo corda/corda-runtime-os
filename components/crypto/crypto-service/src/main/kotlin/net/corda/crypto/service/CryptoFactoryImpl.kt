@@ -9,7 +9,7 @@ import net.corda.crypto.impl.config.CryptoPersistenceConfig
 import net.corda.crypto.impl.persistence.SigningKeyCache
 import net.corda.crypto.impl.persistence.SigningKeyCacheImpl
 import net.corda.crypto.CryptoCategories
-import net.corda.crypto.FreshKeySigningService
+import net.corda.crypto.CryptoConsts
 import net.corda.crypto.SigningService
 import net.corda.crypto.impl.CryptoServiceDecorator
 import net.corda.crypto.impl.FreshKeySigningServiceImpl
@@ -135,10 +135,10 @@ class CryptoFactoryImpl @Activate constructor(
                 logger.debug("Getting the fresh key service for memberId=$memberId")
                 freshKeyServices.getOrPut(memberId) {
                     logger.info("Creating the fresh key service for memberId=$memberId")
-                    val ledgerConfig = getServiceConfig(memberId, CryptoCategories.LEDGER)
-                    val freshKeysConfig = getServiceConfig(memberId, CryptoCategories.FRESH_KEYS)
-                    val ledgerCryptoService = getCryptoService(memberId, CryptoCategories.LEDGER, ledgerConfig)
-                    val freshKeysCryptoService = getCryptoService(memberId, CryptoCategories.FRESH_KEYS, freshKeysConfig)
+                    val ledgerConfig = getServiceConfig(memberId, CryptoConsts.CryptoCategories.LEDGER)
+                    val freshKeysConfig = getServiceConfig(memberId, CryptoConsts.CryptoCategories.FRESH_KEYS)
+                    val ledgerCryptoService = getCryptoService(memberId, CryptoConsts.CryptoCategories.LEDGER, ledgerConfig)
+                    val freshKeysCryptoService = getCryptoService(memberId, CryptoConsts.CryptoCategories.FRESH_KEYS, freshKeysConfig)
                     FreshKeySigningServiceImpl(
                         cache = getSigningKeyCache(memberId, libraryConfig.publicKeys),
                         cryptoService = ledgerCryptoService,

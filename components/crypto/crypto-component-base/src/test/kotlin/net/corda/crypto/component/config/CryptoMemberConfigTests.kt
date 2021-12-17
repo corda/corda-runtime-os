@@ -1,6 +1,7 @@
 package net.corda.crypto.component.config
 
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.CryptoConsts
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
 import org.junit.jupiter.api.Test
@@ -34,7 +35,7 @@ class CryptoMemberConfigTests {
                 )
             )
         )
-        val category = config.getCategory(CryptoCategories.LEDGER)
+        val category = config.getCategory(CryptoConsts.CryptoCategories.LEDGER)
         assertEquals("FUTUREX", category.serviceName)
         assertEquals(Duration.ofSeconds(10), category.timeout)
         assertEquals("CORDA.EDDSA.ED25519", category.defaultSignatureScheme)
@@ -66,7 +67,7 @@ class CryptoMemberConfigTests {
                 )
             )
         )
-        val category = config.getCategory(CryptoCategories.FRESH_KEYS)
+        val category = config.getCategory(CryptoConsts.CryptoCategories.FRESH_KEYS)
         assertEquals("default", category.serviceName)
         assertEquals(Duration.ofSeconds(1), category.timeout)
         assertEquals("CORDA.ECDSA.SECP256K1", category.defaultSignatureScheme)
@@ -79,7 +80,7 @@ class CryptoMemberConfigTests {
     @Timeout(5)
     fun `Should use default values for get category when no data is supplied`() {
         val config = CryptoMemberConfigImpl(emptyMap())
-        val category = config.getCategory(CryptoCategories.LEDGER)
+        val category = config.getCategory(CryptoConsts.CryptoCategories.LEDGER)
         assertEquals(CryptoServiceConfig.DEFAULT_SERVICE_NAME, category.serviceName)
         assertEquals(Duration.ofSeconds(5), category.timeout)
         assertEquals(ECDSA_SECP256R1_CODE_NAME, category.defaultSignatureScheme)

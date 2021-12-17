@@ -1,6 +1,7 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.CryptoConsts
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactoryProvider
 import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
@@ -36,7 +37,7 @@ class DefaultCryptoServiceProviderTests {
     @Test
     @Timeout(30)
     fun `Should be able to create instance and use it to generate and sign using all supported schemes`() {
-        val cryptoService = createCryptoServiceProvider().createCryptoService(CryptoCategories.LEDGER)
+        val cryptoService = createCryptoServiceProvider().createCryptoService(CryptoConsts.CryptoCategories.LEDGER)
         cryptoService.supportedSchemes().forEach { signatureScheme ->
             val testData = UUID.randomUUID().toString().toByteArray()
             val badVerifyData = UUID.randomUUID().toString().toByteArray()
@@ -52,7 +53,7 @@ class DefaultCryptoServiceProviderTests {
     @Test
     @Timeout(30)
     fun `Should be able to create instance and use it to generate and sign using all supported wrapping schemes`() {
-        val cryptoService = createCryptoServiceProvider().createCryptoService(CryptoCategories.FRESH_KEYS)
+        val cryptoService = createCryptoServiceProvider().createCryptoService(CryptoConsts.CryptoCategories.FRESH_KEYS)
         cryptoService.createWrappingKey(masterKeyAlias, false)
         cryptoService.supportedWrappingSchemes().forEach { signatureScheme ->
             val testData = UUID.randomUUID().toString().toByteArray()
@@ -94,7 +95,7 @@ class DefaultCryptoServiceProviderTests {
             )
         )
         val exception = assertThrows<CryptoServiceLibraryException> {
-            provider.createCryptoService(CryptoCategories.FRESH_KEYS)
+            provider.createCryptoService(CryptoConsts.CryptoCategories.FRESH_KEYS)
         }
         assertFalse(exception.isRecoverable)
     }
@@ -115,7 +116,7 @@ class DefaultCryptoServiceProviderTests {
                     )
                 )
             )
-            assertNotNull(provider.createCryptoService(CryptoCategories.LEDGER))
+            assertNotNull(provider.createCryptoService(CryptoConsts.CryptoCategories.LEDGER))
         }.runAndValidate()
         provider.stop()
         assertFalse(provider.isRunning)

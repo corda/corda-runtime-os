@@ -12,6 +12,7 @@ dependencies {
     implementation "net.i2p.crypto:eddsa:$eddsaVersion"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
+    implementation "net.corda:corda-avro-schema"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"

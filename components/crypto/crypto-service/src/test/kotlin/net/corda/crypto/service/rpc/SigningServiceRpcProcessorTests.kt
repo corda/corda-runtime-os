@@ -2,6 +2,7 @@ package net.corda.crypto.service.rpc
 
 import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.CryptoConsts
 import net.corda.crypto.SigningService
 import net.corda.crypto.service.CryptoFactory
 import net.corda.crypto.testkit.CryptoMocks
@@ -165,7 +166,7 @@ class SigningServiceRpcProcessorTests {
             memberId,
             KeyValuePairList(
                 listOf(
-                    KeyValuePair(SigningServiceRpcProcessor.CATEGORY, CryptoCategories.LEDGER),
+                    KeyValuePair(SigningServiceRpcProcessor.CATEGORY, CryptoConsts.CryptoCategories.LEDGER),
                     KeyValuePair("key1", "value1"),
                     KeyValuePair("key2", "value2")
                 )
@@ -423,7 +424,7 @@ class SigningServiceRpcProcessorTests {
         val actualSchemes = result.response as WireSignatureSchemes
         val expectedSchemes = cryptoMocks.factories.cryptoServices.getSigningService(
             memberId = memberId,
-            category = CryptoCategories.LEDGER
+            category = CryptoConsts.CryptoCategories.LEDGER
         ).supportedSchemes
         assertEquals(expectedSchemes.size, actualSchemes.codes.size)
         expectedSchemes.forEach {

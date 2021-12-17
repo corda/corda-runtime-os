@@ -5,8 +5,7 @@ import net.corda.crypto.impl.FreshKeySigningServiceImpl
 import net.corda.crypto.impl.SigningServiceImpl
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCacheImpl
 import net.corda.crypto.impl.persistence.SigningKeyCacheImpl
-import net.corda.crypto.CryptoCategories
-import net.corda.crypto.FreshKeySigningService
+import net.corda.crypto.CryptoConsts
 import net.corda.crypto.SigningService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
@@ -31,8 +30,8 @@ class MockCryptoFactory(
         return freshKeyServices.getOrPut(memberId) {
             FreshKeySigningServiceImpl(
                 cache = cache,
-                cryptoService = getCryptoService(memberId, CryptoCategories.LEDGER),
-                freshKeysCryptoService = getCryptoService(memberId, CryptoCategories.FRESH_KEYS),
+                cryptoService = getCryptoService(memberId, CryptoConsts.CryptoCategories.LEDGER),
+                freshKeysCryptoService = getCryptoService(memberId, CryptoConsts.CryptoCategories.FRESH_KEYS),
                 schemeMetadata = mocks.schemeMetadata,
                 defaultFreshKeySignatureSchemeCodeName = defaultFreshKeySignatureScheme.codeName
             )

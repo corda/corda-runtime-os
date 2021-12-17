@@ -1,6 +1,7 @@
 package net.corda.crypto.impl.dev
 
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.CryptoConsts
 import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
 import net.corda.crypto.impl.persistence.SigningKeyCache
@@ -72,7 +73,7 @@ class DevCryptoServiceTests {
             cryptoService = devCryptoServiceProvider.getInstance(
                 CryptoServiceContext(
                     memberId = factory.memberId,
-                    category = CryptoCategories.LEDGER,
+                    category = CryptoConsts.CryptoCategories.LEDGER,
                     cipherSuiteFactory = factory,
                     config = DevCryptoServiceConfiguration()
                 )

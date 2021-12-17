@@ -1,7 +1,6 @@
 package net.corda.crypto.impl
 
 import net.corda.crypto.impl.persistence.SigningKeyCache
-import net.corda.crypto.FreshKeySigningService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService

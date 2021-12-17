@@ -1,7 +1,6 @@
 package net.corda.crypto.testkit
 
 import net.corda.crypto.CryptoLibraryClientsFactory
-import net.corda.crypto.FreshKeySigningService
 import net.corda.crypto.SigningService
 
 class MockCryptoLibraryClientsFactory(

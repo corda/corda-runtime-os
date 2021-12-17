@@ -1,6 +1,7 @@
 package net.corda.crypto.service
 
 import net.corda.crypto.CryptoCategories
+import net.corda.crypto.CryptoConsts
 import net.corda.crypto.component.config.MemberConfigReaderImpl
 import net.corda.crypto.impl.DefaultCryptoServiceProvider
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
@@ -61,7 +62,7 @@ class CryptoFactoryTests {
     @Test
     @Timeout(30)
     fun `Should create services without starting`() {
-        assertNotNull(factory.getSigningService(UUID.randomUUID().toString(), CryptoCategories.LEDGER))
+        assertNotNull(factory.getSigningService(UUID.randomUUID().toString(), CryptoConsts.CryptoCategories.LEDGER))
         assertNotNull(factory.getFreshKeySigningService(UUID.randomUUID().toString()))
     }
 
@@ -73,7 +74,7 @@ class CryptoFactoryTests {
         (1..100).createTestCase {
             factory.handleConfigEvent(config)
             assertTrue(factory.isRunning)
-            assertNotNull(factory.getSigningService(UUID.randomUUID().toString(), CryptoCategories.LEDGER))
+            assertNotNull(factory.getSigningService(UUID.randomUUID().toString(), CryptoConsts.CryptoCategories.LEDGER))
             assertNotNull(factory.getFreshKeySigningService(UUID.randomUUID().toString()))
         }.runAndValidate()
         factory.stop()
