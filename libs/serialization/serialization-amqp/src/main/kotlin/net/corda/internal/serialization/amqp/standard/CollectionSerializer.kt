@@ -42,17 +42,19 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
 
     companion object {
         // NB: Order matters in this map, the most specific classes should be listed at the end
-        private val supportedTypes: Map<Class<out Collection<*>>, (List<*>) -> Collection<*>> = Collections.unmodifiableMap(
-            linkedMapOf(
-                Collection::class.java to Collections::unmodifiableCollection,
-                List::class.java to Collections::unmodifiableList,
-                Set::class.java to { list -> Collections.unmodifiableSet(LinkedHashSet(list)) },
-                SortedSet::class.java to { list -> Collections.unmodifiableSortedSet(TreeSet(list)) },
-                NavigableSet::class.java to { list -> Collections.unmodifiableNavigableSet(TreeSet(list)) }
+        private val supportedTypes: Map<Class<out Collection<*>>, (List<*>) -> Collection<*>>
+            get() = Collections.unmodifiableMap(
+                linkedMapOf(
+                    Collection::class.java to Collections::unmodifiableCollection,
+                    List::class.java to Collections::unmodifiableList,
+                    Set::class.java to { list -> Collections.unmodifiableSet(LinkedHashSet(list)) },
+                    SortedSet::class.java to { list -> Collections.unmodifiableSortedSet(TreeSet(list)) },
+                    NavigableSet::class.java to { list -> Collections.unmodifiableNavigableSet(TreeSet(list)) }
+                )
             )
-        )
 
-        private val supportedTypeIdentifiers = supportedTypes.keys.mapTo(LinkedHashSet(), TypeIdentifier::forClass)
+        private val supportedTypeIdentifiers
+            get() = supportedTypes.keys.mapTo(LinkedHashSet(), TypeIdentifier::forClass)
 
         /**
          * Replace erased collection types with parameterised types with wildcard type parameters, so that they are represented
