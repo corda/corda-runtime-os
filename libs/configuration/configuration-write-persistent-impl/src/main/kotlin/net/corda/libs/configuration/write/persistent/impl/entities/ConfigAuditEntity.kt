@@ -11,7 +11,16 @@ import javax.persistence.Id
 import javax.persistence.SequenceGenerator
 import javax.persistence.Table
 
-// TODO - Joel - Describe.
+/**
+ * The entity for the audit log of the cluster configuration in the cluster database.
+ *
+ * @param changeNumber The sequence number of the audit event.
+ * @param section The section of the configuration.
+ * @param version The version of the configuration.
+ * @param configuration The configuration in JSON or HOCON format.
+ * @param updateTimestamp The last time this section of the configuration was changed.
+ * @param updateActor The ID of the user that last updated this section of the configuration.
+ */
 @Entity
 @Table(name = DB_TABLE_CONFIG_AUDIT)
 data class ConfigAuditEntity(
