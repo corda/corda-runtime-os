@@ -5,11 +5,6 @@
   "doc": "Internal over-the-wire request to sign using alias and default signature scheme",
   "fields": [
     {
-      "name": "category",
-      "type": "string",
-      "doc": "Category like TLS, LEDGER, FRESH_KEY, etc."
-    },
-    {
       "name": "alias",
       "type": "string",
       "doc": "It's used to look up the matching private key information and sign the data"
