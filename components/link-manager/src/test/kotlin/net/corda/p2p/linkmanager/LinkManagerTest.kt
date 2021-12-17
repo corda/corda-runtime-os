@@ -1060,4 +1060,27 @@ class LinkManagerTest {
         )
     }
 
+    @Test
+    fun `InboundMessageProcessor gives warning if no partitions are assigned and does not write the mapping of a new session, when processing an initiator hello message`() {
+        val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
+        val response = LinkOutMessage(LinkOutHeader("", NetworkType.CORDA_5, FAKE_ADDRESS), responderHelloMessage())
+        Mockito.`when`(mockSessionManager.processSessionMessage(any())).thenReturn(response)
+
+        val initiatorHelloMessage = initiatorHelloMessage()
+
+        val processor = LinkManager.InboundMessageProcessor(
+            mockSessionManager,
+            Mockito.mock(LinkManagerNetworkMap::class.java),
+            assignedListener(emptyList())
+        )
+        val messages = listOf(
+            EventLogRecord(TOPIC, KEY, LinkInMessage(initiatorHelloMessage), 0, 0)
+        )
+        val records = processor.onNext(messages)
+        assertThat(records).isEmpty()
+
+        loggingInterceptor.assertSingleWarning(
+            "No partitions from topic ${Schema.LINK_IN_TOPIC} are currently assigned to the inbound message processor."
+        )
+    }
 }
