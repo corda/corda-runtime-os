@@ -5,7 +5,7 @@ import net.corda.messaging.api.publisher.Publisher
 
 /** An implementation of [PersistentConfigWriter]. */
 class PersistentConfigWriterImpl internal constructor(
-    private val subscription: ConfigManagementRPCSubscription,
+    private val subscription: ConfigMgmtRPCSubscription,
     private val publisher: Publisher
 ) : PersistentConfigWriter {
 

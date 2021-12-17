@@ -52,7 +52,7 @@ class PersistentConfigWriterFactoryImpl @Activate constructor(
     }
 
     /**
-     * Creates a [ConfigManagementRPCSubscription] using the provided [config] and [instanceId]. The subscription
+     * Creates a [ConfigMgmtRPCSubscription] using the provided [config] and [instanceId]. The subscription
      * is for the [TOPIC_CONFIG_MGMT_REQUEST] topic, and handles requests using a [PersistentConfigWriterProcessor].
      *
      * @throws PersistentConfigWriterException If the subscription cannot be set up.
@@ -61,7 +61,7 @@ class PersistentConfigWriterFactoryImpl @Activate constructor(
         config: SmartConfig,
         instanceId: Int,
         publisher: Publisher
-    ): ConfigManagementRPCSubscription {
+    ): ConfigMgmtRPCSubscription {
         val rpcConfig = RPCConfig(
             GROUP_NAME,
             CLIENT_NAME_RPC,
