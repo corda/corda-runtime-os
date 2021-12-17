@@ -78,7 +78,7 @@ services:
       retries: 15
   http-rpc-gw:
     container_name: http-rpc-gw
-    image: "corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest"
+    image: "corda-os-docker-dev.software.r3.com/corda-os-http-rpc-gateway:latest-local"
     ports:
       - "8888:8888"
       - "5005:5005"
@@ -90,7 +90,7 @@ services:
         condition: service_completed_successfully
   db-worker-proto:
     container_name: db-worker-proto
-    image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker-prototype:latest"
+    image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker-prototype:latest-local"
     depends_on:
       init-kafka:
         condition: service_completed_successfully
