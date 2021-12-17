@@ -20,7 +20,6 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.Random
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.thread
@@ -28,11 +27,13 @@ import kotlin.concurrent.write
 
 @Suppress("LongParameterList")
 class Sender(private val publisherFactory: PublisherFactory,
-             dbParams: DBParams?,
+             private val dbParams: DBParams?,
              private val loadGenParams: LoadGenerationParams,
              private val sendTopic: String,
              private val kafkaServers: String,
-             private val clients: Int): Closeable {
+             private val clients: Int,
+             private val instanceId: String,
+             ): Closeable {
 
     companion object {
         private val logger = contextLogger()
@@ -40,9 +41,6 @@ class Sender(private val publisherFactory: PublisherFactory,
 
     private val random = Random()
     private val objectMapper = ObjectMapper().registerKotlinModule().registerModule(JavaTimeModule())
-    private val dbConnection = DbConnection(dbParams,
-        "INSERT INTO sent_messages (sender_id, message_id) " +
-                "VALUES (?, ?) on conflict do nothing")
 
     private val writerThreads = mutableListOf<Thread>()
     private val stopLock = ReentrantReadWriteLock()
@@ -53,18 +51,24 @@ class Sender(private val publisherFactory: PublisherFactory,
         val senderId = UUID.randomUUID().toString()
         logger.info("Using sender ID: $senderId")
 
-        val instanceId = System.getenv("INSTANCE_ID") ?: random.nextInt().toString()
         val threads = (1..clients).map { client ->
             thread(isDaemon = true) {
-                val messagesSent = AtomicInteger(0)
+                val dbConnection = if(dbParams != null) {
+                    DbConnection(dbParams,
+                        "INSERT INTO sent_messages (sender_id, message_id) " +
+                                "VALUES (?, ?) on conflict do nothing")
+                } else {
+                    null
+                }
+                var messagesSent = 0
                 val kafkaConfig = SmartConfigImpl.empty()
                     .withValue(KAFKA_BOOTSTRAP_SERVER_KEY, ConfigValueFactory.fromAnyRef(kafkaServers))
                     .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-sender-$instanceId-$client"))
                 val publisher = publisherFactory.createPublisher(PublisherConfig("app-simulator"), kafkaConfig)
                 publisher.use {
-                    while (moreMessagesToSend(messagesSent.get(), loadGenParams)) {
+                    while (moreMessagesToSend(messagesSent, loadGenParams)) {
                         val messageWithIds = (1..loadGenParams.batchSize).map {
-                            "$instanceId:$client:${messagesSent.incrementAndGet()}"
+                            "$senderId:$client:${++messagesSent}"
                         }.map {
                             createMessage(it, senderId, loadGenParams.peer, loadGenParams.ourIdentity, loadGenParams.messageSizeBytes)
                         }
@@ -75,11 +79,11 @@ class Sender(private val publisherFactory: PublisherFactory,
                             if(!stop) {
                                 val futures = publisher.publish(records)
 
-                                if (dbConnection.connection != null) {
+                                if (dbConnection?.connection != null) {
                                     val messageSentEvents = messageWithIds.map { (messageId, _) ->
                                         MessageSentEvent(senderId, messageId)
                                     }
-                                    writeSentMessagesToDb(messageSentEvents)
+                                    writeSentMessagesToDb(dbConnection, messageSentEvents)
                                 }
                                 futures.forEach { it.get() }
                             }
@@ -87,8 +91,9 @@ class Sender(private val publisherFactory: PublisherFactory,
 
                         Thread.sleep(loadGenParams.interBatchDelay.toMillis())
                     }
-                    logger.info("Client $client sent ${messagesSent.get()} messages.")
+                    logger.info("Client $client sent $messagesSent messages.")
                 }
+                dbConnection?.close()
             }
         }
         writerThreads.addAll(threads)
@@ -110,7 +115,6 @@ class Sender(private val publisherFactory: PublisherFactory,
     fun stop() {
         stopLock.write {
             stop = true
-            dbConnection.close()
         }
     }
 
@@ -147,14 +151,14 @@ class Sender(private val publisherFactory: PublisherFactory,
         return messageId to AppMessage(message)
     }
 
-    private fun writeSentMessagesToDb(messages: List<MessageSentEvent>) {
+    private fun writeSentMessagesToDb(dbConnection: DbConnection, messages: List<MessageSentEvent>) {
         messages.forEach { messageSentEvent ->
-            dbConnection.statement?.setString(1, messageSentEvent.sender)
-            dbConnection.statement?.setString(2, messageSentEvent.messageId)
-            dbConnection.statement?.addBatch()
-            dbConnection.statement?.executeBatch()
+            dbConnection.statement.setString(1, messageSentEvent.sender)
+            dbConnection.statement.setString(2, messageSentEvent.messageId)
+            dbConnection.statement.addBatch()
         }
-        dbConnection.connection?.commit()
+        dbConnection.statement.executeBatch()
+        dbConnection.connection.commit()
     }
 
 

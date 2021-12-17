@@ -19,6 +19,7 @@ import picocli.CommandLine
 import java.io.File
 import java.time.Duration
 import java.time.Instant
+import kotlin.random.Random
 
 @Component(immediate = true)
 class AppSimulator @Activate constructor(
@@ -85,13 +86,13 @@ class AppSimulator @Activate constructor(
         val simulatorMode = simulatorConfig.getEnum(SimulationMode::class.java, "simulatorMode")
         when (simulatorMode) {
             SimulationMode.SENDER -> {
-                runSender(simulatorConfig, publisherFactory, sendTopic, kafkaServers, clients)
+                runSender(simulatorConfig, publisherFactory, sendTopic, kafkaServers, clients, parameters.instanceId)
             }
             SimulationMode.RECEIVER -> {
-                runReceiver(subscriptionFactory, receiveTopic, kafkaServers, clients)
+                runReceiver(subscriptionFactory, receiveTopic, kafkaServers, clients, parameters.instanceId)
             }
             SimulationMode.DB_SINK -> {
-                runSink(simulatorConfig, subscriptionFactory, kafkaServers, clients)
+                runSink(simulatorConfig, subscriptionFactory, kafkaServers, clients, parameters.instanceId)
             }
             else -> throw IllegalStateException("Invalid value for simulator mode: $simulatorMode")
         }
@@ -103,11 +104,20 @@ class AppSimulator @Activate constructor(
         publisherFactory: PublisherFactory,
         sendTopic: String,
         kafkaServers: String,
-        clients: Int
+        clients: Int,
+        instanceId: String,
     ) {
         val connectionDetails = readDbParams(simulatorConfig)
         val loadGenerationParams = readLoadGenParams(simulatorConfig)
-        val sender = Sender(publisherFactory, connectionDetails, loadGenerationParams, sendTopic, kafkaServers, clients)
+        val sender = Sender(
+            publisherFactory,
+            connectionDetails,
+            loadGenerationParams,
+            sendTopic,
+            kafkaServers,
+            clients,
+            instanceId,
+        )
         sender.start()
         resources.add(sender)
         // If it's one-off we wait until all messages have been sent.
@@ -118,8 +128,14 @@ class AppSimulator @Activate constructor(
         }
     }
 
-    private fun runReceiver(subscriptionFactory: SubscriptionFactory, receiveTopic: String, kafkaServers: String, clients: Int) {
-        val receiver = Receiver(subscriptionFactory, receiveTopic, DELIVERED_MSG_TOPIC, kafkaServers, clients)
+    private fun runReceiver(
+        subscriptionFactory: SubscriptionFactory,
+        receiveTopic: String,
+        kafkaServers: String,
+        clients: Int,
+        instanceId: String,
+    ) {
+        val receiver = Receiver(subscriptionFactory, receiveTopic, DELIVERED_MSG_TOPIC, kafkaServers, clients, instanceId)
         receiver.start()
         resources.add(receiver)
     }
@@ -128,7 +144,8 @@ class AppSimulator @Activate constructor(
         simulatorConfig: Config,
         subscriptionFactory: SubscriptionFactory,
         kafkaServers: String,
-        clients: Int
+        clients: Int,
+        instanceId: String,
     ) {
         val connectionDetails = readDbParams(simulatorConfig)
         if (connectionDetails == null) {
@@ -136,7 +153,7 @@ class AppSimulator @Activate constructor(
             shutdownOSGiFramework()
             return
         }
-        val sink = Sink(subscriptionFactory, connectionDetails, kafkaServers, clients)
+        val sink = Sink(subscriptionFactory, connectionDetails, kafkaServers, clients, instanceId)
         sink.start()
         resources.add(sink)
     }
@@ -196,6 +213,12 @@ class CliParameters {
         description = ["The kafka servers. Default to \${DEFAULT-VALUE}"]
     )
     var kafkaServers = System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
+
+    @CommandLine.Option(
+        names = ["-i", "--instance-id"],
+        description = ["The instance ID. Default to \${DEFAULT-VALUE}"]
+    )
+    var instanceId = System.getenv("INSTANCE_ID") ?: Random.nextInt().toString()
 
     @CommandLine.Option(
         names = ["--simulator-config"],

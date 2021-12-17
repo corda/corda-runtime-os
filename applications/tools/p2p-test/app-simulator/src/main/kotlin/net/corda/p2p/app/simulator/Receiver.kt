@@ -20,13 +20,15 @@ import net.corda.v5.base.util.contextLogger
 import java.io.Closeable
 import java.time.Duration
 import java.time.Instant
-import kotlin.random.Random
 
+@Suppress("LongParameterList")
 class Receiver(private val subscriptionFactory: SubscriptionFactory,
                private val receiveTopic: String,
                private val metadataTopic: String,
                private val kafkaServers: String,
-               private val clients: Int): Closeable {
+               private val clients: Int,
+               private val instanceId: String,
+    ): Closeable {
 
     companion object {
         private val logger = contextLogger()
@@ -36,7 +38,6 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
     private val subscriptions = mutableListOf<Subscription<*, *>>()
 
     fun start() {
-        val instanceId = System.getenv("INSTANCE_ID") ?: Random.nextInt().toString()
         (1..clients).forEach { client ->
             val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", receiveTopic, client)
             val kafkaConfig = SmartConfigImpl.empty()
