@@ -50,6 +50,7 @@ class SerializerFactoryBuilder {
         var getBundlesMethod: Method?
 
         try {
+            // TODO - Maybe we should be passing a Classloader as a property to be used in function below?
             val frameworkUtilClass = Class.forName(FRAMEWORK_UTIL_CLASS_NAME, false, this::class.java.classLoader)
             val bundleContextClass = Class.forName(BUNDLE_CONTEXT_CLASS_NAME, false, frameworkUtilClass.classLoader)
             val bundleClass = Class.forName(BUNDLE_CLASS_NAME, false, frameworkUtilClass.classLoader)
