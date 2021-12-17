@@ -5,11 +5,6 @@
   "doc": "Internal over-the-wire request to generate a new key pair for a tenant.",
   "fields": [
     {
-      "name": "tenantId",
-      "type": "string",
-      "doc": "The tenant id which wants an HSM to be assigned to."
-    },
-    {
       "name": "category",
       "type": "string",
       "doc": "The category, like TLS, LEDGER, FRESH_KEYS, etc., which needs assignment."
