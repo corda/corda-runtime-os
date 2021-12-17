@@ -14,6 +14,7 @@ import org.apache.qpid.proton.codec.DescribedTypeConstructor
 data class Envelope(val obj: Any?, val schema: Schema, val transformsSchema: TransformsSchema, val metadata: Metadata) : DescribedType {
     companion object : DescribedTypeConstructor<Envelope> {
 
+        @JvmStatic
         val DESCRIPTOR get() = AMQPDescriptorRegistry.ENVELOPE.amqpDescriptor
 
         val DESCRIPTOR_OBJECT get() = Descriptor(null, DESCRIPTOR)
