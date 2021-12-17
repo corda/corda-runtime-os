@@ -17,7 +17,7 @@ import net.corda.v5.base.util.contextLogger
 class FlowEventProcessorImpl(
     private val flowRunner: FlowRunner,
     flowEventHandlers: List<FlowEventHandler<Any>>,
-    flowRequestHandlers: List<FlowRequestHandler<FlowIORequest<*>>>
+    flowRequestHandlers: List<FlowRequestHandler<out FlowIORequest<*>>>
 ) : FlowEventProcessor {
 
     private companion object {
@@ -30,7 +30,7 @@ class FlowEventProcessorImpl(
 
     private val flowEventHandlers: Map<Any, FlowEventHandler<Any>> = flowEventHandlers.associateBy { it.type }
 
-    private val flowRequestHandlers: Map<Class<FlowIORequest<*>>, FlowRequestHandler<FlowIORequest<*>>> =
+    private val flowRequestHandlers: Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>> =
         flowRequestHandlers.associateBy { it.type }
 
     override fun onNext(state: Checkpoint?, event: Record<FlowKey, FlowEvent>): StateAndEventProcessor.Response<Checkpoint> {

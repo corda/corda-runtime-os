@@ -1,18 +1,30 @@
 package net.corda.flow.manager.impl
 
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
+import net.corda.flow.fiber.FlowContinuation
+import net.corda.flow.fiber.requests.FlowIORequest
+import net.corda.flow.manager.FlowEventProcessor
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import net.corda.flow.manager.impl.handlers.events.FlowEventHandler
 import net.corda.flow.manager.impl.handlers.requests.FlowRequestHandler
 import net.corda.flow.manager.impl.runner.FlowRunner
-import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.fiber.requests.FlowIORequest
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.uncheckedCast
 
+/**
+ * [FlowEventPipeline] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].
+ *
+ * @param flowEventHandler The [FlowEventHandler] that is used for event processing pipeline steps.
+ * @param flowRequestHandlers The registered [FlowRequestHandler]s, where one is used to request post-processing after a flow suspends.
+ * @param flowRunner The [FlowRunner] that is used to start or resume a flow's fiber.
+ * @param context The [FlowEventContext] that should be modified by the pipeline steps.
+ * @param output The [FlowIORequest] that is output by a flow's fiber when it suspends.
+ */
 data class FlowEventPipeline(
     val flowEventHandler: FlowEventHandler<Any>,
-    val flowRequestHandlers: Map<Class<FlowIORequest<*>>, FlowRequestHandler<FlowIORequest<*>>>,
+    val flowRequestHandlers: Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>>,
     val flowRunner: FlowRunner,
     val context: FlowEventContext<Any>,
     val output: FlowIORequest<*>? = null
@@ -27,10 +39,10 @@ data class FlowEventPipeline(
     }
 
     fun runOrContinue(): FlowEventPipeline {
-        return when (val continuation = flowEventHandler.resumeOrContinue(context)) {
+        return when (val continuation = flowEventHandler.runOrContinue(context)) {
             is FlowContinuation.Run, is FlowContinuation.Error -> {
                 val (checkpoint, output) = flowRunner.runFlow(
-                    context.checkpoint!!,
+                    requireCheckpoint(context) { "The flow must have a checkpoint to start or resume" },
                     context.inputEvent,
                     continuation
                 ).waitForCheckpoint()
@@ -43,7 +55,9 @@ data class FlowEventPipeline(
     fun setCheckpointSuspendedOn(): FlowEventPipeline {
         // If the flow fiber did not run or resume then there is no `suspendedOn` to change to.
         output?.let {
-            context.checkpoint!!.flowState.suspendedOn = it::class.qualifiedName
+            requireCheckpoint(context) { "The flow must have a checkpoint after suspending" }
+                .flowState
+                .suspendedOn = it::class.qualifiedName
         }
         return this
     }
@@ -69,7 +83,19 @@ data class FlowEventPipeline(
     private fun getFlowRequestHandler(request: FlowIORequest<*>): FlowRequestHandler<FlowIORequest<*>> {
         return when (val handler = flowRequestHandlers[request::class.java]) {
             null -> throw FlowProcessingException("${request::class.qualifiedName} does not have an associated flow request handler")
-            else -> handler
+            else -> uncheckedCast(handler)
+        }
+    }
+
+    private inline fun requireCheckpoint(context: FlowEventContext<Any>, message: () -> String): Checkpoint {
+        return when (val checkpoint = context.checkpoint) {
+            null -> {
+                message().let {
+                    log.error("$it. Context: $context")
+                    throw FlowProcessingException(it)
+                }
+            }
+            else -> checkpoint
         }
     }
 }

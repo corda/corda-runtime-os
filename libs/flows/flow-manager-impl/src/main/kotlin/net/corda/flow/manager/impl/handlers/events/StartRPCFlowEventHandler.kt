@@ -48,7 +48,7 @@ class StartRPCFlowEventHandler : FlowEventHandler<StartRPCFlow> {
         }
     }
 
-    override fun resumeOrContinue(context: FlowEventContext<StartRPCFlow>): FlowContinuation {
+    override fun runOrContinue(context: FlowEventContext<StartRPCFlow>): FlowContinuation {
         return FlowContinuation.Run()
     }
 
