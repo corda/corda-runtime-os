@@ -8,6 +8,7 @@ import javax.persistence.Entity
 import javax.persistence.GeneratedValue
 import javax.persistence.GenerationType.SEQUENCE
 import javax.persistence.Id
+import javax.persistence.PrePersist
 import javax.persistence.SequenceGenerator
 import javax.persistence.Table
 
@@ -18,7 +19,7 @@ import javax.persistence.Table
  * @param section The section of the configuration.
  * @param version The version of the configuration.
  * @param configuration The configuration in JSON or HOCON format.
- * @param updateTimestamp The last time this section of the configuration was changed.
+ * @param updateTimestamp When this configuration update occurred.
  * @param updateActor The ID of the user that last updated this section of the configuration.
  */
 @Entity
@@ -36,10 +37,17 @@ data class ConfigAuditEntity(
     @Column(name = "config", nullable = false)
     val configuration: String,
     @Column(name = "update_ts", nullable = false)
-    val updateTimestamp: Instant,
+    var updateTimestamp: Instant,
     @Column(name = "update_actor", nullable = false)
     val updateActor: String
 ) {
-    constructor(section: String, version: Int, configuration: String, updateTimestamp: Instant, updateActor: String) :
-            this(0, section, version, configuration, updateTimestamp, updateActor)
+    constructor(section: String, version: Int, configuration: String, updateActor: String) :
+            this(0, section, version, configuration, Instant.MIN, updateActor)
+
+    /** Sets [updateTimestamp] to the current time. */
+    @Suppress("Unused")
+    @PrePersist
+    private fun onCreate() {
+        updateTimestamp = Instant.now()
+    }
 }

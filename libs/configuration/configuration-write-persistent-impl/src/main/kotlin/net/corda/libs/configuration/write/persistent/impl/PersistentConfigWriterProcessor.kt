@@ -13,7 +13,6 @@ import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
-import java.time.Instant
 import javax.persistence.RollbackException
 
 /**
@@ -54,10 +53,8 @@ internal class PersistentConfigWriterProcessor(
      * @return True if the commit was successful, false if the commit failed.
      */
     private fun publishConfigToDB(req: ConfigurationManagementRequest, respFuture: ConfigMgmtRespFuture): Boolean {
-        // TODO - Joel - Get DB to generate timestamp.
-        val now = Instant.now()
-        val newConfig = ConfigEntity(req.section, req.version, req.configuration, now, req.updateActor)
-        val newConfigAudit = ConfigAuditEntity(req.section, req.version, req.configuration, now, req.updateActor)
+        val newConfig = ConfigEntity(req.section, req.version, req.configuration, req.updateActor)
+        val newConfigAudit = ConfigAuditEntity(req.section, req.version, req.configuration, req.updateActor)
 
         return try {
             writeEntities(newConfig, newConfigAudit)

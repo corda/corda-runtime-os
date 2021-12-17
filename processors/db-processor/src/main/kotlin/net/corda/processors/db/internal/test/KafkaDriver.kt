@@ -79,7 +79,6 @@ class KafkaDriver @Activate constructor(
                 section,
                 1,
                 config,
-                Instant.now().toEpochMilli(),
                 "joel-user"
             )
 
@@ -92,7 +91,6 @@ class KafkaDriver @Activate constructor(
                     section,
                     currentVersion,
                     config,
-                    Instant.now().toEpochMilli(),
                     "joel-user"
                 )
                 publisher.sendRequest(newRequest).get()
