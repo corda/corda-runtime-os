@@ -272,13 +272,15 @@ class AppResolution extends DefaultTask {
 -runee: JavaSE-11
 -runfw: org.apache.felix.framework
 -resolve.effective: resolve,active
--runrequires: bnd.identity;id='\${project.group}.\${project.name}'
+-runrequires:\
+    bnd.identity;id='\${project.group}.\${project.name}',\
+    osgi.service;filter:='(objectClass=net.corda.osgi.api.Application)'
 -runstartlevel: order=sortbynameversion,begin=-1
 '''
             // Our launcher creates the Shutdown service dynamically, so
             // declare it as a system capability for the resolver's sake.
             writer.print '''\
--runsystemcapabilities: osgi.service;objectClass:List<String>=net.corda.osgi.api.Shutdown;effective:=active
+-runsystemcapabilities: osgi.service;objectClass:List<String>='net.corda.osgi.api.Shutdown';effective:=active
 '''
             if (!systemProperties.isEmpty()) {
                 writer.print('-runsystempackages:')

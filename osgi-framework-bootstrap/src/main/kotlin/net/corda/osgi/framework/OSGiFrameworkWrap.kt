@@ -528,7 +528,13 @@ class OSGiFrameworkWrap(
         val applicationServiceReference: ServiceReference<Application>? =
             framework.bundleContext.getServiceReference(Application::class.java)
         if (applicationServiceReference != null) {
-            framework.bundleContext.getService(applicationServiceReference)?.startup(args)
+            val application = framework.bundleContext.getService(applicationServiceReference)
+            if (application != null) {
+                application.startup(args)
+            } else {
+                logger.error("Your Application could not be instantiated - check your constructor @Reference parameters\n" +
+                        "Remove all parameters and add them back one at a time to locate the problem.")
+            }
         } else {
             throw ClassNotFoundException(
                 "No class implementing ${Application::class.java} found to start the application.\n" +
