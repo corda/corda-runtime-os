@@ -33,13 +33,3 @@ dependencies {
     runtimeOnly project(":libs:configuration:configuration-write-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
 }
-
-tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
-    if (project.hasProperty('jibRemotePublish')) {
-        remotePublish = jibRemotePublish.toBoolean()
-    }
-
-    if (project.hasProperty('isReleaseCandidate')) {
-        releaseCandidate = isReleaseCandidate.toBoolean()
-    }
-}
