@@ -18,8 +18,9 @@ import java.util.EnumMap
 abstract class Transform : DescribedType {
     companion object : DescribedTypeConstructor<Transform> {
 
-        @JvmField
-        val DESCRIPTOR = AMQPDescriptorRegistry.TRANSFORM_ELEMENT.amqpDescriptor
+        @JvmStatic
+        val DESCRIPTOR
+            get() = AMQPDescriptorRegistry.TRANSFORM_ELEMENT.amqpDescriptor
 
         /**
          * @param obj: a serialized instance of a described type, should be one of the
@@ -75,7 +76,7 @@ abstract class Transform : DescribedType {
  */
 class UnknownTransform : Transform() {
     companion object : DescribedTypeConstructor<UnknownTransform> {
-        const val typeName = "UnknownTransform"
+        val typeName get() = "UnknownTransform"
 
         override fun newInstance(obj: Any?) = UnknownTransform()
 
@@ -93,7 +94,7 @@ class UnknownTransform : Transform() {
  */
 class UnknownTestTransform(val a: Int, val b: Int, val c: Int) : Transform() {
     companion object : DescribedTypeConstructor<UnknownTestTransform> {
-        const val typeName = "UnknownTest"
+        val typeName get() = "UnknownTest"
 
         override fun newInstance(obj: Any?): UnknownTestTransform {
             val described = obj as List<*>
@@ -120,7 +121,7 @@ class EnumDefaultSchemaTransform(val old: String, val new: String) : Transform()
         /**
          * Value encoded into the schema that identifies a transform as this type
          */
-        const val typeName = "EnumDefault"
+        val typeName get() = "EnumDefault"
 
         override fun newInstance(obj: Any?): EnumDefaultSchemaTransform {
             val described = obj as List<*>
@@ -157,7 +158,7 @@ class RenameSchemaTransform(val from: String, val to: String) : Transform() {
         /**
          * Value encoded into the schema that identifies a transform as this type
          */
-        const val typeName = "Rename"
+        val typeName get() = "Rename"
 
         override fun newInstance(obj: Any?): RenameSchemaTransform {
             val described = obj as List<*>
@@ -249,8 +250,8 @@ object TransformsAnnotationProcessor {
 data class TransformsSchema(val types: Map<String, EnumMap<TransformTypes, MutableList<Transform>>>) : DescribedType {
     companion object : DescribedTypeConstructor<TransformsSchema> {
 
-        @JvmField
-        val DESCRIPTOR = AMQPDescriptorRegistry.TRANSFORM_SCHEMA.amqpDescriptor
+        @JvmStatic
+        val DESCRIPTOR get() = AMQPDescriptorRegistry.TRANSFORM_SCHEMA.amqpDescriptor
 
         /**
          * Prepare a schema for encoding, takes all of the types being transmitted and inspects each
