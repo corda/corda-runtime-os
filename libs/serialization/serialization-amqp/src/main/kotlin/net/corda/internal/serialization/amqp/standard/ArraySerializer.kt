@@ -21,10 +21,10 @@ import net.corda.internal.serialization.amqp.AMQPNotSerializableException
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
+import java.lang.IllegalArgumentException
 import java.lang.reflect.Type
 
 /**
@@ -138,18 +138,18 @@ abstract class PrimArraySerializer(type: Type, factory: LocalSerializerFactory) 
     companion object {
         // We don't need to handle the unboxed byte type as that is coercible to a byte array, but
         // the other 7 primitive types we do
-        private val primTypes: Map<Type, (LocalSerializerFactory) -> PrimArraySerializer> = mapOf(
-                IntArray::class.java to { f -> PrimIntArraySerializer(f) },
-                CharArray::class.java to { f -> PrimCharArraySerializer(f) },
-                BooleanArray::class.java to { f -> PrimBooleanArraySerializer(f) },
-                FloatArray::class.java to { f -> PrimFloatArraySerializer(f) },
-                ShortArray::class.java to { f -> PrimShortArraySerializer(f) },
-                DoubleArray::class.java to { f -> PrimDoubleArraySerializer(f) },
-                LongArray::class.java to { f -> PrimLongArraySerializer(f) }
+        fun make(type: Type, factory: LocalSerializerFactory) =
+            when(type) {
+                IntArray::class.java -> PrimIntArraySerializer(factory)
+                CharArray::class.java -> PrimCharArraySerializer(factory)
+                BooleanArray::class.java -> PrimBooleanArraySerializer(factory)
+                FloatArray::class.java -> PrimFloatArraySerializer(factory)
+                ShortArray::class.java -> PrimShortArraySerializer(factory)
+                DoubleArray::class.java -> PrimDoubleArraySerializer(factory)
+                LongArray::class.java -> PrimLongArraySerializer(factory)
                 // ByteArray::class.java <-> NOT NEEDED HERE (see comment above)
-        )
-
-        fun make(type: Type, factory: LocalSerializerFactory) = primTypes[type]!!(factory)
+                else -> throw IllegalArgumentException("Type $type is not a primitive array type")
+            }
     }
 
     fun localWriteObject(data: Data, func: () -> Unit) {
