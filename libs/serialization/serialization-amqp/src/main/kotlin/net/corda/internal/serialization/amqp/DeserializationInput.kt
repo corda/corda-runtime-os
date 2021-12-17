@@ -10,6 +10,7 @@ import net.corda.serialization.EncodingWhitelist
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.ByteSequence
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SerializedBytes
@@ -37,9 +38,10 @@ class DeserializationInput constructor(
     private val serializerFactory: SerializerFactory
 ) {
     private val objectHistory: MutableList<Any> = mutableListOf()
-    private val logger = loggerFor<DeserializationInput>()
 
     companion object {
+        private val logger = contextLogger()
+
         @VisibleForTesting
         @Throws(AMQPNoTypeNotSerializableException::class)
         fun <T> withDataBytes(
