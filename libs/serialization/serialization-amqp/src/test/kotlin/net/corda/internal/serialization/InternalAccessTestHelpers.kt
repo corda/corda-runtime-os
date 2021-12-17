@@ -10,7 +10,7 @@ import java.lang.reflect.Type
  * A set of functions in serialization:test that allows testing of serialization internal classes in the serialization-tests project.
  */
 
-const val MAX_TYPE_PARAM_DEPTH = AMQPTypeIdentifierParser.MAX_TYPE_PARAM_DEPTH
+val MAX_TYPE_PARAM_DEPTH = AMQPTypeIdentifierParser.MAX_TYPE_PARAM_DEPTH
 
 fun Class<out Any?>.accessPropertyDescriptors(validateProperties: Boolean = true):
     Map<String, PropertyDescriptor> = propertyDescriptors(validateProperties)
