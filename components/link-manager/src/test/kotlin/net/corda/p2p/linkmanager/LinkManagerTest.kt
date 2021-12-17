@@ -1025,7 +1025,7 @@ class LinkManagerTest {
     }
 
     @Test
-    fun `OutboundMessageProcessor gives warning if no partitions are assigned to the InboundMessageProcessor`() {
+    fun `OutboundMessageProcessor produces only a LinkManagerSentMarker and gives warning if no partitions are assigned to the InboundMessageProcessor`() {
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
         val sessionInitMessage = LinkOutMessage()
         Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(
@@ -1050,8 +1050,13 @@ class LinkManagerTest {
         val records = processor.onNext(messages)
         assertThat(records).hasSize(messages.size)
 
+        assertThat(records).filteredOn { it.topic == P2P_OUT_MARKERS }.hasSize(messages.size)
+            .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
+            .extracting<AppMessageMarker> { it.value as AppMessageMarker }
+            .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
+
         loggingInterceptor.assertSingleWarning(
-            "No partitions exist"
+            "No partitions from topic ${Schema.LINK_IN_TOPIC} are currently assigned to the inbound message processor."
         )
     }
 
