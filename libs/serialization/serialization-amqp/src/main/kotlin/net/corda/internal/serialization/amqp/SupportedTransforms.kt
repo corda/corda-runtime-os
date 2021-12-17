@@ -26,15 +26,17 @@ data class SupportedTransform(
  * outer annotation
  */
 @Suppress("UNCHECKED_CAST")
-private val wrapperExtract = { x: Annotation ->
-    (x::class.java.getDeclaredMethod("value").invoke(x) as Array<Annotation>).toList()
-}
+private val wrapperExtract
+        get() = { x: Annotation ->
+                (x::class.java.getDeclaredMethod("value").invoke(x) as Array<Annotation>).toList()
+        }
 
 /**
  * Extract from an annotated class the list of annotations that refer to a particular
  * transformation type when that class has a single decorator applied
  */
-private val singleExtract = { x: Annotation -> listOf(x) }
+private val singleExtract
+        get() = { x: Annotation -> listOf(x) }
 
 // Transform annotation used to test the handling of transforms the de-serialising node doesn't understand. At
 // some point test cases will have been created with this transform applied.
@@ -48,29 +50,30 @@ private val singleExtract = { x: Annotation -> listOf(x) }
  * NOTE: We have to support single instances of the transform annotations as well as the wrapping annotation
  * when many instances are repeated.
  */
-val supportedTransforms = listOf(
-        SupportedTransform(
-                CordaSerializationTransformEnumDefaults::class.java,
-                TransformTypes.EnumDefault,
-                wrapperExtract
-        ),
-        SupportedTransform(
-                CordaSerializationTransformEnumDefault::class.java,
-                TransformTypes.EnumDefault,
-                singleExtract
-        ),
-        SupportedTransform(
-                CordaSerializationTransformRenames::class.java,
-                TransformTypes.Rename,
-                wrapperExtract
-        ),
-        SupportedTransform(
-                CordaSerializationTransformRename::class.java,
-                TransformTypes.Rename,
-                singleExtract
+val supportedTransforms
+        get() = listOf(
+                SupportedTransform(
+                        CordaSerializationTransformEnumDefaults::class.java,
+                        TransformTypes.EnumDefault,
+                        wrapperExtract
+                ),
+                SupportedTransform(
+                        CordaSerializationTransformEnumDefault::class.java,
+                        TransformTypes.EnumDefault,
+                        singleExtract
+                ),
+                SupportedTransform(
+                        CordaSerializationTransformRenames::class.java,
+                        TransformTypes.Rename,
+                        wrapperExtract
+                ),
+                SupportedTransform(
+                        CordaSerializationTransformRename::class.java,
+                        TransformTypes.Rename,
+                        singleExtract
+                )
+                //,SupportedTransform(
+                //        UnknownTransformAnnotation::class.java,
+                //        TransformTypes.UnknownTest,
+                //        singleExtract)
         )
-        //,SupportedTransform(
-        //        UnknownTransformAnnotation::class.java,
-        //        TransformTypes.UnknownTest,
-        //        singleExtract)
-)
