@@ -59,12 +59,12 @@ class TypeModellingFingerPrinter(
 internal class FingerprintWriter(debugEnabled: Boolean = false) {
 
     companion object {
-        private const val ARRAY_HASH: String = "Array = true"
-        private const val ENUM_HASH: String = "Enum = true"
-        private const val ALREADY_SEEN_HASH: String = "Already seen = true"
-        private const val NULLABLE_HASH: String = "Nullable = true"
-        private const val NOT_NULLABLE_HASH: String = "Nullable = false"
-        private const val ANY_TYPE_HASH: String = "Any type = true"
+        private val ARRAY_HASH get() = "Array = true"
+        private val ENUM_HASH get() = "Enum = true"
+        private val ALREADY_SEEN_HASH get() = "Already seen = true"
+        private val NULLABLE_HASH get() = "Nullable = true"
+        private val NOT_NULLABLE_HASH get() = "Nullable = false"
+        private val ANY_TYPE_HASH get() = "Any type = true"
 
         private val logger = contextLogger()
     }
@@ -104,7 +104,7 @@ private class FingerPrintingState(
         private val writer: FingerprintWriter) {
 
     companion object {
-        private var CHARACTER_TYPE = LocalTypeInformation.Atomic(
+        private val CHARACTER_TYPE get() = LocalTypeInformation.Atomic(
                 Character::class.java,
                 TypeIdentifier.forClass(Character::class.java))
     }
