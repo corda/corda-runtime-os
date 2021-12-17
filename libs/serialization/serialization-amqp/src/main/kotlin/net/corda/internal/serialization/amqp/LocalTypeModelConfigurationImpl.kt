@@ -29,7 +29,8 @@ class LocalTypeModelConfigurationImpl(
 }
 
 // Copied from SerializerFactory so that we can have equivalent behaviour, for now.
-private val opaqueTypes = setOf(
+private val opaqueTypes
+    get() = setOf(
         Character::class.java,
         Char::class.java,
         Boolean::class.java,
@@ -51,18 +52,19 @@ private val opaqueTypes = setOf(
         ByteArray::class.java,
         String::class.java,
         Symbol::class.java
-)
+    )
 
 @Suppress("unchecked_cast")
-private val DEFAULT_BASE_TYPES = BaseLocalTypes(
-    collectionClass = Collection::class.java,
-    enumSetClass = EnumSet::class.java,
-    exceptionClass = Exception::class.java,
-    mapClass = Map::class.java,
-    stringClass = String::class.java,
-    isEnum = Class<*>::isEnum,
-    enumConstants = Class<*>::getEnumConstants,
-    enumConstantNames = { clazz ->
-        (clazz as Class<out Enum<*>>).enumConstants.map(Enum<*>::name)
-    }
-)
+private val DEFAULT_BASE_TYPES
+    get() = BaseLocalTypes(
+        collectionClass = Collection::class.java,
+        enumSetClass = EnumSet::class.java,
+        exceptionClass = Exception::class.java,
+        mapClass = Map::class.java,
+        stringClass = String::class.java,
+        isEnum = Class<*>::isEnum,
+        enumConstants = Class<*>::getEnumConstants,
+        enumConstantNames = { clazz ->
+            (clazz as Class<out Enum<*>>).enumConstants.map(Enum<*>::name)
+        }
+    )
