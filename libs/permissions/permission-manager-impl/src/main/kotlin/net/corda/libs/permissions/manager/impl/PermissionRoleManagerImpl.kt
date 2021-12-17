@@ -1,6 +1,5 @@
 package net.corda.libs.permissions.manager.impl
 
-import java.time.Duration
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
@@ -9,6 +8,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.manager.PermissionRoleManager
 import net.corda.libs.permissions.manager.exception.PermissionManagerException
+import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
 import net.corda.libs.permissions.manager.request.CreateRoleRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
@@ -23,20 +23,7 @@ class PermissionRoleManagerImpl(
     private val permissionCache: PermissionCache
 ) : PermissionRoleManager {
 
-    private companion object {
-        const val ENDPOINT_TIMEOUT_PATH = "endpointTimeoutMs"
-        const val DEFAULT_ENDPOINT_TIMEOUT_MS = 10000L
-    }
-
-    private val writerTimeout = initializeEndpointTimeoutDuration(config)
-
-    private fun initializeEndpointTimeoutDuration(config: SmartConfig): Duration {
-        return if (config.hasPath(ENDPOINT_TIMEOUT_PATH)) {
-            Duration.ofMillis(config.getLong(ENDPOINT_TIMEOUT_PATH))
-        } else {
-            Duration.ofMillis(DEFAULT_ENDPOINT_TIMEOUT_MS)
-        }
-    }
+    private val writerTimeout = config.getEndpointTimeout()
 
     override fun createRole(createRoleRequestDto: CreateRoleRequestDto): Try<RoleResponseDto> {
         return Try.on {
