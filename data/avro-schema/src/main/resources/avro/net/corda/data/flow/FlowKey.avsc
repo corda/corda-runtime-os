@@ -2,14 +2,17 @@
   "type": "record",
   "name": "FlowKey",
   "namespace": "net.corda.data.flow",
+  "doc": "Represents of a unique key for a flow instance.",
   "fields": [
     {
       "name": "flowId",
-      "type": "string"
+      "type": "string",
+      "doc": "Unique id for a flow instance, string representation of a UUID"
     },
     {
       "name": "identity",
-      "type": "net.corda.data.identity.HoldingIdentity"
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "Identity of the party executing the flow."
     }
   ]
 }

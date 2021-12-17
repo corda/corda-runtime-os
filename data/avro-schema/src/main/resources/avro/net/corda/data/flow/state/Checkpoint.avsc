@@ -2,29 +2,43 @@
   "type": "record",
   "name": "Checkpoint",
   "namespace": "net.corda.data.flow.state",
+  "doc": "Represents the current state of a flow when suspended.",
   "fields": [
     {
       "name": "flowKey",
-      "type": "net.corda.data.flow.FlowKey"
+      "type": "net.corda.data.flow.FlowKey",
+      "doc": "Unique key for a flow instance."
     },
     {
       "name": "fiber",
-      "type": "bytes"
+      "type": "bytes",
+      "doc": "Flow execution state, serialized at the point the flow was suspended."
     },
     {
       "name": "cpiId",
-      "type": "string"
+      "type": "string",
+      "doc": "CPI ID for the package containing the flow."
     },
     {
       "name": "flowState",
-      "type": "net.corda.data.flow.state.StateMachineState"
+      "type": "net.corda.data.flow.state.StateMachineState",
+      "doc": "A set of attributes used to record the current state of the flow's execution."
     },
     {
       "name": "sessions",
       "type": {
         "type": "array",
         "items": "net.corda.data.flow.state.session.SessionState"
-      }
+      },
+      "doc": "The current open sessions created by/for the executing flow."
+    },
+    {
+      "name": "flowStackItems",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.flow.FlowStackItem"
+      },
+      "doc": "Used to track calls to sub-flows and their relationship to sessions."
     }
   ]
 }

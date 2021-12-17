@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "FlowStackItem",
+  "namespace": "net.corda.data.flow",
+  "doc": "Represents an item on the flow stack.",
+  "fields": [
+    {
+      "name": "flowName",
+      "type": "string",
+      "doc": "Class name of the flow."
+    },
+    {
+      "name": "isInitiatingFlow",
+      "type": "boolean",
+      "doc": "Flag to show if the flow is an initiating flow type."
+    },
+    {
+      "name": "sessionIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "List of any session IDs associated with this flow."
+    }
+  ]
+}
