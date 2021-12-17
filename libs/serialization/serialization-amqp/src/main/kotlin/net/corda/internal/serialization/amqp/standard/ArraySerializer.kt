@@ -139,7 +139,7 @@ abstract class PrimArraySerializer(type: Type, factory: LocalSerializerFactory) 
         // We don't need to handle the unboxed byte type as that is coercible to a byte array, but
         // the other 7 primitive types we do
         fun make(type: Type, factory: LocalSerializerFactory) =
-            when(type) {
+            when (type) {
                 IntArray::class.java -> PrimIntArraySerializer(factory)
                 CharArray::class.java -> PrimCharArraySerializer(factory)
                 BooleanArray::class.java -> PrimBooleanArraySerializer(factory)
