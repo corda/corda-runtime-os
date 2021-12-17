@@ -15,10 +15,10 @@ import java.io.NotSerializableException
 data class Metadata(val values: MutableMap<String, Any> = mutableMapOf()) : DescribedType {
     companion object : DescribedTypeConstructor<Metadata> {
 
-        @JvmField
-        val DESCRIPTOR = AMQPDescriptorRegistry.METADATA.amqpDescriptor
+        @JvmStatic
+        val DESCRIPTOR get() = AMQPDescriptorRegistry.METADATA.amqpDescriptor
 
-        private const val VALUES_IDX = 0
+        private val VALUES_IDX get() = 0
 
         fun get(obj: Any): Metadata {
             val describedType = obj as DescribedType
