@@ -22,7 +22,8 @@ object AMQPTypeIdentifiers {
             primitiveTypeNamesByName[TypeIdentifier.forGenericType(type)] ?:
                     throw NotSerializableException("Primitive type name requested for non-primitive type $type")
 
-    private val primitiveTypeNamesByName = sequenceOf(
+    private val primitiveTypeNamesByName
+        get() = sequenceOf(
             Character::class to "char",
             Char::class to "char",
             Boolean::class to "boolean",
@@ -67,7 +68,8 @@ object AMQPTypeIdentifiers {
         }
     }
 
-    private val primitiveByteArrayType = TypeIdentifier.ArrayOf(TypeIdentifier.forClass(Byte::class.javaPrimitiveType!!))
+    private val primitiveByteArrayType
+        get() = TypeIdentifier.ArrayOf(TypeIdentifier.forClass(Byte::class.javaPrimitiveType!!))
 
     fun nameForType(type: Type): String = nameForType(TypeIdentifier.forGenericType(type))
 }
