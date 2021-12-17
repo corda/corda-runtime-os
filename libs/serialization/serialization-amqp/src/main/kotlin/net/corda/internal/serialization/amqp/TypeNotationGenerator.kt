@@ -59,7 +59,8 @@ object TypeNotationGenerator {
         return Field(name, typeName, requires, defaultValue, null, isMandatory, false)
     }
 
-    private val defaultValues = sequenceOf(
+    private val defaultValues
+        get() = sequenceOf(
             Boolean::class to "false",
             Byte::class to "0",
             Int::class to "0",
@@ -67,7 +68,8 @@ object TypeNotationGenerator {
             Short::class to "0",
             Long::class to "0",
             Float::class to "0",
-            Double::class to "0").associate { (type, value) ->
-        TypeIdentifier.forClass(type.javaPrimitiveType!!) to value
-    }
+            Double::class to "0"
+        ).associate { (type, value) ->
+            TypeIdentifier.forClass(type.javaPrimitiveType!!) to value
+        }
 }
