@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package net.corda.comp.kafka.config.write
 
 import net.corda.libs.configuration.SmartConfig

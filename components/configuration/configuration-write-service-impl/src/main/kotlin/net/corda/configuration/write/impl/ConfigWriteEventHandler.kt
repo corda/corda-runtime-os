@@ -23,8 +23,8 @@ class ConfigWriteEventHandler(
      * Upon [StartProcessingEvent], starts processing cluster configuration updates. Upon [StopEvent], stops processing
      * them.
      *
-     * @throws ConfigWriteServiceException If an event type other than [StartEvent]/[StartProcessingEvent]/[StopEvent]
-     * is received, if multiple [StartProcessingEvent]s are received, or if the creation of the subscription fails.
+     * @throws ConfigWriteServiceException If multiple [StartProcessingEvent]s are received, or if the creation of the
+     *  subscription fails.
      */
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -32,16 +32,18 @@ class ConfigWriteEventHandler(
 
             is StartProcessingEvent -> {
                 if (configWriter != null) {
-                    throw ConfigWriteServiceException("An attempt was made to subscribe twice.")
+                    throw ConfigWriteServiceException("An attempt was made to start processing twice.")
                 }
 
                 tryOrError(coordinator, "Could not connect to cluster database.") {
                     dbUtils.checkClusterDatabaseConnection(event.config)
                 }
 
-                tryOrError(coordinator, "Subscribing to config management requests failed.") {
+                tryOrError(coordinator, "Could not subscribe to config management requests.") {
                     // TODO - Joel - I should be pulling this config out of the DB, and check diff with stuff from config read at startup. Raise separate JIRA.
-                    configWriter = configWriterFactory.create(event.config, event.instanceId).apply { start() }
+                    configWriter = configWriterFactory
+                        .create(event.config, event.instanceId)
+                        .apply { start() }
                 }
 
                 coordinator.updateStatus(UP)
