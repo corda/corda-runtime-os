@@ -1,12 +1,15 @@
 package net.corda.libs.permissions.manager.impl.converter
 
+import net.corda.libs.permissions.manager.common.PermissionTypeEnum
 import net.corda.data.permissions.PermissionAssociation as AvroPermissionAssociation
+import net.corda.data.permissions.PermissionType as AvroPermissionType
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.data.permissions.User as AvroUser
 import net.corda.data.permissions.Role as AvroRole
+import net.corda.data.permissions.Permission as AvroPermission
 
 /**
  * Avro objects are versioned, serialized and put onto the messaging bus.
@@ -61,7 +64,26 @@ fun AvroPermissionAssociation.convertToResponseDto() : PermissionResponseDto {
         permission.lastChangeDetails.updateTimestamp,
         permission.groupVisibility,
         permission.virtualNode,
-        permission.type.name,
+        permission.type.map(),
         permission.permissionString
+    )
+}
+
+private fun AvroPermissionType.map(): PermissionTypeEnum {
+    return when(this) {
+        AvroPermissionType.ALLOW -> PermissionTypeEnum.ALLOW
+        AvroPermissionType.DENY -> PermissionTypeEnum.DENY
+    }
+}
+
+fun AvroPermission.convertToResponseDto(): PermissionResponseDto {
+    return PermissionResponseDto(
+        id,
+        version,
+        lastChangeDetails.updateTimestamp,
+        groupVisibility,
+        virtualNode,
+        type.map(),
+        permissionString
     )
 }
