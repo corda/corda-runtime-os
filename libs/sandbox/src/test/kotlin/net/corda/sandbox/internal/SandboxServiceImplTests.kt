@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -84,11 +85,11 @@ class SandboxServiceImplTests {
                 val bundle = mockBundle(bundleName, bundleClass, bundleLocation)
                 whenever(getBundle(bundleClass)).thenReturn(bundle)
                 whenever(startBundle(bundle)).then {
-                    if (bundleName in notStartableBundles) throw BundleException("")
+                    if (bundleName in notStartableBundles) throw BundleException("Start")
                     startedBundles.add(bundle)
                 }
                 whenever(bundle.uninstall()).then {
-                    if (bundleName in notUninstallableBundles) throw IllegalStateException()
+                    if (bundleName in notUninstallableBundles) throw BundleException("Uninstall")
                     uninstalledBundles.add(bundle)
                 }
 
@@ -393,7 +394,7 @@ class SandboxServiceImplTests {
 
         val leftoverBundle = startedBundles.find { bundle ->
             bundle.symbolicName == cpkAndContentsOne.mainBundleName
-        }!!
+        } ?: fail("Bundle ${cpkAndContentsOne.mainBundleName} not found")
         assertFalse(sandboxService.hasVisibility(mockBundle(), leftoverBundle))
         assertFalse(sandboxService.hasVisibility(leftoverBundle, mockBundle()))
     }

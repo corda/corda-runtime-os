@@ -120,7 +120,7 @@ class KafkaEventLogSubscriptionImplTest {
 
         verify(mockCordaConsumer, times(0)).poll()
         verify(consumerBuilder, times(1)).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
-        verify(producerBuilder, times(0)).createProducer(any())
+        verify(producerBuilder, times(1)).createProducer(any())
         assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
     }
 
@@ -144,7 +144,7 @@ class KafkaEventLogSubscriptionImplTest {
         while (kafkaEventLogSubscription.isRunning) { Thread.sleep(10) }
 
         verify(mockCordaConsumer, times(0)).poll()
-        verify(consumerBuilder, times(1)).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
+        verify(consumerBuilder, times(0)).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
         verify(producerBuilder, times(1)).createProducer(any())
         verify(mockCordaProducer, times(0)).beginTransaction()
         assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
@@ -179,7 +179,7 @@ class KafkaEventLogSubscriptionImplTest {
 
         assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
         verify(consumerBuilder, times(2)).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
-        verify(producerBuilder, times(1)).createProducer(any())
+        verify(producerBuilder, times(2)).createProducer(any())
         verify(mockCordaProducer, times(0)).beginTransaction()
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+1)).poll()
@@ -216,7 +216,7 @@ class KafkaEventLogSubscriptionImplTest {
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+1)).poll()
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(consumerBuilder, times(2)).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
-        verify(producerBuilder, times(1)).createProducer(any())
+        verify(producerBuilder, times(2)).createProducer(any())
         verify(mockCordaProducer, times(consumerPollAndProcessRetriesCount+1)).beginTransaction()
         verify(mockCordaProducer, times(0)).sendRecords(any())
         verify(mockCordaProducer, times(0)).sendAllOffsetsToTransaction(any())

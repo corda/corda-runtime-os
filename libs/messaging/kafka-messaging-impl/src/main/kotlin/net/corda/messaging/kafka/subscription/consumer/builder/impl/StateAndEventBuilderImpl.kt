@@ -35,10 +35,14 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
         kClazz: Class<K>,
         sClazz: Class<S>,
         eClazz: Class<E>,
-        stateAndEventListener: StateAndEventListener<K, S>?
+        stateAndEventListener: StateAndEventListener<K, S>?,
+        onStateError: (String, ByteArray) -> Unit,
+        onEventError: (String, ByteArray) -> Unit
     ): Pair<StateAndEventConsumer<K, S, E>, ConsumerRebalanceListener> {
-        val stateConsumer = stateConsumerBuilder.createCompactedConsumer(config.stateConsumerConfig, kClazz, sClazz)
-        val eventConsumer = eventConsumerBuilder.createDurableConsumer(config.eventConsumerConfig, kClazz, eClazz)
+        val stateConsumer =
+            stateConsumerBuilder.createCompactedConsumer(config.stateConsumerConfig, kClazz, sClazz, onStateError)
+        val eventConsumer =
+            eventConsumerBuilder.createDurableConsumer(config.eventConsumerConfig, kClazz, eClazz, onEventError)
         validateConsumers(config, stateConsumer, eventConsumer)
 
         val partitionState =
