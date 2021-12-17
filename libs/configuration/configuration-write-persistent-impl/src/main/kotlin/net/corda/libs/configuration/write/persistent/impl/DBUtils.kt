@@ -13,9 +13,18 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
 
-/** Encapsulates database-related functionality, so that it can be stubbed during tests. */
+/**
+ * Encapsulates database-related functionality, so that it can be stubbed during tests.
+ *
+ * @param schemaMigrator The migrator for the liquibase scripts.
+ * @param entityManagerFactoryFactory The factory for creating [EntityManagerFactory]s.
+ * @property managedEntities The entities managed by the entity manager.
+ * @property dataSource The data source for the cluster database.
+ * @property entityManagerFactory The factory for creating [EntityManager]s.
+ */
 @Component(service = [DBUtils::class])
 class DBUtils @Activate constructor(
     @Reference(service = LiquibaseSchemaMigrator::class)
@@ -23,8 +32,9 @@ class DBUtils @Activate constructor(
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory
 ) {
-    private val dataSourceFactory = HikariDataSourceFactory()
-    private val managedEntities = setOf(ConfigEntity::class.java, ConfigAuditEntity::class.java)
+    private val managedEntities = listOf(ConfigEntity::class.java, ConfigAuditEntity::class.java)
+    private var dataSource: DataSource? = null
+    private var entityManagerFactory: EntityManagerFactory? = null
 
     /**
      * Connects to the cluster database using the [config], and applies the Liquibase schema migrations for each of the
@@ -36,26 +46,39 @@ class DBUtils @Activate constructor(
         }
         val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
 
-        createDataSource(config).connection.use { connection ->
+        val dataSource = dataSource ?: setDataSource(config)
+        dataSource.connection.use { connection ->
             schemaMigrator.updateDb(connection, dbChange, LiquibaseSchemaMigrator.PUBLIC_SCHEMA)
         }
     }
 
-    /** Connects to the cluster database using the [config] and creates an [EntityManager]. */
+    /** Uses the [entityManagerFactory] to create an [EntityManager]. */
     fun createEntityManager(config: SmartConfig): EntityManager {
-        val dataSource = createDataSource(config)
-        return entityManagerFactoryFactory.create(
-            PERSISTENCE_UNIT_NAME, managedEntities.toList(), DbEntityManagerConfiguration(dataSource)
-        ).createEntityManager()
+        val dataSource = dataSource ?: setDataSource(config)
+        val entityManagerFactory = entityManagerFactory ?: setEntityManagerFactory(dataSource)
+        return entityManagerFactory.createEntityManager()
     }
 
-    /** Creates a [DataSource] for the cluster database using the [config]. */
-    private fun createDataSource(config: SmartConfig): DataSource {
+    /** Sets [dataSource] using the [config]. */
+    private fun setDataSource(config: SmartConfig): DataSource {
         val driver = config.getString(CONFIG_DB_DRIVER)
         val jdbcUrl = config.getString(CONFIG_JDBC_URL)
         val username = config.getString(CONFIG_DB_USER)
         val password = config.getString(CONFIG_DB_PASS)
 
-        return dataSourceFactory.create(driver, jdbcUrl, username, password, false, MAX_POOL_SIZE)
+        return HikariDataSourceFactory()
+            .create(driver, jdbcUrl, username, password, false, MAX_POOL_SIZE)
+            .also { dataSource ->
+                this.dataSource = dataSource
+            }
+    }
+
+    /** Sets [entityManagerFactory] using the [dataSource]. */
+    private fun setEntityManagerFactory(dataSource: DataSource): EntityManagerFactory {
+        return entityManagerFactoryFactory
+            .create(PERSISTENCE_UNIT_NAME, managedEntities, DbEntityManagerConfiguration(dataSource))
+            .also { entityManagerFactory ->
+                this.entityManagerFactory = entityManagerFactory
+            }
     }
 }
