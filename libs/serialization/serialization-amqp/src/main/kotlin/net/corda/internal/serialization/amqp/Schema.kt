@@ -15,9 +15,9 @@ import org.apache.qpid.proton.codec.DescribedTypeConstructor
 import java.io.NotSerializableException
 import java.lang.reflect.Type
 
-const val DESCRIPTOR_DOMAIN: String = "net.corda"
-@JvmField
-val amqpMagic = CordaSerializationMagic("corda".toByteArray() + byteArrayOf(3, 0))
+val DESCRIPTOR_DOMAIN get() = "net.corda"
+
+val amqpMagic get() = CordaSerializationMagic("corda".toByteArray() + byteArrayOf(3, 0))
 
 fun typeDescriptorFor(typeId: TypeIdentifier): Symbol = Symbol.valueOf("$DESCRIPTOR_DOMAIN:${AMQPTypeIdentifiers.nameForType(typeId)}")
 fun typeDescriptorFor(type: Type): Symbol = typeDescriptorFor(forGenericType(type))
@@ -54,8 +54,8 @@ private class RedescribedType(
 data class Schema(val types: List<TypeNotation>) : DescribedType {
     companion object : DescribedTypeConstructor<Schema> {
 
-        @JvmField
-        val DESCRIPTOR = AMQPDescriptorRegistry.SCHEMA.amqpDescriptor
+        @JvmStatic
+        val DESCRIPTOR get() = AMQPDescriptorRegistry.SCHEMA.amqpDescriptor
 
         fun get(obj: Any): Schema {
             val describedType = obj as DescribedType
@@ -86,8 +86,8 @@ data class Descriptor(val name: Symbol?, val code: UnsignedLong? = null) : Descr
 
     companion object : DescribedTypeConstructor<Descriptor> {
 
-        @JvmField
-        val DESCRIPTOR = AMQPDescriptorRegistry.OBJECT_DESCRIPTOR.amqpDescriptor
+        @JvmStatic
+        val DESCRIPTOR get() = AMQPDescriptorRegistry.OBJECT_DESCRIPTOR.amqpDescriptor
 
         fun get(obj: Any): Descriptor {
             val describedType = obj as DescribedType
@@ -133,8 +133,8 @@ data class Field(
         val multiple: Boolean) : DescribedType {
     companion object : DescribedTypeConstructor<Field> {
 
-        @JvmField
-        val DESCRIPTOR = AMQPDescriptorRegistry.FIELD.amqpDescriptor
+        @JvmStatic
+        val DESCRIPTOR get() = AMQPDescriptorRegistry.FIELD.amqpDescriptor
 
         fun get(obj: Any): Field {
             val describedType = obj as DescribedType
@@ -201,8 +201,8 @@ data class CompositeType(
 ) : TypeNotation() {
     companion object : DescribedTypeConstructor<CompositeType> {
 
-        @JvmField
-        val DESCRIPTOR = AMQPDescriptorRegistry.COMPOSITE_TYPE.amqpDescriptor
+        @JvmStatic
+        val DESCRIPTOR get() = AMQPDescriptorRegistry.COMPOSITE_TYPE.amqpDescriptor
 
         fun get(describedType: DescribedType): CompositeType {
             if (describedType.descriptor != DESCRIPTOR) {
@@ -252,8 +252,8 @@ data class RestrictedType(override val name: String,
                           val choices: List<Choice>) : TypeNotation() {
     companion object : DescribedTypeConstructor<RestrictedType> {
 
-        @JvmField
-        val DESCRIPTOR = AMQPDescriptorRegistry.RESTRICTED_TYPE.amqpDescriptor
+        @JvmStatic
+        val DESCRIPTOR get() = AMQPDescriptorRegistry.RESTRICTED_TYPE.amqpDescriptor
 
         fun get(describedType: DescribedType): RestrictedType {
             if (describedType.descriptor != DESCRIPTOR) {
@@ -299,8 +299,8 @@ data class RestrictedType(override val name: String,
 data class Choice(val name: String, val value: String) : DescribedType {
     companion object : DescribedTypeConstructor<Choice> {
 
-        @JvmField
-        val DESCRIPTOR = AMQPDescriptorRegistry.CHOICE.amqpDescriptor
+        @JvmStatic
+        val DESCRIPTOR get() = AMQPDescriptorRegistry.CHOICE.amqpDescriptor
 
         fun get(obj: Any): Choice {
             val describedType = obj as DescribedType
@@ -330,8 +330,8 @@ data class Choice(val name: String, val value: String) : DescribedType {
 data class ReferencedObject(private val refCounter: Int) : DescribedType {
     companion object : DescribedTypeConstructor<ReferencedObject> {
 
-        @JvmField
-        val DESCRIPTOR = AMQPDescriptorRegistry.REFERENCED_OBJECT.amqpDescriptor
+        @JvmStatic
+        val DESCRIPTOR get() = AMQPDescriptorRegistry.REFERENCED_OBJECT.amqpDescriptor
 
         fun get(obj: Any): ReferencedObject {
             val describedType = obj as DescribedType

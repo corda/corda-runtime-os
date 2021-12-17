@@ -193,15 +193,15 @@ public class JavaSerializationOutputTests {
         DecoderImpl decoder = new DecoderImpl();
 
         decoder.register(Envelope.getDESCRIPTOR(), Envelope.Companion);
-        decoder.register(Schema.DESCRIPTOR, Schema.Companion);
-        decoder.register(Descriptor.DESCRIPTOR, Descriptor.Companion);
-        decoder.register(Field.DESCRIPTOR, Field.Companion);
-        decoder.register(CompositeType.DESCRIPTOR, CompositeType.Companion);
-        decoder.register(Choice.DESCRIPTOR, Choice.Companion);
-        decoder.register(RestrictedType.DESCRIPTOR, RestrictedType.Companion);
+        decoder.register(Schema.getDESCRIPTOR(), Schema.Companion);
+        decoder.register(Descriptor.getDESCRIPTOR(), Descriptor.Companion);
+        decoder.register(Field.getDESCRIPTOR(), Field.Companion);
+        decoder.register(CompositeType.getDESCRIPTOR(), CompositeType.Companion);
+        decoder.register(Choice.getDESCRIPTOR(), Choice.Companion);
+        decoder.register(RestrictedType.getDESCRIPTOR(), RestrictedType.Companion);
         decoder.register(Transform.DESCRIPTOR, Transform.Companion);
         decoder.register(TransformsSchema.DESCRIPTOR, TransformsSchema.Companion);
-        decoder.register(Metadata.DESCRIPTOR, Metadata.Companion);
+        decoder.register(Metadata.getDESCRIPTOR(), Metadata.Companion);
 
         new EncoderImpl(decoder);
         decoder.setByteBuffer(ByteBuffer.wrap(bytes.getBytes(), 8, bytes.getSize() - 8));
