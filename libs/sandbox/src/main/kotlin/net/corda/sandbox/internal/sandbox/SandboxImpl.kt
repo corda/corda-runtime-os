@@ -56,8 +56,11 @@ internal open class SandboxImpl(
         try {
             bundle.uninstall()
             null
+        } catch (e: IllegalStateException) {
+            logger.warn("Bundle ${bundle.symbolicName} is not installed", e)
+            null
         } catch (e: Exception) {
-            logger.warn("Bundle ${bundle.symbolicName} could not be uninstalled, due to: $e")
+            logger.warn("Bundle ${bundle.symbolicName} could not be uninstalled", e)
             bundle
         }
     }
