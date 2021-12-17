@@ -1025,7 +1025,7 @@ class LinkManagerTest {
     }
 
     @Test
-    fun `OutboundMessageProcessor gives warning if partitions empty`() {
+    fun `OutboundMessageProcessor gives warning if no partitions are assigned to the InboundMessageProcessor`() {
         val mockSessionManager = Mockito.mock(SessionManager::class.java)
         val sessionInitMessage = LinkOutMessage()
         Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(
