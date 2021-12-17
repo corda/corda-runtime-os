@@ -1,7 +1,5 @@
 package net.corda.messaging.kafka.integration
 
-import java.util.UUID
-
 class TopicTemplates {
     companion object {
         const val TEST_TOPIC_PREFIX  = "testPrefix"
@@ -27,6 +25,18 @@ class TopicTemplates {
                     } 
                 ]"""
 
+        const val COMPACTED_TOPIC2  = "CompactedTopic2"
+        const val COMPACTED_TOPIC2_TEMPLATE = """topics = [ 
+                    { 
+                        topicName = "$TEST_TOPIC_PREFIX$COMPACTED_TOPIC2" 
+                        numPartitions = 1 
+                        replicationFactor = 3 
+                        config { 
+                            cleanup.policy=compact 
+                        } 
+                    } 
+                ]"""
+
         const val DURABLE_TOPIC1 = "DurableTopic1"
         val DURABLE_TOPIC1_TEMPLATE = """topics = [ 
                     { 
@@ -39,7 +49,7 @@ class TopicTemplates {
         const val PUBLISHER_TEST_DURABLE_TOPIC1  = "PublisherTestDurableTopic1"
         const val PUBLISHER_TEST_DURABLE_TOPIC1_TEMPLATE = """topics = [ 
                     { 
-                        topicName = "$TEST_TOPIC_PREFIX$DURABLE_TOPIC1" 
+                        topicName = "$TEST_TOPIC_PREFIX$PUBLISHER_TEST_DURABLE_TOPIC1" 
                         numPartitions = 2 
                         replicationFactor = 3 
                     } 
@@ -169,6 +179,28 @@ class TopicTemplates {
                     },
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$EVENT_TOPIC6.state" 
+                        numPartitions = 2 
+                        replicationFactor = 3 
+                        config { 
+                            cleanup.policy=compact 
+                        } 
+                    } 
+                ]"""
+
+        const val EVENT_TOPIC7  = "EventTopic7"
+        const val EVENT_TOPIC7_TEMPLATE = """topics = [ 
+                    { 
+                        topicName = "$TEST_TOPIC_PREFIX$EVENT_TOPIC7" 
+                        numPartitions = 2 
+                        replicationFactor = 3 
+                    },
+                    { 
+                        topicName = "$TEST_TOPIC_PREFIX$EVENT_TOPIC7$DLQ_SUFFIX" 
+                        numPartitions = 2 
+                        replicationFactor = 3 
+                    },
+                    { 
+                        topicName = "$TEST_TOPIC_PREFIX$EVENT_TOPIC7.state" 
                         numPartitions = 2 
                         replicationFactor = 3 
                         config { 
