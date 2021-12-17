@@ -33,12 +33,13 @@ data class PermissionResponseType(
     val virtualNode: String?,
 
     /**
-     * Virtual node the permission applies to.
+     * Defines whether this is an ALLOW or DENY type of permission.
      */
-    val permissionType: String?,
+    val permissionType: PermissionTypeEnum,
 
     /**
-     * Virtual node the permission applies to.
+     * Machine-parseable string representing an individual permission. It can be any arbitrary string as long as the authorization code can
+     * make use of it in the context of user permission matching.
      */
-    val permissionString: String?,
+    val permissionString: String
 )
