@@ -148,7 +148,7 @@ abstract class PrimArraySerializer(type: Type, factory: LocalSerializerFactory) 
                 DoubleArray::class.java -> PrimDoubleArraySerializer(factory)
                 LongArray::class.java -> PrimLongArraySerializer(factory)
                 // ByteArray::class.java <-> NOT NEEDED HERE (see comment above)
-                else -> throw IllegalArgumentException("Type $type is not a primitive array type")
+                else -> throw IllegalArgumentException("Type $type is not a supported primitive array type")
             }
     }
 
