@@ -153,17 +153,19 @@ sealed class TypeIdentifier {
     data class Unparameterised(override val name: String) : TypeIdentifier() {
 
         companion object {
-            private val primitives = listOf(
+            private val primitives
+                get() = listOf(
                     Byte::class,
-                    Boolean:: class,
+                    Boolean::class,
                     Char::class,
                     Int::class,
                     Short::class,
                     Long::class,
                     Float::class,
-                    Double::class).associate {
-                it.javaPrimitiveType!!.name to it.javaPrimitiveType
-            }
+                    Double::class
+                ).associate {
+                    it.javaPrimitiveType!!.name to it.javaPrimitiveType
+                }
         }
         val isPrimitive get() = name in primitives
 
