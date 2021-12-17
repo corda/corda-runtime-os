@@ -101,9 +101,9 @@ fun Permission.toAvroPermission(): AvroPermission {
         version,
         AvroChangeDetails(updateTimestamp),
         virtualNode,
+        permissionType.toAvroPermissionType(),
         permissionString,
-        groupVisibility?.id,
-        permissionType.toAvroPermissionType()
+        groupVisibility?.id
     )
 }
 
@@ -111,7 +111,17 @@ fun Permission.toAvroPermission(): AvroPermission {
  * Convert from model PermissionType to Avro PermissionType.
  */
 fun PermissionType.toAvroPermissionType(): AvroPermissionType {
-    return AvroPermissionType.valueOf(name)
+    return when(this) {
+        PermissionType.ALLOW -> AvroPermissionType.ALLOW
+        PermissionType.DENY -> AvroPermissionType.DENY
+    }
+}
+
+fun AvroPermissionType.fromAvroPermissionType(): PermissionType  {
+    return when(this) {
+        AvroPermissionType.ALLOW -> PermissionType.ALLOW
+        AvroPermissionType.DENY -> PermissionType.DENY
+    }
 }
 
 /**

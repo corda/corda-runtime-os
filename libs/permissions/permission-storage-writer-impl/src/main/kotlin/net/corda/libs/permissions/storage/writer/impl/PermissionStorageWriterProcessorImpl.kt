@@ -3,10 +3,12 @@ package net.corda.libs.permissions.storage.writer.impl
 import java.util.concurrent.CompletableFuture
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
+import net.corda.data.permissions.management.permission.CreatePermissionRequest
 import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
+import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWriter
 import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
 import net.corda.v5.base.util.contextLogger
@@ -14,7 +16,8 @@ import net.corda.v5.base.util.contextLogger
 class PermissionStorageWriterProcessorImpl(
     private val permissionStorageReader: PermissionStorageReader,
     private val userWriter: UserWriter,
-    private val roleWriter: RoleWriter
+    private val roleWriter: RoleWriter,
+    private val permissionWriter: PermissionWriter
 ) : PermissionStorageWriterProcessor {
 
     private companion object {
@@ -33,6 +36,12 @@ class PermissionStorageWriterProcessorImpl(
                     val avroRole = roleWriter.createRole(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishNewRole(avroRole)
                     avroRole
+                }
+                is CreatePermissionRequest -> {
+                    val avroPermission = permissionWriter.createPermission(permissionRequest, request.requestUserId,
+                        request.virtualNodeId)
+                    // Nothing to publish as permissions are only available through associations with roles
+                    avroPermission
                 }
                 else -> throw IllegalArgumentException("Received invalid permission request type")
             }
