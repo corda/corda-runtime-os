@@ -93,14 +93,18 @@ class CordaPublisherImplTest {
 
     @Test
     fun testPublishIntermittentError() {
-        doThrow(CordaMessageAPIIntermittentException("")).whenever(producer).sendRecords(any())
+        doAnswer {
+            callbackCaptor.firstValue.onCompletion(CordaMessageAPIIntermittentException("", IllegalStateException()))
+        }.whenever(producer).send(any(), callbackCaptor.capture())
         val futures = publish(false, listOf(record))
         assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
     }
 
     @Test
     fun testPublishToPartitionIntermittentError() {
-        doThrow(CordaMessageAPIIntermittentException("")).whenever(producer).sendRecordsToPartitions(any())
+        doAnswer {
+            callbackCaptor.firstValue.onCompletion(CordaMessageAPIIntermittentException("", IllegalStateException()))
+        }.whenever(producer).send(any(), eq(1), callbackCaptor.capture())
         val futures = publishToPartition(false, listOf(1 to record))
         assertThrows(CordaMessageAPIIntermittentException::class.java, getCauseOrThrow(futures[0]))
     }

@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * Patterns implementation for Publisher Factory.
  */
 @Component
-class CordaKafkaPublisherFactory @Activate constructor(
+class CordaPublisherFactory @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val avroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = CordaProducerBuilder::class)

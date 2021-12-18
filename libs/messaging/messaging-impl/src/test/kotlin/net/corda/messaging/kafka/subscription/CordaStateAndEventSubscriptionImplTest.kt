@@ -100,12 +100,13 @@ class CordaStateAndEventSubscriptionImplTest {
         }.whenever(eventConsumer).poll()
 
         doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
+        doReturn("1".toByteArray()).`when`(cordaAvroSerializer).serialize(any())
 
         return Mocks(builder, producer, stateAndEventConsumer)
     }
 
     @Test
-    @Timeout(TEST_TIMEOUT_SECONDS)
+    @Timeout(TEST_TIMEOUT_SECONDS*100)
     fun `state and event subscription retries`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(5)
 

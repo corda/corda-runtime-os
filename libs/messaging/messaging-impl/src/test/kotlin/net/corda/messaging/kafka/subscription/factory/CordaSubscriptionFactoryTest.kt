@@ -3,6 +3,7 @@ package net.corda.messaging.kafka.subscription.factory
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -20,6 +21,7 @@ import org.mockito.kotlin.mock
 class CordaSubscriptionFactoryTest {
 
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
+    private val cordaAvroSerializer: CordaAvroSerializer<Any> = mock()
     private val publisherFactory: PublisherFactory = mock()
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
@@ -29,6 +31,7 @@ class CordaSubscriptionFactoryTest {
 
     @BeforeEach
     fun setup() {
+        doReturn(cordaAvroSerializer).`when`(cordaAvroSerializationFactory).createAvroSerializer<Any>(any())
         config = ConfigFactory.load()
         factory = CordaSubscriptionFactory(
             cordaAvroSerializationFactory,

@@ -23,7 +23,6 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.messaging.subscription.CordaRPCSubscriptionImpl
-import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -31,7 +30,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Captor
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -66,13 +64,12 @@ class CordaRPCSubscriptionImplTest {
             0
         )
     )
-    private val schemaRegistry: AvroSchemaRegistry = mock<AvroSchemaRegistry>().also {
-        whenever(it.deserialize(any(), any(), anyOrNull())).thenReturn(dummyRequest)
-        whenever(it.serialize(any())).thenReturn(dummyRequest.toByteBuffer())
-        whenever(it.getClassType(any())).thenReturn(HoldingIdentity::class.java)
+    private val deserializer: CordaAvroDeserializer<HoldingIdentity> = mock<CordaAvroDeserializer<HoldingIdentity>>().also {
+        whenever(it.deserialize(any())).thenReturn(dummyRequest)
     }
-    private val deserializer: CordaAvroDeserializer<HoldingIdentity> = mock()
-    private val serializer: CordaAvroSerializer<HoldingIdentity> = mock()
+    private val serializer: CordaAvroSerializer<HoldingIdentity> = mock<CordaAvroSerializer<HoldingIdentity>>().also {
+        whenever(it.serialize(any())).thenReturn(dummyRequest.toByteBuffer().array())
+    }
     private val publisher: Publisher = mock()
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
