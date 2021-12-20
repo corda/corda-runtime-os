@@ -15,6 +15,7 @@ import net.corda.permissions.password.PasswordServiceFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import net.corda.libs.configuration.SmartConfig
 
 @Component(service = [PermissionManagerFactory::class])
 class PermissionManagerFactoryImpl @Activate constructor(
@@ -22,13 +23,14 @@ class PermissionManagerFactoryImpl @Activate constructor(
     private val passwordServiceFactory: PasswordServiceFactory
 ) : PermissionManagerFactory {
     override fun create(
+        config: SmartConfig,
         rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
         permissionCache: PermissionCache
     ): PermissionManager {
         return PermissionManagerImpl(
-            PermissionUserManagerImpl(rpcSender, permissionCache, passwordServiceFactory.createPasswordService(SecureRandom())),
-            PermissionGroupManagerImpl(rpcSender, permissionCache),
-            PermissionRoleManagerImpl(rpcSender, permissionCache)
+            PermissionUserManagerImpl(config, rpcSender, permissionCache, passwordServiceFactory.createPasswordService(SecureRandom())),
+            PermissionGroupManagerImpl(config, rpcSender, permissionCache),
+            PermissionRoleManagerImpl(config, rpcSender, permissionCache)
         )
     }
 }

@@ -13,6 +13,8 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-topic-schema"
 
+    implementation project(":components:permissions:permission-storage-reader-service")
+
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")

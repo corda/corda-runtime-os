@@ -1,10 +1,9 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
-import net.corda.httprpc.exception.HttpApiException
+import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
-import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -12,7 +11,6 @@ import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.permissions.service.PermissionServiceComponent
-import net.corda.v5.base.util.Try
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -36,7 +34,6 @@ internal class UserEndpointImplTest {
         "parentGroupId"
     )
 
-    private val mockTry = mock<Try<UserResponseDto>>()
     private val userResponseDto = UserResponseDto(
         "uuid",
         0,
@@ -79,8 +76,7 @@ internal class UserEndpointImplTest {
         val createUserDtoCapture = argumentCaptor<CreateUserRequestDto>()
         whenever(lifecycleCoordinator.isRunning).thenReturn(true)
         whenever(permissionService.isRunning).thenReturn(true)
-        whenever(permissionManager.createUser(createUserDtoCapture.capture())).thenReturn(mockTry)
-        whenever(mockTry.getOrThrow()).thenReturn(userResponseDto)
+        whenever(permissionManager.createUser(createUserDtoCapture.capture())).thenReturn(userResponseDto)
 
         endpoint.start()
         val responseType = endpoint.createUser(createUserType)
@@ -93,25 +89,6 @@ internal class UserEndpointImplTest {
         assertEquals(true, responseType.enabled)
         assertEquals(now, responseType.passwordExpiry)
         assertEquals("parentGroupId", responseType.parentGroup)
-    }
-
-    @Test
-    fun `create a user throws with status 500 when permission manager is not running`() {
-        endpoint.start()
-        whenever(permissionManager.isRunning).thenReturn(false)
-
-        val e = assertThrows<HttpApiException> {
-            endpoint.createUser(createUserType)
-        }
-        assertEquals(500, e.statusCode)
-    }
-
-    @Test
-    fun `create a user throws with status 500 when this service is not running`() {
-        val e = assertThrows<HttpApiException> {
-            endpoint.createUser(createUserType)
-        }
-        assertEquals(500, e.statusCode)
     }
 
     @Test
@@ -133,25 +110,6 @@ internal class UserEndpointImplTest {
         assertEquals(true, responseType.enabled)
         assertEquals(now, responseType.passwordExpiry)
         assertEquals("parentGroupId", responseType.parentGroup)
-    }
-
-    @Test
-    fun `get a user throws with status 500 when permission manager is not running`() {
-        endpoint.start()
-        whenever(permissionManager.isRunning).thenReturn(false)
-
-        val e = assertThrows<HttpApiException> {
-            endpoint.getUser("abc")
-        }
-        assertEquals(500, e.statusCode)
-    }
-
-    @Test
-    fun `get a user throws with status 500 when this service is not running`() {
-        val e = assertThrows<HttpApiException> {
-            endpoint.getUser("abc")
-        }
-        assertEquals(500, e.statusCode)
     }
 
     @Test

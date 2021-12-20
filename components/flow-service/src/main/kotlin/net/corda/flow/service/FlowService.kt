@@ -1,8 +1,7 @@
 package net.corda.flow.service
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.flow.manager.FlowEventExecutorFactory
-import net.corda.flow.manager.FlowMetaDataFactory
+import net.corda.flow.manager.factory.FlowEventProcessorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -40,10 +39,10 @@ class FlowService @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = FlowMetaDataFactory::class)
-    private val flowMetaDataFactory: FlowMetaDataFactory,
-    @Reference(service = FlowEventExecutorFactory::class)
-    private val flowEventExecutorFactory: FlowEventExecutorFactory
+    @Reference(service = FlowEventProcessorFactory::class)
+    private val flowEventProcessorFactory: FlowEventProcessorFactory,
+    @Reference(service = SandboxService::class)
+    private val sandboxService: SandboxService
 ) : Lifecycle {
 
     companion object {
@@ -86,8 +85,7 @@ class FlowService @Activate constructor(
                     coordinatorFactory,
                     event.config,
                     subscriptionFactory,
-                    flowMetaDataFactory,
-                    flowEventExecutorFactory
+                    flowEventProcessorFactory
                 )
                 newExecutor.start()
                 executor = newExecutor

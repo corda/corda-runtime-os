@@ -80,7 +80,15 @@ class KafkaStateAndEventSubscriptionImplTest {
         doAnswer { setOf(topicPartition) }.whenever(stateConsumer).assignment()
         doAnswer { listOf(state) }.whenever(stateConsumer).poll()
         doAnswer { Pair(stateAndEventConsumer, rebalanceListener) }.whenever(builder)
-            .createStateEventConsumerAndRebalanceListener(any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())
+            .createStateEventConsumerAndRebalanceListener(
+                any(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull()
+            )
 
         val mockConsumerRecords = generateMockConsumerRecordList(iterations, TOPIC, 0)
         var eventsPaused = false
@@ -136,6 +144,8 @@ class KafkaStateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
             anyOrNull()
         )
         verify(builder, times(1)).createProducer(any())
@@ -167,6 +177,8 @@ class KafkaStateAndEventSubscriptionImplTest {
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(
             any(),
+            anyOrNull(),
+            anyOrNull(),
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),
@@ -222,6 +234,8 @@ class KafkaStateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
             anyOrNull()
         )
         verify(builder, times(1)).createProducer(any())
@@ -270,6 +284,8 @@ class KafkaStateAndEventSubscriptionImplTest {
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(
             any(),
+            anyOrNull(),
+            anyOrNull(),
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),
@@ -331,8 +347,13 @@ class KafkaStateAndEventSubscriptionImplTest {
         subscription.stop()
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(
-            any(), anyOrNull(),
-            anyOrNull(), anyOrNull(), anyOrNull()
+            any(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
         )
         verify(builder, times(1)).createProducer(any())
         verify(producer, times(1)).beginTransaction()

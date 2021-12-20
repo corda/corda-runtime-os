@@ -10,8 +10,6 @@
     javax.xml.stream.events;version=1.0.0,\
     javax.xml.stream.util;version=1.0.0,\
     sun.security.x509
--runproperties: \
-    base.directory=${fileuri;${task.temporaryDir}}
 
 # Enable debugging.
 # -runjdb: 1044

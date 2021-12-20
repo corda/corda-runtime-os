@@ -19,15 +19,3 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 }
-
-tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
-    description "Builds the docker image for the deployable OSGi application"
-
-    if (project.hasProperty('jibRemotePublish')) {
-        remotePublish = jibRemotePublish.toBoolean()
-    }
-
-    if (project.hasProperty('releaseCandidate')) {
-        releaseCandidate = releaseCandidate.toBoolean()
-    }
-}

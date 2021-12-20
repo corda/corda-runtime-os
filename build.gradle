@@ -26,7 +26,7 @@ plugins {
 }
 
 wrapper {
-    gradleVersion = '7.2'
+    gradleVersion = '7.3.2'
     distributionType = Wrapper.DistributionType.BIN
     distributionUrl="https://gradleproxy:gradleproxy@software.r3.com/artifactory/gradle-proxy/gradle-$gradleVersion-bin.zip"
 }
@@ -298,6 +298,7 @@ subprojects {
     }
 
     task allDependencyInsight(type: DependencyInsightReportTask) {}
+    task allDependencies(type: DependencyReportTask) {}
 
     configurations {
         all {
@@ -319,6 +320,29 @@ subprojects {
             "javax.persistence.Embeddable",
             "javax.persistence.MappedSuperclass"
         )
+    }
+
+    // apply docker publishing to workers and select testing applications
+    def nonWorkerImages = ['p2p-gateway', 'p2p-link-manager', 'http-rpc-gateway', 'app-simulator', 'configuration-publisher', 'db-worker-prototype']
+    if (it.toString().contains(":applications:workers:release:") || nonWorkerImages.contains(it.name)) {
+
+        tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
+            if (project.hasProperty('jibRemotePublish')) {
+                remotePublish = jibRemotePublish.toBoolean()
+            }
+
+            if (project.hasProperty('isReleaseCandidate')) {
+                releaseCandidate = isReleaseCandidate.toBoolean()
+            }
+
+            if (project.hasProperty('isNightly')) {
+                nightlyBuild = isNightly.toBoolean()
+            }
+
+            if (project.hasProperty('isPreTest')) {
+                preTest = isPreTest.toBoolean()
+            }
+        }
     }
 }
 
