@@ -179,7 +179,7 @@ class PermissionStorageWriterProcessorImplTest {
     }
 
     @Test
-    fun `receiving CreatePermissionRequest calls permissionWriter and catches exception and does not publish and completes future exceptionally`() {
+    fun `receiving CreatePermissionRequest calls permissionWriter and completes future exceptionally`() {
         val message = "Entity manager error."
         whenever(permissionWriter.createPermission(createPermissionRequest, creatorUserId, null)).thenThrow(
             IllegalArgumentException(

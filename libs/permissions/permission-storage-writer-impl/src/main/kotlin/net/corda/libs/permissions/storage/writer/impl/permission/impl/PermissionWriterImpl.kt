@@ -32,7 +32,8 @@ class PermissionWriterImpl(
         return entityManagerFactory.transaction { entityManager ->
             val groupVisibility = if (request.groupVisibility != null) {
                 requireNotNull(entityManager.find(Group::class.java, request.groupVisibility)) {
-                    "Failed to create new Permission: $permissionName as the specified group visibility: ${request.groupVisibility} does not exist."
+                    "Failed to create new Permission: $permissionName as the specified group visibility: " +
+                            "${request.groupVisibility} does not exist."
                 }
             } else {
                 null

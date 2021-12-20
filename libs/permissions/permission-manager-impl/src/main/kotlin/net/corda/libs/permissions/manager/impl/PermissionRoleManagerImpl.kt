@@ -15,7 +15,6 @@ import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.concurrent.getOrThrow
-import java.time.Duration
 
 class PermissionRoleManagerImpl(
     config: SmartConfig,

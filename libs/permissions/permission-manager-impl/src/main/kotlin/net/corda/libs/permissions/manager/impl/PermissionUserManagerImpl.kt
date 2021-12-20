@@ -16,7 +16,6 @@ import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.permissions.password.PasswordService
 import net.corda.v5.base.concurrent.getOrThrow
-import java.time.Duration
 
 class PermissionUserManagerImpl(
     config: SmartConfig,
