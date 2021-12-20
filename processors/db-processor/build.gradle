@@ -20,7 +20,4 @@ dependencies {
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
-
-    // TODO - Joel - Remove.
-    implementation project(':driver')
 }

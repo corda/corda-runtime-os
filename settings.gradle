@@ -278,7 +278,6 @@ include 'testing:bundles:testing-dogs'
 include 'testing:cpbs:helloworld'
 include 'testing:message-patterns'
 include 'testing:test-utilities'
-include 'driver'
 
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.
