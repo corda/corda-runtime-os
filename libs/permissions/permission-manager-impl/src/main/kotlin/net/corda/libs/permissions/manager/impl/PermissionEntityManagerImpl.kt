@@ -7,10 +7,8 @@ import net.corda.data.permissions.management.permission.CreatePermissionRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.manager.PermissionEntityManager
-import net.corda.libs.permissions.manager.common.PermissionTypeEnum
 import net.corda.libs.permissions.manager.exception.PermissionManagerException
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
-import net.corda.data.permissions.management.permission.PermissionTypeEnum as AvroPermissionTypeEnum
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
 import net.corda.libs.permissions.manager.impl.converter.fromInternal
 import net.corda.libs.permissions.manager.request.CreatePermissionRequestDto
