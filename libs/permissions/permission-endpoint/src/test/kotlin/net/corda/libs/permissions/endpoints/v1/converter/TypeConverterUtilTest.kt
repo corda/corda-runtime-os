@@ -1,11 +1,11 @@
 package net.corda.libs.permissions.endpoints.v1.converter
 
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionTypeEnum
+import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import java.time.Instant
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
-import net.corda.libs.permissions.manager.common.PermissionTypeEnum as InternalPermissionTypeEnum
+import net.corda.libs.permissions.manager.common.PermissionTypeDto as InternalPermissionTypeEnum
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
@@ -123,7 +123,7 @@ class TypeConverterUtilTest {
         assertEquals(now, type.permissions[0].updateTimestamp)
         assertEquals("groupVis2", type.permissions[0].groupVisibility)
         assertEquals("virtNode3", type.permissions[0].virtualNode)
-        assertEquals(PermissionTypeEnum.ALLOW, type.permissions[0].permissionType)
+        assertEquals(PermissionType.ALLOW, type.permissions[0].permissionType)
         assertEquals("*", type.permissions[0].permissionString)
 
         assertEquals("permission2", type.permissions[1].id)
@@ -131,14 +131,14 @@ class TypeConverterUtilTest {
         assertEquals(earlier, type.permissions[1].updateTimestamp)
         assertEquals("groupVis2", type.permissions[1].groupVisibility)
         assertEquals("virtNode3", type.permissions[1].virtualNode)
-        assertEquals(PermissionTypeEnum.DENY, type.permissions[1].permissionType)
+        assertEquals(PermissionType.DENY, type.permissions[1].permissionType)
         assertEquals("*", type.permissions[1].permissionString)
     }
 
     @Test
     fun `convert CreatePermissionType to CreatePermissionRequestDto`() {
         val createPermissionType = CreatePermissionType(
-            PermissionTypeEnum.ALLOW, "permissionString","group1", "virtualNode")
+            PermissionType.ALLOW, "permissionString","group1", "virtualNode")
 
         val requestedBy = "me"
         val dto = createPermissionType.convertToDto(requestedBy)

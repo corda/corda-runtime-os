@@ -10,7 +10,7 @@ import net.corda.libs.permissions.manager.PermissionEntityManager
 import net.corda.libs.permissions.manager.exception.PermissionManagerException
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
-import net.corda.libs.permissions.manager.impl.converter.fromInternal
+import net.corda.libs.permissions.manager.impl.converter.toAvroType
 import net.corda.libs.permissions.manager.request.CreatePermissionRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionRequestDto
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
@@ -31,7 +31,7 @@ class PermissionEntityManagerImpl(
                 createPermissionRequestDto.requestedBy,
                 createPermissionRequestDto.virtualNode,
                 CreatePermissionRequest(
-                    createPermissionRequestDto.permissionType.fromInternal(),
+                    createPermissionRequestDto.permissionType.toAvroType(),
                     createPermissionRequestDto.permissionString,
                     createPermissionRequestDto.groupVisibility
                 )

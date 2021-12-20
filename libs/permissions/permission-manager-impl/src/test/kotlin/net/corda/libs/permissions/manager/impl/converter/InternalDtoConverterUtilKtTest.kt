@@ -10,13 +10,13 @@ import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.Property
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
-import net.corda.libs.permissions.manager.common.PermissionTypeEnum
+import net.corda.libs.permissions.manager.common.PermissionTypeDto
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 
-internal class AvroConverterUtilKtTest {
+internal class InternalDtoConverterUtilKtTest {
 
     @Test
     fun `convert simple User`() {
@@ -164,7 +164,7 @@ internal class AvroConverterUtilKtTest {
         assertEquals("virtNode1", result.permissions[0].virtualNode)
         assertEquals("*", result.permissions[0].permissionString)
         assertEquals("group21", result.permissions[0].groupVisibility)
-        assertEquals(PermissionTypeEnum.DENY, result.permissions[0].permissionType)
+        assertEquals(PermissionTypeDto.DENY, result.permissions[0].permissionType)
 
         assertEquals("permId2", result.permissions[1].id)
         assertEquals(2, result.permissions[1].version)
@@ -172,6 +172,6 @@ internal class AvroConverterUtilKtTest {
         assertEquals("virtNode2", result.permissions[1].virtualNode)
         assertEquals("*", result.permissions[1].permissionString)
         assertEquals("group2", result.permissions[1].groupVisibility)
-        assertEquals(PermissionTypeEnum.ALLOW, result.permissions[1].permissionType)
+        assertEquals(PermissionTypeDto.ALLOW, result.permissions[1].permissionType)
     }
 }

@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.manager.impl.converter
 
-import net.corda.libs.permissions.manager.common.PermissionTypeEnum
+import net.corda.libs.permissions.manager.common.PermissionTypeDto
 import net.corda.data.permissions.PermissionAssociation as AvroPermissionAssociation
 import net.corda.data.permissions.PermissionType as AvroPermissionType
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
@@ -64,22 +64,22 @@ fun AvroPermissionAssociation.convertToResponseDto() : PermissionResponseDto {
         permission.lastChangeDetails.updateTimestamp,
         permission.groupVisibility,
         permission.virtualNode,
-        permission.permissionType.toInternal(),
+        permission.permissionType.toResponseDtoType(),
         permission.permissionString
     )
 }
 
-private fun AvroPermissionType.toInternal(): PermissionTypeEnum {
+private fun AvroPermissionType.toResponseDtoType(): PermissionTypeDto {
     return when(this) {
-        AvroPermissionType.ALLOW -> PermissionTypeEnum.ALLOW
-        AvroPermissionType.DENY -> PermissionTypeEnum.DENY
+        AvroPermissionType.ALLOW -> PermissionTypeDto.ALLOW
+        AvroPermissionType.DENY -> PermissionTypeDto.DENY
     }
 }
 
-fun PermissionTypeEnum.fromInternal(): AvroPermissionType {
+fun PermissionTypeDto.toAvroType(): AvroPermissionType {
     return when(this) {
-        PermissionTypeEnum.ALLOW -> AvroPermissionType.ALLOW
-        PermissionTypeEnum.DENY -> AvroPermissionType.DENY
+        PermissionTypeDto.ALLOW -> AvroPermissionType.ALLOW
+        PermissionTypeDto.DENY -> AvroPermissionType.DENY
     }
 }
 
@@ -90,7 +90,7 @@ fun AvroPermission.convertToResponseDto(): PermissionResponseDto {
         lastChangeDetails.updateTimestamp,
         groupVisibility,
         virtualNode,
-        permissionType.toInternal(),
+        permissionType.toResponseDtoType(),
         permissionString
     )
 }

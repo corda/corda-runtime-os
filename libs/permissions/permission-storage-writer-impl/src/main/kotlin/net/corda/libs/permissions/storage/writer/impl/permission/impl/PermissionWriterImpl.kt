@@ -4,7 +4,7 @@ import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.management.permission.CreatePermissionRequest
-import net.corda.libs.permissions.storage.common.converter.fromAvroPermissionType
+import net.corda.libs.permissions.storage.common.converter.toDbModelPermissionType
 import net.corda.libs.permissions.storage.common.converter.toAvroPermission
 import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWriter
 import net.corda.orm.utils.transaction
@@ -45,7 +45,7 @@ class PermissionWriterImpl(
                 updateTimestamp = updateTimestamp,
                 groupVisibility = groupVisibility,
                 virtualNodeId,
-                request.permissionType.fromAvroPermissionType(),
+                request.permissionType.toDbModelPermissionType(),
                 request.permissionString
             )
             permission.version = 0

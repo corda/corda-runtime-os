@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.manager.request
 
-import net.corda.libs.permissions.manager.common.PermissionTypeEnum
+import net.corda.libs.permissions.manager.common.PermissionTypeDto
 
 /**
  * Request object for creating a Permission entity in the permission system.
@@ -14,7 +14,7 @@ data class CreatePermissionRequestDto(
     /**
      * Defines whether this is an ALLOW or DENY type of permission.
      */
-    val permissionType: PermissionTypeEnum,
+    val permissionType: PermissionTypeDto,
 
     /**
      * Machine-parseable string representing an individual permission. It can be any arbitrary string as long as the authorization code can

@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.manager.response
 
-import net.corda.libs.permissions.manager.common.PermissionTypeEnum
+import net.corda.libs.permissions.manager.common.PermissionTypeDto
 import java.time.Instant
 
 /**
@@ -12,6 +12,6 @@ data class PermissionResponseDto(
     val lastUpdatedTimestamp: Instant,
     val groupVisibility: String?,
     val virtualNode: String?,
-    val permissionType: PermissionTypeEnum,
+    val permissionType: PermissionTypeDto,
     val permissionString: String
 )

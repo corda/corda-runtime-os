@@ -2,7 +2,7 @@ package net.corda.libs.permissions.endpoints.v1.converter
 
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionTypeEnum
+import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
@@ -15,7 +15,7 @@ import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
-import net.corda.libs.permissions.manager.common.PermissionTypeEnum as InternalPermissionTypeEnum
+import net.corda.libs.permissions.manager.common.PermissionTypeDto as InternalPermissionTypeEnum
 
 /**
  * RequestTypes and ResponseTypes are versioned classes that make up part of the public HTTP API.
@@ -111,29 +111,29 @@ fun PermissionResponseDto.convertToEndpointType(): PermissionResponseType {
         lastUpdatedTimestamp,
         groupVisibility,
         virtualNode,
-        permissionType.fromInternal(),
+        permissionType.toEndpointType(),
         permissionString
     )
 }
 
-private fun PermissionTypeEnum.toInternal(): InternalPermissionTypeEnum {
+fun PermissionType.toRequestDtoType(): InternalPermissionTypeEnum {
     return when(this) {
-        PermissionTypeEnum.ALLOW -> InternalPermissionTypeEnum.ALLOW
-        PermissionTypeEnum.DENY -> InternalPermissionTypeEnum.DENY
+        PermissionType.ALLOW -> InternalPermissionTypeEnum.ALLOW
+        PermissionType.DENY -> InternalPermissionTypeEnum.DENY
     }
 }
 
-private fun InternalPermissionTypeEnum.fromInternal(): PermissionTypeEnum {
+private fun InternalPermissionTypeEnum.toEndpointType(): PermissionType {
     return when(this) {
-        InternalPermissionTypeEnum.ALLOW -> PermissionTypeEnum.ALLOW
-        InternalPermissionTypeEnum.DENY -> PermissionTypeEnum.DENY
+        InternalPermissionTypeEnum.ALLOW -> PermissionType.ALLOW
+        InternalPermissionTypeEnum.DENY -> PermissionType.DENY
     }
 }
 
 fun CreatePermissionType.convertToDto(requestedBy: String): CreatePermissionRequestDto {
     return CreatePermissionRequestDto(
         requestedBy,
-        permissionType.toInternal(),
+        permissionType.toRequestDtoType(),
         permissionString,
         groupVisibility,
         virtualNode

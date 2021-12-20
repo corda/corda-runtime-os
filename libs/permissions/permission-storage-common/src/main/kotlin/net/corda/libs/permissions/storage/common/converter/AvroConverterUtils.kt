@@ -117,7 +117,7 @@ fun PermissionType.toAvroPermissionType(): AvroPermissionType {
     }
 }
 
-fun AvroPermissionType.fromAvroPermissionType(): PermissionType  {
+fun AvroPermissionType.toDbModelPermissionType(): PermissionType  {
     return when(this) {
         AvroPermissionType.ALLOW -> PermissionType.ALLOW
         AvroPermissionType.DENY -> PermissionType.DENY

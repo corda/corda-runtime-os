@@ -5,7 +5,7 @@ import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionTypeEnum
+import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -27,12 +27,12 @@ class CreatePermissionE2eTest {
 
             // Create permission
             val setPermString = testToolkit.uniqueName + "-PermissionString"
-            val createPermType = CreatePermissionType(PermissionTypeEnum.ALLOW, setPermString, null, null)
+            val createPermType = CreatePermissionType(PermissionType.ALLOW, setPermString, null, null)
 
             fun PermissionResponseType.assertAsExpected(): PermissionResponseType {
                 assertSoftly {
                     it.assertThat(permissionString).isEqualTo(setPermString)
-                    it.assertThat(permissionType).isEqualTo(PermissionTypeEnum.ALLOW)
+                    it.assertThat(permissionType).isEqualTo(PermissionType.ALLOW)
                 }
                 return this
             }
