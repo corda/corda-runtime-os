@@ -28,19 +28,19 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [MembershipGroupReadService::class])
 class MembershipGroupReadServiceImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReaderComponent::class)
-    private val virtualNodeInfoReader: VirtualNodeInfoReaderComponent,
+    val virtualNodeInfoReader: VirtualNodeInfoReaderComponent,
     @Reference(service = CpiInfoReaderComponent::class)
-    private val cpiInfoReader: CpiInfoReaderComponent,
+    val cpiInfoReader: CpiInfoReaderComponent,
     @Reference(service = ConfigurationReadService::class)
-    private val configurationReadService: ConfigurationReadService,
+    val configurationReadService: ConfigurationReadService,
     @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory,
+    val subscriptionFactory: SubscriptionFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory
+    val coordinatorFactory: LifecycleCoordinatorFactory
 ) : MembershipGroupReadService, Lifecycle {
 
     // Group data cache instance shared across services.
-    private val membershipGroupReadCache = MembershipGroupReadCache.Impl()
+    val membershipGroupReadCache = MembershipGroupReadCache.Impl()
 
     // Factory responsible for creating group readers or taking existing instances from the cache.
     private val membershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(
@@ -50,28 +50,21 @@ class MembershipGroupReadServiceImpl @Activate constructor(
     )
 
     // Membership group topic subscriptions
-    private val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
+    val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
         subscriptionFactory,
         membershipGroupReadCache
     )
 
 
     // Handler for lifecycle events.
-    private val lifecycleHandler = MembershipGroupReadLifecycleHandler.Impl(
-        this,
-        virtualNodeInfoReader,
-        cpiInfoReader,
-        configurationReadService,
-        membershipGroupReadCache,
-        membershipGroupReadSubscriptions
-    )
+    private val lifecycleHandler = MembershipGroupReadLifecycleHandler.Impl(this)
 
     // Component lifecycle coordinator
-    private val coordinator = coordinatorFactory
-        .createCoordinator<MembershipGroupReadService>(lifecycleHandler)
+    private val coordinator =
+        coordinatorFactory.createCoordinator<MembershipGroupReadService>(lifecycleHandler)
 
     // Component is running when it's subscriptions are active.
-    override val isRunning: Boolean
+    override val isRunning
         get() = membershipGroupReadSubscriptions.isRunning
 
     /**
