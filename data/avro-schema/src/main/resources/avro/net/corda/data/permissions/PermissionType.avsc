@@ -1,0 +1,7 @@
+{
+  "type": "enum",
+  "name": "PermissionType",
+  "namespace": "net.corda.data.permissions",
+  "symbols": ["ALLOW", "DENY"],
+  "doc": "The type of the permission."
+}
