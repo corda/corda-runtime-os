@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package net.corda.tools.kafka
 
 import com.typesafe.config.ConfigFactory

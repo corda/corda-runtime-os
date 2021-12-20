@@ -125,7 +125,7 @@ class PersistentConfigWriterProcessorTests {
     }
 
     @Test
-    fun `returns null configuration if existing configuration for the given section cannot be read back when sending RPC failure response`() {
+    fun `returns null configuration if configuration for the given section cannot be read back when sending RPC failure response`() {
         val dbUtils = DummyDBUtils(isWriteFails = true, isReadFails = true)
         val processor = PersistentConfigWriterProcessor(DummyPublisher(), dummySmartConfig, dbUtils)
         val resp = processRequest(processor, configMgmtReq)

@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package net.corda.p2p.gateway
 
 import com.typesafe.config.ConfigFactory

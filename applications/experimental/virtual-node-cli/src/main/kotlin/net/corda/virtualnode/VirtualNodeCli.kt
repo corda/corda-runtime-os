@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package net.corda.virtualnode
 
 import net.corda.comp.kafka.config.write.KafkaConfigWrite

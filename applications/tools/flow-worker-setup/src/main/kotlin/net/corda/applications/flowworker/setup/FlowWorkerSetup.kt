@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package net.corda.applications.flowworker.setup
 
 import net.corda.applications.flowworker.setup.helper.getHelloWorldRPCEventRecord
