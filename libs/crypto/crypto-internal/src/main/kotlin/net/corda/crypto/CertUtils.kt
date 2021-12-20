@@ -65,25 +65,6 @@ fun SigningService.getSigner(
     }
 }
 
-fun FreshKeySigningService.getSigner(
-    schemeMetadata: CipherSchemeMetadata,
-    publicKey: PublicKey,
-    context: Map<String, String>
-): ContentSigner {
-    return object : ContentSigner {
-        private val signatureScheme: SignatureScheme = schemeMetadata.findSignatureScheme(publicKey)
-        private val sigAlgID: AlgorithmIdentifier = signatureScheme.signatureSpec.signatureOID
-            ?: throw CryptoServiceException(
-                "The signature algorithm is not specified in ${signatureScheme.codeName}",
-                isRecoverable = false
-            )
-        private val baos = ByteArrayOutputStream()
-        override fun getAlgorithmIdentifier(): AlgorithmIdentifier = sigAlgID
-        override fun getOutputStream(): OutputStream = baos
-        override fun getSignature(): ByteArray = sign(publicKey, baos.toByteArray(), context).bytes
-    }
-}
-
 private fun getValidityWindow(before: Duration, after: Duration): Pair<Date, Date> {
     val startOfDayUTC = Instant.now().truncatedTo(ChronoUnit.DAYS)
     val notBefore = startOfDayUTC - before

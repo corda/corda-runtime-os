@@ -12,6 +12,7 @@ dependencies {
     implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
     implementation "net.i2p.crypto:eddsa:$eddsaVersion"
     implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"

@@ -35,7 +35,7 @@ class KeyRegistrarPublisher(
 
     private fun createRequest(tenantId: String, request: Any): KeyRegistrationRequest =
         KeyRegistrationRequest(
-            createWireRequestContext(tenantId),
+            createWireRequestContext<KeyRegistrarPublisher>(tenantId),
             request
         )
 }

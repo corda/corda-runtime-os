@@ -16,20 +16,12 @@ fun CryptoRequestContext.toCryptoPublishResult() = CryptoPublishResult(requestId
 
 fun List<CompletableFuture<Unit>>.waitAll() = forEach { it.get() }
 
-fun createWireRequestContext(tenantId: String): CryptoRequestContext = CryptoRequestContext(
-    HSMRegistrarPublisher::class.simpleName,
+inline fun <reified CALLER> createWireRequestContext(tenantId: String): CryptoRequestContext = CryptoRequestContext(
+    CALLER::class.simpleName,
     Instant.now(),
     UUID.randomUUID().toString(),
     tenantId,
     emptyKeyValuePairList
-)
-
-fun createWireRequestContext(tenantId: String, context: KeyValuePairList): CryptoRequestContext = CryptoRequestContext(
-    HSMRegistrarPublisher::class.simpleName,
-    Instant.now(),
-    UUID.randomUUID().toString(),
-    tenantId,
-    context
 )
 
 fun Map<String, String>.toWire(): KeyValuePairList {

@@ -37,7 +37,7 @@ import java.util.concurrent.TimeoutException
 class CryptoOpsPublisher(
     private val schemeMetadata: CipherSchemeMetadata,
     private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>,
-    private val clientRetries: Int,
+    private val clientRetries: Long,
     private val clientTimeout: Duration
 ) : CryptoOpsClient {
     companion object {
@@ -187,7 +187,7 @@ class CryptoOpsPublisher(
 
     private fun createRequest(tenantId: String, request: Any): RpcOpsRequest =
         RpcOpsRequest(
-            createWireRequestContext(tenantId),
+            createWireRequestContext<CryptoOpsPublisher>(tenantId),
             request
         )
 

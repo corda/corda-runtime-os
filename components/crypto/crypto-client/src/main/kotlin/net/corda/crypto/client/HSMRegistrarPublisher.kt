@@ -50,7 +50,7 @@ class HSMRegistrarPublisher(
 
     private fun createRequest(tenantId: String, request: Any): HSMRegistrationRequest =
         HSMRegistrationRequest(
-            createWireRequestContext(tenantId),
+            createWireRequestContext<HSMRegistrarPublisher>(tenantId),
             request
         )
 }
