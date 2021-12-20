@@ -88,6 +88,33 @@ object AMQPTypeIdentifierParser {
          * We are parsing a raw type name, either at the top level or as part of a list of type parameters.
          */
         data class ParsingRawType(override val parent: ParsingParameterList?, val buffer: StringBuilder = StringBuilder()) : ParseState() {
+
+            // This was made an instance var (used to be a static var) to avoid leaking it among CPKs.
+            private val simplified = mapOf(
+                "string" to String::class,
+                "boolean" to Boolean::class,
+                "byte" to Byte::class,
+                "char" to Char::class,
+                "int" to Int::class,
+                "short" to Short::class,
+                "long" to Long::class,
+                "double" to Double::class,
+                "float" to Float::class,
+                "ubyte" to UnsignedByte::class,
+                "uint" to UnsignedInteger::class,
+                "ushort" to UnsignedShort::class,
+                "ulong" to UnsignedLong::class,
+                "decimal32" to Decimal32::class,
+                "decimal64" to Decimal64::class,
+                "decimal128" to Decimal128::class,
+                "binary" to ByteArray::class,
+                "timestamp" to Date::class,
+                "uuid" to UUID::class,
+                "symbol" to Symbol::class
+            ).mapValues { (_, v) ->
+                TypeIdentifier.forClass(v.javaObjectType)
+            }
+
             override fun accept(c: Char, sandboxGroup: SandboxGroup) = when (c) {
                 ',' ->
                     if (parent == null) notInParameterList(c)
@@ -171,30 +198,5 @@ object AMQPTypeIdentifierParser {
 
             override fun getTypeIdentifier() = identifier
         }
-    }
-
-    private val simplified
-        get() = mapOf(
-            "string" to String::class,
-            "boolean" to Boolean::class,
-            "byte" to Byte::class,
-            "char" to Char::class,
-            "int" to Int::class,
-            "short" to Short::class,
-            "long" to Long::class,
-            "double" to Double::class,
-            "float" to Float::class,
-            "ubyte" to UnsignedByte::class,
-            "uint" to UnsignedInteger::class,
-            "ushort" to UnsignedShort::class,
-            "ulong" to UnsignedLong::class,
-            "decimal32" to Decimal32::class,
-            "decimal64" to Decimal64::class,
-            "decimal128" to Decimal128::class,
-            "binary" to ByteArray::class,
-            "timestamp" to Date::class,
-            "uuid" to UUID::class,
-            "symbol" to Symbol::class).mapValues { (_, v) ->
-        TypeIdentifier.forClass(v.javaObjectType)
     }
 }
