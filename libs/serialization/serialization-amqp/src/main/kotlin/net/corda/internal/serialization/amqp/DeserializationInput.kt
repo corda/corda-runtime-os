@@ -11,7 +11,6 @@ import net.corda.serialization.SerializationContext
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SerializedBytes
 import org.apache.qpid.proton.amqp.Binary
