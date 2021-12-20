@@ -15,9 +15,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.config.MembershipConfig
 import net.corda.membership.config.MembershipConfigConstants
 import net.corda.membership.impl.config.MembershipConfigImpl
-import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.impl.read.component.MembershipGroupReadServiceImpl
-import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
 import net.corda.membership.lifecycle.MembershipConfigReceived
 import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
 
@@ -26,15 +24,25 @@ interface MembershipGroupReadLifecycleHandler {
      * Default implementation.
      */
     class Impl(
-        private val membershipGroupReadService: MembershipGroupReadServiceImpl,
-        private val virtualNodeInfoReader: VirtualNodeInfoReaderComponent,
-        private val cpiInfoReader: CpiInfoReaderComponent,
-        private val configurationReadService: ConfigurationReadService,
-        private val membershipGroupReadCache: MembershipGroupReadCache,
-        private val membershipGroupReadSubscriptions: MembershipGroupReadSubscriptions
+        private val membershipGroupReadService: MembershipGroupReadServiceImpl
     ) : LifecycleEventHandler {
         private var configRegistrationHandle: AutoCloseable? = null
         private var componentRegistrationHandle: AutoCloseable? = null
+
+        private val virtualNodeInfoReader
+            get() = membershipGroupReadService.virtualNodeInfoReader
+
+        private val cpiInfoReader
+            get() = membershipGroupReadService.cpiInfoReader
+
+        private val configurationReadService
+            get() = membershipGroupReadService.configurationReadService
+
+        private val membershipGroupReadCache
+            get() = membershipGroupReadService.membershipGroupReadCache
+
+        private val membershipGroupReadSubscriptions
+            get() = membershipGroupReadService.membershipGroupReadSubscriptions
 
         override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
             when (event) {
