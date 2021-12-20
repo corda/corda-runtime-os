@@ -1,0 +1,3 @@
+package net.corda.membership.impl.read.lifecycle
+
+class MembershipGroupReadLifecycleHandlerTest

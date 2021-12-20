@@ -17,10 +17,12 @@ dependencies {
     implementation project(":libs:virtual-node:cpi-info-service")
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(":libs:virtual-node:virtual-node-info-service")
+    implementation project(":components:virtual-node:cpi-info-service-reader")
     implementation project(":components:virtual-node:virtual-node-info-service-reader")
     implementation project(":components:configuration:configuration-read-service")
 
     implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-topic-schema"
     implementation "net.corda:corda-membership"
     implementation "net.corda:corda-membership-identity"
 

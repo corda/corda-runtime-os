@@ -2,6 +2,7 @@ package net.corda.membership.impl.read.cache
 
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.v5.membership.identity.MemberX500Name
+import java.util.Collections
 
 /**
  * Interface for storing the member lists in-memory including implementation class.
@@ -22,7 +23,8 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
      */
     class Impl : MemberListCache {
 
-        private val cache: MutableMap<String, MutableMap<MemberX500Name, MutableList<MemberInfo>>> = mutableMapOf()
+        private val cache: MutableMap<String, MutableMap<MemberX500Name, MutableList<MemberInfo>>> =
+            Collections.synchronizedMap(mutableMapOf())
 
         private fun getMemberList(groupId: String, memberX500Name: MemberX500Name): MutableList<MemberInfo> =
             cache.getOrPut(groupId) {

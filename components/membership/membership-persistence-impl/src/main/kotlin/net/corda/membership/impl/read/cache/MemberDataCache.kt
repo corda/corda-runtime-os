@@ -1,6 +1,7 @@
 package net.corda.membership.impl.read.cache
 
 import net.corda.v5.membership.identity.MemberX500Name
+import java.util.Collections
 
 /**
  * Interface for classes which are to be used as caches for group member data.
@@ -33,7 +34,8 @@ interface MemberDataCache<T> {
      */
     class Impl<T> : MemberDataCache<T> {
 
-        private val cache: MutableMap<String, MutableMap<MemberX500Name, T>> = mutableMapOf()
+        private val cache: MutableMap<String, MutableMap<MemberX500Name, T>> =
+            Collections.synchronizedMap(mutableMapOf())
 
         private fun getCachedData(groupId: String): MutableMap<MemberX500Name, T> =
             cache.getOrPut(groupId) { mutableMapOf() }

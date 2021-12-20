@@ -1,8 +1,8 @@
-package net.corda.membership.impl.read
+package net.corda.membership.impl.read.reader
 
 import net.corda.membership.CPIWhiteList
 import net.corda.membership.GroupPolicy
-import net.corda.membership.impl.read.cache.MemberListCache
+import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.identity.MemberInfo
@@ -12,11 +12,11 @@ class MembershipGroupReaderImpl(
     override val groupId: String,
     override val owningMember: MemberX500Name,
     override val policy: GroupPolicy,
-    private val memberListCache: MemberListCache
+    private val membershipGroupReadCache: MembershipGroupReadCache
 ) : MembershipGroupReader {
 
     private val memberList: List<MemberInfo>
-        get() = memberListCache.get(groupId, owningMember)!!
+        get() = membershipGroupReadCache.memberListCache.get(groupId, owningMember)!!
 
     override val groupParameters: GroupParameters
         get() = TODO("Not yet implemented")

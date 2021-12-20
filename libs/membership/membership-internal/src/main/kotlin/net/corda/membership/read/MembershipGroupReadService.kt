@@ -7,10 +7,11 @@ import net.corda.v5.membership.identity.MemberX500Name
  */
 interface MembershipGroupReadService {
     /**
-     * Returns a singleton instance of [MembershipGroupReader] for a given group ID and MemberX500Name.
+     * Returns a singleton instance of [MembershipGroupReader] for a given group ID and MemberX500Name which gives
+     * access to that holding identity's view on the group.
      *
-     * @param groupId String containing the group identifier.
-     * @param memberX500Name MemberX500Name of the member requesting the group policy.
+     * @param groupId The group identifier on the group the caller is requesting a view on.
+     * @param memberX500Name [MemberX500Name] of the member whose view on the group the caller is requesting.
      */
     fun getGroupReader(groupId: String, memberX500Name: MemberX500Name): MembershipGroupReader
 }
