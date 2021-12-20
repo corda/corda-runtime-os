@@ -11,7 +11,6 @@ import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.permissions.service.PermissionServiceComponent
-import net.corda.v5.base.util.Try
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -35,7 +34,6 @@ internal class UserEndpointImplTest {
         "parentGroupId"
     )
 
-    private val mockTry = mock<Try<UserResponseDto>>()
     private val userResponseDto = UserResponseDto(
         "uuid",
         0,
@@ -78,8 +76,7 @@ internal class UserEndpointImplTest {
         val createUserDtoCapture = argumentCaptor<CreateUserRequestDto>()
         whenever(lifecycleCoordinator.isRunning).thenReturn(true)
         whenever(permissionService.isRunning).thenReturn(true)
-        whenever(permissionManager.createUser(createUserDtoCapture.capture())).thenReturn(mockTry)
-        whenever(mockTry.getOrThrow()).thenReturn(userResponseDto)
+        whenever(permissionManager.createUser(createUserDtoCapture.capture())).thenReturn(userResponseDto)
 
         endpoint.start()
         val responseType = endpoint.createUser(createUserType)

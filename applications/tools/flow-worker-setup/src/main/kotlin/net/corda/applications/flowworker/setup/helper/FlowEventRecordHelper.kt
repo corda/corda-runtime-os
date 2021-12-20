@@ -6,9 +6,9 @@ import net.corda.data.flow.event.mapper.MessageDirection
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.Companion.FLOW_MAPPER_EVENT_TOPIC
 import java.time.Instant
 
-const val DEFAULT_FLOW_MAPPER_TOPIC_VALUE = "flow.mapper.event.topic"
 
 fun getHelloWorldRPCEventRecord(): Record<*, *> {
     return getStartRPCEventRecord(
@@ -26,7 +26,7 @@ fun getStartRPCEventRecord(clientId: String, cpiId: String, flowName: String, x5
     val identity = HoldingIdentity(x500Name, groupId)
     val flowKey = "$clientId.$x500Name.$groupId"
     val rpcStartFlow = StartRPCFlow(clientId, cpiId, flowName, identity, Instant.now(), "{ \"who\":\"world\"}")
-    return Record(DEFAULT_FLOW_MAPPER_TOPIC_VALUE, flowKey, FlowMapperEvent(MessageDirection.INBOUND, rpcStartFlow))
+    return Record(FLOW_MAPPER_EVENT_TOPIC, flowKey, FlowMapperEvent(MessageDirection.INBOUND, rpcStartFlow))
 }
 
 fun getHelloWorldScheduleCleanupEvent(): Record<*, *> {
@@ -35,7 +35,7 @@ fun getHelloWorldScheduleCleanupEvent(): Record<*, *> {
 
 fun getScheduleCleanupEvent(clientId: String, x500Name: String, groupId: String): Record<*, *> {
     return Record(
-        DEFAULT_FLOW_MAPPER_TOPIC_VALUE, "$clientId.$x500Name.$groupId", FlowMapperEvent(
+        FLOW_MAPPER_EVENT_TOPIC, "$clientId.$x500Name.$groupId", FlowMapperEvent(
             MessageDirection.INBOUND,
             ScheduleCleanup(
                 System.currentTimeMillis() +
