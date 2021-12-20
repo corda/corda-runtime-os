@@ -15,7 +15,7 @@ import org.apache.qpid.proton.codec.DescribedTypeConstructor
 import java.io.NotSerializableException
 import java.lang.reflect.Type
 
-val DESCRIPTOR_DOMAIN get() = "net.corda"
+const val DESCRIPTOR_DOMAIN: String = "net.corda"
 
 val amqpMagic get() = CordaSerializationMagic("corda".toByteArray() + byteArrayOf(3, 0))
 

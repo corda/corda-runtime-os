@@ -24,13 +24,13 @@ import java.lang.reflect.ParameterizedType
  * Index into the types list of the parent type of the serializer object, should be the
  * type that this object proxies for
  */
-private val CORDAPP_TYPE get() = 0
+private const val CORDAPP_TYPE = 0
 
 /**
  * Index into the types list of the parent type of the serializer object, should be the
  * type of the proxy object that we're using to represent the object we're proxying for
  */
-private val PROXY_TYPE get() = 1
+private const val PROXY_TYPE = 1
 
 /**
  * Wrapper class for user provided serializers

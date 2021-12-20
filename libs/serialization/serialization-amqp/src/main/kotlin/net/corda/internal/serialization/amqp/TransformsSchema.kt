@@ -76,7 +76,7 @@ abstract class Transform : DescribedType {
  */
 class UnknownTransform : Transform() {
     companion object : DescribedTypeConstructor<UnknownTransform> {
-        val typeName get() = "UnknownTransform"
+        const val typeName = "UnknownTransform"
 
         override fun newInstance(obj: Any?) = UnknownTransform()
 
@@ -94,7 +94,7 @@ class UnknownTransform : Transform() {
  */
 class UnknownTestTransform(val a: Int, val b: Int, val c: Int) : Transform() {
     companion object : DescribedTypeConstructor<UnknownTestTransform> {
-        val typeName get() = "UnknownTest"
+        const val typeName = "UnknownTest"
 
         override fun newInstance(obj: Any?): UnknownTestTransform {
             val described = obj as List<*>
@@ -121,7 +121,7 @@ class EnumDefaultSchemaTransform(val old: String, val new: String) : Transform()
         /**
          * Value encoded into the schema that identifies a transform as this type
          */
-        val typeName get() = "EnumDefault"
+        const val typeName = "EnumDefault"
 
         override fun newInstance(obj: Any?): EnumDefaultSchemaTransform {
             val described = obj as List<*>
@@ -158,7 +158,7 @@ class RenameSchemaTransform(val from: String, val to: String) : Transform() {
         /**
          * Value encoded into the schema that identifies a transform as this type
          */
-        val typeName get() = "Rename"
+        const val typeName = "Rename"
 
         override fun newInstance(obj: Any?): RenameSchemaTransform {
             val described = obj as List<*>

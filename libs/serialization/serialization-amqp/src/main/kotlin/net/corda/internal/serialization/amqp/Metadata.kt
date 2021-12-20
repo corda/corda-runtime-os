@@ -18,7 +18,7 @@ data class Metadata(val values: MutableMap<String, Any> = mutableMapOf()) : Desc
         @JvmStatic
         val DESCRIPTOR get() = AMQPDescriptorRegistry.METADATA.amqpDescriptor
 
-        private val VALUES_IDX get() = 0
+        private const val VALUES_IDX = 0
 
         fun get(obj: Any): Metadata {
             val describedType = obj as DescribedType

@@ -19,14 +19,14 @@ data class Envelope(val obj: Any?, val schema: Schema, val transformsSchema: Tra
 
         val DESCRIPTOR_OBJECT get() = Descriptor(null, DESCRIPTOR)
 
-        private val ENVELOPE_SIMPLE get() = 2
-        private val ENVELOPE_WITH_TRANSFORMS get() = 3
-        private val ENVELOPE_WITH_METADATA get() = 4
+        private const val ENVELOPE_SIMPLE = 2
+        private const val ENVELOPE_WITH_TRANSFORMS = 3
+        private const val ENVELOPE_WITH_METADATA = 4
 
-        private val BLOB_IDX get() = 0
-        private val SCHEMA_IDX get() = 1
-        private val TRANSFORMS_SCHEMA_IDX get() = 2
-        private val METADATA_IDX get() = 3
+        private const val BLOB_IDX = 0
+        private const val SCHEMA_IDX = 1
+        private const val TRANSFORMS_SCHEMA_IDX = 2
+        private const val METADATA_IDX = 3
 
         @Suppress("ThrowsCount")
         fun get(data: Data): Envelope {

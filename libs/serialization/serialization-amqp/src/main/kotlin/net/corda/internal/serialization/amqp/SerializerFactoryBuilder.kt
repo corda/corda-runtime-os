@@ -20,9 +20,9 @@ class SerializerFactoryBuilder {
     private val getBundles: Method?
 
     companion object {
-        private val FRAMEWORK_UTIL_CLASS_NAME get() = "org.osgi.framework.FrameworkUtil"
-        private val BUNDLE_CONTEXT_CLASS_NAME get() = "org.osgi.framework.BundleContext"
-        private val BUNDLE_CLASS_NAME get() = "org.osgi.framework.Bundle"
+        private const val FRAMEWORK_UTIL_CLASS_NAME = "org.osgi.framework.FrameworkUtil"
+        private const val BUNDLE_CONTEXT_CLASS_NAME = "org.osgi.framework.BundleContext"
+        private const val BUNDLE_CLASS_NAME = "org.osgi.framework.Bundle"
 
         /**
          * The standard mapping of Java object types to Java primitive types.

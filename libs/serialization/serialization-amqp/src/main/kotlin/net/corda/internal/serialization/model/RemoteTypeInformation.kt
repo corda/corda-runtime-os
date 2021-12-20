@@ -66,7 +66,7 @@ sealed class RemoteTypeInformation {
      * The [RemoteTypeInformation] corresponding to an unbounded wildcard ([TypeIdentifier.UnknownType])
      */
     object Unknown : RemoteTypeInformation() {
-        override val typeDescriptor get() = "?"
+        override val typeDescriptor = "?"
         override val typeIdentifier get() = TypeIdentifier.UnknownType
     }
 
@@ -74,7 +74,7 @@ sealed class RemoteTypeInformation {
      * The [RemoteTypeInformation] corresponding to [java.lang.Object] / [Any] ([TypeIdentifier.TopType])
      */
     object Top : RemoteTypeInformation() {
-        override val typeDescriptor get() = "*"
+        override val typeDescriptor = "*"
         override val typeIdentifier get() = TypeIdentifier.TopType
     }
 

@@ -10,7 +10,7 @@ import java.lang.reflect.Constructor
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
-private val IGNORE_COMPUTED get() = -1
+private const val IGNORE_COMPUTED = -1
 
 /**
  * Creates a new [ObjectBuilder] ready to be populated with deserialized values so that it can create an object instance.
@@ -259,7 +259,7 @@ class EvolutionObjectBuilder(
 
     companion object {
 
-        val DISCARDED get() = -1
+        const val DISCARDED: Int = -1
 
         /**
          * Construct an [EvolutionObjectBuilder] for the specified type, constructor and properties, mapping the list of
