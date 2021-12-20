@@ -1,6 +1,6 @@
 package net.corda.crypto.client
 
-import net.corda.crypto.clients.CryptoOpsClient
+import net.corda.crypto.CryptoOpsClient
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
@@ -8,7 +8,6 @@ import net.corda.data.crypto.wire.CryptoPublicKeys
 import net.corda.data.crypto.wire.CryptoSignature
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.crypto.wire.WireSignatureSpec
 import net.corda.data.crypto.wire.ops.rpc.AssignedHSMRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.FilterMyKeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.GenerateFreshKeyRpcCommand
@@ -122,7 +121,7 @@ class CryptoOpsPublisher(
             tenantId,
             SignWithSpecRpcCommand(
                 ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)),
-                WireSignatureSpec(signatureSpec.signatureName, signatureSpec.customDigestName?.name),
+                CryptoSignatureSpec(signatureSpec.signatureName, signatureSpec.customDigestName?.name),
                 ByteBuffer.wrap(data),
                 context.toWire()
             )
@@ -138,7 +137,6 @@ class CryptoOpsPublisher(
         val request = createRequest(
             tenantId,
             SignWithAliasRpcCommand(
-                "DELETE ME",
                 alias,
                 ByteBuffer.wrap(data),
                 context.toWire()
@@ -158,9 +156,8 @@ class CryptoOpsPublisher(
         val request = createRequest(
             tenantId,
             SignWithAliasSpecRpcCommand(
-                "DELETE ME",
                 alias,
-                WireSignatureSpec(signatureSpec.signatureName, signatureSpec.customDigestName?.name),
+                CryptoSignatureSpec(signatureSpec.signatureName, signatureSpec.customDigestName?.name),
                 ByteBuffer.wrap(data),
                 context.toWire()
             )

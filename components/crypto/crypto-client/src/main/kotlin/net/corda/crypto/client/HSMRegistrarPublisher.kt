@@ -1,8 +1,8 @@
 package net.corda.crypto.client
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.clients.CryptoPublishResult
-import net.corda.crypto.clients.HSMRegistrarClient
+import net.corda.crypto.CryptoPublishResult
+import net.corda.crypto.HSMRegistrarClient
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.wire.registration.hsm.AddHSMCommand
 import net.corda.data.crypto.wire.registration.hsm.AssignHSMCommand
@@ -24,7 +24,7 @@ class HSMRegistrarPublisher(
     override fun assignHSM(tenantId: String, category: String, defaultSignatureScheme: String): CryptoPublishResult =
         publish(
             tenantId,
-            AssignHSMCommand(tenantId, category, defaultSignatureScheme, emptyKeyValuePairList)
+            AssignHSMCommand(category, defaultSignatureScheme, emptyKeyValuePairList)
         )
 
     override fun assignSoftHSM(
@@ -35,14 +35,14 @@ class HSMRegistrarPublisher(
     ): CryptoPublishResult =
         publish(
             tenantId,
-            AssignSoftHSMCommand(tenantId, category, passphrase, defaultSignatureScheme, emptyKeyValuePairList)
+            AssignSoftHSMCommand(category, passphrase, defaultSignatureScheme, emptyKeyValuePairList)
         )
 
     private fun publish(tenantId: String, request: Any): CryptoPublishResult {
         val envelope = createRequest(tenantId, request)
         publisher.publish(
             listOf(
-                Record(Schemas.Crypto.HSM_REGISTRATION_MESSAGE_TOPIC, CryptoConsts.CLUSTER_TENANT_ID, request)
+                Record(Schemas.Crypto.HSM_REGISTRATION_MESSAGE_TOPIC, CryptoConsts.CLUSTER_TENANT_ID, envelope)
             )
         ).waitAll()
         return envelope.context.toCryptoPublishResult()

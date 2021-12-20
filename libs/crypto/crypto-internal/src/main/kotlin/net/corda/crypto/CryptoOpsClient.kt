@@ -1,4 +1,4 @@
-package net.corda.crypto.clients
+package net.corda.crypto
 
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.crypto.SigningService

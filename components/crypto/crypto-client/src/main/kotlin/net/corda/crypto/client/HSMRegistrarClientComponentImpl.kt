@@ -1,7 +1,7 @@
 package net.corda.crypto.client
 
-import net.corda.crypto.clients.CryptoPublishResult
-import net.corda.crypto.clients.HSMRegistrarClient
+import net.corda.crypto.CryptoPublishResult
+import net.corda.crypto.HSMRegistrarClient
 import net.corda.crypto.component.lifecycle.AbstractComponent
 import net.corda.crypto.impl.closeGracefully
 import net.corda.data.crypto.config.HSMConfig

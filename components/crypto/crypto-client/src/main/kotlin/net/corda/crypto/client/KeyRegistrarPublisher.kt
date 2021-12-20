@@ -1,7 +1,7 @@
 package net.corda.crypto.client
 
-import net.corda.crypto.clients.CryptoPublishResult
-import net.corda.crypto.clients.KeyRegistrarClient
+import net.corda.crypto.CryptoPublishResult
+import net.corda.crypto.KeyRegistrarClient
 import net.corda.data.crypto.wire.registration.key.GenerateKeyPairCommand
 import net.corda.data.crypto.wire.registration.key.KeyRegistrationRequest
 import net.corda.messaging.api.publisher.Publisher
@@ -20,14 +20,14 @@ class KeyRegistrarPublisher(
     ): CryptoPublishResult =
         publish(
             tenantId,
-            GenerateKeyPairCommand(tenantId, category, alias, context.toWire())
+            GenerateKeyPairCommand(category, alias, context.toWire())
         )
 
     private fun publish(tenantId: String, request: Any): CryptoPublishResult {
         val envelope = createRequest(tenantId, request)
         publisher.publish(
             listOf(
-                Record(Schemas.Crypto.KEY_REGISTRATION_MESSAGE_TOPIC, tenantId, request)
+                Record(Schemas.Crypto.KEY_REGISTRATION_MESSAGE_TOPIC, tenantId, envelope)
             )
         ).waitAll()
         return envelope.context.toCryptoPublishResult()

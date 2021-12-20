@@ -1,6 +1,4 @@
-package net.corda.crypto.clients
-
-import net.corda.crypto.SigningService
+package net.corda.crypto
 
 /**
  * The key registration client to generate keys.

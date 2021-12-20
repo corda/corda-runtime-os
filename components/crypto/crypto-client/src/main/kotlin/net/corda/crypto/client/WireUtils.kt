@@ -2,7 +2,7 @@
 
 package net.corda.crypto.client
 
-import net.corda.crypto.clients.CryptoPublishResult
+import net.corda.crypto.CryptoPublishResult
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext

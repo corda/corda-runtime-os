@@ -13,7 +13,7 @@ class CryptoRpcConfig(
     map: Map<String, Any?>
 ) : CryptoConfigMap(map) {
     val clientTimeoutMillis: Long
-        get() = getLong(this::clientTimeoutMillis.name, 15)
+        get() = getLong(this::clientTimeoutMillis.name, 15000)
 
     val clientRetries: Long
         get() = getLong(this::clientRetries.name, 1)

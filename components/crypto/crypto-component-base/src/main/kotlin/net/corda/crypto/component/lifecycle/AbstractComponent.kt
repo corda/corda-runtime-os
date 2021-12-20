@@ -16,11 +16,11 @@ abstract class AbstractComponent<RESOURCE: AutoCloseable>(
 ) : Lifecycle {
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
-    protected val coordinator = coordinatorFactory.createCoordinator(coordinatorName) { event, _ ->
+    val coordinator = coordinatorFactory.createCoordinator(coordinatorName) { event, _ ->
         handleCoordinatorEvent(event)
     }
 
-    protected var resources: RESOURCE? = null
+    var resources: RESOURCE? = null
         private set
 
     override val isRunning: Boolean

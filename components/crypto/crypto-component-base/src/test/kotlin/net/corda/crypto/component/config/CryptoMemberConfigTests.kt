@@ -1,6 +1,5 @@
 package net.corda.crypto.component.config
 
-import net.corda.crypto.CryptoCategories
 import net.corda.crypto.CryptoConsts
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
