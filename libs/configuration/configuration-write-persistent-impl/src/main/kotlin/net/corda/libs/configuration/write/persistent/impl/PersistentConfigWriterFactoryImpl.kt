@@ -19,7 +19,7 @@ import org.osgi.service.component.annotations.Reference
 /** An implementation of [PersistentConfigWriterFactory]. */
 @Suppress("Unused")
 @Component(service = [PersistentConfigWriterFactory::class])
-class PersistentConfigWriterFactoryImpl @Activate constructor(
+internal class PersistentConfigWriterFactoryImpl @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = PublisherFactory::class)

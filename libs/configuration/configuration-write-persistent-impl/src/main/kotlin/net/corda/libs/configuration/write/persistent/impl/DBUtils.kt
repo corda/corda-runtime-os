@@ -26,7 +26,7 @@ import javax.sql.DataSource
  * @property entityManagerFactory The factory for creating [EntityManager]s.
  */
 @Component(service = [DBUtils::class])
-class DBUtils @Activate constructor(
+internal class DBUtils @Activate constructor(
     @Reference(service = LiquibaseSchemaMigrator::class)
     private val schemaMigrator: LiquibaseSchemaMigrator,
     @Reference(service = EntityManagerFactoryFactory::class)

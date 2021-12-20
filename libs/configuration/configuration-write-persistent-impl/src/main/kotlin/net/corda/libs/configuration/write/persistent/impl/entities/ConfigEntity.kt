@@ -23,7 +23,7 @@ import javax.persistence.Version
  */
 @Entity
 @Table(name = DB_TABLE_CONFIG)
-data class ConfigEntity(
+internal class ConfigEntity(
     @Id
     @Column(name = "section", nullable = false)
     val section: String,
