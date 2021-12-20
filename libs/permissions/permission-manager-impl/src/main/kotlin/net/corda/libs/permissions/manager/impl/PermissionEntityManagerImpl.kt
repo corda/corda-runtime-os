@@ -12,6 +12,7 @@ import net.corda.libs.permissions.manager.exception.PermissionManagerException
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
 import net.corda.data.permissions.management.permission.PermissionTypeEnum as AvroPermissionTypeEnum
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
+import net.corda.libs.permissions.manager.impl.converter.fromInternal
 import net.corda.libs.permissions.manager.request.CreatePermissionRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionRequestDto
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
@@ -34,7 +35,7 @@ class PermissionEntityManagerImpl(
                     createPermissionRequestDto.requestedBy,
                     "cluster",
                     CreatePermissionRequest(
-                        createPermissionRequestDto.permissionType.map(),
+                        createPermissionRequestDto.permissionType.fromInternal(),
                         createPermissionRequestDto.permissionString,
                         createPermissionRequestDto.groupVisibility
                     )
@@ -54,12 +55,5 @@ class PermissionEntityManagerImpl(
     override fun getPermission(permissionRequestDto: GetPermissionRequestDto): PermissionResponseDto? {
         val cachedPermission: Permission = permissionCache.getPermission(permissionRequestDto.permissionId) ?: return null
         return cachedPermission.convertToResponseDto()
-    }
-}
-
-private fun PermissionTypeEnum.map(): AvroPermissionTypeEnum {
-    return when(this) {
-        PermissionTypeEnum.ALLOW -> AvroPermissionTypeEnum.ALLOW
-        PermissionTypeEnum.DENY -> AvroPermissionTypeEnum.DENY
     }
 }

@@ -64,15 +64,22 @@ fun AvroPermissionAssociation.convertToResponseDto() : PermissionResponseDto {
         permission.lastChangeDetails.updateTimestamp,
         permission.groupVisibility,
         permission.virtualNode,
-        permission.type.map(),
+        permission.permissionType.toInternal(),
         permission.permissionString
     )
 }
 
-private fun AvroPermissionType.map(): PermissionTypeEnum {
+private fun AvroPermissionType.toInternal(): PermissionTypeEnum {
     return when(this) {
         AvroPermissionType.ALLOW -> PermissionTypeEnum.ALLOW
         AvroPermissionType.DENY -> PermissionTypeEnum.DENY
+    }
+}
+
+fun PermissionTypeEnum.fromInternal(): AvroPermissionType {
+    return when(this) {
+        PermissionTypeEnum.ALLOW -> AvroPermissionType.ALLOW
+        PermissionTypeEnum.DENY -> AvroPermissionType.DENY
     }
 }
 
@@ -83,7 +90,7 @@ fun AvroPermission.convertToResponseDto(): PermissionResponseDto {
         lastChangeDetails.updateTimestamp,
         groupVisibility,
         virtualNode,
-        type.map(),
+        permissionType.toInternal(),
         permissionString
     )
 }

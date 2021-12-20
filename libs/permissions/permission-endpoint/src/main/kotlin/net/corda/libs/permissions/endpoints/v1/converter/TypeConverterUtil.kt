@@ -111,29 +111,29 @@ fun PermissionResponseDto.convertToEndpointType(): PermissionResponseType {
         lastUpdatedTimestamp,
         groupVisibility,
         virtualNode,
-        permissionType.map(),
+        permissionType.fromInternal(),
         permissionString
     )
 }
 
-private fun InternalPermissionTypeEnum.map(): PermissionTypeEnum {
-    return when(this) {
-        InternalPermissionTypeEnum.ALLOW -> PermissionTypeEnum.ALLOW
-        InternalPermissionTypeEnum.DENY -> PermissionTypeEnum.DENY
-    }
-}
-
-private fun PermissionTypeEnum.map(): InternalPermissionTypeEnum {
+private fun PermissionTypeEnum.toInternal(): InternalPermissionTypeEnum {
     return when(this) {
         PermissionTypeEnum.ALLOW -> InternalPermissionTypeEnum.ALLOW
         PermissionTypeEnum.DENY -> InternalPermissionTypeEnum.DENY
     }
 }
 
+private fun InternalPermissionTypeEnum.fromInternal(): PermissionTypeEnum {
+    return when(this) {
+        InternalPermissionTypeEnum.ALLOW -> PermissionTypeEnum.ALLOW
+        InternalPermissionTypeEnum.DENY -> PermissionTypeEnum.DENY
+    }
+}
+
 fun CreatePermissionType.convertToDto(requestedBy: String): CreatePermissionRequestDto {
     return CreatePermissionRequestDto(
         requestedBy,
-        permissionType.map(),
+        permissionType.toInternal(),
         permissionString,
         groupVisibility,
         virtualNode
