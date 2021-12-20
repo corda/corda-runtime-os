@@ -31,7 +31,7 @@ class PermissionEntityManagerImpl(
             val future = rpcSender.sendRequest(
                 PermissionManagementRequest(
                     createPermissionRequestDto.requestedBy,
-                    "cluster",
+                    createPermissionRequestDto.virtualNode,
                     CreatePermissionRequest(
                         createPermissionRequestDto.permissionType.fromInternal(),
                         createPermissionRequestDto.permissionString,
