@@ -13,7 +13,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigWriteServiceImpl]. */
-class ConfigWriteEventHandler(
+internal class ConfigWriteEventHandler(
     private val configWriterFactory: PersistentConfigWriterFactory,
     private val dbUtils: DBUtils
 ) : LifecycleEventHandler {

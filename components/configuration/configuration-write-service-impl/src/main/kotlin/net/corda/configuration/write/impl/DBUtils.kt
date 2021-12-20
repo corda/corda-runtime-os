@@ -8,7 +8,7 @@ import javax.sql.DataSource
 
 /** Encapsulates database-related functionality, so that it can be stubbed during tests. */
 @Component(service = [DBUtils::class])
-class DBUtils {
+internal class DBUtils {
     private var dataSource: DataSource? = null
 
     /**

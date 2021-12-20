@@ -12,7 +12,7 @@ import org.osgi.service.component.annotations.Reference
 /** An implementation of [ConfigWriteService]. */
 @Suppress("Unused")
 @Component(service = [ConfigWriteService::class])
-class ConfigWriteServiceImpl @Activate constructor(
+internal class ConfigWriteServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PersistentConfigWriterFactory::class)
