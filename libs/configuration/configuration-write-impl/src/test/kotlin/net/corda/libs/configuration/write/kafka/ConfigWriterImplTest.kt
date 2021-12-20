@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package net.corda.libs.configuration.write.kafka
 
 import org.mockito.kotlin.any

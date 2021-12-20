@@ -11,11 +11,13 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 
 class ConfigWriterFactoryImplTest {
+    @Suppress("Deprecation")
     private lateinit var cordaWriteServiceFactory: ConfigWriterFactoryImpl
     private var publisherFactory: PublisherFactory = mock()
     private var publisher: Publisher = mock()
     private val topicName = "topic"
 
+    @Suppress("Deprecation")
     @BeforeEach
     fun beforeEach() {
         cordaWriteServiceFactory = ConfigWriterFactoryImpl(publisherFactory)
