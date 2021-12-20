@@ -1,0 +1,30 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import static org.gradle.api.JavaVersion.VERSION_11
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+}
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version "$kotlinVersion"
+    id 'maven-publish'
+}
+
+ext.pluginsDir = "$buildDir/plugins"
+
+allprojects {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+
+    group = 'net.corda.cli'
+    version = '0.0.1-beta'
+}
+
+tasks.named("build") {
+    dependsOn(":app:fatJar")
+}
