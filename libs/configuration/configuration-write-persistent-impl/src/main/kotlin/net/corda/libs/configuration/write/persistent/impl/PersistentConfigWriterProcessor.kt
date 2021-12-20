@@ -37,6 +37,8 @@ internal class PersistentConfigWriterProcessor(
      * If both steps succeed, [respFuture] is completed successfully. Otherwise, it is completed unsuccessfully.
      */
     override fun onNext(request: ConfigMgmtReq, respFuture: ConfigMgmtRespFuture) {
+        // TODO - CORE-3318 - Ensure we don't perform any blocking operations in the processor.
+        // TODO - CORE-3319 - Strategy for DB and Kafka retries.
         if (publishConfigToDB(request, respFuture)) {
             publishConfigToKafka(request, respFuture)
         }
@@ -77,7 +79,6 @@ internal class PersistentConfigWriterProcessor(
         try {
             future.get()
         } catch (e: Exception) {
-            // TODO - Joel - Correct behaviour is to keep retrying publication, e.g. background reconciliation, but being careful not to overwrite new written config. Raise separate JIRA.
             val errMsg = "Record $configRecord was written to the database, but couldn't be published."
             handleException(respFuture, errMsg, e, req.section)
             return

@@ -41,7 +41,8 @@ internal class ConfigWriteEventHandler(
                 }
 
                 tryOrError(coordinator, "Could not subscribe to config management requests.") {
-                    // TODO - Joel - I should be pulling this config out of the DB, and check diff with stuff from config read at startup. Raise separate JIRA.
+                    // TODO - CORE-3316 - At worker start-up, read back configuration from database and check it
+                    //  against Kafka topic.
                     configWriter = configWriterFactory
                         .create(event.config, event.instanceId)
                         .apply { start() }

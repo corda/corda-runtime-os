@@ -3,8 +3,6 @@ package net.corda.configuration.write
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 
-// TODO - Joel - Try and write the RPC gateway as well, for full e2e example. Raise separate JIRA.
-
 /** Wraps a `PersistentConfigWriter` to persist and broadcast cluster configuration updates. */
 interface ConfigWriteService : Lifecycle {
 

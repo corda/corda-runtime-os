@@ -8,7 +8,6 @@ import net.corda.configuration.write.impl.MAX_POOL_SIZE
 import net.corda.db.core.HikariDataSourceFactory
 import net.corda.libs.configuration.SmartConfig
 import org.osgi.service.component.annotations.Component
-import java.sql.SQLException
 import javax.sql.DataSource
 
 /** An implementation of [DBUtils]. */

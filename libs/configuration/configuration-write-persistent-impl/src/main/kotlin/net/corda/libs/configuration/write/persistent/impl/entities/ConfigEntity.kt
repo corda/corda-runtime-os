@@ -10,7 +10,7 @@ import javax.persistence.PreUpdate
 import javax.persistence.Table
 import javax.persistence.Version
 
-// TODO - Joel - Move liquibase scripts to corda-api repo.
+// TODO - CORE-3317 - Move Liquibase scripts for `ConfigEntity` and `ConfigAuditEntity` to corda-api repo.
 
 /**
  * The entity for the current cluster configuration in the cluster database.

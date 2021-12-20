@@ -1,7 +1,5 @@
 package net.corda.libs.configuration.write.persistent.impl
 
-import net.corda.data.config.ConfigurationManagementRequest
-import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.persistent.PersistentConfigWriter
 import net.corda.libs.configuration.write.persistent.PersistentConfigWriterException
@@ -67,12 +65,11 @@ internal class PersistentConfigWriterFactoryImpl @Activate constructor(
             GROUP_NAME,
             CLIENT_NAME_RPC,
             TOPIC_CONFIG_MGMT_REQUEST,
-            ConfigurationManagementRequest::class.java,
-            ConfigurationManagementResponse::class.java,
+            ConfigMgmtReq::class.java,
+            ConfigMgmtResp::class.java,
             instanceId
         )
 
-        // TODO - Joel - Don't do anything blocking in processor. Raise separate JIRA.
         val processor = PersistentConfigWriterProcessor(publisher, config, dbUtils)
         return try {
             subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
