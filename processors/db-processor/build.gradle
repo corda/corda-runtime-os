@@ -17,6 +17,8 @@ dependencies {
     implementation 'net.corda:corda-base'
 
     runtimeOnly project(':components:configuration:configuration-write-service-impl')
+    runtimeOnly project(':libs:messaging:kafka-messaging-impl')
+    runtimeOnly project(':libs:schema-registry:schema-registry-impl')
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
