@@ -31,17 +31,17 @@ class PermissionValidatorImplTest {
             "5e0a07a6-c25d-413a-be34-647a792f4f58", 1,
             ChangeDetails(Instant.now()),
             virtualNode,
+            PermissionType.ALLOW,
             permissionString,
-            "group1",
-            PermissionType.ALLOW)
+            "group1")
 
         private val permissionDenied = Permission(
             "5e0a07a6-c25d-413a-be34-647a792f4f58", 1,
             ChangeDetails(Instant.now()),
             virtualNode,
+            PermissionType.DENY,
             permissionString,
-            "group1",
-            PermissionType.DENY)
+            "group1")
 
         private val role = Role(
             "roleId1", 1,

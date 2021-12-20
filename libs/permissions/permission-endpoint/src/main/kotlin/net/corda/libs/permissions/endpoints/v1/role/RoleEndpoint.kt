@@ -29,7 +29,7 @@ interface RoleEndpoint : RpcOps {
     ): RoleResponseType
 
     /**
-     * Get a role by its name in the RBAC permission system.
+     * Get a role by its identifier in the RBAC permission system.
      */
     @HttpRpcGET(description = "Get a Role by its ID", path = "")
     fun getRole(
