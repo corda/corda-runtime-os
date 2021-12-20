@@ -1,7 +1,8 @@
-package net.corda.membership.impl.read
+package net.corda.membership.impl.read.reader
 
 import net.corda.membership.GroupPolicy
 import net.corda.membership.impl.read.cache.MemberListCache
+import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.v5.membership.identity.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -18,7 +19,10 @@ class MembershipGroupReaderImplTest {
     private val groupId = "GROUP_ID"
     private val memberName = MemberX500Name("Alice", "London", "GB")
     private val groupPolicy: GroupPolicy = mock()
-    private val memberListCache: MemberListCache = mock()
+    private val memberCache: MemberListCache = mock()
+    private val membershipGroupCache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
+        whenever(this.memberListCache).thenReturn(memberCache)
+    }
     private val memberInfo = mock<MemberInfo>().apply {
         whenever(name).thenReturn(memberName)
     }
@@ -29,12 +33,12 @@ class MembershipGroupReaderImplTest {
             groupId,
             memberName,
             groupPolicy,
-            memberListCache
+            membershipGroupCache
         )
     }
 
     private fun mockMemberList(memberList: List<MemberInfo>) {
-        whenever(memberListCache.get(eq(groupId), eq(memberName))).thenReturn(memberList)
+        whenever(memberCache.get(eq(groupId), eq(memberName))).thenReturn(memberList)
     }
 
     @Test
