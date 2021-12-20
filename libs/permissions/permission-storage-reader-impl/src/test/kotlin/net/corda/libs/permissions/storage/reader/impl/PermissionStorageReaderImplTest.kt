@@ -27,6 +27,7 @@ import net.corda.data.permissions.PermissionAssociation
 import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
+import net.corda.data.permissions.PermissionType as AvroPermissionType
 import net.corda.data.permissions.Role as AvroRole
 import net.corda.data.permissions.User as AvroUser
 
@@ -55,9 +56,9 @@ class PermissionStorageReaderImplTest {
             -1,
             ChangeDetails(permission.updateTimestamp),
             permission.virtualNode,
+            AvroPermissionType.ALLOW,
             permission.permissionString,
-            parentGroup.id,
-            net.corda.data.permissions.PermissionType.ALLOW
+            parentGroup.id
         )
 
         val role = Role(

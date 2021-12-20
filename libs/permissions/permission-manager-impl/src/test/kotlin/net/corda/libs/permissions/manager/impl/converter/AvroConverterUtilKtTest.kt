@@ -128,9 +128,9 @@ internal class AvroConverterUtilKtTest {
                         21,
                         ChangeDetails(now),
                         "virtNode1",
+                        PermissionType.DENY,
                         "*",
-                        "group21",
-                        PermissionType.DENY
+                        "group21"
                     )
                 ),
                 PermissionAssociation(
@@ -140,9 +140,9 @@ internal class AvroConverterUtilKtTest {
                         2,
                         ChangeDetails(now),
                         "virtNode2",
+                        PermissionType.ALLOW,
                         "*",
-                        "group2",
-                        PermissionType.ALLOW
+                        "group2"
                     )
                 )
             )
