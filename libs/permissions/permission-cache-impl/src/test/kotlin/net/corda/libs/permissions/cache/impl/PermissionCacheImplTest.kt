@@ -36,9 +36,9 @@ internal class PermissionCacheImplTest {
         emptyList(), listOf(RoleAssociation(ChangeDetails(Instant.now()), "role1"), RoleAssociation(ChangeDetails(Instant.now()), "role2")))
 
     private val permission1 = Permission("perm1", 0, ChangeDetails(Instant.now()), "virtNode1",
-        "*", group1.id, PermissionType.ALLOW)
+        PermissionType.ALLOW, "*", group1.id)
     private val permission2 = Permission("perm2", 0, ChangeDetails(Instant.now()), "virtNode2",
-        "*", group1.id, PermissionType.DENY)
+        PermissionType.DENY, "*", group1.id)
 
     private val role1 = Role("role1", 0, ChangeDetails(Instant.now()), "admin", group1.id,
         listOf(PermissionAssociation(ChangeDetails(Instant.now()), permission1)))
