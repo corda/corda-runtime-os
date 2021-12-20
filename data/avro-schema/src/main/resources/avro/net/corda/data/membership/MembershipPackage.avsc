@@ -9,7 +9,7 @@
       "doc": "Distribution type for this data package. Could be a standard MGM update, or a response to a requested synchronisation.",
       "type": {
         "type": "enum",
-        "name": "distributionType",
+        "name": "DistributionType",
         "symbols": ["STANDARD", "SYNC"]
       }
     },
