@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Membership data read and write services implementation'
+description 'Membership data read services implementation'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
