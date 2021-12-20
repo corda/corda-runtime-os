@@ -134,7 +134,7 @@ internal class AvroConverterUtilsTest {
         assertEquals(later, convertedPermission1.lastChangeDetails.updateTimestamp)
         assertNull(convertedPermission1.groupVisibility)
         assertEquals("virtNode3", convertedPermission1.virtualNode)
-        assertEquals(AvroPermissionType.ALLOW, convertedPermission1.type)
+        assertEquals(AvroPermissionType.ALLOW, convertedPermission1.permissionType)
         assertEquals("*", convertedPermission1.permissionString)
 
         val permissionAssoc2 = avroRole.permissions[1]
@@ -145,9 +145,8 @@ internal class AvroConverterUtilsTest {
         assertEquals(later, convertedPermission2.lastChangeDetails.updateTimestamp)
         assertNull(convertedPermission2.groupVisibility)
         assertEquals("virtNode4", convertedPermission2.virtualNode)
-        assertEquals(AvroPermissionType.DENY, convertedPermission2.type)
+        assertEquals(AvroPermissionType.DENY, convertedPermission2.permissionType)
         assertEquals("*", convertedPermission2.permissionString)
-
     }
 
     @Test

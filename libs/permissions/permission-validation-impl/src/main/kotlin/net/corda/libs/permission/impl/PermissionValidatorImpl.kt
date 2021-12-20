@@ -64,7 +64,7 @@ class PermissionValidatorImpl(
         val allPermissions = roles.flatMap { it.permissions.map { permissionAssociation -> permissionAssociation.permission } }
 
         // Perform checks, with deny taking priority over allow
-        val (denies, allows) = allPermissions.partition { it.type == PermissionType.DENY }
+        val (denies, allows) = allPermissions.partition { it.permissionType == PermissionType.DENY }
         if (denies.any { wildcardMatch(it, permissionRequested) }) {
             logger.debug { "Explicitly denied by: '${denies.first { wildcardMatch(it, permissionRequested) }}'" }
             return false
