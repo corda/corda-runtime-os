@@ -24,7 +24,7 @@ import javax.persistence.Table
  */
 @Entity
 @Table(name = DB_TABLE_CONFIG_AUDIT)
-internal class ConfigAuditEntity(
+internal data class ConfigAuditEntity(
     @Id
     @SequenceGenerator(name = CONFIG_AUDIT_GENERATOR, sequenceName = "config_audit_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = SEQUENCE, generator = CONFIG_AUDIT_GENERATOR)

@@ -1,22 +1,23 @@
-package net.corda.configuration.write.impl
+package net.corda.configuration.write.impl.dbutils
 
+import net.corda.configuration.write.impl.CONFIG_DB_DRIVER
+import net.corda.configuration.write.impl.CONFIG_DB_PASS
+import net.corda.configuration.write.impl.CONFIG_DB_USER
+import net.corda.configuration.write.impl.CONFIG_JDBC_URL
+import net.corda.configuration.write.impl.MAX_POOL_SIZE
 import net.corda.db.core.HikariDataSourceFactory
 import net.corda.libs.configuration.SmartConfig
 import org.osgi.service.component.annotations.Component
 import java.sql.SQLException
 import javax.sql.DataSource
 
-/** Encapsulates database-related functionality, so that it can be stubbed during tests. */
+/** An implementation of [DBUtils]. */
+@Suppress("Unused")
 @Component(service = [DBUtils::class])
-internal class DBUtils {
+internal class DBUtilsImpl : DBUtils {
     private var dataSource: DataSource? = null
 
-    /**
-     * Checks that it's possible to connect to the cluster database using the [config].
-     *
-     * @throws SQLException If the cluster database cannot be connected to.
-     */
-    fun checkClusterDatabaseConnection(config: SmartConfig) {
+    override fun checkClusterDatabaseConnection(config: SmartConfig) {
         val dataSource = dataSource ?: setDataSource(config)
         dataSource.connection.close()
     }

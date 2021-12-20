@@ -26,6 +26,8 @@ dependencies {
 
     runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
+
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
 
 tasks.named('jar', Jar) {

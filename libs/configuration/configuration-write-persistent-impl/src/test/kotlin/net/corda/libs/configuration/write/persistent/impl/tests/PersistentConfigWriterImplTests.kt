@@ -2,13 +2,11 @@ package net.corda.libs.configuration.write.persistent.impl.tests
 
 import net.corda.libs.configuration.write.persistent.impl.ConfigMgmtRPCSubscription
 import net.corda.libs.configuration.write.persistent.impl.PersistentConfigWriterImpl
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.util.concurrent.CompletableFuture
 
 /** Tests of [PersistentConfigWriterImpl]. */
 class PersistentConfigWriterImplTests {
@@ -72,7 +70,7 @@ class PersistentConfigWriterImplTests {
             isRunning = false
         }
 
-        override val subscriptionName = LifecycleCoordinatorName("")
+        override val subscriptionName get() = throw NotImplementedError()
     }
 
     /** A [Publisher] that tracks whether it has been started. */
@@ -87,8 +85,8 @@ class PersistentConfigWriterImplTests {
             isStarted = false
         }
 
-        override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>) = emptyList<CompletableFuture<Unit>>()
+        override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>) = throw NotImplementedError()
 
-        override fun publish(records: List<Record<*, *>>) = emptyList<CompletableFuture<Unit>>()
+        override fun publish(records: List<Record<*, *>>) = throw NotImplementedError()
     }
 }

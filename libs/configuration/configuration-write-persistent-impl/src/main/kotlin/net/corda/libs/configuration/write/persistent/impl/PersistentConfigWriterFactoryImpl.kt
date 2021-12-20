@@ -7,6 +7,7 @@ import net.corda.libs.configuration.write.persistent.PersistentConfigWriter
 import net.corda.libs.configuration.write.persistent.PersistentConfigWriterException
 import net.corda.libs.configuration.write.persistent.PersistentConfigWriterFactory
 import net.corda.libs.configuration.write.persistent.TOPIC_CONFIG_MGMT_REQUEST
+import net.corda.libs.configuration.write.persistent.impl.dbutils.DBUtils
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory

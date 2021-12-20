@@ -1,6 +1,7 @@
 package net.corda.configuration.write.impl
 
 import net.corda.configuration.write.ConfigWriteService
+import net.corda.configuration.write.impl.dbutils.DBUtils
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.persistent.PersistentConfigWriterFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory

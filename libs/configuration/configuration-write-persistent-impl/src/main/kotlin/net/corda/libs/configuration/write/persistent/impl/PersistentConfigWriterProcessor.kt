@@ -2,18 +2,16 @@ package net.corda.libs.configuration.write.persistent.impl
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.Configuration
-import net.corda.data.config.ConfigurationManagementRequest
-import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.persistent.TOPIC_CONFIG
 import net.corda.libs.configuration.write.persistent.TOPIC_CONFIG_MGMT_REQUEST
+import net.corda.libs.configuration.write.persistent.impl.dbutils.DBUtils
 import net.corda.libs.configuration.write.persistent.impl.entities.ConfigAuditEntity
 import net.corda.libs.configuration.write.persistent.impl.entities.ConfigEntity
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
-import javax.persistence.RollbackException
 
 /**
  * An RPC responder processor that handles configuration management requests.
@@ -25,7 +23,7 @@ internal class PersistentConfigWriterProcessor(
     private val publisher: Publisher,
     private val config: SmartConfig,
     private val dbUtils: DBUtils
-) : RPCResponderProcessor<ConfigurationManagementRequest, ConfigurationManagementResponse> {
+) : RPCResponderProcessor<ConfigMgmtReq, ConfigMgmtResp> {
 
     private companion object {
         val logger = contextLogger()
@@ -36,9 +34,9 @@ internal class PersistentConfigWriterProcessor(
      * the updated config is then published by the [publisher] to the [TOPIC_CONFIG] topic for consumption using a
      * `ConfigReader`.
      *
-     * If both steps succeed, [respFuture] is completed to indicate success. Otherwise, it is completed exceptionally.
+     * If both steps succeed, [respFuture] is completed successfully. Otherwise, it is completed unsuccessfully.
      */
-    override fun onNext(request: ConfigurationManagementRequest, respFuture: ConfigMgmtRespFuture) {
+    override fun onNext(request: ConfigMgmtReq, respFuture: ConfigMgmtRespFuture) {
         if (publishConfigToDB(request, respFuture)) {
             publishConfigToKafka(request, respFuture)
         }
@@ -47,17 +45,17 @@ internal class PersistentConfigWriterProcessor(
     /**
      * Commits the updated config described by [req] to the database.
      *
-     * If the transaction fails, the exception is caught and [respFuture] is completed exceptionally. The transaction
+     * If the transaction fails, the exception is caught and [respFuture] is completed unsuccessfully. The transaction
      * is not retried.
      *
      * @return True if the commit was successful, false if the commit failed.
      */
-    private fun publishConfigToDB(req: ConfigurationManagementRequest, respFuture: ConfigMgmtRespFuture): Boolean {
+    private fun publishConfigToDB(req: ConfigMgmtReq, respFuture: ConfigMgmtRespFuture): Boolean {
         val newConfig = ConfigEntity(req.section, req.version, req.configuration, req.updateActor)
         val newConfigAudit = ConfigAuditEntity(req.section, req.version, req.configuration, req.updateActor)
 
         return try {
-            writeEntities(newConfig, newConfigAudit)
+            dbUtils.writeEntities(config, newConfig, newConfigAudit)
             true
         } catch (e: Exception) {
             val errMsg = "Entity $newConfig couldn't be written to the database."
@@ -69,10 +67,10 @@ internal class PersistentConfigWriterProcessor(
     /**
      * Publishes the updated config described by [req] on the [TOPIC_CONFIG] Kafka topic.
      *
-     * If the publication fails, the exception is caught and [respFuture] is completed exceptionally. Publication is
-     * not retried. Otherwise, we complete [respFuture] successfully.
+     * If the publication fails, the exception is caught and [respFuture] is completed unsuccessfully. Publication is
+     * not retried. Otherwise, [respFuture] is completed successfully.
      */
-    private fun publishConfigToKafka(req: ConfigurationManagementRequest, respFuture: ConfigMgmtRespFuture) {
+    private fun publishConfigToKafka(req: ConfigMgmtReq, respFuture: ConfigMgmtRespFuture) {
         val configRecord = Record(TOPIC_CONFIG, req.section, Configuration(req.configuration, req.version.toString()))
         val future = publisher.publish(listOf(configRecord)).first()
 
@@ -85,60 +83,27 @@ internal class PersistentConfigWriterProcessor(
             return
         }
 
-        respFuture.complete(ConfigurationManagementResponse(true, req.version, req.configuration))
+        respFuture.complete(ConfigMgmtResp(true, req.version, req.configuration))
     }
 
     /**
-     * Writes [newConfig] and [newConfigAudit] to the cluster database in a single transaction.
-     *
-     * @throws RollbackException If the database transaction cannot be committed.
-     * @throws IllegalStateException/IllegalArgumentException/TransactionRequiredException If writing the entities
-     *  fails for any other reason.
-     */
-    private fun writeEntities(newConfig: ConfigEntity, newConfigAudit: ConfigAuditEntity) {
-        val entityManager = dbUtils.createEntityManager(config)
-
-        try {
-            entityManager.transaction.begin()
-            entityManager.merge(newConfig)
-            entityManager.persist(newConfigAudit)
-            entityManager.transaction.commit()
-
-        } finally {
-            entityManager.close()
-        }
-    }
-
-    /**
-     * Logs the error, then completes the [respFuture] with an [ExceptionEnvelope].
+     * Logs the [errMsg] and [cause], then completes the [respFuture] with an [ExceptionEnvelope].
      *
      * @throws IllegalStateException If the current configuration cannot be read back from the cluster database.
      */
     private fun handleException(respFuture: ConfigMgmtRespFuture, errMsg: String, cause: Exception, section: String) {
         logger.debug("$errMsg Cause: $cause.")
-        val currentConfig = readConfigEntity(section)
+        val currentConfig = try {
+            dbUtils.readConfigEntity(config, section)
+        } catch (e: IllegalStateException) {
+            // We ignore this additional error, and report the one we were already planning to report.
+            null
+        }
 
         respFuture.complete(
-            ConfigurationManagementResponse(
-                ExceptionEnvelope(cause.javaClass.name, errMsg),
-                currentConfig?.version,
-                currentConfig?.configuration
+            ConfigMgmtResp(
+                ExceptionEnvelope(cause.javaClass.name, errMsg), currentConfig?.version, currentConfig?.configuration
             )
         )
-    }
-
-    /**
-     * Reads the [ConfigEntity] for the specified [section]. Returns null if no config exists for the specified section.
-     *
-     * @throws IllegalStateException If the entity manager cannot be created.
-     */
-    private fun readConfigEntity(section: String): ConfigEntity? {
-        val entityManager = dbUtils.createEntityManager(config)
-
-        return try {
-            entityManager.find(ConfigEntity::class.java, section)
-        } finally {
-            entityManager.close()
-        }
     }
 }
