@@ -10,6 +10,7 @@ import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.Property
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
+import net.corda.libs.permissions.manager.common.PermissionTypeEnum
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -163,7 +164,7 @@ internal class AvroConverterUtilKtTest {
         assertEquals("virtNode1", result.permissions[0].virtualNode)
         assertEquals("*", result.permissions[0].permissionString)
         assertEquals("group21", result.permissions[0].groupVisibility)
-        assertEquals("DENY", result.permissions[0].permissionType)
+        assertEquals(PermissionTypeEnum.DENY, result.permissions[0].permissionType)
 
         assertEquals("permId2", result.permissions[1].id)
         assertEquals(2, result.permissions[1].version)
@@ -171,7 +172,6 @@ internal class AvroConverterUtilKtTest {
         assertEquals("virtNode2", result.permissions[1].virtualNode)
         assertEquals("*", result.permissions[1].permissionString)
         assertEquals("group2", result.permissions[1].groupVisibility)
-        assertEquals("ALLOW", result.permissions[1].permissionType)
-
+        assertEquals(PermissionTypeEnum.ALLOW, result.permissions[1].permissionType)
     }
 }
