@@ -45,7 +45,7 @@ class PermissionEndpointImpl @Activate constructor(
             createPermissionType.convertToDto(principal)
         )
 
-        return createPermissionResult.getOrThrow().convertToEndpointType()
+        return createPermissionResult.convertToEndpointType()
     }
 
     override fun getPermission(id: String): PermissionResponseType {

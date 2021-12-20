@@ -16,7 +16,6 @@ import net.corda.libs.permissions.manager.request.GetPermissionRequestDto
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.concurrent.getOrThrow
-import net.corda.v5.base.util.Try
 
 class PermissionEntityManagerImpl(
     config: SmartConfig,
@@ -26,28 +25,26 @@ class PermissionEntityManagerImpl(
 
     private val writerTimeout = config.getEndpointTimeout()
 
-    override fun createPermission(createPermissionRequestDto: CreatePermissionRequestDto): Try<PermissionResponseDto> {
-        return Try.on {
-            val future = rpcSender.sendRequest(
-                PermissionManagementRequest(
-                    createPermissionRequestDto.requestedBy,
-                    createPermissionRequestDto.virtualNode,
-                    CreatePermissionRequest(
-                        createPermissionRequestDto.permissionType.fromInternal(),
-                        createPermissionRequestDto.permissionString,
-                        createPermissionRequestDto.groupVisibility
-                    )
+    override fun createPermission(createPermissionRequestDto: CreatePermissionRequestDto): PermissionResponseDto {
+        val future = rpcSender.sendRequest(
+            PermissionManagementRequest(
+                createPermissionRequestDto.requestedBy,
+                createPermissionRequestDto.virtualNode,
+                CreatePermissionRequest(
+                    createPermissionRequestDto.permissionType.fromInternal(),
+                    createPermissionRequestDto.permissionString,
+                    createPermissionRequestDto.groupVisibility
                 )
             )
+        )
 
-            val futureResponse = future.getOrThrow(writerTimeout)
+        val futureResponse = future.getOrThrow(writerTimeout)
 
-            val result = futureResponse.response
-            if (result !is Permission)
-                throw PermissionManagerException("Unknown response for Create Permission operation: $result")
+        val result = futureResponse.response
+        if (result !is Permission)
+            throw PermissionManagerException("Unknown response for Create Permission operation: $result")
 
-            result.convertToResponseDto()
-        }
+        return result.convertToResponseDto()
     }
 
     override fun getPermission(permissionRequestDto: GetPermissionRequestDto): PermissionResponseDto? {
