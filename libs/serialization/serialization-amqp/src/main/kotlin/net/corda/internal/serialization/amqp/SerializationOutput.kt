@@ -4,7 +4,6 @@ import net.corda.internal.serialization.CordaSerializationEncoding
 import net.corda.internal.serialization.SectionId
 import net.corda.internal.serialization.byteArrayOutput
 import net.corda.internal.serialization.model.TypeIdentifier
-import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.serialization.SerializedBytes
@@ -63,7 +62,7 @@ open class SerializationOutput constructor(
         try {
             val blob = _serialize(obj, context)
             val schema = Schema(schemaHistory.toList())
-            return BytesAndSchemas(blob, schema, TransformsSchema.build(schema, serializerFactory, context, metadata), Metadata())
+            return BytesAndSchemas(blob, schema, TransformsSchema.build(schema, serializerFactory, metadata), Metadata())
         } finally {
             andFinally()
         }
@@ -83,7 +82,7 @@ open class SerializationOutput constructor(
                 writeObject(obj, this, context)
                 val schema = Schema(schemaHistory.toList())
                 writeSchema(schema, this)
-                writeTransformSchema(TransformsSchema.build(schema, serializerFactory, context, metadata), this)
+                writeTransformSchema(TransformsSchema.build(schema, serializerFactory, metadata), this)
                 writeMetadata(metadata, this)
             }
         }
@@ -121,7 +120,7 @@ open class SerializationOutput constructor(
         if (obj == null) {
             data.putNull()
         } else {
-            writeObject(obj, data, if (type == TypeIdentifier.UnknownType.getLocalType()) obj.javaClass else type, context, debugIndent)
+            writeObject(obj, data, if (type == TypeIdentifier.UnknownType.getLocalType(context.currentSandboxGroup())) obj.javaClass else type, context, debugIndent)
         }
     }
 
@@ -133,8 +132,8 @@ open class SerializationOutput constructor(
      * Attaches information about the CPKs associated with the serialised objects to the metadata
      */
     private fun putTypeToMetadata(type: Type, context: SerializationContext) {
-        val classTag = (context.sandboxGroup as? SandboxGroup)?.getEvolvableTag(type.asClass())
-        if (classTag != null && !metadata.containsKey(type.typeName)) {
+        val classTag = context.currentSandboxGroup().getEvolvableTag(type.asClass())
+        if (!metadata.containsKey(type.typeName)) {
             val key = type.asClass().name
             metadata.putValue(key, classTag)
         }

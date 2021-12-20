@@ -22,7 +22,6 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
-import java.util.Hashtable
 import java.util.UUID.randomUUID
 
 // Various dummy serialised class tags.
@@ -49,9 +48,7 @@ class SandboxGroupImplTests {
     private val nonSandboxClass = Float::class.java
     private val nonBundleClass = Boolean::class.java
 
-    private val mockCpkMainBundle = mockBundle(CPK_MAIN_BUNDLE_NAME, cpkClass).apply {
-        whenever(headers).thenReturn(Hashtable())
-    }
+    private val mockCpkMainBundle = mockBundle(CPK_MAIN_BUNDLE_NAME, cpkClass)
     private val mockCpkLibraryBundle = mockBundle(CPK_LIBRARY_BUNDLE_NAME, cpkLibraryClass)
     private val mockPublicBundle = mockBundle(PUBLIC_BUNDLE_NAME, publicClass)
     private val mockPublicLibraryBundle = mockBundle(PUBLIC_LIBRARY_BUNDLE_NAME, publicLibraryClass)

@@ -9,11 +9,11 @@ data class CreateRoleRequestDto(
      */
     val requestedBy: String,
     /**
-     * The ID of the virtual node in which to create the User.
-     */
-    val virtualNodeId: String?,
-    /**
      * Name of the Role.
      */
-    val roleName: String
+    val roleName: String,
+    /**
+     * Optional group visibility for the Role.
+     */
+    val groupVisibility: String?
 )

@@ -358,14 +358,14 @@ class SerializationOutputTests {
     fun `test whitelist`() {
         val obj = Woo2(4)
         assertThrows<NotSerializableException> {
-            serdes(obj, SerializerFactoryBuilder.build(AlwaysEmptyWhitelist))
+            serdes(obj, SerializerFactoryBuilder.build(AlwaysEmptyWhitelist, testSerializationContext.currentSandboxGroup()))
         }
     }
 
     @Test
     fun `test annotation whitelisting`() {
         val obj = AnnotatedWoo(5)
-        serdes(obj, SerializerFactoryBuilder.build(AlwaysEmptyWhitelist))
+        serdes(obj, SerializerFactoryBuilder.build(AlwaysEmptyWhitelist, testSerializationContext.currentSandboxGroup()))
     }
 
     @Test
@@ -464,7 +464,7 @@ class SerializationOutputTests {
 
     @Test
     fun `class constructor is invoked on deserialisation`() {
-        val serializerFactory = SerializerFactoryBuilder.build(AllWhitelist)
+        val serializerFactory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         val ser = SerializationOutput(serializerFactory)
         val des = DeserializationInput(serializerFactory)
         val serialisedOne = ser.serialize(NonZeroByte(1)).bytes
@@ -492,22 +492,22 @@ class SerializationOutputTests {
     @Test
     fun `test annotation is inherited`() {
         val obj = InheritAnnotation("blah")
-        serdes(obj, SerializerFactoryBuilder.build(AlwaysEmptyWhitelist))
+        serdes(obj, SerializerFactoryBuilder.build(AlwaysEmptyWhitelist, testSerializationContext.currentSandboxGroup()))
     }
 
     @Test
     fun `generics from java are supported`() {
         val obj = DummyOptional("YES")
-        serdes(obj, SerializerFactoryBuilder.build(AlwaysEmptyWhitelist))
+        serdes(obj, SerializerFactoryBuilder.build(AlwaysEmptyWhitelist, testSerializationContext.currentSandboxGroup()))
     }
 
     @Test
     fun `test throwables serialize`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         factory.register(ThrowableSerializer(factory), factory)
         factory.register(StackTraceElementSerializer(), factory)
 
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory2 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         factory2.register(ThrowableSerializer(factory2), factory2)
         factory2.register(StackTraceElementSerializer(), factory2)
 
@@ -519,11 +519,11 @@ class SerializationOutputTests {
 
     @Test
     fun `test complex throwables serialize`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         factory.register(ThrowableSerializer(factory), factory)
         factory.register(StackTraceElementSerializer(), factory)
 
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory2 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         factory2.register(ThrowableSerializer(factory2), factory2)
         factory2.register(StackTraceElementSerializer(), factory2)
 
@@ -549,11 +549,11 @@ class SerializationOutputTests {
 
     @Test
     fun `test suppressed throwables serialize`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         factory.register(ThrowableSerializer(factory), factory)
         factory.register(StackTraceElementSerializer(), factory)
 
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory2 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         factory2.register(ThrowableSerializer(factory2), factory2)
         factory2.register(StackTraceElementSerializer(), factory)
 
@@ -573,11 +573,11 @@ class SerializationOutputTests {
 
     @Test
     fun `test flow corda exception subclasses serialize`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         factory.register(ThrowableSerializer(factory), factory)
         factory.register(StackTraceElementSerializer(), factory)
 
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory2 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         factory2.register(ThrowableSerializer(factory2), factory2)
         factory2.register(StackTraceElementSerializer(), factory2)
 
@@ -672,8 +672,8 @@ class SerializationOutputTests {
         val b = ByteArray(2)
         val obj = Bob(listOf(a, b, a))
 
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+        val factory2 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         val obj2 = serdes(obj, factory, factory2, expectedEqual = false, expectDeserializedEqual = false)
 
         assertNotSame(obj2.byteArrays[0], obj2.byteArrays[2])
@@ -686,8 +686,8 @@ class SerializationOutputTests {
         val a = listOf("a", "b")
         val obj = Vic(a, a)
 
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+        val factory2 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         val objCopy = serdes(obj, factory, factory2)
         assertSame(objCopy.a, objCopy.b)
     }
@@ -703,8 +703,8 @@ class SerializationOutputTests {
     fun `test private constructor`() {
         val obj = Spike()
 
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+        val factory2 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         serdes(obj, factory, factory2)
     }
 
@@ -712,10 +712,10 @@ class SerializationOutputTests {
 
     @Test
     fun `test toString custom serializer`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         factory.register(BigDecimalSerializer(), factory)
 
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory2 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         factory2.register(BigDecimalSerializer(), factory2)
 
         val obj = BigDecimals(BigDecimal.TEN, BigDecimal.TEN)
@@ -727,10 +727,10 @@ class SerializationOutputTests {
 
     @Test
     fun `test byte arrays not reference counted`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         factory.register(BigDecimalSerializer(), factory)
 
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory2 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         factory2.register(BigDecimalSerializer(), factory2)
 
         val bytes = ByteArray(1)
@@ -753,10 +753,10 @@ class SerializationOutputTests {
 
     @Test
     fun `test InputStream serialize`() {
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         factory.register(InputStreamSerializer(), factory)
 
-        val factory2 = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory2 = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
         factory2.register(InputStreamSerializer(), factory2)
         val bytes = ByteArray(10) { it.toByte() }
         val obj = bytes.inputStream()
@@ -962,14 +962,14 @@ class SerializationOutputTests {
 
     @Test
     fun `compression reduces number of bytes significantly`() {
-        val ser = SerializationOutput(SerializerFactoryBuilder.build(AllWhitelist))
+        val ser = SerializationOutput(SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup()))
         val obj = ByteArray(20000)
         val uncompressedSize = ser.serialize(obj).bytes.size
         val compressedSize = ser.serialize(obj, CordaSerializationEncoding.SNAPPY).bytes.size
         // Ordinarily this might be considered high maintenance, but we promised wire compatibility, so they'd better not change!
         // Different than Corda 4, because this includes the Metadata element.
-        assertEquals(20075, uncompressedSize)
-        assertEquals(1022, compressedSize)
+        assertEquals(20097, uncompressedSize)
+        assertEquals(1044, compressedSize)
     }
 
     // JDK11: backwards compatibility function to deal with StacktraceElement comparison pre-JPMS

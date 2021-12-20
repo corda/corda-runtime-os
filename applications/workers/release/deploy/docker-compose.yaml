@@ -48,17 +48,17 @@ services:
 #  crypto-worker:
 #    container_name: crypto-worker
 #    # Created with `gradlew applications:workers:release:crypto:publishOSGiImage`.
-#    image: "corda-os-docker-dev.software.r3.com/corda-os-crypto-worker:latest"
+#    image: "corda-os-docker-dev.software.r3.com/corda-os-crypto-worker:latest-local"
   db-worker:
     container_name: db-worker
     # Created with `gradlew applications:workers:release:db:publishOSGiImage`.
-    image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker:latest"
+    image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker:latest-local"
     command: -c messaging.kafka.common.bootstrap.servers=kafka:9092
 #  flow-worker:
 #    container_name: flow-worker
 #    # Created with `gradlew applications:workers:release:flow:publishOSGiImage`.
-#    image: "corda-os-docker-dev.software.r3.com/corda-os-flow-worker:latest"
+#    image: "corda-os-docker-dev.software.r3.com/corda-os-flow-worker:latest-local"
 #  rpc-worker:
 #    container_name: rpc-worker
 #    # Created with `gradlew applications:workers:release:rpc:publishOSGiImage`.
-#    image: "corda-os-docker-dev.software.r3.com/corda-os-rpc-worker:latest"
+#    image: "corda-os-docker-dev.software.r3.com/corda-os-rpc-worker:latest-local"

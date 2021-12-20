@@ -42,11 +42,11 @@ class HttpRpcServerTest {
                     JavalinRouteProviderImpl(
                         "/",
                         "1",
-                        APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure.getOrThrow()
+                        APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure
                     ),
                     SecurityManagerRPCImpl(emptySet()),
                     configProvider,
-                    OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure.getOrThrow(), configProvider)
+                    OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider)
                 )
             },
             SSL_PASSWORD_MISSING
@@ -68,11 +68,11 @@ class HttpRpcServerTest {
                     JavalinRouteProviderImpl(
                         "/",
                         "1",
-                        APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure.getOrThrow()
+                        APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure
                     ),
                     SecurityManagerRPCImpl(emptySet()),
                     configProvider,
-                    OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure.getOrThrow(), configProvider)
+                    OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider)
                 )
             },
             INSECURE_SERVER_DEV_MODE_WARNING
@@ -90,7 +90,7 @@ class HttpRpcServerTest {
         doReturn(null).whenever(configProvider).getSSLKeyStorePassword()
         doReturn(true).whenever(configProvider).isDevModeEnabled()
 
-        val resources = APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure.getOrThrow()
+        val resources = APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure
         val endpointsCount = resources.sumOf { it.endpoints.count() }
         val openApiJson = OpenApiInfoProvider(resources, configProvider).openApiString
         val openApi = Json.mapper().readValue(openApiJson, OpenAPI::class.java)
@@ -115,11 +115,11 @@ class HttpRpcServerTest {
                 JavalinRouteProviderImpl(
                     "/",
                     "1",
-                    APIStructureRetriever(listOf(MultipleParamAnnotationApiImpl())).structure.getOrThrow()
+                    APIStructureRetriever(listOf(MultipleParamAnnotationApiImpl())).structure
                 ),
                 SecurityManagerRPCImpl(emptySet()),
                 configProvider,
-                OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure.getOrThrow(), configProvider)
+                OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider)
             )
         }.isInstanceOf(IllegalArgumentException::class.java)
             .hasMessage(

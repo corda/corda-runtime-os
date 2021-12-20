@@ -1,0 +1,31 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+tasks.register('integrationTest', Test) {
+    description = "Runs integration tests."
+
+    testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
+    classpath = project.sourceSets["integrationTest"].runtimeClasspath
+}
+
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:flows:flow-mapper")
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-topic-schema"
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}
+
+description 'Flow Mapper Library Impl'

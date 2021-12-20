@@ -20,8 +20,8 @@ dependencies {
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 }
 
-private boolean isBundle(JarFile jarFile) {
-    return jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.BUNDLE_SYMBOLICNAME) != null
+private static boolean isBundle(JarFile jarFile) {
+    return jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.BUNDLE_MANIFESTVERSION) != null
 }
 
 private static boolean isJar(final File file) {
@@ -31,17 +31,17 @@ private static boolean isJar(final File file) {
 private addBundle(
         final File source,
         final File target,
-        final Set<String> systemBundleSet) {
+        final Set<String> applicationBundleSet) {
     Files.deleteIfExists(target.toPath())
     Files.copy(source.toPath(), target.toPath())
-    systemBundleSet.add("bundles/${source.name}")
+    applicationBundleSet.add("bundles/${source.name}")
     logger.info "OSGI Bundle $source.name included as resource."
 }
 
 private addBundles(
         final File[] files,
         final File bundlesDir,
-        final Set<String> systemBundleSet) {
+        final Set<String> applicationBundleSet) {
     if (!bundlesDir.exists()) {
         bundlesDir.mkdirs()
     }
@@ -49,7 +49,7 @@ private addBundles(
         if (isJar(file)) {
             final def jarFile = new JarFile(file)
             if (isBundle(jarFile)) {
-                addBundle(file, new File(bundlesDir, file.name), systemBundleSet)
+                addBundle(file, new File(bundlesDir, file.name), applicationBundleSet)
             }
         }
     }
@@ -64,15 +64,15 @@ test {
         if (!target.exists()) {
             target.mkdirs()
         }
-        final Set<String> systemBundleSet = new TreeSet<>()
-        addBundles(source.listFiles(), target, systemBundleSet)
-        final systemBundlesFile = new File(project.buildDir, "resources/test/system_bundles")
-        systemBundlesFile.withWriter { writer ->
-            systemBundleSet.each { line ->
+        final Set<String> applicationBundleSet = new TreeSet<>()
+        addBundles(source.listFiles(), target, applicationBundleSet)
+        final applicationBundlesFile = new File(project.buildDir, "resources/test/application_bundles")
+        applicationBundlesFile.withWriter { writer ->
+            applicationBundleSet.each { line ->
                 writer.writeLine(line)
             }
         }
-        final numberOfBundles = systemBundleSet.size()
-        logger.info "Included $numberOfBundles OSGi bundles in $systemBundlesFile resource."
+        final numberOfBundles = applicationBundleSet.size()
+        logger.info "Included $numberOfBundles OSGi bundles in $applicationBundlesFile resource."
     }
 }

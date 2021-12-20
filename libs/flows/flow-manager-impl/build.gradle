@@ -17,13 +17,16 @@ dependencies {
     implementation "net.corda:corda-packaging"
     implementation project(":libs:sandbox")
     implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-topic-schema"
 
     implementation project(':libs:flows:dependency-injection')
+    implementation project(':libs:flows:flow-fiber')
+    implementation project(':libs:flows:flow-fiber-impl')
     implementation project(':libs:flows:flow-manager')
-    implementation project(':libs:flows:statemachine')
-    implementation project(':libs:flows:statemachine-impl')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:serialization:checkpoint-serialization-api')
+    implementation project(':libs:virtual-node:sandbox-group-service')
+    implementation project(':libs:application:application-impl')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

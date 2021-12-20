@@ -34,8 +34,6 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
-    integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    integrationTestImplementation "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     integrationTestImplementation "net.corda:corda-application"
     integrationTestImplementation "net.corda:corda-crypto"
     integrationTestImplementation "net.corda:corda-cipher-suite"

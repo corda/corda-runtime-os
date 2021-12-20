@@ -111,5 +111,6 @@ class KafkaRandomAccessSubscriptionIntegrationTest {
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             Assertions.assertEquals(LifecycleStatus.DOWN, coordinator.status)
         }
+        coordinator.stop()
     }
 }

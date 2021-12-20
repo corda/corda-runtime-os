@@ -1,5 +1,8 @@
 package net.corda.configuration.read.impl
 
+import com.typesafe.config.ConfigFactory
+import net.corda.configuration.read.ConfigurationReadException
+import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.configuration.read.ConfigListener
 import net.corda.libs.configuration.read.ConfigReader
 import net.corda.libs.configuration.read.factory.ConfigReaderFactory
@@ -12,9 +15,11 @@ import net.corda.lifecycle.StopEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentCaptor
 import org.mockito.Captor
 import org.mockito.Mockito.`when`
+import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.capture
@@ -23,7 +28,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.secondValue
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyZeroInteractions
 
 internal class ConfigReadServiceEventHandlerTest {
 
@@ -92,7 +96,7 @@ internal class ConfigReadServiceEventHandlerTest {
     fun `Start event fails when bootstrap config not provided`() {
         configReadServiceEventHandler.processEvent(StartEvent(), coordinator)
         // The first value captured will be from the BootstrapConfig being provided
-        verifyZeroInteractions(coordinator)
+        verifyNoInteractions(coordinator)
     }
 
     @Test
@@ -109,9 +113,29 @@ internal class ConfigReadServiceEventHandlerTest {
     fun `Error event means nothing happens`() {
         configReadServiceEventHandler.processEvent(ErrorEvent(Exception()), coordinator)
         // The first value captured will be from the BootstrapConfig being provided
-        verifyZeroInteractions(coordinator)
-        verifyZeroInteractions(configReaderFactory)
-        verifyZeroInteractions(configReader)
-        verifyZeroInteractions(callbackHandles)
+        verifyNoInteractions(coordinator)
+        verifyNoInteractions(configReaderFactory)
+        verifyNoInteractions(configReader)
+        verifyNoInteractions(callbackHandles)
+    }
+
+    @Test
+    fun `Multiple bootstrap events with same config are ignored`() {
+        val configA = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("foo" to "bar", "bar" to "baz")))
+        val configB = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("bar" to "baz", "foo" to "bar")))
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configA), coordinator)
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configB), coordinator)
+        verify(coordinator, times(1)).postEvent(capture(lifecycleEventCaptor))
+        assertThat(lifecycleEventCaptor.firstValue is SetupSubscription)
+    }
+
+    @Test
+    fun `Multiple bootstrap events with different config raises an error`() {
+        val configA = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("foo" to "bar", "bar" to "baz")))
+        val configB = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("bar" to "baz", "foo" to "foo")))
+        configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configA), coordinator)
+        assertThrows<ConfigurationReadException> {
+            configReadServiceEventHandler.processEvent(BootstrapConfigProvided(configB), coordinator)
+        }
     }
 }

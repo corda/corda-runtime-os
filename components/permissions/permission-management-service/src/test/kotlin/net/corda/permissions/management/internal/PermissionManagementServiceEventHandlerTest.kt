@@ -1,11 +1,14 @@
 package net.corda.permissions.management.internal
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.factory.PermissionManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
@@ -20,7 +23,6 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -30,8 +32,11 @@ internal class PermissionManagementServiceEventHandlerTest {
     private val permissionCache = mock<PermissionCache>()
     private val permissionCacheService = mock<PermissionCacheService>()
 
+    private val config = mock<SmartConfig>()
     private val rpcSender = mock<RPCSender<PermissionManagementRequest, PermissionManagementResponse>>()
     private val publisherFactory = mock<PublisherFactory>()
+
+    private val configurationReadService = mock<ConfigurationReadService>()
 
     private val permissionManager = mock<PermissionManager>()
     private val permissionManagerFactory = mock<PermissionManagerFactory>()
@@ -39,93 +44,98 @@ internal class PermissionManagementServiceEventHandlerTest {
     private val registrationHandle = mock<RegistrationHandle>()
     private val coordinator = mock<LifecycleCoordinator>()
 
-    private val handler = PermissionManagementServiceEventHandler(publisherFactory, permissionCacheService, permissionManagerFactory)
+    private val handler = PermissionManagementServiceEventHandler(
+        publisherFactory,
+        permissionCacheService,
+        permissionManagerFactory,
+        configurationReadService
+    )
 
     @BeforeEach
     fun setUp() {
         whenever(permissionCacheService.permissionCache)
             .thenReturn(permissionCache)
+
         whenever(publisherFactory.createRPCSender(any<RPCConfig<PermissionManagementRequest, PermissionManagementResponse>>(), any()))
             .thenReturn(rpcSender)
-        whenever(permissionManagerFactory.create(rpcSender, permissionCache))
+
+        whenever(permissionManagerFactory.create(config, rpcSender, permissionCache))
             .thenReturn(permissionManager)
-        whenever(coordinator.followStatusChangesByName(any())).thenReturn(registrationHandle)
+
+        whenever(coordinator.followStatusChangesByName(
+            setOf(
+                LifecycleCoordinatorName.forComponent<PermissionCacheService>(),
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+            )
+        )).thenReturn(registrationHandle)
     }
 
     @Test
-    fun `processing a start event creates and starts the rpc sender`() {
-        assertNull(handler.rpcSender)
-
-        handler.processEvent(StartEvent(), coordinator)
-
-        assertNotNull(handler.rpcSender)
-
-        verify(rpcSender).start()
-    }
-
-    @Test
-    fun `processing a start event causes the service to follow permission cache status changes`() {
+    fun `processing a start event follows permission cache and config read service for status updates`() {
         assertNull(handler.registrationHandle)
 
         handler.processEvent(StartEvent(), coordinator)
 
+        verify(coordinator).followStatusChangesByName(
+            setOf(
+                LifecycleCoordinatorName.forComponent<PermissionCacheService>(),
+                LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+            )
+        )
         assertNotNull(handler.registrationHandle)
     }
 
     @Test
-    fun `processing an UP event from the permission cache when the service is started starts the permission manager`() {
-        assertNull(handler.permissionManager)
-
+    fun `when cache and config read are UP, register for config updates with callback`() {
         handler.processEvent(StartEvent(), coordinator)
+
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
-        assertNotNull(handler.permissionManager)
-        verify(permissionManager).start()
+        verify(configurationReadService).registerForUpdates(any())
     }
 
     @Test
-    fun `processing an UP event from the permission cache when the service is not started throws an exception`() {
-        assertThrows<IllegalStateException> {
-            handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        }
-    }
-
-    @Test
-    fun `processing an UP event from the permission cache when the service is started updates the service's status to UP`() {
-        handler.processEvent(StartEvent(), coordinator)
-        handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        verify(coordinator).updateStatus(LifecycleStatus.UP)
-    }
-
-    @Test
-    fun `processing a DOWN event from the permission cache when the service is started stops the permission manager`() {
-        handler.processEvent(StartEvent(), coordinator)
-        handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-
-        assertNotNull(handler.permissionManager)
+    fun `processing status DOWN change for cache or config will stop permission manager`() {
+        handler.permissionManager = permissionManager
 
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), coordinator)
 
-        assertNull(handler.permissionManager)
         verify(permissionManager).stop()
-    }
-
-    @Test
-    fun `processing a DOWN event from the permission cache when the service is started updates the service's status to DOWN`() {
-        handler.processEvent(StartEvent(), coordinator)
-        handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), coordinator)
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
 
     @Test
-    fun `processing a stop event stops the service's dependencies`() {
-        handler.processEvent(StartEvent(), coordinator)
+    fun `processing UP status update subscribes for configuration updates`() {
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
-        assertNotNull(handler.registrationHandle)
-        assertNotNull(handler.permissionManager)
-        assertNotNull(handler.rpcSender)
+        verify(configurationReadService).registerForUpdates(any())
+    }
+
+    @Test
+    fun `processing DOWN status update stops and nulls the permission manager and sets status to DOWN`() {
+        handler.permissionManager = permissionManager
+
+        handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), coordinator)
+
+        verify(permissionManager).stop()
+        verify(coordinator).updateStatus(LifecycleStatus.DOWN)
+
+        assertNull(handler.permissionManager)
+    }
+
+    @Test
+    fun `processing ERROR status update stops coordinator and sets status to ERROR`() {
+        handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.ERROR), coordinator)
+
+        verify(coordinator).stop()
+        verify(coordinator).updateStatus(LifecycleStatus.ERROR)
+    }
+
+    @Test
+    fun `processing a stop event stops the service's dependencies and sets status to DOWN`() {
+        handler.rpcSender = rpcSender
+        handler.permissionManager = permissionManager
+        handler.registrationHandle = registrationHandle
 
         handler.processEvent(StopEvent(), coordinator)
 
@@ -136,12 +146,6 @@ internal class PermissionManagementServiceEventHandlerTest {
         verify(rpcSender).stop()
         verify(permissionManager).stop()
         verify(registrationHandle).close()
-    }
-
-    @Test
-    fun `processing a stop event updates the service's status to DOWN`() {
-        handler.processEvent(StartEvent(), coordinator)
-        handler.processEvent(StopEvent(), coordinator)
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
 }

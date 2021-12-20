@@ -1,9 +1,6 @@
 package net.corda.libs.permissions.manager.impl
 
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
+import com.typesafe.config.ConfigValueFactory
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.Property
 import net.corda.data.permissions.RoleAssociation
@@ -11,6 +8,8 @@ import net.corda.data.permissions.User
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.CreateUserRequest
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.manager.exception.PermissionManagerException
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
@@ -20,20 +19,21 @@ import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
 import net.corda.v5.base.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
 
 class PermissionUserManagerImplTest {
 
@@ -66,9 +66,9 @@ class PermissionUserManagerImplTest {
 
     private val permissionManagementResponse = PermissionManagementResponse(avroUser)
     private val permissionManagementResponseWithoutPassword = PermissionManagementResponse(avroUserWithoutPassword)
+    private val config = mock<SmartConfig>()
 
-
-    private val manager = PermissionUserManagerImpl(rpcSender, permissionCache, passwordService)
+    private val manager = PermissionUserManagerImpl(config, rpcSender, permissionCache, passwordService)
 
     @Test
     fun `create a user sends rpc request and converts result`() {
@@ -96,21 +96,17 @@ class PermissionUserManagerImplTest {
         assertEquals(createUserRequestDto.passwordExpiry!!.toEpochMilli(), capturedCreateUserRequest.passwordExpiry.toEpochMilli())
         assertEquals(createUserRequestDto.parentGroup, capturedCreateUserRequest.parentGroupId)
 
-        assertTrue(result.isSuccess)
-        assertFalse(result.isFailure)
-        result.doOnSuccess {
-            assertEquals(fullName, it.fullName)
-            assertEquals(avroUser.enabled, it.enabled)
-            assertEquals(avroUser.lastChangeDetails.updateTimestamp, it.lastUpdatedTimestamp)
-            assertEquals(false, it.ssoAuth)
-            assertEquals(avroUser.parentGroupId, it.parentGroup)
-            assertEquals(1, it.properties.size)
+        assertEquals(fullName, result.fullName)
+        assertEquals(avroUser.enabled, result.enabled)
+        assertEquals(avroUser.lastChangeDetails.updateTimestamp, result.lastUpdatedTimestamp)
+        assertEquals(false, result.ssoAuth)
+        assertEquals(avroUser.parentGroupId, result.parentGroup)
+        assertEquals(1, result.properties.size)
 
-            val property = it.properties.first()
-            assertEquals(userProperty.lastChangeDetails.updateTimestamp, property.lastChangedTimestamp)
-            assertEquals(userProperty.key, property.key)
-            assertEquals(userProperty.value, property.value)
-        }
+        val property = result.properties.first()
+        assertEquals(userProperty.lastChangeDetails.updateTimestamp, property.lastChangedTimestamp)
+        assertEquals(userProperty.key, property.key)
+        assertEquals(userProperty.value, property.value)
     }
 
     @Test
@@ -138,21 +134,17 @@ class PermissionUserManagerImplTest {
         assertNull(capturedCreateUserRequest.passwordExpiry)
         assertEquals(createUserRequestDto.parentGroup, capturedCreateUserRequest.parentGroupId)
 
-        assertTrue(result.isSuccess)
-        assertFalse(result.isFailure)
-        result.doOnSuccess {
-            assertEquals(fullName, it.fullName)
-            assertEquals(avroUser.enabled, it.enabled)
-            assertEquals(avroUser.lastChangeDetails.updateTimestamp, it.lastUpdatedTimestamp)
-            assertEquals(true, it.ssoAuth)
-            assertEquals(avroUser.parentGroupId, it.parentGroup)
-            assertEquals(1, it.properties.size)
+        assertEquals(fullName, result.fullName)
+        assertEquals(avroUser.enabled, result.enabled)
+        assertEquals(avroUser.lastChangeDetails.updateTimestamp, result.lastUpdatedTimestamp)
+        assertEquals(true, result.ssoAuth)
+        assertEquals(avroUser.parentGroupId, result.parentGroup)
+        assertEquals(1, result.properties.size)
 
-            val property = it.properties.first()
-            assertEquals(userProperty.lastChangeDetails.updateTimestamp, property.lastChangedTimestamp)
-            assertEquals(userProperty.key, property.key)
-            assertEquals(userProperty.value, property.value)
-        }
+        val property = result.properties.first()
+        assertEquals(userProperty.lastChangeDetails.updateTimestamp, property.lastChangedTimestamp)
+        assertEquals(userProperty.key, property.key)
+        assertEquals(userProperty.value, property.value)
     }
 
     @Test
@@ -164,13 +156,7 @@ class PermissionUserManagerImplTest {
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
 
-        val result = manager.createUser(createUserRequestDto)
-
-        assertTrue(result.isFailure)
-        assertFalse(result.isSuccess)
-        assertThrows(PermissionManagerException::class.java) {
-            result.getOrThrow()
-        }
+        assertThrows(PermissionManagerException::class.java) { manager.createUser(createUserRequestDto) }
     }
 
     @Test
@@ -200,5 +186,25 @@ class PermissionUserManagerImplTest {
         val result = manager.getUser(getUserRequestDto)
 
         assertNull(result)
+    }
+
+    @Test
+    fun `creating permission user manager will use the remote writer timeout set in the config`() {
+        val config = SmartConfigImpl.empty()
+            .withValue("endpointTimeoutMs", ConfigValueFactory.fromAnyRef(12345L))
+
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        val requestCaptor = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
+        whenever(passwordService.saltAndHash(eq("mypassword"))).thenReturn(PasswordHash("randomSalt", "hashedPass"))
+        whenever(future.getOrThrow(Duration.ofMillis(12345L))).thenReturn(permissionManagementResponse)
+
+        val manager = PermissionUserManagerImpl(config, rpcSender, permissionCache, passwordService)
+
+        val result = manager.createUser(createUserRequestDto)
+
+        verify(future, times(1)).getOrThrow(Duration.ofMillis(12345L))
+
+        assertEquals(avroUser.id, result.id)
     }
 }

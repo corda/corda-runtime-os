@@ -1,10 +1,12 @@
 package net.corda.membership.conversion
 
-import net.corda.data.WireKeyValuePair
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.v5.membership.conversion.ConversionContext
 import net.corda.v5.membership.conversion.LayeredPropertyMap
 import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.v5.membership.conversion.ValueNotFoundException
+import java.nio.ByteBuffer
 import java.util.SortedMap
 import java.util.concurrent.ConcurrentHashMap
 
@@ -204,7 +206,7 @@ inline fun <reified T> LayeredPropertyMap.parseList(itemKeyPrefix: String): List
 }
 
 /**
- * Extension function for converting the content of [KeyValueStore] to a list of [WireKeyValuePair].
+ * Extension function for converting the content of [KeyValueStore] to a list of [KeyValuePair].
  * This conversion is required, because of the avro serialization done on the P2P layer.
  */
-fun LayeredPropertyMap.toWireKeyValuePairList(): List<WireKeyValuePair> = entries.map { WireKeyValuePair(it.key, it.value) }
+fun LayeredPropertyMap.toWire(): ByteBuffer = KeyValuePairList(entries.map { KeyValuePair(it.key, it.value) }).toByteBuffer()
