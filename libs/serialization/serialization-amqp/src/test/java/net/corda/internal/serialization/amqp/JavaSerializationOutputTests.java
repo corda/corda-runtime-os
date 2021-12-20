@@ -199,8 +199,8 @@ public class JavaSerializationOutputTests {
         decoder.register(CompositeType.getDESCRIPTOR(), CompositeType.Companion);
         decoder.register(Choice.getDESCRIPTOR(), Choice.Companion);
         decoder.register(RestrictedType.getDESCRIPTOR(), RestrictedType.Companion);
-        decoder.register(Transform.DESCRIPTOR, Transform.Companion);
-        decoder.register(TransformsSchema.DESCRIPTOR, TransformsSchema.Companion);
+        decoder.register(Transform.getDESCRIPTOR(), Transform.Companion);
+        decoder.register(TransformsSchema.getDESCRIPTOR(), TransformsSchema.Companion);
         decoder.register(Metadata.getDESCRIPTOR(), Metadata.Companion);
 
         new EncoderImpl(decoder);
