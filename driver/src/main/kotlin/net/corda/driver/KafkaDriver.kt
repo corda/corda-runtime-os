@@ -1,4 +1,4 @@
-package net.corda.processors.db.internal.test
+package net.corda.driver
 
 import com.typesafe.config.ConfigFactory
 import io.javalin.Javalin

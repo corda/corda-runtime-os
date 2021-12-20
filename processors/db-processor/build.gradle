@@ -13,6 +13,7 @@ dependencies {
     implementation project(':components:configuration:configuration-write-service')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:lifecycle:lifecycle')
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'net.corda:corda-base'
 
     runtimeOnly project(':components:configuration:configuration-write-service-impl')
@@ -20,18 +21,6 @@ dependencies {
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
-    // TODO - Joel - Below are dependencies required by `KafkaDriver`. Remove in the future.
-    compileOnly 'org.osgi:osgi.core'
-    implementation project(':libs:configuration:configuration-read')
-    implementation project(":libs:messaging:messaging")
-    implementation project(":libs:schema-registry:schema-registry")
-    implementation 'net.corda:corda-avro-schema'
-    implementation 'com.google.code.gson:gson:2.8.9'
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "io.javalin:javalin-osgi:$javalinVersion"
-    runtimeOnly project(":components:configuration:configuration-read-service-impl")
-    runtimeOnly project(":libs:configuration:configuration-read-impl")
-    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
-    runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"
-
+    // TODO - Joel - Remove.
+    implementation project(':driver')
 }
