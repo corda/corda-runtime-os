@@ -31,7 +31,7 @@ enum class SectionId : OrdinalWriter {
     ENCODING;
 
     companion object {
-        val reader = OrdinalReader(values())
+        val reader get() = OrdinalReader(values())
     }
 
     override val bits = OrdinalBits(ordinal)
@@ -43,16 +43,16 @@ enum class CordaSerializationEncoding(private val encoderType: EncoderType) : Se
 
     @ServiceConsumer(EncoderService::class)
     companion object {
-        val reader = OrdinalReader(values())
+        val reader get() = OrdinalReader(values())
 
         /**
          * Gets the [EncoderService] via jvm [ServiceLoader]
          */
-        private val encoderService: EncoderService by lazy {
-            // This has to be lazy initialized or a function rather than a value due to initialization order.
-            ServiceLoader.load(EncoderService::class.java).toList().firstOrNull()
+        private val encoderService: EncoderService
+            get() =
+                // This has to be lazy initialized or a function rather than a value due to initialization order.
+                ServiceLoader.load(EncoderService::class.java).toList().firstOrNull()
                     ?: throw NullPointerException("Could not get serialization encoder service")
-        }
 
         /**
          * Get an [Encoder] of the specified type
