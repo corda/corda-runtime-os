@@ -9,10 +9,6 @@ plugins {
 ext.pluginsDir = "$buildDir/plugins"
 
 subprojects {
-    repositories {
-        mavenCentral()
-    }
-
     group = 'net.corda.cli'
     version = '0.0.1-beta'
 
