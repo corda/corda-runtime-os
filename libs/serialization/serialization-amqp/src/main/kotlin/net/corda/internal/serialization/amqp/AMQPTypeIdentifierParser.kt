@@ -105,6 +105,7 @@ object AMQPTypeIdentifierParser {
             }
 
             override fun getTypeIdentifier(): TypeIdentifier {
+                val simplified = simplified
                 return when (val typeName = getTypeName()) {
                     "*" -> TypeIdentifier.TopType
                     "?" -> TypeIdentifier.UnknownType
