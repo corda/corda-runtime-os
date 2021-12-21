@@ -2,8 +2,18 @@
   "type": "record",
   "name": "HSMLabel",
   "namespace": "net.corda.data.crypto.config",
-  "doc": "Defines complete persistent record for the HSM configuration.",
+  "doc": "Defines label associated with a specific HSM configuration for a tenant and category. Record is published each time a tenant is associated with an HSM.",
   "fields": [
+    {
+      "name": "tenantId",
+      "type": "string",
+      "doc": "Tenant id."
+    },
+    {
+      "name": "category",
+      "type": "string",
+      "doc": "Category such as LEDGER, TLS, etc."
+    },
     {
       "name": "hsmConfigId",
       "type": "string",
