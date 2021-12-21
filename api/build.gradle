@@ -4,8 +4,9 @@ plugins {
 }
 
 dependencies {
+    api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     compileOnly "org.pf4j:pf4j:${pf4jVersion}"
-    api "info.picocli:picocli:4.5.2"
+    api "info.picocli:picocli:$picoCliVersion"
 }
 
 publishing {
