@@ -14,8 +14,8 @@ interface MembershipGroupReaderFactory {
      * Returns a group information service providing group information for the
      * specified group as viewed by the specified member.
      *
-     * @param groupId String containing the group identifier.
-     * @param memberX500Name MemberX500Name of the member requesting the group policy.
+     * @param groupId The group identifier on the group the caller is requesting a view on.
+     * @param memberX500Name [MemberX500Name] of the member whose view on the group the caller is requesting.
      */
     fun getGroupReader(groupId: String, memberX500Name: MemberX500Name): MembershipGroupReader
 

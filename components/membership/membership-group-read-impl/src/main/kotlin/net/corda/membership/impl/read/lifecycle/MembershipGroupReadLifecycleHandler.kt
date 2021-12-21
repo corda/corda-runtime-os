@@ -21,6 +21,9 @@ import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscripti
 import net.corda.membership.lifecycle.MembershipConfigReceived
 import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
 
+/**
+ * Lifecycle handler for the membership group read component.
+ */
 interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
     /**
      * Default implementation.
