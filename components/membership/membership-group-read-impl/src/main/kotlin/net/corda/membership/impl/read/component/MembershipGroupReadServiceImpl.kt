@@ -40,7 +40,7 @@ class MembershipGroupReadServiceImpl @Activate constructor(
 ) : MembershipGroupReadService, Lifecycle {
 
     // Group data cache instance shared across services.
-    val membershipGroupReadCache = MembershipGroupReadCache.Impl()
+    private val membershipGroupReadCache = MembershipGroupReadCache.Impl()
 
     // Factory responsible for creating group readers or taking existing instances from the cache.
     private val membershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(
@@ -50,14 +50,18 @@ class MembershipGroupReadServiceImpl @Activate constructor(
     )
 
     // Membership group topic subscriptions
-    val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
+    private val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
         subscriptionFactory,
         membershipGroupReadCache
     )
 
 
     // Handler for lifecycle events.
-    private val lifecycleHandler = MembershipGroupReadLifecycleHandler.Impl(this)
+    private val lifecycleHandler = MembershipGroupReadLifecycleHandler.Impl(
+        this,
+        membershipGroupReadSubscriptions,
+        membershipGroupReadCache
+    )
 
     // Component lifecycle coordinator
     private val coordinator =

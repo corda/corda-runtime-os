@@ -4,11 +4,12 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReaderComponent
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
+import net.corda.membership.impl.read.TestProperties.Companion.aliceName
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.packaging.CPI
-import net.corda.v5.membership.identity.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
@@ -24,8 +25,7 @@ class MembershipGroupReadServiceImplTest {
 
     private lateinit var membershipGroupReadService: MembershipGroupReadServiceImpl
 
-    private val groupId = "GROUP_ID"
-    private val memberName = MemberX500Name("Alice", "London", "GB")
+    private val memberName = aliceName
 
     private lateinit var cpiInfoReader: CpiInfoReaderComponent
     private lateinit var virtualNodeInfoReader: VirtualNodeInfoReaderComponent
@@ -45,7 +45,7 @@ class MembershipGroupReadServiceImplTest {
         )
     }
 
-//    @Test
+    //    @Test
 //    fun `Group reader cannot be retrieved if service hasn't started yet`() {
 //        assertThrows<CordaRuntimeException> {
 //            membershipGroupReadService.getGroupReader(groupId, memberName)
@@ -157,32 +157,32 @@ class MembershipGroupReadServiceImplTest {
 //        assertTrue(membershipGroupReadService.isRunning)
 //    }
 //
-private fun configureMocks() {
-    var memberListSubIsRunning = false
+    private fun configureMocks() {
+        var memberListSubIsRunning = false
 
-    val cpi: CPI.Identifier = mock()
-    val virtualNodeInfo = VirtualNodeInfo(HoldingIdentity(memberName.toString(), groupId), cpi)
-    val cpiMetadata = mock<CPI.Metadata>().apply {
-        doReturn("").whenever(this).groupPolicy
-    }
-    val mockMemberListSub = mock<CompactedSubscription<String, SignedMemberInfo>>().apply {
-        doAnswer { memberListSubIsRunning = true }.whenever(this).start()
-        doAnswer { memberListSubIsRunning = false }.whenever(this).stop()
-        doAnswer { memberListSubIsRunning }.whenever(this).isRunning
-    }
+        val cpi: CPI.Identifier = mock()
+        val virtualNodeInfo = VirtualNodeInfo(HoldingIdentity(memberName.toString(), GROUP_ID_1), cpi)
+        val cpiMetadata = mock<CPI.Metadata>().apply {
+            doReturn("").whenever(this).groupPolicy
+        }
+        val mockMemberListSub = mock<CompactedSubscription<String, SignedMemberInfo>>().apply {
+            doAnswer { memberListSubIsRunning = true }.whenever(this).start()
+            doAnswer { memberListSubIsRunning = false }.whenever(this).stop()
+            doAnswer { memberListSubIsRunning }.whenever(this).isRunning
+        }
 
-    cpiInfoReader = mock<CpiInfoReaderComponent>().apply {
-        doReturn(cpiMetadata).whenever(this).get(eq(cpi))
+        cpiInfoReader = mock<CpiInfoReaderComponent>().apply {
+            doReturn(cpiMetadata).whenever(this).get(eq(cpi))
+        }
+        virtualNodeInfoReader = mock<VirtualNodeInfoReaderComponent>().apply {
+            doReturn(virtualNodeInfo).whenever(this).get(any())
+        }
+        subscriptionFactory = mock<SubscriptionFactory>().apply {
+            doReturn(mockMemberListSub).whenever(this).createCompactedSubscription(
+                any(),
+                any<CompactedProcessor<String, SignedMemberInfo>>(),
+                any()
+            )
+        }
     }
-    virtualNodeInfoReader = mock<VirtualNodeInfoReaderComponent>().apply {
-        doReturn(virtualNodeInfo).whenever(this).get(any())
-    }
-    subscriptionFactory = mock<SubscriptionFactory>().apply {
-        doReturn(mockMemberListSub).whenever(this).createCompactedSubscription(
-            any(),
-            any<CompactedProcessor<String, SignedMemberInfo>>(),
-            any()
-        )
-    }
-}
 }

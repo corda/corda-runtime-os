@@ -25,15 +25,21 @@ interface MembershipGroupReadCache : Lifecycle {
      */
     class Impl : MembershipGroupReadCache {
         private companion object {
-            const val UNINITIALIZED_CACHE_ERROR = "Could not check membership group data cache because the cache " +
-                    "has not been initialised yet."
+            const val UNINITIALIZED_CACHE_ERROR = "Could not access the %s because the cache has not been " +
+                    "initialised yet."
+            const val MEMBER_LIST_CACHE = "member list cache"
+            const val GROUP_READER_CACHE = "group reader cache"
         }
 
         override val memberListCache
-            get() = _memberListCache ?: throw CordaRuntimeException(UNINITIALIZED_CACHE_ERROR)
+            get() = _memberListCache ?: throw CordaRuntimeException(
+                String.format(UNINITIALIZED_CACHE_ERROR, MEMBER_LIST_CACHE)
+            )
 
         override val groupReaderCache
-            get() = _groupReaderCache ?: throw CordaRuntimeException(UNINITIALIZED_CACHE_ERROR)
+            get() = _groupReaderCache ?: throw CordaRuntimeException(
+                String.format(UNINITIALIZED_CACHE_ERROR, GROUP_READER_CACHE)
+            )
 
         override var isRunning: Boolean = false
 

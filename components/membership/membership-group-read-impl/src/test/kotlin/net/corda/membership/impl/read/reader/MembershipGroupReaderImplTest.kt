@@ -1,10 +1,11 @@
 package net.corda.membership.impl.read.reader
 
 import net.corda.membership.GroupPolicy
+import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
+import net.corda.membership.impl.read.TestProperties.Companion.aliceName
 import net.corda.membership.impl.read.cache.MemberListCache
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.v5.membership.identity.MemberInfo
-import net.corda.v5.membership.identity.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
@@ -16,8 +17,7 @@ import org.mockito.kotlin.whenever
 class MembershipGroupReaderImplTest {
     private lateinit var membershipGroupReaderImpl: MembershipGroupReaderImpl
 
-    private val groupId = "GROUP_ID"
-    private val memberName = MemberX500Name("Alice", "London", "GB")
+    private val memberName = aliceName
     private val groupPolicy: GroupPolicy = mock()
     private val memberCache: MemberListCache = mock()
     private val membershipGroupCache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
@@ -30,7 +30,7 @@ class MembershipGroupReaderImplTest {
     @BeforeEach
     fun setUp() {
         membershipGroupReaderImpl = MembershipGroupReaderImpl(
-            groupId,
+            GROUP_ID_1,
             memberName,
             groupPolicy,
             membershipGroupCache
@@ -38,7 +38,7 @@ class MembershipGroupReaderImplTest {
     }
 
     private fun mockMemberList(memberList: List<MemberInfo>) {
-        whenever(memberCache.get(eq(groupId), eq(memberName))).thenReturn(memberList)
+        whenever(memberCache.get(eq(GROUP_ID_1), eq(memberName))).thenReturn(memberList)
     }
 
     @Test

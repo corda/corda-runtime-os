@@ -34,8 +34,6 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
         private val subscriptionFactory: SubscriptionFactory,
         private val groupReadCache: MembershipGroupReadCache
     ) : MembershipGroupReadSubscriptions {
-        override val isRunning: Boolean
-            get() = subscriptions.all { it?.isRunning ?: false }
 
         private var memberListSubscription: CompactedSubscription<String, SignedMemberInfo>? = null
 
@@ -43,6 +41,9 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
             get() = listOf(
                 memberListSubscription
             )
+
+        override val isRunning: Boolean
+            get() = subscriptions.all { it?.isRunning ?: false }
 
         override fun start(config: MembershipConfig) {
             startMemberListSubscription(config)
