@@ -1,6 +1,5 @@
 package net.corda.applications.workers.workercommon.internal
 
-import net.corda.applications.workers.workercommon.HEALTH_MONITOR_PORT
 import net.corda.applications.workers.workercommon.HealthMonitor
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
