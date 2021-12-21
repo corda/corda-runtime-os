@@ -1,6 +1,5 @@
-package net.corda.crypto.client
+package net.corda.crypto
 
-import net.corda.crypto.CryptoOpsClient
 import net.corda.lifecycle.Lifecycle
 
 interface CryptoOpsClientComponent : CryptoOpsClient, Lifecycle

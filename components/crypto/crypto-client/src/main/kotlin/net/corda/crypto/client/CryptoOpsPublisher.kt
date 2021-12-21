@@ -26,18 +26,13 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
-import net.corda.v5.crypto.exceptions.CryptoServiceTimeoutException
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.time.Duration
 import java.util.UUID
-import java.util.concurrent.TimeoutException
 
 class CryptoOpsPublisher(
     private val schemeMetadata: CipherSchemeMetadata,
-    private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>,
-    private val clientRetries: Long,
-    private val clientTimeout: Duration
+    private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>
 ) : CryptoOpsClient {
     companion object {
         private val logger = contextLogger()
@@ -48,7 +43,7 @@ class CryptoOpsPublisher(
             tenantId,
             PublicKeyRpcQuery(alias)
         )
-        val response = request.executeWithTimeoutAndRetry(CryptoPublicKey::class.java, allowNoContentValue = true)
+        val response = request.execute(CryptoPublicKey::class.java, allowNoContentValue = true)
         return if (response != null) {
             schemeMetadata.decodePublicKey(response.key.array())
         } else {
@@ -65,7 +60,7 @@ class CryptoOpsPublisher(
                 }
             )
         )
-        val response = request.executeWithTimeoutAndRetry(CryptoPublicKeys::class.java)
+        val response = request.execute(CryptoPublicKeys::class.java)
         return response!!.keys.map {
             schemeMetadata.decodePublicKey(it.array())
         }
@@ -76,7 +71,7 @@ class CryptoOpsPublisher(
             tenantId,
             GenerateFreshKeyRpcCommand(null, context.toWire())
         )
-        val response = request.executeWithTimeoutAndRetry(CryptoPublicKey::class.java)
+        val response = request.execute(CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
@@ -85,7 +80,7 @@ class CryptoOpsPublisher(
             tenantId,
             GenerateFreshKeyRpcCommand(externalId.toString(), context.toWire())
         )
-        val response = request.executeWithTimeoutAndRetry(CryptoPublicKey::class.java)
+        val response = request.execute(CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
     }
 
@@ -103,7 +98,7 @@ class CryptoOpsPublisher(
                 context.toWire()
             )
         )
-        val response = request.executeWithTimeoutAndRetry(CryptoSignatureWithKey::class.java)
+        val response = request.execute(CryptoSignatureWithKey::class.java)
         return DigitalSignature.WithKey(
             by = schemeMetadata.decodePublicKey(response!!.publicKey.array()),
             bytes = response.bytes.array()
@@ -126,7 +121,7 @@ class CryptoOpsPublisher(
                 context.toWire()
             )
         )
-        val response = request.executeWithTimeoutAndRetry(CryptoSignatureWithKey::class.java)
+        val response = request.execute(CryptoSignatureWithKey::class.java)
         return DigitalSignature.WithKey(
             by = schemeMetadata.decodePublicKey(response!!.publicKey.array()),
             bytes = response.bytes.array()
@@ -142,7 +137,7 @@ class CryptoOpsPublisher(
                 context.toWire()
             )
         )
-        val response = request.executeWithTimeoutAndRetry(CryptoSignature::class.java)
+        val response = request.execute(CryptoSignature::class.java)
         return response!!.bytes.array()
     }
 
@@ -162,7 +157,7 @@ class CryptoOpsPublisher(
                 context.toWire()
             )
         )
-        val response = request.executeWithTimeoutAndRetry(CryptoSignature::class.java)
+        val response = request.execute(CryptoSignature::class.java)
         return response!!.bytes.array()
     }
 
@@ -171,7 +166,7 @@ class CryptoOpsPublisher(
             tenantId,
             HSMAliasRpcQuery(alias)
         )
-        return request.executeWithTimeoutAndRetry(String::class.java, allowNoContentValue = true)
+        return request.execute(String::class.java, allowNoContentValue = true)
     }
 
     override fun getHSM(tenantId: String, category: String): HSMInfo? {
@@ -179,7 +174,7 @@ class CryptoOpsPublisher(
             tenantId,
             AssignedHSMRpcQuery(category)
         )
-        return request.executeWithTimeoutAndRetry(HSMInfo::class.java, allowNoContentValue = true)
+        return request.execute(HSMInfo::class.java, allowNoContentValue = true)
     }
 
     private fun createRequest(tenantId: String, request: Any): RpcOpsRequest =
@@ -189,15 +184,14 @@ class CryptoOpsPublisher(
         )
 
     @Suppress("ThrowsCount", "UNCHECKED_CAST", "ComplexMethod")
-    private fun <RESPONSE> RpcOpsRequest.executeWithTimeoutAndRetry(
+    private fun <RESPONSE> RpcOpsRequest.execute(
         respClazz: Class<RESPONSE>,
         allowNoContentValue: Boolean = false
     ): RESPONSE? {
-        var retry = clientRetries
         while (true) {
             try {
                 logger.info("Sending {} for member {}", request::class.java.name, context.tenantId)
-                val response = sender.sendRequest(this).getOrThrow(clientTimeout)
+                val response = sender.sendRequest(this).getOrThrow()
                 require(
                     response.context.requestingComponent == context.requestingComponent &&
                             response.context.tenantId == context.tenantId
@@ -220,20 +214,6 @@ class CryptoOpsPublisher(
                 }
                 logger.debug("Received response {} for member {}", respClazz.name, context.tenantId)
                 return response.response as RESPONSE
-            } catch (e: TimeoutException) {
-                retry--
-                if (retry < 0) {
-                    logger.error(
-                        "Timeout executing ${request::class.java.name} for member ${context.tenantId}, " +
-                                "all retries are exhausted", e
-                    )
-                    throw CryptoServiceTimeoutException(clientTimeout, e)
-                } else {
-                    logger.error(
-                        "Timeout executing ${request::class.java.name} for member ${context.tenantId}, " +
-                                "will retry...", e
-                    )
-                }
             } catch (e: CryptoServiceLibraryException) {
                 logger.error("Failed executing ${request::class.java.name} for member ${context.tenantId}", e)
                 throw e

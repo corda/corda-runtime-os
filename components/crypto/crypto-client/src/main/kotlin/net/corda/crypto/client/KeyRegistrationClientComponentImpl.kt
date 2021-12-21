@@ -1,10 +1,10 @@
 package net.corda.crypto.client
 
 import net.corda.crypto.CryptoPublishResult
-import net.corda.crypto.HSMRegistrarClient
+import net.corda.crypto.KeyRegistrationClient
+import net.corda.crypto.KeyRegistrationClientComponent
 import net.corda.crypto.component.lifecycle.AbstractComponent
 import net.corda.crypto.impl.closeGracefully
-import net.corda.data.crypto.config.HSMConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.publisher.Publisher
@@ -13,43 +13,36 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Component(service = [HSMRegistrarClientComponent::class])
-class HSMRegistrarClientComponentImpl(
+@Component(service = [KeyRegistrationClientComponent::class])
+class KeyRegistrationClientComponentImpl(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory
-) : AbstractComponent<HSMRegistrarClientComponentImpl.Resources>(
+) : AbstractComponent<KeyRegistrationClientComponentImpl.Resources>(
     coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<HSMRegistrarClientComponent>()
-), HSMRegistrarClientComponent {
+    LifecycleCoordinatorName.forComponent<KeyRegistrationClientComponent>()
+), KeyRegistrationClientComponent {
     companion object {
-        const val CLIENT_ID = "crypto.registration.hsm"
+        const val CLIENT_ID = "crypto.registration.key"
 
-        inline val Resources?.instance: HSMRegistrarClient
+        inline val Resources?.instance: KeyRegistrationClient
             get() = this?.registrar ?: throw IllegalStateException("The component haven't been initialised.")
     }
 
     private lateinit var publisherFactory: PublisherFactory
 
     @Reference(service = PublisherFactory::class)
-    fun putPublisherFactory(publisherFactory: PublisherFactory) {
+    fun publisherFactoryRef(publisherFactory: PublisherFactory) {
         this.publisherFactory = publisherFactory
         createResources()
     }
 
-    override fun putHSM(config: HSMConfig): CryptoPublishResult =
-        resources.instance.putHSM(config)
-
-    override fun assignHSM(tenantId: String, category: String, defaultSignatureScheme: String): CryptoPublishResult =
-        resources.instance.assignHSM(tenantId, category, defaultSignatureScheme)
-
-    override fun assignSoftHSM(
+    override fun generateKeyPair(
         tenantId: String,
         category: String,
-        passphrase: String,
-        defaultSignatureScheme: String
+        alias: String,
+        context: Map<String, String>
     ): CryptoPublishResult =
-        resources.instance.assignSoftHSM(tenantId, category, passphrase, defaultSignatureScheme)
-
+        resources.instance.generateKeyPair(tenantId, category, alias, context)
 
     override fun allocateResources(): Resources = Resources(publisherFactory)
 
@@ -57,7 +50,7 @@ class HSMRegistrarClientComponentImpl(
         publisherFactory: PublisherFactory
     ) : AutoCloseable {
         private val publisher: Publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
-        val registrar: HSMRegistrarPublisher = HSMRegistrarPublisher(publisher)
+        val registrar: KeyRegistrationClient = KeyRegistrationPublisher(publisher)
         override fun close() {
             publisher.closeGracefully()
         }

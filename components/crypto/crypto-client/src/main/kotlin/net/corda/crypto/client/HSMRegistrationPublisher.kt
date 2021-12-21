@@ -2,7 +2,7 @@ package net.corda.crypto.client
 
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.CryptoPublishResult
-import net.corda.crypto.HSMRegistrarClient
+import net.corda.crypto.HSMRegistrationClient
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.wire.registration.hsm.AddHSMCommand
 import net.corda.data.crypto.wire.registration.hsm.AssignHSMCommand
@@ -12,9 +12,9 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 
-class HSMRegistrarPublisher(
+class HSMRegistrationPublisher(
     private val publisher: Publisher
-) : HSMRegistrarClient {
+) : HSMRegistrationClient {
     override fun putHSM(config: HSMConfig): CryptoPublishResult =
         publish(
             CryptoConsts.CLUSTER_TENANT_ID,
@@ -50,7 +50,7 @@ class HSMRegistrarPublisher(
 
     private fun createRequest(tenantId: String, request: Any): HSMRegistrationRequest =
         HSMRegistrationRequest(
-            createWireRequestContext<HSMRegistrarPublisher>(tenantId),
+            createWireRequestContext<HSMRegistrationPublisher>(tenantId),
             request
         )
 }

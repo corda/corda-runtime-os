@@ -13,6 +13,7 @@ dependencies {
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
     implementation "net.corda:corda-avro-schema"
+    implementation project(":libs:lifecycle:lifecycle")
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"

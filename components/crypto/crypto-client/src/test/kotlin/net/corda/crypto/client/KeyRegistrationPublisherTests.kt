@@ -25,7 +25,7 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertEquals
 
-class KeyRegistrarPublisherTests {
+class KeyRegistrationPublisherTests {
     @Test
     @Timeout(5)
     fun `Should publish command to generate key pair`() {
@@ -33,7 +33,7 @@ class KeyRegistrarPublisherTests {
         val publisher = mock<Publisher> {
             on { publish(any()) } doReturn listOf(CompletableFuture<Unit>().also { it.complete(Unit) })
         }
-        val cut = KeyRegistrarPublisher(publisher)
+        val cut = KeyRegistrationPublisher(publisher)
         val before = Instant.now()
         val result = cut.generateKeyPair(
             tenantId = "some-tenant",
@@ -69,7 +69,7 @@ class KeyRegistrarPublisherTests {
                 lessThanOrEqualTo(after.toEpochMilli())
             )
         )
-        assertEquals(KeyRegistrarPublisher::class.simpleName, context.requestingComponent)
+        assertEquals(KeyRegistrationPublisher::class.simpleName, context.requestingComponent)
         assertThat(context.other.items, empty())
     }
 }

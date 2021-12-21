@@ -5,7 +5,7 @@ import net.corda.data.crypto.config.HSMConfig
 /**
  * The HSM registration client to generate keys.
  */
-interface HSMRegistrarClient {
+interface HSMRegistrationClient {
     /**
      * Adds new HSM configuration.
      */

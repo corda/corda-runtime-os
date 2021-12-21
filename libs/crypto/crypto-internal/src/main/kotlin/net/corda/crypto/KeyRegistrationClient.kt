@@ -3,7 +3,7 @@ package net.corda.crypto
 /**
  * The key registration client to generate keys.
  */
-interface KeyRegistrarClient {
+interface KeyRegistrationClient {
     /**
      * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
      *
