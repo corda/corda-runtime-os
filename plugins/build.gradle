@@ -1,5 +1,5 @@
 plugins {
-        id "org.jetbrains.kotlin.jvm"  // need to apply kotlin plugin here as it provides 'build' task
+    id 'base'
 }
 
 // here we define the tasks which will build the plugins in the subprojects

@@ -1,13 +1,13 @@
 plugins {
-    id "org.jetbrains.kotlin.kapt"
+    id 'org.jetbrains.kotlin.kapt'
 }
 
 dependencies {
-    compileOnly(project(":api"))
+    compileOnly project(":api")
 
-    compileOnly("org.pf4j:pf4j:${pf4jVersion}")
-    kapt("org.pf4j:pf4j:${pf4jVersion}")
-    implementation("org.apache.commons:commons-lang3:${commonsLangVersion}") // this is an examples for an external library included
+    compileOnly "org.pf4j:pf4j:${pf4jVersion}"
+    kapt "org.pf4j:pf4j:${pf4jVersion}"
+    implementation "org.apache.commons:commons-lang3:${commonsLangVersion}" // this is an examples for an external library included
 }
 
 

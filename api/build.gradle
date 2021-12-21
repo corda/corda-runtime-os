@@ -1,4 +1,3 @@
-
 plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'maven-publish'
@@ -12,7 +11,7 @@ dependencies {
 publishing {
     publications {
         cliapi(MavenPublication){
-            from components["kotlin"]
+            from components.kotlin
         }
     }
 }

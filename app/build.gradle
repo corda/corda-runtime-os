@@ -1,4 +1,3 @@
-
 plugins {
     id 'org.jetbrains.kotlin.jvm' 
     id 'application'
@@ -27,7 +26,7 @@ tasks.named("run") {
     systemProperty("pf4j.pluginsDir", file(pluginsDir).absolutePath)
 }
 
-tasks.register("fatJar", Jar) {
+def fatJar = tasks.register('fatJar', Jar) {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
     dependsOn(tasks.named("compileKotlin"))
 
@@ -41,5 +40,9 @@ tasks.register("fatJar", Jar) {
         attributes["Main-Class"] = appMainClass
     }
 
-    archiveBaseName.set("corda-cli")
+    archiveBaseName = 'corda-cli'
+}
+
+artifacts {
+    archives fatJar
 }
