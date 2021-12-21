@@ -10,14 +10,16 @@ import net.corda.v5.base.util.contextLogger
 class GroupPolicyFactory {
     companion object {
         private val logger = contextLogger()
+        const val EMPTY_GROUP_POLICY = "GroupPolicy file is empty."
+        const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed."
     }
 
     fun createGroupPolicy(groupPolicyJson: String?): GroupPolicy {
         return GroupPolicyImpl(
             try {
                 if (groupPolicyJson.isNullOrBlank()) {
-                    logger.info("Group policy file is empty.")
-                    emptyMap()
+                    logger.error(EMPTY_GROUP_POLICY)
+                    throw CordaRuntimeException(EMPTY_GROUP_POLICY)
                 } else {
                     ConfigFactory
                         .parseString(groupPolicyJson)
@@ -25,8 +27,8 @@ class GroupPolicyFactory {
                         .unwrapped()
                 }
             } catch (e: ConfigException.Parse) {
-                logger.error("Group policy file failed to parse. Check the file format.")
-                throw CordaRuntimeException("GroupPolicy file is incorrectly formatted and parsing failed.", e)
+                logger.error(FAILED_PARSING)
+                throw CordaRuntimeException(FAILED_PARSING, e)
             }
         )
     }
