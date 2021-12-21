@@ -81,7 +81,7 @@ class ConfigTests {
     }
 
     @Test
-    fun `multiple messaging params can be passed through to the processor`() {
+    fun `multiple messaging params can be provided`() {
         val processor = DummyProcessor()
         val dbWorker = DBWorker(processor, DummyShutdown(), SmartConfigFactoryImpl(), DummyHealthMonitor())
         val args = arrayOf(
@@ -96,7 +96,7 @@ class ConfigTests {
     }
 
     @Test
-    fun `multiple database params can be passed through to the processor`() {
+    fun `multiple database params can be provided`() {
         val processor = DummyProcessor()
         val dbWorker = DBWorker(processor, DummyShutdown(), SmartConfigFactoryImpl(), DummyHealthMonitor())
         val args = arrayOf(
@@ -111,7 +111,7 @@ class ConfigTests {
     }
 
     @Test
-    fun `multiple additional params can be passed through to the processor`() {
+    fun `multiple additional params can be provided`() {
         val processor = DummyProcessor()
         val dbWorker = DBWorker(processor, DummyShutdown(), SmartConfigFactoryImpl(), DummyHealthMonitor())
         val args = arrayOf(
@@ -125,7 +125,7 @@ class ConfigTests {
         assertEquals(CUSTOM_VAL_TWO, config.getAnyRef("$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_TWO"))
     }
 
-    /** A [DBProcessor] that stores the passed-in config in [config] for later inspection. */
+    /** A [DBProcessor] that stores the passed-in config in [config] for inspection. */
     private class DummyProcessor : DBProcessor {
         var config: SmartConfig? = null
 
