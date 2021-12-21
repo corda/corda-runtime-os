@@ -34,6 +34,9 @@ class DefaultWorkerParams {
     )
     var healthMonitorPort = HEALTH_MONITOR_PORT
 
+    @Option(names = ["-m", "--messagingParams"], description = ["Messaging parameters for the worker."])
+    var messagingParams = emptyMap<String, String>()
+
     @Option(names = ["-c", "--additionalParams"], description = ["Additional parameters for the worker."])
     var additionalParams = emptyMap<String, String>()
 }
