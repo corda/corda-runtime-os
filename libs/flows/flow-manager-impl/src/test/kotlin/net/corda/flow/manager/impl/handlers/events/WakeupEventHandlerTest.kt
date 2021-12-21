@@ -52,14 +52,14 @@ class WakeupEventHandlerTest {
     }
 
     @Test
-    fun `runOrContinue returns FlowContinuation#Continue if it is not waiting for a wakeup event`() {
+    fun `runOrContinue throws if it is not waiting for a wakeup event`() {
         val checkpoint = Checkpoint().apply {
             flowState = StateMachineState().apply {
                 waitingFor = WaitingFor(Receive())
             }
         }
         val inputContext = FlowEventContext(checkpoint, flowEvent, wakeupPayload, emptyList())
-        assertEquals(FlowContinuation.Continue, handler.runOrContinue(inputContext))
+        handler.runOrContinue(inputContext)
     }
 
     @Test
@@ -70,7 +70,9 @@ class WakeupEventHandlerTest {
             }
         }
         val inputContext = FlowEventContext(checkpoint, flowEvent, wakeupPayload, emptyList())
-        assertEquals(FlowContinuation.Continue, handler.runOrContinue(inputContext))
+        assertThrows<FlowProcessingException> {
+            handler.runOrContinue(inputContext)
+        }
     }
 
     @Test

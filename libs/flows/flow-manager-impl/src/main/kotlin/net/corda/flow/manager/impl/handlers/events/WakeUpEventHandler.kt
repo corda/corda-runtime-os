@@ -3,7 +3,6 @@ package net.corda.flow.manager.impl.handlers.events
 import net.corda.data.flow.event.Wakeup
 import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import org.osgi.service.component.annotations.Component
 import net.corda.data.flow.state.waiting.Wakeup as WaitingForWakeup
 
@@ -19,12 +18,10 @@ class WakeUpEventHandler : FlowEventHandler<Wakeup> {
 
     override fun runOrContinue(context: FlowEventContext<Wakeup>): FlowContinuation {
         val checkpoint = requireCheckpoint(context)
-        return if (checkpoint.flowState.waitingFor?.value is WaitingForWakeup) {
+        return if (checkpoint.flowState.requireWaitingFor().value is WaitingForWakeup) {
             FlowContinuation.Run(Unit)
         } else {
-            throw FlowProcessingException(
-                "Received a ${Wakeup::class.qualifiedName} event while waiting for a ${WaitingForWakeup::class.qualifiedName}"
-            )
+            FlowContinuation.Continue
         }
     }
 

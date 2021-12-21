@@ -2,6 +2,8 @@ package net.corda.flow.manager.impl.handlers.events
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
+import net.corda.data.flow.state.StateMachineState
+import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.manager.impl.FlowEventContext
@@ -84,4 +86,16 @@ interface FlowEventHandler<T> {
  */
 fun FlowEventHandler<*>.requireCheckpoint(context: FlowEventContext<*>): Checkpoint {
     return context.checkpoint ?: throw FlowProcessingException("${this::class.java.name} requires a non-null checkpoint as input")
+}
+
+/**
+ * Throws a [FlowProcessingException] if [StateMachineState.waitingFor] is null.
+ *
+ * @return A non-null [WaitingFor].
+ *
+ * @throws FlowProcessingException if [StateMachineState.waitingFor] is null.
+ */
+fun StateMachineState.requireWaitingFor(): WaitingFor {
+    return waitingFor
+        ?: throw FlowProcessingException("Flow is in an invalid state as it is waiting for no input events while also being suspended")
 }
