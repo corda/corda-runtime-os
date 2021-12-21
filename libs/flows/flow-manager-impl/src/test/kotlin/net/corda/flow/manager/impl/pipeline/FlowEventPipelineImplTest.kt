@@ -1,4 +1,4 @@
-package net.corda.flow.manager.impl
+package net.corda.flow.manager.impl.pipeline
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
@@ -6,6 +6,7 @@ import net.corda.data.flow.state.StateMachineState
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.requests.FlowIORequest
+import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import net.corda.flow.manager.impl.handlers.events.FlowEventHandler
 import net.corda.flow.manager.impl.handlers.requests.FlowRequestHandler
@@ -22,11 +23,11 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 
-class FlowEventPipelineTest {
+class FlowEventPipelineImplTest {
 
     private val flowState = StateMachineState()
     private val checkpoint = Checkpoint().apply {
-        flowState = this@FlowEventPipelineTest.flowState
+        flowState = this@FlowEventPipelineImplTest.flowState
         fiber = ByteBuffer.wrap(byteArrayOf(0, 0, 0, 0))
     }
 
@@ -58,7 +59,7 @@ class FlowEventPipelineTest {
         whenever(runFlow(any(), any(), any())).thenReturn(flowFiber)
     }
 
-    private val pipeline = FlowEventPipeline(
+    private val pipeline = FlowEventPipelineImpl(
         flowEventHandler,
         mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
         flowRunner,

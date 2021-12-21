@@ -6,8 +6,8 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.requests.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventContext
-import net.corda.flow.manager.impl.FlowEventPipeline
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
+import net.corda.flow.manager.impl.pipeline.FlowEventPipeline
 
 /**
  * The [FlowRequestHandler] interface is implemented by services that process [FlowIORequest]s output by [FlowFiber]s when they suspend.

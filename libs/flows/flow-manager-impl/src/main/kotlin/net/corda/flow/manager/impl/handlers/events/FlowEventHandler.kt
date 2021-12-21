@@ -5,13 +5,13 @@ import net.corda.data.flow.state.Checkpoint
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.manager.impl.FlowEventContext
-import net.corda.flow.manager.impl.FlowEventPipeline
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
+import net.corda.flow.manager.impl.pipeline.FlowEventPipelineImpl
 
 /**
  * The [FlowEventHandler] interface is implemented by services that process received [FlowEvent]s.
  *
- * The processing of an event is split into steps which are executed by [FlowEventPipeline].
+ * The processing of an event is split into steps which are executed by [FlowEventPipelineImpl].
  *
  * Each step receives an incoming [FlowEventContext] that contains information about the the received event, the flow's [Checkpoint] and
  * records that should be sent back to the message bus. It is expected that the [FlowEventContext.checkpoint] and
