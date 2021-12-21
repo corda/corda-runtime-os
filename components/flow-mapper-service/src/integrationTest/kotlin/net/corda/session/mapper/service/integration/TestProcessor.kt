@@ -11,7 +11,9 @@ class TestProcessor(
     override val keyClass = Any::class.java
     override val valueClass = Any::class.java
     override fun onNext(events: List<Record<Any, Any>>): List<Record<*, *>> {
-        latch.countDown()
+        for (event in events) {
+            latch.countDown()
+        }
         return emptyList()
     }
 }
