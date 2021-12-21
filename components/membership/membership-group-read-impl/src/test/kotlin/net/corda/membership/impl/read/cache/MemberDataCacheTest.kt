@@ -17,6 +17,7 @@ import org.mockito.kotlin.mock
 class MemberDataCacheTest {
 
     interface MemberData
+
     private lateinit var memberDataCache: MemberDataCache<MemberData>
 
     private val lookUpMemberName = TestProperties.aliceName
@@ -45,8 +46,8 @@ class MemberDataCacheTest {
 
     @Test
     fun `Cache for one member and lookup for a different member`() {
-        addToCacheWithDefaults(lookUpMember = memberName1)
-        assertNull(lookupWithDefaults())
+        addToCacheWithDefaults()
+        assertNull(lookupWithDefaults(lookUpMember = memberName1))
     }
 
     @Test

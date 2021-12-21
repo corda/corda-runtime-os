@@ -2,40 +2,55 @@ package net.corda.membership.impl.read.component
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReaderComponent
-import net.corda.data.membership.SignedMemberInfo
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
-import net.corda.messaging.api.processor.CompactedProcessor
-import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.packaging.CPI
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+/**
+ * Tests for [MembershipGroupReadServiceImpl]. Test are kept to a minimum because the implementation doesn't contain
+ * much actual implementation code but rather uses other classes which have more specific purposes. Each are tested
+ * separately to this class.
+ */
 class MembershipGroupReadServiceImplTest {
 
     private lateinit var membershipGroupReadService: MembershipGroupReadServiceImpl
 
     private val memberName = aliceName
 
-    private lateinit var cpiInfoReader: CpiInfoReaderComponent
-    private lateinit var virtualNodeInfoReader: VirtualNodeInfoReaderComponent
-    private lateinit var subscriptionFactory: SubscriptionFactory
-    private lateinit var configurationReadService: ConfigurationReadService
-    private lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    var coordinatorIsRunning = false
+    private val coordinator: LifecycleCoordinator = mock<LifecycleCoordinator>().apply {
+        doAnswer { coordinatorIsRunning }.whenever(this).isRunning
+        doAnswer { coordinatorIsRunning = true }.whenever(this).start()
+        doAnswer { coordinatorIsRunning = false }.whenever(this).stop()
+    }
+
+    private val cpiInfoReader: CpiInfoReaderComponent = mock()
+    private val virtualNodeInfoReader: VirtualNodeInfoReaderComponent = mock()
+    private val subscriptionFactory: SubscriptionFactory = mock()
+    private val configurationReadService: ConfigurationReadService = mock()
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
+        doReturn(coordinator).whenever(this).createCoordinator(any(), any())
+    }
 
     @BeforeEach
     fun setUp() {
-        configureMocks()
         membershipGroupReadService = MembershipGroupReadServiceImpl(
             virtualNodeInfoReader,
             cpiInfoReader,
@@ -45,144 +60,36 @@ class MembershipGroupReadServiceImplTest {
         )
     }
 
-    //    @Test
-//    fun `Group reader cannot be retrieved if service hasn't started yet`() {
-//        assertThrows<CordaRuntimeException> {
-//            membershipGroupReadService.getGroupReader(groupId, memberName)
-//        }
-//    }
-//
-//    @Test
-//    fun `Group reader can be retrieved if service has started`() {
-//        membershipGroupReadService.start()
-//        membershipGroupReadService.getGroupReader(groupId, memberName)
-//    }
-//
-//    @Test
-//    fun `Group reader cannot be retrieved if service has stopped`() {
-//        membershipGroupReadService.start()
-//        membershipGroupReadService.stop()
-//        assertThrows<CordaRuntimeException> {
-//            membershipGroupReadService.getGroupReader(groupId, memberName)
-//        }
-//    }
-//
-//    @Test
-//    fun `Service is not running if start has not been called`() {
-//        assertFalse(membershipGroupReadService.isRunning)
-//    }
-//
-//    @Test
-//    fun `Service is running if start has been called`() {
-//        membershipGroupReadService.start()
-//        assertTrue(membershipGroupReadService.isRunning)
-//    }
-//
-//    @Test
-//    fun `Service is not running if stop has been called`() {
-//        membershipGroupReadService.start()
-//        membershipGroupReadService.stop()
-//        assertFalse(membershipGroupReadService.isRunning)
-//    }
-//
-//    @Test
-//    fun `Group reader is returned from the cache if already created`() {
-//        membershipGroupReadService.start()
-//        val lookup1 = membershipGroupReadService.getGroupReader(groupId, memberName)
-//        val lookup2 = membershipGroupReadService.getGroupReader(groupId, memberName)
-//        assertEquals(lookup1, lookup2)
-//    }
-//
-//    @Test
-//    fun `Group reader cache is cleared after restarting the service`() {
-//        membershipGroupReadService.start()
-//        val lookup1 = membershipGroupReadService.getGroupReader(groupId, memberName)
-//        membershipGroupReadService.stop()
-//        membershipGroupReadService.start()
-//        val lookup2 = membershipGroupReadService.getGroupReader(groupId, memberName)
-//        assertNotEquals(lookup1, lookup2)
-//    }
-//
-//    @Test
-//    fun `handleConfigEvent restarts the subscriptions`() {
-//        // When service starts, subscription is created
-//        membershipGroupReadService.start()
-//        verify(subscriptionFactory, times(1))
-//            .createCompactedSubscription(
-//                any(),
-//                any<CompactedProcessor<String, SignedMemberInfo>>(),
-//                any()
-//            )
-//
-//        // When config event is handled, the subscription is started again
-//        membershipGroupReadService.handleConfigEvent(mock())
-//        verify(subscriptionFactory, times(2))
-//            .createCompactedSubscription(
-//                any(),
-//                any<CompactedProcessor<String, SignedMemberInfo>>(),
-//                any()
-//            )
-//    }
-//
-//    @Test
-//    fun `handleConfigEvent recreates the caches`() {
-//        // start the service
-//        membershipGroupReadService.start()
-//
-//        // create and cache group reader
-//        val reader1 = membershipGroupReadService.getGroupReader(groupId, memberName)
-//        // get reader from cache
-//        val reader2 = membershipGroupReadService.getGroupReader(groupId, memberName)
-//        assertEquals(reader1, reader2)
-//
-//        // handle config event
-//        membershipGroupReadService.handleConfigEvent(mock())
-//
-//        // next reader should be new since cache should have been reset
-//        val reader3 = membershipGroupReadService.getGroupReader(groupId, memberName)
-//        // get reader from cache
-//        val reader4 = membershipGroupReadService.getGroupReader(groupId, memberName)
-//        assertEquals(reader3, reader4)
-//
-//        // current reader should not equal previous reader from before handling the config
-//        assertNotEquals(reader1, reader3)
-//    }
-//
-//    @Test
-//    fun `Service is running after handling a config event`() {
-//        assertFalse(membershipGroupReadService.isRunning)
-//        membershipGroupReadService.start()
-//        assertTrue(membershipGroupReadService.isRunning)
-//        membershipGroupReadService.handleConfigEvent(mock())
-//        assertTrue(membershipGroupReadService.isRunning)
-//    }
-//
-    private fun configureMocks() {
-        var memberListSubIsRunning = false
+    @Test
+    fun `Component is not running before starting and after stopping`() {
+        assertFalse(membershipGroupReadService.isRunning)
+        membershipGroupReadService.start()
+        assertTrue(membershipGroupReadService.isRunning)
+        membershipGroupReadService.stop()
+        assertFalse(membershipGroupReadService.isRunning)
+    }
 
-        val cpi: CPI.Identifier = mock()
-        val virtualNodeInfo = VirtualNodeInfo(HoldingIdentity(memberName.toString(), GROUP_ID_1), cpi)
-        val cpiMetadata = mock<CPI.Metadata>().apply {
-            doReturn("").whenever(this).groupPolicy
-        }
-        val mockMemberListSub = mock<CompactedSubscription<String, SignedMemberInfo>>().apply {
-            doAnswer { memberListSubIsRunning = true }.whenever(this).start()
-            doAnswer { memberListSubIsRunning = false }.whenever(this).stop()
-            doAnswer { memberListSubIsRunning }.whenever(this).isRunning
-        }
+    @Test
+    fun `Lifecycle coordinator is started when starting this component`() {
+        verify(coordinator, never()).start()
+        membershipGroupReadService.start()
+        verify(coordinator).start()
+    }
 
-        cpiInfoReader = mock<CpiInfoReaderComponent>().apply {
-            doReturn(cpiMetadata).whenever(this).get(eq(cpi))
+    @Test
+    fun `Lifecycle coordinator is stopped when stopping this component`() {
+        membershipGroupReadService.start()
+
+        verify(coordinator, never()).stop()
+        membershipGroupReadService.stop()
+        verify(coordinator).stop()
+    }
+
+    @Test
+    fun `Get group reader throws exception if component hasn't started`() {
+        val e = assertThrows<CordaRuntimeException> {
+            membershipGroupReadService.getGroupReader(GROUP_ID_1, memberName)
         }
-        virtualNodeInfoReader = mock<VirtualNodeInfoReaderComponent>().apply {
-            doReturn(virtualNodeInfo).whenever(this).get(any())
-        }
-        subscriptionFactory = mock<SubscriptionFactory>().apply {
-            doReturn(mockMemberListSub).whenever(this).createCompactedSubscription(
-                any(),
-                any<CompactedProcessor<String, SignedMemberInfo>>(),
-                any()
-            )
-        }
+        assertEquals(MembershipGroupReadServiceImpl.ACCESS_TOO_EARLY, e.message)
     }
 }

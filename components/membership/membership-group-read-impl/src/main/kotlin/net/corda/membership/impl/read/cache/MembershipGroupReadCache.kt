@@ -24,7 +24,7 @@ interface MembershipGroupReadCache : Lifecycle {
      * Default implementation of [MembershipGroupReadCache].
      */
     class Impl : MembershipGroupReadCache {
-        private companion object {
+        companion object {
             const val UNINITIALIZED_CACHE_ERROR = "Could not access the %s because the cache has not been " +
                     "initialised yet."
             const val MEMBER_LIST_CACHE = "member list cache"
