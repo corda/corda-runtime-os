@@ -20,7 +20,7 @@
       "doc": "HSM configuration id."
     },
     {
-      "name": "label",
+      "name": "hsmLabel",
       "type": "string",
       "doc": "Label associated with HSM worker, see HSMInfo for more details."
     }

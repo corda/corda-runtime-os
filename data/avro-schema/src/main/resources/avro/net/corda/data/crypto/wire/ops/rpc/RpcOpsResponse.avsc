@@ -19,7 +19,7 @@
         "net.corda.data.crypto.wire.CryptoSignatureWithKey",
         "net.corda.data.crypto.wire.CryptoSignatureSchemes",
         "net.corda.data.crypto.config.HSMInfo",
-        "string"
+        "HSMKey"
       ],
       "doc": "Response's payload, depends on the requested operation"
     }

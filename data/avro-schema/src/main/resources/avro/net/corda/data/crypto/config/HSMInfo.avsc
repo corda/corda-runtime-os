@@ -23,7 +23,7 @@
       "doc": "Ever increasing on each update version of the record, the initial value is 1."
     },
     {
-      "name": "label",
+      "name": "hsmLabel",
       "type": "string",
       "doc": "Label associated with HSM worker to partition for HSMs which don't support more than one HSM per process/VM. The default value is 'default'."
     },

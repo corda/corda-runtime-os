@@ -21,7 +21,8 @@
         "FilterMyKeysRpcQuery",
         "SupportedSchemesRpcQuery",
         "AssignedHSMRpcQuery",
-        "HSMAliasRpcQuery"
+        "HSMKeyInfoByAliasRpcQuery",
+        "HSMKeyInfoByPublicKeyRpcQuery"
       ],
       "doc": "Request's payload, depends on the requested operation."
     }

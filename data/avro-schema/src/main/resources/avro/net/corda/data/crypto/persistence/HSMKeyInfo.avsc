@@ -1,0 +1,81 @@
+{
+  "type": "record",
+  "name": "HSMKeyInfo",
+  "namespace": "net.corda.data.crypto.persistence",
+  "doc": "Defines association of a tenant defined key alias to the actual which is used by particular HSM.",
+  "fields": [
+    {
+      "name": "tenantId",
+      "type": "string",
+      "doc": "Tenant id."
+    },
+    {
+      "name": "tenantAlias",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "Alias which is assigned by the tenant, the wrapped keys will have this value as null."
+    },
+    {
+      "name": "hsmConfigId",
+      "type": "string",
+      "doc": "HSM configuration id."
+    },
+    {
+      "name": "hsmLabel",
+      "type": "string",
+      "doc": "Label associated with HSM worker."
+    },
+    {
+      "name": "hsmAlias",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "Alias which is used by the HSM, the wrapped keys will have this value as null"
+    },
+    {
+      "name": "publicKey",
+      "type": "bytes",
+      "doc": "Serialized public key."
+    },
+    {
+      "name": "externalId",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "Key's external id."
+    },
+    {
+      "name": "masterKeyAlias",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "For wrapped keys only, the master's key alias."
+    },
+    {
+      "name": "privateKeyMaterial",
+      "type": [
+        "null",
+        "bytes"
+      ],
+      "doc": "For wrapped keys only, serialised and encrypted (wrapped) private key."
+    },
+    {
+      "name": "schemeCodeName",
+      "type": "string",
+      "doc": "The key's signature scheme code."
+    },
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds when the record was updated or added."
+    }
+  ]
+}
