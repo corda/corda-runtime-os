@@ -10,7 +10,6 @@ import net.corda.flow.manager.impl.handlers.requests.FlowRequestHandler
 import net.corda.flow.manager.impl.pipeline.FlowEventPipeline
 import net.corda.flow.manager.impl.pipeline.FlowEventPipelineImpl
 import net.corda.flow.manager.impl.runner.FlowRunner
-import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
