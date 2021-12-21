@@ -119,4 +119,21 @@ class Schemas {
             const val EVENT_TOPIC = "crypto.event"
         }
     }
+
+    /**
+     * Membership topic schema
+     */
+    class Membership {
+        companion object {
+            // Member persistence topics
+            const val MEMBER_LIST_TOPIC = "membership.members"
+            const val GROUP_PARAMETERS_TOPIC = "membership.group.params"
+            const val CPI_WHITELIST_TOPIC = "membership.group.cpi.whitelists"
+            const val PROPOSAL_TOPIC = "membership.proposals"
+
+            // Member messaging topics
+            const val UPDATE_TOPIC = "membership.update"
+            const val EVENT_TOPIC = "membership.event"
+        }
+    }
 }
