@@ -15,7 +15,9 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.config.MembershipConfig
 import net.corda.membership.config.MembershipConfigConstants
 import net.corda.membership.impl.config.MembershipConfigImpl
+import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.impl.read.component.MembershipGroupReadServiceImpl
+import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
 import net.corda.membership.lifecycle.MembershipConfigReceived
 import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
 
@@ -24,7 +26,9 @@ interface MembershipGroupReadLifecycleHandler {
      * Default implementation.
      */
     class Impl(
-        private val membershipGroupReadService: MembershipGroupReadServiceImpl
+        private val membershipGroupReadService: MembershipGroupReadServiceImpl,
+        private val membershipGroupReadSubscriptions: MembershipGroupReadSubscriptions,
+        private val membershipGroupReadCache: MembershipGroupReadCache
     ) : LifecycleEventHandler {
         private var configRegistrationHandle: AutoCloseable? = null
         private var componentRegistrationHandle: AutoCloseable? = null
@@ -37,12 +41,6 @@ interface MembershipGroupReadLifecycleHandler {
 
         private val configurationReadService
             get() = membershipGroupReadService.configurationReadService
-
-        private val membershipGroupReadCache
-            get() = membershipGroupReadService.membershipGroupReadCache
-
-        private val membershipGroupReadSubscriptions
-            get() = membershipGroupReadService.membershipGroupReadSubscriptions
 
         override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
             when (event) {
