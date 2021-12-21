@@ -51,8 +51,8 @@ class MemberListCacheImplTest {
 
     @Test
     fun `Cache for one member and lookup for a different member`() {
-        addToCacheWithDefaults(lookUpMember = memberName1)
-        assertMemberList(lookupWithDefaults())
+        addToCacheWithDefaults()
+        assertMemberList(lookupWithDefaults(lookUpMember = memberName1))
     }
 
     @Test

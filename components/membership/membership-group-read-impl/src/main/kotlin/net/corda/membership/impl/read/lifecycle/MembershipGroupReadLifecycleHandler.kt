@@ -21,7 +21,7 @@ import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscripti
 import net.corda.membership.lifecycle.MembershipConfigReceived
 import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
 
-interface MembershipGroupReadLifecycleHandler {
+interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
     /**
      * Default implementation.
      */
@@ -29,7 +29,7 @@ interface MembershipGroupReadLifecycleHandler {
         private val membershipGroupReadService: MembershipGroupReadServiceImpl,
         private val membershipGroupReadSubscriptions: MembershipGroupReadSubscriptions,
         private val membershipGroupReadCache: MembershipGroupReadCache
-    ) : LifecycleEventHandler {
+    ) : MembershipGroupReadLifecycleHandler {
         private var configRegistrationHandle: AutoCloseable? = null
         private var componentRegistrationHandle: AutoCloseable? = null
 
@@ -59,6 +59,7 @@ interface MembershipGroupReadLifecycleHandler {
             configurationReadService.start()
             cpiInfoReader.start()
             virtualNodeInfoReader.start()
+            membershipGroupReadCache.start()
 
             componentRegistrationHandle = coordinator.followStatusChangesByName(
                 setOf(
@@ -124,7 +125,7 @@ interface MembershipGroupReadLifecycleHandler {
         /**
          * Parse membership config from received config and pass the new config to the service lifecycle coordinator.
          */
-        private class MembershipGroupConfigurationHandler(
+        class MembershipGroupConfigurationHandler(
             val coordinator: LifecycleCoordinator
         ) : ConfigurationHandler {
             override fun onNewConfiguration(changedKeys: Set<String>, config: Map<String, SmartConfig>) {

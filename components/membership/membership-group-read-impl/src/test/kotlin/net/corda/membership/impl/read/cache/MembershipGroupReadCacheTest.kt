@@ -61,12 +61,24 @@ class MembershipGroupReadCacheTest {
 
     @Test
     fun `Member list cache is not accessible before starting`() {
-        assertThrows<CordaRuntimeException> { memberListCache }
+        val e = assertThrows<CordaRuntimeException> { memberListCache }
+        assertEquals(
+            String.format(
+                MembershipGroupReadCache.Impl.UNINITIALIZED_CACHE_ERROR,
+                MembershipGroupReadCache.Impl.MEMBER_LIST_CACHE
+            ), e.message
+        )
     }
 
     @Test
     fun `Group reader cache is not accessible before starting`() {
-        assertThrows<CordaRuntimeException> { groupReaderCache }
+        val e = assertThrows<CordaRuntimeException> { groupReaderCache }
+        assertEquals(
+            String.format(
+                MembershipGroupReadCache.Impl.UNINITIALIZED_CACHE_ERROR,
+                MembershipGroupReadCache.Impl.GROUP_READER_CACHE
+            ), e.message
+        )
     }
 
     @Test

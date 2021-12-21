@@ -1,13 +1,10 @@
 package net.corda.membership.impl.read.reader
 
-import net.corda.cpiinfo.read.CpiInfoReaderComponent
 import net.corda.membership.GroupPolicy
 import net.corda.membership.impl.GroupPolicyImpl
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.v5.membership.identity.MemberX500Name
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
 
 /**
  * Factory for creating [MembershipGroupReader] for a holding identity (group ID & MemberX500Name).
@@ -26,8 +23,6 @@ interface MembershipGroupReaderFactory {
      * Default implementation.
      */
     class Impl(
-        private val virtualNodeInfoReader: VirtualNodeInfoReaderComponent,
-        private val cpiInfoReader: CpiInfoReaderComponent,
         private val membershipGroupReadCache: MembershipGroupReadCache,
     ) : MembershipGroupReaderFactory {
         private val groupReaderCache get() = membershipGroupReadCache.groupReaderCache
@@ -50,24 +45,18 @@ interface MembershipGroupReaderFactory {
 
         /**
          * Retrieves the GroupPolicy JSON string from the CPI metadata and parses it into a [GroupPolicy] object.
+         * Stub until actual implementation exists.
          */
         private fun getGroupPolicy(
             groupId: String,
             memberX500Name: MemberX500Name
         ): GroupPolicy {
-            val holdingIdentity = HoldingIdentity(groupId, memberX500Name.toString())
-            val groupPolicyJson = virtualNodeInfoReader.get(holdingIdentity)
-                ?.cpi
-                ?.let { cpiInfoReader.get(it)?.groupPolicy }
-            requireNotNull(groupPolicyJson)
-            return parseGroupPolicy(groupPolicyJson)
-        }
-
-        private fun parseGroupPolicy(groupPolicyJson: String): GroupPolicy {
-            // Add group policy parsing call here. Can remove `require` function. Only added to temporarily satisfy
-            // compilation.
-            require(groupPolicyJson.length >= 0)
-            return GroupPolicyImpl(emptyMap())
+            return GroupPolicyImpl(
+                mapOf(
+                    "groupId" to groupId,
+                    "owningMember" to memberX500Name
+                )
+            )
         }
     }
 }
