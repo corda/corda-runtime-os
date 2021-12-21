@@ -158,7 +158,15 @@ class FlowEventPipelineImplTest {
 
     @Test
     fun `setCheckpointSuspendedOn does not set the checkpoint's suspendedOn property when output is not set`() {
-        val pipeline = this.pipeline.copy(output = null)
+        val pipeline = this.pipeline.copy(
+            context = inputContext.copy(
+                checkpoint = Checkpoint().apply {
+                    flowState = StateMachineState().apply {
+                        suspendedOn = FlowIORequest.ForceCheckpoint::class.qualifiedName
+                    }
+                }),
+            output = null
+        )
         assertEquals(pipeline, pipeline.setCheckpointSuspendedOn())
     }
 
