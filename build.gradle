@@ -3,7 +3,6 @@ import static org.gradle.api.JavaVersion.VERSION_11
 
 plugins {
     id 'org.jetbrains.kotlin.jvm' apply false
-    id 'maven-publish'
     id 'base'
 }
 
@@ -28,6 +27,10 @@ subprojects {
                 "-java-parameters"
             ]
         }
+    }
+
+    tasks.withType(GenerateModuleMetadata).configureEach {
+        enabled = false
     }
 }
 

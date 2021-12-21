@@ -12,6 +12,7 @@ publishing {
     publications {
         cliapi(MavenPublication){
             from components.kotlin
+            artifactId 'corda-cli-api'
         }
     }
 }
