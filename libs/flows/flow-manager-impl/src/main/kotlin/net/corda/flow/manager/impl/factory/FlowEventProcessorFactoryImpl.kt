@@ -6,9 +6,11 @@ import net.corda.flow.manager.impl.FlowEventProcessorImpl
 import net.corda.flow.manager.impl.pipeline.factory.FlowEventPipelineFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 
 @Component(service = [FlowEventProcessorFactory::class])
 class FlowEventProcessorFactoryImpl @Activate constructor(
+    @Reference(service = FlowEventPipelineFactory::class)
     private val flowEventPipelineFactory: FlowEventPipelineFactory
 ) : FlowEventProcessorFactory {
 
