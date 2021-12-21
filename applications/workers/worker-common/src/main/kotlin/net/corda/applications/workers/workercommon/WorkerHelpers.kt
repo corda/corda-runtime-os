@@ -2,6 +2,8 @@ package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.applications.workers.workercommon.internal.INSTANCE_ID_PATH
+import net.corda.applications.workers.workercommon.internal.TOPIC_PREFIX_PATH
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Shutdown
 import org.osgi.framework.FrameworkUtil
@@ -10,9 +12,6 @@ import picocli.CommandLine
 /** Helpers used across multiple workers. */
 class WorkerHelpers {
     companion object {
-        private const val INSTANCE_ID = "instance-id"
-        private const val TOPIC_MESSAGE_PREFIX_PATH = "messaging.topic.prefix"
-
         /**
          * Parses the [args] into the [params].
          *
@@ -29,21 +28,16 @@ class WorkerHelpers {
             return params
         }
 
-        /** Uses [smartConfigFactory] to create a `SmartConfig` wrapping the worker's
-         * additional parameters, instanceId and topic prefix from [params]. */
+        /**
+         * Uses [smartConfigFactory] to create a `SmartConfig` containing the instance ID, topic prefix and default
+         * parameters.
+         */
         fun getBootstrapConfig(params: DefaultWorkerParams, smartConfigFactory: SmartConfigFactory) =
-            smartConfigFactory.create(ConfigFactory.parseMap(params.additionalParams)
-                .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(params.instanceId)))
-                .withValue(TOPIC_MESSAGE_PREFIX_PATH, ConfigValueFactory.fromAnyRef(getConfigValue(params.topicPrefix, "")))
-
-        private fun getConfigValue(topicPrefix: String, default: String): Any? {
-            return if (!topicPrefix.isNullOrBlank()) {
-                topicPrefix
-            } else {
-                default
-            }
-        }
-
+            smartConfigFactory.create(
+                ConfigFactory.parseMap(params.additionalParams)
+                    .withValue(INSTANCE_ID_PATH, ConfigValueFactory.fromAnyRef(params.instanceId))
+                    .withValue(TOPIC_PREFIX_PATH, ConfigValueFactory.fromAnyRef(params.topicPrefix))
+            )
 
         /** Sets up the [healthMonitor] based on the [params]. */
         fun setUpHealthMonitor(healthMonitor: HealthMonitor, params: DefaultWorkerParams) {

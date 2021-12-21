@@ -1,5 +1,6 @@
 package net.corda.applications.workers.workercommon
 
+import net.corda.applications.workers.workercommon.internal.HEALTH_MONITOR_PORT
 import picocli.CommandLine.Option
 import kotlin.math.absoluteValue
 import kotlin.random.Random

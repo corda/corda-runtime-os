@@ -13,7 +13,7 @@ class CryptoProcessorImpl: CryptoProcessor {
         val logger = contextLogger()
     }
 
-    override fun start(instanceId: Int, topicPrefix: String, config: SmartConfig) {
+    override fun start(config: SmartConfig) {
         logger.info("Crypto processor starting.")
     }
 

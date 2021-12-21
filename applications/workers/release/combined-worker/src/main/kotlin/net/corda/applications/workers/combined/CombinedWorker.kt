@@ -52,10 +52,10 @@ class CombinedWorker @Activate constructor(
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
         val config = getBootstrapConfig(params.defaultParams, smartConfigFactory)
-        cryptoProcessor.start(params.defaultParams.instanceId, params.defaultParams.topicPrefix, config)
-        dbProcessor.start(params.defaultParams.instanceId, params.defaultParams.topicPrefix, config)
-        flowProcessor.start(params.defaultParams.instanceId, params.defaultParams.topicPrefix, config)
-        rpcProcessor.start(params.defaultParams.instanceId, params.defaultParams.topicPrefix, config)
+        cryptoProcessor.start(config)
+        dbProcessor.start(config)
+        flowProcessor.start(config)
+        rpcProcessor.start(config)
     }
 
     override fun shutdown() {
