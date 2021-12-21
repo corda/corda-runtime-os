@@ -29,6 +29,7 @@ class HSMRegistrationClientComponentImpl(
             get() = this?.registrar ?: throw IllegalStateException("The component haven't been initialised.")
     }
 
+    @Volatile
     private lateinit var publisherFactory: PublisherFactory
 
     @Reference(service = PublisherFactory::class)

@@ -36,7 +36,10 @@ class CryptoOpsClientComponentImpl(
             get() = this?.ops ?: throw IllegalStateException("The component haven't been initialised.")
     }
 
+    @Volatile
     private lateinit var publisherFactory: PublisherFactory
+
+    @Volatile
     private lateinit var schemeMetadata: CipherSchemeMetadata
 
     @Reference(service = PublisherFactory::class)

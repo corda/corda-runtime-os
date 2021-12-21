@@ -7,6 +7,16 @@ object CryptoConsts {
     const val CLUSTER_TENANT_ID = "cluster"
 
     /**
+     * Crypto request context constants.
+     */
+    object Request {
+        /**
+         * Key for the key pair defining HSM's label in the
+         */
+        const val HSM_LABEL_CONTEXT_KEY = "hsm.label"
+    }
+
+    /**
      * Constants defining most common categories for the signing service.
      */
     object CryptoCategories {

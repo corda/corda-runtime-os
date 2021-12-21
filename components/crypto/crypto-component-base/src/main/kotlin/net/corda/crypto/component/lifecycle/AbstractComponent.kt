@@ -20,6 +20,7 @@ abstract class AbstractComponent<RESOURCE: AutoCloseable>(
         handleCoordinatorEvent(event)
     }
 
+    @Volatile
     var resources: RESOURCE? = null
         private set
 

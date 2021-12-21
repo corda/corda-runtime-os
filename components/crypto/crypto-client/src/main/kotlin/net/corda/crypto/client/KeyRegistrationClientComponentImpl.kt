@@ -1,6 +1,7 @@
 package net.corda.crypto.client
 
 import net.corda.crypto.CryptoPublishResult
+import net.corda.crypto.HSMLabelMapComponent
 import net.corda.crypto.KeyRegistrationClient
 import net.corda.crypto.KeyRegistrationClientComponent
 import net.corda.crypto.component.lifecycle.AbstractComponent
@@ -28,11 +29,21 @@ class KeyRegistrationClientComponentImpl(
             get() = this?.registrar ?: throw IllegalStateException("The component haven't been initialised.")
     }
 
+    @Volatile
     private lateinit var publisherFactory: PublisherFactory
+
+    @Volatile
+    private lateinit var labelMap: HSMLabelMapComponent
 
     @Reference(service = PublisherFactory::class)
     fun publisherFactoryRef(publisherFactory: PublisherFactory) {
         this.publisherFactory = publisherFactory
+        createResources()
+    }
+
+    @Reference(service = HSMLabelMapComponent::class)
+    fun labelMapRef(labelMap: HSMLabelMapComponent) {
+        this.labelMap = labelMap
         createResources()
     }
 
@@ -44,13 +55,14 @@ class KeyRegistrationClientComponentImpl(
     ): CryptoPublishResult =
         resources.instance.generateKeyPair(tenantId, category, alias, context)
 
-    override fun allocateResources(): Resources = Resources(publisherFactory)
+    override fun allocateResources(): Resources = Resources(publisherFactory, labelMap)
 
     class Resources(
-        publisherFactory: PublisherFactory
+        publisherFactory: PublisherFactory,
+        labelMap: HSMLabelMapComponent
     ) : AutoCloseable {
         private val publisher: Publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
-        val registrar: KeyRegistrationClient = KeyRegistrationPublisher(publisher)
+        val registrar: KeyRegistrationClient = KeyRegistrationPublisher(publisher, labelMap)
         override fun close() {
             publisher.closeGracefully()
         }

@@ -1,6 +1,8 @@
 package net.corda.crypto.client
 
+import net.corda.crypto.CryptoConsts
 import net.corda.crypto.CryptoOpsClient
+import net.corda.crypto.HSMLabelMap
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
@@ -32,7 +34,8 @@ import java.util.UUID
 
 class CryptoOpsPublisher(
     private val schemeMetadata: CipherSchemeMetadata,
-    private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>
+    private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>,
+    private val labelMap: HSMLabelMap
 ) : CryptoOpsClient {
     companion object {
         private val logger = contextLogger()
@@ -40,8 +43,9 @@ class CryptoOpsPublisher(
 
     override fun findPublicKey(tenantId: String, alias: String): PublicKey? {
         val request = createRequest(
-            tenantId,
-            PublicKeyRpcQuery(alias)
+            tenantId = tenantId,
+            hsmLabel = null,
+            request = PublicKeyRpcQuery(alias)
         )
         val response = request.execute(CryptoPublicKey::class.java, allowNoContentValue = true)
         return if (response != null) {
@@ -53,8 +57,9 @@ class CryptoOpsPublisher(
 
     override fun filterMyKeys(tenantId: String, candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> {
         val request = createRequest(
-            tenantId,
-            FilterMyKeysRpcQuery(
+            tenantId = tenantId,
+            hsmLabel = null,
+            request = FilterMyKeysRpcQuery(
                 candidateKeys.map {
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(it))
                 }
@@ -68,8 +73,9 @@ class CryptoOpsPublisher(
 
     override fun freshKey(tenantId: String, context: Map<String, String>): PublicKey {
         val request = createRequest(
-            tenantId,
-            GenerateFreshKeyRpcCommand(null, context.toWire())
+            tenantId = tenantId,
+            hsmLabel = labelMap.get(tenantId, CryptoConsts.CryptoCategories.FRESH_KEYS),
+            request = GenerateFreshKeyRpcCommand(null, context.toWire())
         )
         val response = request.execute(CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
@@ -77,8 +83,9 @@ class CryptoOpsPublisher(
 
     override fun freshKey(tenantId: String, externalId: UUID, context: Map<String, String>): PublicKey {
         val request = createRequest(
-            tenantId,
-            GenerateFreshKeyRpcCommand(externalId.toString(), context.toWire())
+            tenantId = tenantId,
+            hsmLabel = labelMap.get(tenantId, CryptoConsts.CryptoCategories.FRESH_KEYS),
+            request = GenerateFreshKeyRpcCommand(externalId.toString(), context.toWire())
         )
         val response = request.execute(CryptoPublicKey::class.java)
         return schemeMetadata.decodePublicKey(response!!.key.array())
@@ -177,9 +184,9 @@ class CryptoOpsPublisher(
         return request.execute(HSMInfo::class.java, allowNoContentValue = true)
     }
 
-    private fun createRequest(tenantId: String, request: Any): RpcOpsRequest =
+    private fun createRequest(tenantId: String, hsmLabel: String?, request: Any): RpcOpsRequest =
         RpcOpsRequest(
-            createWireRequestContext<CryptoOpsPublisher>(tenantId),
+            createWireRequestContext<CryptoOpsPublisher>(tenantId, hsmLabel),
             request
         )
 
