@@ -95,7 +95,7 @@ class FlowEventPipelineImplTest {
     }
 
     @Test
-    fun `runOrContinue throws when their is no checkpoint and FlowContinuation#Run is returned by the FlowEventHandler`() {
+    fun `runOrContinue throws when there is no checkpoint and FlowContinuation#Run is returned by the FlowEventHandler`() {
         val context = inputContext.copy(checkpoint = null)
         val pipeline = this.pipeline.copy(context = context)
         whenever(flowEventHandler.runOrContinue(context)).thenReturn(FlowContinuation.Run(Unit))
@@ -135,7 +135,7 @@ class FlowEventPipelineImplTest {
     }
 
     @Test
-    fun `runOrContinue throws when their is no checkpoint and FlowContinuation#Error is returned by the FlowEventHandler`() {
+    fun `runOrContinue throws when there is no checkpoint and FlowContinuation#Error is returned by the FlowEventHandler`() {
         val context = inputContext.copy(checkpoint = null)
         val pipeline = this.pipeline.copy(context = context)
         whenever(flowEventHandler.runOrContinue(context)).thenReturn(FlowContinuation.Error(IllegalStateException("I'm broken")))
@@ -183,7 +183,15 @@ class FlowEventPipelineImplTest {
     }
 
     @Test
-    fun `eventPostProcessing calls the FlowEventHandler`() {
+    fun `eventPostProcessing calls the FlowEventHandler when output is set`() {
+        val pipeline = this.pipeline.copy(output = FlowIORequest.ForceCheckpoint)
+        assertEquals(outputContext, pipeline.eventPostProcessing().context)
+        verify(flowEventHandler).postProcess(inputContext)
+    }
+
+    @Test
+    fun `eventPostProcessing calls the FlowEventHandler when output is not set`() {
+        val pipeline = this.pipeline.copy(output = null)
         assertEquals(outputContext, pipeline.eventPostProcessing().context)
         verify(flowEventHandler).postProcess(inputContext)
     }
@@ -200,5 +208,25 @@ class FlowEventPipelineImplTest {
             )
         )
         assertEquals(StateAndEventProcessor.Response(pipeline.context.checkpoint, records), pipeline.toStateAndEventResponse())
+    }
+
+    @Test
+    fun `toStateAndEventResponse returns no events if the context contained no output records`() {
+        val pipeline = this.pipeline.copy(
+            context = inputContext.copy(
+                outputRecords = emptyList()
+            )
+        )
+        assertEquals(StateAndEventProcessor.Response(pipeline.context.checkpoint, emptyList()), pipeline.toStateAndEventResponse())
+    }
+
+    @Test
+    fun `toStateAndEventResponse returns a null checkpoint if the context's checkpoint was null`() {
+        val pipeline = this.pipeline.copy(
+            context = inputContext.copy(
+                checkpoint = null
+            )
+        )
+        assertEquals(StateAndEventProcessor.Response(null, emptyList()), pipeline.toStateAndEventResponse())
     }
 }

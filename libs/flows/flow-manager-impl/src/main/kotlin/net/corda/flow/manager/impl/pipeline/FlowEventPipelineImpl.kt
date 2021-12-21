@@ -82,21 +82,16 @@ data class FlowEventPipelineImpl(
     }
 
     private fun getFlowRequestHandler(request: FlowIORequest<*>): FlowRequestHandler<FlowIORequest<*>> {
-        return when (val handler = flowRequestHandlers[request::class.java]) {
-            null -> throw FlowProcessingException("${request::class.qualifiedName} does not have an associated flow request handler")
-            else -> uncheckedCast(handler)
-        }
+        // This [uncheckedCast] is required to remove the [out] from the [FlowRequestHandler] that is extracted from the map.
+        // The [out] cannot be kept as it leaks onto the [FlowRequestHandler] interface eventually leading to code that cannot compile.
+        return uncheckedCast(flowRequestHandlers[request::class.java])
+            ?: throw FlowProcessingException("${request::class.qualifiedName} does not have an associated flow request handler")
     }
 
     private inline fun requireCheckpoint(context: FlowEventContext<Any>, message: () -> String): Checkpoint {
-        return when (val checkpoint = context.checkpoint) {
-            null -> {
-                message().let {
-                    log.error("$it. Context: $context")
-                    throw FlowProcessingException(it)
-                }
-            }
-            else -> checkpoint
+        return context.checkpoint ?: message().let {
+            log.error("$it. Context: $context")
+            throw FlowProcessingException(it)
         }
     }
 }

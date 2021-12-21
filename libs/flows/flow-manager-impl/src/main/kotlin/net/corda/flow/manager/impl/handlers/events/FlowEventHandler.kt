@@ -32,6 +32,9 @@ interface FlowEventHandler<T> {
      *
      * Pre-processing is executed as the first step and occurs before starting or resuming a flow's fiber.
      *
+     * The [FlowEventContext] returned from this method must have a non-null [Checkpoint]. The [Checkpoint] could be set on the input
+     * [context] and modified or a new [Checkpoint] instance can be created and referenced from the output [FlowEventContext].
+     *
      * @param context The [FlowEventContext] that should be modified within this processing step.
      *
      * @return The modified [FlowEventContext].

@@ -10,6 +10,7 @@ import net.corda.flow.manager.impl.handlers.requests.FlowRequestHandler
 import net.corda.flow.manager.impl.pipeline.FlowEventPipeline
 import net.corda.flow.manager.impl.pipeline.FlowEventPipelineImpl
 import net.corda.flow.manager.impl.runner.FlowRunner
+import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -54,9 +55,7 @@ class FlowEventPipelineFactoryImpl(
     }
 
     private fun getFlowEventHandler(event: FlowEvent): FlowEventHandler<Any> {
-        return when (val handler = flowEventHandlerMap[event.payload::class.java]) {
-            null -> throw FlowProcessingException("${event.payload::class.java.name} does not have an associated flow event handler")
-            else -> handler
-        }
+        return flowEventHandlerMap[event.payload::class.java]
+            ?: throw FlowProcessingException("${event.payload::class.java.name} does not have an associated flow event handler")
     }
 }
