@@ -13,14 +13,12 @@ class DefaultWorkerParams {
     @Option(names = ["-v", "--version"], description = ["Display version and exit."])
     var versionRequested = false
 
-    @Suppress("Unused")
     @Option(
         names = ["-i", "--instanceId"],
         description = ["The Kafka instance ID for this worker. Defaults to a random value."]
     )
     var instanceId = Random.nextInt().absoluteValue
 
-    @Suppress("Unused")
     @Option(
         names = ["-t", "--topicPrefix"],
         description = ["The prefix to use for Kafka topics. Defaults to the empty string."]
