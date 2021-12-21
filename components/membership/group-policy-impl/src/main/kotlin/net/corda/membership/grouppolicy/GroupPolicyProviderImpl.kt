@@ -75,6 +75,21 @@ class GroupPolicyProviderImpl @Activate constructor(
         groupPolicies[holdingIdentity] = groupPolicy
     }
 
+    /**
+     * Parse the group policy string to a [GroupPolicy] object.
+     *
+     * [VirtualNodeInfoReaderComponent] is used to get the [VirtualNodeInfo], unless provided as a parameter. It may be
+     * the case in a virtual node info callback where we are given the changed virtual node info.
+     *
+     * [CpiInfoReaderComponent] is used to get the CPI metadata containing the group policy for the CPI installed on
+     * the virtual node.
+     *
+     * The group policy is cached to simplify lookups later.
+     *
+     * @param holdingIdentity The holding identity of the member retrieving the group policy.
+     * @param virtualNodeInfo if the VirtualNodeInfo is known, it can be passed in instead of getting this from the
+     *  virtual node info reader.
+     */
     private fun parseGroupPolicy(
         holdingIdentity: HoldingIdentity,
         virtualNodeInfo: VirtualNodeInfo? = null,
