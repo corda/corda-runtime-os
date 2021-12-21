@@ -121,12 +121,7 @@ class GroupPolicyProviderImplTest {
             groupId2,
             testAttr3
         )
-        assertExpectedGroupPolicy(
-            groupPolicyProvider.getGroupPolicy(groupId2, bob),
-            null,
-            null,
-            0
-        )
+        assertThrows<CordaRuntimeException> { groupPolicyProvider.getGroupPolicy(groupId2, bob) }
     }
 
     @Test

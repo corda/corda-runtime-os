@@ -51,22 +51,18 @@ class GroupPolicyFactoryTest {
     }
 
     @Test
-    fun `Empty string as group policy returns empty group policy`() {
-        val result = groupPolicyFactory.createGroupPolicy(emptyString)
-        assertEquals(0, result.size)
+    fun `Empty string as group policy throws corda runtime exception`() {
+        assertThrows<CordaRuntimeException> { groupPolicyFactory.createGroupPolicy(emptyString) }
     }
 
     @Test
-    fun `Whitespace string as group policy returns empty group policy`() {
-        val result = groupPolicyFactory.createGroupPolicy(whitespaceString)
-        assertEquals(0, result.size)
+    fun `Whitespace string as group policy throws corda runtime exception`() {
+        assertThrows<CordaRuntimeException> { groupPolicyFactory.createGroupPolicy(whitespaceString) }
     }
 
     @Test
     fun `Invalid format group policy throws corda runtime exception`() {
-        assertThrows<CordaRuntimeException> {
-            groupPolicyFactory.createGroupPolicy(invalidFormatGroupPolicy)
-        }
+        assertThrows<CordaRuntimeException> { groupPolicyFactory.createGroupPolicy(invalidFormatGroupPolicy) }
     }
 
     @Test
@@ -74,7 +70,6 @@ class GroupPolicyFactoryTest {
         val result = groupPolicyFactory.createGroupPolicy(getSampleGroupPolicy())
         assertEquals(testGroupId, result.groupId)
     }
-
 
 
     @Test
