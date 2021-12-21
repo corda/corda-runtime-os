@@ -51,7 +51,7 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
                 NavigableSet::class.java to { list -> Collections.unmodifiableNavigableSet(TreeSet(list)) }
             )
 
-        private val supportedTypeIdentifiers
+        private val supportedTypeIdentifiers: Set<TypeIdentifier>
             get() = supportedTypes.keys.mapTo(LinkedHashSet(), TypeIdentifier::forClass)
 
         /**
