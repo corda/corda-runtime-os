@@ -18,6 +18,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine.Mixin
+import picocli.CommandLine.Option
 
 /** A worker that starts all processors. */
 @Suppress("Unused", "LongParameterList")
@@ -41,6 +42,8 @@ class CombinedWorker @Activate constructor(
 
     private companion object {
         private val logger = contextLogger()
+        private const val DB_CONFIG_PATH = "database"
+        private const val RPC_CONFIG_PATH = "rpc"
     }
 
     /** Parses the arguments, then initialises and starts the processors. */
@@ -51,7 +54,10 @@ class CombinedWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val config = getBootstrapConfig(params.defaultParams, smartConfigFactory)
+        val databaseParams = listOf(params.databaseParams to DB_CONFIG_PATH)
+        val rpcParams = listOf(params.rpcParams to RPC_CONFIG_PATH)
+        val config = getBootstrapConfig(smartConfigFactory, params.defaultParams, databaseParams + rpcParams)
+
         cryptoProcessor.start(config)
         dbProcessor.start(config)
         flowProcessor.start(config)
@@ -65,7 +71,7 @@ class CombinedWorker @Activate constructor(
         dbProcessor.stop()
         flowProcessor.stop()
         rpcProcessor.stop()
-        
+
         healthMonitor.stop()
     }
 }
@@ -74,4 +80,10 @@ class CombinedWorker @Activate constructor(
 private class CombinedWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
+
+    @Option(names = ["-d", "--databaseParams"], description = ["Database parameters for the worker."])
+    var databaseParams = emptyMap<String, String>()
+
+    @Option(names = ["-r", "--rpcParams"], description = ["RPC parameters for the worker."])
+    var rpcParams = emptyMap<String, String>()
 }

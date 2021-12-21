@@ -15,6 +15,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine.Mixin
+import picocli.CommandLine.Option
 
 /** The worker for interacting with the database. */
 @Suppress("Unused")
@@ -32,6 +33,7 @@ class DBWorker @Activate constructor(
 
     private companion object {
         private val logger = contextLogger()
+        private const val DB_CONFIG_PATH = "database"
     }
 
     /** Parses the arguments, then initialises and starts the [processor]. */
@@ -42,7 +44,9 @@ class DBWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, DBWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val config = getBootstrapConfig(params.defaultParams, smartConfigFactory)
+        val databaseParams = listOf(params.databaseParams to DB_CONFIG_PATH)
+        val config = getBootstrapConfig(smartConfigFactory, params.defaultParams, databaseParams)
+
         processor.start(config)
     }
 
@@ -57,4 +61,7 @@ class DBWorker @Activate constructor(
 private class DBWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
+
+    @Option(names = ["-d", "--databaseParams"], description = ["Database parameters for the worker."])
+    var databaseParams = emptyMap<String, String>()
 }

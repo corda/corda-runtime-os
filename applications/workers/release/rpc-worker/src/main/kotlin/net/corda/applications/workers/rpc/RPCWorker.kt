@@ -15,6 +15,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine.Mixin
+import picocli.CommandLine.Option
 
 /** The worker for handling RPC requests. */
 @Suppress("Unused")
@@ -32,6 +33,7 @@ class RPCWorker @Activate constructor(
 
     private companion object {
         private val logger = contextLogger()
+        private const val RPC_CONFIG_PATH = "rpc"
     }
 
     /** Parses the arguments, then initialises and starts the [processor]. */
@@ -42,7 +44,9 @@ class RPCWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, RPCWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val config = getBootstrapConfig(params.defaultParams, smartConfigFactory)
+        val rpcParams = listOf(params.rpcParams to RPC_CONFIG_PATH)
+        val config = getBootstrapConfig(smartConfigFactory, params.defaultParams, rpcParams)
+
         processor.start(config)
     }
 
@@ -57,4 +61,7 @@ class RPCWorker @Activate constructor(
 private class RPCWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
+
+    @Option(names = ["-r", "--rpcParams"], description = ["RPC parameters for the worker."])
+    var rpcParams = emptyMap<String, String>()
 }

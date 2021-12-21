@@ -25,7 +25,7 @@ class DefaultWorkerParams {
     )
     var topicPrefix = ""
 
-    @Option(names = ["-d", "--disableHealthMonitor"], description = ["Disables the health monitor."])
+    @Option(names = ["-n", "--noHealthMonitor"], description = ["Disables the health monitor."])
     var disableHealthMonitor = false
 
     @Option(

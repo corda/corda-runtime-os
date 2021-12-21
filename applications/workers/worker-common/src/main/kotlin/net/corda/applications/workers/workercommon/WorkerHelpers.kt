@@ -4,13 +4,16 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.applications.workers.workercommon.internal.CUSTOM_CONFIG_PATH
 import net.corda.applications.workers.workercommon.internal.INSTANCE_ID_PATH
-import net.corda.applications.workers.workercommon.internal.MESSAGING_CONFIG_PATH
+import net.corda.applications.workers.workercommon.internal.MSG_CONFIG_PATH
 import net.corda.applications.workers.workercommon.internal.TOPIC_PREFIX_PATH
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Shutdown
 import org.osgi.framework.FrameworkUtil
 import picocli.CommandLine
+
+/** A pairing of a configuration key/value map with the path at which the configuration should be stored. */
+private typealias ParamsAndPath = Pair<Map<String, String>, String>
 
 /** Helpers used across multiple workers. */
 class WorkerHelpers {
@@ -32,18 +35,26 @@ class WorkerHelpers {
         }
 
         /**
-         * Uses [smartConfigFactory] to create a `SmartConfig` containing the instance ID, topic prefix and default
-         * parameters.
+         * Uses [smartConfigFactory] to create a `SmartConfig` containing the instance ID, topic prefix, additional
+         * params in the [defaultParams], and any [extraParams].
          */
-        fun getBootstrapConfig(params: DefaultWorkerParams, smartConfigFactory: SmartConfigFactory): SmartConfig {
-            val messagingParamsMap = params.messagingParams.mapKeys { (k, _) -> "$MESSAGING_CONFIG_PATH.$k" }
-            val additionalParamsMap = params.additionalParams.mapKeys { (k, _) -> "$CUSTOM_CONFIG_PATH.$k" }
+        fun getBootstrapConfig(
+            smartConfigFactory: SmartConfigFactory,
+            defaultParams: DefaultWorkerParams,
+            extraParams: List<ParamsAndPath> = emptyList()
+        ): SmartConfig {
+            val messagingParamsMap = defaultParams.messagingParams.mapKeys { (key, _) -> "$MSG_CONFIG_PATH.$key" }
+            val additionalParamsMap = defaultParams.additionalParams.mapKeys { (key, _) -> "$CUSTOM_CONFIG_PATH.$key" }
+            val extraParamsMap = extraParams
+                .map { (params, path) -> params.mapKeys { (key, _) -> "$path.$key" } }
+                .flatMap { map -> map.entries }
+                .associate { (key, value) -> key to value }
 
             return smartConfigFactory.create(
                 ConfigFactory
-                    .parseMap(messagingParamsMap + additionalParamsMap)
-                    .withValue(INSTANCE_ID_PATH, ConfigValueFactory.fromAnyRef(params.instanceId))
-                    .withValue(TOPIC_PREFIX_PATH, ConfigValueFactory.fromAnyRef(params.topicPrefix))
+                    .parseMap(messagingParamsMap + additionalParamsMap + extraParamsMap)
+                    .withValue(INSTANCE_ID_PATH, ConfigValueFactory.fromAnyRef(defaultParams.instanceId))
+                    .withValue(TOPIC_PREFIX_PATH, ConfigValueFactory.fromAnyRef(defaultParams.topicPrefix))
             )
         }
 

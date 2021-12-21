@@ -42,7 +42,8 @@ class FlowWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, FlowWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val config = getBootstrapConfig(params.defaultParams, smartConfigFactory)
+        val config = getBootstrapConfig(smartConfigFactory, params.defaultParams)
+
         processor.start(config)
     }
 

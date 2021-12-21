@@ -17,14 +17,15 @@ import org.osgi.framework.Bundle
  */
 class ConfigTests {
     @Test
-    fun `instance ID, topic prefix, messaging params and additional params are passed through to the processor`() {
+    fun `instance ID, topic prefix, messaging params, database params and additional params are passed through to the processor`() {
         val processor = DummyProcessor()
         val dbWorker = DBWorker(processor, DummyShutdown(), SmartConfigFactoryImpl(), DummyHealthMonitor())
         val args = arrayOf(
             FLAG_INSTANCE_ID, VAL_INSTANCE_ID,
             FLAG_TOPIC_PREFIX, VALUE_TOPIC_PREFIX,
-            FLAG_ADDITIONAL_PARAM, "$EXTRA_KEY_ONE=$EXTRA_VAL_ONE",
-            FLAG_MSG_PARAM, "$MSG_KEY_ONE=$MSG_VAL_ONE"
+            FLAG_MSG_PARAM, "$MSG_KEY_ONE=$MSG_VAL_ONE",
+            FLAG_DB_PARAM, "$DB_KEY_ONE=$DB_VAL_ONE",
+            FLAG_ADDITIONAL_PARAM, "$CUSTOM_KEY_ONE=$CUSTOM_VAL_ONE",
         )
         dbWorker.startup(args)
         val config = processor.config!!
@@ -32,8 +33,9 @@ class ConfigTests {
         val expectedKeys = setOf(
             KEY_INSTANCE_ID,
             KEY_TOPIC_PREFIX,
-            "$CUSTOM_CONFIG_PATH.$EXTRA_KEY_ONE",
-            "$MSG_CONFIG_PATH.$MSG_KEY_ONE"
+            "$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE",
+            "$MSG_CONFIG_PATH.$MSG_KEY_ONE",
+            "$DB_CONFIG_PATH.$DB_KEY_ONE"
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -41,7 +43,8 @@ class ConfigTests {
         assertEquals(VAL_INSTANCE_ID.toInt(), config.getAnyRef(KEY_INSTANCE_ID))
         assertEquals(VALUE_TOPIC_PREFIX, config.getAnyRef(KEY_TOPIC_PREFIX))
         assertEquals(MSG_VAL_ONE, config.getAnyRef("$MSG_CONFIG_PATH.$MSG_KEY_ONE"))
-        assertEquals(EXTRA_VAL_ONE, config.getAnyRef("$CUSTOM_CONFIG_PATH.$EXTRA_KEY_ONE"))
+        assertEquals(DB_VAL_ONE, config.getAnyRef("$DB_CONFIG_PATH.$DB_KEY_ONE"))
+        assertEquals(CUSTOM_VAL_ONE, config.getAnyRef("$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE"))
     }
 
     @Test
@@ -93,18 +96,33 @@ class ConfigTests {
     }
 
     @Test
-    fun `multiple additional params can be passed through to the processor`() {
+    fun `multiple database params can be passed through to the processor`() {
         val processor = DummyProcessor()
         val dbWorker = DBWorker(processor, DummyShutdown(), SmartConfigFactoryImpl(), DummyHealthMonitor())
         val args = arrayOf(
-            FLAG_ADDITIONAL_PARAM, "$EXTRA_KEY_ONE=$EXTRA_VAL_ONE",
-            FLAG_ADDITIONAL_PARAM, "$EXTRA_KEY_TWO=$EXTRA_VAL_TWO"
+            FLAG_DB_PARAM, "$DB_KEY_ONE=$DB_VAL_ONE",
+            FLAG_DB_PARAM, "$DB_KEY_TWO=$DB_VAL_TWO"
         )
         dbWorker.startup(args)
         val config = processor.config!!
 
-        assertEquals(EXTRA_VAL_ONE, config.getAnyRef("$CUSTOM_CONFIG_PATH.$EXTRA_KEY_ONE"))
-        assertEquals(EXTRA_VAL_TWO, config.getAnyRef("$CUSTOM_CONFIG_PATH.$EXTRA_KEY_TWO"))
+        assertEquals(DB_VAL_ONE, config.getAnyRef("$DB_CONFIG_PATH.$DB_KEY_ONE"))
+        assertEquals(DB_VAL_TWO, config.getAnyRef("$DB_CONFIG_PATH.$DB_KEY_TWO"))
+    }
+
+    @Test
+    fun `multiple additional params can be passed through to the processor`() {
+        val processor = DummyProcessor()
+        val dbWorker = DBWorker(processor, DummyShutdown(), SmartConfigFactoryImpl(), DummyHealthMonitor())
+        val args = arrayOf(
+            FLAG_ADDITIONAL_PARAM, "$CUSTOM_KEY_ONE=$CUSTOM_VAL_ONE",
+            FLAG_ADDITIONAL_PARAM, "$CUSTOM_KEY_TWO=$CUSTOM_VAL_TWO"
+        )
+        dbWorker.startup(args)
+        val config = processor.config!!
+
+        assertEquals(CUSTOM_VAL_ONE, config.getAnyRef("$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE"))
+        assertEquals(CUSTOM_VAL_TWO, config.getAnyRef("$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_TWO"))
     }
 
     /** A [DBProcessor] that stores the passed-in config in [config] for later inspection. */
