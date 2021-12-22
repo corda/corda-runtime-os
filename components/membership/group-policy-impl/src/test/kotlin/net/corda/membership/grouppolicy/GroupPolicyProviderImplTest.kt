@@ -1,7 +1,6 @@
 package net.corda.membership.grouppolicy
 
 import net.corda.cpiinfo.read.CpiInfoReaderComponent
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
@@ -101,7 +100,7 @@ class GroupPolicyProviderImplTest {
         doAnswer { handler?.processEvent(StopEvent(), this) }.whenever(this).stop()
     }
     val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
-        doAnswer{
+        doAnswer {
             handler = it.arguments[1] as LifecycleEventHandler
             coordinator
         }.whenever(this)
