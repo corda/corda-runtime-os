@@ -45,6 +45,7 @@ def fatJar = tasks.register('fatJar', Jar) {
 
     manifest {
         attributes["Main-Class"] = appMainClass
+        attributes["Multi-Release"] = true
     }
 
     archiveBaseName = 'corda-cli'
