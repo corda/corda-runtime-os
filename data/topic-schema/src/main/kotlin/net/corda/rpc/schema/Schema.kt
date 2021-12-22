@@ -8,5 +8,6 @@ class Schema {
         const val RPC_PERM_USER_TOPIC = "rpc.permissions.user"
         const val RPC_PERM_GROUP_TOPIC = "rpc.permissions.group"
         const val RPC_PERM_ROLE_TOPIC = "rpc.permissions.role"
+        const val RPC_PERM_ENTITY_TOPIC = "rpc.permissions.permission"
     }
 }
