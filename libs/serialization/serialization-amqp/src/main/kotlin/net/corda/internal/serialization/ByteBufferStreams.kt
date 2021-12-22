@@ -10,6 +10,7 @@ import java.nio.ByteBuffer
 import java.util.Arrays
 import kotlin.math.min
 
+// TODO: this static is subject to leaking between CPKs and needs to be issued
 internal val serializeOutputStreamPool = LazyPool(
         clear = ByteBufferOutputStream::reset,
         shouldReturnToPool = { it.size() < 256 * 1024 }, // Discard if it grew too large
