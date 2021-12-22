@@ -107,35 +107,35 @@ class GroupPolicyProviderImplTest {
     fun `Correct group policy is returned when CPI metadata contains group policy string and service has started`() {
         groupPolicyProvider.start()
         assertExpectedGroupPolicy(
-            groupPolicyProvider.getGroupPolicy(groupId1, alice),
+            groupPolicyProvider.getGroupPolicy(holdingIdentity1),
             groupId1,
             testAttr1
         )
         assertExpectedGroupPolicy(
-            groupPolicyProvider.getGroupPolicy(groupId1, bob),
+            groupPolicyProvider.getGroupPolicy(holdingIdentity2),
             groupId1,
             testAttr2
         )
         assertExpectedGroupPolicy(
-            groupPolicyProvider.getGroupPolicy(groupId2, alice),
+            groupPolicyProvider.getGroupPolicy(holdingIdentity3),
             groupId2,
             testAttr3
         )
-        assertThrows<CordaRuntimeException> { groupPolicyProvider.getGroupPolicy(groupId2, bob) }
+        assertThrows<CordaRuntimeException> { groupPolicyProvider.getGroupPolicy(holdingIdentity4) }
     }
 
     @Test
     fun `Group policy read fails if service hasn't started`() {
         assertThrows<CordaRuntimeException> {
-            groupPolicyProvider.getGroupPolicy(groupId1, alice)
+            groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         }
     }
 
     @Test
     fun `Same group policy is returned if it has already been parsed`() {
         groupPolicyProvider.start()
-        val result1 = groupPolicyProvider.getGroupPolicy(groupId1, alice)
-        val result2 = groupPolicyProvider.getGroupPolicy(groupId1, alice)
+        val result1 = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
+        val result2 = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
 
         assertEquals(result1, result2)
     }
@@ -143,10 +143,10 @@ class GroupPolicyProviderImplTest {
     @Test
     fun `Different group policy is returned if the service restarts`() {
         groupPolicyProvider.start()
-        val result1 = groupPolicyProvider.getGroupPolicy(groupId1, alice)
+        val result1 = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         groupPolicyProvider.stop()
         groupPolicyProvider.start()
-        val result2 = groupPolicyProvider.getGroupPolicy(groupId1, alice)
+        val result2 = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
 
         assertNotEquals(result1, result2)
     }
@@ -167,7 +167,7 @@ class GroupPolicyProviderImplTest {
         assertNull(virtualNodeListener)
         groupPolicyProvider.start()
         assertNotNull(virtualNodeListener)
-        val original = groupPolicyProvider.getGroupPolicy(groupId1, alice)
+        val original = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         assertExpectedGroupPolicy(original, groupId1, testAttr1)
 
         virtualNodeListener?.onUpdate(
@@ -175,7 +175,7 @@ class GroupPolicyProviderImplTest {
             mapOf(holdingIdentity1 to VirtualNodeInfo(holdingIdentity1, cpiIdentifier2))
         )
 
-        val updated = groupPolicyProvider.getGroupPolicy(groupId1, alice)
+        val updated = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         assertNotEquals(original, updated)
         assertExpectedGroupPolicy(updated, groupId1, testAttr2)
     }
@@ -191,7 +191,7 @@ class GroupPolicyProviderImplTest {
             mapOf(holdingIdentity1 to VirtualNodeInfo(holdingIdentity1, cpiIdentifier2))
         )
 
-        val updated = groupPolicyProvider.getGroupPolicy(groupId1, alice)
+        val updated = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         assertExpectedGroupPolicy(updated, groupId1, testAttr2)
     }
 }

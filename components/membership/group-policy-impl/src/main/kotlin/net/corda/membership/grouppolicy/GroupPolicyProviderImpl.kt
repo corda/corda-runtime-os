@@ -33,13 +33,8 @@ class GroupPolicyProviderImpl @Activate constructor(
     private var _groupPolicies: MutableMap<HoldingIdentity, GroupPolicy>? = null
 
     override fun getGroupPolicy(
-        groupId: String,
-        memberX500Name: MemberX500Name
-    ): GroupPolicy {
-        val holdingIdentity = HoldingIdentity(memberX500Name.toString(), groupId)
-        return lookupGroupPolicy(holdingIdentity)
-            ?: parseGroupPolicy(holdingIdentity)
-    }
+        holdingIdentity: HoldingIdentity
+    ) = lookupGroupPolicy(holdingIdentity) ?: parseGroupPolicy(holdingIdentity)
 
     override fun start() {
         _groupPolicies = Collections.synchronizedMap(mutableMapOf())
