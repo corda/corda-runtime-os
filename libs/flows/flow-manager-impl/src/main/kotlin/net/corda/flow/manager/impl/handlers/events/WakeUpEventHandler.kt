@@ -12,13 +12,13 @@ class WakeUpEventHandler : FlowEventHandler<Wakeup> {
     override val type = Wakeup::class.java
 
     override fun preProcess(context: FlowEventContext<Wakeup>): FlowEventContext<Wakeup> {
-        requireCheckpoint(context.checkpoint)
+        requireCheckpoint(context)
         return context
     }
 
-    override fun resumeOrContinue(context: FlowEventContext<Wakeup>): FlowContinuation {
-        val checkpoint = requireCheckpoint(context.checkpoint)
-        return if (checkpoint.flowState.waitingFor.value is WaitingForWakeup) {
+    override fun runOrContinue(context: FlowEventContext<Wakeup>): FlowContinuation {
+        val checkpoint = requireCheckpoint(context)
+        return if (checkpoint.flowState.requireWaitingFor().value is WaitingForWakeup) {
             FlowContinuation.Run(Unit)
         } else {
             FlowContinuation.Continue
