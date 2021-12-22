@@ -28,9 +28,9 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
 
         private fun getMemberList(groupId: String, memberX500Name: MemberX500Name): MutableList<MemberInfo> =
             cache.getOrPut(groupId) {
-                mutableMapOf()
+                Collections.synchronizedMap(mutableMapOf())
             }.getOrPut(memberX500Name) {
-                mutableListOf()
+                Collections.synchronizedList(mutableListOf())
             }
 
         override fun get(groupId: String, memberX500Name: MemberX500Name): List<MemberInfo> =

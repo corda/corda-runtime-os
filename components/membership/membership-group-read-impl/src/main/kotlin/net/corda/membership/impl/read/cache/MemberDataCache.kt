@@ -38,7 +38,7 @@ interface MemberDataCache<T> {
             Collections.synchronizedMap(mutableMapOf())
 
         private fun getCachedData(groupId: String): MutableMap<MemberX500Name, T> =
-            cache.getOrPut(groupId) { mutableMapOf() }
+            cache.getOrPut(groupId) { Collections.synchronizedMap(mutableMapOf()) }
 
         override fun get(groupId: String, memberX500Name: MemberX500Name): T? =
             getCachedData(groupId)[memberX500Name]
