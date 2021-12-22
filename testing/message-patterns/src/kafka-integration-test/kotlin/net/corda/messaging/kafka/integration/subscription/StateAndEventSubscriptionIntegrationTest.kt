@@ -47,6 +47,7 @@ import net.corda.v5.base.util.seconds
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
@@ -72,6 +73,7 @@ class StateAndEventSubscriptionIntegrationTest {
         const val EVENTSTATE_OUTPUT6 = "EventStateOutputTopic6"
         const val CONSUMER_PROCESSOR_TIMEOUT = "consumer.processor.timeout"
         const val CONSUMER_MAX_POLL_INTERVAL = "consumer.max.poll.interval.ms"
+        const val TWENTY_FIVE_SECONDS = 25 * 1_000L
     }
 
     @InjectService(timeout = 4000)
@@ -95,6 +97,7 @@ class StateAndEventSubscriptionIntegrationTest {
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }
 
+    @Disabled
     @Test
     fun `create topic with two partitions, start two statevent sub, publish records with two keys, no outputs`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC1_TEMPLATE)
@@ -167,6 +170,7 @@ class StateAndEventSubscriptionIntegrationTest {
         }
     }
 
+    @Disabled
     @Test
     fun `create topics, start one statevent sub, publish records with two keys, update state and output records and verify`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC2_TEMPLATE)
@@ -199,6 +203,7 @@ class StateAndEventSubscriptionIntegrationTest {
         durableSub.stop()
     }
 
+    @Disabled
     @Test
     fun `create topics, start statevent sub, fail processor on first attempt, publish 2 records, verify listener and outputs`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC3_TEMPLATE)
@@ -272,7 +277,7 @@ class StateAndEventSubscriptionIntegrationTest {
         //fail slowly on first record. allow time for subscription to be stopped to force rebalance
         val stateEventSub2 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC4-group", EVENT_TOPIC4, 2),
-            TestStateEventProcessor(onNextLatch2, true, true, EVENTSTATE_OUTPUT4, 70000),
+            TestStateEventProcessor(onNextLatch2, true, true, EVENTSTATE_OUTPUT4, TWENTY_FIVE_SECONDS),
             longWaitProcessorConfig
         )
 
@@ -310,6 +315,7 @@ class StateAndEventSubscriptionIntegrationTest {
         durableSub.stop()
     }
 
+    @Disabled
     @Test
     fun `create topics, start one statevent sub, publish records, slow processor for first record, 1 record sent DLQ and verify`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC5_TEMPLATE)
@@ -358,6 +364,7 @@ class StateAndEventSubscriptionIntegrationTest {
         stateEventSub1.stop()
     }
 
+    @Disabled
     @Test
     fun `create topics, start one statevent sub, publish records, slow processor and listener, all records successful`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC6_TEMPLATE)

@@ -20,6 +20,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [StateAndEventBuilder::class])
 class StateAndEventBuilderImpl @Activate constructor(
@@ -52,7 +53,7 @@ class StateAndEventBuilderImpl @Activate constructor(
             )
 
         val mapFactory = object : MapFactory<K, Pair<Long, S>> {
-            override fun createMap(): MutableMap<K, Pair<Long, S>> = createMap()
+            override fun createMap(): MutableMap<K, Pair<Long, S>> = ConcurrentHashMap()
             override fun destroyMap(map: MutableMap<K, Pair<Long, S>>) = map.clear()
         }
 

@@ -55,6 +55,7 @@ dependencies {
     kafkaIntegrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
     kafkaIntegrationTestRuntimeOnly project(":libs:kafka-utils:topic-admin-impl")
     kafkaIntegrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    kafkaIntegrationTestRuntimeOnly project(":libs:messaging:kafka-message-bus-impl")
     kafkaIntegrationTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
     kafkaIntegrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     kafkaIntegrationTestRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
@@ -85,8 +86,9 @@ def kafkaTestingBundle = tasks.register('kafkaTestingBundle', Bundle) {
 
     bnd """\
 Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
-Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
+Test-Cases: net.corda.messaging.kafka.integration.subscription.StateAndEventSubscriptionIntegrationTest 
 """
+    //Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
 }
 
 artifacts {

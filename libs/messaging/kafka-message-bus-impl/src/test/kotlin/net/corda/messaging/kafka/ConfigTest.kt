@@ -15,7 +15,7 @@ import net.corda.messaging.kafka.utils.toConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-class ConfigTestTemp {
+class ConfigTest {
 
     @Test
     fun `check resolved publisher configuration`() {

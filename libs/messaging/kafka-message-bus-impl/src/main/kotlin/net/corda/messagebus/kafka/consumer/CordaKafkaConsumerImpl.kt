@@ -56,7 +56,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     private val consumerCommitOffsetMaxRetries = config.getLong(COMMIT_OFFSET_MAX_RETRIES)
     private val topicPrefix = config.getString(TOPIC_PREFIX)
     private val topic = config.getString(TOPIC_NAME)
-    private val topicWithPrefix = "$topicPrefix$topic"
     private val groupName = config.getString(CommonClientConfigs.GROUP_ID_CONFIG)
 
     override fun close() {
@@ -177,7 +176,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
     override fun subscribe(topic: String, listener: CordaConsumerRebalanceListener?) =
-        subscribe(listOf(topicWithPrefix), listener)
+        subscribe(listOf(topic), listener)
 
     override fun subscribe(topics: Collection<String>, listener: CordaConsumerRebalanceListener?) {
         val newTopics = topics.map {
