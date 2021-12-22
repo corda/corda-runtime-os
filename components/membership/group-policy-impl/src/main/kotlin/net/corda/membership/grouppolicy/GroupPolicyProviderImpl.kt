@@ -22,9 +22,6 @@ class GroupPolicyProviderImpl @Activate constructor(
     @Reference(service = CpiInfoReaderComponent::class)
     private val cpiInfoReader: CpiInfoReaderComponent
 ) : Lifecycle, GroupPolicyProvider {
-    companion object {
-        private val logger = contextLogger()
-    }
 
     private var virtualNodeInfoCallbackHandle: AutoCloseable? = null
     private val groupPolicyFactory = GroupPolicyFactory()
