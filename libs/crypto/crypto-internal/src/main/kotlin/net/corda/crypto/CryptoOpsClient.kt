@@ -1,7 +1,7 @@
 package net.corda.crypto
 
 import net.corda.data.crypto.config.HSMInfo
-import net.corda.crypto.SigningService
+import net.corda.data.crypto.wire.ops.rpc.HSMKeyDetails
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
@@ -32,6 +32,24 @@ interface CryptoOpsClient {
      * @return A collection of [PublicKey]s that this node owns.
      */
     fun filterMyKeys(tenantId: String, candidateKeys: Iterable<PublicKey>): Iterable<PublicKey>
+
+    /**
+     * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
+     *
+     * @param tenantId The tenant owning the key.
+     * @param category The key category, such as TLS, LEDGER, etc. Don't use FRESH_KEY category as there is separate API
+     * for the fresh keys which is base around wrapped keys.
+     * @param alias the tenant defined key alias for the key pair to be generated.
+     * @param context the optional key/value operation context.
+     *
+     * @return The public part of the pair.
+     */
+    fun generateKeyPair(
+        tenantId: String,
+        category: String,
+        alias: String,
+        context: Map<String, String> = SigningService.EMPTY_CONTEXT
+    ): PublicKey
 
     /**
      * Generates a new random [KeyPair] and adds it to the internal key storage.
@@ -114,18 +132,27 @@ interface CryptoOpsClient {
     ): ByteArray
 
     /**
-     * Looks up an alias which is used by HSM for the corresponding key.
+     * Looks up key details by its alias.
      * Note that the alias is scoped to tenant, so it would be enough for the system to figure out which HSM to use
      * without having category as parameter.
      *
-     * @return The HSM's key alias if it's found otherwise null.
+     * @return The key details if it's found otherwise null.
      */
-    fun findHSMAlias(tenantId: String, alias: String): String?
+    fun findHSMKey(tenantId: String, alias: String): HSMKeyDetails?
+
+    /**
+     * Looks up key details by its public key.
+     * Note that the alias is scoped to tenant, so it would be enough for the system to figure out which HSM to use
+     * without having category as parameter.
+     *
+     * @return The key details if it's found otherwise null.
+     */
+    fun findHSMKey(tenantId: String, publicKey: PublicKey): HSMKeyDetails?
 
     /**
      * Looks up information about the assigned HSM.
      *
      * @return The HSM's info if it's assigned otherwise null.
      */
-    fun getHSM(tenantId: String, category: String) : HSMInfo?
+    fun findHSM(tenantId: String, category: String) : HSMInfo?
 }

@@ -1,8 +1,6 @@
 package net.corda.crypto.client
 
-import net.corda.crypto.CryptoConsts
 import net.corda.crypto.CryptoOpsClient
-import net.corda.crypto.HSMLabelMap
 import net.corda.data.crypto.config.HSMInfo
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoPublicKey
@@ -13,7 +11,10 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.ops.rpc.AssignedHSMRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.FilterMyKeysRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.GenerateFreshKeyRpcCommand
-import net.corda.data.crypto.wire.ops.rpc.HSMAliasRpcQuery
+import net.corda.data.crypto.wire.ops.rpc.GenerateKeyPairCommand
+import net.corda.data.crypto.wire.ops.rpc.HSMKeyDetails
+import net.corda.data.crypto.wire.ops.rpc.HSMKeyInfoByAliasRpcQuery
+import net.corda.data.crypto.wire.ops.rpc.HSMKeyInfoByPublicKeyRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.PublicKeyRpcQuery
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
@@ -34,8 +35,7 @@ import java.util.UUID
 
 class CryptoOpsPublisher(
     private val schemeMetadata: CipherSchemeMetadata,
-    private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>,
-    private val labelMap: HSMLabelMap
+    private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>
 ) : CryptoOpsClient {
     companion object {
         private val logger = contextLogger()
@@ -44,7 +44,6 @@ class CryptoOpsPublisher(
     override fun findPublicKey(tenantId: String, alias: String): PublicKey? {
         val request = createRequest(
             tenantId = tenantId,
-            hsmLabel = null,
             request = PublicKeyRpcQuery(alias)
         )
         val response = request.execute(CryptoPublicKey::class.java, allowNoContentValue = true)
@@ -58,7 +57,6 @@ class CryptoOpsPublisher(
     override fun filterMyKeys(tenantId: String, candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> {
         val request = createRequest(
             tenantId = tenantId,
-            hsmLabel = null,
             request = FilterMyKeysRpcQuery(
                 candidateKeys.map {
                     ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(it))
@@ -71,10 +69,30 @@ class CryptoOpsPublisher(
         }
     }
 
+    override fun generateKeyPair(
+        tenantId: String,
+        category: String,
+        alias: String,
+        context: Map<String, String>
+    ): PublicKey {
+        logger.info(
+            "Sending '{}'(tenant={}, category={}, alias={}) command",
+            GenerateKeyPairCommand::class.java.name,
+            tenantId,
+            category,
+            alias
+        )
+        val request = createRequest(
+            tenantId = tenantId,
+            request = GenerateKeyPairCommand(tenantId, category, context.toWire())
+        )
+        val response = request.execute(CryptoPublicKey::class.java)
+        return schemeMetadata.decodePublicKey(response!!.key.array())
+    }
+
     override fun freshKey(tenantId: String, context: Map<String, String>): PublicKey {
         val request = createRequest(
             tenantId = tenantId,
-            hsmLabel = labelMap.get(tenantId, CryptoConsts.CryptoCategories.FRESH_KEYS),
             request = GenerateFreshKeyRpcCommand(null, context.toWire())
         )
         val response = request.execute(CryptoPublicKey::class.java)
@@ -84,7 +102,6 @@ class CryptoOpsPublisher(
     override fun freshKey(tenantId: String, externalId: UUID, context: Map<String, String>): PublicKey {
         val request = createRequest(
             tenantId = tenantId,
-            hsmLabel = labelMap.get(tenantId, CryptoConsts.CryptoCategories.FRESH_KEYS),
             request = GenerateFreshKeyRpcCommand(externalId.toString(), context.toWire())
         )
         val response = request.execute(CryptoPublicKey::class.java)
@@ -168,15 +185,23 @@ class CryptoOpsPublisher(
         return response!!.bytes.array()
     }
 
-    override fun findHSMAlias(tenantId: String, alias: String): String? {
+    override fun findHSMKey(tenantId: String, alias: String): HSMKeyDetails? {
         val request = createRequest(
             tenantId,
-            HSMAliasRpcQuery(alias)
+            HSMKeyInfoByAliasRpcQuery(alias)
         )
-        return request.execute(String::class.java, allowNoContentValue = true)
+        return request.execute(HSMKeyDetails::class.java, allowNoContentValue = true)
     }
 
-    override fun getHSM(tenantId: String, category: String): HSMInfo? {
+    override fun findHSMKey(tenantId: String, publicKey: PublicKey): HSMKeyDetails? {
+        val request = createRequest(
+            tenantId,
+            HSMKeyInfoByPublicKeyRpcQuery(ByteBuffer.wrap(schemeMetadata.encodeAsByteArray(publicKey)))
+        )
+        return request.execute(HSMKeyDetails::class.java, allowNoContentValue = true)
+    }
+
+    override fun findHSM(tenantId: String, category: String): HSMInfo? {
         val request = createRequest(
             tenantId,
             AssignedHSMRpcQuery(category)
@@ -184,9 +209,9 @@ class CryptoOpsPublisher(
         return request.execute(HSMInfo::class.java, allowNoContentValue = true)
     }
 
-    private fun createRequest(tenantId: String, hsmLabel: String?, request: Any): RpcOpsRequest =
+    private fun createRequest(tenantId: String, request: Any): RpcOpsRequest =
         RpcOpsRequest(
-            createWireRequestContext<CryptoOpsPublisher>(tenantId, hsmLabel),
+            createWireRequestContext<CryptoOpsPublisher>(tenantId),
             request
         )
 

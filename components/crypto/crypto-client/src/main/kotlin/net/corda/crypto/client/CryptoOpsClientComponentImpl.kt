@@ -4,6 +4,7 @@ import net.corda.crypto.CryptoOpsClientComponent
 import net.corda.crypto.component.lifecycle.AbstractComponent
 import net.corda.crypto.impl.stopGracefully
 import net.corda.data.crypto.config.HSMInfo
+import net.corda.data.crypto.wire.ops.rpc.HSMKeyDetails
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -60,6 +61,14 @@ class CryptoOpsClientComponentImpl(
     override fun filterMyKeys(tenantId: String, candidateKeys: Iterable<PublicKey>): Iterable<PublicKey> =
         resources.instance.filterMyKeys(tenantId, candidateKeys)
 
+    override fun generateKeyPair(
+        tenantId: String,
+        category: String,
+        alias: String,
+        context: Map<String, String>
+    ): PublicKey =
+        resources.instance.generateKeyPair(tenantId, category, alias, context)
+
     override fun freshKey(tenantId: String, context: Map<String, String>): PublicKey =
         resources.instance.freshKey(tenantId, context)
 
@@ -95,11 +104,14 @@ class CryptoOpsClientComponentImpl(
     ): ByteArray =
         resources.instance.sign(tenantId, alias, signatureSpec, data, context)
 
-    override fun findHSMAlias(tenantId: String, alias: String): String? =
-        resources.instance.findHSMAlias(tenantId, alias)
+    override fun findHSMKey(tenantId: String, alias: String): HSMKeyDetails? =
+        resources.instance.findHSMKey(tenantId, alias)
 
-    override fun getHSM(tenantId: String, category: String): HSMInfo? =
-        resources.instance.getHSM(tenantId, category)
+    override fun findHSMKey(tenantId: String, publicKey: PublicKey): HSMKeyDetails? =
+        resources.instance.findHSMKey(tenantId, publicKey)
+
+    override fun findHSM(tenantId: String, category: String): HSMInfo? =
+        resources.instance.findHSM(tenantId, category)
 
     override fun allocateResources(): Resources = Resources(publisherFactory, schemeMetadata)
 
