@@ -1,4 +1,4 @@
-package net.corda.membership.impl.read.processor
+package net.corda.membership.impl.read.subscription
 
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache

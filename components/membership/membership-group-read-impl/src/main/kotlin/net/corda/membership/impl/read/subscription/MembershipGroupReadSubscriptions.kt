@@ -10,7 +10,6 @@ import net.corda.membership.config.memberList
 import net.corda.membership.config.persistence
 import net.corda.membership.config.topicName
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
-import net.corda.membership.impl.read.processor.MemberListProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
