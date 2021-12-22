@@ -2,6 +2,7 @@ package net.corda.membership.impl.read.processor
 
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.membership.impl.read.cache.MemberListCache
+import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 
@@ -10,7 +11,7 @@ import net.corda.messaging.api.records.Record
  * On each update the member list cache should be updated so that other services can access the latest data.
  */
 class MemberListProcessor(
-    private val memberListCache: MemberListCache
+    private val membershipGroupReadCache: MembershipGroupReadCache
 ) : CompactedProcessor<String, SignedMemberInfo> {
     override val keyClass: Class<String>
         get() = String::class.java
