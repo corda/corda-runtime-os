@@ -4,7 +4,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import net.corda.data.permissions.Group
 import net.corda.data.permissions.Permission
-import net.corda.data.permissions.PermissionAssociation
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
 import net.corda.libs.permissions.cache.PermissionCache
