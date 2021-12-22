@@ -289,6 +289,7 @@ if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
             substitute module('net.corda:corda-api') using project(':corda-api')
             substitute module('net.corda:corda-crypto') using project(':crypto')
             substitute module('net.corda:corda-avro-schema') using project(':data:avro-schema')
+            substitute module('net.corda:corda-config-schema') using project(':data:config-schema')
             substitute module('net.corda:corda-db-schema') using project(':data:db-schema')
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
             substitute module('net.corda:corda-ledger') using project(':ledger')
