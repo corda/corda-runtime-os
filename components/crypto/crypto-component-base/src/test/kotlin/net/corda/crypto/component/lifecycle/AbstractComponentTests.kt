@@ -18,6 +18,8 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.reflect.full.memberFunctions
+import kotlin.reflect.jvm.isAccessible
 import kotlin.test.assertEquals
 
 class AbstractComponentTests {
@@ -39,7 +41,11 @@ class AbstractComponentTests {
             on { isRunning }.thenAnswer { coordinatorIsRunning }
             on { postEvent(any()) } doAnswer {
                 val event = it.getArgument(0, LifecycleEvent::class.java)
-                testComponent.callHandleEvent(event)
+                testComponent::class.memberFunctions.first { f -> f.name == "handleCoordinatorEvent" }.let { ff ->
+                    ff.isAccessible = true
+                    ff.call(testComponent, event)
+                }
+                Unit
             }
         }
         coordinatorFactory = mock {
@@ -125,7 +131,6 @@ class AbstractComponentTests {
         LifecycleCoordinatorName.forComponent<TestAbstractComponent>()
     ) {
         override fun allocateResources(): Resources = resourcesToAllocate
-        fun callHandleEvent(event: LifecycleEvent) = handleCoordinatorEvent(event)
         fun callCreateResources() = createResources()
     }
 }

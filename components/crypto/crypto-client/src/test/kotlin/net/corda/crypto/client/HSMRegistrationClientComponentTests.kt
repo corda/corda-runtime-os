@@ -7,7 +7,6 @@ import net.corda.data.crypto.wire.registration.hsm.AddHSMCommand
 import net.corda.data.crypto.wire.registration.hsm.AssignHSMCommand
 import net.corda.data.crypto.wire.registration.hsm.AssignSoftHSMCommand
 import net.corda.data.crypto.wire.registration.hsm.HSMRegistrationRequest
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.schema.Schemas
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
@@ -17,31 +16,25 @@ import org.hamcrest.Matchers.empty
 import org.hamcrest.Matchers.emptyOrNullString
 import org.hamcrest.Matchers.not
 import org.hamcrest.core.IsInstanceOf
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
+import org.mockito.kotlin.atLeast
+import org.mockito.kotlin.verify
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertSame
 
-class HSMRegistrationPublisherTests {
-
-    private lateinit var publisher: Publisher
-    private lateinit var registrar: HSMRegistrationPublisher
-
+class HSMRegistrationClientComponentTests : AbstractComponentTests<HSMRegistrationClientComponentImpl>() {
     @BeforeEach
-    fun setup() {
-        publisher = mock {
-            on { publish(any()) } doReturn listOf(CompletableFuture<Unit>().also { it.complete(Unit) })
-        }
-        registrar = HSMRegistrationPublisher(publisher)
+    fun setup() = setup {
+        val instance = HSMRegistrationClientComponentImpl(coordinatorFactory)
+        instance.putPublisherFactory(publisherFactory)
+        instance
     }
 
     @Test
@@ -65,7 +58,7 @@ class HSMRegistrationPublisherTests {
             ByteBuffer.allocate(0)
         )
         val result = publisher.act {
-            registrar.putHSM(config)
+            component.putHSM(config)
         }
         assertThat(result.value.requestId, not(emptyOrNullString()))
         assertEquals(1, result.messages.size)
@@ -92,7 +85,7 @@ class HSMRegistrationPublisherTests {
     @Timeout(5)
     fun `Should publish command to assign HSM`() {
         val result = publisher.act {
-            registrar.assignHSM(
+            component.assignHSM(
                 tenantId = "some-tenant",
                 category = CryptoConsts.CryptoCategories.LEDGER,
                 defaultSignatureScheme = EDDSA_ED25519_CODE_NAME
@@ -124,7 +117,7 @@ class HSMRegistrationPublisherTests {
     @Timeout(5)
     fun `Should publish command to assign Soft HSM`() {
         val result = publisher.act {
-            registrar.assignSoftHSM(
+            component.assignSoftHSM(
                 tenantId = "some-tenant",
                 category = CryptoConsts.CryptoCategories.LEDGER,
                 passphrase = "1234",
@@ -152,5 +145,14 @@ class HSMRegistrationPublisherTests {
         result.assertThatIsBetween(context.requestTimestamp)
         assertEquals(HSMRegistrationPublisher::class.simpleName, context.requestingComponent)
         assertThat(context.other.items, empty())
+    }
+
+    @Test
+    @Timeout(5)
+    fun `Should cleanup created resources when component is stopped`() {
+        component.stop()
+        Assertions.assertFalse(component.isRunning)
+        Assertions.assertNull(component.resources)
+        verify(publisher, atLeast(1)).close()
     }
 }

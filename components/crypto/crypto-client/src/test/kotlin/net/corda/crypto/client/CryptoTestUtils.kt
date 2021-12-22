@@ -1,6 +1,13 @@
 package net.corda.crypto.client
 
+import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.bouncycastle.jce.ECNamedCurveTable
@@ -8,13 +15,20 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.allOf
 import org.hamcrest.Matchers.greaterThanOrEqualTo
 import org.hamcrest.Matchers.lessThanOrEqualTo
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Signature
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
+import kotlin.reflect.full.memberFunctions
+import kotlin.reflect.jvm.isAccessible
 
 fun generateKeyPair(schemeMetadata: CipherSchemeMetadata): KeyPair {
     val keyPairGenerator = KeyPairGenerator.getInstance("EC", schemeMetadata.providers["BC"])
@@ -69,4 +83,50 @@ data class PublishActResult<R>(
     val firstRecord: Record<*, *> get() = messages.first()[0]
 
     fun assertThatIsBetween(timestamp: Instant) = assertThatIsBetween(timestamp, before, after)
+}
+
+abstract class AbstractComponentTests<COMPONENT: Lifecycle> {
+    protected var coordinatorIsRunning = false
+    protected lateinit var coordinator: LifecycleCoordinator
+    protected lateinit var coordinatorFactory: LifecycleCoordinatorFactory
+    protected lateinit var publisher: Publisher
+    protected lateinit var publisherFactory: PublisherFactory
+    protected lateinit var component: COMPONENT
+
+    fun setup(componentFactory: () -> COMPONENT) {
+        coordinator = mock {
+            on { start() } doAnswer {
+                coordinatorIsRunning = true
+            }
+            on { stop() } doAnswer {
+                coordinatorIsRunning = false
+            }
+            on { isRunning }.thenAnswer { coordinatorIsRunning }
+            on { postEvent(any()) } doAnswer {
+                val event = it.getArgument(0, LifecycleEvent::class.java)
+                component::class.memberFunctions.first { f -> f.name == "handleCoordinatorEvent" }.let { ff ->
+                    ff.isAccessible = true
+                    ff.call(component, event)
+                }
+                Unit
+            }
+        }
+        coordinatorFactory = mock {
+            on { createCoordinator(any(), any()) } doReturn coordinator
+        }
+        publisher = mock {
+            on { publish(any()) } doReturn listOf(CompletableFuture<Unit>().also { it.complete(Unit) })
+        }
+        publisherFactory = mock {
+            on { createPublisher(any(), any()) } doReturn publisher
+        }
+        component = componentFactory()
+        component.start()
+        coordinator.postEvent(
+            RegistrationStatusChangeEvent(
+                registration = mock(),
+                status = LifecycleStatus.UP
+            )
+        )
+    }
 }
