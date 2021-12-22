@@ -71,7 +71,6 @@ class GroupPolicyFactoryTest {
         assertEquals(testGroupId, result.groupId)
     }
 
-
     @Test
     fun `Parse group policy - verify internal map`() {
         val result = groupPolicyFactory.createGroupPolicy(getSampleGroupPolicy())
