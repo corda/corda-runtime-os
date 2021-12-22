@@ -15,6 +15,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.packaging.CPI
 import net.corda.packaging.CPK
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -50,7 +51,6 @@ class LocalPackageCache @Activate constructor(
 
     private companion object {
         private const val CFG_KEY = "corda.cpi"
-        private const val BOOTSTRAP_KEY = "corda.boot"
         private val logger = contextLogger()
         private val cpiMapCollector: Collector<CPI, TreeMap<CPI.Identifier, CPI>, NavigableMap<CPI.Identifier, CPI>> =
             Collector.of(
@@ -174,8 +174,8 @@ class LocalPackageCache @Activate constructor(
                 scanDirectoryAndBuildCache(config[CFG_KEY]!!)
             }
             // allow us to pass the directory in via the bootstrap config.
-            if (BOOTSTRAP_KEY in changedKeys) {
-                val cfg = config[BOOTSTRAP_KEY]!!.toSafeConfig()
+            if (ConfigKeys.BOOT_CONFIG in changedKeys) {
+                val cfg = config[ConfigKeys.BOOT_CONFIG]!!.toSafeConfig()
 
                 if (cfg.hasPath(CFG_KEY)) {
                     scanDirectoryAndBuildCache(cfg.getConfig(CFG_KEY)!!)
