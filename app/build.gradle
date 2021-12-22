@@ -24,7 +24,7 @@ application {
 
 tasks.named("run"){
     doFirst{
-        systemProperty("pf4j.pluginsDir", file(pluginsDir).absolutePath)
+        systemProperty "pf4j.pluginsDir", file(pluginsDir).absolutePath
     }
 }
 
