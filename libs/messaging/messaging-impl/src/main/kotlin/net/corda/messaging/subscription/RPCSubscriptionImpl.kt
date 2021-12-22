@@ -14,7 +14,6 @@ import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUME
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messaging.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -25,6 +24,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.utils.render
+import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer

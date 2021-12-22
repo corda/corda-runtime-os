@@ -3,11 +3,11 @@ package net.corda.messaging.kafka.subscription.consumer.listener
 import com.typesafe.config.Config
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
-import net.corda.messaging.api.consumer.StateAndEventConsumer
-import net.corda.messaging.api.subscription.config.StateAndEventConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
+import net.corda.messaging.subscription.config.StateAndEventConfig
+import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.StateAndEventPartitionState
 import net.corda.messaging.subscription.consumer.listener.StateAndEventRebalanceListener
 import net.corda.messaging.subscription.factory.MapFactory

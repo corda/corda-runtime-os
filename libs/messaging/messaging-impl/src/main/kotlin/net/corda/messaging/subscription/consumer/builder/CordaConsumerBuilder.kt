@@ -1,4 +1,4 @@
-package net.corda.messaging.api.consumer.builder
+package net.corda.messaging.subscription.consumer.builder
 
 import com.typesafe.config.Config
 import net.corda.messagebus.api.consumer.CordaConsumer

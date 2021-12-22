@@ -10,7 +10,6 @@ import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUME
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
-import net.corda.messaging.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.PubSubProcessor
@@ -20,6 +19,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CON
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.kafka.utils.render
 import net.corda.messaging.kafka.utils.toRecord
+import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory

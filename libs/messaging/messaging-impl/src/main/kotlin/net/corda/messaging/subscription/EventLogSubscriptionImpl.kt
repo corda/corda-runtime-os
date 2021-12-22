@@ -14,7 +14,6 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
-import net.corda.messaging.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -27,6 +26,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAM
 import net.corda.messaging.kafka.utils.render
 import net.corda.messaging.kafka.utils.toCordaProducerRecords
 import net.corda.messaging.kafka.utils.toEventLogRecord
+import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceListener
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory

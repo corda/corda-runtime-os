@@ -6,7 +6,6 @@ import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC_N
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.builder.MessageBusConsumerBuilder
-import net.corda.messaging.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalanceListener
 import net.corda.messaging.subscription.consumer.listener.PubSubConsumerRebalanceListener
 import org.osgi.service.component.annotations.Activate

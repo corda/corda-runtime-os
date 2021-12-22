@@ -1,4 +1,4 @@
-package net.corda.messaging.api.consumer
+package net.corda.messaging.subscription.consumer
 
 import net.corda.messagebus.api.consumer.CordaConsumer
 import java.time.Clock

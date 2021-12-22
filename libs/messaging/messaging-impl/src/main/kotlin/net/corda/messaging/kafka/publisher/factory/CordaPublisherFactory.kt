@@ -11,7 +11,6 @@ import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.configuration.ConfigProperties.Companion.PATTERN_PUBLISHER
 import net.corda.messaging.api.configuration.ConfigProperties.Companion.PATTERN_RPC_SENDER
-import net.corda.messaging.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -21,6 +20,7 @@ import net.corda.messaging.kafka.publisher.CordaKafkaRPCSenderImpl
 import net.corda.messaging.kafka.publisher.CordaPublisherImpl
 import net.corda.messaging.kafka.utils.ConfigUtils.Companion.resolvePublisherConfiguration
 import net.corda.messaging.kafka.utils.toConfig
+import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

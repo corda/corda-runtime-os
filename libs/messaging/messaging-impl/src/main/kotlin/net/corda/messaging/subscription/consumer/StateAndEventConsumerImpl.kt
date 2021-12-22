@@ -3,11 +3,10 @@ package net.corda.messaging.subscription.consumer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messaging.api.consumer.StateAndEventConsumer
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.api.subscription.config.StateAndEventConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.kafka.utils.tryGetResult
+import net.corda.messaging.subscription.config.StateAndEventConfig
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory

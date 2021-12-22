@@ -1,4 +1,4 @@
-package net.corda.messaging.api.subscription.config
+package net.corda.messaging.subscription.config
 
 import com.typesafe.config.Config
 import net.corda.messagebus.api.configuration.ConfigProperties

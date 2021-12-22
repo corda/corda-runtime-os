@@ -17,7 +17,6 @@ import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CORDA_C
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messaging.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
@@ -29,6 +28,7 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.RESPONSE_TOPIC
 import net.corda.messaging.kafka.utils.FutureTracker
 import net.corda.messaging.kafka.utils.render
+import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.subscription.consumer.listener.RPCConsumerRebalanceListener
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
