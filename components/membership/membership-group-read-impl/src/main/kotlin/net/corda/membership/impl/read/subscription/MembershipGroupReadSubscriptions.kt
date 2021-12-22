@@ -67,7 +67,7 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
 
             memberListSubscription = subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(memberListGroupName, memberListTopicName),
-                MemberListProcessor(groupReadCache.memberListCache)
+                MemberListProcessor(groupReadCache)
             ).also {
                 it.start()
             }
