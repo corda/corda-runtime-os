@@ -27,7 +27,7 @@ dependencies {
     implementation project(":components:sandbox:sandbox-service")
     implementation project(":components:virtual-node:sandbox-group-context-service")
 
-    runtimeOnly project(":libs:sandbox")
+    runtimeOnly project(":libs:sandbox-internal")
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
     runtimeOnly project(":libs:crypto:crypto-impl")
     runtimeOnly project(":libs:configuration:configuration-write-impl")
