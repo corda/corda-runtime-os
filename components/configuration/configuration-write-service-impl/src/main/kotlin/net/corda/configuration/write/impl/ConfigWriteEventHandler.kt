@@ -10,7 +10,6 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus.DOWN
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
-import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigWriteServiceImpl]. */
@@ -29,8 +28,6 @@ internal class ConfigWriteEventHandler(
      */
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
-            is StartEvent -> Unit // We cannot start processing updates until we have the required service config.
-
             is StartProcessingEvent -> {
                 if (configWriter != null) {
                     throw ConfigWriteServiceException("An attempt was made to start processing twice.")
@@ -53,6 +50,7 @@ internal class ConfigWriteEventHandler(
 
             is StopEvent -> {
                 configWriter?.stop()
+                configWriter = null
                 coordinator.updateStatus(DOWN)
             }
         }

@@ -23,9 +23,6 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation 'org.slf4j:slf4j-api'
 
-    runtimeOnly project(':libs:configuration:configuration-write-impl')
-    runtimeOnly project(':libs:configuration:configuration-write-persistent-impl')
-
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
