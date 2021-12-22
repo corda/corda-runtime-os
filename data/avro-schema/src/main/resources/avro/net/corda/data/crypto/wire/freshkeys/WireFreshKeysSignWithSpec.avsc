@@ -2,7 +2,7 @@
   "type": "record",
   "name": "WireFreshKeysSignWithSpec",
   "namespace": "net.corda.data.crypto.wire.freshkeys",
-  "doc": "Internal over-the-wire request to sign using signature spec override",
+  "doc": "Request to sign using signature spec override",
   "fields": [
     {
       "name": "publicKey",

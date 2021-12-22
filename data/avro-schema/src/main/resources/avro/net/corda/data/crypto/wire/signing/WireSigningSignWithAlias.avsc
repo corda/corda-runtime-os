@@ -2,7 +2,7 @@
   "type": "record",
   "name": "WireSigningSignWithAlias",
   "namespace": "net.corda.data.crypto.wire.signing",
-  "doc": "Internal over-the-wire request to sign using alias and default signature scheme",
+  "doc": "Request to sign using alias and default signature scheme",
   "fields": [
     {
       "name": "alias",

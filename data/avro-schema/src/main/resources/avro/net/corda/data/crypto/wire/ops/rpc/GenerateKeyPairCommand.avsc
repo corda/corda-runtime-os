@@ -1,8 +1,8 @@
 {
   "type": "record",
   "name": "GenerateKeyPairCommand",
-  "namespace": "net.corda.data.crypto.wire.registration.key",
-  "doc": "Internal over-the-wire request to generate a new key pair for a tenant.",
+  "namespace": "net.corda.data.crypto.wire.ops.rpc",
+  "doc": "Request to generate a new key pair for a tenant.",
   "fields": [
     {
       "name": "category",

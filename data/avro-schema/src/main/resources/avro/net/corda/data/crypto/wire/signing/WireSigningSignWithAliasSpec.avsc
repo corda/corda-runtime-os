@@ -2,7 +2,7 @@
   "type": "record",
   "name": "WireSigningSignWithAliasSpec",
   "namespace": "net.corda.data.crypto.wire.signing",
-  "doc": "Internal over-the-wire request to sign using alias and signature spec override",
+  "doc": "Request to sign using alias and signature spec override",
   "fields": [
     {
       "name": "alias",

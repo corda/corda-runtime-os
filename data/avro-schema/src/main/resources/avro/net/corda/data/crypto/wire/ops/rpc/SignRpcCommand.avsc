@@ -2,7 +2,7 @@
   "type": "record",
   "name": "SignRpcCommand",
   "namespace": "net.corda.data.crypto.wire.ops.rpc",
-  "doc": "Internal over-the-wire request to sign using public key and default signature spec.",
+  "doc": "Request to sign using public key and default signature spec.",
   "fields": [
     {
       "name": "publicKey",

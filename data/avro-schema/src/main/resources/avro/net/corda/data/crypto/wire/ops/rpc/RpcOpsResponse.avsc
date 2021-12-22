@@ -2,7 +2,7 @@
   "type": "record",
   "name": "RpcOpsResponse",
   "namespace": "net.corda.data.crypto.wire.ops.rpc",
-  "doc": "Internal over-the-wire response for crypto's RPC operations envelope",
+  "doc": "Response for crypto's RPC operations envelope",
   "fields": [
     {
       "name": "context",
@@ -19,7 +19,7 @@
         "net.corda.data.crypto.wire.CryptoSignatureWithKey",
         "net.corda.data.crypto.wire.CryptoSignatureSchemes",
         "net.corda.data.crypto.config.HSMInfo",
-        "HSMKey"
+        "HSMKeyDetails"
       ],
       "doc": "Response's payload, depends on the requested operation"
     }

@@ -2,7 +2,7 @@
   "type": "record",
   "name": "WireSigningRequest",
   "namespace": "net.corda.data.crypto.wire.signing",
-  "doc": "Internal over-the-wire request for crypto's [SigningService], the service operations are multiplexed",
+  "doc": "Request for crypto's [SigningService], the service operations are multiplexed",
   "fields": [
     {
       "name": "context",

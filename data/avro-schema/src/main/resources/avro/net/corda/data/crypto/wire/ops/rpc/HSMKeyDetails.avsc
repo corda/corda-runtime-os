@@ -1,8 +1,8 @@
 {
   "type": "record",
-  "name": "HSMKey",
+  "name": "HSMKeyDetails",
   "namespace": "net.corda.data.crypto.wire.ops.rpc",
-  "doc": "Defines association of a tenant defined key alias to the actual which is used by particular HSM.",
+  "doc": "Defines details about a key pair.",
   "fields": [
     {
       "name": "tenantId",
@@ -34,11 +34,6 @@
         "string"
       ],
       "doc": "Alias which is used by the HSM, the wrapped keys will have this value as null"
-    },
-    {
-      "name": "publicKey",
-      "type": "bytes",
-      "doc": "Serialized public key."
     },
     {
       "name": "externalId",

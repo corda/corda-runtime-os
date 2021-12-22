@@ -2,7 +2,7 @@
   "type": "record",
   "name": "AssignHSMCommand",
   "namespace": "net.corda.data.crypto.wire.registration.hsm",
-  "doc": "Internal over-the-wire request to assign an HSM to a tenant.",
+  "doc": "Request to assign an HSM to a tenant.",
   "fields": [
     {
       "name": "category",

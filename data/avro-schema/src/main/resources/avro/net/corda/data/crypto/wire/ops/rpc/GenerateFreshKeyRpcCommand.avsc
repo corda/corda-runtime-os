@@ -2,7 +2,7 @@
   "type": "record",
   "name": "GenerateFreshKeyRpcCommand",
   "namespace": "net.corda.data.crypto.wire.ops.rpc",
-  "doc": "Internal over-the-wire request to generate new wrapped key (fresh key) pair.",
+  "doc": "Request to generate new wrapped key (fresh key) pair.",
   "fields": [
     {
       "name": "externalId",

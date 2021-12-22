@@ -2,7 +2,7 @@
   "type": "record",
   "name": "WireFreshKeysFreshKey",
   "namespace": "net.corda.data.crypto.wire.freshkeys",
-  "doc": "Internal over-the-wire request to generate new wrapped key pair",
+  "doc": "Request to generate new wrapped key pair",
   "fields": [
     {
       "name": "externalId",

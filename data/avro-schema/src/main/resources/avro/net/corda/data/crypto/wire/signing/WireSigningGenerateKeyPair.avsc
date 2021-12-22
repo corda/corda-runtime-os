@@ -2,7 +2,7 @@
   "type": "record",
   "name": "WireSigningGenerateKeyPair",
   "namespace": "net.corda.data.crypto.wire.signing",
-  "doc": "Internal over-the-wire request to generate new key pair",
+  "doc": "Request to generate new key pair",
   "fields": [
     {
       "name": "alias",

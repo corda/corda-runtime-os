@@ -2,7 +2,7 @@
   "type": "record",
   "name": "WireFreshKeysSign",
   "namespace": "net.corda.data.crypto.wire.freshkeys",
-  "doc": "Internal over-the-wire request to sign using default signature scheme",
+  "doc": "Request to sign using default signature scheme",
   "fields": [
     {
       "name": "publicKey",

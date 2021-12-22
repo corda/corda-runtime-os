@@ -2,7 +2,7 @@
   "type": "record",
   "name": "WireSigningSign",
   "namespace": "net.corda.data.crypto.wire.signing",
-  "doc": "Internal over-the-wire request to sign using public key and default signature spec",
+  "doc": "Request to sign using public key and default signature spec",
   "fields": [
     {
       "name": "publicKey",

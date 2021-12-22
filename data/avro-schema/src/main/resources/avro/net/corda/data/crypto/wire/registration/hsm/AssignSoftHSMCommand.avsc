@@ -2,7 +2,7 @@
   "type": "record",
   "name": "AssignSoftHSMCommand",
   "namespace": "net.corda.data.crypto.wire.registration.hsm",
-  "doc": "Internal over-the-wire request to assign the Soft HSM to a tenant.",
+  "doc": "Request to assign the Soft HSM to a tenant.",
   "fields": [
     {
       "name": "category",

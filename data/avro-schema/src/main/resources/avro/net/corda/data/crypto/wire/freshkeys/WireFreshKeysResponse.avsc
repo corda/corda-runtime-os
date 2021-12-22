@@ -2,7 +2,7 @@
   "type": "record",
   "name": "WireFreshKeysResponse",
   "namespace": "net.corda.data.crypto.wire.freshkeys",
-  "doc": "Internal over-the-wire response for crypto's [FreshKeysSigningService] operations",
+  "doc": "Response for crypto's [FreshKeysSigningService] operations",
   "fields": [
     {
       "name": "context",

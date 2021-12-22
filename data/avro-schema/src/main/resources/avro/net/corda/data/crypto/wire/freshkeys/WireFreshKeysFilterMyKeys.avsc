@@ -2,7 +2,7 @@
   "type": "record",
   "name": "WireFreshKeysFilterMyKeys",
   "namespace": "net.corda.data.crypto.wire.freshkeys",
-  "doc": "Internal over-the-wire request to filter out keys from the provided collection which don't belong to the member",
+  "doc": "Request to filter out keys from the provided collection which don't belong to the member",
   "fields": [
     {
       "name": "keys",

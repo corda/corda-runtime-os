@@ -2,7 +2,7 @@
   "type": "record",
   "name": "SignWithSpecRpcCommand",
   "namespace": "net.corda.data.crypto.wire.ops.rpc",
-  "doc": "Internal over-the-wire request to sign using public key and signature scheme override",
+  "doc": "Request to sign using public key and signature scheme override",
   "fields": [
     {
       "name": "publicKey",

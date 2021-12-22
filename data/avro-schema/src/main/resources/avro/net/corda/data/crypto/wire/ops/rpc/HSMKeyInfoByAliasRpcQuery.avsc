@@ -2,7 +2,7 @@
   "type": "record",
   "name": "HSMKeyInfoByAliasRpcQuery",
   "namespace": "net.corda.data.crypto.wire.ops.rpc",
-  "doc": "Internal over-the-wire request to get HSM key info by it's alias.",
+  "doc": "Request to get HSM key info by it's alias.",
   "fields": [
     {
       "name": "alias",

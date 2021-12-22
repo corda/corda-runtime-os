@@ -2,7 +2,7 @@
   "type": "record",
   "name": "AssignedHSMRpcQuery",
   "namespace": "net.corda.data.crypto.wire.ops.rpc",
-  "doc": "Internal over-the-wire request to get assigned to a tenant HSM.",
+  "doc": "Request to get assigned to a tenant HSM.",
   "fields": [
     {
       "name": "category",

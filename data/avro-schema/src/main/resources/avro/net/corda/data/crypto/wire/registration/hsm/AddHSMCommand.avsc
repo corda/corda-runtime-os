@@ -2,7 +2,7 @@
   "type": "record",
   "name": "AddHSMCommand",
   "namespace": "net.corda.data.crypto.wire.registration.hsm",
-  "doc": "Internal over-the-wire request to add new HSM configuration.",
+  "doc": "Request to add new HSM configuration.",
   "fields": [
     {
       "name": "config",

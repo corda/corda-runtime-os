@@ -2,7 +2,7 @@
   "type": "record",
   "name": "SignWithAliasSpecRpcCommand",
   "namespace": "net.corda.data.crypto.wire.ops.rpc",
-  "doc": "Internal over-the-wire request to sign using alias and signature spec override",
+  "doc": "Request to sign using alias and signature spec override",
   "fields": [
     {
       "name": "alias",
