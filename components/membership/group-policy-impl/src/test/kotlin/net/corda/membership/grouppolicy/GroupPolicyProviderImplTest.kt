@@ -1,6 +1,7 @@
 package net.corda.membership.grouppolicy
 
 import net.corda.cpiinfo.read.CpiInfoReaderComponent
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.GroupPolicy
 import net.corda.packaging.CPI
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -86,10 +87,15 @@ class GroupPolicyProviderImplTest {
         doReturn(cpiMetadata4).whenever(this).get(cpiIdentifier4)
     }
 
+    val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
+
     @BeforeEach
     fun setUp() {
-        virtualNodeListener = null
-        groupPolicyProvider = GroupPolicyProviderImpl(virtualNodeInfoReader, cpiInfoReader)
+        groupPolicyProvider = GroupPolicyProviderImpl(
+            virtualNodeInfoReader,
+            cpiInfoReader,
+            lifecycleCoordinatorFactory
+        )
     }
 
     fun assertExpectedGroupPolicy(
