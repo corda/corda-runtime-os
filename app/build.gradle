@@ -22,8 +22,10 @@ application {
     mainClass = appMainClass
 }
 
-tasks.named("run") {
-    systemProperty("pf4j.pluginsDir", file(pluginsDir).absolutePath)
+tasks.named("run"){
+    doFirst{
+        systemProperty("pf4j.pluginsDir", file(pluginsDir).absolutePath)
+    }
 }
 
 def fatJar = tasks.register('fatJar', Jar) {
