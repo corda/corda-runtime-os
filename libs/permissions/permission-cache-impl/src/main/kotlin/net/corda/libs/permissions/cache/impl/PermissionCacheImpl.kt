@@ -16,7 +16,8 @@ import net.corda.libs.permissions.cache.exception.PermissionCacheException
 internal class PermissionCacheImpl(
     _userData: ConcurrentHashMap<String, User>,
     _groupData: ConcurrentHashMap<String, Group>,
-    _roleData: ConcurrentHashMap<String, Role>
+    _roleData: ConcurrentHashMap<String, Role>,
+    _permissionsData: ConcurrentHashMap<String, Permission>
 ) : PermissionCache {
 
     override val users: ConcurrentHashMap<String, User> = _userData
@@ -30,6 +31,12 @@ internal class PermissionCacheImpl(
             return field
         }
     override val roles: ConcurrentHashMap<String, Role> = _roleData
+        get() {
+            validateCacheIsRunning()
+            return field
+        }
+
+    override val permissions: ConcurrentHashMap<String, Permission> = _permissionsData
         get() {
             validateCacheIsRunning()
             return field
@@ -57,9 +64,7 @@ internal class PermissionCacheImpl(
 
     override fun getPermission(permissionId: String): Permission? {
         validateCacheIsRunning()
-        val permissionAssoc: List<PermissionAssociation> = roles.values.flatMap { it.permissions }
-        val permissionsMap = permissionAssoc.associate { it.permission.id to it.permission }
-        return permissionsMap[permissionId]
+        return permissions[permissionId]
     }
 
     private fun validateCacheIsRunning() {
