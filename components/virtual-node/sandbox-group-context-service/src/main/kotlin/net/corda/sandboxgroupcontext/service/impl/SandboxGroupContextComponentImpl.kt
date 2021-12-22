@@ -59,7 +59,8 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     override fun stop() = coordinator.stop()
 
     override fun close() {
-        coordinator.stop()
+        stop()
+        coordinator.close()
         sandboxGroupContextServiceImpl.close()
     }
 
