@@ -1,24 +1,5 @@
 # Running the flow worker
 
-from root project dir:
-
-```shell
-gradlew clean applications:flow-worker:appJar testing:cpbs:helloworld:build`
-```
-
-from flow-worker app dir:
-```shell
-java -jar corda-flow-worker-5.0.0.0-SNAPSHOT.jar --instanceId 1
-```
-
-configure cpb dir (when using the `LocalPackageCache` impl)
-
-```shell
-java -jar corda-flow-worker-5.0.0.0-SNAPSHOT.jar --instanceId 1 \
-    --additionalParams config.topic.name="config.topic" \
-    --additionalParams corda.cpi.cacheDir="C:\dev\corda-runtime-os\testing\cpbs\helloworld\build\libs"
-```
-
 ## In depth instructions
 
 ###  Compile flow worker using `appJar` task and cpb
