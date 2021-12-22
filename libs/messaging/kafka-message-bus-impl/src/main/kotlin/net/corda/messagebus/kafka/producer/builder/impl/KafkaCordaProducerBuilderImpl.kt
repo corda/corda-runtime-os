@@ -43,7 +43,6 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
             Thread.currentThread().contextClassLoader = null;
             KafkaProducer(
                 producerConfig.toProperties(),
-                // ???? What's the type here?
                 CordaAvroSerializerImpl(avroSchemaRegistry),
                 CordaAvroSerializerImpl(avroSchemaRegistry)
             )

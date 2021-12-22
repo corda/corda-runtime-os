@@ -15,7 +15,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_C
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
-import net.corda.messaging.subscription.CordaCompactedSubscriptionImpl
+import net.corda.messaging.subscription.CompactedSubscriptionImpl
 import net.corda.messaging.subscription.factory.MapFactory
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-class CordaCompactedSubscriptionImplTest {
+class CompactedSubscriptionImplTest {
 
     companion object {
         private const val TEST_TIMEOUT_SECONDS = 2L
@@ -127,7 +127,7 @@ class CordaCompactedSubscriptionImplTest {
             listOf(CordaTopicPartition(TOPIC, 0))
         }.whenever(kafkaConsumer).getPartitions(any(), any())
 
-        val subscription = CordaCompactedSubscriptionImpl(
+        val subscription = CompactedSubscriptionImpl(
             config,
             mapFactory,
             consumerBuilder,
@@ -177,7 +177,7 @@ class CordaCompactedSubscriptionImplTest {
             }
         }.whenever(kafkaConsumer).poll()
 
-        val subscription = CordaCompactedSubscriptionImpl(
+        val subscription = CompactedSubscriptionImpl(
             config,
             mapFactory,
             consumerBuilder,
@@ -209,7 +209,7 @@ class CordaCompactedSubscriptionImplTest {
         doAnswer { initialSnapshotResult }.whenever(kafkaConsumer).poll()
 
         processor.fatalFailSnapshot = true
-        val subscription = CordaCompactedSubscriptionImpl(
+        val subscription = CompactedSubscriptionImpl(
             config,
             mapFactory,
             consumerBuilder,
@@ -239,7 +239,7 @@ class CordaCompactedSubscriptionImplTest {
             emptyList<CordaConsumerRecord<String, String>>()
         }.whenever(kafkaConsumer).poll()
 
-        val subscription = CordaCompactedSubscriptionImpl(
+        val subscription = CompactedSubscriptionImpl(
             config,
             mapFactory,
             consumerBuilder,
@@ -286,7 +286,7 @@ class CordaCompactedSubscriptionImplTest {
         }.whenever(kafkaConsumer).poll()
 
         processor.failNext = true
-        val subscription = CordaCompactedSubscriptionImpl(
+        val subscription = CompactedSubscriptionImpl(
             config,
             mapFactory,
             consumerBuilder,

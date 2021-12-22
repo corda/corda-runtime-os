@@ -14,7 +14,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_D
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.generateMockCordaConsumerRecordList
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.stubs.StubEventLogProcessor
-import net.corda.messaging.subscription.CordaEventLogSubscriptionImpl
+import net.corda.messaging.subscription.EventLogSubscriptionImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,7 +30,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-class CordaEventLogSubscriptionImplTest {
+class EventLogSubscriptionImplTest {
     private companion object {
         private const val TEST_TIMEOUT_SECONDS = 3L
     }
@@ -47,7 +47,7 @@ class CordaEventLogSubscriptionImplTest {
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private var pollInvocationCount : Int = 0
     private var builderInvocationCount : Int = 0
-    private lateinit var kafkaEventLogSubscription: CordaEventLogSubscriptionImpl<String, ByteBuffer>
+    private lateinit var kafkaEventLogSubscription: EventLogSubscriptionImpl<String, ByteBuffer>
     private lateinit var processor: StubEventLogProcessor<String, ByteBuffer>
     private lateinit var pollInvocationLatch: CountDownLatch
     private lateinit var eventsLatch: CountDownLatch
@@ -91,7 +91,7 @@ class CordaEventLogSubscriptionImplTest {
      */
     @Test
     fun testSubscription() {
-        kafkaEventLogSubscription = CordaEventLogSubscriptionImpl(
+        kafkaEventLogSubscription = EventLogSubscriptionImpl(
             config,
             cordaConsumerBuilder,
             cordaProducerBuilder,
@@ -132,7 +132,7 @@ class CordaEventLogSubscriptionImplTest {
         ))
             .thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
 
-        kafkaEventLogSubscription = CordaEventLogSubscriptionImpl(
+        kafkaEventLogSubscription = EventLogSubscriptionImpl(
             config,
             cordaConsumerBuilder,
             cordaProducerBuilder,
@@ -163,7 +163,7 @@ class CordaEventLogSubscriptionImplTest {
     fun testFatalExceptionProducerBuild() {
         whenever(cordaProducerBuilder.createProducer(any())).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
 
-        kafkaEventLogSubscription = CordaEventLogSubscriptionImpl(
+        kafkaEventLogSubscription = EventLogSubscriptionImpl(
             config,
             cordaConsumerBuilder,
             cordaProducerBuilder,
@@ -209,7 +209,7 @@ class CordaEventLogSubscriptionImplTest {
         )
         whenever(mockCordaConsumer.poll()).thenThrow(CordaMessageAPIIntermittentException("Error", Exception()))
 
-        kafkaEventLogSubscription = CordaEventLogSubscriptionImpl(
+        kafkaEventLogSubscription = EventLogSubscriptionImpl(
             config,
             cordaConsumerBuilder,
             cordaProducerBuilder,
@@ -257,7 +257,7 @@ class CordaEventLogSubscriptionImplTest {
             String::class.java, ByteBuffer::class.java)
         doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll()
 
-        kafkaEventLogSubscription = CordaEventLogSubscriptionImpl(
+        kafkaEventLogSubscription = EventLogSubscriptionImpl(
             config,
             cordaConsumerBuilder,
             cordaProducerBuilder,
@@ -291,7 +291,7 @@ class CordaEventLogSubscriptionImplTest {
         processor = StubEventLogProcessor(pollInvocationLatch, eventsLatch, CordaMessageAPIFatalException(""),
             String::class.java, ByteBuffer::class.java)
 
-        kafkaEventLogSubscription = CordaEventLogSubscriptionImpl(
+        kafkaEventLogSubscription = EventLogSubscriptionImpl(
             config,
             cordaConsumerBuilder,
             cordaProducerBuilder,

@@ -16,13 +16,14 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_
 import org.slf4j.LoggerFactory
 
 /**
- * Kafka implementation of a DurableSubscription.
+ * Implementation of a DurableSubscription.
+ *
  * Subscription will continuously try connect to Kafka based on the [config].
  * After connection is successful subscription will attempt to poll and process records until subscription is stopped.
  * Records are processed using the [processor]. Records outputted from the [processor] are sent back to kafka using a
  * producer built by [cordaProducerBuilder]. Records are consumed and produced atomically via transactions.
  *
- * Note: the semantics of a [CordaDurableSubscriptionImpl] are the same with an [CordaEventLogSubscriptionImpl] with the only difference
+ * Note: the semantics of a [DurableSubscriptionImpl] are the same with an [EventLogSubscriptionImpl] with the only difference
  * being the latter exposes a few more attributes for each record. As a result, the former is being implemented by delegating
  * any processing to the latter and filtering out the attributes that are not exposed.
  *
@@ -35,7 +36,7 @@ import org.slf4j.LoggerFactory
  */
 
 @Suppress("LongParameterList")
-class CordaDurableSubscriptionImpl<K : Any, V : Any>(
+class DurableSubscriptionImpl<K : Any, V : Any>(
     private val config: Config,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val cordaProducerBuilder: CordaProducerBuilder,
@@ -48,7 +49,7 @@ class CordaDurableSubscriptionImpl<K : Any, V : Any>(
         "${config.getString(CONSUMER_GROUP_ID)}.${config.getString(PRODUCER_TRANSACTIONAL_ID)}"
     )
 
-    private val subscription = CordaEventLogSubscriptionImpl(config, cordaConsumerBuilder, cordaProducerBuilder,
+    private val subscription = EventLogSubscriptionImpl(config, cordaConsumerBuilder, cordaProducerBuilder,
         ForwardingEventLogProcessor(processor), partitionAssignmentListener, lifecycleCoordinatorFactory)
 
     override val subscriptionName: LifecycleCoordinatorName

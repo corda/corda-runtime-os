@@ -37,12 +37,12 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_S
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.kafka.utils.ConfigUtils.Companion.resolveSubscriptionConfiguration
 import net.corda.messaging.kafka.utils.toConfig
-import net.corda.messaging.subscription.CordaCompactedSubscriptionImpl
-import net.corda.messaging.subscription.CordaDurableSubscriptionImpl
-import net.corda.messaging.subscription.CordaEventLogSubscriptionImpl
-import net.corda.messaging.subscription.CordaPubSubSubscriptionImpl
-import net.corda.messaging.subscription.CordaRPCSubscriptionImpl
-import net.corda.messaging.subscription.CordaStateAndEventSubscriptionImpl
+import net.corda.messaging.subscription.CompactedSubscriptionImpl
+import net.corda.messaging.subscription.DurableSubscriptionImpl
+import net.corda.messaging.subscription.EventLogSubscriptionImpl
+import net.corda.messaging.subscription.PubSubSubscriptionImpl
+import net.corda.messaging.subscription.RPCSubscriptionImpl
+import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -88,7 +88,7 @@ class CordaSubscriptionFactory @Activate constructor(
             PATTERN_PUBSUB
         )
 
-        return CordaPubSubSubscriptionImpl(
+        return PubSubSubscriptionImpl(
             config,
             cordaConsumerBuilder,
             processor,
@@ -115,7 +115,7 @@ class CordaSubscriptionFactory @Activate constructor(
             clientIdCounter.getAndIncrement(),
             PATTERN_DURABLE
         )
-        return CordaDurableSubscriptionImpl(
+        return DurableSubscriptionImpl(
             config,
             cordaConsumerBuilder,
             cordaProducerBuilder,
@@ -143,7 +143,7 @@ class CordaSubscriptionFactory @Activate constructor(
             }
         }
 
-        return CordaCompactedSubscriptionImpl(
+        return CompactedSubscriptionImpl(
             config,
             mapFactory,
             cordaConsumerBuilder,
@@ -170,7 +170,7 @@ class CordaSubscriptionFactory @Activate constructor(
         val stateAndEventConfig = getStateAndEventConfig(config)
 
         val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
-        return CordaStateAndEventSubscriptionImpl(
+        return StateAndEventSubscriptionImpl(
             stateAndEventConfig,
             stateAndEventBuilder,
             processor,
@@ -199,7 +199,7 @@ class CordaSubscriptionFactory @Activate constructor(
             PATTERN_EVENTLOG
         )
 
-        return CordaEventLogSubscriptionImpl(
+        return EventLogSubscriptionImpl(
             config,
             cordaConsumerBuilder,
             cordaProducerBuilder,
@@ -231,7 +231,7 @@ class CordaSubscriptionFactory @Activate constructor(
         val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, rpcConfig.requestType)
         val publisher = publisherFactory.createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig)
 
-        return CordaRPCSubscriptionImpl(
+        return RPCSubscriptionImpl(
             config,
             publisher,
             cordaConsumerBuilder,

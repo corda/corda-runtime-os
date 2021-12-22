@@ -32,7 +32,7 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
-class CordaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
+class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val config: StateAndEventConfig,
     private val builder: StateAndEventBuilder,
     private val processor: StateAndEventProcessor<K, S, E>,

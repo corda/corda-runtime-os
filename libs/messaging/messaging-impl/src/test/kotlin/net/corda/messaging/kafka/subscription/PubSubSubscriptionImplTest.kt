@@ -12,7 +12,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_P
 import net.corda.messaging.kafka.stubs.StubPubSubProcessor
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.generateMockCordaConsumerRecordList
-import net.corda.messaging.subscription.CordaPubSubSubscriptionImpl
+import net.corda.messaging.subscription.PubSubSubscriptionImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -33,7 +33,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-class CordaPubSubSubscriptionImplTest {
+class PubSubSubscriptionImplTest {
     private companion object {
         private const val TEST_TIMEOUT_SECONDS = 30L
     }
@@ -50,7 +50,7 @@ class CordaPubSubSubscriptionImplTest {
     private var executorService: ExecutorService? = null
     private var pollInvocationCount: Int = 0
     private var builderInvocationCount: Int = 0
-    private lateinit var kafkaPubSubSubscription: CordaPubSubSubscriptionImpl<String, ByteBuffer>
+    private lateinit var kafkaPubSubSubscription: PubSubSubscriptionImpl<String, ByteBuffer>
     private lateinit var processor: PubSubProcessor<String, ByteBuffer>
     private lateinit var latch: CountDownLatch
 
@@ -85,7 +85,7 @@ class CordaPubSubSubscriptionImplTest {
     @Test
     fun testPubSubConsumer() {
         kafkaPubSubSubscription =
-            CordaPubSubSubscriptionImpl(
+            PubSubSubscriptionImpl(
                 config,
                 cordaConsumerBuilder,
                 processor,
@@ -113,7 +113,7 @@ class CordaPubSubSubscriptionImplTest {
     fun testPubSubConsumerWithExecutor() {
         executorService = Executors.newFixedThreadPool(1)
         kafkaPubSubSubscription =
-            CordaPubSubSubscriptionImpl(
+            PubSubSubscriptionImpl(
                 config,
                 cordaConsumerBuilder,
                 processor,
@@ -152,7 +152,7 @@ class CordaPubSubSubscriptionImplTest {
 
         doThrow(CordaMessageAPIFatalException::class).whenever(mockCordaConsumer).commitSyncOffsets(any(), anyOrNull())
         kafkaPubSubSubscription =
-            CordaPubSubSubscriptionImpl(
+            PubSubSubscriptionImpl(
                 config,
                 cordaConsumerBuilder,
                 processor,
@@ -194,7 +194,7 @@ class CordaPubSubSubscriptionImplTest {
         )
 
         kafkaPubSubSubscription =
-            CordaPubSubSubscriptionImpl(
+            PubSubSubscriptionImpl(
                 config,
                 cordaConsumerBuilder,
                 processor,
@@ -233,7 +233,7 @@ class CordaPubSubSubscriptionImplTest {
         whenever(mockCordaConsumer.poll()).thenThrow(CordaMessageAPIFatalException("Fatal Error", Exception()))
 
         kafkaPubSubSubscription =
-            CordaPubSubSubscriptionImpl(
+            PubSubSubscriptionImpl(
                 config,
                 cordaConsumerBuilder,
                 processor,
@@ -276,7 +276,7 @@ class CordaPubSubSubscriptionImplTest {
         processor = StubPubSubProcessor(latch, CordaMessageAPIFatalException("", Exception()))
         doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll()
 
-        kafkaPubSubSubscription = CordaPubSubSubscriptionImpl(
+        kafkaPubSubSubscription = PubSubSubscriptionImpl(
             config, cordaConsumerBuilder,
             processor, executorService, lifecycleCoordinatorFactory
         )
@@ -306,7 +306,7 @@ class CordaPubSubSubscriptionImplTest {
         processor = StubPubSubProcessor(latch, IOException())
         doReturn(mockConsumerRecords).whenever(mockCordaConsumer).poll()
 
-        kafkaPubSubSubscription = CordaPubSubSubscriptionImpl(
+        kafkaPubSubSubscription = PubSubSubscriptionImpl(
             config, cordaConsumerBuilder,
             processor, executorService, lifecycleCoordinatorFactory
         )

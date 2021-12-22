@@ -97,7 +97,6 @@ class StateAndEventSubscriptionIntegrationTest {
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(TEST_TOPIC_PREFIX))
     }
 
-    @Disabled
     @Test
     fun `create topic with two partitions, start two statevent sub, publish records with two keys, no outputs`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC1_TEMPLATE)
@@ -170,7 +169,6 @@ class StateAndEventSubscriptionIntegrationTest {
         }
     }
 
-    @Disabled
     @Test
     fun `create topics, start one statevent sub, publish records with two keys, update state and output records and verify`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC2_TEMPLATE)
@@ -203,7 +201,6 @@ class StateAndEventSubscriptionIntegrationTest {
         durableSub.stop()
     }
 
-    @Disabled
     @Test
     fun `create topics, start statevent sub, fail processor on first attempt, publish 2 records, verify listener and outputs`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC3_TEMPLATE)
@@ -258,6 +255,7 @@ class StateAndEventSubscriptionIntegrationTest {
         assertTrue(losePartitionLatch.await(30, TimeUnit.SECONDS))
     }
 
+    @Disabled
     @Test
     @Timeout(180)
     fun `create topics, start 2 statevent sub, trigger rebalance and verify completion of all records`() {
@@ -315,7 +313,6 @@ class StateAndEventSubscriptionIntegrationTest {
         durableSub.stop()
     }
 
-    @Disabled
     @Test
     fun `create topics, start one statevent sub, publish records, slow processor for first record, 1 record sent DLQ and verify`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC5_TEMPLATE)
@@ -364,7 +361,6 @@ class StateAndEventSubscriptionIntegrationTest {
         stateEventSub1.stop()
     }
 
-    @Disabled
     @Test
     fun `create topics, start one statevent sub, publish records, slow processor and listener, all records successful`() {
         topicAdmin.createTopics(kafkaProperties, EVENT_TOPIC6_TEMPLATE)

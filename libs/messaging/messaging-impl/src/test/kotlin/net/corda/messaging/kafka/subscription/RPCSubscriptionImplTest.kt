@@ -22,7 +22,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_R
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
-import net.corda.messaging.subscription.CordaRPCSubscriptionImpl
+import net.corda.messaging.subscription.RPCSubscriptionImpl
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -41,7 +41,7 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
 
-class CordaRPCSubscriptionImplTest {
+class RPCSubscriptionImplTest {
 
     private val config: Config = createStandardTestConfig().getConfig(PATTERN_RPC_RESPONDER)
     private val dummyRequest = HoldingIdentity(
@@ -99,7 +99,7 @@ class CordaRPCSubscriptionImplTest {
     @Test
     fun `rpc subscription receives request and completes it OK`() {
         val processor = TestProcessor(ResponseStatus.OK)
-        val subscription = CordaRPCSubscriptionImpl(
+        val subscription = RPCSubscriptionImpl(
             config,
             publisher,
             cordaConsumerBuilder,
@@ -124,7 +124,7 @@ class CordaRPCSubscriptionImplTest {
     @Test
     fun `rpc subscription receives request and completes it exceptionally`() {
         val processor = TestProcessor(ResponseStatus.FAILED)
-        val subscription = CordaRPCSubscriptionImpl(
+        val subscription = RPCSubscriptionImpl(
             config,
             publisher,
             cordaConsumerBuilder,
@@ -153,7 +153,7 @@ class CordaRPCSubscriptionImplTest {
     @Test
     fun `rpc subscription receives request and cancels it`() {
         val processor = TestProcessor(ResponseStatus.CANCELLED)
-        val subscription = CordaRPCSubscriptionImpl(
+        val subscription = RPCSubscriptionImpl(
             config,
             publisher,
             cordaConsumerBuilder,

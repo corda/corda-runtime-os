@@ -35,7 +35,8 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 /**
- * Kafka implementation of an EventLogSubscription.
+ * Implementation of an EventLogSubscription.
+ *
  * Subscription will continuously try connect to Kafka based on the [config].
  * After connection is successful subscription will attempt to poll and process records until subscription is stopped.
  * Records are processed using the [processor]. Records outputted from the [processor] are sent back to kafka using a
@@ -50,7 +51,7 @@ import kotlin.concurrent.withLock
  */
 
 @Suppress("LongParameterList")
-class CordaEventLogSubscriptionImpl<K : Any, V : Any>(
+class EventLogSubscriptionImpl<K : Any, V : Any>(
     private val config: Config,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val cordaProducerBuilder: CordaProducerBuilder,

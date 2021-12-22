@@ -21,7 +21,7 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_S
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.generateMockCordaConsumerRecordList
-import net.corda.messaging.subscription.CordaStateAndEventSubscriptionImpl
+import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.any
@@ -35,7 +35,7 @@ import org.mockito.kotlin.whenever
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 
-class CordaStateAndEventSubscriptionImplTest {
+class StateAndEventSubscriptionImplTest {
 
     companion object {
         private const val TEST_TIMEOUT_SECONDS = 20L
@@ -120,7 +120,7 @@ class CordaStateAndEventSubscriptionImplTest {
             }
         }.whenever(stateAndEventConsumer).waitForFunctionToFinish(any(), any(), any())
 
-        val subscription = CordaStateAndEventSubscriptionImpl<String, String, String>(
+        val subscription = StateAndEventSubscriptionImpl<String, String, String>(
             stateAndEventConfig,
             builder,
             mock(),
@@ -153,7 +153,7 @@ class CordaStateAndEventSubscriptionImplTest {
     @Timeout(TEST_TIMEOUT_SECONDS)
     fun `state and event subscription no retries`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(5)
-        val subscription = CordaStateAndEventSubscriptionImpl<Any, Any, Any>(
+        val subscription = StateAndEventSubscriptionImpl<Any, Any, Any>(
             stateAndEventConfig,
             builder,
             mock(),
@@ -206,7 +206,7 @@ class CordaStateAndEventSubscriptionImplTest {
                 records
             }
         }.whenever(eventConsumer).poll()
-        val subscription = CordaStateAndEventSubscriptionImpl<Any, Any, Any>(
+        val subscription = StateAndEventSubscriptionImpl<Any, Any, Any>(
             stateAndEventConfig,
             builder,
             mock(),
@@ -257,7 +257,7 @@ class CordaStateAndEventSubscriptionImplTest {
             }
         }.whenever(eventConsumer).poll()
 
-        val subscription = CordaStateAndEventSubscriptionImpl<Any, Any, Any>(
+        val subscription = StateAndEventSubscriptionImpl<Any, Any, Any>(
             stateAndEventConfig,
             builder,
             mock(),
@@ -319,7 +319,7 @@ class CordaStateAndEventSubscriptionImplTest {
                 )
         )
 
-        val subscription = CordaStateAndEventSubscriptionImpl<Any, Any, Any>(
+        val subscription = StateAndEventSubscriptionImpl<Any, Any, Any>(
             shortWaitProcessorConfig,
             builder,
             mock(),
