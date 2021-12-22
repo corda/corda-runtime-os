@@ -15,7 +15,7 @@ import net.corda.membership.read.MembershipGroupReadService
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -91,10 +91,9 @@ class MembershipGroupReadServiceImpl @Activate constructor(
      * Get the [MembershipGroupReader] instance for the given holding identity.
      */
     override fun getGroupReader(
-        groupId: String,
-        memberX500Name: MemberX500Name
+        holdingIdentity: HoldingIdentity
     ) = if (isRunning) {
-        membershipGroupReaderFactory.getGroupReader(groupId, memberX500Name)
+        membershipGroupReaderFactory.getGroupReader(holdingIdentity)
     } else {
         throw CordaRuntimeException(ACCESS_TOO_EARLY)
     }

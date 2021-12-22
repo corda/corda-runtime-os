@@ -3,7 +3,7 @@ package net.corda.membership.impl.read.cache
 import net.corda.membership.impl.read.TestProperties
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_2
-import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -20,8 +20,9 @@ class MemberDataCacheTest {
 
     private lateinit var memberDataCache: MemberDataCache<MemberData>
 
-    private val lookUpMemberName = TestProperties.aliceName
-    private val memberName1 = TestProperties.bobName
+    private val aliceIdGroup1 = HoldingIdentity(TestProperties.aliceName.toString(), GROUP_ID_1)
+    private val bobIdGroup1 = HoldingIdentity(TestProperties.bobName.toString(), GROUP_ID_1)
+    private val aliceIdGroup2 = HoldingIdentity(TestProperties.aliceName.toString(), GROUP_ID_2)
     private val memberData1 = mock<MemberData>()
     private val memberData2 = mock<MemberData>()
 
@@ -32,7 +33,7 @@ class MemberDataCacheTest {
 
     @Test
     fun `Get member data before any data is cached`() {
-        assertNull(memberDataCache.get(GROUP_ID_1, lookUpMemberName))
+        assertNull(memberDataCache.get(aliceIdGroup1))
     }
 
     @Test
@@ -47,20 +48,20 @@ class MemberDataCacheTest {
     @Test
     fun `Cache for one member and lookup for a different member`() {
         addToCacheWithDefaults()
-        assertNull(lookupWithDefaults(lookUpMember = memberName1))
+        assertNull(lookupWithDefaults(bobIdGroup1))
     }
 
     @Test
     fun `Cache for one group and lookup for a different group`() {
         addToCacheWithDefaults()
-        assertNull(lookupWithDefaults(groupId = GROUP_ID_2))
+        assertNull(lookupWithDefaults(aliceIdGroup2))
     }
 
     @Test
     fun `Cache and lookup for a multiple groups`() {
         addToCacheWithDefaults()
         addToCacheWithDefaults(
-            groupId = GROUP_ID_2,
+            aliceIdGroup2,
             memberData = memberData2
         )
 
@@ -69,7 +70,7 @@ class MemberDataCacheTest {
             assertEquals(memberData1, this)
         }
 
-        with(lookupWithDefaults(groupId = GROUP_ID_2)) {
+        with(lookupWithDefaults(aliceIdGroup2)) {
             assertNotNull(this)
             assertEquals(memberData2, this)
         }
@@ -79,7 +80,7 @@ class MemberDataCacheTest {
     fun `Cache and lookup for multiple members in the same group`() {
         addToCacheWithDefaults()
         addToCacheWithDefaults(
-            lookUpMember = memberName1,
+            bobIdGroup1,
             memberData = memberData2
         )
 
@@ -88,24 +89,22 @@ class MemberDataCacheTest {
             assertEquals(memberData1, this)
         }
 
-        with(lookupWithDefaults(lookUpMember = memberName1)) {
+        with(lookupWithDefaults(bobIdGroup1)) {
             assertNotNull(this)
             assertEquals(memberData2, this)
         }
     }
 
     private fun lookupWithDefaults(
-        groupId: String = GROUP_ID_1,
-        lookUpMember: MemberX500Name = lookUpMemberName,
+        holdingIdentity: HoldingIdentity = aliceIdGroup1
     ): MemberData? {
-        return memberDataCache.get(groupId, lookUpMember)
+        return memberDataCache.get(holdingIdentity)
     }
 
     private fun addToCacheWithDefaults(
-        groupId: String = GROUP_ID_1,
-        lookUpMember: MemberX500Name = lookUpMemberName,
+        holdingIdentity: HoldingIdentity = aliceIdGroup1,
         memberData: MemberData = memberData1
     ) {
-        memberDataCache.put(groupId, lookUpMember, memberData)
+        memberDataCache.put(holdingIdentity, memberData)
     }
 }

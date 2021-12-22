@@ -4,20 +4,19 @@ import net.corda.membership.GroupPolicy
 import net.corda.membership.impl.GroupPolicyImpl
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.read.MembershipGroupReader
-import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 
 /**
- * Factory for creating [MembershipGroupReader] for a holding identity (group ID & MemberX500Name).
+ * Factory for creating [MembershipGroupReader] for a holding identity.
  */
 interface MembershipGroupReaderFactory {
     /**
      * Returns a group information service providing group information for the
      * specified group as viewed by the specified member.
      *
-     * @param groupId The group identifier on the group the caller is requesting a view on.
-     * @param memberX500Name [MemberX500Name] of the member whose view on the group the caller is requesting.
+     * @param holdingIdentity The [HoldingIdentity] of the member whose view on data the caller is requesting
      */
-    fun getGroupReader(groupId: String, memberX500Name: MemberX500Name): MembershipGroupReader
+    fun getGroupReader(holdingIdentity: HoldingIdentity): MembershipGroupReader
 
     /**
      * Default implementation.
@@ -27,20 +26,18 @@ interface MembershipGroupReaderFactory {
     ) : MembershipGroupReaderFactory {
         private val groupReaderCache get() = membershipGroupReadCache.groupReaderCache
 
-        override fun getGroupReader(groupId: String, memberX500Name: MemberX500Name) =
-            groupReaderCache.get(groupId, memberX500Name)
-                ?: createGroupReader(groupId, memberX500Name)
+        override fun getGroupReader(holdingIdentity: HoldingIdentity) =
+            groupReaderCache.get(holdingIdentity)
+                ?: createGroupReader(holdingIdentity)
 
         private fun createGroupReader(
-            groupId: String,
-            memberX500Name: MemberX500Name
+            holdingIdentity: HoldingIdentity
         ) = MembershipGroupReaderImpl(
-            groupId,
-            memberX500Name,
-            getGroupPolicy(groupId, memberX500Name),
+            holdingIdentity,
+            getGroupPolicy(holdingIdentity),
             membershipGroupReadCache
         ).apply {
-            groupReaderCache.put(groupId, memberX500Name, this)
+            groupReaderCache.put(holdingIdentity, this)
         }
 
         /**
@@ -48,13 +45,12 @@ interface MembershipGroupReaderFactory {
          * Stub until actual implementation exists.
          */
         private fun getGroupPolicy(
-            groupId: String,
-            memberX500Name: MemberX500Name
+            holdingIdentity: HoldingIdentity
         ): GroupPolicy {
             return GroupPolicyImpl(
                 mapOf(
-                    "groupId" to groupId,
-                    "owningMember" to memberX500Name
+                    "groupId" to holdingIdentity.groupId,
+                    "owningMember" to holdingIdentity.x500Name
                 )
             )
         }

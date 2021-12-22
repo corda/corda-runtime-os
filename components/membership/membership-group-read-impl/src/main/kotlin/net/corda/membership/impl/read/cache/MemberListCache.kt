@@ -1,7 +1,7 @@
 package net.corda.membership.impl.read.cache
 
 import net.corda.v5.membership.identity.MemberInfo
-import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 import java.util.Collections
 
 /**
@@ -11,33 +11,28 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
     /**
      * Overload function allowing a single [MemberInfo] to be cached instead of a whole list.
      *
-     * @param groupId The membership group ID as a [String].
-     * @param memberX500Name The [MemberX500Name] of the member who owns the cached data.
+     * @param holdingIdentity The [HoldingIdentity] of the member whose view on data the caller is updating
      * @param data The data to cache
      */
-    fun put(groupId: String, memberX500Name: MemberX500Name, data: MemberInfo) =
-        put(groupId, memberX500Name, listOf(data))
+    fun put(holdingIdentity: HoldingIdentity, data: MemberInfo) =
+        put(holdingIdentity, listOf(data))
 
     /**
      * Simple in-memory member list cache implementation.
      */
     class Impl : MemberListCache {
 
-        private val cache: MutableMap<String, MutableMap<MemberX500Name, MutableList<MemberInfo>>> =
-            Collections.synchronizedMap(mutableMapOf())
+        private val cache: MutableMap<String, MutableList<MemberInfo>> = Collections.synchronizedMap(mutableMapOf())
 
-        private fun getMemberList(groupId: String, memberX500Name: MemberX500Name): MutableList<MemberInfo> =
-            cache.getOrPut(groupId) {
-                Collections.synchronizedMap(mutableMapOf())
-            }.getOrPut(memberX500Name) {
+        private fun getMemberList(holdingIdentity: HoldingIdentity) =
+            cache.getOrPut(holdingIdentity.id) {
                 Collections.synchronizedList(mutableListOf())
             }
 
-        override fun get(groupId: String, memberX500Name: MemberX500Name): List<MemberInfo> =
-            getMemberList(groupId, memberX500Name)
+        override fun get(holdingIdentity: HoldingIdentity) = getMemberList(holdingIdentity)
 
-        override fun put(groupId: String, memberX500Name: MemberX500Name, data: List<MemberInfo>) {
-            with(getMemberList(groupId, memberX500Name)) {
+        override fun put(holdingIdentity: HoldingIdentity, data: List<MemberInfo>) {
+            with(getMemberList(holdingIdentity)) {
                 removeIf { cached -> data.any { it.name == cached.name } }
                 addAll(data)
             }
