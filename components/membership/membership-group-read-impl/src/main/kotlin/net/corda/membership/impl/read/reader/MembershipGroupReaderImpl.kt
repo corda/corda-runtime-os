@@ -7,16 +7,19 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 
 class MembershipGroupReaderImpl(
-    override val groupId: String,
-    override val owningMember: MemberX500Name,
+    private val holdingIdentity: HoldingIdentity,
     override val policy: GroupPolicy,
     private val membershipGroupReadCache: MembershipGroupReadCache
 ) : MembershipGroupReader {
 
+    override val groupId: String = holdingIdentity.groupId
+    override val owningMember: MemberX500Name = MemberX500Name.parse(holdingIdentity.x500Name)
+
     private val memberList: List<MemberInfo>
-        get() = membershipGroupReadCache.memberListCache.get(groupId, owningMember)!!
+        get() = membershipGroupReadCache.memberListCache.get(holdingIdentity)!!
 
     override val groupParameters: GroupParameters
         get() = TODO("Not yet implemented")

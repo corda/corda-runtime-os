@@ -8,6 +8,7 @@ import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -88,7 +89,7 @@ class MembershipGroupReadServiceImplTest {
     @Test
     fun `Get group reader throws exception if component hasn't started`() {
         val e = assertThrows<CordaRuntimeException> {
-            membershipGroupReadService.getGroupReader(GROUP_ID_1, memberName)
+            membershipGroupReadService.getGroupReader(HoldingIdentity(memberName.toString(), GROUP_ID_1))
         }
         assertEquals(MembershipGroupReadServiceImpl.ACCESS_TOO_EARLY, e.message)
     }

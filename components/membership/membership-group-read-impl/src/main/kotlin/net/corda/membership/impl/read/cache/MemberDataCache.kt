@@ -1,6 +1,6 @@
 package net.corda.membership.impl.read.cache
 
-import net.corda.v5.membership.identity.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 import java.util.Collections
 
 /**
@@ -13,20 +13,18 @@ interface MemberDataCache<T> {
      * Get a cached instance of [T], or null if no cached value exists.
      * Cache lookups are done using a member's holding identity.
      *
-     * @param groupId The membership group ID as a [String].
-     * @param memberX500Name The [MemberX500Name] of the member who owns the cached data.
+     * @param holdingIdentity The [HoldingIdentity] of the member whose view on data the caller is requesting
      */
-    fun get(groupId: String, memberX500Name: MemberX500Name): T?
+    fun get(holdingIdentity: HoldingIdentity): T?
 
     /**
      * Add a new, or update an existing cache entry which is an instance of [T].
      * The member's holding identity is used for cache storage.
      *
-     * @param groupId The membership group ID as a [String].
-     * @param memberX500Name The [MemberX500Name] of the member who owns the cached data.
+     * @param holdingIdentity The [HoldingIdentity] of the member whose view on data the caller is updating
      * @param data The data to cache
      */
-    fun put(groupId: String, memberX500Name: MemberX500Name, data: T)
+    fun put(holdingIdentity: HoldingIdentity, data: T)
 
     /**
      * Basic member data in-memory cache implementation.
@@ -34,17 +32,12 @@ interface MemberDataCache<T> {
      */
     class Impl<T> : MemberDataCache<T> {
 
-        private val cache: MutableMap<String, MutableMap<MemberX500Name, T>> =
-            Collections.synchronizedMap(mutableMapOf())
+        private val cache: MutableMap<String, T> = Collections.synchronizedMap(mutableMapOf())
 
-        private fun getCachedData(groupId: String): MutableMap<MemberX500Name, T> =
-            cache.getOrPut(groupId) { Collections.synchronizedMap(mutableMapOf()) }
+        override fun get(holdingIdentity: HoldingIdentity): T? = cache[holdingIdentity.id]
 
-        override fun get(groupId: String, memberX500Name: MemberX500Name): T? =
-            getCachedData(groupId)[memberX500Name]
-
-        override fun put(groupId: String, memberX500Name: MemberX500Name, data: T) {
-            getCachedData(groupId)[memberX500Name] = data
+        override fun put(holdingIdentity: HoldingIdentity, data: T) {
+            cache[holdingIdentity.id] = data
         }
     }
 }

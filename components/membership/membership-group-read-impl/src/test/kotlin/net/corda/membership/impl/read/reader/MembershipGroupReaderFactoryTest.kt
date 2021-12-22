@@ -6,6 +6,7 @@ import net.corda.membership.impl.read.TestProperties.Companion.bobName
 import net.corda.membership.impl.read.cache.MemberDataCache
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.read.MembershipGroupReader
+import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.BeforeEach
@@ -24,10 +25,13 @@ class MembershipGroupReaderFactoryTest {
     val alice = aliceName
     val bob = bobName
 
+    val aliceIdGroup1 = HoldingIdentity(alice.toString(), GROUP_ID_1)
+    val bobIdGroup1 = HoldingIdentity(bob.toString(), GROUP_ID_1)
+
     val aliceReader: MembershipGroupReader = mock()
     val groupReaderCache = mock<MemberDataCache<MembershipGroupReader>>().apply {
-        doReturn(aliceReader).whenever(this).get(eq(GROUP_ID_1), eq(alice))
-        doReturn(null).whenever(this).get(eq(GROUP_ID_1), eq(bob))
+        doReturn(aliceReader).whenever(this).get(eq(aliceIdGroup1))
+        doReturn(null).whenever(this).get(eq(bobIdGroup1))
     }
 
     val cache: MembershipGroupReadCache = mock<MembershipGroupReadCache>().apply {
@@ -41,19 +45,19 @@ class MembershipGroupReaderFactoryTest {
 
     @Test
     fun `Cached readers are returned if available`() {
-        val result = membershipGroupReaderFactory.getGroupReader(GROUP_ID_1, alice)
+        val result = membershipGroupReaderFactory.getGroupReader(aliceIdGroup1)
         assertEquals(aliceReader, result)
 
-        verify(groupReaderCache).get(eq(GROUP_ID_1), eq(alice))
-        verify(groupReaderCache, never()).put(eq(GROUP_ID_1), eq(alice), eq(result))
+        verify(groupReaderCache).get(eq(aliceIdGroup1))
+        verify(groupReaderCache, never()).put(eq(aliceIdGroup1), eq(result))
     }
 
     @Test
     fun `New readers are created, cached and returned if no matching reader is cached already`() {
-        val result = membershipGroupReaderFactory.getGroupReader(GROUP_ID_1, bob)
+        val result = membershipGroupReaderFactory.getGroupReader(bobIdGroup1)
         assertNotEquals(aliceReader, result)
 
-        verify(groupReaderCache).get(eq(GROUP_ID_1), eq(bob))
-        verify(groupReaderCache).put(eq(GROUP_ID_1), eq(bob), eq(result))
+        verify(groupReaderCache).get(eq(bobIdGroup1))
+        verify(groupReaderCache).put(eq(bobIdGroup1), eq(result))
     }
 }
