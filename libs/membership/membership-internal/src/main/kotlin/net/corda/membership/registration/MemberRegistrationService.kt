@@ -1,15 +1,17 @@
 package net.corda.membership.registration
 
-enum class MembershipRegistrationResult {
+import net.corda.virtualnode.HoldingIdentity
+
+enum class MembershipRequestRegistrationResult {
     /**
-     * Registration got submitted to the MGM successfully.
+     * Registration request got submitted to the MGM successfully.
      */
     SUBMITTED,
 
     /**
-     * Registration request is not yet created, sent to and received by MGM.
+     * Something went wrong and registration request was not sent to the MGM.
      */
-    INCOMPLETE_REGISTRATION
+    NOT_SUBMITTED
 }
 
 /**
@@ -21,17 +23,10 @@ interface MemberRegistrationService {
      * This is the first step to take for a virtual node to become a fully
      * qualified member within a membership group.
      *
-     * @param memberId Hash-based ID for identifying the virtual node requesting registration.
-     */
-    fun register(memberId: String)
-
-    /**
-     * Check the status of the registration request submission.
+     * @param member The holding identity of the virtual node requesting registration.
      *
-     * @param memberId Hash-based ID for identifying the virtual node which registration status we want to check.
-     *
-     * @return The status of the registration request. INCOMPLETE_REGISTRATION is returned when
-     * no request was submitted.
+     * @return The status of the registration request. NOT_SUBMITTED is returned when
+     * something went wrong during creating the request.
      */
-    fun checkRegistrationStatus(memberId: String): MembershipRegistrationResult
+    fun register(member: HoldingIdentity): MembershipRequestRegistrationResult
 }
