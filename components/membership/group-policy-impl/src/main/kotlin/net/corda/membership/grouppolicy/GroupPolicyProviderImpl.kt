@@ -112,7 +112,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      * this component needs to function.
      */
     private fun handleStartEvent() {
-        setStatusToUp()
+        setStatusToUp(coordinator)
 
         registrationHandle = coordinator.followStatusChangesByName(
             setOf(
@@ -123,11 +123,31 @@ class GroupPolicyProviderImpl @Activate constructor(
     }
 
     /**
+     * Handle stopping the component. This should set the status to DOWN and also close the registration handle.
+     */
+    private fun handleStopEvent() {
+        setStatusToDown(coordinator)
+        registrationHandle?.close()
+    }
+
+    /**
+     * If any services we are following change status, this function reacts to that change.
+     * If all of the followed services are UP then this service can start.
+     * If any of the followed services are DOWN then this service should stop.
+     */
+    private fun handleRegistrationChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
+        when (event.status) {
+            LifecycleStatus.UP -> setStatusToUp(coordinator)
+            else -> setStatusToDown(coordinator)
+        }
+    }
+
+    /**
      * This function sets up the component so that it's status is UP.
      * This includes creating the data cache, registering a callback with the virtual node service, and updating the
      * component status.
      */
-    private fun setStatusToUp() {
+    private fun setStatusToUp(coordinator: LifecycleCoordinator) {
         _groupPolicies = Collections.synchronizedMap(mutableMapOf())
 
         /**
@@ -143,34 +163,14 @@ class GroupPolicyProviderImpl @Activate constructor(
     }
 
     /**
-     * Handle stopping the component. This should set the status to DOWN and also close the registration handle.
-     */
-    private fun handleStopEvent() {
-        setStatusToDown()
-        registrationHandle?.close()
-    }
-
-    /**
      * Sets the component status the DOWN.
      * This also closes the virtual node callback handle and clears cached data.
      * The component is not running after it has gone down.
      */
-    private fun setStatusToDown() {
+    private fun setStatusToDown(coordinator: LifecycleCoordinator) {
         coordinator.updateStatus(LifecycleStatus.DOWN)
         isRunning = false
         virtualNodeInfoCallbackHandle?.close()
         _groupPolicies = null
-    }
-
-    /**
-     * If any services we are following change status, this function reacts to that change.
-     * If all of the followed services are UP then this service can start.
-     * If any of the followed services are DOWN then this service should stop.
-     */
-    private fun handleRegistrationChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
-        when (event.status) {
-            LifecycleStatus.UP -> coordinator.postEvent(StartEvent())
-            else -> setStatusToDown()
-        }
     }
 }

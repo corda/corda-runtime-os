@@ -1,7 +1,14 @@
 package net.corda.membership.grouppolicy
 
 import net.corda.cpiinfo.read.CpiInfoReaderComponent
+import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import net.corda.membership.GroupPolicy
 import net.corda.packaging.CPI
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -87,7 +94,19 @@ class GroupPolicyProviderImplTest {
         doReturn(cpiMetadata4).whenever(this).get(cpiIdentifier4)
     }
 
-    val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
+    var handler: LifecycleEventHandler? = null
+
+    val coordinator: LifecycleCoordinator = mock<LifecycleCoordinator>().apply {
+        doAnswer { handler?.processEvent(StartEvent(), this) }.whenever(this).start()
+        doAnswer { handler?.processEvent(StopEvent(), this) }.whenever(this).stop()
+    }
+    val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
+        doAnswer{
+            handler = it.arguments[1] as LifecycleEventHandler
+            coordinator
+        }.whenever(this)
+            .createCoordinator(any(), any())
+    }
 
     @BeforeEach
     fun setUp() {
@@ -199,5 +218,45 @@ class GroupPolicyProviderImplTest {
 
         val updated = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         assertExpectedGroupPolicy(updated, groupId1, testAttr2)
+    }
+
+    @Test
+    fun `Component goes down when followed components go down and data can't be accessed`() {
+        groupPolicyProvider.start()
+        assertTrue(groupPolicyProvider.isRunning)
+        assertNotNull(handler)
+
+        handler?.processEvent(
+            RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN),
+            coordinator
+        )
+
+        assertFalse(groupPolicyProvider.isRunning)
+        assertThrows<CordaRuntimeException> {
+            groupPolicyProvider.getGroupPolicy(holdingIdentity1)
+        }
+    }
+
+    @Test
+    fun `Component goes down and then comes back up when followed components go down and up again`() {
+        groupPolicyProvider.start()
+        assertTrue(groupPolicyProvider.isRunning)
+        assertNotNull(handler)
+
+        handler?.processEvent(
+            RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN),
+            coordinator
+        )
+        handler?.processEvent(
+            RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP),
+            coordinator
+        )
+
+        assertTrue(groupPolicyProvider.isRunning)
+        assertExpectedGroupPolicy(
+            groupPolicyProvider.getGroupPolicy(holdingIdentity1),
+            groupId1,
+            testAttr1
+        )
     }
 }
