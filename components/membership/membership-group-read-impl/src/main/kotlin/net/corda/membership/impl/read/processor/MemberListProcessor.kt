@@ -1,7 +1,6 @@
 package net.corda.membership.impl.read.processor
 
 import net.corda.data.membership.SignedMemberInfo
-import net.corda.membership.impl.read.cache.MemberListCache
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
