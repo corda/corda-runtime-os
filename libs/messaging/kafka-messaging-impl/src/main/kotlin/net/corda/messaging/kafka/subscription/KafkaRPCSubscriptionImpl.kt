@@ -36,8 +36,8 @@ import kotlin.concurrent.withLock
 @Suppress("LongParameterList")
 class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: Config,
-    private val publisher: Publisher,
     private val consumerBuilder: ConsumerBuilder<String, RPCRequest>,
+    private val publisherBuilder: () -> Publisher,
     private val responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>,
     private val serializer: CordaAvroSerializer<RESPONSE>,
     private val deserializer: CordaAvroDeserializer<REQUEST>,
@@ -51,6 +51,7 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
+    private lateinit var publisher: Publisher
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaRPCSubscription-$topic",
@@ -112,6 +113,7 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             threadTmp
         }
         thread?.join(consumerThreadStopTimeout)
+        publisher.close()
     }
 
     private fun runConsumeLoop() {
@@ -120,6 +122,7 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc consumer.  Attempt: $attempts" }
+                publisher = publisherBuilder()
                 consumerBuilder.createRPCConsumer(
                     config.getConfig(KAFKA_CONSUMER),
                     String::class.java,

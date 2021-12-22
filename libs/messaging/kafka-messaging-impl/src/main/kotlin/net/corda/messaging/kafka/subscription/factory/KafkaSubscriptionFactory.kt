@@ -248,12 +248,11 @@ class KafkaSubscriptionFactory @Activate constructor(
 
         val cordaAvroSerializer = CordaAvroSerializer<RESPONSE>(avroSchemaRegistry)
         val cordaAvroDeserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, rpcConfig.requestType)
-        val publisher = publisherFactory.createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig)
 
         return KafkaRPCSubscriptionImpl(
             config,
-            publisher,
             consumerBuilder,
+            { publisherFactory.createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig) },
             responderProcessor,
             cordaAvroSerializer,
             cordaAvroDeserializer,

@@ -1,7 +1,8 @@
-package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.subscription
+package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
@@ -14,13 +15,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_RPC_RESPONDER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
-import net.corda.messaging.kafka.subscription.CordaAvroDeserializer
-import net.corda.messaging.kafka.subscription.KafkaRPCSubscriptionImpl
 import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
-import net.corda.data.identity.HoldingIdentity
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -72,11 +70,12 @@ class KafkaRPCSubscriptionImplTest {
     }
     private val deserializer = CordaAvroDeserializer(schemaRegistry, mock(), HoldingIdentity::class.java)
     private val serializer = CordaAvroSerializer<HoldingIdentity>(schemaRegistry)
-    private val publisher: Publisher = mock()
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private lateinit var kafkaConsumer: CordaKafkaConsumer<String, RPCRequest>
     private lateinit var consumerBuilder: ConsumerBuilder<String, RPCRequest>
+    private val publisherBuilder: () -> Publisher = mock()
+    private val publisher: Publisher = mock()
 
     @Captor
     private val captor = argumentCaptor<List<Pair<Int, Record<Int, RPCResponse>>>>()
@@ -86,6 +85,8 @@ class KafkaRPCSubscriptionImplTest {
         val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
         this.kafkaConsumer = kafkaConsumer
         this.consumerBuilder = consumerBuilder
+
+        whenever(publisherBuilder()).thenReturn(publisher)
 
         doAnswer {
             requestRecord
@@ -103,8 +104,8 @@ class KafkaRPCSubscriptionImplTest {
         val processor = TestProcessor(ResponseStatus.OK)
         val subscription = KafkaRPCSubscriptionImpl(
             config,
-            publisher,
             consumerBuilder,
+            publisherBuilder,
             processor,
             serializer,
             deserializer,
@@ -128,8 +129,8 @@ class KafkaRPCSubscriptionImplTest {
         val processor = TestProcessor(ResponseStatus.FAILED)
         val subscription = KafkaRPCSubscriptionImpl(
             config,
-            publisher,
             consumerBuilder,
+            publisherBuilder,
             processor,
             serializer,
             deserializer,
@@ -157,8 +158,8 @@ class KafkaRPCSubscriptionImplTest {
         val processor = TestProcessor(ResponseStatus.CANCELLED)
         val subscription = KafkaRPCSubscriptionImpl(
             config,
-            publisher,
             consumerBuilder,
+            publisherBuilder,
             processor,
             serializer,
             deserializer,

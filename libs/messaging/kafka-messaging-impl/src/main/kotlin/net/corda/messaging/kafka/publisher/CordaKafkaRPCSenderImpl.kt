@@ -45,8 +45,8 @@ import kotlin.concurrent.withLock
 @Component
 class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: Config,
-    private val publisher: Publisher,
     private val consumerBuilder: ConsumerBuilder<String, RPCResponse>,
+    private val publisherBuilder: () -> Publisher,
     private val serializer: CordaAvroSerializer<REQUEST>,
     private val deserializer: CordaAvroDeserializer<RESPONSE>,
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
@@ -73,6 +73,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val topic = config.getString(TOPIC_NAME)
     private val responseTopic = config.getString(RESPONSE_TOPIC)
     private val futureTracker = FutureTracker<RESPONSE>()
+    private lateinit var publisher: Publisher
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaRPCSender-$topic",
@@ -130,6 +131,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             threadTmp
         }
         thread?.join(consumerThreadStopTimeout)
+        publisher.close()
     }
 
     private fun runConsumeLoop() {
@@ -138,6 +140,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc response consumer.  Attempt: $attempts" }
+                publisher = publisherBuilder()
                 consumerBuilder.createRPCConsumer(
                     config.getConfig(KAFKA_CONSUMER),
                     String::class.java,

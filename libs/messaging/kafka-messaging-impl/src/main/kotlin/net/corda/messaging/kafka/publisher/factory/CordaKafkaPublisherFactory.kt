@@ -75,16 +75,14 @@ class CordaKafkaPublisherFactory @Activate constructor(
             PATTERN_RPC_SENDER
         )
 
-        val publisher = createPublisher(PublisherConfig(rpcConfig.clientName), kafkaConfig)
-
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<String, RPCResponse>(avroSchemaRegistry)
         val serializer = CordaAvroSerializer<REQUEST>(avroSchemaRegistry)
         val deserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, rpcConfig.responseType)
 
         return CordaKafkaRPCSenderImpl(
             publisherConfig,
-            publisher,
             consumerBuilder,
+            { createPublisher(PublisherConfig(rpcConfig.clientName), kafkaConfig) },
             serializer,
             deserializer,
             lifecycleCoordinatorFactory
