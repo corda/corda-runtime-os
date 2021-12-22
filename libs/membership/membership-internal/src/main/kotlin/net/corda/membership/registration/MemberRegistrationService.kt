@@ -26,7 +26,7 @@ interface MemberRegistrationService {
      * @param member The holding identity of the virtual node requesting registration.
      *
      * @return The status of the registration request. NOT_SUBMITTED is returned when
-     * something went wrong during creating the request, or we are unable to find the MGM details.
+     * something went wrong during creating the request.
      */
     fun register(member: HoldingIdentity): MembershipRequestRegistrationResult
 }
