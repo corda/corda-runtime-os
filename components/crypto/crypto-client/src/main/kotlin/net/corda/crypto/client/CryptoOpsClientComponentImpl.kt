@@ -44,13 +44,13 @@ class CryptoOpsClientComponentImpl(
     private lateinit var schemeMetadata: CipherSchemeMetadata
 
     @Reference(service = PublisherFactory::class)
-    fun publisherFactoryRef(publisherFactory: PublisherFactory) {
+    fun putPublisherFactory(publisherFactory: PublisherFactory) {
         this.publisherFactory = publisherFactory
         createResources()
     }
 
     @Reference(service = CipherSchemeMetadata::class)
-    fun publisherFactoryRef(schemeMetadata: CipherSchemeMetadata) {
+    fun putSchemeMetadataRef(schemeMetadata: CipherSchemeMetadata) {
         this.schemeMetadata = schemeMetadata
         createResources()
     }

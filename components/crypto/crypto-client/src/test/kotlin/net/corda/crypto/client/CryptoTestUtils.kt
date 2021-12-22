@@ -7,6 +7,7 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -57,6 +58,20 @@ inline fun <reified R> Publisher.act(
     )
 }
 
+inline fun <reified REQUEST: Any, reified RESPONSE: Any, reified RESULT: Any> RPCSender<REQUEST, RESPONSE>.act(
+    block: () -> RESULT
+): SendActResult<REQUEST, RESULT> {
+    val result = actWithTimer(block)
+    val messages = argumentCaptor<REQUEST>()
+    verify(this).sendRequest(messages.capture())
+    return SendActResult(
+        before = result.first,
+        after = result.second,
+        value = result.third,
+        messages = messages.allValues
+    )
+}
+
 inline fun <reified R> actWithTimer(block: () -> R): Triple<Instant, Instant, R> {
     val before = Instant.now()
     val result = block()
@@ -85,12 +100,21 @@ data class PublishActResult<R>(
     fun assertThatIsBetween(timestamp: Instant) = assertThatIsBetween(timestamp, before, after)
 }
 
+data class SendActResult<REQUEST, RESPONSE>(
+    val before: Instant,
+    val after: Instant,
+    val value: RESPONSE,
+    val messages: List<REQUEST>
+) {
+    val firstRequest: REQUEST get() = messages.first()
+
+    fun assertThatIsBetween(timestamp: Instant) = assertThatIsBetween(timestamp, before, after)
+}
+
 abstract class AbstractComponentTests<COMPONENT: Lifecycle> {
     protected var coordinatorIsRunning = false
     protected lateinit var coordinator: LifecycleCoordinator
     protected lateinit var coordinatorFactory: LifecycleCoordinatorFactory
-    protected lateinit var publisher: Publisher
-    protected lateinit var publisherFactory: PublisherFactory
     protected lateinit var component: COMPONENT
 
     fun setup(componentFactory: () -> COMPONENT) {
@@ -113,12 +137,6 @@ abstract class AbstractComponentTests<COMPONENT: Lifecycle> {
         }
         coordinatorFactory = mock {
             on { createCoordinator(any(), any()) } doReturn coordinator
-        }
-        publisher = mock {
-            on { publish(any()) } doReturn listOf(CompletableFuture<Unit>().also { it.complete(Unit) })
-        }
-        publisherFactory = mock {
-            on { createPublisher(any(), any()) } doReturn publisher
         }
         component = componentFactory()
         component.start()

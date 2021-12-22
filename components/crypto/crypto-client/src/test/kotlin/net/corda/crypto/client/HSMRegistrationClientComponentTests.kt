@@ -7,6 +7,8 @@ import net.corda.data.crypto.wire.registration.hsm.AddHSMCommand
 import net.corda.data.crypto.wire.registration.hsm.AssignHSMCommand
 import net.corda.data.crypto.wire.registration.hsm.AssignSoftHSMCommand
 import net.corda.data.crypto.wire.registration.hsm.HSMRegistrationRequest
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.schema.Schemas
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
@@ -20,18 +22,31 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeast
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertSame
 
 class HSMRegistrationClientComponentTests : AbstractComponentTests<HSMRegistrationClientComponentImpl>() {
+    private lateinit var publisher: Publisher
+    private lateinit var publisherFactory: PublisherFactory
+
     @BeforeEach
-    fun setup() = setup {
+    fun setup() = super.setup {
+        publisher = mock {
+            on { publish(any()) } doReturn listOf(CompletableFuture<Unit>().also { it.complete(Unit) })
+        }
+        publisherFactory = mock {
+            on { createPublisher(any(), any()) } doReturn publisher
+        }
         val instance = HSMRegistrationClientComponentImpl(coordinatorFactory)
         instance.putPublisherFactory(publisherFactory)
         instance

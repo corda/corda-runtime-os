@@ -10,11 +10,12 @@ import net.corda.v5.cipher.suite.schemes.SignatureScheme
 class CryptoMocks(
     schemeMetadataOverride: CipherSchemeMetadata? = null
 ) {
-    val persistenceFactoryProvider = InMemoryKeyValuePersistenceFactoryProvider()
-    val persistenceFactory: KeyValuePersistenceFactory = persistenceFactoryProvider.get()
-
     val schemeMetadata: CipherSchemeMetadata =
         schemeMetadataOverride ?: CipherSchemeMetadataProviderImpl().getInstance()
+
+    /*
+    val persistenceFactoryProvider = InMemoryKeyValuePersistenceFactoryProvider()
+    val persistenceFactory: KeyValuePersistenceFactory = persistenceFactoryProvider.get()
 
     val factories = Factories(this)
 
@@ -38,4 +39,5 @@ class CryptoMocks(
         fun cryptoClients(memberId: String): MockCryptoLibraryClientsFactory =
             MockCryptoLibraryClientsFactory(mocks, memberId)
     }
+     */
 }
