@@ -121,14 +121,14 @@ class BloomFilterTest {
         val expectedItemCount = 10
         val falsePositiveRate = 0.99999999999999999999
 
-        val bloomFilter = createBloomFilter(
+        createBloomFilter(
             expectedItemCount, falsePositiveRate, 99
-        )
+        ).apply {
+            assertEquals(0, this.filterLength)
 
-        assertEquals(0, bloomFilter.filterLength)
-
-        assertThrows<IllegalArgumentException> {
-            bloomFilter.possiblyContains(testElement)
+            assertThrows<IllegalArgumentException> {
+                this.possiblyContains(testElement)
+            }
         }
     }
 
@@ -137,14 +137,14 @@ class BloomFilterTest {
         val expectedItemCount = 0
         val falsePositiveRate = 0.5
 
-        val bloomFilter = createBloomFilter(
+        createBloomFilter(
             expectedItemCount, falsePositiveRate, 99
-        )
+        ).apply {
+            assertEquals(0, this.numberOfHashFunctions)
 
-        assertEquals(0, bloomFilter.numberOfHashFunctions)
-
-        assertThrows<IllegalArgumentException> {
-            bloomFilter.possiblyContains(testElement)
+            assertThrows<IllegalArgumentException> {
+                this.possiblyContains(testElement)
+            }
         }
     }
 }
