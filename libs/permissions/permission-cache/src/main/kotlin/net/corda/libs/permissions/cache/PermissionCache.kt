@@ -13,6 +13,7 @@ interface PermissionCache : Lifecycle {
     val users: Map<String, User>
     val groups: Map<String, Group>
     val roles: Map<String, Role>
+    val permissions: Map<String, Permission>
 
     fun getUser(loginName: String): User?
     fun getGroup(groupId: String): Group?

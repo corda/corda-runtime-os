@@ -40,7 +40,7 @@ class PermissionStorageWriterProcessorImpl(
                 is CreatePermissionRequest -> {
                     val avroPermission = permissionWriter.createPermission(permissionRequest, request.requestUserId,
                         request.virtualNodeId)
-                    // Nothing to publish as permissions are only available through associations with roles
+                    permissionStorageReader.publishNewPermission(avroPermission)
                     avroPermission
                 }
                 else -> throw IllegalArgumentException("Received invalid permission request type")
