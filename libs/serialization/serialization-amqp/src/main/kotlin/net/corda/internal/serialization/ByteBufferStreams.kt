@@ -11,7 +11,7 @@ import java.util.Arrays
 import kotlin.math.min
 
 @Suppress("ForbiddenComment")
-// TODO: this static is subject to leaking between CPKs and needs to be issued
+// TODO: this static is subject to leaking between CPKs and will be issued with https://r3-cev.atlassian.net/browse/CORE-3344.
 internal val serializeOutputStreamPool = LazyPool(
         clear = ByteBufferOutputStream::reset,
         shouldReturnToPool = { it.size() < 256 * 1024 }, // Discard if it grew too large
