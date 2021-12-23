@@ -77,7 +77,8 @@ class Sender(private val publisherFactory: PublisherFactory,
                         }
                         stopLock.read {
                             if(!stop) {
-                                val futures = publisher.publish(records)
+                                publisher.publish(records)
+                                    .forEach { it.get() }
 
                                 if (dbConnection?.connection != null) {
                                     val messageSentEvents = messageWithIds.map { (messageId, _) ->
@@ -85,7 +86,6 @@ class Sender(private val publisherFactory: PublisherFactory,
                                     }
                                     writeSentMessagesToDb(dbConnection, messageSentEvents)
                                 }
-                                futures.forEach { it.get() }
                             }
                         }
 
