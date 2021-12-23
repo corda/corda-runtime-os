@@ -17,6 +17,7 @@ import net.corda.libs.configuration.write.impl.entities.ConfigAuditEntity
 import net.corda.libs.configuration.write.impl.entities.ConfigEntity
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.orm.utils.use
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -49,19 +50,13 @@ internal class DBUtilsImpl @Activate constructor(
         }
     }
 
-    override fun writeEntities(config: SmartConfig, newConfig: ConfigEntity, newConfigAudit: ConfigAuditEntity) {
-        val entityManager = createEntityManager(config)
-
-        try {
+    override fun writeEntities(config: SmartConfig, newConfig: ConfigEntity, newConfigAudit: ConfigAuditEntity) =
+        createEntityManager(config).use { entityManager ->
             entityManager.transaction.begin()
             entityManager.merge(newConfig)
             entityManager.persist(newConfigAudit)
             entityManager.transaction.commit()
-
-        } finally {
-            entityManager.close()
         }
-    }
 
     override fun readConfigEntity(config: SmartConfig, section: String): ConfigEntity? {
         val entityManager = createEntityManager(config)
