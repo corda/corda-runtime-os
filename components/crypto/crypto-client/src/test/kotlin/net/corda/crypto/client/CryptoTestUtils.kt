@@ -8,7 +8,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.bouncycastle.jce.ECNamedCurveTable
@@ -27,7 +26,6 @@ import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Signature
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 import kotlin.reflect.full.memberFunctions
 import kotlin.reflect.jvm.isAccessible
 
@@ -59,7 +57,7 @@ inline fun <reified R> Publisher.act(
 }
 
 inline fun <reified REQUEST: Any, reified RESPONSE: Any, reified RESULT: Any> RPCSender<REQUEST, RESPONSE>.act(
-    block: () -> RESULT
+    block: () -> RESULT?
 ): SendActResult<REQUEST, RESULT> {
     val result = actWithTimer(block)
     val messages = argumentCaptor<REQUEST>()
@@ -103,7 +101,7 @@ data class PublishActResult<R>(
 data class SendActResult<REQUEST, RESPONSE>(
     val before: Instant,
     val after: Instant,
-    val value: RESPONSE,
+    val value: RESPONSE?,
     val messages: List<REQUEST>
 ) {
     val firstRequest: REQUEST get() = messages.first()

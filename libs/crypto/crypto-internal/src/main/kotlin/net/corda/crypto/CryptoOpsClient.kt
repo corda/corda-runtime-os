@@ -14,6 +14,11 @@ import java.util.UUID
  */
 interface CryptoOpsClient {
     /**
+     * Returns the list of schemes codes which are supported by the associated HSM integration.
+     */
+    fun getSupportedSchemes(tenantId: String, category: String): List<String>
+
+    /**
      * Returns the public key for the given alias.
      *
      * @param tenantId The tenant owning the key.

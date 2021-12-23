@@ -30,6 +30,7 @@ dependencies {
     testImplementation project(":testing:crypto-testkit")
     testImplementation project(":testing:test-utilities")
     testImplementation project(":libs:configuration:configuration-core")
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
 
 description 'Crypto Client'

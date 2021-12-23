@@ -1,8 +1,10 @@
 package net.corda.crypto.client
 
 import net.corda.crypto.CryptoConsts
+import net.corda.crypto.CryptoPublishResult
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.config.HSMInfo
+import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.registration.hsm.AddHSMCommand
 import net.corda.data.crypto.wire.registration.hsm.AssignHSMCommand
 import net.corda.data.crypto.wire.registration.hsm.AssignSoftHSMCommand
@@ -28,6 +30,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -50,6 +53,27 @@ class HSMRegistrationClientComponentTests : AbstractComponentTests<HSMRegistrati
         val instance = HSMRegistrationClientComponentImpl(coordinatorFactory)
         instance.putPublisherFactory(publisherFactory)
         instance
+    }
+
+    private fun assertRequestContext(
+        result: PublishActResult<CryptoPublishResult>,
+        expectedTenantId: String
+    ): HSMRegistrationRequest {
+        val req = result.firstRecord.value as HSMRegistrationRequest
+        val context = req.context
+        assertEquals(expectedTenantId, context.tenantId)
+        assertEquals(result.value.requestId, context.requestId)
+        result.assertThatIsBetween(context.requestTimestamp)
+        assertEquals(HSMRegistrationPublisher::class.simpleName, context.requestingComponent)
+        assertThat(context.other.items, empty())
+        return req
+    }
+
+    private inline fun <reified OP> assertOperationType(result: PublishActResult<CryptoPublishResult>): OP {
+        val req = result.firstRecord.value as HSMRegistrationRequest
+        Assertions.assertNotNull(req.request)
+        assertThat(req.request, IsInstanceOf(OP::class.java))
+        return req.request as OP
     }
 
     @Test
@@ -81,19 +105,12 @@ class HSMRegistrationClientComponentTests : AbstractComponentTests<HSMRegistrati
         assertEquals(Schemas.Crypto.HSM_REGISTRATION_MESSAGE_TOPIC, result.firstRecord.topic)
         assertEquals(CryptoConsts.CLUSTER_TENANT_ID, result.firstRecord.key)
         assertThat(result.firstRecord.value, IsInstanceOf(HSMRegistrationRequest::class.java))
-        val req = result.firstRecord.value as HSMRegistrationRequest
-        assertThat(req.request, IsInstanceOf(AddHSMCommand::class.java))
-        val command = req.request as AddHSMCommand
+        assertRequestContext(result, CryptoConsts.CLUSTER_TENANT_ID)
+        val command = assertOperationType<AddHSMCommand>(result)
         assertSame(config, command.config)
         assertNotNull(command.context)
         assertNotNull(command.context.items)
         assertThat(command.context.items, empty())
-        val context = req.context
-        assertEquals(CryptoConsts.CLUSTER_TENANT_ID, context.tenantId)
-        assertEquals(result.value.requestId, context.requestId)
-        result.assertThatIsBetween(context.requestTimestamp)
-        assertEquals(HSMRegistrationPublisher::class.simpleName, context.requestingComponent)
-        assertThat(context.other.items, empty())
     }
 
     @Test
@@ -112,20 +129,14 @@ class HSMRegistrationClientComponentTests : AbstractComponentTests<HSMRegistrati
         assertEquals(Schemas.Crypto.HSM_REGISTRATION_MESSAGE_TOPIC, result.firstRecord.topic)
         assertEquals(CryptoConsts.CLUSTER_TENANT_ID, result.firstRecord.key)
         assertThat(result.firstRecord.value, IsInstanceOf(HSMRegistrationRequest::class.java))
-        val req = result.firstRecord.value as HSMRegistrationRequest
-        assertThat(req.request, IsInstanceOf(AssignHSMCommand::class.java))
-        val command = req.request as AssignHSMCommand
+        val req = assertRequestContext(result, "some-tenant")
+        assertEquals("some-tenant", req.context.tenantId)
+        val command = assertOperationType<AssignHSMCommand>(result)
         assertEquals (CryptoConsts.CryptoCategories.LEDGER, command.category)
         assertEquals(EDDSA_ED25519_CODE_NAME, command.defaultSignatureScheme)
         assertNotNull(command.context)
         assertNotNull(command.context.items)
         assertThat(command.context.items, empty())
-        val context = req.context
-        assertEquals("some-tenant", context.tenantId)
-        assertEquals(result.value.requestId, context.requestId)
-        result.assertThatIsBetween(context.requestTimestamp)
-        assertEquals(HSMRegistrationPublisher::class.simpleName, context.requestingComponent)
-        assertThat(context.other.items, empty())
     }
 
     @Test
@@ -145,21 +156,15 @@ class HSMRegistrationClientComponentTests : AbstractComponentTests<HSMRegistrati
         assertEquals(Schemas.Crypto.HSM_REGISTRATION_MESSAGE_TOPIC, result.firstRecord.topic)
         assertEquals(CryptoConsts.CLUSTER_TENANT_ID, result.firstRecord.key)
         assertThat(result.firstRecord.value, IsInstanceOf(HSMRegistrationRequest::class.java))
-        val req = result.firstRecord.value as HSMRegistrationRequest
-        assertThat(req.request, IsInstanceOf(AssignSoftHSMCommand::class.java))
-        val command = req.request as AssignSoftHSMCommand
+        val req = assertRequestContext(result, "some-tenant")
+        assertEquals("some-tenant", req.context.tenantId)
+        val command = assertOperationType<AssignSoftHSMCommand>(result)
         assertEquals (CryptoConsts.CryptoCategories.LEDGER, command.category)
         assertEquals ("1234", command.passphrase)
         assertEquals(EDDSA_ED25519_CODE_NAME, command.defaultSignatureScheme)
         assertNotNull(command.context)
         assertNotNull(command.context.items)
         assertThat(command.context.items, empty())
-        val context = req.context
-        assertEquals("some-tenant", context.tenantId)
-        assertEquals(result.value.requestId, context.requestId)
-        result.assertThatIsBetween(context.requestTimestamp)
-        assertEquals(HSMRegistrationPublisher::class.simpleName, context.requestingComponent)
-        assertThat(context.other.items, empty())
     }
 
     @Test

@@ -55,6 +55,9 @@ class CryptoOpsClientComponentImpl(
         createResources()
     }
 
+    override fun getSupportedSchemes(tenantId: String, category: String): List<String> =
+        resources.instance.getSupportedSchemes(tenantId, category)
+
     override fun findPublicKey(tenantId: String, alias: String): PublicKey? =
         resources.instance.findPublicKey(tenantId, alias)
 
