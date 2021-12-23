@@ -1,6 +1,6 @@
 package net.corda.dependency.injection
 
-import net.corda.virtualnode.sandboxgroup.SandboxGroupContext
+import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 
 
 /**
@@ -15,7 +15,7 @@ interface DependencyInjectionBuilder {
      *
      * @param sandboxGroupContext The instance of the sandbox to associate the injector with.
      */
-    fun addSandboxDependencies(sandboxGroupContext: SandboxGroupContext)
+    fun addSandboxDependencies(sandboxGroupContext: MutableSandboxGroupContext)
 
     /**
      * @return the configured instance of the [FlowDependencyInjector]

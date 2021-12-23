@@ -62,6 +62,7 @@ dependencies {
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     integrationTestRuntimeOnly project(':libs:crypto:crypto-impl')
+    integrationTestRuntimeOnly project(':libs:sandbox-internal')
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

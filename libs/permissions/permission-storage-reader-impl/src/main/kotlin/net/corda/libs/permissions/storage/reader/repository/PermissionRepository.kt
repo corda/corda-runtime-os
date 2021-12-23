@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.storage.reader.repository
 
 import net.corda.permissions.model.Group
+import net.corda.permissions.model.Permission
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.User
 
@@ -29,6 +30,13 @@ interface PermissionRepository {
      * @return The [Role] entities that exist in the database.
      */
     fun findAllRoles(): List<Role>
+
+    /**
+     * Find all permissions.
+     *
+     * @return The [Permission] entities that exist in the database.
+     */
+    fun findAllPermissions(): List<Permission>
 
     /**
      * Find all users with that match any of the passed in [ids] (uses an `IN`) clause.

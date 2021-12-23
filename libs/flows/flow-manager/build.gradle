@@ -20,5 +20,6 @@ dependencies {
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:serialization:checkpoint-serialization-api')
     implementation project(':libs:sandbox')
-    implementation project(':libs:virtual-node:sandbox-group-service')
+    implementation project(':libs:virtual-node:sandbox-group-context')
+    implementation project(':libs:virtual-node:virtual-node-info')
 }

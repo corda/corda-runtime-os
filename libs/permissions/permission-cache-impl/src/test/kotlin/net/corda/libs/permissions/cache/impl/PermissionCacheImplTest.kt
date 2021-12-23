@@ -23,7 +23,8 @@ internal class PermissionCacheImplTest {
     private val userData = ConcurrentHashMap<String, User>()
     private val groupData = ConcurrentHashMap<String, Group>()
     private val roleData = ConcurrentHashMap<String, Role>()
-    private val permissionCache: PermissionCache = PermissionCacheImpl(userData, groupData, roleData)
+    private val permissionData = ConcurrentHashMap<String, Permission>()
+    private val permissionCache: PermissionCache = PermissionCacheImpl(userData, groupData, roleData, permissionData)
 
     private val user1 = User("id1", 1, ChangeDetails(Instant.now()), "user-login1", "full name", true,
         "hashedPassword", "saltValue", null, false, null, null, emptyList())
@@ -36,9 +37,9 @@ internal class PermissionCacheImplTest {
         emptyList(), listOf(RoleAssociation(ChangeDetails(Instant.now()), "role1"), RoleAssociation(ChangeDetails(Instant.now()), "role2")))
 
     private val permission1 = Permission("perm1", 0, ChangeDetails(Instant.now()), "virtNode1",
-        "*", group1.id, PermissionType.ALLOW)
+        PermissionType.ALLOW, "*", group1.id)
     private val permission2 = Permission("perm2", 0, ChangeDetails(Instant.now()), "virtNode2",
-        "*", group1.id, PermissionType.DENY)
+        PermissionType.DENY, "*", group1.id)
 
     private val role1 = Role("role1", 0, ChangeDetails(Instant.now()), "admin", group1.id,
         listOf(PermissionAssociation(ChangeDetails(Instant.now()), permission1)))
@@ -53,6 +54,8 @@ internal class PermissionCacheImplTest {
         groupData[group2.id] = group2
         roleData[role1.id] = role1
         roleData[role2.id] = role2
+        permissionData[permission1.id] = permission1
+        permissionData[permission2.id] = permission2
         permissionCache.start()
     }
 
@@ -122,5 +125,17 @@ internal class PermissionCacheImplTest {
         assertEquals(2, rolesMap.size, "GetRoles should return all roles in the map.")
         assertTrue(roleIds.containsAll(listOf(role1.id, role2.id)), "GetRoles result should contain role IDs as keys.")
         assertTrue(roles.containsAll(listOf(role1, role2)), "GetRoles result should contain expected roles in the map.")
+    }
+
+    @Test
+    fun getPermissions() {
+        val permissionsMap = permissionCache.permissions
+        val permissionIds = permissionsMap.keys
+        val permissions = permissionsMap.values
+        assertEquals(2, permissionsMap.size, "GetPermissions should return all permissions in the map.")
+        assertTrue(permissionIds.containsAll(listOf(permission1.id, permission2.id)),
+            "GetPermissions result should contain permission IDs as keys.")
+        assertTrue(permissions.containsAll(listOf(permission1, permission2)),
+            "GetPermissions result should contain expected permissions in the map.")
     }
 }

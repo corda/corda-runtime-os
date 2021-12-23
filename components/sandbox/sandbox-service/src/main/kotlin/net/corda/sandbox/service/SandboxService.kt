@@ -1,17 +1,20 @@
 package net.corda.sandbox.service
 
-import net.corda.lifecycle.Lifecycle
-import net.corda.sandbox.SandboxGroup
+import net.corda.packaging.CPI
+import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
+import net.corda.sandboxgroupcontext.SandboxGroupType
+import net.corda.virtualnode.HoldingIdentity
 
 /**
- * Placeholder until sandbox/cpi team introduce something better
- *
+ * Sandbox group context service with an extra convenience method specifically for CPIs.
  */
-interface SandboxService : Lifecycle {
-
-    /**
-     * Get the sandbox for a given [cpiId], [identity] and [sandboxType].
-     * Creates a new sandbox if it doesn't already exist.
-     */
-    fun getSandboxGroupFor(cpiId: String, identity: String, sandboxType: SandboxType): SandboxGroup
+interface SandboxService : SandboxGroupContextComponent {
+    fun getOrCreateByCpiIdentifier(
+        holdingIdentity: HoldingIdentity,
+        cpiIdentifier: CPI.Identifier,
+        sandboxGroupType: SandboxGroupType,
+        initializer: SandboxGroupContextInitializer
+    ): SandboxGroupContext
 }

@@ -38,12 +38,9 @@ data class SerializationContextImpl @JvmOverloads constructor(
     override val encodingWhitelist: EncodingWhitelist = SnappyEncodingWhitelist,
     override val preventDataLoss: Boolean = false,
     override val customSerializers: Set<SerializationCustomSerializer<*, *>>? = null,
-    // TODO this needs chaning in corda-api repo
-    override val classInfoService: Any? = null,
     override val sandboxGroup: Any? = null
 ) : SerializationContext {
 
-    override fun withClassInfoService(classInfoService: Any): SerializationContext = copy(classInfoService = classInfoService)
     override fun withClassLoader(classLoader: ClassLoader): SerializationContext {
         TODO("Not yet implemented")
     }

@@ -4,6 +4,7 @@ import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
 import net.corda.libs.permissions.storage.writer.factory.PermissionStorageWriterProcessorFactory
 import net.corda.libs.permissions.storage.writer.impl.PermissionStorageWriterProcessorImpl
+import net.corda.libs.permissions.storage.writer.impl.permission.impl.PermissionWriterImpl
 import org.osgi.service.component.annotations.Component
 import javax.persistence.EntityManagerFactory
 import net.corda.libs.permissions.storage.writer.impl.role.impl.RoleWriterImpl
@@ -16,7 +17,8 @@ class PermissionStorageWriterProcessorFactoryImpl : PermissionStorageWriterProce
         return PermissionStorageWriterProcessorImpl(
             reader,
             UserWriterImpl(entityManagerFactory),
-            RoleWriterImpl(entityManagerFactory)
+            RoleWriterImpl(entityManagerFactory),
+            PermissionWriterImpl(entityManagerFactory)
         )
     }
 }
