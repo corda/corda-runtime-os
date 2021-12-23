@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.role.types
 
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionAssocResponseType
+import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionAssociationResponseType
 import java.time.Instant
 
 /**
@@ -36,5 +36,5 @@ data class RoleResponseType(
     /**
      * List of permission associations the Role has.
      */
-    val permissions: List<PermissionAssocResponseType>
+    val permissions: List<PermissionAssociationResponseType>
 )

@@ -1,7 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.converter
 
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionAssocResponseType
+import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionAssociationResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
@@ -12,7 +12,7 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.request.CreatePermissionRequestDto
 import net.corda.libs.permissions.manager.request.CreateRoleRequestDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
-import net.corda.libs.permissions.manager.response.PermissionAssocResponseDto
+import net.corda.libs.permissions.manager.response.PermissionAssociationResponseDto
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
@@ -103,8 +103,8 @@ fun RoleResponseDto.convertToEndpointType(): RoleResponseType {
     )
 }
 
-fun PermissionAssocResponseDto.convertToEndpointType(): PermissionAssocResponseType {
-    return PermissionAssocResponseType(id, createdTimestamp)
+fun PermissionAssociationResponseDto.convertToEndpointType(): PermissionAssociationResponseType {
+    return PermissionAssociationResponseType(id, createdTimestamp)
 }
 
 /**

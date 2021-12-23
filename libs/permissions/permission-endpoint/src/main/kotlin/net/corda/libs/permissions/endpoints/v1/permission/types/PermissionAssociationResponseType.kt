@@ -5,7 +5,7 @@ import java.time.Instant
 /**
  * Response type representing a Permission association to be returned to the caller.
  */
-data class PermissionAssocResponseType(
+data class PermissionAssociationResponseType(
 
     /**
      * Id of the Permission.

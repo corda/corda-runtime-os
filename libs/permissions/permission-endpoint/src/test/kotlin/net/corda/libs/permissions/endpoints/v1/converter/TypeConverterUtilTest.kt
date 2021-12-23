@@ -5,7 +5,7 @@ import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import java.time.Instant
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
-import net.corda.libs.permissions.manager.response.PermissionAssocResponseDto
+import net.corda.libs.permissions.manager.response.PermissionAssociationResponseDto
 import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
@@ -80,11 +80,11 @@ class TypeConverterUtilTest {
     fun `convert RoleResponseDto to RoleResponseTypes contains PermissionResponseDtos`() {
         val earlier = Instant.now()
         val now = Instant.now()
-        val permissionAssocResponseDto = PermissionAssocResponseDto(
+        val permissionAssociationResponseDto = PermissionAssociationResponseDto(
             "permission1",
             now
         )
-        val permissionAssocResponseDto2 = PermissionAssocResponseDto(
+        val permissionAssociationResponseDto2 = PermissionAssociationResponseDto(
             "permission2",
             earlier
         )
@@ -94,7 +94,7 @@ class TypeConverterUtilTest {
             lastUpdatedTimestamp = now,
             roleName = "name1",
             groupVisibility = "group1",
-            permissions = listOf(permissionAssocResponseDto, permissionAssocResponseDto2)
+            permissions = listOf(permissionAssociationResponseDto, permissionAssociationResponseDto2)
         )
 
         val type = dto.convertToEndpointType()
@@ -106,10 +106,10 @@ class TypeConverterUtilTest {
         assertEquals("group1", type.groupVisibility)
         assertEquals(2, type.permissions.size)
 
-        assertEquals(permissionAssocResponseDto.id, type.permissions[0].id)
+        assertEquals(permissionAssociationResponseDto.id, type.permissions[0].id)
         assertEquals(now, type.permissions[0].createdTimestamp)
 
-        assertEquals(permissionAssocResponseDto2.id, type.permissions[1].id)
+        assertEquals(permissionAssociationResponseDto2.id, type.permissions[1].id)
         assertEquals(earlier, type.permissions[1].createdTimestamp)
     }
 
