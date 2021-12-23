@@ -29,7 +29,7 @@
         "type": "array",
         "items": "net.corda.data.permissions.PermissionAssociation"
       },
-      "doc": "List of a role's permissions and when they were last updated."
+      "doc": "List of a role's permissions ids and when they were last updated."
     }
   ]
 }
