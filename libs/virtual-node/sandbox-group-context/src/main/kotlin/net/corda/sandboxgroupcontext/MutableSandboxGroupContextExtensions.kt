@@ -6,7 +6,7 @@ package net.corda.sandboxgroupcontext
  * @throws IllegalArgumentException if you call this again for the same type AND key
  */
 inline fun <reified T : Any> MutableSandboxGroupContext.putObjectByKey(key: String, value: T) =
-    this.put(key, value::class.java, value)
+    this.put(key, value)
 
 /**
  * Put an object into the sandbox group context object cache with an implicit key that is the class name.
@@ -14,4 +14,4 @@ inline fun <reified T : Any> MutableSandboxGroupContext.putObjectByKey(key: Stri
  * @throws IllegalArgumentException if you call this again for the same type
  */
 inline fun <reified T : Any> MutableSandboxGroupContext.putUniqueObject(value: T) =
-    this.put(value::class.java.name, value::class.java, value)
+    this.put(value::class.java.name, value)

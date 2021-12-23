@@ -50,7 +50,7 @@ class SandboxGroupContextTest {
     @Test
     fun `can create an simple object`() {
         val dog = Dog("Fido", "Woof!")
-        sandboxGroupContext.put(dog.name, dog::class.java, dog)
+        sandboxGroupContext.put(dog.name, dog)
 
         val actualDog = sandboxGroupContext.get(dog.name, Dog::class.java)
 

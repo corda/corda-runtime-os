@@ -78,8 +78,8 @@ class SandboxGroupContextServiceImpl(
         private val sandboxGroupContext: SandboxGroupContextImpl,
         private val closeable: AutoCloseable
     ) : MutableSandboxGroupContext, AutoCloseable {
-        override fun <T : Any> put(key: String, valueType: Class<out T>, value: T) =
-            sandboxGroupContext.put(key, valueType, value)
+        override fun <T : Any> put(key: String, value: T) =
+            sandboxGroupContext.put(key, value)
 
         override val virtualNodeContext: VirtualNodeContext
             get() = sandboxGroupContext.virtualNodeContext

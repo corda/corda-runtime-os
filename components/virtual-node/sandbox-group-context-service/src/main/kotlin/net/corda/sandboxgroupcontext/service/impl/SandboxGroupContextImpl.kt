@@ -18,19 +18,15 @@ class SandboxGroupContextImpl(
     override val sandboxGroup: SandboxGroup
 ) :  MutableSandboxGroupContext {
 
-    private data class TypedValue(val valueType: Class<*>, val value: Any)
+    private val objectByKey = ConcurrentHashMap<String, Any>()
 
-    private val objectByKey = ConcurrentHashMap<String, TypedValue>()
-
-    override fun <T : Any> put(key: String, valueType: Class<out T>, value: T) {
-        if (objectByKey.putIfAbsent(key, TypedValue(valueType, value)) != null) {
-            throw IllegalArgumentException("Attempt to overwrite existing object in cache with key:  $key")
+    override fun <T : Any> put(key: String, value: T) {
+        if (objectByKey.putIfAbsent(key, value) != null) {
+            throw IllegalArgumentException("Attempt to overwrite existing object in cache with key: $key")
         }
     }
 
     override fun <T : Any> get(key: String, valueType: Class<out T>): T? {
-        return objectByKey[key]?.let { typedValue ->
-            valueType.cast(typedValue.value)
-        }
+        return objectByKey[key]?.let(valueType::cast)
     }
 }
