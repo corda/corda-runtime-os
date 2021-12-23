@@ -19,7 +19,7 @@ dependencies {
 
     implementation project(':libs:configuration:configuration-core')
     implementation project(':components:kafka-topic-admin')
-    implementation project(":components:configuration:configuration-write-service")
+    implementation project(":components:configuration:configuration-publish-service")
     implementation project(":osgi-framework-api")
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
@@ -27,10 +27,9 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
-    runtimeOnly project(':components:configuration:configuration-write-service-impl')
+    runtimeOnly project(':components:configuration:configuration-publish-service-impl')
     runtimeOnly project(':components:kafka-topic-admin')
     runtimeOnly project(":libs:configuration:configuration-write-impl")
-    runtimeOnly project(":libs:configuration:configuration-write-persistent-impl")
     runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")

@@ -1,9 +1,9 @@
 @file:Suppress("DEPRECATION")
 
-package net.corda.configuration.write.impl.tests
+package net.corda.configuration.publish.impl.tests
 
-import net.corda.configuration.write.EphemeralConfigWriteService
-import net.corda.configuration.write.impl.EphemeralConfigWriteServiceImpl
+import net.corda.configuration.publish.ConfigPublishService
+import net.corda.configuration.publish.impl.ConfigPublishServiceImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.ConfigWriter
 import net.corda.libs.configuration.write.CordaConfigurationKey
@@ -22,8 +22,8 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.io.BufferedReader
 
-class EphemeralConfigWriteServiceImplTest {
-    private lateinit var ephemeralConfigWriteService: EphemeralConfigWriteService
+class ConfigPublishServiceImplTest {
+    private lateinit var configPublishService: ConfigPublishService
     private val configWriterFactory: ConfigWriterFactory = mock()
     private val configWriter: ConfigWriter = mock()
     private val config: SmartConfig = mock()
@@ -33,7 +33,7 @@ class EphemeralConfigWriteServiceImplTest {
 
     @BeforeEach
     fun beforeEach() {
-        ephemeralConfigWriteService = EphemeralConfigWriteServiceImpl(configWriterFactory)
+        configPublishService = ConfigPublishServiceImpl(configWriterFactory)
         Mockito.`when`(configWriterFactory.createWriter(any(), any()))
             .thenReturn(configWriter)
     }
@@ -42,7 +42,7 @@ class EphemeralConfigWriteServiceImplTest {
     fun `test config is read and saved properly`() {
         val configString = readConfigFile("config.conf")
 
-        ephemeralConfigWriteService.updateConfig("dummyTopic", config, configString)
+        configPublishService.updateConfig("dummyTopic", config, configString)
 
         val cordaDatabaseKey = CordaConfigurationKey(
             "corda",
@@ -64,7 +64,7 @@ class EphemeralConfigWriteServiceImplTest {
     @Test
     fun `test nested config does not cause issues `() {
         val configString = readConfigFile("nestedConfig.conf")
-        ephemeralConfigWriteService.updateConfig("dummyTopic", config, configString)
+        configPublishService.updateConfig("dummyTopic", config, configString)
 
         val cordaDatabaseKey = CordaConfigurationKey(
             "corda",
@@ -86,7 +86,7 @@ class EphemeralConfigWriteServiceImplTest {
     @Test
     fun `test saving multi package configs while filtering out unversioned packages `() {
         val configString = readConfigFile("multipleConfig.conf")
-        ephemeralConfigWriteService.updateConfig("dummyTopic", config, configString)
+        configPublishService.updateConfig("dummyTopic", config, configString)
 
         val cordaDatabaseKey = CordaConfigurationKey(
             "corda",
@@ -122,7 +122,7 @@ class EphemeralConfigWriteServiceImplTest {
     @Test
     fun `test unversioned config and rogue properties are filtered out and correct config is saved`() {
         val configString = readConfigFile("badConfig.conf")
-        ephemeralConfigWriteService.updateConfig("dummyTopic", config, configString)
+        configPublishService.updateConfig("dummyTopic", config, configString)
 
         val cordaDatabaseKey = CordaConfigurationKey(
             "corda",

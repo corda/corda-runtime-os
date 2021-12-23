@@ -1,11 +1,11 @@
 @file:Suppress("DEPRECATION")
 
-package net.corda.configuration.write.impl
+package net.corda.configuration.publish.impl
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
-import net.corda.configuration.write.EphemeralConfigWriteService
+import net.corda.configuration.publish.ConfigPublishService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.ConfigWriter
 import net.corda.libs.configuration.write.CordaConfigurationKey
@@ -17,11 +17,11 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
-@Component(immediate = true, service = [EphemeralConfigWriteService::class])
-class EphemeralConfigWriteServiceImpl @Activate constructor(
+@Component(immediate = true, service = [ConfigPublishService::class])
+class ConfigPublishServiceImpl @Activate constructor(
     @Reference(service = ConfigWriterFactory::class)
     private val configWriterFactory: ConfigWriterFactory
-): EphemeralConfigWriteService {
+): ConfigPublishService {
     private lateinit var writer: ConfigWriter
 
     private companion object {

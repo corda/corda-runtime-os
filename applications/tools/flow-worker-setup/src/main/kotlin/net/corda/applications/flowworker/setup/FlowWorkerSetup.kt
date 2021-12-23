@@ -4,7 +4,7 @@ import net.corda.applications.flowworker.setup.helper.getHelloWorldRPCEventRecor
 import net.corda.applications.flowworker.setup.helper.getHelloWorldScheduleCleanupEvent
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.components.examples.publisher.CommonPublisher
-import net.corda.configuration.write.EphemeralConfigWriteService
+import net.corda.configuration.publish.ConfigPublishService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -46,8 +46,8 @@ class FlowWorkerSetup @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = EphemeralConfigWriteService::class)
-    private var configWriter: EphemeralConfigWriteService,
+    @Reference(service = ConfigPublishService::class)
+    private var configPublish: ConfigPublishService,
     @Reference(service = KafkaTopicAdmin::class)
     private var kafkaTopicAdmin: KafkaTopicAdmin,
     @Reference(service = SmartConfigFactory::class)
@@ -141,7 +141,7 @@ class FlowWorkerSetup @Activate constructor(
         if (configurationFile != null) {
             log.info("Writing config to topic")
             consoleLogger.info("Writing config")
-            configWriter.updateConfig(
+            configPublish.updateConfig(
                 getConfigValue(ConfigHelper.SYSTEM_ENV_CONFIG_TOPIC_PATH, CONFIG_TOPIC),
                 config,
                 configurationFile.readText()
