@@ -79,7 +79,7 @@ class SandboxGroupContextServiceImpl(
     private class CloseableSandboxGroupContext(
         private val sandboxGroupContext: SandboxGroupContextImpl,
         private val closeable: AutoCloseable
-    ) : MutableSandboxGroupContext, SandboxGroupContext, AutoCloseable {
+    ) : MutableSandboxGroupContext, AutoCloseable {
         override fun <T : Any> put(key: String, valueType: KClass<T>, value: T) =
             sandboxGroupContext.put(key, valueType, value)
 

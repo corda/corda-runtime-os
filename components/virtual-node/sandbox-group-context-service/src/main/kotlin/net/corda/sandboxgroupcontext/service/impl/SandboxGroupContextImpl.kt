@@ -18,7 +18,7 @@ import kotlin.reflect.cast
 class SandboxGroupContextImpl(
     override val virtualNodeContext: VirtualNodeContext,
     override val sandboxGroup: SandboxGroup
-) :  MutableSandboxGroupContext, SandboxGroupContext {
+) :  MutableSandboxGroupContext {
 
     private data class TypedValue<T : Any>(val valueType: KClass<T>, val value: Any)
 
