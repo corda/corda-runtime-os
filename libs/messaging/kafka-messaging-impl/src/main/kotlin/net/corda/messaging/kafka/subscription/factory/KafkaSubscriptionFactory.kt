@@ -12,7 +12,6 @@ import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.PartitionAssignmentListener
@@ -245,6 +244,7 @@ class KafkaSubscriptionFactory @Activate constructor(
             PATTERN_RPC_RESPONDER
         )
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<String, RPCRequest>(avroSchemaRegistry)
+        val producerBuilder = KafkaProducerBuilderImpl(avroSchemaRegistry)
 
         val cordaAvroSerializer = CordaAvroSerializer<RESPONSE>(avroSchemaRegistry)
         val cordaAvroDeserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, rpcConfig.requestType)
@@ -252,7 +252,7 @@ class KafkaSubscriptionFactory @Activate constructor(
         return KafkaRPCSubscriptionImpl(
             config,
             consumerBuilder,
-            { publisherFactory.createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig) },
+            producerBuilder,
             responderProcessor,
             cordaAvroSerializer,
             cordaAvroDeserializer,

@@ -12,10 +12,11 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.kafka.producer.builder.ProducerBuilder
+import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
@@ -46,7 +47,7 @@ import kotlin.concurrent.withLock
 class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: Config,
     private val consumerBuilder: ConsumerBuilder<String, RPCResponse>,
-    private val publisherBuilder: () -> Publisher,
+    private val producerBuilder: ProducerBuilder,
     private val serializer: CordaAvroSerializer<REQUEST>,
     private val deserializer: CordaAvroDeserializer<RESPONSE>,
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
@@ -73,7 +74,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val topic = config.getString(TOPIC_NAME)
     private val responseTopic = config.getString(RESPONSE_TOPIC)
     private val futureTracker = FutureTracker<RESPONSE>()
-    private lateinit var publisher: Publisher
+    private lateinit var producer: CordaKafkaProducer
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaRPCSender-$topic",
@@ -131,7 +132,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             threadTmp
         }
         thread?.join(consumerThreadStopTimeout)
-        publisher.close()
+        producer.close()
     }
 
     private fun runConsumeLoop() {
@@ -140,7 +141,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc response consumer.  Attempt: $attempts" }
-                publisher = publisherBuilder()
+                producer = producerBuilder.createProducer(config.getConfig(ConfigProperties.KAFKA_PRODUCER))
                 consumerBuilder.createRPCConsumer(
                     config.getConfig(KAFKA_CONSUMER),
                     String::class.java,
@@ -270,7 +271,9 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             val record = Record(topic, correlationId, request)
             futureTracker.addFuture(correlationId, future, partition)
             try {
-                publisher.publish(listOf(record))
+                producer.beginTransaction()
+                producer.sendRecords(listOf(record))
+                producer.commitTransaction()
             } catch (ex: Exception) {
                 future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
                 log.error("Failed to publish. Exception: ${ex.message}", ex)

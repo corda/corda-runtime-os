@@ -91,8 +91,14 @@ class RPCSubscriptionIntegrationTest {
 
     @Test
     fun `start rpc sender and responder, send message, complete correctly`() {
-        rpcConfig =
-            RPCConfig(CLIENT_ID + 1, CLIENT_ID, TopicTemplates.RPC_TOPIC, String::class.java, String::class.java)
+        rpcConfig = RPCConfig(
+            CLIENT_ID + 1,
+            CLIENT_ID,
+            TopicTemplates.RPC_TOPIC,
+            String::class.java,
+            String::class.java,
+            1
+        )
         val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
 
         val rpcSub = subscriptionFactory.createRPCSubscription(
@@ -171,7 +177,8 @@ class RPCSubscriptionIntegrationTest {
             CLIENT_ID,
             TopicTemplates.RPC_TOPIC,
             RPCRequest::class.java,
-            RPCResponse::class.java
+            RPCResponse::class.java,
+            2
         )
         val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
 
@@ -218,8 +225,14 @@ class RPCSubscriptionIntegrationTest {
 
     @Test
     fun `start rpc sender and responder, send message, complete exceptionally`() {
-        rpcConfig =
-            RPCConfig(CLIENT_ID + 3, CLIENT_ID, TopicTemplates.RPC_TOPIC, String::class.java, String::class.java)
+        rpcConfig = RPCConfig(
+            CLIENT_ID + 3,
+            CLIENT_ID,
+            TopicTemplates.RPC_TOPIC,
+            String::class.java,
+            String::class.java,
+            3
+        )
         val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
 
         val rpcSub = subscriptionFactory.createRPCSubscription(
@@ -252,8 +265,14 @@ class RPCSubscriptionIntegrationTest {
 
     @Test
     fun `start rpc sender and responder, send message, complete with cancellation`() {
-        rpcConfig =
-            RPCConfig(CLIENT_ID + 5, CLIENT_ID, TopicTemplates.RPC_TOPIC, String::class.java, String::class.java)
+        rpcConfig = RPCConfig(
+            CLIENT_ID + 5,
+            CLIENT_ID,
+            TopicTemplates.RPC_TOPIC,
+            String::class.java,
+            String::class.java,
+            4
+        )
         val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
 
         val rpcSub = subscriptionFactory.createRPCSubscription(
@@ -286,8 +305,14 @@ class RPCSubscriptionIntegrationTest {
 
     @Test
     fun `start rpc sender and responder, send message, complete exceptionally due to repartition`() {
-        rpcConfig =
-            RPCConfig(CLIENT_ID + 6, CLIENT_ID, TopicTemplates.RPC_TOPIC, String::class.java, String::class.java)
+        rpcConfig = RPCConfig(
+            CLIENT_ID + 6,
+            CLIENT_ID,
+            TopicTemplates.RPC_TOPIC,
+            String::class.java,
+            String::class.java,
+            5
+        )
         val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
 
         val rpcSub = subscriptionFactory.createRPCSubscription(

@@ -11,9 +11,10 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.kafka.producer.builder.ProducerBuilder
+import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
@@ -37,7 +38,7 @@ import kotlin.concurrent.withLock
 class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: Config,
     private val consumerBuilder: ConsumerBuilder<String, RPCRequest>,
-    private val publisherBuilder: () -> Publisher,
+    private val producerBuilder: ProducerBuilder,
     private val responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>,
     private val serializer: CordaAvroSerializer<RESPONSE>,
     private val deserializer: CordaAvroDeserializer<REQUEST>,
@@ -51,7 +52,7 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
-    private lateinit var publisher: Publisher
+    private lateinit var producer: CordaKafkaProducer
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaRPCSubscription-$topic",
@@ -113,7 +114,7 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             threadTmp
         }
         thread?.join(consumerThreadStopTimeout)
-        publisher.close()
+        producer.close()
     }
 
     private fun runConsumeLoop() {
@@ -122,7 +123,7 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc consumer.  Attempt: $attempts" }
-                publisher = publisherBuilder()
+                producer = producerBuilder.createProducer(config.getConfig(ConfigProperties.KAFKA_PRODUCER))
                 consumerBuilder.createRPCConsumer(
                     config.getConfig(KAFKA_CONSUMER),
                     String::class.java,
@@ -213,7 +214,9 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 }
 
                 try {
-                    publisher.publishToPartition(listOf(Pair(rpcRequest.replyPartition, record)))
+                    producer.beginTransaction()
+                    producer.sendRecordsToPartitions(listOf(Pair(rpcRequest.replyPartition, record)))
+                    producer.commitTransaction()
                 } catch (ex: Exception) {
                     //intentionally swallowed
                     log.warn("Error publishing response", ex)

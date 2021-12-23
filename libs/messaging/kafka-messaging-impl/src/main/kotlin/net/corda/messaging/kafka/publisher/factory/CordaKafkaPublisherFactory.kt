@@ -12,6 +12,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.messaging.kafka.producer.builder.impl.KafkaProducerBuilderImpl
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.GROUP
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.INSTANCE_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_PUBLISHER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_RPC_SENDER
@@ -67,6 +68,7 @@ class CordaKafkaPublisherFactory @Activate constructor(
             .withValue(GROUP, ConfigValueFactory.fromAnyRef(rpcConfig.groupName))
             .withValue(TOPIC, ConfigValueFactory.fromAnyRef(rpcConfig.requestTopic))
             .withValue("clientName", ConfigValueFactory.fromAnyRef(rpcConfig.clientName))
+            .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(rpcConfig.instanceId))
 
         val publisherConfig = resolvePublisherConfiguration(
             publisherConfiguration,
@@ -76,13 +78,14 @@ class CordaKafkaPublisherFactory @Activate constructor(
         )
 
         val consumerBuilder = CordaKafkaConsumerBuilderImpl<String, RPCResponse>(avroSchemaRegistry)
+        val producerBuilder = KafkaProducerBuilderImpl(avroSchemaRegistry)
         val serializer = CordaAvroSerializer<REQUEST>(avroSchemaRegistry)
         val deserializer = CordaAvroDeserializer(avroSchemaRegistry, { _, _ -> }, rpcConfig.responseType)
 
         return CordaKafkaRPCSenderImpl(
             publisherConfig,
             consumerBuilder,
-            { createPublisher(PublisherConfig(rpcConfig.clientName), kafkaConfig) },
+            producerBuilder,
             serializer,
             deserializer,
             lifecycleCoordinatorFactory

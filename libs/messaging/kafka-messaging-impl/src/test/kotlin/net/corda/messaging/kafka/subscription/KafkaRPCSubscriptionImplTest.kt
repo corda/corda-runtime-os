@@ -10,8 +10,9 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.kafka.producer.builder.ProducerBuilder
+import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_RPC_RESPONDER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.kafka.publisher.CordaAvroSerializer
@@ -74,8 +75,8 @@ class KafkaRPCSubscriptionImplTest {
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private lateinit var kafkaConsumer: CordaKafkaConsumer<String, RPCRequest>
     private lateinit var consumerBuilder: ConsumerBuilder<String, RPCRequest>
-    private val publisherBuilder: () -> Publisher = mock()
-    private val publisher: Publisher = mock()
+    private val producerBuilder: ProducerBuilder = mock()
+    private val producer: CordaKafkaProducer = mock()
 
     @Captor
     private val captor = argumentCaptor<List<Pair<Int, Record<Int, RPCResponse>>>>()
@@ -86,7 +87,7 @@ class KafkaRPCSubscriptionImplTest {
         this.kafkaConsumer = kafkaConsumer
         this.consumerBuilder = consumerBuilder
 
-        whenever(publisherBuilder()).thenReturn(publisher)
+        doAnswer { producer }.whenever(producerBuilder).createProducer(any())
 
         doAnswer {
             requestRecord
@@ -105,7 +106,7 @@ class KafkaRPCSubscriptionImplTest {
         val subscription = KafkaRPCSubscriptionImpl(
             config,
             consumerBuilder,
-            publisherBuilder,
+            producerBuilder,
             processor,
             serializer,
             deserializer,
@@ -119,7 +120,7 @@ class KafkaRPCSubscriptionImplTest {
 
         verify(kafkaConsumer, times(1)).subscribeToTopic()
         assertThat(processor.incomingRecords.size).isEqualTo(1)
-        verify(publisher, times(1)).publishToPartition(captor.capture())
+        verify(producer, times(1)).sendRecordsToPartitions(captor.capture())
         val capturedValue = captor.firstValue
         assertEquals(capturedValue[0].second.value?.responseStatus, ResponseStatus.OK)
     }
@@ -130,7 +131,7 @@ class KafkaRPCSubscriptionImplTest {
         val subscription = KafkaRPCSubscriptionImpl(
             config,
             consumerBuilder,
-            publisherBuilder,
+            producerBuilder,
             processor,
             serializer,
             deserializer,
@@ -144,7 +145,7 @@ class KafkaRPCSubscriptionImplTest {
 
         verify(kafkaConsumer, times(1)).subscribeToTopic()
         assertThat(processor.incomingRecords.size).isEqualTo(1)
-        verify(publisher, times(1)).publishToPartition(captor.capture())
+        verify(producer, times(1)).sendRecordsToPartitions(captor.capture())
         val capturedValue = captor.firstValue
         assertEquals(capturedValue[0].second.value?.responseStatus, ResponseStatus.FAILED)
         assertEquals(
@@ -159,7 +160,7 @@ class KafkaRPCSubscriptionImplTest {
         val subscription = KafkaRPCSubscriptionImpl(
             config,
             consumerBuilder,
-            publisherBuilder,
+            producerBuilder,
             processor,
             serializer,
             deserializer,
@@ -173,7 +174,7 @@ class KafkaRPCSubscriptionImplTest {
 
         verify(kafkaConsumer, times(1)).subscribeToTopic()
         assertThat(processor.incomingRecords.size).isEqualTo(1)
-        verify(publisher, times(1)).publishToPartition(captor.capture())
+        verify(producer, times(1)).sendRecordsToPartitions(captor.capture())
         val capturedValue = captor.firstValue
         assertEquals(capturedValue[0].second.value?.responseStatus, ResponseStatus.CANCELLED)
     }
