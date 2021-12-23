@@ -3,12 +3,14 @@ package net.corda.session.mapper.service.integration
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartRPCFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.MessageDirection
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
@@ -21,15 +23,15 @@ import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.schema.Schemas.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Companion.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.Companion.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 import net.corda.session.mapper.service.FlowMapperService
-import net.corda.test.util.eventually
-import net.corda.v5.base.util.seconds
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -39,11 +41,15 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FlowMapperServiceIntegrationTest {
 
     private companion object {
         const val clientId = "clientId"
     }
+
+    private var setup = false
+
     @InjectService(timeout = 4000)
     lateinit var publisherFactory: PublisherFactory
 
@@ -59,63 +65,129 @@ class FlowMapperServiceIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var flowMapperService: FlowMapperService
 
-    @Test
-    fun testFlowMapperService() {
-        val publisher = publisherFactory.createPublisher(PublisherConfig(clientId))
-
-        val firstKey = "firstKey"
-        val secondKey = "secondKey"
-        val firstRpcRecord = FlowMapperEvent(MessageDirection.INBOUND, StartRPCFlow("","","",
-            HoldingIdentity("", ""), Instant.now(), ""))
-
-        publisher.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, firstKey, firstRpcRecord)))
-        publisher.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, firstKey, firstRpcRecord)))
-        publisher.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, firstKey, FlowMapperEvent(MessageDirection.OUTBOUND, SessionEvent(currentTimeMillis(), 3, SessionData())))))
-        setupConfig(publisher)
-        flowMapperService.start()
-
-        val flowEventLatch = CountDownLatch(3)
-        val flowEventSub = subscriptionFactory.createDurableSubscription(SubscriptionConfig("test-output-flow-event-1", FLOW_EVENT_TOPIC),
-            TestProcessor(flowEventLatch), SmartConfigImpl.empty(),null)
-        flowEventSub.start()
-
-        //validate 2 records sent to flow event
-        publisher.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, secondKey, firstRpcRecord)))
-        eventually(duration = 5.seconds) {
-            assertThat(flowEventLatch.count).isEqualTo(1)
+    @BeforeEach
+    fun setup() {
+        if (!setup) {
+            setup = true
+            val publisher = publisherFactory.createPublisher(PublisherConfig(clientId))
+            setupConfig(publisher)
+            flowMapperService.start()
         }
+    }
 
-        //Cleanup state for first record
-        publisher.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, firstKey, FlowMapperEvent(MessageDirection.INBOUND, ScheduleCleanup
-            (currentTimeMillis())))))
+    @Test
+    fun testSessionInitOutAndDataInbound() {
+        val testId = "test1"
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId))
 
-        //validate duplicate wasn't sent to flow event
-        assertFalse(flowEventLatch.await(3, TimeUnit.SECONDS))
+        //send 2 session init, 1 is duplicate
+        val identity =HoldingIdentity(testId, testId)
+        val flowKey = FlowKey(testId, HoldingIdentity(testId, testId))
+        val sessionInitEvent = Record<Any, Any>(
+            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
+                MessageDirection.OUTBOUND,
+                SessionEvent(currentTimeMillis(), 1, SessionInit(testId, testId, flowKey, identity))
+            )
+        )
+        publisher.publish(listOf(sessionInitEvent, sessionInitEvent))
 
-        //validate p2p out
+        //validate p2p out only receives 1 init
         val p2pLatch = CountDownLatch(1)
-        val p2pOutSub = subscriptionFactory.createDurableSubscription(SubscriptionConfig("test-p2p-out", FLOW_EVENT_TOPIC),
-            TestProcessor(p2pLatch), SmartConfigImpl.empty(),null)
+        val p2pOutSub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
+            TestP2POutProcessor("$testId-INITIATED", p2pLatch, 1), SmartConfigImpl.empty(), null
+        )
         p2pOutSub.start()
         assertTrue(p2pLatch.await(3, TimeUnit.SECONDS))
+        p2pOutSub.stop()
 
-        //validate first state is cleaned up
-        publisher.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, firstKey, firstRpcRecord)))
+        //send data back
+        val sessionDataEvent = Record<Any, Any>(
+            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
+                MessageDirection.INBOUND,
+                SessionEvent(currentTimeMillis(), 2, SessionData())
+            )
+        )
+        publisher.publish(listOf(sessionDataEvent))
+
+        //validate flow event topic
+        val flowEventLatch = CountDownLatch(1)
+        val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
+            SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
+            TestFlowMessageProcessor(flowEventLatch, identity, 1), SmartConfigImpl.empty(), null
+        )
+        flowEventSub.start()
+        assertTrue(flowEventLatch.await(5, TimeUnit.SECONDS))
+        flowEventSub.stop()
+    }
+
+    @Test
+    fun testStartRPCDuplicatesAndCleanup() {
+        val testId = "test2"
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId))
+
+        //2 startRPCRecord, 1 duplicate
+        val identity =HoldingIdentity(testId, testId)
+        val startRPCEvent = Record<Any, Any>(
+            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
+                MessageDirection.INBOUND,
+                StartRPCFlow(testId, testId, testId, identity, Instant.now(), null)
+            )
+        )
+        publisher.publish(listOf(startRPCEvent, startRPCEvent))
+
+        //flow event subscription to validate outputs
+        val flowEventLatch = CountDownLatch(2)
+        val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
+            SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
+            TestFlowMessageProcessor(flowEventLatch, identity, 2), SmartConfigImpl.empty(), null
+        )
+        flowEventSub.start()
+
+        //cleanup
+        val cleanup = Record<Any, Any>(
+            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
+                MessageDirection.INBOUND,
+                ScheduleCleanup(currentTimeMillis())
+            )
+        )
+        publisher.publish(listOf(cleanup))
+
+        //assert duplicate start rpc didnt get processed (and also give the Execute cleanup time to run)
+        assertFalse(flowEventLatch.await(3, TimeUnit.SECONDS))
+
+        //send same key start rpc again
+        publisher.publish(listOf(startRPCEvent))
+
+        //validate went through and not a duplicate
         assertTrue(flowEventLatch.await(5, TimeUnit.SECONDS))
 
-        //validate correct amount of events on the flow mapper event topic(5 rpc records, 1 schedule cleanup, 1 execute cleanup)
-        val flowMapperEventLatch = CountDownLatch(7)
-        val flowMapperSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("test-mapper-event-count", FLOW_MAPPER_EVENT_TOPIC),
-            TestProcessor(flowMapperEventLatch), SmartConfigImpl.empty(),null)
-        flowMapperSub.start()
-        flowMapperEventLatch.await(10, TimeUnit.SECONDS)
-
-        flowMapperService.stop()
         flowEventSub.stop()
+    }
+
+    @Test
+    fun testNoStateForMapper() {
+        val testId = "test3"
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId))
+
+        //send data, no state
+        val sessionDataEvent = Record<Any, Any>(
+            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
+                MessageDirection.OUTBOUND,
+                SessionEvent(currentTimeMillis(), 1, SessionData())
+            )
+        )
+        publisher.publish( listOf(sessionDataEvent))
+
+        //validate p2p out doesn't have any records
+        val p2pLatch = CountDownLatch(1)
+        val p2pOutSub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
+            TestP2POutProcessor("$testId-INITIATED", p2pLatch, 0), SmartConfigImpl.empty(), null
+        )
+        p2pOutSub.start()
+        assertFalse(p2pLatch.await(3, TimeUnit.SECONDS))
         p2pOutSub.stop()
-        flowMapperSub.stop()
-        configService.stop()
     }
 
     private fun setupConfig(publisher: Publisher) {
