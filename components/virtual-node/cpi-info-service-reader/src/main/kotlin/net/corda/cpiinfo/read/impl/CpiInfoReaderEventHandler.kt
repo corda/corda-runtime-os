@@ -1,7 +1,6 @@
 package net.corda.cpiinfo.read.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.CpiInfoReader
 import net.corda.data.packaging.CPIIdentifier
 import net.corda.data.packaging.CPIMetadata
 import net.corda.libs.configuration.SmartConfig

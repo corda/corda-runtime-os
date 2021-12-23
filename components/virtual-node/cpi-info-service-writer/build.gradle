@@ -23,8 +23,8 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     implementation project(":libs:virtual-node:virtual-node-info")
-    implementation project(":libs:virtual-node:cpi-info-service")
     implementation project(":components:virtual-node:virtual-node-common")
+    implementation project(":components:virtual-node:cpi-info-service-reader")
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-read")

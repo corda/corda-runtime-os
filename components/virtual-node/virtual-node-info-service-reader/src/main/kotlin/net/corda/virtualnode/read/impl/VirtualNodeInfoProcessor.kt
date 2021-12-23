@@ -6,9 +6,9 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoListener
+import net.corda.virtualnode.read.VirtualNodeInfoReader
 import net.corda.virtualnode.read.impl.VirtualNodeInfoMap
-import net.corda.virtualnode.service.VirtualNodeInfoListener
-import net.corda.virtualnode.service.VirtualNodeInfoReader
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger

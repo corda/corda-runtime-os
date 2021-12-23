@@ -10,6 +10,8 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation project(":components:sandbox:sandbox-service")
+    implementation project(":components:virtual-node:sandbox-group-context-service")
+    implementation project(":libs:virtual-node:sandbox-group-context")
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:configuration:configuration-core")
@@ -23,7 +25,6 @@ dependencies {
     implementation project(":libs:serialization:checkpoint-serialization-api")
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-packaging"
-    implementation project(':libs:virtual-node:sandbox-group-service')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"

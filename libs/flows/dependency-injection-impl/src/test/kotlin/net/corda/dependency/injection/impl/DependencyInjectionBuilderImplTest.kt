@@ -2,7 +2,7 @@ package net.corda.dependency.injection.impl
 
 import net.corda.dependency.injection.FlowDependencyInjector
 import net.corda.sandbox.SandboxGroup
-import net.corda.virtualnode.sandboxgroup.SandboxGroupContext
+import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIllegalStateException
 import org.junit.jupiter.api.Test
@@ -15,7 +15,7 @@ class DependencyInjectionBuilderImplTest {
     @Test
     fun `create returns configured injector`(){
         val sandboxGroup: SandboxGroup = mock()
-        val sandboxGroupContext:SandboxGroupContext = mock()
+        val sandboxGroupContext: MutableSandboxGroupContext = mock()
         doReturn(sandboxGroup).whenever(sandboxGroupContext).sandboxGroup
 
         val dependencyInjectionBuilder = DependencyInjectionBuilderImpl(listOf(), listOf())

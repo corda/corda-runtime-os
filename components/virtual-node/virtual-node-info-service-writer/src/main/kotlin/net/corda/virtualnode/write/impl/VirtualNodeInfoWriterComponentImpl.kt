@@ -100,14 +100,16 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     }
 
     /** Post a [ConfigChangedEvent]  */
-    private fun onConfigChangeEvent(event: ConfigChangedEvent) = coordinator.postEvent(event)
+    private fun onConfigChangeEvent(event: ConfigChangedEvent)  {
+        coordinator.postEvent(event)
+        coordinator.updateStatus(LifecycleStatus.DOWN)
+    }
 
     /**
      * Once we finally get a config, we can create a publisher connected to the
      * correct Kafka instance, and flag that we're up.
      */
     private fun onConfig(coordinator: LifecycleCoordinator, config: SmartConfig) {
-        coordinator.updateStatus(LifecycleStatus.DOWN)
         publisher?.close()
         publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID, instanceId), config)
         coordinator.updateStatus(LifecycleStatus.UP)
