@@ -4,11 +4,11 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import net.corda.data.permissions.Group
 import net.corda.data.permissions.Permission
-import net.corda.data.permissions.PermissionAssociation
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.cache.exception.PermissionCacheException
+import java.lang.UnsupportedOperationException
 
 /**
  * The Permission cache holds the data used in the RBAC permission system.
@@ -57,9 +57,7 @@ internal class PermissionCacheImpl(
 
     override fun getPermission(permissionId: String): Permission? {
         validateCacheIsRunning()
-        val permissionAssoc: List<PermissionAssociation> = roles.values.flatMap { it.permissions }
-        val permissionsMap = permissionAssoc.associate { it.permission.id to it.permission }
-        return permissionsMap[permissionId]
+        throw UnsupportedOperationException("To be implemented properly")
     }
 
     private fun validateCacheIsRunning() {
