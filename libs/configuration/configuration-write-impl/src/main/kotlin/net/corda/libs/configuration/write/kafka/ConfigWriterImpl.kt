@@ -29,19 +29,6 @@ class ConfigWriterImpl(
     }
 
     /**
-     * Add the properties recorded in [config] to the component configuration.
-     *
-     * @param configKey containing identity, package version and component version
-     * @param config typesafe config object
-     */
-    override fun appendConfiguration(
-        configKey: CordaConfigurationKey,
-        config: Config
-    ) {
-        throw NotImplementedError("Not yet implemented")
-    }
-
-    /**
      * Update the component configuration so that it matches [config].
      *
      * @param configKey containing identity, package version and component version

@@ -10,10 +10,8 @@ import javax.naming.ConfigurationException
  */
 @Suppress("Deprecation")
 @Deprecated("Deprecated in line with the deprecation of `ConfigWriter`.")
-class ConfigVersionNumber(val major: Int, val minor: Int) :
-    Comparable<ConfigVersionNumber> {
+data class ConfigVersionNumber(val major: Int, val minor: Int) {
     companion object {
-        private const val BASIS = 1000000
         private val delimiters = Regex("[-.:]")
 
         /**
@@ -32,26 +30,6 @@ class ConfigVersionNumber(val major: Int, val minor: Int) :
                 throw ConfigurationException("Parsing exception for provided version. Given version $value does not " +
                         "match major.minor(-SNAPSHOT)")
             }
-
         }
-    }
-
-    /** The absolute value of the version number, used to compare versions */
-    private val absoluteValue = major * BASIS + minor
-
-    override fun compareTo(other: ConfigVersionNumber): Int {
-        return absoluteValue.compareTo(other.absoluteValue)
-    }
-
-    override fun equals(other: Any?): Boolean {
-        return other is ConfigVersionNumber && absoluteValue == other.absoluteValue
-    }
-
-    override fun hashCode(): Int {
-        return absoluteValue.hashCode()
-    }
-
-    override fun toString(): String {
-        return "${major}.${minor}"
     }
 }

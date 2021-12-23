@@ -1,10 +1,11 @@
 @file:Suppress("DEPRECATION")
 
-package net.corda.comp.kafka.config.write
+package net.corda.configuration.write.impl
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
+import net.corda.configuration.write.EphemeralConfigWriteService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.ConfigWriter
 import net.corda.libs.configuration.write.CordaConfigurationKey
@@ -16,19 +17,18 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
-@Deprecated("Use `ConfigWriteServiceImpl` instead.")
-@Component(immediate = true, service = [KafkaConfigWrite::class])
-class KafkaConfigWrite @Activate constructor(
+@Component(immediate = true, service = [EphemeralConfigWriteService::class])
+class EphemeralConfigWriteServiceImpl @Activate constructor(
     @Reference(service = ConfigWriterFactory::class)
     private val configWriterFactory: ConfigWriterFactory
-) {
+): EphemeralConfigWriteService {
     private lateinit var writer: ConfigWriter
 
     private companion object {
         private val log: Logger = contextLogger()
     }
 
-    fun updateConfig(destination: String, appConfig: SmartConfig, configurationFile: String) {
+    override fun updateConfig(destination: String, appConfig: SmartConfig, configurationFile: String) {
         writer = configWriterFactory.createWriter(destination, appConfig)
         val configuration = ConfigFactory.parseString(configurationFile)
 

@@ -3,7 +3,7 @@ package net.corda.configuration.write
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 
-/** Wraps a `PersistentConfigWriter` to persist and broadcast cluster configuration updates. */
+/** Receives configuration updates via RPC, persists them to the cluster database, and publishes them to Kafka. */
 interface ConfigWriteService : Lifecycle {
 
     /**

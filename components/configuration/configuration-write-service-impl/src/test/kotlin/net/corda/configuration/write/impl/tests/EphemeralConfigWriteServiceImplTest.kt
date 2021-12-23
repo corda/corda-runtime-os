@@ -1,7 +1,9 @@
 @file:Suppress("DEPRECATION")
 
-package net.corda.comp.kafka.config.write
+package net.corda.configuration.write.impl.tests
 
+import net.corda.configuration.write.EphemeralConfigWriteService
+import net.corda.configuration.write.impl.EphemeralConfigWriteServiceImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.ConfigWriter
 import net.corda.libs.configuration.write.CordaConfigurationKey
@@ -20,9 +22,8 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.io.BufferedReader
 
-class KafkaConfigWriteTest {
-
-    private lateinit var kafkaConfigWrite: KafkaConfigWrite
+class EphemeralConfigWriteServiceImplTest {
+    private lateinit var ephemeralConfigWriteService: EphemeralConfigWriteService
     private val configWriterFactory: ConfigWriterFactory = mock()
     private val configWriter: ConfigWriter = mock()
     private val config: SmartConfig = mock()
@@ -32,7 +33,7 @@ class KafkaConfigWriteTest {
 
     @BeforeEach
     fun beforeEach() {
-        kafkaConfigWrite = KafkaConfigWrite(configWriterFactory)
+        ephemeralConfigWriteService = EphemeralConfigWriteServiceImpl(configWriterFactory)
         Mockito.`when`(configWriterFactory.createWriter(any(), any()))
             .thenReturn(configWriter)
     }
@@ -41,7 +42,7 @@ class KafkaConfigWriteTest {
     fun `test config is read and saved properly`() {
         val configString = readConfigFile("config.conf")
 
-        kafkaConfigWrite.updateConfig("dummyTopic", config, configString)
+        ephemeralConfigWriteService.updateConfig("dummyTopic", config, configString)
 
         val cordaDatabaseKey = CordaConfigurationKey(
             "corda",
@@ -63,7 +64,7 @@ class KafkaConfigWriteTest {
     @Test
     fun `test nested config does not cause issues `() {
         val configString = readConfigFile("nestedConfig.conf")
-        kafkaConfigWrite.updateConfig("dummyTopic", config, configString)
+        ephemeralConfigWriteService.updateConfig("dummyTopic", config, configString)
 
         val cordaDatabaseKey = CordaConfigurationKey(
             "corda",
@@ -85,7 +86,7 @@ class KafkaConfigWriteTest {
     @Test
     fun `test saving multi package configs while filtering out unversioned packages `() {
         val configString = readConfigFile("multipleConfig.conf")
-        kafkaConfigWrite.updateConfig("dummyTopic", config, configString)
+        ephemeralConfigWriteService.updateConfig("dummyTopic", config, configString)
 
         val cordaDatabaseKey = CordaConfigurationKey(
             "corda",
@@ -121,7 +122,7 @@ class KafkaConfigWriteTest {
     @Test
     fun `test unversioned config and rogue properties are filtered out and correct config is saved`() {
         val configString = readConfigFile("badConfig.conf")
-        kafkaConfigWrite.updateConfig("dummyTopic", config, configString)
+        ephemeralConfigWriteService.updateConfig("dummyTopic", config, configString)
 
         val cordaDatabaseKey = CordaConfigurationKey(
             "corda",

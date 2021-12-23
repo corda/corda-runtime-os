@@ -1,10 +1,8 @@
-@file:Suppress("DEPRECATION")
-
 package net.corda.tools.kafka
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.comp.kafka.config.write.KafkaConfigWrite
+import net.corda.configuration.write.EphemeralConfigWriteService
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -27,8 +25,8 @@ import java.util.Properties
 class KafkaConfigUploader @Activate constructor(
     @Reference(service = KafkaTopicAdmin::class)
     private var topicAdmin: KafkaTopicAdmin,
-    @Reference(service = KafkaConfigWrite::class)
-    private var configWriter: KafkaConfigWrite,
+    @Reference(service = EphemeralConfigWriteService::class)
+    private var configWriter: EphemeralConfigWriteService,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = SmartConfigFactory::class)

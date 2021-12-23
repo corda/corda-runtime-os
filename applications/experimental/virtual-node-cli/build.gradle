@@ -26,7 +26,7 @@ dependencies {
     implementation project(":components:virtual-node:cpi-info-service-writer")
     implementation project(':components:kafka-topic-admin')
     implementation project(":applications:tools:common-setup")
-    implementation project(':components:configuration:configuration-write-service-impl')
+    implementation project(':components:configuration:configuration-write-service')
 
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-base"
@@ -43,15 +43,14 @@ dependencies {
     implementation project(":components:virtual-node:cpi-info-service-writer")
 
     runtimeOnly project(":components:configuration:configuration-read-service")
-    runtimeOnly project(':components:configuration:configuration-write-service-impl')
 
     runtimeOnly project(":libs:virtual-node:virtual-node-info")
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
+    runtimeOnly project(':components:configuration:configuration-write-service-impl')
     runtimeOnly project(":libs:configuration:configuration-read-impl")
     runtimeOnly project(":libs:configuration:configuration-write-impl")
+    runtimeOnly project(":libs:configuration:configuration-write-persistent-impl")
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
-    runtimeOnly project(":libs:configuration:configuration-write-impl")
-    runtimeOnly project(":libs:configuration:configuration-read-impl")
     runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
