@@ -44,6 +44,7 @@ dependencies {
     integrationTestImplementation "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     integrationTestImplementation project(":components:configuration:configuration-read-service")
     integrationTestImplementation "net.corda:corda-application"
+    integrationTestRuntimeOnly project(':libs:sandbox-internal')
 
 
 

@@ -41,6 +41,7 @@ dependencies {
 
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     integrationTestRuntimeOnly project(":libs:sandbox-hooks")
+    integrationTestRuntimeOnly project(":libs:sandbox-internal")
 
     // Use custom configurations in consumer cpks to gather location of cpis to add into `resources`
     // Note:  we define the configuration `cpiForTest` in each project's gradle script.
