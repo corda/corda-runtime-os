@@ -53,7 +53,8 @@ dependencies {
     implementation project(":components:http-rpc-gateway-comp")
 
     // Implementations (needs revision!)
-    runtimeOnly project(":libs:messaging:kafka-messaging-impl")
+    runtimeOnly project(":libs:messaging:messaging-impl")
+    runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
     runtimeOnly project(":libs:permissions:permission-validation-impl")
     runtimeOnly project(":libs:permissions:permission-manager-impl")
     runtimeOnly project(":libs:permissions:permission-cache-impl")

@@ -13,8 +13,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.BOOTSTRAP_SERVERS_VALUE
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.KAFKA_COMMON_BOOTSTRAP_SERVER
 import net.corda.messaging.kafka.integration.IntegrationTestProperties.Companion.TOPIC_PREFIX
@@ -96,9 +96,10 @@ class DurableSubscriptionIntegrationTest {
             null
         )
 
+        val CONSUMER_MAX_POLL_INTERVAL = "consumer.max.poll.interval.ms"
         val triggerRebalanceQuicklyConfig = kafkaConfig
             .withValue(
-                "$MESSAGING_KAFKA.${ConfigProperties.CONSUMER_MAX_POLL_INTERVAL}",
+                "$MESSAGING_KAFKA.${CONSUMER_MAX_POLL_INTERVAL}",
                 ConfigValueFactory.fromAnyRef(1000)
             )
         //long delay to not allow sub to to try rejoin group after rebalance

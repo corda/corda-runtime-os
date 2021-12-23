@@ -6,7 +6,7 @@ import net.corda.data.crypto.wire.freshkeys.WireFreshKeysRequest
 import net.corda.data.crypto.wire.freshkeys.WireFreshKeysResponse
 import net.corda.data.crypto.wire.signing.WireSigningRequest
 import net.corda.data.crypto.wire.signing.WireSigningResponse
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 
 class CryptoRpcConfig(

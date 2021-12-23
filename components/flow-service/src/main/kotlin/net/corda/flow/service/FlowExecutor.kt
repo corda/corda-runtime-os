@@ -12,6 +12,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.StateAndEventSubscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC

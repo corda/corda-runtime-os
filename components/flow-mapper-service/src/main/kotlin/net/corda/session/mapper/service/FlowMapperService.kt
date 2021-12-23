@@ -19,6 +19,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.StateAndEventSubscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
