@@ -15,8 +15,9 @@ import javax.persistence.Version
  * The entity for the current cluster configuration in the cluster database.
  *
  * @param section The section of the configuration.
- * @param version The version of the configuration. Used for optimistic locking.
- * @param configuration The configuration in JSON or HOCON format.
+ * @param version The version number used for optimistic locking.
+ * @param config The configuration in JSON or HOCON format.
+ * @param configVersion The version of the configuration.
  * @param updateTimestamp The last time this section of the configuration was updated.
  * @param updateActor The ID of the user that last updated this section of the configuration.
  */
@@ -30,14 +31,16 @@ internal data class ConfigEntity(
     @Column(name = "version", nullable = false)
     val version: Int = -1,
     @Column(name = "config", nullable = false)
-    val configuration: String,
+    val config: String,
+    @Column(name = "config_version", nullable = false)
+    val configVersion: Int,
     @Column(name = "update_ts", nullable = false)
     var updateTimestamp: Instant,
     @Column(name = "update_actor", nullable = false)
     val updateActor: String
 ) {
-    constructor(section: String, version: Int, configuration: String, updateActor: String) :
-            this(section, version, configuration, Instant.MIN, updateActor)
+    constructor(section: String, version: Int, config: String, configVersion: Int, updateActor: String) :
+            this(section, version, config, configVersion, Instant.MIN, updateActor)
 
     /** Sets [updateTimestamp] to the current time. */
     @Suppress("Unused")

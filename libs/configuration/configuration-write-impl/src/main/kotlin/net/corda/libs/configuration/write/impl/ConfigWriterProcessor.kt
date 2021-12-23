@@ -59,8 +59,8 @@ internal class ConfigWriterProcessor(
         respFuture: ConfigurationManagementResponseFuture
     ): Boolean {
 
-        val newConfig = ConfigEntity(req.section, req.version, req.configuration, req.updateActor)
-        val newConfigAudit = ConfigAuditEntity(req.section, req.version, req.configuration, req.updateActor)
+        val newConfig = ConfigEntity(req.section, req.version, req.config, req.configVersion, req.updateActor)
+        val newConfigAudit = ConfigAuditEntity(req.section, req.config, req.version, req.updateActor)
 
         return try {
             dbUtils.writeEntities(config, newConfig, newConfigAudit)
@@ -83,7 +83,7 @@ internal class ConfigWriterProcessor(
         respFuture: ConfigurationManagementResponseFuture
     ) {
 
-        val configRecord = Record(CONFIG_TOPIC, req.section, Configuration(req.configuration, req.version.toString()))
+        val configRecord = Record(CONFIG_TOPIC, req.section, Configuration(req.config, req.version.toString()))
         val future = publisher.publish(listOf(configRecord)).first()
 
         try {
@@ -94,7 +94,7 @@ internal class ConfigWriterProcessor(
             return
         }
 
-        respFuture.complete(ConfigurationManagementResponse(true, req.version, req.configuration))
+        respFuture.complete(ConfigurationManagementResponse(true, req.version, req.config))
     }
 
     /**
@@ -116,7 +116,7 @@ internal class ConfigWriterProcessor(
 
         respFuture.complete(
             ConfigurationManagementResponse(
-                ExceptionEnvelope(cause.javaClass.name, errMsg), currentConfig?.version, currentConfig?.configuration
+                ExceptionEnvelope(cause.javaClass.name, errMsg), currentConfig?.version, currentConfig?.config
             )
         )
     }

@@ -18,8 +18,8 @@ import javax.persistence.Table
  *
  * @param changeNumber The sequence number of the audit event.
  * @param section The section of the configuration.
- * @param version The version of the configuration.
- * @param configuration The configuration in JSON or HOCON format.
+ * @param config The configuration in JSON or HOCON format.
+ * @param configVersion The version of the configuration.
  * @param updateTimestamp When this configuration update occurred.
  * @param updateActor The ID of the user that last updated this section of the configuration.
  */
@@ -33,17 +33,17 @@ internal data class ConfigAuditEntity(
     val changeNumber: Int,
     @Column(name = "section", nullable = false)
     val section: String,
-    @Column(name = "version", nullable = false)
-    val version: Int,
     @Column(name = "config", nullable = false)
-    val configuration: String,
+    val config: String,
+    @Column(name = "config_version", nullable = false)
+    val configVersion: Int,
     @Column(name = "update_ts", nullable = false)
     var updateTimestamp: Instant,
     @Column(name = "update_actor", nullable = false)
     val updateActor: String
 ) {
-    constructor(section: String, version: Int, configuration: String, updateActor: String) :
-            this(0, section, version, configuration, Instant.MIN, updateActor)
+    constructor(section: String, config: String, configVersion: Int, updateActor: String) :
+            this(0, section, config, configVersion, Instant.MIN, updateActor)
 
     /** Sets [updateTimestamp] to the current time. */
     @Suppress("Unused")
