@@ -35,7 +35,7 @@ dependencies {
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion"
 
     // This is just the CPK's "main" jar.
-    cpks project(':libs:sandbox:sandbox-scr-cpk')
+    cpks project(':libs:sandbox-internal:sandbox-scr-cpk')
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

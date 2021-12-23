@@ -2,6 +2,7 @@ package net.corda.libs.permissions.cache.factory
 
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.permissions.Group
+import net.corda.data.permissions.Permission
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
 import net.corda.libs.permissions.cache.processor.PermissionCacheTopicProcessor
@@ -35,11 +36,22 @@ interface PermissionCacheTopicProcessorFactory {
     /**
      * Create a topic processor for Roles.
      *
-     * @param roleData the instance of a ConcurrentHashMap holding the UsRoleer data.
+     * @param roleData the instance of a ConcurrentHashMap holding the Role data.
      * @param onSnapshotCallback the callback invoked after snapshot has been received.
      */
     fun createRoleTopicProcessor(
         roleData: ConcurrentHashMap<String, Role>,
         onSnapshotCallback: () -> Unit,
     ): PermissionCacheTopicProcessor<String, Role>
+
+    /**
+     * Create a topic processor for Permissions.
+     *
+     * @param permissionData the instance of a ConcurrentHashMap holding the Permission data.
+     * @param onSnapshotCallback the callback invoked after snapshot has been received.
+     */
+    fun createPermissionTopicProcessor(
+        permissionData: ConcurrentHashMap<String, Permission>,
+        onSnapshotCallback: () -> Unit,
+    ): PermissionCacheTopicProcessor<String, Permission>
 }
