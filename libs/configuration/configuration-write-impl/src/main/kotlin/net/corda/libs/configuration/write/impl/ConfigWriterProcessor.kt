@@ -60,7 +60,7 @@ internal class ConfigWriterProcessor(
     ): Boolean {
 
         val newConfig = ConfigEntity(req.section, req.version, req.config, req.configVersion, req.updateActor)
-        val newConfigAudit = ConfigAuditEntity(req.section, req.config, req.version, req.updateActor)
+        val newConfigAudit = ConfigAuditEntity(req.section, req.config, req.configVersion, req.updateActor)
 
         return try {
             dbUtils.writeEntities(config, newConfig, newConfigAudit)
