@@ -24,6 +24,9 @@ fun BloomFilter.add(bytes: ByteArray) {
  * Please note, it's the nature of Bloom filters that they can produce false positives.
  */
 fun BloomFilter.possiblyContains(bytes: ByteArray): Boolean {
+    if (numberOfHashFunctions == 0 || filterLength == 0) {
+        throw IllegalArgumentException("Number of hash functions and filter length must not be zero.")
+    }
     val hash1 = Integer.toUnsignedLong(MurmurHash3.hash32(bytes, 0, bytes.size, hashSeed))
     val hash2 = Integer.toUnsignedLong(MurmurHash3.hash32(bytes, 0, bytes.size, hash1.toInt()))
     for (i in 0 until numberOfHashFunctions) {

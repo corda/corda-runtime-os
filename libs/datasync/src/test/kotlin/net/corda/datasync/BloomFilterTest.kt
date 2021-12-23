@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 
@@ -112,6 +113,34 @@ class BloomFilterTest {
             if(m % 2 != 0 && !falsePositives.contains(m)) {
                 assertFalse(bloomFilter.possiblyContains(m.toByteArray()))
             }
+        }
+    }
+
+    @Test
+    fun `searching for an element in the bloom filter throws exception if filter length is zero`() {
+        val expectedItemCount = 10
+        val falsePositiveRate = 0.99999999999999999999
+
+        val bloomFilter = createBloomFilter(
+            expectedItemCount, falsePositiveRate, 99
+        )
+
+        assertThrows<IllegalArgumentException> {
+            bloomFilter.possiblyContains(testElement)
+        }
+    }
+
+    @Test
+    fun `searching for an element in the bloom filter throws exception if number of hashes is zero`() {
+        val expectedItemCount = 0
+        val falsePositiveRate = 0.5
+
+        val bloomFilter = createBloomFilter(
+            expectedItemCount, falsePositiveRate, 99
+        )
+
+        assertThrows<IllegalArgumentException> {
+            bloomFilter.possiblyContains(testElement)
         }
     }
 }
