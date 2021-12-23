@@ -1,7 +1,6 @@
 package net.corda.sandboxgroupcontext
 
 import net.corda.sandbox.SandboxGroup
-import kotlin.reflect.KClass
 
 /**
  * A context object that is essentially a decorated [SandboxGroup].  It should contain everything required to
@@ -26,5 +25,5 @@ interface SandboxGroupContext : SandboxGroupContextData {
      *
      * @return null if it doesn't exist.
      */
-    fun <T : Any> get(key: String, valueType: KClass<T>): T?
+    fun <T : Any> get(key: String, valueType: Class<out T>): T?
 }

@@ -32,8 +32,7 @@ class Cat(override val name: String, private val noise: String) : Animal {
 }
 
 class SandboxGroupContextTest {
-    private fun Set<CPK>.toIds() = map { it.metadata.id }.toSet()
-    private fun Set<CPK>.toMap() = map { it.metadata.id to it }.toMap()
+    private fun Set<CPK>.toIds() = mapTo(LinkedHashSet()) { it.metadata.id }
 
     private val holdingIdentity = HoldingIdentity("foo", "bar")
     private val cpk: CPK = Helpers.mockTrivialCpk("MAIN_BUNDLE")
@@ -51,9 +50,9 @@ class SandboxGroupContextTest {
     @Test
     fun `can create an simple object`() {
         val dog = Dog("Fido", "Woof!")
-        sandboxGroupContext.put(dog.name, dog.javaClass.kotlin, dog)
+        sandboxGroupContext.put(dog.name, dog)
 
-        val actualDog = sandboxGroupContext.get(dog.name, Dog::class)
+        val actualDog = sandboxGroupContext.get(dog.name, Dog::class.java)
 
         assertThat(actualDog).isNotNull
         assertThat(actualDog!!.name).isEqualTo(dog.name)
@@ -66,7 +65,7 @@ class SandboxGroupContextTest {
         val dog = Dog("Fido", "Woof!")
         sandboxGroupContext.putObjectByKey(dog.name, dog)
 
-        val actualDog = sandboxGroupContext.get(dog.name, Dog::class)
+        val actualDog = sandboxGroupContext.get(dog.name, Dog::class.java)
 
         assertThat(actualDog).isNotNull
         assertThat(actualDog!!.name).isEqualTo(dog.name)

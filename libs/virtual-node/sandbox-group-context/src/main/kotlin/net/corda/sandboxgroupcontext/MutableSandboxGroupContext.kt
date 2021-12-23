@@ -1,7 +1,5 @@
 package net.corda.sandboxgroupcontext
 
-import kotlin.reflect.KClass
-
 /**
  * All objects that are [put] into the context are held by their `(type, key)` tuple.
  *
@@ -21,8 +19,8 @@ interface MutableSandboxGroupContext : SandboxGroupContext {
      *
      * Instances of this interface are only passed into [SandboxGroupContextInitializer]
      *
-     * If the object you [put] is [AutoCloseable] you MUST call [close] on your object(s) as part of the [AutoCloseable]
-     * that you return from [SandboxGroupContextInitializer], i.e.
+     * If the object you [put] is [AutoCloseable] you MUST call [AutoCloseable.close] on your object(s) as part of the
+     * [AutoCloseable] that you return from [SandboxGroupContextInitializer], i.e.
      *
      *     override fun initializeSandboxGroupContext(holdingIdentity: HoldingIdentity, ctx: MutableSandboxGroupContext) : AutoCloseable {
      *       val someObject = SomeObject() // : AutoCloseable
@@ -48,5 +46,5 @@ interface MutableSandboxGroupContext : SandboxGroupContext {
      *
      * @throws IllegalArgumentException if any attempts to [put] another object with the same type
      */
-    fun <T : Any> put(key: String, valueType: KClass<T>, value: T)
+    fun <T : Any> put(key: String, value: T)
 }
