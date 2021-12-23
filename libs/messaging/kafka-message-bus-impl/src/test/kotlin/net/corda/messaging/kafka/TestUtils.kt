@@ -9,6 +9,7 @@ import net.corda.messagebus.api.configuration.ConfigProperties.Companion.INSTANC
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC
 
 const val TOPIC_PREFIX = "test"
+const val PATTERN_PUBSUB = "messaging.pattern.pubsub"
 
 fun createStandardTestConfig(): Config = ConfigFactory.parseResourcesAnySyntax("messaging-enforced.conf")
     .withValue(GROUP, ConfigValueFactory.fromAnyRef(GROUP))

@@ -1,11 +1,6 @@
 package net.corda.messaging.api.configuration
 
-import net.corda.messagebus.api.configuration.ConfigProperties
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_CLOSE_TIMEOUT
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.GROUP_ID
-
+/*
 class ConfigProperties {
     companion object {
         const val TOPIC = "topic"
@@ -35,3 +30,4 @@ class ConfigProperties {
         const val PATTERN_RPC_RESPONDER = "messaging.pattern.rpcResponder"
     }
 }
+ */
