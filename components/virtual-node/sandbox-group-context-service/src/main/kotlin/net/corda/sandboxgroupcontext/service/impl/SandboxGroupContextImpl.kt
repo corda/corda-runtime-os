@@ -5,8 +5,6 @@ import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.reflect.KClass
-import kotlin.reflect.cast
 
 /**
  * Implementation of [MutableSandboxGroupContext] and [SandboxGroupContext]
@@ -18,25 +16,17 @@ import kotlin.reflect.cast
 class SandboxGroupContextImpl(
     override val virtualNodeContext: VirtualNodeContext,
     override val sandboxGroup: SandboxGroup
-) :  MutableSandboxGroupContext, SandboxGroupContext {
+) :  MutableSandboxGroupContext {
 
-    private data class TypedValue<T : Any>(val valueType: KClass<T>, val value: Any)
+    private val objectByKey = ConcurrentHashMap<String, Any>()
 
-    private val objectByKey = ConcurrentHashMap<String, TypedValue<*>>()
-
-    override fun <T : Any> put(key: String, valueType: KClass<T>, value: T) {
-        val typedValue = TypedValue(valueType, value)
-        if (objectByKey.containsKey(key)) {
-            throw IllegalArgumentException("Attempt to overwrite existing object in cache with key:  $key")
+    override fun <T : Any> put(key: String, value: T) {
+        if (objectByKey.putIfAbsent(key, value) != null) {
+            throw IllegalArgumentException("Attempt to overwrite existing object in cache with key: $key")
         }
-        objectByKey[key] = typedValue
     }
 
-    override fun <T : Any> get(key: String, valueType: KClass<T>): T? {
-        if (!objectByKey.containsKey(key)) {
-            return null
-        }
-        val typedValue = objectByKey[key]!!
-        return valueType.cast(typedValue.value)
+    override fun <T : Any> get(key: String, valueType: Class<out T>): T? {
+        return objectByKey[key]?.let(valueType::cast)
     }
 }

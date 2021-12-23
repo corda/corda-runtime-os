@@ -42,9 +42,9 @@ internal class PermissionCacheImplTest {
         PermissionType.DENY, "*", group1.id)
 
     private val role1 = Role("role1", 0, ChangeDetails(Instant.now()), "admin", group1.id,
-        listOf(PermissionAssociation(ChangeDetails(Instant.now()), permission1)))
+        listOf(PermissionAssociation(ChangeDetails(Instant.now()), permission1.id)))
     private val role2 = Role("role2", 0, ChangeDetails(Instant.now()), "admin", group1.id,
-        listOf(PermissionAssociation(ChangeDetails(Instant.now()), permission2)))
+        listOf(PermissionAssociation(ChangeDetails(Instant.now()), permission2.id)))
 
     @BeforeEach
     fun setUp() {

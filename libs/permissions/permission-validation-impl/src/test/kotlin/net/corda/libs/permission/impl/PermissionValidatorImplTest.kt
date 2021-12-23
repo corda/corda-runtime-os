@@ -28,7 +28,7 @@ class PermissionValidatorImplTest {
         private const val permissionUrlRequest = "https://host:1234/node-rpc/5e0a07a6-c25d-413a-be34-647a792f4f58/${permissionString}"
 
         private val permission = Permission(
-            "5e0a07a6-c25d-413a-be34-647a792f4f58", 1,
+            "allowPermissionId", 1,
             ChangeDetails(Instant.now()),
             virtualNode,
             PermissionType.ALLOW,
@@ -36,7 +36,7 @@ class PermissionValidatorImplTest {
             "group1")
 
         private val permissionDenied = Permission(
-            "5e0a07a6-c25d-413a-be34-647a792f4f58", 1,
+            "denyPermissionId", 1,
             ChangeDetails(Instant.now()),
             virtualNode,
             PermissionType.DENY,
@@ -51,7 +51,7 @@ class PermissionValidatorImplTest {
             listOf(
                 PermissionAssociation(
                     ChangeDetails(Instant.now()),
-                    permission
+                    permission.id
                 )
             )
         )
@@ -61,7 +61,7 @@ class PermissionValidatorImplTest {
             ChangeDetails(Instant.now()),
             "STARTFLOW-MYFLOW",
             "group1",
-            listOf(PermissionAssociation(ChangeDetails(Instant.now()), permissionDenied))
+            listOf(PermissionAssociation(ChangeDetails(Instant.now()), permissionDenied.id))
         )
         private val user = User(
             "user1",
@@ -112,20 +112,22 @@ class PermissionValidatorImplTest {
         @BeforeAll
         @JvmStatic
         fun setUp() {
+            whenever(permissionCache.getUser(user.loginName)).thenReturn(user)
+            whenever(permissionCache.getUser(userWithPermDenied.loginName)).thenReturn(userWithPermDenied)
+            whenever(permissionCache.getUser(disabledUser.loginName)).thenReturn(disabledUser)
 
-            whenever(permissionCache.getUser("user1")).thenReturn(user)
-            whenever(permissionCache.getUser("userWithPermDenied")).thenReturn(userWithPermDenied)
-            whenever(permissionCache.getUser("disabledUser")).thenReturn(disabledUser)
+            whenever(permissionCache.getRole(role.id)).thenReturn(role)
+            whenever(permissionCache.getRole(roleWithPermDenied.id)).thenReturn(roleWithPermDenied)
 
-            whenever(permissionCache.getRole("roleId1")).thenReturn(role)
-            whenever(permissionCache.getRole("roleId2")).thenReturn(roleWithPermDenied)
+            whenever(permissionCache.getPermission(permission.id)).thenReturn(permission)
+            whenever(permissionCache.getPermission(permissionDenied.id)).thenReturn(permissionDenied)
         }
     }
 
     @Test
     fun `User with proper permission will be authorized`() {
 
-        assertTrue(permissionService.authorizeUser("requestId", user.id, permissionUrlRequest))
+        assertTrue(permissionService.authorizeUser("requestId", user.loginName, permissionUrlRequest))
     }
 
     @Test

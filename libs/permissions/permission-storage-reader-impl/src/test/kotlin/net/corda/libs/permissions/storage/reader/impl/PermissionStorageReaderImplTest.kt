@@ -102,7 +102,7 @@ class PermissionStorageReaderImplTest {
             listOf(
                 PermissionAssociation(
                     ChangeDetails(role.rolePermAssociations.first().updateTimestamp),
-                    avroPermission
+                    avroPermission.id
                 )
             )
         )
@@ -116,7 +116,7 @@ class PermissionStorageReaderImplTest {
             listOf(
                 PermissionAssociation(
                     ChangeDetails(role2.rolePermAssociations.first().updateTimestamp),
-                    avroPermission
+                    avroPermission.id
                 )
             )
         )
