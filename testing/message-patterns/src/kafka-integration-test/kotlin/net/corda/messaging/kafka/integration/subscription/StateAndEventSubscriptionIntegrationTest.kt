@@ -47,6 +47,7 @@ import net.corda.v5.base.util.seconds
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
@@ -254,6 +255,7 @@ class StateAndEventSubscriptionIntegrationTest {
         assertTrue(losePartitionLatch.await(30, TimeUnit.SECONDS))
     }
 
+    @Disabled("Possibly triggers two rebalances. Needs a rework")
     @Test
     @Timeout(180)
     fun `create topics, start 2 statevent sub, trigger rebalance and verify completion of all records`() {

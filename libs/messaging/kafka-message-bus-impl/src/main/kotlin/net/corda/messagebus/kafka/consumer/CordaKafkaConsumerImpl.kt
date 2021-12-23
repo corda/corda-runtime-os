@@ -12,6 +12,8 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
+import net.corda.messagebus.kafka.utils.toCordaTopicPartition
+import net.corda.messagebus.kafka.utils.toTopicPartition
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.v5.base.util.contextLogger
@@ -41,14 +43,12 @@ import java.time.Duration
 class CordaKafkaConsumerImpl<K : Any, V : Any>(
     config: Config,
     private val consumer: Consumer<K, V>,
-    defaultListener: CordaConsumerRebalanceListener? = null,
+    internal var defaultListener: CordaConsumerRebalanceListener? = null,
 ) : CordaConsumer<K, V> {
 
     companion object {
         private val log: Logger = contextLogger()
     }
-
-    internal var defaultListener = defaultListener
 
     private val consumerPollTimeout = Duration.ofMillis(config.getLong(POLL_TIMEOUT))
     private val consumerCloseTimeout = Duration.ofMillis(config.getLong(CLOSE_TIMEOUT))
@@ -300,8 +300,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun assign(partitions: Collection<CordaTopicPartition>) {
         try {
-            val newPartition = partitions.map { TopicPartition(topicPrefix + it.topic, it.partition) }
-            consumer.assign(newPartition)
+            consumer.assign(partitions.toTopicPartitions())
         } catch (ex: Exception) {
             when (ex) {
                 is ConcurrentModificationException -> {
@@ -323,10 +322,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun assignment(): Set<CordaTopicPartition> {
         return try {
-            val partitionSet = consumer.assignment()
-            partitionSet.map {
-                CordaTopicPartition(it.topic().removePrefix(topicPrefix), it.partition())
-            }.toSet()
+            consumer.assignment().toCordaTopicPartitions().toSet()
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException -> {
@@ -347,7 +343,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun position(partition: CordaTopicPartition): Long {
         return try {
-            consumer.position(TopicPartition(topicPrefix + partition.topic, partition.partition))
+            consumer.position(partition.toTopicPartition())
         } catch (ex: Exception) {
             when (ex) {
                 is AuthenticationException,
@@ -374,7 +370,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun seek(partition: CordaTopicPartition, offset: Long) {
         try {
-            consumer.seek(TopicPartition(topicPrefix + partition.topic, partition.partition), offset)
+            consumer.seek(partition.toTopicPartition(), offset)
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalArgumentException,
@@ -399,8 +395,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun seekToBeginning(partitions: Collection<CordaTopicPartition>) {
         try {
-            val newPartitions = partitions.map { TopicPartition(topicPrefix + it.topic, it.partition) }
-            consumer.seekToBeginning(newPartitions)
+            consumer.seekToBeginning(partitions.toTopicPartitions())
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalArgumentException,
@@ -425,8 +420,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun seekToEnd(partitions: Collection<CordaTopicPartition>) {
         try {
-            val newPartitions = partitions.map { TopicPartition(topicPrefix + it.topic, it.partition) }
-            consumer.seekToEnd(newPartitions)
+            consumer.seekToEnd(partitions.toTopicPartitions())
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalArgumentException,
@@ -453,14 +447,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         partitions: Collection<CordaTopicPartition>
     ): Map<CordaTopicPartition, Long> {
         return try {
-            val newPartitions = partitions.map { TopicPartition(topicPrefix + it.topic, it.partition) }
-            val partitionMap = consumer.beginningOffsets(newPartitions)
-            partitionMap.map { (key, value) ->
-                CordaTopicPartition(
-                    key.topic().removePrefix(topicPrefix),
-                    key.partition()
-                ) to value
-            }.toMap()
+            val partitionMap = consumer.beginningOffsets(partitions.toTopicPartitions())
+            partitionMap.mapKeys { it.key.toCordaTopicPartition() }
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException,
@@ -486,14 +474,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         partitions: Collection<CordaTopicPartition>
     ): Map<CordaTopicPartition, Long> {
         return try {
-            val newPartitions = partitions.map { TopicPartition(topicPrefix + it.topic, it.partition) }
-            val partitionMap = consumer.endOffsets(newPartitions)
-            partitionMap.map { (key, value) ->
-                CordaTopicPartition(
-                    key.topic().removePrefix(topicPrefix),
-                    key.partition()
-                ) to value
-            }.toMap()
+            val partitionMap = consumer.endOffsets(partitions.toTopicPartitions())
+            partitionMap.mapKeys { it.key.toCordaTopicPartition() }
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException,
@@ -516,8 +498,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun resume(partitions: Collection<CordaTopicPartition>) {
         try {
-            val newPartitions = partitions.map { TopicPartition(topicPrefix + it.topic, it.partition) }
-            consumer.resume(newPartitions)
+            consumer.resume(partitions.toTopicPartitions())
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException -> {
@@ -532,8 +513,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun pause(partitions: Collection<CordaTopicPartition>) {
         try {
-            val newPartitions = partitions.map { TopicPartition(topicPrefix + it.topic, it.partition) }
-            consumer.pause(newPartitions)
+            consumer.pause(partitions.toTopicPartitions())
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException -> {
@@ -548,10 +528,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun paused(): Set<CordaTopicPartition> {
         return try {
-            val partitionSet = consumer.paused()
-            partitionSet.map {
-                CordaTopicPartition(it.topic().removePrefix(topicPrefix), it.partition())
-            }.toSet()
+            consumer.paused().toCordaTopicPartitions().toSet()
         } catch (ex: Exception) {
             when (ex) {
                 is IllegalStateException -> {
@@ -584,6 +561,11 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     override fun setDefaultRebalanceListener(defaultListener: CordaConsumerRebalanceListener) {
         this.defaultListener = defaultListener
     }
+
+    private fun CordaTopicPartition.toTopicPartition() = toTopicPartition(topicPrefix)
+    private fun Collection<CordaTopicPartition>.toTopicPartitions() = this.map { it.toTopicPartition(topicPrefix) }
+    private fun TopicPartition.toCordaTopicPartition() = toCordaTopicPartition(topicPrefix)
+    private fun Collection<TopicPartition>.toCordaTopicPartitions() = this.map { it.toCordaTopicPartition(topicPrefix) }
 }
 
 fun CordaConsumerRebalanceListener.toKafkaListener(): ConsumerRebalanceListener {

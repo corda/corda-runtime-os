@@ -169,8 +169,8 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun processRecords(cordaConsumerRecords: List<CordaConsumerRecord<String, RPCRequest>>) {
-        cordaConsumerRecords.forEach {
+    private fun processRecords(consumerRecords: List<CordaConsumerRecord<String, RPCRequest>>) {
+        consumerRecords.forEach {
             val rpcRequest = it.value ?: throw CordaMessageAPIIntermittentException("Should we not have a request?")
             val requestBytes = rpcRequest.payload
             val request = deserializer.deserialize(requestBytes.array())
