@@ -1,0 +1,35 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-app'
+}
+
+description 'P2P Configuration Publisher Application'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':osgi-framework-api')
+    implementation project(':components:gateway')
+    implementation project(':libs:configuration:configuration-schema:p2p')
+    implementation "net.corda:corda-avro-schema"
+    implementation project(":libs:configuration:configuration-core")
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.slf4j:slf4j-api'
+    implementation 'net.corda:corda-base'
+    implementation "info.picocli:picocli:$picocliVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
+    runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+
+    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
+    runtimeOnly project(":libs:messaging:kafka-messaging-impl")
+    implementation project(":libs:configuration:configuration-publish")
+    runtimeOnly project(":libs:configuration:configuration-publish-impl")
+    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
+}

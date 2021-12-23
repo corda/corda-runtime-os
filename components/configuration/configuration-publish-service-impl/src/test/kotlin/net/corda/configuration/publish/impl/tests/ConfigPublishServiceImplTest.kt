@@ -5,10 +5,10 @@ package net.corda.configuration.publish.impl.tests
 import net.corda.configuration.publish.ConfigPublishService
 import net.corda.configuration.publish.impl.ConfigPublishServiceImpl
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.write.ConfigWriter
-import net.corda.libs.configuration.write.CordaConfigurationKey
-import net.corda.libs.configuration.write.CordaConfigurationVersion
-import net.corda.libs.configuration.write.factory.ConfigWriterFactory
+import net.corda.libs.configuration.publish.ConfigPublisher
+import net.corda.libs.configuration.publish.CordaConfigurationKey
+import net.corda.libs.configuration.publish.CordaConfigurationVersion
+import net.corda.libs.configuration.publish.factory.ConfigPublisherFactory
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,8 +24,8 @@ import java.io.BufferedReader
 
 class ConfigPublishServiceImplTest {
     private lateinit var configPublishService: ConfigPublishService
-    private val configWriterFactory: ConfigWriterFactory = mock()
-    private val configWriter: ConfigWriter = mock()
+    private val configPublisherFactory: ConfigPublisherFactory = mock()
+    private val configPublisher: ConfigPublisher = mock()
     private val config: SmartConfig = mock()
 
     @Captor
@@ -33,9 +33,9 @@ class ConfigPublishServiceImplTest {
 
     @BeforeEach
     fun beforeEach() {
-        configPublishService = ConfigPublishServiceImpl(configWriterFactory)
-        Mockito.`when`(configWriterFactory.createWriter(any(), any()))
-            .thenReturn(configWriter)
+        configPublishService = ConfigPublishServiceImpl(configPublisherFactory)
+        Mockito.`when`(configPublisherFactory.createPublisher(any(), any()))
+            .thenReturn(configPublisher)
     }
 
     @Test
@@ -56,7 +56,7 @@ class ConfigPublishServiceImplTest {
             CordaConfigurationVersion("security", 5, 3)
         )
 
-        verify(configWriter, times(2)).updateConfiguration(capture(keyCaptor), any())
+        verify(configPublisher, times(2)).updateConfiguration(capture(keyCaptor), any())
         Assertions.assertEquals(cordaDatabaseKey, keyCaptor.allValues[0])
         Assertions.assertEquals(cordaSecurityKey, keyCaptor.allValues[1])
     }
@@ -78,7 +78,7 @@ class ConfigPublishServiceImplTest {
             CordaConfigurationVersion("security", 5, 3)
         )
 
-        verify(configWriter, times(2)).updateConfiguration(capture(keyCaptor), any())
+        verify(configPublisher, times(2)).updateConfiguration(capture(keyCaptor), any())
         Assertions.assertEquals(cordaDatabaseKey, keyCaptor.allValues[0])
         Assertions.assertEquals(cordaSecurityKey, keyCaptor.allValues[1])
     }
@@ -112,7 +112,7 @@ class ConfigPublishServiceImplTest {
             CordaConfigurationVersion("security", 5, 3)
         )
 
-        verify(configWriter, times(4)).updateConfiguration(capture(keyCaptor), any())
+        verify(configPublisher, times(4)).updateConfiguration(capture(keyCaptor), any())
         Assertions.assertEquals(cordaDatabaseKey, keyCaptor.allValues[0])
         Assertions.assertEquals(cordaSecurityKey, keyCaptor.allValues[1])
         Assertions.assertEquals(improvedCordaDatabaseKey, keyCaptor.allValues[2])
@@ -136,7 +136,7 @@ class ConfigPublishServiceImplTest {
             CordaConfigurationVersion("security", 5, 3)
         )
 
-        verify(configWriter, times(2)).updateConfiguration(capture(keyCaptor), any())
+        verify(configPublisher, times(2)).updateConfiguration(capture(keyCaptor), any())
         Assertions.assertEquals(cordaDatabaseKey, keyCaptor.allValues[0])
         Assertions.assertEquals(cordaSecurityKey, keyCaptor.allValues[1])
     }

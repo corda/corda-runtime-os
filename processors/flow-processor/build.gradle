@@ -28,7 +28,7 @@ dependencies {
     runtimeOnly project(":libs:sandbox")
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
     runtimeOnly project(":libs:crypto:crypto-impl")
-    runtimeOnly project(":libs:configuration:configuration-write-impl")
+    runtimeOnly project(":libs:configuration:configuration-publish-impl")
     runtimeOnly project(":libs:configuration:configuration-read-impl")
     runtimeOnly project(":libs:flows:flow-mapper-impl")
     runtimeOnly project(":libs:flows:flow-manager-impl")

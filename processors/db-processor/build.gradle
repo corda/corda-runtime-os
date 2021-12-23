@@ -17,7 +17,7 @@ dependencies {
     implementation 'net.corda:corda-base'
 
     runtimeOnly project(':components:configuration:configuration-write-service-impl')
-    runtimeOnly project(':libs:configuration:configuration-write-impl')
+    runtimeOnly project(':libs:configuration:configuration-publish-impl')
     runtimeOnly project(':libs:configuration:configuration-write-persistent-impl')
     runtimeOnly project(':libs:messaging:kafka-messaging-impl')
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')

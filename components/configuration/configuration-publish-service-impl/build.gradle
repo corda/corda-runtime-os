@@ -11,7 +11,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:configuration:configuration-publish-service')
     implementation project(':libs:configuration:configuration-core')
-    implementation project(':libs:configuration:configuration-write')
+    implementation project(':libs:configuration:configuration-publish')
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'net.corda:corda-base'
