@@ -20,7 +20,7 @@ abstract class ConfigProducer : Runnable {
 
     override fun run() {
         consoleLogger.info("Publishing configuration...")
-        val writer = parent!!.createWriter()
+        val writer = parent!!.createPublisher()
         writer.updateConfiguration(
             key,
             parent.smartConfigFactory.create(configuration)

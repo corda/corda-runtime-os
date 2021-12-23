@@ -64,7 +64,7 @@ internal class CommonArguments(
             )
     }
 
-    fun createWriter(): ConfigPublisher =
+    fun createPublisher(): ConfigPublisher =
         configPublisherFactory.createPublisher(
             configTopicName,
             smartConfigFactory.create(kafkaNodeConfiguration)
