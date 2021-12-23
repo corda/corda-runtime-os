@@ -38,7 +38,8 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
-import net.corda.p2p.schema.Schema
+import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.toBase64
@@ -572,7 +573,7 @@ class SessionManagerTest {
         )
         assertThat(sessionManager.getSessionById(sessionId)).isEqualTo(SessionManager.SessionDirection.NoSession)
         publisherWithDominoLogicByClientId["session-manager"]!!.forEach {
-            verify(it).publish(listOf(Record(Schema.SESSION_OUT_PARTITIONS, sessionId, null)))
+            verify(it).publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, null)))
         }
     }
 
@@ -789,7 +790,7 @@ class SessionManagerTest {
         )
         assertThat(sessionManager.getSessionById(sessionState.sessionId)).isEqualTo(SessionManager.SessionDirection.NoSession)
         publisherWithDominoLogicByClientId["session-manager"]!!.forEach {
-            verify(it).publish(listOf(Record(Schema.SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
+            verify(it).publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
         }
     }
 
@@ -937,7 +938,7 @@ class SessionManagerTest {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
-            .publish(listOf(Record(Schema.SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
+            .publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
 
         sessionManager.stop()
         resourceHolder.close()
@@ -948,7 +949,7 @@ class SessionManagerTest {
         val messages = mutableListOf<AuthenticatedDataMessage>()
         fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
             val record = records.single()
-            assertEquals(Schema.LINK_OUT_TOPIC, record.topic)
+            assertEquals(LINK_OUT_TOPIC, record.topic)
             messages.add((record.value as LinkOutMessage).payload as AuthenticatedDataMessage)
             return listOf(CompletableFuture.completedFuture(Unit))
         }
@@ -1001,7 +1002,7 @@ class SessionManagerTest {
             assertThat(sessionManager.processOutboundMessage(message)).isInstanceOf(NewSessionNeeded::class.java)
         }
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
-            .publish(listOf(Record(Schema.SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
+            .publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
         sessionManager.stop()
         resourcesHolder.close()
 
@@ -1104,7 +1105,7 @@ class SessionManagerTest {
         val resourcesHolder = ResourcesHolder()
         fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
             for (record in records) {
-                if (record.topic == Schema.LINK_OUT_TOPIC) {
+                if (record.topic == LINK_OUT_TOPIC) {
                     linkOutMessages++
                 }
             }
@@ -1178,7 +1179,7 @@ class SessionManagerTest {
         Thread.sleep(3 * configWithHeartbeat.heartbeatPeriod.toMillis())
         assertThat(linkOutMessages).isEqualTo(messagesSentSoFar)
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
-            .publish(listOf(Record(Schema.SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
+            .publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionState.sessionId, null)))
 
         resourcesHolder.close()
         sessionManager.stop()
@@ -1193,7 +1194,7 @@ class SessionManagerTest {
         var sessionManager: SessionManager? = null
         fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
             val record = records.single()
-            assertEquals(Schema.LINK_OUT_TOPIC, record.topic)
+            assertEquals(LINK_OUT_TOPIC, record.topic)
             val message = (record.value as LinkOutMessage).payload as AuthenticatedDataMessage
             messages.add(message)
             if (sessionManager != null) {

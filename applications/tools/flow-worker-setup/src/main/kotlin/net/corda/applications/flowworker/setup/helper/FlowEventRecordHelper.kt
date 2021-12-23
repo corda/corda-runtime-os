@@ -6,7 +6,7 @@ import net.corda.data.flow.event.mapper.MessageDirection
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.identity.HoldingIdentity
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Companion.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import java.time.Instant
 
 

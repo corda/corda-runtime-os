@@ -1,6 +1,8 @@
 package net.corda.libs.permissions.storage.reader.impl
 
 import net.corda.data.permissions.ChangeDetails
+import net.corda.data.permissions.PermissionAssociation
+import net.corda.data.permissions.RoleAssociation
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
 import net.corda.messaging.api.publisher.Publisher
@@ -14,7 +16,9 @@ import net.corda.permissions.model.RoleGroupAssociation
 import net.corda.permissions.model.RolePermissionAssociation
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
-import net.corda.rpc.schema.Schema
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_GROUP_TOPIC
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.argumentCaptor
@@ -23,8 +27,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import net.corda.data.permissions.PermissionAssociation
-import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.PermissionType as AvroPermissionType
@@ -301,9 +303,9 @@ class PermissionStorageReaderImplTest {
 
         processor.start()
 
-        val userRecord = Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, avroUser)
-        val groupRecord = Record(Schema.RPC_PERM_GROUP_TOPIC, group.id, avroGroup)
-        val roleRecord = Record(Schema.RPC_PERM_ROLE_TOPIC, role.id, avroRole)
+        val userRecord = Record(RPC_PERM_USER_TOPIC, user.loginName, avroUser)
+        val groupRecord = Record(RPC_PERM_GROUP_TOPIC, group.id, avroGroup)
+        val roleRecord = Record(RPC_PERM_ROLE_TOPIC, role.id, avroRole)
 
         val captor = argumentCaptor<List<Record<String, Any>>>()
         verify(publisher, times(3)).publish(captor.capture())
@@ -323,9 +325,9 @@ class PermissionStorageReaderImplTest {
 
         processor.start()
 
-        val userRecord = Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, value = null)
-        val groupRecord = Record(Schema.RPC_PERM_GROUP_TOPIC, group.name, value = null)
-        val roleRecord = Record(Schema.RPC_PERM_ROLE_TOPIC, role.name, value = null)
+        val userRecord = Record(RPC_PERM_USER_TOPIC, user.loginName, value = null)
+        val groupRecord = Record(RPC_PERM_GROUP_TOPIC, group.name, value = null)
+        val roleRecord = Record(RPC_PERM_ROLE_TOPIC, role.name, value = null)
 
         val captor = argumentCaptor<List<Record<String, Any>>>()
         verify(publisher, times(3)).publish(captor.capture())
@@ -342,7 +344,7 @@ class PermissionStorageReaderImplTest {
 
         processor.start()
 
-        val userRecord = Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, avroUser)
+        val userRecord = Record(RPC_PERM_USER_TOPIC, user.loginName, avroUser)
 
         verify(publisher).publish(listOf(userRecord))
     }
@@ -356,7 +358,7 @@ class PermissionStorageReaderImplTest {
 
         processor.publishGroups(groupIds)
 
-        val groupRecord = Record(Schema.RPC_PERM_GROUP_TOPIC, group.id, avroGroup)
+        val groupRecord = Record(RPC_PERM_GROUP_TOPIC, group.id, avroGroup)
 
         verify(publisher).publish(listOf(groupRecord))
     }
@@ -370,7 +372,7 @@ class PermissionStorageReaderImplTest {
 
         processor.publishRoles(roleIds)
 
-        val roleRecord = Record(Schema.RPC_PERM_ROLE_TOPIC, role.id, avroRole)
+        val roleRecord = Record(RPC_PERM_ROLE_TOPIC, role.id, avroRole)
 
         verify(publisher).publish(listOf(roleRecord))
     }
@@ -382,7 +384,7 @@ class PermissionStorageReaderImplTest {
 
         processor.start()
 
-        val userRecord = Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, value = null)
+        val userRecord = Record(RPC_PERM_USER_TOPIC, user.loginName, value = null)
 
         verify(publisher).publish(listOf(userRecord))
     }
@@ -396,7 +398,7 @@ class PermissionStorageReaderImplTest {
 
         processor.publishGroups(groupIds)
 
-        val groupRecord = Record(Schema.RPC_PERM_GROUP_TOPIC, group.name, value = null)
+        val groupRecord = Record(RPC_PERM_GROUP_TOPIC, group.name, value = null)
 
         verify(publisher).publish(listOf(groupRecord))
     }
@@ -410,7 +412,7 @@ class PermissionStorageReaderImplTest {
 
         processor.publishRoles(roleIds)
 
-        val roleRecord = Record(Schema.RPC_PERM_ROLE_TOPIC, role.name, value = null)
+        val roleRecord = Record(RPC_PERM_ROLE_TOPIC, role.name, value = null)
 
         verify(publisher).publish(listOf(roleRecord))
     }
@@ -424,8 +426,8 @@ class PermissionStorageReaderImplTest {
         processor.start()
 
         val userRecords = listOf(
-            Record(Schema.RPC_PERM_USER_TOPIC, user.loginName, avroUser),
-            Record(Schema.RPC_PERM_USER_TOPIC, user2.loginName, value = null)
+            Record(RPC_PERM_USER_TOPIC, user.loginName, avroUser),
+            Record(RPC_PERM_USER_TOPIC, user2.loginName, value = null)
         )
 
         verify(publisher).publish(userRecords)
@@ -441,8 +443,8 @@ class PermissionStorageReaderImplTest {
         processor.publishGroups(groupIds)
 
         val groupRecords = listOf(
-            Record(Schema.RPC_PERM_GROUP_TOPIC, group.id, avroGroup),
-            Record(Schema.RPC_PERM_GROUP_TOPIC, group2.id, value = null)
+            Record(RPC_PERM_GROUP_TOPIC, group.id, avroGroup),
+            Record(RPC_PERM_GROUP_TOPIC, group2.id, value = null)
         )
 
         verify(publisher).publish(groupRecords)
@@ -458,8 +460,8 @@ class PermissionStorageReaderImplTest {
         processor.publishRoles(roleIds)
 
         val roleRecords = listOf(
-            Record(Schema.RPC_PERM_ROLE_TOPIC, role.id, avroRole),
-            Record(Schema.RPC_PERM_ROLE_TOPIC, role2.id, value = null)
+            Record(RPC_PERM_ROLE_TOPIC, role.id, avroRole),
+            Record(RPC_PERM_ROLE_TOPIC, role2.id, value = null)
         )
 
         verify(publisher).publish(roleRecords)

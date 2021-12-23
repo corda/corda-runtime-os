@@ -1,6 +1,5 @@
 package net.corda.permissions.cache
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.Group
 import net.corda.data.permissions.Role
@@ -25,11 +24,14 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.rpc.schema.Schema
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_GROUP_TOPIC
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.concurrent.ConcurrentHashMap
 
 private data class NewConfigurationReceivedEvent(val config: SmartConfig): LifecycleEvent
 
@@ -163,7 +165,7 @@ class PermissionCacheService @Activate constructor(
         kafkaConfig: SmartConfig
     ): CompactedSubscription<String, User> {
         return subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_USER_TOPIC),
+            SubscriptionConfig(CONSUMER_GROUP, RPC_PERM_USER_TOPIC),
             permissionCacheTopicProcessorFactory.createUserTopicProcessor(userData) {
                 coordinator.postEvent(UserTopicSnapshotReceived())
             },
@@ -176,7 +178,7 @@ class PermissionCacheService @Activate constructor(
         kafkaConfig: SmartConfig
     ): CompactedSubscription<String, Group> {
         return subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_GROUP_TOPIC),
+            SubscriptionConfig(CONSUMER_GROUP, RPC_PERM_GROUP_TOPIC),
             permissionCacheTopicProcessorFactory.createGroupTopicProcessor(groupData) {
                 coordinator.postEvent(GroupTopicSnapshotReceived())
             },
@@ -189,7 +191,7 @@ class PermissionCacheService @Activate constructor(
         kafkaConfig: SmartConfig
     ): CompactedSubscription<String, Role> {
         return subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_ROLE_TOPIC),
+            SubscriptionConfig(CONSUMER_GROUP, RPC_PERM_ROLE_TOPIC),
             permissionCacheTopicProcessorFactory.createRoleTopicProcessor(roleData) {
                 coordinator.postEvent(RoleTopicSnapshotReceived())
             },

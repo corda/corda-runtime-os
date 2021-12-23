@@ -16,7 +16,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.mapper.impl.FlowMapperEventExecutorFactoryImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Companion.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
