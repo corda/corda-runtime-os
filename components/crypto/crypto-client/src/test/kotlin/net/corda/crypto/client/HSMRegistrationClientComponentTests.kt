@@ -4,7 +4,6 @@ import net.corda.crypto.CryptoConsts
 import net.corda.crypto.CryptoPublishResult
 import net.corda.data.crypto.config.HSMConfig
 import net.corda.data.crypto.config.HSMInfo
-import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.registration.hsm.AddHSMCommand
 import net.corda.data.crypto.wire.registration.hsm.AssignHSMCommand
 import net.corda.data.crypto.wire.registration.hsm.AssignSoftHSMCommand
@@ -30,7 +29,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.nio.ByteBuffer
-import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -64,7 +62,7 @@ class HSMRegistrationClientComponentTests : AbstractComponentTests<HSMRegistrati
         assertEquals(expectedTenantId, context.tenantId)
         assertEquals(result.value.requestId, context.requestId)
         result.assertThatIsBetween(context.requestTimestamp)
-        assertEquals(HSMRegistrationPublisher::class.simpleName, context.requestingComponent)
+        assertEquals(HSMRegistrationClientImpl::class.simpleName, context.requestingComponent)
         assertThat(context.other.items, empty())
         return req
     }

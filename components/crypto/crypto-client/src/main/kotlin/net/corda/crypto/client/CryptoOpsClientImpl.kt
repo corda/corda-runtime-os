@@ -36,7 +36,7 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.util.UUID
 
-class CryptoOpsPublisher(
+internal class CryptoOpsClientImpl(
     private val schemeMetadata: CipherSchemeMetadata,
     private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse>
 ) : CryptoOpsClient {
@@ -296,7 +296,7 @@ class CryptoOpsPublisher(
 
     private fun createRequest(tenantId: String, request: Any): RpcOpsRequest =
         RpcOpsRequest(
-            createWireRequestContext<CryptoOpsPublisher>(tenantId),
+            createWireRequestContext<CryptoOpsClientImpl>(tenantId),
             request
         )
 

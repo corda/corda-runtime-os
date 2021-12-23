@@ -25,7 +25,7 @@ class HSMRegistrationClientComponentImpl(
     companion object {
         const val CLIENT_ID = "crypto.registration.hsm"
 
-        inline val Resources?.instance: HSMRegistrationClient
+        private inline val Resources?.instance: HSMRegistrationClient
             get() = this?.registrar ?: throw IllegalStateException("The component haven't been initialised.")
     }
 
@@ -59,7 +59,7 @@ class HSMRegistrationClientComponentImpl(
         publisherFactory: PublisherFactory
     ) : AutoCloseable {
         private val publisher: Publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID))
-        val registrar: HSMRegistrationPublisher = HSMRegistrationPublisher(publisher)
+        internal val registrar: HSMRegistrationClientImpl = HSMRegistrationClientImpl(publisher)
         override fun close() {
             publisher.closeGracefully()
         }

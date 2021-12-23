@@ -13,7 +13,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
 
-class HSMRegistrationPublisher(
+internal class HSMRegistrationClientImpl(
     private val publisher: Publisher
 ) : HSMRegistrationClient {
     companion object {
@@ -86,7 +86,7 @@ class HSMRegistrationPublisher(
 
     private fun createRequest(tenantId: String, request: Any): HSMRegistrationRequest =
         HSMRegistrationRequest(
-            createWireRequestContext<HSMRegistrationPublisher>(tenantId),
+            createWireRequestContext<HSMRegistrationClientImpl>(tenantId),
             request
         )
 }

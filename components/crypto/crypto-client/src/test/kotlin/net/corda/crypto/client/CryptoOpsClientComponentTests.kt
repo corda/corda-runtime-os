@@ -110,7 +110,7 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
         val context = result.firstRequest.context
         kotlin.test.assertEquals(knownTenantId, context.tenantId)
         result.assertThatIsBetween(context.requestTimestamp)
-        kotlin.test.assertEquals(CryptoOpsPublisher::class.simpleName, context.requestingComponent)
+        kotlin.test.assertEquals(CryptoOpsClientImpl::class.simpleName, context.requestingComponent)
         assertThat(context.other.items, Matchers.empty())
     }
 

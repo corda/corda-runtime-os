@@ -33,7 +33,7 @@ class CryptoOpsClientComponentImpl(
         const val CLIENT_ID = "crypto.ops.rpc"
         const val GROUP_NAME = "crypto.ops.rpc"
 
-        inline val Resources?.instance: CryptoOpsPublisher
+        private inline val Resources?.instance: CryptoOpsClientImpl
             get() = this?.ops ?: throw IllegalStateException("The component haven't been initialised.")
     }
 
@@ -131,7 +131,7 @@ class CryptoOpsClientComponentImpl(
                 responseType = RpcOpsResponse::class.java
             )
         ).also { it.start() }
-        val ops: CryptoOpsPublisher = CryptoOpsPublisher(
+        internal val ops: CryptoOpsClientImpl = CryptoOpsClientImpl(
             schemeMetadata = schemeMetadata,
             sender = sender
         )
