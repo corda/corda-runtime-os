@@ -43,7 +43,7 @@ import java.time.Duration
 class CordaKafkaConsumerImpl<K : Any, V : Any>(
     config: Config,
     private val consumer: Consumer<K, V>,
-    internal var defaultListener: CordaConsumerRebalanceListener? = null,
+    private var defaultListener: CordaConsumerRebalanceListener? = null,
 ) : CordaConsumer<K, V> {
 
     companion object {
