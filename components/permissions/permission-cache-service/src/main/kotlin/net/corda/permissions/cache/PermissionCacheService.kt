@@ -26,6 +26,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ENTITY_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_GROUP_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
@@ -220,7 +221,7 @@ class PermissionCacheService @Activate constructor(
         kafkaConfig: SmartConfig
     ): CompactedSubscription<String, Permission> {
         return subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_ENTITY_TOPIC),
+            SubscriptionConfig(CONSUMER_GROUP, RPC_PERM_ENTITY_TOPIC),
             permissionCacheTopicProcessorFactory.createPermissionTopicProcessor(permissionData) {
                 coordinator.postEvent(PermissionTopicSnapshotReceived())
             },
