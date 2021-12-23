@@ -88,7 +88,7 @@ fun Role.toAvroRole(): AvroRole {
 fun RolePermissionAssociation.toAvroPermissionAssociation(): AvroPermissionAssociation {
     return AvroPermissionAssociation(
         AvroChangeDetails(updateTimestamp),
-        permission.toAvroPermission()
+        permission.id
     )
 }
 
