@@ -8,10 +8,10 @@ description "Dependency Injection"
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-application"
-    implementation "net.corda:corda-base"
-    implementation project(":libs:flows:flow-fiber")
-    implementation project(':libs:sandbox')
-    implementation project(':libs:virtual-node:sandbox-group-context')
+    api platform("net.corda:corda-api:$cordaApiVersion")
+    api project(':libs:flows:flow-fiber')
+    api project(':libs:sandbox')
+    api project(':libs:virtual-node:sandbox-group-context')
+    api 'net.corda:corda-application'
+    api 'net.corda:corda-serialization'
 }
