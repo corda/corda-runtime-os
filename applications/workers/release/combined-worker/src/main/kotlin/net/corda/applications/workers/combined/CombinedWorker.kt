@@ -2,6 +2,7 @@ package net.corda.applications.workers.combined
 
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.HealthMonitor
+import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
@@ -54,9 +55,9 @@ class CombinedWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val databaseParams = listOf(params.databaseParams to DB_CONFIG_PATH)
-        val rpcParams = listOf(params.rpcParams to RPC_CONFIG_PATH)
-        val config = getBootstrapConfig(smartConfigFactory, params.defaultParams, databaseParams + rpcParams)
+        val databaseConfig = PathAndConfig(DB_CONFIG_PATH, params.databaseParams)
+        val rpcConfig = PathAndConfig(RPC_CONFIG_PATH, params.rpcParams)
+        val config = getBootstrapConfig(smartConfigFactory, params.defaultParams, listOf(databaseConfig, rpcConfig))
 
         cryptoProcessor.start(config)
         dbProcessor.start(config)

@@ -2,6 +2,7 @@ package net.corda.applications.workers.db
 
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.HealthMonitor
+import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
@@ -44,8 +45,8 @@ class DBWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, DBWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val databaseParams = listOf(params.databaseParams to DB_CONFIG_PATH)
-        val config = getBootstrapConfig(smartConfigFactory, params.defaultParams, databaseParams)
+        val databaseConfig = PathAndConfig(DB_CONFIG_PATH, params.databaseParams)
+        val config = getBootstrapConfig(smartConfigFactory, params.defaultParams, listOf(databaseConfig))
 
         processor.start(config)
     }

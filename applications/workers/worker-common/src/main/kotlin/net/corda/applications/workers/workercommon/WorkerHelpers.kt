@@ -12,8 +12,8 @@ import net.corda.osgi.api.Shutdown
 import org.osgi.framework.FrameworkUtil
 import picocli.CommandLine
 
-/** A pairing of a configuration key/value map with the path at which the configuration should be stored. */
-private typealias ParamsAndPath = Pair<Map<String, String>, String>
+/** Associates a configuration key/value map with the path at which the configuration should be stored. */
+data class PathAndConfig(val path: String, val config: Map<String, String>)
 
 /** Helpers used across multiple workers. */
 class WorkerHelpers {
@@ -41,12 +41,12 @@ class WorkerHelpers {
         fun getBootstrapConfig(
             smartConfigFactory: SmartConfigFactory,
             defaultParams: DefaultWorkerParams,
-            extraParams: List<ParamsAndPath> = emptyList()
+            extraParams: List<PathAndConfig> = emptyList()
         ): SmartConfig {
             val messagingParamsMap = defaultParams.messagingParams.mapKeys { (key, _) -> "$MSG_CONFIG_PATH.$key" }
             val additionalParamsMap = defaultParams.additionalParams.mapKeys { (key, _) -> "$CUSTOM_CONFIG_PATH.$key" }
             val extraParamsMap = extraParams
-                .map { (params, path) -> params.mapKeys { (key, _) -> "$path.$key" } }
+                .map { (path, params) -> params.mapKeys { (key, _) -> "$path.$key" } }
                 .flatMap { map -> map.entries }
                 .associate { (key, value) -> key to value }
 
