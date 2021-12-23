@@ -2,8 +2,8 @@ package net.corda.configuration.write.impl
 
 import net.corda.configuration.write.ConfigWriteServiceException
 import net.corda.configuration.write.impl.dbutils.DBUtils
-import net.corda.libs.configuration.write.persistent.PersistentConfigWriter
-import net.corda.libs.configuration.write.persistent.PersistentConfigWriterFactory
+import net.corda.libs.configuration.write.ConfigWriter
+import net.corda.libs.configuration.write.ConfigWriterFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
@@ -14,10 +14,10 @@ import net.corda.lifecycle.StopEvent
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigWriteServiceImpl]. */
 internal class ConfigWriteEventHandler(
-    private val configWriterFactory: PersistentConfigWriterFactory,
+    private val configWriterFactory: ConfigWriterFactory,
     private val dbUtils: DBUtils
 ) : LifecycleEventHandler {
-    private var configWriter: PersistentConfigWriter? = null
+    private var configWriter: ConfigWriter? = null
 
     /**
      * Upon [StartProcessingEvent], starts processing cluster configuration updates. Upon [StopEvent], stops processing

@@ -3,7 +3,7 @@ package net.corda.configuration.write.impl
 import net.corda.configuration.write.ConfigWriteService
 import net.corda.configuration.write.impl.dbutils.DBUtils
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.write.persistent.PersistentConfigWriterFactory
+import net.corda.libs.configuration.write.ConfigWriterFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import org.osgi.service.component.annotations.Activate
@@ -16,14 +16,14 @@ import org.osgi.service.component.annotations.Reference
 internal class ConfigWriteServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = PersistentConfigWriterFactory::class)
-    persistentConfigWriterFactory: PersistentConfigWriterFactory,
+    @Reference(service = ConfigWriterFactory::class)
+    configWriterFactory: ConfigWriterFactory,
     @Reference(service = DBUtils::class)
     dbUtils: DBUtils
 ) : ConfigWriteService {
 
     private val coordinator = let {
-        val eventHandler = ConfigWriteEventHandler(persistentConfigWriterFactory, dbUtils)
+        val eventHandler = ConfigWriteEventHandler(configWriterFactory, dbUtils)
         coordinatorFactory.createCoordinator<ConfigWriteService>(eventHandler)
     }
 

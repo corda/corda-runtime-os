@@ -1,0 +1,80 @@
+package net.corda.libs.configuration.write.impl
+
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.write.ConfigWriter
+import net.corda.libs.configuration.write.ConfigWriterException
+import net.corda.libs.configuration.write.ConfigWriterFactory
+import net.corda.libs.configuration.write.TOPIC_CONFIG_MGMT_REQUEST
+import net.corda.libs.configuration.write.impl.dbutils.DBUtils
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+
+/** An implementation of [ConfigWriterFactory]. */
+@Suppress("Unused")
+@Component(service = [ConfigWriterFactory::class])
+internal class ConfigWriterFactoryImpl @Activate constructor(
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = DBUtils::class)
+    private val dbUtils: DBUtils
+) : ConfigWriterFactory {
+
+    override fun create(config: SmartConfig, instanceId: Int): ConfigWriter {
+        // This is temporary. In the future, migrations will be applied by a different codepath.
+        dbUtils.migrateClusterDatabase(config)
+
+        val publisher = createPublisher(config, instanceId)
+        val subscription = createRPCSubscription(config, instanceId, publisher)
+        return ConfigWriterImpl(subscription, publisher)
+    }
+
+    /**
+     * Creates a [Publisher] using the provided [config] and [instanceId].
+     *
+     * @throws ConfigWriterException If the publisher cannot be set up.
+     */
+    private fun createPublisher(config: SmartConfig, instanceId: Int): Publisher {
+        val publisherConfig = PublisherConfig(CLIENT_NAME_DB, instanceId)
+        return try {
+            publisherFactory.createPublisher(publisherConfig, config)
+        } catch (e: Exception) {
+            throw ConfigWriterException("Could not create `ConfigWriter`.", e)
+        }
+    }
+
+    /**
+     * Creates a [ConfigMgmtRPCSubscription] using the provided [config] and [instanceId]. The subscription
+     * is for the [TOPIC_CONFIG_MGMT_REQUEST] topic, and handles requests using a [ConfigWriterProcessor].
+     *
+     * @throws ConfigWriterException If the subscription cannot be set up.
+     */
+    private fun createRPCSubscription(
+        config: SmartConfig,
+        instanceId: Int,
+        publisher: Publisher
+    ): ConfigMgmtRPCSubscription {
+        val rpcConfig = RPCConfig(
+            GROUP_NAME,
+            CLIENT_NAME_RPC,
+            TOPIC_CONFIG_MGMT_REQUEST,
+            ConfigMgmtReq::class.java,
+            ConfigMgmtResp::class.java,
+            instanceId
+        )
+
+        val processor = ConfigWriterProcessor(publisher, config, dbUtils)
+        return try {
+            subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
+        } catch (e: Exception) {
+            throw ConfigWriterException("Could not create `ConfigWriter`.", e)
+        }
+    }
+}

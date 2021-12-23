@@ -1,25 +1,37 @@
 plugins {
-    id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
-description "Configuration Write Service Impl"
+description 'Configuration Write Library Impl'
 
 dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(':components:configuration:configuration-write-service')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-write')
     implementation project(':libs:db:db-admin')
+    implementation project(':libs:db:db-admin-impl')
     implementation project(':libs:db:db-core')
     implementation project(':libs:db:db-orm')
     implementation project(':libs:lifecycle:lifecycle')
+    implementation project(":libs:messaging:messaging")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
     implementation 'org.slf4j:slf4j-api'
 
+    runtimeOnly project(':libs:db:db-orm-impl')
+    runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
+
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}
+
+tasks.named('jar', Jar) {
+    bnd '''\
+DynamicImport-Package: org.hibernate.proxy
+'''
 }

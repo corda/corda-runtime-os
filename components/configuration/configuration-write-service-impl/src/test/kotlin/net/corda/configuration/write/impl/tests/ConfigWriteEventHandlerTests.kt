@@ -5,9 +5,9 @@ import net.corda.configuration.write.impl.ConfigWriteEventHandler
 import net.corda.configuration.write.impl.StartProcessingEvent
 import net.corda.configuration.write.impl.dbutils.DBUtils
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.write.persistent.PersistentConfigWriter
-import net.corda.libs.configuration.write.persistent.PersistentConfigWriterException
-import net.corda.libs.configuration.write.persistent.PersistentConfigWriterFactory
+import net.corda.libs.configuration.write.ConfigWriter
+import net.corda.libs.configuration.write.ConfigWriterException
+import net.corda.libs.configuration.write.ConfigWriterFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.LifecycleStatus.DOWN
@@ -151,32 +151,32 @@ class ConfigWriteEventHandlerTests {
     }
 
     /**
-     * A [PersistentConfigWriterFactory] that creates [DummyConfigWriter]s.
+     * A [ConfigWriterFactory] that creates [DummyConfigWriter]s.
      *
-     * Throws [PersistentConfigWriterException] if [isCreationFails].
+     * Throws [ConfigWriterException] if [isCreationFails].
      */
     private class DummyConfigWriterFactory(
-        private val configWriter: PersistentConfigWriter,
+        private val configWriter: ConfigWriter,
         private val isCreationFails: Boolean = false
-    ) : PersistentConfigWriterFactory {
+    ) : ConfigWriterFactory {
         override fun create(config: SmartConfig, instanceId: Int) = if (isCreationFails) {
-            throw PersistentConfigWriterException("")
+            throw ConfigWriterException("")
         } else {
             configWriter
         }
     }
 
     /**
-     * A [PersistentConfigWriter] that tracks whether it has been started and stopped.
+     * A [ConfigWriter] that tracks whether it has been started and stopped.
      *
-     * Throws [PersistentConfigWriterException] if [isStartFails].
+     * Throws [ConfigWriterException] if [isStartFails].
      */
-    private class DummyConfigWriter(private val isStartFails: Boolean = false) : PersistentConfigWriter {
+    private class DummyConfigWriter(private val isStartFails: Boolean = false) : ConfigWriter {
         override var isRunning = false
 
         override fun start() {
             if (isStartFails) {
-                throw PersistentConfigWriterException("")
+                throw ConfigWriterException("")
             }
 
             isRunning = true
