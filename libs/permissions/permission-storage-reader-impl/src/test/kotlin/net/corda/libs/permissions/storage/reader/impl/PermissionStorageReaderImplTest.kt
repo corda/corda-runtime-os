@@ -16,6 +16,7 @@ import net.corda.permissions.model.RoleGroupAssociation
 import net.corda.permissions.model.RolePermissionAssociation
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ENTITY_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_GROUP_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
@@ -104,7 +105,7 @@ class PermissionStorageReaderImplTest {
             listOf(
                 PermissionAssociation(
                     ChangeDetails(role.rolePermAssociations.first().updateTimestamp),
-                    avroPermission
+                    avroPermission.id
                 )
             )
         )
@@ -118,7 +119,7 @@ class PermissionStorageReaderImplTest {
             listOf(
                 PermissionAssociation(
                     ChangeDetails(role2.rolePermAssociations.first().updateTimestamp),
-                    avroPermission
+                    avroPermission.id
                 )
             )
         )
@@ -293,47 +294,55 @@ class PermissionStorageReaderImplTest {
     private val processor = PermissionStorageReaderImpl(permissionCache, permissionRepository, publisher)
 
     @Test
-    fun `starting the reader publishes stored users, groups and roles`() {
+    fun `starting the reader publishes stored users, groups, roles and permissions`() {
         whenever(permissionCache.users).thenReturn(emptyMap())
         whenever(permissionCache.groups).thenReturn(emptyMap())
         whenever(permissionCache.roles).thenReturn(emptyMap())
+        whenever(permissionCache.permissions).thenReturn(emptyMap())
         whenever(permissionRepository.findAllUsers()).thenReturn(listOf(user))
         whenever(permissionRepository.findAllGroups()).thenReturn(listOf(group))
         whenever(permissionRepository.findAllRoles()).thenReturn(listOf(role))
+        whenever(permissionRepository.findAllPermissions()).thenReturn(listOf(permission))
 
         processor.start()
 
         val userRecord = Record(RPC_PERM_USER_TOPIC, user.loginName, avroUser)
         val groupRecord = Record(RPC_PERM_GROUP_TOPIC, group.id, avroGroup)
         val roleRecord = Record(RPC_PERM_ROLE_TOPIC, role.id, avroRole)
+        val permissionRecord = Record(RPC_PERM_ENTITY_TOPIC, permission.id, avroPermission)
 
         val captor = argumentCaptor<List<Record<String, Any>>>()
-        verify(publisher, times(3)).publish(captor.capture())
+        verify(publisher, times(4)).publish(captor.capture())
         assertEquals(listOf(userRecord), captor.firstValue)
         assertEquals(listOf(groupRecord), captor.secondValue)
         assertEquals(listOf(roleRecord), captor.thirdValue)
+        assertEquals(listOf(permissionRecord), captor.allValues[3])
     }
 
     @Test
-    fun `starting the reader diffs the permission cache and removes any users, groups and roles that were deleted`() {
+    fun `starting the reader diffs the permission cache and removes any users, groups, roles and permissions deleted`() {
         whenever(permissionCache.users).thenReturn(mapOf(user.loginName to avroUser))
-        whenever(permissionCache.groups).thenReturn(mapOf(avroGroup.name to avroGroup))
-        whenever(permissionCache.roles).thenReturn(mapOf(avroRole.name to avroRole))
+        whenever(permissionCache.groups).thenReturn(mapOf(avroGroup.id to avroGroup))
+        whenever(permissionCache.roles).thenReturn(mapOf(avroRole.id to avroRole))
+        whenever(permissionCache.permissions).thenReturn(mapOf(avroPermission.id to avroPermission))
         whenever(permissionRepository.findAllUsers()).thenReturn(emptyList())
         whenever(permissionRepository.findAllGroups()).thenReturn(emptyList())
         whenever(permissionRepository.findAllRoles()).thenReturn(emptyList())
+        whenever(permissionRepository.findAllPermissions()).thenReturn(emptyList())
 
         processor.start()
 
         val userRecord = Record(RPC_PERM_USER_TOPIC, user.loginName, value = null)
-        val groupRecord = Record(RPC_PERM_GROUP_TOPIC, group.name, value = null)
-        val roleRecord = Record(RPC_PERM_ROLE_TOPIC, role.name, value = null)
+        val groupRecord = Record(RPC_PERM_GROUP_TOPIC, group.id, value = null)
+        val roleRecord = Record(RPC_PERM_ROLE_TOPIC, role.id, value = null)
+        val permissionRecord = Record(RPC_PERM_ENTITY_TOPIC, permission.id, value = null)
 
         val captor = argumentCaptor<List<Record<String, Any>>>()
-        verify(publisher, times(3)).publish(captor.capture())
+        verify(publisher, times(4)).publish(captor.capture())
         assertEquals(listOf(userRecord), captor.firstValue)
         assertEquals(listOf(groupRecord), captor.secondValue)
         assertEquals(listOf(roleRecord), captor.thirdValue)
+        assertEquals(listOf(permissionRecord), captor.allValues[3])
     }
 
     @Test
@@ -393,12 +402,12 @@ class PermissionStorageReaderImplTest {
     fun `publishGroups diffs the permission cache and removes any specified groups records that were deleted`() {
         val groupIds = listOf("group id")
 
-        whenever(permissionCache.groups).thenReturn(mapOf(avroGroup.name to avroGroup))
+        whenever(permissionCache.groups).thenReturn(mapOf(avroGroup.id to avroGroup))
         whenever(permissionRepository.findAllGroups(groupIds)).thenReturn(emptyList())
 
         processor.publishGroups(groupIds)
 
-        val groupRecord = Record(RPC_PERM_GROUP_TOPIC, group.name, value = null)
+        val groupRecord = Record(RPC_PERM_GROUP_TOPIC, group.id, value = null)
 
         verify(publisher).publish(listOf(groupRecord))
     }
@@ -407,12 +416,12 @@ class PermissionStorageReaderImplTest {
     fun `publishRoles diffs the permission cache and removes any specified roles records that were deleted`() {
         val roleIds = listOf("role id")
 
-        whenever(permissionCache.roles).thenReturn(mapOf(avroRole.name to avroRole))
+        whenever(permissionCache.roles).thenReturn(mapOf(avroRole.id to avroRole))
         whenever(permissionRepository.findAllRoles(roleIds)).thenReturn(emptyList())
 
         processor.publishRoles(roleIds)
 
-        val roleRecord = Record(RPC_PERM_ROLE_TOPIC, role.name, value = null)
+        val roleRecord = Record(RPC_PERM_ROLE_TOPIC, role.id, value = null)
 
         verify(publisher).publish(listOf(roleRecord))
     }

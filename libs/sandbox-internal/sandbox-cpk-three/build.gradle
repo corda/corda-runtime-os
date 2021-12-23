@@ -2,7 +2,7 @@ plugins {
     id 'net.corda.plugins.cordapp-cpk'
 }
 
-description 'Corda Sandbox CPK One'
+description 'Corda Sandbox CPK Three'
 
 group 'com.example.sandbox'
 version ''
@@ -10,7 +10,7 @@ version ''
 cordapp {
     targetPlatformVersion 999 as Integer
     workflow {
-        name 'Sandbox CPK-1'
+        name 'Sandbox CPK-3'
         versionId 1
         vendor 'R3'
     }
@@ -20,11 +20,8 @@ dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation project(':libs:sandbox:sandbox-cpk-library')
+    implementation project(':libs:sandbox-internal:sandbox-cpk-library')
     cordaProvided 'org.osgi:osgi.core'
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'org.slf4j:slf4j-api'
-    // We use version 2.10.10 here, and version 2.10.9 in CPK Two, to show that multiple versions of a library can
-    // co-exist in a sandbox group.
-    implementation 'joda-time:joda-time:2.10.10'
 }

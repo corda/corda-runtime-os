@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.manager.impl.converter
 
 import net.corda.libs.permissions.manager.common.PermissionTypeDto
+import net.corda.libs.permissions.manager.response.PermissionAssociationResponseDto
 import net.corda.data.permissions.PermissionAssociation as AvroPermissionAssociation
 import net.corda.data.permissions.PermissionType as AvroPermissionType
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
@@ -57,15 +58,10 @@ fun AvroRole.convertToResponseDto(): RoleResponseDto {
     )
 }
 
-fun AvroPermissionAssociation.convertToResponseDto() : PermissionResponseDto {
-    return PermissionResponseDto(
-        permission.id,
-        permission.version,
-        permission.lastChangeDetails.updateTimestamp,
-        permission.groupVisibility,
-        permission.virtualNode,
-        permission.permissionType.toResponseDtoType(),
-        permission.permissionString
+fun AvroPermissionAssociation.convertToResponseDto() : PermissionAssociationResponseDto {
+    return PermissionAssociationResponseDto(
+        permissionId,
+        changeDetails.updateTimestamp
     )
 }
 

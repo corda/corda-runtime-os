@@ -13,7 +13,7 @@ import kotlin.reflect.KClass
  * [net.corda.sandboxgroupcontext.MutableSandboxGroupContext.put],
  * the object can be retrieved by [net.corda.sandboxgroupcontext.SandboxGroupContext.get]
  */
-interface MutableSandboxGroupContext : SandboxGroupContextData {
+interface MutableSandboxGroupContext : SandboxGroupContext {
     /**
      * Put an object into the cache.
      *
