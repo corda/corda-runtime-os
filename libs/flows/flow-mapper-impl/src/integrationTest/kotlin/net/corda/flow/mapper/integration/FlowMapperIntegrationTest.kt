@@ -13,19 +13,24 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.mapper.impl.FlowMapperEventExecutorFactoryImpl
+import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.fail
+import org.osgi.test.common.annotation.InjectService
+import org.osgi.test.junit5.service.ServiceExtension
 import java.time.Instant
 
+@ExtendWith(ServiceExtension::class)
 class FlowMapperIntegrationTest {
 
-    private val flowMapperEventExecutorFactory = FlowMapperEventExecutorFactoryImpl()
+    @InjectService(timeout = 4000)
+    lateinit var executorFactory: FlowMapperEventExecutorFactory
 
     @Test
     fun sendStartRPC() {
@@ -183,7 +188,7 @@ class FlowMapperIntegrationTest {
         state: FlowMapperState?,
         event: Record<String, FlowMapperEvent>
     ): StateAndEventProcessor.Response<FlowMapperState> {
-        val executor = flowMapperEventExecutorFactory.create(event.key, event.value!!, state)
+        val executor = executorFactory.create(event.key, event.value!!, state)
         val result = executor.execute()
         return StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
     }
