@@ -8,7 +8,6 @@ import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.cache.exception.PermissionCacheException
-import java.lang.UnsupportedOperationException
 
 /**
  * The Permission cache holds the data used in the RBAC permission system.
