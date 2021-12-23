@@ -7,7 +7,6 @@ import javax.naming.ConfigurationException
 
 class ConfigVersionNumberTest {
 
-    @Suppress("Deprecation")
     @Test
     fun testCorrectVersionNumbers() {
         val version1 = "4.5"
@@ -16,7 +15,6 @@ class ConfigVersionNumberTest {
         Assertions.assertEquals(ConfigVersionNumber(4, 5), ConfigVersionNumber.from(version2))
     }
 
-    @Suppress("Deprecation")
     @Test
     fun testIncorrectVersionNumbers() {
         val version1 = "4.5.4.5"

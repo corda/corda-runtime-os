@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package net.corda.p2p.config.publisher
 
 import com.typesafe.config.ConfigFactory

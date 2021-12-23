@@ -2,8 +2,7 @@ package net.corda.libs.configuration.publish
 
 import com.typesafe.config.Config
 
-@Suppress("Deprecation")
-@Deprecated("Use `PersistentConfigWriter` instead.")
+/** Publishes configuration to Kafka, without persisting it to the cluster database. */
 interface ConfigPublisher {
     /**
      * When updating, the stored configuration object for the [configKey] will be completely replaced by the given [config] object

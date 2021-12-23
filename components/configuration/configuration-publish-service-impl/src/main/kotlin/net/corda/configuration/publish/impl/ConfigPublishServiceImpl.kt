@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package net.corda.configuration.publish.impl
 
 import com.typesafe.config.Config

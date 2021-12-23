@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package net.corda.configuration.publish.impl.tests
 
 import net.corda.configuration.publish.ConfigPublishService

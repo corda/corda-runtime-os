@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package net.corda.libs.configuration.publish.impl
 
 import com.typesafe.config.Config
@@ -18,7 +16,6 @@ import org.slf4j.Logger
  * Kafka implementation of the [ConfigPublisher]
  * @property topicName the topic configurations will be published to
  */
-@Deprecated("Use `PersistentConfigWriterImpl` instead.")
 class ConfigPublisherImpl(
     private val topicName: String,
     private val publisher: Publisher

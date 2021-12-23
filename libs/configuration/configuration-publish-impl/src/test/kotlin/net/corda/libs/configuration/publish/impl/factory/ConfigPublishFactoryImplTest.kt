@@ -11,13 +11,11 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 
 class ConfigPublishFactoryImplTest {
-    @Suppress("Deprecation")
     private lateinit var cordaPublisherFactory: ConfigPublisherFactoryImpl
     private var publisherFactory: PublisherFactory = mock()
     private var publisher: Publisher = mock()
     private val topicName = "topic"
 
-    @Suppress("Deprecation")
     @BeforeEach
     fun beforeEach() {
         cordaPublisherFactory = ConfigPublisherFactoryImpl(publisherFactory)

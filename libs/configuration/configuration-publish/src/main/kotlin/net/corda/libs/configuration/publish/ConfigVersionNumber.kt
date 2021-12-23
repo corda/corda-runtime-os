@@ -8,8 +8,6 @@ import javax.naming.ConfigurationException
  * @property major Major version
  * @property minor Minor version
  */
-@Suppress("Deprecation")
-@Deprecated("Deprecated in line with the deprecation of `ConfigWriter`.")
 data class ConfigVersionNumber(val major: Int, val minor: Int) {
     companion object {
         private val delimiters = Regex("[-.:]")
