@@ -26,5 +26,5 @@ interface SandboxGroupContext : SandboxGroupContextData {
      *
      * @return null if it doesn't exist.
      */
-    fun <T : Any> get(key: String, valueType: KClass<T>): T?
+    fun <T : Any> get(key: String, valueType: KClass<out T>): T?
 }

@@ -24,7 +24,7 @@ class SandboxGroupContextImpl(
 
     private val objectByKey = ConcurrentHashMap<String, TypedValue<*>>()
 
-    override fun <T : Any> put(key: String, valueType: KClass<T>, value: T) {
+    override fun <T : Any> put(key: String, valueType: KClass<out T>, value: T) {
         val typedValue = TypedValue(valueType, value)
         if (objectByKey.containsKey(key)) {
             throw IllegalArgumentException("Attempt to overwrite existing object in cache with key:  $key")
@@ -32,7 +32,7 @@ class SandboxGroupContextImpl(
         objectByKey[key] = typedValue
     }
 
-    override fun <T : Any> get(key: String, valueType: KClass<T>): T? {
+    override fun <T : Any> get(key: String, valueType: KClass<out T>): T? {
         if (!objectByKey.containsKey(key)) {
             return null
         }

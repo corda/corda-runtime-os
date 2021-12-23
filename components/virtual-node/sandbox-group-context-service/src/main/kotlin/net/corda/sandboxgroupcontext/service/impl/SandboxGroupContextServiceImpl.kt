@@ -80,7 +80,7 @@ class SandboxGroupContextServiceImpl(
         private val sandboxGroupContext: SandboxGroupContextImpl,
         private val closeable: AutoCloseable
     ) : MutableSandboxGroupContext, AutoCloseable {
-        override fun <T : Any> put(key: String, valueType: KClass<T>, value: T) =
+        override fun <T : Any> put(key: String, valueType: KClass<out T>, value: T) =
             sandboxGroupContext.put(key, valueType, value)
 
         override val virtualNodeContext: VirtualNodeContext
@@ -89,12 +89,12 @@ class SandboxGroupContextServiceImpl(
         override val sandboxGroup: SandboxGroup
             get() = sandboxGroupContext.sandboxGroup
 
-        override fun <T : Any> get(key: String, valueType: KClass<T>): T? = sandboxGroupContext.get(key, valueType)
+        override fun <T : Any> get(key: String, valueType: KClass<out T>): T? = sandboxGroupContext.get(key, valueType)
 
         override fun close() = closeable.close()
     }
 
     override fun close() {
-        contexts.forEach { (_, v) -> v.close() }
+        contexts.values.forEach(AutoCloseable::close)
     }
 }
