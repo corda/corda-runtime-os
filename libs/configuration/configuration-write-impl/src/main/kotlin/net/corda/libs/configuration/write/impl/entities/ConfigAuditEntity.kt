@@ -1,5 +1,6 @@
 package net.corda.libs.configuration.write.impl.entities
 
+import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.write.impl.CONFIG_AUDIT_GENERATOR
 import net.corda.libs.configuration.write.impl.DB_TABLE_CONFIG_AUDIT
 import java.time.Instant
@@ -23,7 +24,7 @@ import javax.persistence.Table
  * @param updateActor The ID of the user that last updated this section of the configuration.
  */
 @Entity
-@Table(name = DB_TABLE_CONFIG_AUDIT)
+@Table(name = DB_TABLE_CONFIG_AUDIT, schema = DbSchema.CONFIG)
 internal data class ConfigAuditEntity(
     @Id
     @SequenceGenerator(name = CONFIG_AUDIT_GENERATOR, sequenceName = "config_audit_id_seq", allocationSize = 1)

@@ -15,7 +15,7 @@ internal const val CLIENT_NAME_DB = "config.manager.db"
 internal const val CLIENT_NAME_RPC = "config.manager.rpc"
 
 internal const val PERSISTENCE_UNIT_NAME = "cluster-config"
-internal const val MIGRATION_FILE_LOCATION = "migration/db.changelog-master.xml"
+internal const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/config/db.changelog-master.xml"
 internal const val MAX_POOL_SIZE = 10
 internal const val CONFIG_DB_DRIVER = "db.driver"
 internal const val CONFIG_JDBC_URL = "db.jdbc.url"

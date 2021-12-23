@@ -4,6 +4,7 @@ import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.core.HikariDataSourceFactory
+import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.impl.CONFIG_DB_DRIVER
 import net.corda.libs.configuration.write.impl.CONFIG_DB_PASS
@@ -44,8 +45,8 @@ internal class DBUtilsImpl @Activate constructor(
     private var entityManagerFactory: EntityManagerFactory? = null
 
     override fun migrateClusterDatabase(config: SmartConfig) {
-        val changeLogResourceFiles = managedEntities.mapTo(LinkedHashSet()) { entity ->
-            ChangeLogResourceFiles(entity.packageName, listOf(MIGRATION_FILE_LOCATION), entity.classLoader)
+        val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
+            ChangeLogResourceFiles(klass.packageName, listOf(MIGRATION_FILE_LOCATION), klass.classLoader)
         }
         val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
 

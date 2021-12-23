@@ -1,5 +1,6 @@
 package net.corda.libs.configuration.write.impl.entities
 
+import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.write.impl.DB_TABLE_CONFIG
 import java.time.Instant
 import javax.persistence.Column
@@ -9,8 +10,6 @@ import javax.persistence.PrePersist
 import javax.persistence.PreUpdate
 import javax.persistence.Table
 import javax.persistence.Version
-
-// TODO - CORE-3317 - Move Liquibase scripts for `ConfigEntity` and `ConfigAuditEntity` to corda-api repo.
 
 /**
  * The entity for the current cluster configuration in the cluster database.
@@ -22,7 +21,7 @@ import javax.persistence.Version
  * @param updateActor The ID of the user that last updated this section of the configuration.
  */
 @Entity
-@Table(name = DB_TABLE_CONFIG)
+@Table(name = DB_TABLE_CONFIG, schema = DbSchema.CONFIG)
 internal data class ConfigEntity(
     @Id
     @Column(name = "section", nullable = false)
