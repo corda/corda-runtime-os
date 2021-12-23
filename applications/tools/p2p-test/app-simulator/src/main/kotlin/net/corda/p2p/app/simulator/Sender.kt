@@ -20,6 +20,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.Random
 import java.util.UUID
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.thread
@@ -77,11 +78,19 @@ class Sender(private val publisherFactory: PublisherFactory,
                         }
                         stopLock.read {
                             if(!stop) {
-                                publisher.publish(records)
-                                    .forEach { it.get() }
+                                val publishedIds = publisher.publish(records).zip(messageWithIds).filter { (future, messageWithId)->
+                                    try {
+                                        future.get()
+                                        true
+                                    } catch (e: ExecutionException) {
+                                        logger.warn("Could not publish message with ID: ${messageWithId.first}", e)
+                                        false
+                                    }
+                                }.map { it.second.first }
+                                logger.info("Published ${publishedIds.size} messages")
 
                                 if (dbConnection?.connection != null) {
-                                    val messageSentEvents = messageWithIds.map { (messageId, _) ->
+                                    val messageSentEvents = publishedIds.map { messageId ->
                                         MessageSentEvent(senderId, messageId)
                                     }
                                     writeSentMessagesToDb(dbConnection, messageSentEvents)
