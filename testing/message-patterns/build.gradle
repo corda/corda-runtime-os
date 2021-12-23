@@ -86,9 +86,8 @@ def kafkaTestingBundle = tasks.register('kafkaTestingBundle', Bundle) {
 
     bnd """\
 Bundle-SymbolicName: \${task.archiveBaseName}-\${task.archiveClassifier}
-Test-Cases: net.corda.messaging.kafka.integration.subscription.StateAndEventSubscriptionIntegrationTest 
+    Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
 """
-    //Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
 }
 
 artifacts {
