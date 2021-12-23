@@ -117,17 +117,30 @@ class BloomFilterTest {
     }
 
     @Test
-    fun `searching for an element in the bloom filter throws exception if filter length is zero`() {
+    fun `creating bloom filter throws exception throws exception if expected item count is zero`() {
         val expectedItemCount = 10
         val falsePositiveRate = 0.99999999999999999999
+
+        assertThrows<IllegalArgumentException> {
+            createBloomFilter(
+                expectedItemCount, falsePositiveRate, 99
+            )
+        }
+    }
+
+    @Test
+    fun `searching for an element in the bloom filter throws exception if filter length is zero`() {
+        val expectedItemCount = 0
+        val falsePositiveRate = 0.5
+
+        val testElementPool = setOf(41, 149, 151, 243, 249, 253, 261, 265, 271, 287)
 
         createBloomFilter(
             expectedItemCount, falsePositiveRate, 99
         ).apply {
             assertEquals(0, this.filterLength)
-
-            assertThrows<IllegalArgumentException> {
-                this.possiblyContains(testElement)
+            testElementPool.forEach { testElement ->
+                assertFalse(this.possiblyContains(testElement.toByteArray()))
             }
         }
     }
@@ -137,13 +150,14 @@ class BloomFilterTest {
         val expectedItemCount = 0
         val falsePositiveRate = 0.5
 
+        val testElementPool = setOf(41, 149, 151, 243, 249, 253, 261, 265, 271, 287)
+
         createBloomFilter(
             expectedItemCount, falsePositiveRate, 99
         ).apply {
             assertEquals(0, this.numberOfHashFunctions)
-
-            assertThrows<IllegalArgumentException> {
-                this.possiblyContains(testElement)
+            testElementPool.forEach { testElement ->
+                assertFalse(this.possiblyContains(testElement.toByteArray()))
             }
         }
     }

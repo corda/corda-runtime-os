@@ -25,7 +25,7 @@ fun BloomFilter.add(bytes: ByteArray) {
  */
 fun BloomFilter.possiblyContains(bytes: ByteArray): Boolean {
     if (numberOfHashFunctions == 0 || filterLength == 0) {
-        throw IllegalArgumentException("Number of hash functions and filter length must not be zero.")
+        return false
     }
     val hash1 = Integer.toUnsignedLong(MurmurHash3.hash32(bytes, 0, bytes.size, hashSeed))
     val hash2 = Integer.toUnsignedLong(MurmurHash3.hash32(bytes, 0, bytes.size, hash1.toInt()))
@@ -47,6 +47,9 @@ fun BloomFilter.possiblyContains(bytes: ByteArray): Boolean {
  * @param hashSeed The seed of the filter used for calculating the hashes, must change after each round.
  */
 fun createBloomFilter(expectedItemCount: Int, falsePositiveRate: Double, hashSeed: Int): BloomFilter {
+    if ( falsePositiveRate <= 0 || falsePositiveRate >= 1) {
+        throw IllegalArgumentException("False positive rate must be between 0 and 1.")
+    }
     val filterLength = filterLengthCalc(expectedItemCount, falsePositiveRate)
     return BloomFilter(
         numberOfHashFunctions(expectedItemCount, filterLength),
