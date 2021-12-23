@@ -216,7 +216,7 @@ class CliParameters {
 
     @CommandLine.Option(
         names = ["-i", "--instance-id"],
-        description = ["The instance ID. Default to \${DEFAULT-VALUE}"]
+        description = ["The instance ID. Defaults to the value of the env. variable INSTANCE_ID or a random number, if that hasn't been set."]
     )
     var instanceId = System.getenv("INSTANCE_ID") ?: Random.nextInt().toString()
 
