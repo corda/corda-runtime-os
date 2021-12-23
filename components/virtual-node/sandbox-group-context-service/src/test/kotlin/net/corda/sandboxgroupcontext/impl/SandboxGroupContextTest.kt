@@ -50,9 +50,9 @@ class SandboxGroupContextTest {
     @Test
     fun `can create an simple object`() {
         val dog = Dog("Fido", "Woof!")
-        sandboxGroupContext.put(dog.name, dog::class, dog)
+        sandboxGroupContext.put(dog.name, dog::class.java, dog)
 
-        val actualDog = sandboxGroupContext.get(dog.name, Dog::class)
+        val actualDog = sandboxGroupContext.get(dog.name, Dog::class.java)
 
         assertThat(actualDog).isNotNull
         assertThat(actualDog!!.name).isEqualTo(dog.name)
@@ -65,7 +65,7 @@ class SandboxGroupContextTest {
         val dog = Dog("Fido", "Woof!")
         sandboxGroupContext.putObjectByKey(dog.name, dog)
 
-        val actualDog = sandboxGroupContext.get(dog.name, Dog::class)
+        val actualDog = sandboxGroupContext.get(dog.name, Dog::class.java)
 
         assertThat(actualDog).isNotNull
         assertThat(actualDog!!.name).isEqualTo(dog.name)

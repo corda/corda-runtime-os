@@ -9,8 +9,6 @@ import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.reflect.KClass
-
 
 /**
  * This is the underlying implementation of the [SandboxGroupContextService]
@@ -80,7 +78,7 @@ class SandboxGroupContextServiceImpl(
         private val sandboxGroupContext: SandboxGroupContextImpl,
         private val closeable: AutoCloseable
     ) : MutableSandboxGroupContext, AutoCloseable {
-        override fun <T : Any> put(key: String, valueType: KClass<out T>, value: T) =
+        override fun <T : Any> put(key: String, valueType: Class<out T>, value: T) =
             sandboxGroupContext.put(key, valueType, value)
 
         override val virtualNodeContext: VirtualNodeContext
@@ -89,7 +87,7 @@ class SandboxGroupContextServiceImpl(
         override val sandboxGroup: SandboxGroup
             get() = sandboxGroupContext.sandboxGroup
 
-        override fun <T : Any> get(key: String, valueType: KClass<out T>): T? = sandboxGroupContext.get(key, valueType)
+        override fun <T : Any> get(key: String, valueType: Class<out T>): T? = sandboxGroupContext.get(key, valueType)
 
         override fun close() = closeable.close()
     }
