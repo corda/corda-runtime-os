@@ -1,10 +1,12 @@
 package net.corda.libs.configuration.write.impl
 
+import net.corda.config.schema.Schema.Companion.CONFIG_MGMT_REQUEST_TOPIC
+import net.corda.data.config.ConfigurationManagementRequest
+import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.ConfigWriter
 import net.corda.libs.configuration.write.ConfigWriterException
 import net.corda.libs.configuration.write.ConfigWriterFactory
-import net.corda.libs.configuration.write.TOPIC_CONFIG_MGMT_REQUEST
 import net.corda.libs.configuration.write.impl.dbutils.DBUtils
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -46,13 +48,13 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
         return try {
             publisherFactory.createPublisher(publisherConfig, config)
         } catch (e: Exception) {
-            throw ConfigWriterException("Could not create `ConfigWriter`.", e)
+            throw ConfigWriterException("Could not create `${ConfigWriter::class.qualifiedName}`.", e)
         }
     }
 
     /**
-     * Creates a [ConfigMgmtRPCSubscription] using the provided [config] and [instanceId]. The subscription
-     * is for the [TOPIC_CONFIG_MGMT_REQUEST] topic, and handles requests using a [ConfigWriterProcessor].
+     * Creates a [ConfigurationManagementRPCSubscription] using the provided [config] and [instanceId]. The
+     * subscription is for the [CONFIG_MGMT_REQUEST_TOPIC] topic, and handles requests using a [ConfigWriterProcessor].
      *
      * @throws ConfigWriterException If the subscription cannot be set up.
      */
@@ -60,13 +62,14 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
         config: SmartConfig,
         instanceId: Int,
         publisher: Publisher
-    ): ConfigMgmtRPCSubscription {
+    ): ConfigurationManagementRPCSubscription {
+
         val rpcConfig = RPCConfig(
             GROUP_NAME,
             CLIENT_NAME_RPC,
-            TOPIC_CONFIG_MGMT_REQUEST,
-            ConfigMgmtReq::class.java,
-            ConfigMgmtResp::class.java,
+            CONFIG_MGMT_REQUEST_TOPIC,
+            ConfigurationManagementRequest::class.java,
+            ConfigurationManagementResponse::class.java,
             instanceId
         )
 

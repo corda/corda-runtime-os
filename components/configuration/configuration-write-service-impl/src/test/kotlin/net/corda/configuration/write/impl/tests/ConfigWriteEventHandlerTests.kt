@@ -30,7 +30,7 @@ class ConfigWriteEventHandlerTests {
     private val instanceId = 0
 
     @Test
-    fun `for StartProcessing event, throws and sets coordinator status to error if cluster database cannot be reached`() {
+    fun `StartProcessing event throws and sets coordinator status to error if cluster database cannot be reached`() {
         val erroringDBUtils = DummyDBUtils(isConnectionFails = true)
 
         val boxedStatus = BoxedStatus(DOWN)
@@ -45,7 +45,7 @@ class ConfigWriteEventHandlerTests {
     }
 
     @Test
-    fun `for StartProcessing event, throws and sets coordinator status to error if config writer cannot be created`() {
+    fun `StartProcessing event throws and sets coordinator status to error if config writer cannot be created`() {
         val erroringConfigWriterFactory = DummyConfigWriterFactory(DummyConfigWriter(), isCreationFails = true)
 
         val boxedStatus = BoxedStatus(DOWN)
@@ -60,7 +60,7 @@ class ConfigWriteEventHandlerTests {
     }
 
     @Test
-    fun `for StartProcessing event, throws and sets coordinator status to error if config writer cannot be started`() {
+    fun `StartProcessing event throws and sets coordinator status to error if config writer cannot be started`() {
         val erroringConfigWriter = DummyConfigWriter(isStartFails = true)
         val configWriterFactory = DummyConfigWriterFactory(erroringConfigWriter)
 

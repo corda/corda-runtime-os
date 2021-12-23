@@ -24,15 +24,7 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
 
-/**
- * An implementation of [DBUtils].
- *
- * @param schemaMigrator The migrator for the liquibase scripts.
- * @param entityManagerFactoryFactory The factory for creating [EntityManagerFactory]s.
- * @property managedEntities The entities managed by the entity manager.
- * @property dataSource The data source for the cluster database.
- * @property entityManagerFactory The factory for creating [EntityManager]s.
- */
+/** An implementation of [DBUtils]. */
 @Suppress("Unused")
 @Component(service = [DBUtils::class])
 internal class DBUtilsImpl @Activate constructor(
@@ -41,6 +33,7 @@ internal class DBUtilsImpl @Activate constructor(
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory
 ) : DBUtils {
+
     private var dataSource: DataSource? = null
     private var entityManagerFactory: EntityManagerFactory? = null
 

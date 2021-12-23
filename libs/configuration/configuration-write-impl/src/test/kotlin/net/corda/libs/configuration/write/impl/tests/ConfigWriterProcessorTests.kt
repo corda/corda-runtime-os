@@ -3,19 +3,19 @@ package net.corda.libs.configuration.write.impl.tests
 import com.typesafe.config.ConfigFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.Configuration
+import net.corda.data.config.ConfigurationManagementRequest
+import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactoryImpl
-import net.corda.libs.configuration.write.TOPIC_CONFIG
-import net.corda.libs.configuration.write.impl.ConfigMgmtReq
-import net.corda.libs.configuration.write.impl.ConfigMgmtResp
-import net.corda.libs.configuration.write.impl.ConfigMgmtRespFuture
 import net.corda.libs.configuration.write.impl.ConfigWriterProcessor
+import net.corda.libs.configuration.write.impl.ConfigurationManagementResponseFuture
 import net.corda.libs.configuration.write.impl.dbutils.DBUtils
 import net.corda.libs.configuration.write.impl.entities.ConfigAuditEntity
 import net.corda.libs.configuration.write.impl.entities.ConfigEntity
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.Companion.CONFIG_TOPIC
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -30,7 +30,9 @@ class ConfigWriterProcessorTests {
 
     private val config = ConfigEntity("section", 1, "config_one", "actor_one")
     private val configAudit = config.run { ConfigAuditEntity(section, version, configuration, updateActor) }
-    private val configMgmtReq = config.run { ConfigMgmtReq(section, version, configuration, updateActor) }
+    private val configMgmtReq = config.run {
+        ConfigurationManagementRequest(section, version, configuration, updateActor)
+    }
 
     @Test
     fun `writes correct configuration and audit data to the database`() {
@@ -49,7 +51,7 @@ class ConfigWriterProcessorTests {
         processRequest(processor, configMgmtReq)
 
         val recordConfig = Configuration(configMgmtReq.configuration, configMgmtReq.version.toString())
-        val record = Record(TOPIC_CONFIG, configMgmtReq.section, recordConfig)
+        val record = Record(CONFIG_TOPIC, configMgmtReq.section, recordConfig)
         assertEquals(listOf(record), publisher.publishedRecords)
     }
 
@@ -59,7 +61,7 @@ class ConfigWriterProcessorTests {
         val processor = ConfigWriterProcessor(publisher, dummySmartConfig, DummyDBUtils())
         val resp = processRequest(processor, configMgmtReq)
 
-        val configMgmtResp = ConfigMgmtResp(true, configMgmtReq.version, configMgmtReq.configuration)
+        val configMgmtResp = ConfigurationManagementResponse(true, configMgmtReq.version, configMgmtReq.configuration)
         assertEquals(configMgmtResp, resp)
     }
 
@@ -86,7 +88,9 @@ class ConfigWriterProcessorTests {
         val expectedEnvelope = ExceptionEnvelope(
             RollbackException::class.java.name, "Entity $config couldn't be written to the database."
         )
-        val expectedResp = ConfigMgmtResp(expectedEnvelope, initialConfig.version, initialConfig.configuration)
+        val expectedResp = ConfigurationManagementResponse(
+            expectedEnvelope, initialConfig.version, initialConfig.configuration
+        )
         assertEquals(expectedResp, resp)
     }
 
@@ -98,20 +102,22 @@ class ConfigWriterProcessorTests {
         val resp = processRequest(processor, configMgmtReq)
 
         val expectedRecord = configMgmtReq.run {
-            Record(TOPIC_CONFIG, section, Configuration(configuration, version.toString()))
+            Record(CONFIG_TOPIC, section, Configuration(configuration, version.toString()))
         }
         val expectedEnvelope = ExceptionEnvelope(
             ExecutionException::class.java.name,
             "Record $expectedRecord was written to the database, but couldn't be published."
         )
-        val expectedResp = ConfigMgmtResp(expectedEnvelope, config.version, config.configuration)
+        val expectedResp = ConfigurationManagementResponse(expectedEnvelope, config.version, config.configuration)
         assertEquals(expectedResp, resp)
     }
 
     @Test
     fun `returns null configuration if there is no existing configuration for the given section when sending RPC failure response`() {
         val newConfig = config.copy(section = "another_section")
-        val req = ConfigMgmtReq(newConfig.section, newConfig.version, newConfig.configuration, newConfig.updateActor)
+        val req = ConfigurationManagementRequest(
+            newConfig.section, newConfig.version, newConfig.configuration, newConfig.updateActor
+        )
 
         val dbUtils = DummyDBUtils(isWriteFails = true)
         val processor = ConfigWriterProcessor(DummyPublisher(), dummySmartConfig, dbUtils)
@@ -120,7 +126,7 @@ class ConfigWriterProcessorTests {
         val expectedEnvelope = ExceptionEnvelope(
             RollbackException::class.java.name, "Entity $newConfig couldn't be written to the database."
         )
-        val expectedResp = ConfigMgmtResp(expectedEnvelope, null, null)
+        val expectedResp = ConfigurationManagementResponse(expectedEnvelope, null, null)
         assertEquals(expectedResp, resp)
     }
 
@@ -133,13 +139,17 @@ class ConfigWriterProcessorTests {
         val expectedEnvelope = ExceptionEnvelope(
             RollbackException::class.java.name, "Entity $config couldn't be written to the database."
         )
-        val expectedResp = ConfigMgmtResp(expectedEnvelope, null, null)
+        val expectedResp = ConfigurationManagementResponse(expectedEnvelope, null, null)
         assertEquals(expectedResp, resp)
     }
 
     /** Calls [processor].`onNext` for the given [req], and returns the result of the future. */
-    private fun processRequest(processor: ConfigWriterProcessor, req: ConfigMgmtReq): ConfigMgmtResp {
-        val respFuture = ConfigMgmtRespFuture()
+    private fun processRequest(
+        processor: ConfigWriterProcessor,
+        req: ConfigurationManagementRequest
+    ): ConfigurationManagementResponse {
+
+        val respFuture = ConfigurationManagementResponseFuture()
         processor.onNext(req, respFuture)
         return respFuture.get()
     }

@@ -1,7 +1,7 @@
 package net.corda.libs.configuration.write.impl.tests
 
-import net.corda.libs.configuration.write.impl.ConfigMgmtRPCSubscription
 import net.corda.libs.configuration.write.impl.ConfigWriterImpl
+import net.corda.libs.configuration.write.impl.ConfigurationManagementRPCSubscription
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -58,8 +58,8 @@ class ConfigWriterImplTests {
         assertFalse(configWriter.isRunning)
     }
 
-    /** A [ConfigMgmtRPCSubscription] that tracks whether the subscription has been started. */
-    private class DummySubscription : ConfigMgmtRPCSubscription {
+    /** A [ConfigurationManagementRPCSubscription] that tracks whether the subscription has been started. */
+    private class DummySubscription : ConfigurationManagementRPCSubscription {
         override var isRunning = false
 
         override fun start() {

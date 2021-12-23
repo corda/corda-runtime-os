@@ -5,7 +5,11 @@ import net.corda.libs.configuration.write.impl.entities.ConfigAuditEntity
 import net.corda.libs.configuration.write.impl.entities.ConfigEntity
 import javax.persistence.RollbackException
 
-/** Encapsulates database-related functionality, so that it can be stubbed during tests. */
+/**
+ * Encapsulates database-related functionality, so that it can be stubbed during tests.
+ *
+ * @property managedEntities The entities that this class's entity manager will manage.
+ */
 internal interface DBUtils {
     val managedEntities: List<Class<out Any>>
         get() = listOf(ConfigEntity::class.java, ConfigAuditEntity::class.java)

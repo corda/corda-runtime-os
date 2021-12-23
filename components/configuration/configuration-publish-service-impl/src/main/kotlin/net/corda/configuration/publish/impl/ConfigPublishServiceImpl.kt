@@ -26,15 +26,15 @@ class ConfigPublishServiceImpl @Activate constructor(
         private val log: Logger = contextLogger()
     }
 
-    override fun updateConfig(destination: String, appConfig: SmartConfig, configurationFile: String) {
-        publisher = configPublisherFactory.createPublisher(destination, appConfig)
-        val configuration = ConfigFactory.parseString(configurationFile)
+    override fun updateConfig(topic: String, appConfig: SmartConfig, configuration: String) {
+        publisher = configPublisherFactory.createPublisher(topic, appConfig)
+        val parsedConfig = ConfigFactory.parseString(configuration)
 
-        for (packageKey in configuration.root().keys) {
+        for (packageKey in parsedConfig.root().keys) {
             var packageVersion: CordaConfigurationVersion
             try {
                 packageVersion =
-                    CordaConfigurationVersion.from(packageKey, configuration.getString("$packageKey.packageVersion"))
+                    CordaConfigurationVersion.from(packageKey, parsedConfig.getString("$packageKey.packageVersion"))
             } catch (e: ConfigException) {
                 log.warn(
                     "Package $packageKey has no defined packageVersion. " +
@@ -43,7 +43,7 @@ class ConfigPublishServiceImpl @Activate constructor(
                 continue
             }
 
-            val packageConfig = configuration.getConfig(packageKey)
+            val packageConfig = parsedConfig.getConfig(packageKey)
             for (componentKey in packageConfig.root().keys) {
                 //skip if the component key is the package version
                 if (componentKey != "packageVersion") {

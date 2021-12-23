@@ -5,7 +5,7 @@ import net.corda.messaging.api.publisher.Publisher
 
 /** An implementation of [ConfigWriter]. */
 internal class ConfigWriterImpl internal constructor(
-    private val subscription: ConfigMgmtRPCSubscription,
+    private val subscription: ConfigurationManagementRPCSubscription,
     private val publisher: Publisher
 ) : ConfigWriter {
 
