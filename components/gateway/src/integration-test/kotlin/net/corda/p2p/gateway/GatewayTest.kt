@@ -32,9 +32,9 @@ import net.corda.p2p.gateway.messaging.http.HttpConnectionEvent
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.http.ListenerWithServer
-import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
-import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
-import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
+import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds

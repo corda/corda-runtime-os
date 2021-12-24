@@ -1,22 +1,22 @@
 package net.corda.libs.permissions.storage.reader.impl
 
 import net.corda.libs.permissions.cache.PermissionCache
-import net.corda.libs.permissions.storage.reader.PermissionStorageReader
-import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
 import net.corda.libs.permissions.storage.common.converter.toAvroGroup
 import net.corda.libs.permissions.storage.common.converter.toAvroPermission
 import net.corda.libs.permissions.storage.common.converter.toAvroRole
 import net.corda.libs.permissions.storage.common.converter.toAvroUser
+import net.corda.libs.permissions.storage.reader.PermissionStorageReader
+import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.Permission
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.User
-import net.corda.rpc.schema.Schema.Companion.RPC_PERM_ENTITY_TOPIC
-import net.corda.rpc.schema.Schema.Companion.RPC_PERM_GROUP_TOPIC
-import net.corda.rpc.schema.Schema.Companion.RPC_PERM_ROLE_TOPIC
-import net.corda.rpc.schema.Schema.Companion.RPC_PERM_USER_TOPIC
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ENTITY_TOPIC
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_GROUP_TOPIC
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.data.permissions.Group as AvroGroup

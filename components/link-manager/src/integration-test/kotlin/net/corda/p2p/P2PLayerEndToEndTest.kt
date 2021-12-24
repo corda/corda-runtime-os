@@ -46,11 +46,13 @@ import net.corda.p2p.linkmanager.ConfigBasedLinkManagerHostingMap
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.StubCryptoService
 import net.corda.p2p.linkmanager.StubNetworkMap
-import net.corda.p2p.schema.Schema
-import net.corda.p2p.schema.TestSchema
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
 import net.corda.p2p.test.NetworkMapEntry
+import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
+import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
@@ -116,12 +118,12 @@ class P2PLayerEndToEndTest {
 
         val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
         val hostAApplicationReader = hostA.subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("app-layer", Schema.P2P_IN_TOPIC, 1), InitiatorProcessor(hostAReceivedMessages),
+            SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), InitiatorProcessor(hostAReceivedMessages),
             bootstrapConfig,
             null
         )
         val hostBApplicationReaderWriter = hostB.subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("app-layer", Schema.P2P_IN_TOPIC, 1), ResponderProcessor(),
+            SubscriptionConfig("app-layer", P2P_IN_TOPIC, 1), ResponderProcessor(),
             bootstrapConfig,
             null
         )
@@ -133,7 +135,7 @@ class P2PLayerEndToEndTest {
             val randomId = UUID.randomUUID().toString()
             val messageHeader = AuthenticatedMessageHeader(HoldingIdentity(hostB.x500Name, GROUP_ID), HoldingIdentity(hostA.x500Name, GROUP_ID), TTL, randomId, randomId, SUBSYSTEM)
             val message = AuthenticatedMessage(messageHeader, ByteBuffer.wrap("ping ($index)".toByteArray()))
-            Record(Schema.P2P_OUT_TOPIC, randomId, AppMessage(message))
+            Record(P2P_OUT_TOPIC, randomId, AppMessage(message))
         }
         hostAApplicationWriter.use {
             hostAApplicationWriter.start()
@@ -170,19 +172,19 @@ class P2PLayerEndToEndTest {
             "${hostA.x500Name}-$GROUP_ID" to NetworkMapEntry(net.corda.data.identity.HoldingIdentity(hostA.x500Name, GROUP_ID), ByteBuffer.wrap(hostA.keyPair.public.encoded), KeyAlgorithm.ECDSA, "http://${hostA.p2pAddress}:${hostA.p2pPort}", NetworkType.CORDA_5),
             "${hostB.x500Name}-$GROUP_ID" to NetworkMapEntry(net.corda.data.identity.HoldingIdentity(hostB.x500Name, GROUP_ID), ByteBuffer.wrap(hostB.keyPair.public.encoded), KeyAlgorithm.ECDSA, "http://${hostB.p2pAddress}:${hostB.p2pPort}", NetworkType.CORDA_5)
         )
-        val networkMapRecords = networkMapEntries.map { Record(TestSchema.NETWORK_MAP_TOPIC, it.key, it.value) }
+        val networkMapRecords = networkMapEntries.map { Record(NETWORK_MAP_TOPIC, it.key, it.value) }
         publisherForHostA.use { publisher ->
             publisher.start()
             publisher.publish(networkMapRecords).forEach { it.get() }
             publisher.publish(listOf(
-                Record(TestSchema.CRYPTO_KEYS_TOPIC, "key-1", KeyPairEntry(KeyAlgorithm.ECDSA, ByteBuffer.wrap(hostA.keyPair.public.encoded), ByteBuffer.wrap(hostA.keyPair.private.encoded)))
+                Record(CRYPTO_KEYS_TOPIC, "key-1", KeyPairEntry(KeyAlgorithm.ECDSA, ByteBuffer.wrap(hostA.keyPair.public.encoded), ByteBuffer.wrap(hostA.keyPair.private.encoded)))
             )).forEach { it.get() }
         }
         publisherForHostB.use { publisher ->
             publisher.start()
             publisher.publish(networkMapRecords).forEach { it.get() }
             publisher.publish(listOf(
-                Record(TestSchema.CRYPTO_KEYS_TOPIC, "key-1", KeyPairEntry(KeyAlgorithm.ECDSA, ByteBuffer.wrap(hostB.keyPair.public.encoded), ByteBuffer.wrap(hostB.keyPair.private.encoded)))
+                Record(CRYPTO_KEYS_TOPIC, "key-1", KeyPairEntry(KeyAlgorithm.ECDSA, ByteBuffer.wrap(hostB.keyPair.public.encoded), ByteBuffer.wrap(hostB.keyPair.private.encoded)))
             )).forEach { it.get() }
         }
     }
@@ -250,7 +252,7 @@ class P2PLayerEndToEndTest {
                     AuthenticatedMessageHeader(message.header.source, message.header.destination, TTL, randomId, randomId, SUBSYSTEM),
                     ByteBuffer.wrap(message.payload.array().toString(Charsets.UTF_8).replace("ping", "pong").toByteArray())
                 )
-                Record(Schema.P2P_OUT_TOPIC, randomId, AppMessage(responseMessage))
+                Record(P2P_OUT_TOPIC, randomId, AppMessage(responseMessage))
             }
         }
 

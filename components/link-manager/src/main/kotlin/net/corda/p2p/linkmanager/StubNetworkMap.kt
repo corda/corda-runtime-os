@@ -11,9 +11,9 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.protocol.ProtocolConstants
-import net.corda.p2p.schema.TestSchema
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.NetworkMapEntry
+import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.nio.ByteBuffer
 import java.security.MessageDigest
@@ -27,7 +27,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                      configuration: SmartConfig): LinkManagerNetworkMap {
 
     private val processor = NetworkMapEntryProcessor()
-    private val subscriptionConfig = SubscriptionConfig("network-map", TestSchema.NETWORK_MAP_TOPIC, instanceId)
+    private val subscriptionConfig = SubscriptionConfig("network-map", NETWORK_MAP_TOPIC, instanceId)
     private val subscription = subscriptionFactory.createCompactedSubscription(subscriptionConfig, processor, configuration)
     private val keyDeserialiser = KeyDeserialiser()
 

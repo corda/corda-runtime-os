@@ -2,10 +2,10 @@ package net.corda.flow.manager.impl.handlers.requests
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
-import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.fiber.requests.FlowIORequest
+import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import org.osgi.service.component.annotations.Component
 import net.corda.data.flow.state.waiting.Wakeup as WaitingForWakeup
 
@@ -18,7 +18,7 @@ class ForceCheckpointRequestHandler : FlowRequestHandler<FlowIORequest.ForceChec
         val checkpoint = requireCheckpoint(context)
         checkpoint.setWaitingFor(WaitingForWakeup())
         val record = Record(
-            topic = Schemas.FLOW_EVENT_TOPIC,
+            topic = FLOW_EVENT_TOPIC,
             key = checkpoint.flowKey,
             value = FlowEvent(checkpoint.flowKey, Wakeup())
         )

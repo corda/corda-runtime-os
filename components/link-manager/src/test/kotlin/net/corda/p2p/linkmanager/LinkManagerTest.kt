@@ -52,12 +52,12 @@ import net.corda.p2p.linkmanager.utilities.MockNetworkMap
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
-import net.corda.p2p.schema.Schema
-import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
-import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
-import net.corda.p2p.schema.Schema.Companion.P2P_OUT_MARKERS
-import net.corda.p2p.schema.Schema.Companion.P2P_OUT_TOPIC
-import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
+import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -284,7 +284,7 @@ class LinkManagerTest {
         reference.set(mock())
         val listener = InboundAssignmentListener(reference)
         for (partition in partitions) {
-            listener.onPartitionsAssigned(listOf(Schema.LINK_IN_TOPIC to partition))
+            listener.onPartitionsAssigned(listOf(LINK_IN_TOPIC to partition))
         }
         return listener
     }
@@ -519,7 +519,7 @@ class LinkManagerTest {
             .extracting<LinkOutMessage> { it.value as LinkOutMessage }
             .allSatisfy { assertThat(it).isSameAs(sessionInitMessage) }
 
-        assertThat(records).filteredOn { it.topic == Schema.SESSION_OUT_PARTITIONS }.hasSize(messages.size)
+        assertThat(records).filteredOn { it.topic == SESSION_OUT_PARTITIONS }.hasSize(messages.size)
             .allSatisfy { assertThat(it.key).isSameAs(SESSION_ID) }
             .extracting<SessionPartitions> { it.value as SessionPartitions }
             .allSatisfy { assertThat(it.partitions.toIntArray()).isEqualTo(inboundSubscribedTopics.toIntArray()) }

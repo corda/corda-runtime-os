@@ -10,7 +10,7 @@ import net.corda.flow.fiber.requests.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -45,7 +45,7 @@ class ForceCheckpointRequestHandlerTest {
         val inputContext = FlowEventContext<Any>(checkpoint, flowEvent, "doesn't matter", emptyList())
         val outputContext = handler.postProcess(inputContext, FlowIORequest.ForceCheckpoint)
         assertEquals(
-            listOf(Record(Schemas.FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, Wakeup()))),
+            listOf(Record(FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, Wakeup()))),
             outputContext.outputRecords
         )
     }

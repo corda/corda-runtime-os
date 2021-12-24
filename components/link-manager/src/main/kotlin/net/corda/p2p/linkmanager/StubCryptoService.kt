@@ -10,9 +10,9 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RSA_SIGNATURE_ALGO
-import net.corda.p2p.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
+import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.v5.base.util.contextLogger
 import java.security.PrivateKey
 import java.security.PublicKey

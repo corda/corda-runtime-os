@@ -12,7 +12,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.packaging.CPI
-import net.corda.schema.Schemas.Companion.CONFIG_TOPIC
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.tools.setup.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
 import net.corda.tools.setup.common.ConfigHelper.Companion.SYSTEM_ENV_CONFIG_TOPIC_PATH
 import net.corda.tools.setup.common.ConfigHelper.Companion.getBootstrapConfig

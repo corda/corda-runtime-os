@@ -19,7 +19,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.permissions.cache.PermissionCacheService
-import net.corda.rpc.schema.Schema
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 
@@ -132,7 +132,7 @@ internal class PermissionManagementServiceEventHandler(
             RPCConfig(
                 GROUP_NAME,
                 CLIENT_NAME,
-                Schema.RPC_PERM_MGMT_REQ_TOPIC,
+                RPC_PERM_MGMT_REQ_TOPIC,
                 PermissionManagementRequest::class.java,
                 PermissionManagementResponse::class.java
             ),

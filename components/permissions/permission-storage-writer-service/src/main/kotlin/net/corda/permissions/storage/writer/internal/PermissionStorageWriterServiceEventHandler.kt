@@ -15,7 +15,7 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
-import net.corda.rpc.schema.Schema
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import javax.persistence.EntityManagerFactory
@@ -51,7 +51,7 @@ class PermissionStorageWriterServiceEventHandler(
                             rpcConfig = RPCConfig(
                                 groupName = GROUP_NAME,
                                 clientName = CLIENT_NAME,
-                                requestTopic = Schema.RPC_PERM_MGMT_REQ_TOPIC,
+                                requestTopic = RPC_PERM_MGMT_REQ_TOPIC,
                                 requestType = PermissionManagementRequest::class.java,
                                 responseType = PermissionManagementResponse::class.java
                             ),
