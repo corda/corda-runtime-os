@@ -48,7 +48,7 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
         return try {
             publisherFactory.createPublisher(publisherConfig, config)
         } catch (e: Exception) {
-            throw ConfigWriterException("Could not create `${ConfigWriter::class.qualifiedName}`.", e)
+            throw ConfigWriterException("Could not create publisher to publish updated configuration.", e)
         }
     }
 
@@ -77,7 +77,7 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
         return try {
             subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
         } catch (e: Exception) {
-            throw ConfigWriterException("Could not create `ConfigWriter`.", e)
+            throw ConfigWriterException("Could not create subscription to process configuration update requests.", e)
         }
     }
 }
