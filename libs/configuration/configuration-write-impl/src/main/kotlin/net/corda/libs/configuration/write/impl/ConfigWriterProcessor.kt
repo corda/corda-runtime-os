@@ -12,7 +12,7 @@ import net.corda.libs.configuration.write.impl.entities.ConfigEntity
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Companion.CONFIG_TOPIC
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.v5.base.util.contextLogger
 
 /**

@@ -15,7 +15,7 @@ import net.corda.libs.configuration.write.impl.entities.ConfigEntity
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Companion.CONFIG_TOPIC
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -28,10 +28,10 @@ import javax.persistence.RollbackException
 class ConfigWriterProcessorTests {
     private val dummySmartConfig = SmartConfigFactoryImpl().create(ConfigFactory.empty())
 
-    private val config = ConfigEntity("section", 1, "config_one", "actor_one")
-    private val configAudit = config.run { ConfigAuditEntity(section, version, configuration, updateActor) }
+    private val config = ConfigEntity("section", 1, "config_one", 1, "actor_one")
+    private val configAudit = config.run { ConfigAuditEntity(section, config, version, updateActor) }
     private val configMgmtReq = config.run {
-        ConfigurationManagementRequest(section, version, configuration, updateActor)
+        ConfigurationManagementRequest(section, version, config, configVersion, updateActor)
     }
 
     @Test
@@ -50,7 +50,7 @@ class ConfigWriterProcessorTests {
         val processor = ConfigWriterProcessor(publisher, dummySmartConfig, DummyDBUtils())
         processRequest(processor, configMgmtReq)
 
-        val recordConfig = Configuration(configMgmtReq.configuration, configMgmtReq.version.toString())
+        val recordConfig = Configuration(configMgmtReq.config, configMgmtReq.version.toString())
         val record = Record(CONFIG_TOPIC, configMgmtReq.section, recordConfig)
         assertEquals(listOf(record), publisher.publishedRecords)
     }
@@ -61,7 +61,7 @@ class ConfigWriterProcessorTests {
         val processor = ConfigWriterProcessor(publisher, dummySmartConfig, DummyDBUtils())
         val resp = processRequest(processor, configMgmtReq)
 
-        val configMgmtResp = ConfigurationManagementResponse(true, configMgmtReq.version, configMgmtReq.configuration)
+        val configMgmtResp = ConfigurationManagementResponse(true, configMgmtReq.version, configMgmtReq.config)
         assertEquals(configMgmtResp, resp)
     }
 
@@ -78,7 +78,7 @@ class ConfigWriterProcessorTests {
 
     @Test
     fun `sends RPC failure response if fails to write configuration to the database`() {
-        val initialConfig = ConfigEntity(config.section, 0, "config_two", "actor_two")
+        val initialConfig = ConfigEntity(config.section, 0, "config_two", 1, "actor_two")
         val initialConfigMap = mapOf(initialConfig.section to initialConfig)
 
         val dbUtils = DummyDBUtils(initialConfigMap, isWriteFails = true)
@@ -89,7 +89,7 @@ class ConfigWriterProcessorTests {
             RollbackException::class.java.name, "Entity $config couldn't be written to the database."
         )
         val expectedResp = ConfigurationManagementResponse(
-            expectedEnvelope, initialConfig.version, initialConfig.configuration
+            expectedEnvelope, initialConfig.version, initialConfig.config
         )
         assertEquals(expectedResp, resp)
     }
@@ -102,22 +102,22 @@ class ConfigWriterProcessorTests {
         val resp = processRequest(processor, configMgmtReq)
 
         val expectedRecord = configMgmtReq.run {
-            Record(CONFIG_TOPIC, section, Configuration(configuration, version.toString()))
+            Record(CONFIG_TOPIC, section, Configuration(config, version.toString()))
         }
         val expectedEnvelope = ExceptionEnvelope(
             ExecutionException::class.java.name,
             "Record $expectedRecord was written to the database, but couldn't be published."
         )
-        val expectedResp = ConfigurationManagementResponse(expectedEnvelope, config.version, config.configuration)
+        val expectedResp = ConfigurationManagementResponse(expectedEnvelope, config.version, config.config)
         assertEquals(expectedResp, resp)
     }
 
     @Test
     fun `returns null configuration if there is no existing configuration for the given section when sending RPC failure response`() {
         val newConfig = config.copy(section = "another_section")
-        val req = ConfigurationManagementRequest(
-            newConfig.section, newConfig.version, newConfig.configuration, newConfig.updateActor
-        )
+        val req = newConfig.run {
+            ConfigurationManagementRequest(section, version, config, configVersion, updateActor)
+        }
 
         val dbUtils = DummyDBUtils(isWriteFails = true)
         val processor = ConfigWriterProcessor(DummyPublisher(), dummySmartConfig, dbUtils)
@@ -142,67 +142,67 @@ class ConfigWriterProcessorTests {
         val expectedResp = ConfigurationManagementResponse(expectedEnvelope, null, null)
         assertEquals(expectedResp, resp)
     }
+}
 
-    /** Calls [processor].`onNext` for the given [req], and returns the result of the future. */
-    private fun processRequest(
-        processor: ConfigWriterProcessor,
-        req: ConfigurationManagementRequest
-    ): ConfigurationManagementResponse {
+/** Calls [processor].`onNext` for the given [req], and returns the result of the future. */
+private fun processRequest(
+    processor: ConfigWriterProcessor,
+    req: ConfigurationManagementRequest
+): ConfigurationManagementResponse {
 
-        val respFuture = ConfigurationManagementResponseFuture()
-        processor.onNext(req, respFuture)
-        return respFuture.get()
+    val respFuture = ConfigurationManagementResponseFuture()
+    processor.onNext(req, respFuture)
+    return respFuture.get()
+}
+
+/**
+ * A [Publisher] that tracks [publishedRecords].
+ *
+ * Throws on publication if [isPublishFails].
+ */
+private class DummyPublisher(private val isPublishFails: Boolean = false) : Publisher {
+    var publishedRecords = mutableListOf<Record<*, *>>()
+
+    override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> = if (isPublishFails) {
+        listOf(supplyAsync { throw CordaMessageAPIIntermittentException("") })
+    } else {
+        this.publishedRecords.addAll(records)
+        listOf(CompletableFuture.completedFuture(Unit))
     }
 
-    /**
-     * A [Publisher] that tracks [publishedRecords].
-     *
-     * Throws on publication if [isPublishFails].
-     */
-    private class DummyPublisher(private val isPublishFails: Boolean = false) : Publisher {
-        var publishedRecords = mutableListOf<Record<*, *>>()
+    override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>) = throw NotImplementedError()
+    override fun close() = throw NotImplementedError()
+}
 
-        override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> = if (isPublishFails) {
-            listOf(supplyAsync { throw CordaMessageAPIIntermittentException("") })
+/**
+ * A [DBUtils] that tracks [persistedConfig] and [persistedConfigAudit].
+ *
+ * Throws on write if [isWriteFails]. Throws on read if [isReadFails].
+ */
+private class DummyDBUtils(
+    initialConfig: Map<String, ConfigEntity> = emptyMap(),
+    private val isWriteFails: Boolean = false,
+    private val isReadFails: Boolean = false
+) : DBUtils {
+    val persistedConfig = initialConfig.toMutableMap()
+    val persistedConfigAudit
+        get() = persistedConfig.values.map { config ->
+            ConfigAuditEntity(config.section, config.config, config.configVersion, config.updateActor)
+        }
+
+    override fun writeEntities(config: SmartConfig, newConfig: ConfigEntity, newConfigAudit: ConfigAuditEntity) {
+        if (isWriteFails) {
+            throw RollbackException()
         } else {
-            this.publishedRecords.addAll(records)
-            listOf(CompletableFuture.completedFuture(Unit))
+            this.persistedConfig[newConfig.section] = newConfig
         }
-
-        override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>) = throw NotImplementedError()
-        override fun close() = throw NotImplementedError()
     }
 
-    /**
-     * A [DBUtils] that tracks [persistedConfig] and [persistedConfigAudit].
-     *
-     * Throws on write if [isWriteFails]. Throws on read if [isReadFails].
-     */
-    private class DummyDBUtils(
-        initialConfig: Map<String, ConfigEntity> = emptyMap(),
-        private val isWriteFails: Boolean = false,
-        private val isReadFails: Boolean = false
-    ) : DBUtils {
-        val persistedConfig = initialConfig.toMutableMap()
-        val persistedConfigAudit
-            get() = persistedConfig.values.map { config ->
-                ConfigAuditEntity(config.section, config.version, config.configuration, config.updateActor)
-            }
-
-        override fun writeEntities(config: SmartConfig, newConfig: ConfigEntity, newConfigAudit: ConfigAuditEntity) {
-            if (isWriteFails) {
-                throw RollbackException()
-            } else {
-                this.persistedConfig[newConfig.section] = newConfig
-            }
-        }
-
-        override fun readConfigEntity(config: SmartConfig, section: String) = if (isReadFails) {
-            throw IllegalStateException()
-        } else {
-            this.persistedConfig[section]
-        }
-
-        override fun migrateClusterDatabase(config: SmartConfig) = throw NotImplementedError()
+    override fun readConfigEntity(config: SmartConfig, section: String) = if (isReadFails) {
+        throw IllegalStateException()
+    } else {
+        this.persistedConfig[section]
     }
+
+    override fun migrateClusterDatabase(config: SmartConfig) = throw NotImplementedError()
 }
