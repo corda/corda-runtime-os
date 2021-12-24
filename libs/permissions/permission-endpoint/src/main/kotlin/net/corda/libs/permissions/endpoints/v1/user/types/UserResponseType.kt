@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.user.types
 
 import java.time.Instant
+import net.corda.libs.permissions.endpoints.v1.role.types.RoleAssociationResponseType
 
 /**
  * Response type representing a User to be returned to the caller.
@@ -55,5 +56,10 @@ data class UserResponseType(
     /**
      * User properties.
      */
-    val properties: List<PropertyResponseType>
+    val properties: List<PropertyResponseType>,
+
+    /**
+     * The User's role associations.
+     */
+    val roleAssociations: List<RoleAssociationResponseType>
 )

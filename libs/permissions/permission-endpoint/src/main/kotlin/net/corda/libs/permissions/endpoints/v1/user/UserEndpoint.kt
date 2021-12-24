@@ -6,7 +6,9 @@ import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.libs.permissions.endpoints.v1.user.types.AddRoleToUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
+import net.corda.libs.permissions.endpoints.v1.user.types.RemoveRoleFromUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 
 /**
@@ -37,4 +39,21 @@ interface UserEndpoint : RpcOps {
         loginName: String
     ): UserResponseType
 
+    /**
+     * Add a role to a User in the RBAC permission system.
+     */
+    @HttpRpcPOST(description = "Add a role to a User", path = "addRole")
+    fun addRole(
+        @HttpRpcRequestBodyParameter(description = "Details of the user and role to be associated", required = true)
+        addRoleToUserType: AddRoleToUserType
+    ): UserResponseType
+
+    /**
+     * Remove a role from a User in the RBAC permission system.
+     */
+    @HttpRpcPOST(description = "Remove a role from a User", path = "removeRole")
+    fun removeRole(
+        @HttpRpcRequestBodyParameter(description = "Details of the user and role to be disassociated", required = true)
+        removeRoleFromUserType: RemoveRoleFromUserType
+    ): UserResponseType
 }

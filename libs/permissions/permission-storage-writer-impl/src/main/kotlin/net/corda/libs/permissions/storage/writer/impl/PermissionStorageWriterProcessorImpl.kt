@@ -8,6 +8,8 @@ import net.corda.data.permissions.management.role.AddPermissionToRoleRequest
 import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.data.permissions.management.role.RemovePermissionFromRoleRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
+import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
 import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWriter
@@ -31,6 +33,16 @@ class PermissionStorageWriterProcessorImpl(
             val response = when (val permissionRequest = request.request) {
                 is CreateUserRequest -> {
                     val avroUser = userWriter.createUser(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishNewUser(avroUser)
+                    avroUser
+                }
+                is AddRoleToUserRequest -> {
+                    val avroUser = userWriter.addRoleToUser(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishNewUser(avroUser)
+                    avroUser
+                }
+                is RemoveRoleFromUserRequest -> {
+                    val avroUser = userWriter.removeRoleFromUser(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishNewUser(avroUser)
                     avroUser
                 }
