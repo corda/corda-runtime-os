@@ -8,7 +8,7 @@ import net.corda.sandbox.SandboxGroup
  * This is in its own interface simply because both [SandboxGroupContext]
  * and [MutableSandboxGroupContext] need to return it, but we don't want
  * [MutableSandboxGroupContext] to inherit from [SandboxGroupContext] thus
- * preventing users from accidentally calling [java.lang.AutoCloseable.close]
+ * preventing users from accidentally calling [AutoCloseable.close]
  * during [SandboxGroupContextInitializer].
  */
 interface SandboxGroupContextData {

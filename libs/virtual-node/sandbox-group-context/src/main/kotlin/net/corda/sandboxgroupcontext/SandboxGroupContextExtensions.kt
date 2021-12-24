@@ -7,7 +7,7 @@ package net.corda.sandboxgroupcontext
  *
  * @return null if not found
  */
-inline fun <reified T : Any> SandboxGroupContext.getObjectByKey(key: String) = this.get(key, T::class)
+inline fun <reified T : Any> SandboxGroupContext.getObjectByKey(key: String) = this.get(key, T::class.java)
 
 /**
  * Get an object instance uniquely identified by its class name from the sandbox group context object cache.
@@ -18,4 +18,4 @@ inline fun <reified T : Any> SandboxGroupContext.getObjectByKey(key: String) = t
  * @return null if not found
  */
 inline fun <reified T : Any> SandboxGroupContext.getUniqueObject() =
-    this.get(T::class.qualifiedName.toString(), T::class)
+    this.get(T::class.java.name, T::class.java)

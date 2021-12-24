@@ -82,7 +82,10 @@ class FlowMapperListener(
         scheduledTasks[eventKey] = executorService.schedule(
             {
                 log.debug { "Clearing up mapper state for key $eventKey" }
-                publisher?.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, eventKey, ExecuteCleanup())))
+                publisher?.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, eventKey, FlowMapperEvent(
+                    MessageDirection.INBOUND,
+                    ExecuteCleanup()
+                ))))
             },
             expiryTime - clock.millis(),
             TimeUnit.MILLISECONDS
