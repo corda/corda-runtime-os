@@ -6,11 +6,13 @@ import net.corda.membership.impl.read.TestProperties.Companion.bobName
 import net.corda.membership.impl.read.cache.MemberDataCache
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.read.MembershipGroupReader
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -40,7 +42,7 @@ class MembershipGroupReaderFactoryTest {
 
     @BeforeEach
     fun setUp() {
-        membershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(cache)
+        membershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(cache, mock())
     }
 
     @Test

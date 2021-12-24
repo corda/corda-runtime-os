@@ -20,6 +20,7 @@ dependencies {
     implementation project(":components:virtual-node:cpi-info-service-reader")
     implementation project(":components:virtual-node:virtual-node-info-service-reader")
     implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:crypto:crypto-service")
 
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
