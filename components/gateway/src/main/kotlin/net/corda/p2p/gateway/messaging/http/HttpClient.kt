@@ -56,7 +56,7 @@ class HttpClient(
 
     private val lock = ReentrantLock()
 
-    private val channelLock = ReentrantLock()
+    private val channelLock = ReentrantLock(true)
 
     /**
      * Queue containing messages that will be sent once the connection is established.
