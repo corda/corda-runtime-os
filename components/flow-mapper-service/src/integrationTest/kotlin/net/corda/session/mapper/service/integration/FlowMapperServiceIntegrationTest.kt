@@ -20,10 +20,10 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.schema.Schemas.Companion.CONFIG_TOPIC
-import net.corda.schema.Schemas.Companion.FLOW_EVENT_TOPIC
-import net.corda.schema.Schemas.Companion.FLOW_MAPPER_EVENT_TOPIC
-import net.corda.schema.Schemas.Companion.P2P_OUT_TOPIC
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.Companion.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG
 import net.corda.session.mapper.service.FlowMapperService
