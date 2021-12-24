@@ -8,7 +8,6 @@ abstract class P2pPod(
     details: P2PDeploymentDetails,
 ) : Pod() {
     override val pullSecrets = listOf(CordaOsDockerDevSecret.name)
-    open val otherPorts: Collection<Port> = emptyList()
     abstract val imageName: String
     override val image by lazy {
         "${CordaOsDockerDevSecret.host}/corda-os-$imageName:${details.tag}"
@@ -33,7 +32,7 @@ abstract class P2pPod(
     override val resourceRequest = details.resourceRequest
 
     override val ports by lazy {
-        otherPorts + if (details.debug) {
+        if (details.debug) {
             listOf(
                 Port.Debug
             )

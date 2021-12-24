@@ -2,7 +2,7 @@ package net.corda.p2p.deployment.pods
 
 import net.corda.p2p.deployment.Yaml
 
-abstract class Pod {
+abstract class Pod : Yamlable {
     abstract val app: String
     abstract val image: String
     open val ports: Collection<Port> = emptyList()
@@ -14,7 +14,7 @@ abstract class Pod {
     open val readyLog: Regex? = null
     open val resourceRequest: ResourceRequest? = null
 
-    fun yamls(namespaceName: String): Collection<Yaml> {
+    override fun yamls(namespaceName: String): Collection<Yaml> {
         return rawData.map {
             it.createConfig(namespaceName, app)
         } +

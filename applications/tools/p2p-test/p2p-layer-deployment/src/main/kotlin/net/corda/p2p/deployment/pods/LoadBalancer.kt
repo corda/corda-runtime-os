@@ -1,34 +1,32 @@
 package net.corda.p2p.deployment.pods
 
 class LoadBalancer(
-    servers: Collection<String>,
-) : Pod() {
-    override val app = "load-balancer"
-    override val image = "tekn0ir/nginx-stream"
-    override val ports: Collection<Port> = listOf(
-        Port.Gateway
-    )
-    override val rawData = listOf(
-        TextRawData(
-            "balancer-config", "/opt/nginx/stream.conf.d",
-            listOf(
-                TextFile(
-                    "default.conf",
-                    """
-                    upstream loadbalancer {
-                          ${
-                    servers.joinToString("\n") {
-                        "server $it:${Port.Gateway.port};"
-                    }
-                    }
-                    }
-                    server {
-                        listen ${Port.Gateway.port};
-                        proxy_pass loadbalancer;
-                    }
-                    """.trimIndent()
+    private val type: String,
+    private val ports: Collection<Port>,
+) : Yamlable {
+    override fun yamls(namespaceName: String) =
+        listOf(
+            mapOf(
+                "apiVersion" to "v1",
+                "kind" to "Service",
+                "metadata" to mapOf(
+                    "name" to "load-balancer",
+                    "namespace" to namespaceName,
+                    "labels" to mapOf("app" to "load-balancer"),
+                    "annotations" to mapOf(
+                        "cluster-autoscaler.kubernetes.io/safe-to-evict" to "false",
+                    )
+                ),
+                "spec" to mapOf(
+                    "type" to "LoadBalancer",
+                    "ports" to ports.map {
+                        mapOf(
+                            "port" to it.port,
+                            "name" to it.displayName,
+                        )
+                    },
+                    "selector" to mapOf("type" to type)
                 )
             )
         )
-    )
 }

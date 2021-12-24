@@ -9,20 +9,18 @@ class Gateway(
         fun gateways(
             kafkaServers: String,
             details: P2PDeploymentDetails,
-        ): Collection<Pod> {
+        ): Collection<Yamlable> {
             val gateways = (1..details.gatewayCount).map {
                 Gateway(it, kafkaServers, details)
             }
             val balancer = LoadBalancer(
-                gateways.map { it.app }
+                "p2p-gateway",
+                listOf(Port.Gateway),
             )
             return gateways + balancer
         }
     }
     override val imageName = "p2p-gateway"
-    override val otherPorts = listOf(
-        Port.Gateway
-    )
 
     override val readyLog = ".*Waiting for gateway to start.*".toRegex()
 }
