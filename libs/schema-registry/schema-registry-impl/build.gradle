@@ -12,11 +12,10 @@ dependencies {
 
     implementation "org.apache.avro:avro:$avroVersion"
     // Transitive dependency bump to eliminate critical violation in NexusIQ report - see nexus iq report.
-    // Constains block can be removed when Avro is upgraded to v1.11
-    // For more details, please see: https://issues.apache.org/jira/browse/AVRO-3215
+    // Constraints block can be removed when Avro is upgraded to the next version
     constraints {
-        implementation('org.apache.commons:commons-compress:1.21+') {
-            because 'CVE-2021-35515, CVE-2021-35516, CVE-2021-35517, CVE-2021-36090'
+        implementation('com.fasterxml.jackson.core:jackson-databind:2.13+') {
+            because 'sonatype-2021-4682'
         }
     }
 
