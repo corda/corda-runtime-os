@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 internal class SignedTransactionDigestTest {
 
     companion object {
-        private val jsonMapper: ObjectMapper = ObjectMapper().apply { registerModule(KotlinModule()) }
+        private val jsonMapper: ObjectMapper = ObjectMapper().apply { registerModule(KotlinModule.Builder().build()) }
     }
 
     @Test
