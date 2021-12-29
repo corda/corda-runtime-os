@@ -14,14 +14,15 @@ internal interface DBUtils {
     fun migrateClusterDatabase(config: SmartConfig)
 
     /**
-     * Creates an entity manager using the [config], then writes [newConfig] and [newConfigAudit] to the cluster
-     * database in a single transaction.
+     * Creates an entity manager using the [config], then merges all the [entitiesToMerge] and persists all the
+     * [entitiesToPersist] to the cluster database in a single transaction.
      *
      * @throws RollbackException If the database transaction cannot be committed.
+     * @throws IllegalArgumentException If any of [entitiesToMerge] or [entitiesToPersist] are not entities.
      * @throws IllegalStateException/IllegalArgumentException/TransactionRequiredException If writing the entities
      *  fails for any other reason.
      */
-    fun writeEntities(config: SmartConfig, newConfig: ConfigEntity, newConfigAudit: ConfigAuditEntity)
+    fun writeEntities(config: SmartConfig, entitiesToMerge: Collection<Any>, entitiesToPersist: Collection<Any>)
 
     /**
      * Creates an entity manager using the [config], then reads the [ConfigEntity] for the specified [section]. Returns

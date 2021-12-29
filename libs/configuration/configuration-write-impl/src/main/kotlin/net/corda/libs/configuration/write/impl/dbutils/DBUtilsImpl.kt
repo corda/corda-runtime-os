@@ -52,11 +52,14 @@ internal class DBUtilsImpl @Activate constructor(
         }
     }
 
-    override fun writeEntities(config: SmartConfig, newConfig: ConfigEntity, newConfigAudit: ConfigAuditEntity) =
-        createEntityManager(config).transaction { entityManager ->
-            entityManager.merge(newConfig)
-            entityManager.persist(newConfigAudit)
-        }
+    override fun writeEntities(
+        config: SmartConfig,
+        entitiesToMerge: Collection<Any>,
+        entitiesToPersist: Collection<Any>
+    ) = createEntityManager(config).transaction { entityManager ->
+        entitiesToMerge.forEach { entity -> entityManager.merge(entity) }
+        entitiesToPersist.forEach { entity -> entityManager.persist(entity) }
+    }
 
     override fun readConfigEntity(config: SmartConfig, section: String): ConfigEntity? {
         val entityManager = createEntityManager(config)

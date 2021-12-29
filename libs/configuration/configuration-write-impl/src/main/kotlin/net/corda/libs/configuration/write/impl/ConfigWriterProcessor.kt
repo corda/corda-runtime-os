@@ -63,10 +63,10 @@ internal class ConfigWriterProcessor(
         val newConfigAudit = ConfigAuditEntity(req.section, req.config, req.configVersion, req.updateActor)
 
         return try {
-            dbUtils.writeEntities(config, newConfig, newConfigAudit)
+            dbUtils.writeEntities(config, setOf(newConfig), setOf(newConfigAudit))
             true
         } catch (e: Exception) {
-            val errMsg = "Entity $newConfig couldn't be written to the database."
+            val errMsg = "Entities $newConfig and $newConfigAudit couldn't be written to the database."
             handleException(respFuture, errMsg, e, req.section)
             false
         }

@@ -86,7 +86,8 @@ class ConfigWriterProcessorTests {
         val resp = processRequest(processor, configMgmtReq)
 
         val expectedEnvelope = ExceptionEnvelope(
-            RollbackException::class.java.name, "Entity $config couldn't be written to the database."
+            RollbackException::class.java.name,
+            "Entities $config and $configAudit couldn't be written to the database."
         )
         val expectedResp = ConfigurationManagementResponse(
             expectedEnvelope, initialConfig.version, initialConfig.config
@@ -115,6 +116,8 @@ class ConfigWriterProcessorTests {
     @Test
     fun `returns null configuration if there is no existing configuration for the given section when sending RPC failure response`() {
         val newConfig = config.copy(section = "another_section")
+        val newConfigAudit = configAudit.copy(section = newConfig.section)
+
         val req = newConfig.run {
             ConfigurationManagementRequest(section, version, config, configVersion, updateActor)
         }
@@ -124,7 +127,8 @@ class ConfigWriterProcessorTests {
         val resp = processRequest(processor, req)
 
         val expectedEnvelope = ExceptionEnvelope(
-            RollbackException::class.java.name, "Entity $newConfig couldn't be written to the database."
+            RollbackException::class.java.name,
+            "Entities $newConfig and $newConfigAudit couldn't be written to the database."
         )
         val expectedResp = ConfigurationManagementResponse(expectedEnvelope, null, null)
         assertEquals(expectedResp, resp)
@@ -137,7 +141,8 @@ class ConfigWriterProcessorTests {
         val resp = processRequest(processor, configMgmtReq)
 
         val expectedEnvelope = ExceptionEnvelope(
-            RollbackException::class.java.name, "Entity $config couldn't be written to the database."
+            RollbackException::class.java.name,
+            "Entities $config and $configAudit couldn't be written to the database."
         )
         val expectedResp = ConfigurationManagementResponse(expectedEnvelope, null, null)
         assertEquals(expectedResp, resp)
@@ -190,10 +195,11 @@ private class DummyDBUtils(
             ConfigAuditEntity(config.section, config.config, config.configVersion, config.updateActor)
         }
 
-    override fun writeEntities(config: SmartConfig, newConfig: ConfigEntity, newConfigAudit: ConfigAuditEntity) {
+    override fun writeEntities(config: SmartConfig, entitiesToMerge: Collection<Any>, entitiesToPersist: Collection<Any>) {
         if (isWriteFails) {
             throw RollbackException()
         } else {
+            val newConfig = entitiesToMerge.first() as ConfigEntity
             this.persistedConfig[newConfig.section] = newConfig
         }
     }
