@@ -22,8 +22,10 @@ class CreatePermissionE2eTest {
             val proxy = client.start().proxy
 
             // Check that permission does not exist yet
-            assertThatThrownBy { proxy.getPermission("randomID") }.isInstanceOf(MissingRequestedResourceException::class.java)
-                .hasMessageContaining("Permission randomID not found")
+            with("randomID") {
+                assertThatThrownBy { proxy.getPermission(this) }.isInstanceOf(MissingRequestedResourceException::class.java)
+                    .hasMessageContaining("Permission $this not found")
+            }
 
             // Create permission
             val setPermString = testToolkit.uniqueName + "-PermissionString"
@@ -37,16 +39,13 @@ class CreatePermissionE2eTest {
                 return this
             }
 
-            /*val permId = */proxy.createPermission(createPermType).assertAsExpected().id
+            val permId = proxy.createPermission(createPermType).assertAsExpected().id
 
             // Check that the permission does exist now. The distribution of entity records may take some time to complete on the
             // message bus, hence use of `eventually` along with `assertDoesNotThrow`.
             eventually {
                 assertDoesNotThrow {
-                    // This is not going to work for now, as permissions are only discoverable through association with
-                    // roles
-                    // Need to think about the alternatives for isolated permissions.
-                    // proxy.getPermission(permId).assertAsExpected()
+                    proxy.getPermission(permId).assertAsExpected()
                 }
             }
         }

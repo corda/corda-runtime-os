@@ -68,6 +68,7 @@ dependencies {
     integrationTestImplementation project(":libs:messaging:inmemory-messaging-impl")
     integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(":libs:sandbox-hooks")
+    integrationTestRuntimeOnly project(":libs:sandbox-internal")
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

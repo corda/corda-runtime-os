@@ -2,6 +2,7 @@ package net.corda.applications.workers.db
 
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.HealthMonitor
+import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
@@ -15,6 +16,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine.Mixin
+import picocli.CommandLine.Option
 
 /** The worker for interacting with the database. */
 @Suppress("Unused")
@@ -32,6 +34,7 @@ class DBWorker @Activate constructor(
 
     private companion object {
         private val logger = contextLogger()
+        private const val DB_CONFIG_PATH = "database"
     }
 
     /** Parses the arguments, then initialises and starts the [processor]. */
@@ -42,8 +45,10 @@ class DBWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, DBWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val config = getBootstrapConfig(params.defaultParams, smartConfigFactory)
-        processor.start(params.defaultParams.instanceId, params.defaultParams.topicPrefix, config)
+        val databaseConfig = PathAndConfig(DB_CONFIG_PATH, params.databaseParams)
+        val config = getBootstrapConfig(smartConfigFactory, params.defaultParams, listOf(databaseConfig))
+
+        processor.start(config)
     }
 
     override fun shutdown() {
@@ -57,4 +62,7 @@ class DBWorker @Activate constructor(
 private class DBWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
+
+    @Option(names = ["-d", "--databaseParams"], description = ["Database parameters for the worker."])
+    var databaseParams = emptyMap<String, String>()
 }

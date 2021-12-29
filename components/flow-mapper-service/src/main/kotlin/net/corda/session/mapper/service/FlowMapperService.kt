@@ -34,7 +34,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.Executors
 
-@Component(service = [FlowMapperService::class])
+@Component(service = [FlowMapperService::class], immediate = true)
 class FlowMapperService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -112,9 +112,7 @@ class FlowMapperService @Activate constructor(
         )
         stateAndEventSub = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig(consumerGroup, FLOW_MAPPER_EVENT_TOPIC, config.getInt(INSTANCE_ID)),
-            FlowMapperMessageProcessor(
-                flowMapperEventExecutorFactory
-            ),
+            FlowMapperMessageProcessor(flowMapperEventExecutorFactory),
             config,
             FlowMapperListener(scheduledTaskState!!)
         )
@@ -148,6 +146,10 @@ class FlowMapperService @Activate constructor(
 
     override fun stop() {
         coordinator.stop()
+    }
+
+    override fun close() {
+        coordinator.close()
     }
 }
 

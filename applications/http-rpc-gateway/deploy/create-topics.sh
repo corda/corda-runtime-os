@@ -18,6 +18,7 @@ docker exec kafka bash -c "$create_kafka_topics --create --topic ${topic_prefix}
 docker exec kafka bash -c "$create_kafka_topics --create --topic ${topic_prefix}rpc.permissions.user --config \"cleanup.policy=compact\""
 docker exec kafka bash -c "$create_kafka_topics --create --topic ${topic_prefix}rpc.permissions.group --config \"cleanup.policy=compact\""
 docker exec kafka bash -c "$create_kafka_topics --create --topic ${topic_prefix}rpc.permissions.role --config \"cleanup.policy=compact\""
+docker exec kafka bash -c "$create_kafka_topics --create --topic ${topic_prefix}rpc.permissions.permission --config \"cleanup.policy=compact\""
 
 echo "Topics Created:"
 docker exec kafka bash -c "$kafka_topics --list"

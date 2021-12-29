@@ -1,0 +1,39 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpb'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+description 'Sandbox Service test cpb ONE'
+
+group 'com.example.helloworld.one.cpb'
+version ''
+
+cordapp {
+    targetPlatformVersion 999 as Integer
+    workflow {
+        name 'Sandbox Service test cpb ONE'
+        versionId 1
+        vendor 'R3'
+    }
+}
+
+configurations {
+    cpiForTest {
+        canBeResolved = false
+    }
+}
+
+artifacts {
+    cpiForTest tasks.named('cpb', Jar)
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    cordaProvided "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided 'net.corda:corda-crypto'
+    cordaProvided 'net.corda:corda-cipher-suite'
+    cordaProvided 'org.slf4j:slf4j-api'
+    cordapp project(':components:sandbox:sandbox-service:sandbox-service-test-resources:hello-world-cpk-one')
+}

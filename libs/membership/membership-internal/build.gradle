@@ -14,4 +14,5 @@ dependencies {
     implementation "net.corda:corda-membership-identity"
     implementation "net.corda:corda-membership-conversion"
     implementation "net.corda:corda-membership"
+    api project(":libs:virtual-node:virtual-node-info")
 }

@@ -15,8 +15,8 @@ class ForceCheckpointRequestHandler : FlowRequestHandler<FlowIORequest.ForceChec
     override val type = FlowIORequest.ForceCheckpoint::class.java
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.ForceCheckpoint): FlowEventContext<Any> {
-        context.setCheckpointWaitingFor(WaitingForWakeup())
-        val checkpoint = context.checkpoint!!
+        val checkpoint = requireCheckpoint(context)
+        checkpoint.setWaitingFor(WaitingForWakeup())
         val record = Record(
             topic = Schemas.FLOW_EVENT_TOPIC,
             key = checkpoint.flowKey,

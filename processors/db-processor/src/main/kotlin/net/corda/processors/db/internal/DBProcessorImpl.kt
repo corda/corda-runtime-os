@@ -26,19 +26,14 @@ class DBProcessorImpl @Activate constructor(
             .withValue(CONFIG_DB_PASS, ConfigValueFactory.fromAnyRef(CONFIG_DB_PASS_DEFAULT))
     }
 
-    override fun start(instanceId: Int, topicPrefix: String, config: SmartConfig) {
-        val augmentedConfig = augmentConfig(config, topicPrefix)
+    override fun start(config: SmartConfig) {
+        val augmentedConfig = config.withFallback(dbDefaultsConfig)
 
         configWriteService.start()
-        configWriteService.startProcessing(augmentedConfig, instanceId)
+        configWriteService.startProcessing(augmentedConfig, config.getInt("instanceId"))
     }
 
     override fun stop() {
         configWriteService.stop()
     }
-
-    /** Augments the existing [config] with the topic prefix as a value, and the database defaults as a fallback. */
-    private fun augmentConfig(config: SmartConfig, topicPrefix: String) = config
-        .withValue(CONFIG_MESSAGING_TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(topicPrefix))
-        .withFallback(dbDefaultsConfig)
 }

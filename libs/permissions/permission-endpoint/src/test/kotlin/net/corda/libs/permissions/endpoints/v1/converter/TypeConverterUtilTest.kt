@@ -5,8 +5,7 @@ import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import java.time.Instant
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
-import net.corda.libs.permissions.manager.common.PermissionTypeDto as InternalPermissionTypeEnum
-import net.corda.libs.permissions.manager.response.PermissionResponseDto
+import net.corda.libs.permissions.manager.response.PermissionAssociationResponseDto
 import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
@@ -81,32 +80,21 @@ class TypeConverterUtilTest {
     fun `convert RoleResponseDto to RoleResponseTypes contains PermissionResponseDtos`() {
         val earlier = Instant.now()
         val now = Instant.now()
+        val permissionAssociationResponseDto = PermissionAssociationResponseDto(
+            "permission1",
+            now
+        )
+        val permissionAssociationResponseDto2 = PermissionAssociationResponseDto(
+            "permission2",
+            earlier
+        )
         val dto = RoleResponseDto(
             id = "id1",
             version = 991,
             lastUpdatedTimestamp = now,
             roleName = "name1",
             groupVisibility = "group1",
-            permissions = listOf(
-                PermissionResponseDto(
-                    "permission1",
-                    0,
-                    now,
-                    "groupVis2",
-                    "virtNode3",
-                    InternalPermissionTypeEnum.ALLOW,
-                    "*"
-                ),
-                PermissionResponseDto(
-                    "permission2",
-                    1,
-                    earlier,
-                    "groupVis2",
-                    "virtNode3",
-                    InternalPermissionTypeEnum.DENY,
-                    "*"
-                ),
-            )
+            permissions = listOf(permissionAssociationResponseDto, permissionAssociationResponseDto2)
         )
 
         val type = dto.convertToEndpointType()
@@ -118,21 +106,11 @@ class TypeConverterUtilTest {
         assertEquals("group1", type.groupVisibility)
         assertEquals(2, type.permissions.size)
 
-        assertEquals("permission1", type.permissions[0].id)
-        assertEquals(0, type.permissions[0].version)
-        assertEquals(now, type.permissions[0].updateTimestamp)
-        assertEquals("groupVis2", type.permissions[0].groupVisibility)
-        assertEquals("virtNode3", type.permissions[0].virtualNode)
-        assertEquals(PermissionType.ALLOW, type.permissions[0].permissionType)
-        assertEquals("*", type.permissions[0].permissionString)
+        assertEquals(permissionAssociationResponseDto.id, type.permissions[0].id)
+        assertEquals(now, type.permissions[0].createdTimestamp)
 
-        assertEquals("permission2", type.permissions[1].id)
-        assertEquals(1, type.permissions[1].version)
-        assertEquals(earlier, type.permissions[1].updateTimestamp)
-        assertEquals("groupVis2", type.permissions[1].groupVisibility)
-        assertEquals("virtNode3", type.permissions[1].virtualNode)
-        assertEquals(PermissionType.DENY, type.permissions[1].permissionType)
-        assertEquals("*", type.permissions[1].permissionString)
+        assertEquals(permissionAssociationResponseDto2.id, type.permissions[1].id)
+        assertEquals(earlier, type.permissions[1].createdTimestamp)
     }
 
     @Test

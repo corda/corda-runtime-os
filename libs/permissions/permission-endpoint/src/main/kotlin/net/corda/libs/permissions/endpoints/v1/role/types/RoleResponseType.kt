@@ -1,7 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.role.types
 
+import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionAssociationResponseType
 import java.time.Instant
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
 
 /**
  * Response type representing a Role to be returned to the caller.
@@ -34,7 +34,7 @@ data class RoleResponseType(
     val groupVisibility: String?,
 
     /**
-     * List of permissions the Role has.
+     * List of permission associations the Role has.
      */
-    val permissions: List<PermissionResponseType>
+    val permissions: List<PermissionAssociationResponseType>
 )

@@ -15,9 +15,9 @@ class FlowFinishedRequestHandler : FlowRequestHandler<FlowIORequest.FlowFinished
     override val type = FlowIORequest.FlowFinished::class.java
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.FlowFinished): FlowEventContext<Any> {
-        val checkpoint = context.checkpoint!!
+        val checkpoint = requireCheckpoint(context)
+        checkpoint.setWaitingFor(null)
         log.info("Flow [${checkpoint.flowKey.flowId}] completed successfully")
-        context.setCheckpointWaitingFor(null)
         // Needs to go to a different topic, but currently sends to the flow event topic
         // The commented out code should be added + changed when this is resolved.
 //        val result = RPCFlowResult.newBuilder()

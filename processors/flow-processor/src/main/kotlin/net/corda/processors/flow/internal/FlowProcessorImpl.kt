@@ -19,7 +19,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "Unused")
 @Component(service = [FlowProcessor::class])
 class FlowProcessorImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
@@ -40,7 +40,7 @@ class FlowProcessorImpl @Activate constructor(
 
     private val lifeCycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(::eventHandler)
 
-    override fun start(instanceId: Int, topicPrefix: String, config: SmartConfig) {
+    override fun start(config: SmartConfig) {
         log.info("Flow processor starting.")
         lifeCycleCoordinator.start()
         lifeCycleCoordinator.postEvent(BootConfigEvent(config))
