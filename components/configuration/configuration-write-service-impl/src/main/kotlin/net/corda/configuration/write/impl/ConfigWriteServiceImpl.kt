@@ -1,7 +1,7 @@
 package net.corda.configuration.write.impl
 
 import net.corda.configuration.write.ConfigWriteService
-import net.corda.configuration.write.impl.dbutils.DBUtils
+import net.corda.configuration.write.impl.dbutils.DBUtilsImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.ConfigWriterFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -17,13 +17,11 @@ internal class ConfigWriteServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigWriterFactory::class)
-    configWriterFactory: ConfigWriterFactory,
-    @Reference(service = DBUtils::class)
-    dbUtils: DBUtils
+    configWriterFactory: ConfigWriterFactory
 ) : ConfigWriteService {
 
     private val coordinator = let {
-        val eventHandler = ConfigWriteEventHandler(configWriterFactory, dbUtils)
+        val eventHandler = ConfigWriteEventHandler(configWriterFactory, DBUtilsImpl())
         coordinatorFactory.createCoordinator<ConfigWriteService>(eventHandler)
     }
 
