@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "RemoveRoleFromUserRequest",
+  "namespace": "net.corda.data.permissions.management.user",
+  "fields": [
+    {
+      "name": "loginName",
+      "type": "string"
+    },
+    {
+      "name": "roleName",
+      "type": "string"
+    }
+  ]
+}

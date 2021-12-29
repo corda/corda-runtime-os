@@ -20,6 +20,8 @@
       "name": "request",
       "type": [
         "net.corda.data.permissions.management.user.CreateUserRequest",
+        "net.corda.data.permissions.management.user.AddRoleToUserRequest",
+        "net.corda.data.permissions.management.user.RemoveRoleFromUserRequest",
         "net.corda.data.permissions.management.role.CreateRoleRequest",
         "net.corda.data.permissions.management.permission.CreatePermissionRequest"
       ]
