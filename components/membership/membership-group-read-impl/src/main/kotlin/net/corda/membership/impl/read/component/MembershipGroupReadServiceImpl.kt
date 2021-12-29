@@ -33,6 +33,7 @@ import org.osgi.service.component.annotations.Reference
  * will not be available until subscriptions have been created meaning lookups done before configuration has been
  * received will return no results.
  */
+@Suppress("LongParameterList")
 @Component(service = [MembershipGroupReadService::class])
 class MembershipGroupReadServiceImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReaderComponent::class)

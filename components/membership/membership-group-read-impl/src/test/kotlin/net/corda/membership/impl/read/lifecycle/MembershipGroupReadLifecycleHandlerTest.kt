@@ -2,7 +2,6 @@ package net.corda.membership.impl.read.lifecycle
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReaderComponent
-import net.corda.crypto.service.CryptoFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigObject
 import net.corda.lifecycle.LifecycleCoordinator
