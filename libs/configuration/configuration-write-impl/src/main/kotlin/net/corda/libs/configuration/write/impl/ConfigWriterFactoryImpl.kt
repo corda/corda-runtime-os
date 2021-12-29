@@ -30,7 +30,7 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
 ) : ConfigWriterFactory {
 
     override fun create(config: SmartConfig, instanceId: Int): ConfigWriter {
-        // This is temporary. In the future, migrations will be applied by a different codepath.
+        // TODO - CORE-3177 - Migrations should be applied by a different codepath.
         dbUtils.migrateClusterDatabase(config)
 
         val publisher = createPublisher(config, instanceId)
