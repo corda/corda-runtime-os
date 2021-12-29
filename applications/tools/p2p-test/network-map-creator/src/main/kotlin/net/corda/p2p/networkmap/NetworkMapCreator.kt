@@ -9,10 +9,10 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.p2p.schema.TestSchema
+import net.corda.p2p.NetworkType
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.NetworkMapEntry
-import net.corda.p2p.NetworkType
+import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -26,7 +26,7 @@ import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.security.PublicKey
-import java.util.Properties
+import java.util.*
 
 @Suppress("SpreadOperator")
 @Component(immediate = true)
@@ -76,7 +76,7 @@ class NetworkMapCreator @Activate constructor(
                 return
             }
 
-            val topic = parameters.topic ?: TestSchema.NETWORK_MAP_TOPIC
+            val topic = parameters.topic ?: NETWORK_MAP_TOPIC
             val netmapConfig = ConfigFactory.parseFile(parameters.networkMapFile)
             val recordsWithAdditions = netmapConfig.getConfigList("entriesToAdd").map { config ->
                 val x500Name = config.getString("x500name")
@@ -182,7 +182,7 @@ class CliParameters {
     var kafkaConnection: File? = null
 
     @CommandLine.Option(names = ["--topic"], description = ["Topic to write the records to. " +
-            "Defaults to ${TestSchema.NETWORK_MAP_TOPIC}, if not specified."])
+            "Defaults to ${NETWORK_MAP_TOPIC}, if not specified."])
     var topic: String? = null
 
     @CommandLine.Option(names = ["--netmap-file"], description = ["File containing network map data used to populate Kafka."])

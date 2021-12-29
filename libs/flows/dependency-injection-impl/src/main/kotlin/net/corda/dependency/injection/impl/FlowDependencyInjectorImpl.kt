@@ -8,9 +8,7 @@ import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.injection.CordaInject
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import java.lang.reflect.Field
-import java.util.*
-import kotlin.reflect.KClass
-import kotlin.reflect.full.allSuperclasses
+import java.util.Collections
 
 class FlowDependencyInjectorImpl(
     private val sandboxGroup: SandboxGroup
@@ -21,10 +19,8 @@ class FlowDependencyInjectorImpl(
         services: List<InjectableFactory<*>>,
         singletons: List<SingletonSerializeAsToken>
     ) : this(sandboxGroup) {
-        services.forEach {
-            registerServiceFactory(it)
-            singletonList.addAll(singletons)
-        }
+        services.forEach(::registerServiceFactory)
+        singletonList.addAll(singletons)
     }
 
     private val serviceTypeMap: MutableMap<Class<*>, InjectableFactory<*>> =
@@ -33,10 +29,10 @@ class FlowDependencyInjectorImpl(
     private val singletonList = mutableSetOf<SingletonSerializeAsToken>()
 
     override fun injectServices(flow: Flow<*>, flowFiber: FlowFiber<*>) {
-        val requiredFields = flow::class.getFieldsForInjection()
-        val mismatchedFields = requiredFields.filter { !serviceTypeMap.containsKey(it.type) }
+        val requiredFields = flow::class.java.getFieldsForInjection()
+        val mismatchedFields = requiredFields.filterNot { serviceTypeMap.containsKey(it.type) }
         if (mismatchedFields.any()) {
-            val fields = mismatchedFields.joinToString(separator = ", ") { it.name }
+            val fields = mismatchedFields.joinToString(separator = ", ", transform = Field::getName)
             throw IllegalArgumentException(
                 "No registered types could be found for the following field(s) '$fields'"
             )
@@ -66,24 +62,28 @@ class FlowDependencyInjectorImpl(
     }
 
     /**
-     * Get the declared fields of the current KClass, and of the superclasses of this KClass.
+     * Get the declared fields of the current [Class], and of the superclasses of this [Class].
      * We get declared fields to include fields of all accessibility types.
      * Finally, we need to filter so that only fields annotated with [CordaInject] are returned.
      */
-    private fun KClass<*>.getFieldsForInjection(): Collection<Field> {
+    private fun Class<*>.getFieldsForInjection(): Collection<Field> {
         return this.getFieldsForInjection(CordaInject::class.java)
     }
 
-    @Suppress("SpreadOperator")
-    private fun KClass<*>.getFieldsForInjection(annotationType: Class<out Annotation>): Collection<Field> {
-        return setOf(
-            this,
-            *this.allSuperclasses.toTypedArray()
-        )
-            .flatMap { it.java.declaredFields.toSet() }
-            .filter {
-                it.isAnnotationPresent(annotationType)
+    private fun Class<*>.getFieldsForInjection(annotationType: Class<out Annotation>): Collection<Field> {
+        return getSuperClassesFor(this).flatMap { it.declaredFields.toSet() }
+            .filter { field ->
+                field.isAnnotationPresent(annotationType)
             }
     }
-}
 
+    private fun getSuperClassesFor(clazz: Class<*>): List<Class<*>> {
+        val superClasses = mutableListOf<Class<*>>()
+        var target: Class<*>? = clazz
+        while (target != null) {
+            superClasses.add(target)
+            target = target.superclass
+        }
+        return superClasses
+    }
+}

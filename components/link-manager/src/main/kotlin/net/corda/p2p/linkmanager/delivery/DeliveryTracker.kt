@@ -24,7 +24,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
-import net.corda.p2p.schema.Schema
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
@@ -69,7 +69,7 @@ class DeliveryTracker(
 
     private val messageTracker = MessageTracker(replayScheduler)
     private val messageTrackerSubscription = subscriptionFactory.createStateAndEventSubscription(
-        SubscriptionConfig("message-tracker-group", Schema.P2P_OUT_MARKERS, instanceId),
+        SubscriptionConfig("message-tracker-group", P2P_OUT_MARKERS, instanceId),
         messageTracker.processor,
         configuration,
         messageTracker.listener

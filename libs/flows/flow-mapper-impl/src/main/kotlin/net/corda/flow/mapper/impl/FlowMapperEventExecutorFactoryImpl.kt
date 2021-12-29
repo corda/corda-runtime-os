@@ -12,7 +12,7 @@ import net.corda.flow.mapper.impl.executor.ExecuteCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.ScheduleCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionEventExecutor
 import net.corda.flow.mapper.impl.executor.StartRPCFlowExecutor
-import net.corda.schema.Schemas.Companion.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [FlowMapperEventExecutorFactory::class])
