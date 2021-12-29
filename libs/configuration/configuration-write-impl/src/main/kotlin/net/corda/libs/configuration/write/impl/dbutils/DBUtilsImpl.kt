@@ -35,6 +35,8 @@ internal class DBUtilsImpl @Activate constructor(
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory
 ) : DBUtils {
 
+    private val managedEntities: List<Class<out Any>>
+        get() = listOf(ConfigEntity::class.java, ConfigAuditEntity::class.java)
     private var dataSource: DataSource? = null
     private var entityManagerFactory: EntityManagerFactory? = null
 
