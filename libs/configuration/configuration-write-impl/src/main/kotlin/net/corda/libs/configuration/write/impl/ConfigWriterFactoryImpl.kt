@@ -3,16 +3,18 @@ package net.corda.libs.configuration.write.impl
 import net.corda.config.schema.Schema.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
+import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.ConfigWriter
 import net.corda.libs.configuration.write.ConfigWriterException
 import net.corda.libs.configuration.write.ConfigWriterFactory
-import net.corda.libs.configuration.write.impl.dbutils.DBUtils
+import net.corda.libs.configuration.write.impl.dbutils.DBUtilsImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.orm.EntityManagerFactoryFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -25,14 +27,13 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = DBUtils::class)
-    private val dbUtils: DBUtils
+    @Reference(service = LiquibaseSchemaMigrator::class)
+    private val schemaMigrator: LiquibaseSchemaMigrator,
+    @Reference(service = EntityManagerFactoryFactory::class)
+    private val entityManagerFactoryFactory: EntityManagerFactoryFactory
 ) : ConfigWriterFactory {
 
     override fun create(config: SmartConfig, instanceId: Int): ConfigWriter {
-        // TODO - CORE-3177 - Migrations should be applied by a different codepath.
-        dbUtils.migrateClusterDatabase(config)
-
         val publisher = createPublisher(config, instanceId)
         val subscription = createRPCSubscription(config, instanceId, publisher)
         return ConfigWriterImpl(subscription, publisher)
@@ -72,8 +73,9 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
             ConfigurationManagementResponse::class.java,
             instanceId
         )
+        val dbUtils = DBUtilsImpl(config, schemaMigrator, entityManagerFactoryFactory)
+        val processor = ConfigWriterProcessor(publisher, dbUtils)
 
-        val processor = ConfigWriterProcessor(publisher, config, dbUtils)
         return try {
             subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)
         } catch (e: Exception) {

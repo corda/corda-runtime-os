@@ -23,12 +23,16 @@ import net.corda.v5.base.util.contextLogger
  */
 internal class ConfigWriterProcessor(
     private val publisher: Publisher,
-    private val config: SmartConfig,
     private val dbUtils: DBUtils
 ) : RPCResponderProcessor<ConfigurationManagementRequest, ConfigurationManagementResponse> {
 
     private companion object {
         val logger = contextLogger()
+    }
+
+    init {
+        // TODO - CORE-3177 - Migrations should be applied by a different codepath.
+        dbUtils.migrateClusterDatabase()
     }
 
     /**
@@ -63,7 +67,7 @@ internal class ConfigWriterProcessor(
         val newConfigAudit = ConfigAuditEntity(req.section, req.config, req.configVersion, req.updateActor)
 
         return try {
-            dbUtils.writeEntities(config, setOf(newConfig), setOf(newConfigAudit))
+            dbUtils.writeEntities(newConfig, newConfigAudit)
             true
         } catch (e: Exception) {
             val errMsg = "Entities $newConfig and $newConfigAudit couldn't be written to the database."
@@ -108,7 +112,7 @@ internal class ConfigWriterProcessor(
 
         logger.debug("$errMsg Cause: $cause.")
         val currentConfig = try {
-            dbUtils.readConfigEntity(config, section)
+            dbUtils.readConfigEntity(section)
         } catch (e: IllegalStateException) {
             // We ignore this additional error, and report the one we were already planning to report.
             null

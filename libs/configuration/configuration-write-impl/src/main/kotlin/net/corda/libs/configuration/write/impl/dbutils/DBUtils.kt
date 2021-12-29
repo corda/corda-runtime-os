@@ -1,34 +1,26 @@
 package net.corda.libs.configuration.write.impl.dbutils
 
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.impl.entities.ConfigAuditEntity
 import net.corda.libs.configuration.write.impl.entities.ConfigEntity
-import javax.persistence.RollbackException
 
 /** Encapsulates database-related functionality, so that it can be stubbed during tests. */
 internal interface DBUtils {
-    /**
-     * Connects to the cluster database using the [config], and applies the Liquibase schema migrations for each of the
-     * entities.
-     */
-    fun migrateClusterDatabase(config: SmartConfig)
+    /** Applies the Liquibase schema migrations for each of the entities. */
+    fun migrateClusterDatabase()
 
     /**
-     * Creates an entity manager using the [config], then merges all the [entitiesToMerge] and persists all the
-     * [entitiesToPersist] to the cluster database in a single transaction.
+     * Writes [newConfig] and [newConfigAudit] to the cluster database in a single transaction.
      *
-     * @throws RollbackException If the database transaction cannot be committed.
-     * @throws IllegalArgumentException If any of [entitiesToMerge] or [entitiesToPersist] are not entities.
+     * @throws `RollbackException` If the database transaction cannot be committed.
      * @throws IllegalStateException/IllegalArgumentException/TransactionRequiredException If writing the entities
      *  fails for any other reason.
      */
-    fun writeEntities(config: SmartConfig, entitiesToMerge: Collection<Any>, entitiesToPersist: Collection<Any>)
+    fun writeEntities(newConfig: ConfigEntity, newConfigAudit: ConfigAuditEntity)
 
     /**
-     * Creates an entity manager using the [config], then reads the [ConfigEntity] for the specified [section]. Returns
-     * null if no config exists for the specified section.
+     * Reads the [ConfigEntity] for the specified [section]. Returns null if no config exists for the specified section.
      *
      * @throws IllegalStateException If the entity manager cannot be created.
      */
-    fun readConfigEntity(config: SmartConfig, section: String): ConfigEntity?
+    fun readConfigEntity(section: String): ConfigEntity?
 }
