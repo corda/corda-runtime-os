@@ -46,21 +46,6 @@ class RoleWriterTest {
     }
 
     @Test
-    fun `create a role checks role doesn't already exist, if it does, throw illegal argument exception`() {
-
-        whenever(entityManager.createQuery(any<String>())).thenReturn(query)
-        whenever(query.setParameter(eq("roleName"), eq("role1"))).thenReturn(query)
-        whenever(query.singleResult).thenReturn(1L)
-
-        val e = assertThrows<IllegalArgumentException> {
-            roleWriter.createRole(createRoleRequest, requestUserId)
-        }
-
-        verify(entityTransaction).begin()
-        assertEquals("Failed to create new role: role1 as they already exist.", e.message)
-    }
-
-    @Test
     fun `create a role checks groupVisibility group ID and throws illegal argument exception if does not exist`() {
 
         whenever(entityManager.createQuery(any<String>())).thenReturn(query)
