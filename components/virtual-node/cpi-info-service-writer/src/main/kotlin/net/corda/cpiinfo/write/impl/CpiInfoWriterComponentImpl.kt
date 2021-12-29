@@ -15,7 +15,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.packaging.CPI
 import net.corda.packaging.converters.toAvro
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.VirtualNode.Companion.CPI_INFO_TOPIC
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.common.ConfigChangedEvent
@@ -58,11 +58,11 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     private var publisher: Publisher? = null
 
     override fun put(cpiMetadata: CPI.Metadata) {
-        publish(listOf(Record(Schemas.CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), cpiMetadata.toAvro())))
+        publish(listOf(Record(CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), cpiMetadata.toAvro())))
     }
 
     override fun remove(cpiMetadata: CPI.Metadata) {
-        publish(listOf(Record(Schemas.CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), null)))
+        publish(listOf(Record(CPI_INFO_TOPIC, cpiMetadata.id.toAvro(), null)))
     }
 
     /** Synchronous publish */

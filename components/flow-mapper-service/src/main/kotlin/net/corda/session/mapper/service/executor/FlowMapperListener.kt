@@ -7,7 +7,7 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.schema.Schemas.Companion.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace

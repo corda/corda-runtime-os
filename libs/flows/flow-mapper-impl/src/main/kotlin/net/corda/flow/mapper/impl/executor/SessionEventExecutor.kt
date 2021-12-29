@@ -12,8 +12,8 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Companion.FLOW_EVENT_TOPIC
-import net.corda.schema.Schemas.Companion.P2P_OUT_TOPIC
+import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.v5.base.util.contextLogger
 
 class SessionEventExecutor(

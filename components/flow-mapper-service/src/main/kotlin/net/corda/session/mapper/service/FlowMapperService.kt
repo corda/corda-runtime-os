@@ -21,7 +21,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.schema.Schemas.Companion.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.Companion.MESSAGING_CONFIG

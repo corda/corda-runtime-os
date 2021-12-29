@@ -3,7 +3,7 @@ package net.corda.tools.setup.common
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.schema.Schemas.Companion.CONFIG_TOPIC
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.v5.base.util.contextLogger
 import org.slf4j.Logger
 

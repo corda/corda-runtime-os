@@ -12,7 +12,7 @@ import net.corda.flow.manager.impl.pipeline.FlowEventPipelineImpl
 import net.corda.flow.manager.impl.pipeline.factory.FlowEventPipelineFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -28,7 +28,7 @@ class FlowEventProcessorImplTest {
     private val updatedCheckpoint = Checkpoint().apply {
         cpiId = "cpi id set"
     }
-    private val outputRecords = listOf(Record(Schemas.FLOW_EVENT_TOPIC, "key", "value"))
+    private val outputRecords = listOf(Record(FLOW_EVENT_TOPIC, "key", "value"))
     private val updatedContext = FlowEventContext<Any>(updatedCheckpoint, FlowEvent(flowKey, wakeupPayload), wakeupPayload, outputRecords)
 
     private val flowEventPipeline = mock<FlowEventPipeline>().apply {
@@ -48,21 +48,21 @@ class FlowEventProcessorImplTest {
     @Test
     fun `Throws FlowHospitalException if there was no flow event`() {
         assertThrows<FlowHospitalException> {
-            processor.onNext(Checkpoint(), Record(Schemas.FLOW_EVENT_TOPIC, flowKey, null))
+            processor.onNext(Checkpoint(), Record(FLOW_EVENT_TOPIC, flowKey, null))
         }
     }
 
     @Test
     fun `Returns a checkpoint and events to send`() {
         whenever(flowEventPipeline.eventPostProcessing()).thenReturn(FlowEventPipelineImpl(mock(), mock(), mock(), updatedContext))
-        val response = processor.onNext(Checkpoint(), Record(Schemas.FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, wakeupPayload)))
+        val response = processor.onNext(Checkpoint(), Record(FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, wakeupPayload)))
         assertEquals(updatedCheckpoint, response.updatedState)
         assertEquals(outputRecords, response.responseEvents)
     }
 
     @Test
     fun `Calls the pipeline steps in order`() {
-        processor.onNext(Checkpoint(), Record(Schemas.FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, wakeupPayload)))
+        processor.onNext(Checkpoint(), Record(FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, wakeupPayload)))
         inOrder(flowEventPipeline) {
             verify(flowEventPipeline).eventPreProcessing()
             verify(flowEventPipeline).runOrContinue()
@@ -76,7 +76,7 @@ class FlowEventProcessorImplTest {
     @Test
     fun `Returns the existing checkpoint and no records if there was an FlowProcessingException when executing the pipeline`() {
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(FlowProcessingException("Broken"))
-        val response = processor.onNext(Checkpoint(), Record(Schemas.FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, wakeupPayload)))
+        val response = processor.onNext(Checkpoint(), Record(FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, wakeupPayload)))
         assertEquals(Checkpoint(), response.updatedState)
         assertEquals(emptyList<Record<FlowKey, FlowEvent>>(), response.responseEvents)
     }
@@ -85,7 +85,7 @@ class FlowEventProcessorImplTest {
     fun `Returns the existing checkpoint and no records if there was an unknown exception when executing the pipeline`() {
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(IllegalStateException("Broken"))
         assertThrows<IllegalStateException> {
-            processor.onNext(Checkpoint(), Record(Schemas.FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, wakeupPayload)))
+            processor.onNext(Checkpoint(), Record(FLOW_EVENT_TOPIC, flowKey, FlowEvent(flowKey, wakeupPayload)))
         }
     }
 }
