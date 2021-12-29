@@ -1,39 +1,87 @@
 package net.corda.processors.db.internal
 
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
+import com.typesafe.config.Config
 import net.corda.configuration.write.ConfigWriteService
+import net.corda.db.admin.LiquibaseSchemaMigrator
+import net.corda.db.admin.impl.ClassloaderChangeLog
+import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
+import net.corda.db.core.HikariDataSourceFactory
+import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.datamodel.ConfigAuditEntity
+import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.orm.DbEntityManagerConfiguration
+import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.processors.db.DBProcessor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import javax.sql.DataSource
 
 /** The processor for a `DBWorker`. */
 @Suppress("Unused")
 @Component(service = [DBProcessor::class])
 class DBProcessorImpl @Activate constructor(
     @Reference(service = ConfigWriteService::class)
-    private val configWriteService: ConfigWriteService
+    private val configWriteService: ConfigWriteService,
+    @Reference(service = EntityManagerFactoryFactory::class)
+    private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
+    @Reference(service = LiquibaseSchemaMigrator::class)
+    private val schemaMigrator: LiquibaseSchemaMigrator
 ) : DBProcessor {
 
-    private companion object {
-        // A `Config` object containing the database defaults.
-        private val dbDefaultsConfig = ConfigFactory.empty()
-            .withValue(CONFIG_DB_DRIVER, ConfigValueFactory.fromAnyRef(CONFIG_DB_DRIVER_DEFAULT))
-            .withValue(CONFIG_JDBC_URL, ConfigValueFactory.fromAnyRef(CONFIG_JDBC_URL_DEFAULT))
-            .withValue(CONFIG_DB_USER, ConfigValueFactory.fromAnyRef(CONFIG_DB_USER_DEFAULT))
-            .withValue(CONFIG_DB_PASS, ConfigValueFactory.fromAnyRef(CONFIG_DB_PASS_DEFAULT))
-    }
-
     override fun start(config: SmartConfig) {
-        val augmentedConfig = config.withFallback(dbDefaultsConfig)
+        val dataSource = createDataSource(config)
+        checkDatabaseConnection(dataSource)
+        migrateDatabase(dataSource)
 
         configWriteService.start()
-        configWriteService.startProcessing(augmentedConfig, config.getInt("instanceId"))
+        val instanceId = config.getInt(CONFIG_INSTANCE_ID)
+        val entityManagerFactory = createEntityManagerFactory(dataSource)
+        configWriteService.startProcessing(config, instanceId, entityManagerFactory)
     }
 
     override fun stop() {
         configWriteService.stop()
     }
+
+    /**
+     * Checks that it is possible to connect to the cluster database using the [dataSource].
+     *
+     * @throws `SQLException` If the cluster database cannot be connected to.
+     */
+    private fun checkDatabaseConnection(dataSource: DataSource) = dataSource.connection.close()
+
+    /** Uses the [dataSource] to apply the Liquibase schema migrations for each of the entities. */
+    private fun migrateDatabase(dataSource: DataSource) {
+        val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
+            ChangeLogResourceFiles(klass.packageName, listOf(MIGRATION_FILE_LOCATION), klass.classLoader)
+        }
+        val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
+
+        dataSource.connection.use { connection ->
+            schemaMigrator.updateDb(connection, dbChange, LiquibaseSchemaMigrator.PUBLIC_SCHEMA)
+        }
+    }
+
+    /** Creates an `EntityManagerFactory` using the [dataSource]. */
+    private fun createEntityManagerFactory(dataSource: DataSource) = entityManagerFactoryFactory.create(
+        PERSISTENCE_UNIT_NAME,
+        listOf(ConfigEntity::class.java, ConfigAuditEntity::class.java),
+        DbEntityManagerConfiguration(dataSource)
+    )
+
+    /** Creates a [DataSource] using the [config]. */
+    private fun createDataSource(config: Config): DataSource {
+        val driver = getConfigStringOrDefault(config, CONFIG_DB_DRIVER, CONFIG_DB_DRIVER_DEFAULT)
+        val jdbcUrl = getConfigStringOrDefault(config, CONFIG_JDBC_URL, CONFIG_JDBC_URL_DEFAULT)
+        val username = getConfigStringOrDefault(config, CONFIG_DB_USER, CONFIG_DB_USER_DEFAULT)
+        val password = getConfigStringOrDefault(config, CONFIG_DB_PASS, CONFIG_DB_PASS_DEFAULT)
+
+        return HikariDataSourceFactory().create(driver, jdbcUrl, username, password, false, MAX_POOL_SIZE)
+    }
+
+    /** Returns the string at [path] from [config], or [default] if the path doesn't exist. */
+    private fun getConfigStringOrDefault(config: Config, path: String, default: String) =
+        if (config.hasPath(path)) config.getString(path) else default
 }

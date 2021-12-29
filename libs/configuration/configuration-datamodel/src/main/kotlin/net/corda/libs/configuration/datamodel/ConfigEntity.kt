@@ -1,7 +1,7 @@
-package net.corda.libs.configuration.write.impl.entities
+package net.corda.libs.configuration.datamodel
 
 import net.corda.db.schema.DbSchema
-import net.corda.libs.configuration.write.impl.DB_TABLE_CONFIG
+import net.corda.libs.configuration.datamodel.internal.DB_TABLE_CONFIG
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -23,7 +23,7 @@ import javax.persistence.Version
  */
 @Entity
 @Table(name = DB_TABLE_CONFIG, schema = DbSchema.CONFIG)
-internal data class ConfigEntity(
+data class ConfigEntity(
     @Id
     @Column(name = "section", nullable = false)
     val section: String,

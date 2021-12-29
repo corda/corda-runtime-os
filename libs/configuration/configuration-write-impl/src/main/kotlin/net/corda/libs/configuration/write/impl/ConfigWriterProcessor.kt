@@ -1,14 +1,12 @@
 package net.corda.libs.configuration.write.impl
 
-import net.corda.config.schema.Schema.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
-import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.datamodel.ConfigAuditEntity
+import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.write.impl.dbutils.DBUtils
-import net.corda.libs.configuration.write.impl.entities.ConfigAuditEntity
-import net.corda.libs.configuration.write.impl.entities.ConfigEntity
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -18,8 +16,8 @@ import net.corda.v5.base.util.contextLogger
 /**
  * An RPC responder processor that handles configuration management requests.
  *
- * Listens for configuration management requests on [CONFIG_MGMT_REQUEST_TOPIC]. Persists the updated
- * configuration to the cluster database and publishes the updated configuration to [CONFIG_TOPIC].
+ * Listens for configuration management requests over RPC. Persists the updated configuration to the cluster database
+ * and publishes the updated configuration to Kafka.
  */
 internal class ConfigWriterProcessor(
     private val publisher: Publisher,
@@ -28,11 +26,6 @@ internal class ConfigWriterProcessor(
 
     private companion object {
         val logger = contextLogger()
-    }
-
-    init {
-        // TODO - CORE-3177 - Migrations should be applied by a different codepath.
-        dbUtils.migrateClusterDatabase()
     }
 
     /**
@@ -109,8 +102,6 @@ internal class ConfigWriterProcessor(
     private fun handleException(
         respFuture: ConfigurationManagementResponseFuture, errMsg: String, cause: Exception, section: String
     ) {
-
-        logger.debug("$errMsg Cause: $cause.")
         val currentConfig = try {
             dbUtils.readConfigEntity(section)
         } catch (e: IllegalStateException) {

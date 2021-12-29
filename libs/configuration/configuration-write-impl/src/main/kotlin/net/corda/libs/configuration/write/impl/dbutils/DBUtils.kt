@@ -1,13 +1,10 @@
 package net.corda.libs.configuration.write.impl.dbutils
 
-import net.corda.libs.configuration.write.impl.entities.ConfigAuditEntity
-import net.corda.libs.configuration.write.impl.entities.ConfigEntity
+import net.corda.libs.configuration.datamodel.ConfigAuditEntity
+import net.corda.libs.configuration.datamodel.ConfigEntity
 
 /** Encapsulates database-related functionality, so that it can be stubbed during tests. */
 internal interface DBUtils {
-    /** Applies the Liquibase schema migrations for each of the entities. */
-    fun migrateClusterDatabase()
-
     /**
      * Writes [newConfig] and [newConfigAudit] to the cluster database in a single transaction.
      *

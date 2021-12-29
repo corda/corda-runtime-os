@@ -12,11 +12,9 @@ dependencies {
     implementation project(':components:configuration:configuration-write-service')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-write')
-    implementation project(':libs:db:db-admin')
-    implementation project(':libs:db:db-core')
-    implementation project(':libs:db:db-orm')
     implementation project(':libs:lifecycle:lifecycle')
     implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation 'javax.persistence:javax.persistence-api'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'net.corda:corda-base'
     implementation 'org.slf4j:slf4j-api'

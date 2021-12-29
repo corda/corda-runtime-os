@@ -1,8 +1,8 @@
-package net.corda.libs.configuration.write.impl.entities
+package net.corda.libs.configuration.datamodel
 
 import net.corda.db.schema.DbSchema
-import net.corda.libs.configuration.write.impl.CONFIG_AUDIT_GENERATOR
-import net.corda.libs.configuration.write.impl.DB_TABLE_CONFIG_AUDIT
+import net.corda.libs.configuration.datamodel.internal.CONFIG_AUDIT_GENERATOR
+import net.corda.libs.configuration.datamodel.internal.DB_TABLE_CONFIG_AUDIT
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -25,7 +25,7 @@ import javax.persistence.Table
  */
 @Entity
 @Table(name = DB_TABLE_CONFIG_AUDIT, schema = DbSchema.CONFIG)
-internal data class ConfigAuditEntity(
+data class ConfigAuditEntity(
     @Id
     @SequenceGenerator(name = CONFIG_AUDIT_GENERATOR, sequenceName = "config_audit_id_seq", allocationSize = 1)
     @GeneratedValue(strategy = SEQUENCE, generator = CONFIG_AUDIT_GENERATOR)

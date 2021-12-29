@@ -1,7 +1,6 @@
 package net.corda.configuration.write.impl
 
 import net.corda.configuration.write.ConfigWriteService
-import net.corda.configuration.write.impl.dbutils.DBUtilsImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.ConfigWriterFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -9,6 +8,7 @@ import net.corda.lifecycle.createCoordinator
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import javax.persistence.EntityManagerFactory
 
 /** An implementation of [ConfigWriteService]. */
 @Suppress("Unused")
@@ -21,12 +21,12 @@ internal class ConfigWriteServiceImpl @Activate constructor(
 ) : ConfigWriteService {
 
     private val coordinator = let {
-        val eventHandler = ConfigWriteEventHandler(configWriterFactory, DBUtilsImpl())
+        val eventHandler = ConfigWriteEventHandler(configWriterFactory)
         coordinatorFactory.createCoordinator<ConfigWriteService>(eventHandler)
     }
 
-    override fun startProcessing(config: SmartConfig, instanceId: Int) {
-        val startProcessingEvent = StartProcessingEvent(config, instanceId)
+    override fun startProcessing(config: SmartConfig, instanceId: Int, entityManagerFactory: EntityManagerFactory) {
+        val startProcessingEvent = StartProcessingEvent(config, instanceId, entityManagerFactory)
         coordinator.postEvent(startProcessingEvent)
     }
 

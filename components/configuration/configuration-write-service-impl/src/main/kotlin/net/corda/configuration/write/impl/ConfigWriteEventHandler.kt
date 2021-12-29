@@ -1,7 +1,6 @@
 package net.corda.configuration.write.impl
 
 import net.corda.configuration.write.ConfigWriteServiceException
-import net.corda.configuration.write.impl.dbutils.DBUtils
 import net.corda.libs.configuration.write.ConfigWriter
 import net.corda.libs.configuration.write.ConfigWriterFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -14,8 +13,7 @@ import net.corda.lifecycle.StopEvent
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigWriteServiceImpl]. */
 internal class ConfigWriteEventHandler(
-    private val configWriterFactory: ConfigWriterFactory,
-    private val dbUtils: DBUtils
+    private val configWriterFactory: ConfigWriterFactory
 ) : LifecycleEventHandler {
     private var configWriter: ConfigWriter? = null
 
@@ -33,16 +31,15 @@ internal class ConfigWriteEventHandler(
                     throw ConfigWriteServiceException("An attempt was made to start processing twice.")
                 }
 
-                tryOrError(coordinator, "Could not connect to cluster database.") {
-                    dbUtils.checkClusterDatabaseConnection(event.config)
-                }
-
-                tryOrError(coordinator, "Could not subscribe to config management requests.") {
+                try {
                     // TODO - CORE-3316 - At worker start-up, read back configuration from database and check it
                     //  against Kafka topic.
                     configWriter = configWriterFactory
-                        .create(event.config, event.instanceId)
+                        .create(event.config, event.instanceId, event.entityManagerFactory)
                         .apply { start() }
+                } catch (e: Exception) {
+                    coordinator.updateStatus(ERROR)
+                    throw ConfigWriteServiceException("Could not subscribe to config management requests.", e)
                 }
 
                 coordinator.updateStatus(UP)
@@ -53,15 +50,6 @@ internal class ConfigWriteEventHandler(
                 configWriter = null
                 coordinator.updateStatus(DOWN)
             }
-        }
-    }
-
-    private fun tryOrError(coordinator: LifecycleCoordinator, errMsg: String, action: () -> Unit) {
-        try {
-            action()
-        } catch (e: Exception) {
-            coordinator.updateStatus(ERROR)
-            throw ConfigWriteServiceException(errMsg, e)
         }
     }
 }

@@ -3,7 +3,6 @@ package net.corda.configuration.write.impl.tests
 import net.corda.configuration.write.ConfigWriteServiceException
 import net.corda.configuration.write.impl.ConfigWriteEventHandler
 import net.corda.configuration.write.impl.StartProcessingEvent
-import net.corda.configuration.write.impl.dbutils.DBUtils
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.ConfigWriter
 import net.corda.libs.configuration.write.ConfigWriterException
@@ -23,26 +22,11 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.sql.SQLException
+import javax.persistence.EntityManagerFactory
 
 /** Tests of [ConfigWriteEventHandler]. */
 class ConfigWriteEventHandlerTests {
     private val instanceId = 0
-
-    @Test
-    fun `StartProcessing event throws and sets coordinator status to error if cluster database cannot be reached`() {
-        val erroringDBUtils = DummyDBUtils(isConnectionFails = true)
-
-        val boxedStatus = BoxedStatus(DOWN)
-        val mockCoordinator = createMockCoordinator(boxedStatus)
-
-        val eventHandler = ConfigWriteEventHandler(DummyConfigWriterFactory(DummyConfigWriter()), erroringDBUtils)
-        val e = assertThrows<ConfigWriteServiceException> {
-            eventHandler.processEvent(StartProcessingEvent(mock(), instanceId), mockCoordinator)
-        }
-        assertEquals("Could not connect to cluster database.", e.message)
-        assertEquals(ERROR, boxedStatus.status)
-    }
 
     @Test
     fun `StartProcessing event throws and sets coordinator status to error if config writer cannot be created`() {
@@ -51,9 +35,9 @@ class ConfigWriteEventHandlerTests {
         val boxedStatus = BoxedStatus(DOWN)
         val mockCoordinator = createMockCoordinator(boxedStatus)
 
-        val eventHandler = ConfigWriteEventHandler(erroringConfigWriterFactory, DummyDBUtils())
+        val eventHandler = ConfigWriteEventHandler(erroringConfigWriterFactory)
         val e = assertThrows<ConfigWriteServiceException> {
-            eventHandler.processEvent(StartProcessingEvent(mock(), instanceId), mockCoordinator)
+            eventHandler.processEvent(StartProcessingEvent(mock(), instanceId, mock()), mockCoordinator)
         }
         assertEquals("Could not subscribe to config management requests.", e.message)
         assertEquals(ERROR, boxedStatus.status)
@@ -67,9 +51,9 @@ class ConfigWriteEventHandlerTests {
         val boxedStatus = BoxedStatus(DOWN)
         val mockCoordinator = createMockCoordinator(boxedStatus)
 
-        val eventHandler = ConfigWriteEventHandler(configWriterFactory, DummyDBUtils())
+        val eventHandler = ConfigWriteEventHandler(configWriterFactory)
         val e = assertThrows<ConfigWriteServiceException> {
-            eventHandler.processEvent(StartProcessingEvent(mock(), instanceId), mockCoordinator)
+            eventHandler.processEvent(StartProcessingEvent(mock(), instanceId, mock()), mockCoordinator)
         }
         assertEquals("Could not subscribe to config management requests.", e.message)
         assertEquals(ERROR, boxedStatus.status)
@@ -80,8 +64,8 @@ class ConfigWriteEventHandlerTests {
         val boxedStatus = BoxedStatus(DOWN)
         val mockCoordinator = createMockCoordinator(boxedStatus)
 
-        val eventHandler = ConfigWriteEventHandler(DummyConfigWriterFactory(DummyConfigWriter()), DummyDBUtils())
-        eventHandler.processEvent(StartProcessingEvent(mock(), instanceId), mockCoordinator)
+        val eventHandler = ConfigWriteEventHandler(DummyConfigWriterFactory(DummyConfigWriter()))
+        eventHandler.processEvent(StartProcessingEvent(mock(), instanceId, mock()), mockCoordinator)
         assertEquals(UP, boxedStatus.status)
     }
 
@@ -90,18 +74,18 @@ class ConfigWriteEventHandlerTests {
         val configWriter = DummyConfigWriter()
         val configWriterFactory = DummyConfigWriterFactory(configWriter)
 
-        val eventHandler = ConfigWriteEventHandler(configWriterFactory, DummyDBUtils())
-        eventHandler.processEvent(StartProcessingEvent(mock(), instanceId), mock())
+        val eventHandler = ConfigWriteEventHandler(configWriterFactory)
+        eventHandler.processEvent(StartProcessingEvent(mock(), instanceId, mock()), mock())
         assertTrue(configWriter.isRunning)
     }
 
     @Test
     fun `throws if StartProcessing event received twice`() {
-        val eventHandler = ConfigWriteEventHandler(DummyConfigWriterFactory(DummyConfigWriter()), DummyDBUtils())
-        eventHandler.processEvent(StartProcessingEvent(mock(), instanceId), mock())
+        val eventHandler = ConfigWriteEventHandler(DummyConfigWriterFactory(DummyConfigWriter()))
+        eventHandler.processEvent(StartProcessingEvent(mock(), instanceId, mock()), mock())
 
         val e = assertThrows<ConfigWriteServiceException> {
-            eventHandler.processEvent(StartProcessingEvent(mock(), instanceId), mock())
+            eventHandler.processEvent(StartProcessingEvent(mock(), instanceId, mock()), mock())
         }
         assertEquals("An attempt was made to start processing twice.", e.message)
     }
@@ -111,7 +95,7 @@ class ConfigWriteEventHandlerTests {
         val boxedStatus = BoxedStatus(UP)
         val mockCoordinator = createMockCoordinator(boxedStatus)
 
-        val eventHandler = ConfigWriteEventHandler(DummyConfigWriterFactory(DummyConfigWriter()), DummyDBUtils())
+        val eventHandler = ConfigWriteEventHandler(DummyConfigWriterFactory(DummyConfigWriter()))
         eventHandler.processEvent(StopEvent(), mockCoordinator)
         assertEquals(DOWN, boxedStatus.status)
     }
@@ -121,8 +105,8 @@ class ConfigWriteEventHandlerTests {
         val configWriter = DummyConfigWriter()
         val configWriterFactory = DummyConfigWriterFactory(DummyConfigWriter())
 
-        val eventHandler = ConfigWriteEventHandler(configWriterFactory, DummyDBUtils())
-        eventHandler.processEvent(StartProcessingEvent(mock(), instanceId), mock())
+        val eventHandler = ConfigWriteEventHandler(configWriterFactory)
+        eventHandler.processEvent(StartProcessingEvent(mock(), instanceId, mock()), mock())
         eventHandler.processEvent(StopEvent(), mock())
         assertFalse(configWriter.isRunning)
     }
@@ -141,15 +125,6 @@ class ConfigWriteEventHandlerTests {
     /** A mutable wrapper around [status]. */
     private class BoxedStatus(var status: LifecycleStatus)
 
-    /** A [DBUtils] that throws if the database connection is checked and [isConnectionFails]. */
-    private class DummyDBUtils(private val isConnectionFails: Boolean = false) : DBUtils {
-        override fun checkClusterDatabaseConnection(config: SmartConfig) {
-            if (isConnectionFails) {
-                throw SQLException()
-            }
-        }
-    }
-
     /**
      * A [ConfigWriterFactory] that creates [DummyConfigWriter]s.
      *
@@ -157,13 +132,14 @@ class ConfigWriteEventHandlerTests {
      */
     private class DummyConfigWriterFactory(
         private val configWriter: ConfigWriter,
-        private val isCreationFails: Boolean = false
+        private val isCreationFails: Boolean = false,
     ) : ConfigWriterFactory {
-        override fun create(config: SmartConfig, instanceId: Int) = if (isCreationFails) {
-            throw ConfigWriterException("")
-        } else {
-            configWriter
-        }
+        override fun create(config: SmartConfig, instanceId: Int, entityManagerFactory: EntityManagerFactory) =
+            if (isCreationFails) {
+                throw ConfigWriterException("")
+            } else {
+                configWriter
+            }
     }
 
     /**

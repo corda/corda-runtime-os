@@ -4,11 +4,11 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
+import net.corda.libs.configuration.datamodel.ConfigAuditEntity
+import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.write.impl.ConfigWriterProcessor
 import net.corda.libs.configuration.write.impl.ConfigurationManagementResponseFuture
 import net.corda.libs.configuration.write.impl.dbutils.DBUtils
-import net.corda.libs.configuration.write.impl.entities.ConfigAuditEntity
-import net.corda.libs.configuration.write.impl.entities.ConfigEntity
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -203,6 +203,4 @@ private class DummyDBUtils(
     } else {
         this.persistedConfig[section]
     }
-
-    override fun migrateClusterDatabase() = Unit
 }
