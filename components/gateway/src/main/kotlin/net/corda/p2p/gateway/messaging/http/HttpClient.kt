@@ -56,6 +56,8 @@ class HttpClient(
 
     private val lock = ReentrantLock()
 
+    private val channelLock = ReentrantLock(true)
+
     /**
      * Queue containing messages that will be sent once the connection is established.
      * All queue operations must be synchronized through [writeProcessor].
@@ -125,8 +127,10 @@ class HttpClient(
                 requestQueue.offer(message to future)
             } else {
                 val request = HttpHelper.createRequest(message, destinationInfo.uri)
-                channel.writeAndFlush(request)
-                pendingResponses.addLast(future)
+                channelLock.withLock {
+                    channel.writeAndFlush(request)
+                    pendingResponses.addLast(future)
+                }
                 logger.debug("Sent HTTP request $request")
             }
         }
@@ -155,8 +159,10 @@ class HttpClient(
             while (requestQueue.isNotEmpty()) {
                 val (message, future) = requestQueue.removeFirst()
                 val request = HttpHelper.createRequest(message, destinationInfo.uri)
-                clientChannel!!.writeAndFlush(request)
-                pendingResponses.add(future)
+                channelLock.withLock {
+                    clientChannel!!.writeAndFlush(request)
+                    pendingResponses.add(future)
+                }
                 logger.debug("Sent HTTP request $request")
             }
         }
@@ -168,8 +174,10 @@ class HttpClient(
             clientChannel = null
 
             // Fail futures for pending requests that are never going to complete and queued requests, as connection was disrupted.
-            while (pendingResponses.isNotEmpty()) {
-                pendingResponses.removeFirst().completeExceptionally(RuntimeException("Connection was closed."))
+            channelLock.withLock {
+                while (pendingResponses.isNotEmpty()) {
+                    pendingResponses.removeFirst().completeExceptionally(RuntimeException("Connection was closed."))
+                }
             }
             while (requestQueue.isNotEmpty()) {
                 requestQueue.removeFirst().second.completeExceptionally(RuntimeException("Connection was closed."))
@@ -185,7 +193,9 @@ class HttpClient(
     }
 
     override fun onResponse(httpResponse: HttpResponse) {
-        val future = pendingResponses.removeFirst()
+        val future = channelLock.withLock {
+            pendingResponses.removeFirst()
+        }
         future.complete(httpResponse)
     }
 
