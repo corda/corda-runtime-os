@@ -2,7 +2,6 @@ package net.corda.libs.permissions.storage.writer.impl.role.impl
 
 import java.time.Instant
 import java.util.UUID
-import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.libs.permissions.storage.common.converter.toAvroRole
@@ -30,8 +29,6 @@ class RoleWriterImpl(
         log.debug { "Received request to create new role: $roleName." }
 
         return entityManagerFactory.transaction { entityManager ->
-            requireRoleNotExists(entityManager, roleName)
-
             val groupVisibility = if (request.groupVisibility != null) {
                 requireNotNull(entityManager.find(Group::class.java, request.groupVisibility)) {
                     "Failed to create new Role: $roleName as the specified group visibility: ${request.groupVisibility} does not exist."
@@ -65,14 +62,5 @@ class RoleWriterImpl(
 
             role.toAvroRole()
         }
-    }
-
-    private fun requireRoleNotExists(entityManager: EntityManager, roleName: String) {
-        val result = entityManager
-            .createQuery("SELECT count(1) FROM Role WHERE name = :roleName")
-            .setParameter("roleName", roleName)
-            .singleResult as Long
-
-        require(result == 0L) { "Failed to create new role: $roleName as they already exist." }
     }
 }

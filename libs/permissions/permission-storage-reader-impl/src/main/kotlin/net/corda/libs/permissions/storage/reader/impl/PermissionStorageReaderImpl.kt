@@ -52,6 +52,10 @@ class PermissionStorageReaderImpl(
     }
 
     override fun publishNewRole(role: AvroRole) {
+        publishUpdatedRole(role)
+    }
+
+    override fun publishUpdatedRole(role: AvroRole) {
         publisher.publish(listOf(Record(RPC_PERM_ROLE_TOPIC, key = role.id, value = role))).single().getOrThrow()
     }
 
