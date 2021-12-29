@@ -17,14 +17,15 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import org.junit.jupiter.api.assertDoesNotThrow
-import java.lang.IllegalStateException
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class CreateRoleE2eTest {
 
     private val testToolkit by TestToolkitProperty()
 
-    private lateinit var roleId: String
+    companion object {
+        private var sharedRoleId: String? = null
+    }
 
     @Test
     @Order(1)
@@ -40,7 +41,7 @@ class CreateRoleE2eTest {
             // Create role
             val createRoleType = CreateRoleType(name, null)
 
-            roleId = with(proxy.createRole(createRoleType)) {
+            val roleId = with(proxy.createRole(createRoleType)) {
                 assertSoftly {
                     it.assertThat(roleName).isEqualTo(name)
                     it.assertThat(version).isEqualTo(0L)
@@ -65,26 +66,22 @@ class CreateRoleE2eTest {
                 }
             }
 
-            // Try to create a role with the same name again and verify that it fails
-            assertThatThrownBy { proxy.createRole(CreateRoleType(name, null)) }
-                .isInstanceOf(InternalErrorException::class.java)
-                .hasMessageContaining("Failed to create new role: $name as they already exist")
-
             val groupName = "non-existing-group"
             val name2 = testToolkit.uniqueName
 
-            // Try to create a role with the same name again and verify that it fails
+            // Try to create a role with a group that does not exist
             assertThatThrownBy { proxy.createRole(CreateRoleType(name2, groupName)) }
                 .isInstanceOf(InternalErrorException::class.java)
                 .hasMessageContaining("Failed to create new Role: $name2 as the specified group visibility: $groupName does not exist.")
 
+            sharedRoleId = roleId
         }
     }
 
     @Test
     @Order(2)
     fun `test add and remove permission to a role`() {
-        assertNotNull(roleId)
+        val roleId = requireNotNull(sharedRoleId)
 
         // Create permission
         val permission = testToolkit.httpClientFor(PermissionEndpoint::class.java).use { client ->
@@ -114,8 +111,8 @@ class CreateRoleE2eTest {
             val proxy = client.start().proxy
 
             // Try to remove association when it does not exist
-            assertThatThrownBy { proxy.removePermission(roleId, permId) }.isInstanceOf(MissingRequestedResourceException::class.java)
-                .hasMessageContaining("Foo")
+            assertThatThrownBy { proxy.removePermission(roleId, permId) }.isInstanceOf(InternalErrorException::class.java)
+                .hasMessageContaining("not associated with a role")
 
             val roleWithPermission = proxy.addPermission(roleId, permId)
             assertEquals(permId, roleWithPermission.permissions[0].id)
@@ -130,8 +127,8 @@ class CreateRoleE2eTest {
             }
 
             // Try to add same association again when it already exists
-            assertThatThrownBy { proxy.addPermission(roleId, permId) }.isInstanceOf(IllegalStateException::class.java)
-                .hasMessageContaining("Foo")
+            assertThatThrownBy { proxy.addPermission(roleId, permId) }.isInstanceOf(InternalErrorException::class.java)
+                .hasMessageContaining("Error while committing the transaction")
 
             val roleWithPermissionRemoved = proxy.removePermission(roleId, permId)
             assertTrue(roleWithPermissionRemoved.permissions.isEmpty())
