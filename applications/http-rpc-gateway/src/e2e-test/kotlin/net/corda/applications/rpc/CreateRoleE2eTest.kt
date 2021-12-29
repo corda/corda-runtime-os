@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import org.junit.jupiter.api.assertDoesNotThrow
+import java.lang.IllegalStateException
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class CreateRoleE2eTest {
@@ -127,6 +128,10 @@ class CreateRoleE2eTest {
                     assertTrue(permissionAssociationResponseType.createdTimestamp.isAfter(permTs))
                 }
             }
+
+            // Try to add same association again when it already exists
+            assertThatThrownBy { proxy.addPermission(roleId, permId) }.isInstanceOf(IllegalStateException::class.java)
+                .hasMessageContaining("Foo")
 
             val roleWithPermissionRemoved = proxy.removePermission(roleId, permId)
             assertTrue(roleWithPermissionRemoved.permissions.isEmpty())
