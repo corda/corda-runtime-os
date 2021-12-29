@@ -55,7 +55,7 @@ class VirtualNodeCli @Activate constructor(
     @Reference(service = SmartConfigFactory::class)
     private val smartConfigFactory: SmartConfigFactory,
     @Reference(service = ConfigPublishService::class)
-    private val configPublish: ConfigPublishService,
+    private val configPublishService: ConfigPublishService,
     @Reference(service = KafkaTopicAdmin::class)
     private var topicAdmin: KafkaTopicAdmin
 ) : Application, ConfigPublisher {
@@ -135,7 +135,7 @@ class VirtualNodeCli @Activate constructor(
         if (configurationFile == null)
             return
 
-        configPublish.updateConfig(
+        configPublishService.updateConfig(
             getConfigValue(
                 SYSTEM_ENV_CONFIG_TOPIC_PATH,
                 CONFIG_TOPIC
