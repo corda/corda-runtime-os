@@ -13,18 +13,12 @@ import net.corda.libs.permissions.storage.common.ConfigKeys.DB_CONFIG_KEY
 import net.corda.libs.permissions.storage.common.ConfigKeys.DB_PASSWORD
 import net.corda.libs.permissions.storage.common.ConfigKeys.DB_URL
 import net.corda.libs.permissions.storage.common.ConfigKeys.DB_USER
-import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
-import net.corda.libs.permissions.storage.writer.factory.PermissionStorageWriterProcessorFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.orm.EntitiesSet
-import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.permissions.cache.PermissionCacheService
@@ -45,30 +39,18 @@ import javax.sql.DataSource
 @Component
 @Suppress("LongParameterList", "UNUSED")
 class DbWorkerPrototypeApp @Activate constructor(
-    @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = LiquibaseSchemaMigrator::class)
     private val schemaMigrator: LiquibaseSchemaMigrator,
-    @Reference(service = EntityManagerFactoryFactory::class)
-    private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
     @Reference(service = SmartConfigFactory::class)
     private val smartConfigFactory: SmartConfigFactory,
-    @Reference(service = PermissionStorageWriterProcessorFactory::class)
-    private val permissionStorageWriterProcessorFactory: PermissionStorageWriterProcessorFactory,
     @Reference(service = PermissionCacheService::class)
     private val permissionCacheService: PermissionCacheService,
-    @Reference(service = PermissionStorageReaderFactory::class)
-    private val permissionStorageReaderFactory: PermissionStorageReaderFactory,
-    @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = EntitiesSet::class, name = DbSchema.RPC_RBAC)
-    private val rbacEntitiesSet: EntitiesSet,
     @Reference(service = PermissionStorageReaderService::class)
     private val permissionStorageReaderService: PermissionStorageReaderService,
     @Reference(service = PermissionStorageWriterService::class)
