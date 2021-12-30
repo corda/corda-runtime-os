@@ -27,6 +27,7 @@ import net.corda.v5.base.util.contextLogger
 import javax.persistence.EntityManagerFactory
 import kotlin.reflect.KFunction3
 
+@Suppress("LongParameterList")
 class PermissionStorageWriterServiceEventHandler(
     private val subscriptionFactory: SubscriptionFactory,
     private val permissionStorageWriterProcessorFactory: PermissionStorageWriterProcessorFactory,

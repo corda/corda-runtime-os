@@ -55,7 +55,13 @@ class PermissionStorageWriterServiceEventHandlerTest {
         ConfigFactory.empty()
             .withValue(
                 ConfigKeys.DB_CONFIG_KEY,
-                ConfigValueFactory.fromMap(mapOf(ConfigKeys.DB_URL to "dbUrl", ConfigKeys.DB_USER to "dbUser", ConfigKeys.DB_PASSWORD to "dbPass"))
+                ConfigValueFactory.fromMap(
+                    mapOf(
+                        ConfigKeys.DB_URL to "dbUrl",
+                        ConfigKeys.DB_USER to "dbUser",
+                        ConfigKeys.DB_PASSWORD to "dbPass"
+                    )
+                )
             )
     )
 
