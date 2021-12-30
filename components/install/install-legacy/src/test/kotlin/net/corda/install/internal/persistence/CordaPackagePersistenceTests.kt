@@ -64,6 +64,7 @@ class CordaPackagePersistenceTests {
     @AfterEach
     fun teardown() {
         cordaPackagePersistence.close()
+        cordaPackagePersistence.deleteCpkDirectory()
         flowsCpk.close()
         workflowCpk.close()
         contractCpk.close()
