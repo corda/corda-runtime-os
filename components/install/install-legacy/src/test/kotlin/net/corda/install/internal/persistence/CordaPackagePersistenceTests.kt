@@ -7,6 +7,7 @@ import net.corda.packaging.CPK
 import net.corda.packaging.PackagingException
 import net.corda.packaging.util.UncloseableInputStream
 import net.corda.packaging.util.ZipTweaker
+import net.corda.utilities.deleteRecursively
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.AfterEach
@@ -18,7 +19,6 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
-import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.Constants.BUNDLE_SYMBOLICNAME
 import org.osgi.service.cm.ConfigurationAdmin
 import java.io.ByteArrayInputStream
@@ -48,8 +48,10 @@ class CordaPackagePersistenceTests {
     private lateinit var contractCpk : CPK
     private lateinit var cordaPackagePersistence : CordaPackageFileBasedPersistenceImpl
 
+    private val junitTestDir = Files.createTempDirectory("CordaPackagePersistenceTests")
+
     @BeforeEach
-    fun setup(@TempDir junitTestDir : Path) {
+    fun setup() {
         flowsCpkLocation = pathOf("test.cpk.flows")
         flowsCpk = cpk(flowsCpkLocation, junitTestDir)
         workflowCpkLocation = pathOf("test.cpk.workflow")
@@ -68,6 +70,7 @@ class CordaPackagePersistenceTests {
         flowsCpk.close()
         workflowCpk.close()
         contractCpk.close()
+        junitTestDir.deleteRecursively()
     }
 
     private fun pathOf(propertyName: String): Path {
