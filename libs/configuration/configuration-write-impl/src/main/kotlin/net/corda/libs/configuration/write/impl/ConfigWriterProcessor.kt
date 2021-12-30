@@ -11,7 +11,6 @@ import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
-import net.corda.v5.base.util.contextLogger
 
 /**
  * An RPC responder processor that handles configuration management requests.
@@ -23,10 +22,6 @@ internal class ConfigWriterProcessor(
     private val publisher: Publisher,
     private val dbUtils: DBUtils
 ) : RPCResponderProcessor<ConfigurationManagementRequest, ConfigurationManagementResponse> {
-
-    private companion object {
-        val logger = contextLogger()
-    }
 
     /**
      * For each [request], the processor attempts to commit the updated config to the cluster database. If successful,

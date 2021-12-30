@@ -8,16 +8,11 @@ import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.write.impl.ConfigWriterProcessor
 import net.corda.libs.configuration.write.impl.ConfigurationManagementResponseFuture
-import net.corda.libs.configuration.write.impl.dbutils.DBUtils
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletableFuture.supplyAsync
 import java.util.concurrent.ExecutionException
 import javax.persistence.RollbackException
 
@@ -62,7 +57,7 @@ class ConfigWriterProcessorTests {
 
     @Test
     fun `writes configuration and audit data to the database even if publication to Kafka fails`() {
-        val publisher = DummyPublisher(isPublishFails = true)
+        val publisher = DummyPublisher(publishFails = true)
         val dbUtils = DummyDBUtils()
         val processor = ConfigWriterProcessor(publisher, dbUtils)
         processRequest(processor, configMgmtReq)
@@ -76,7 +71,7 @@ class ConfigWriterProcessorTests {
         val initialConfig = ConfigEntity(config.section, 0, "config_two", 1, "actor_two")
         val initialConfigMap = mapOf(initialConfig.section to initialConfig)
 
-        val dbUtils = DummyDBUtils(initialConfigMap, isWriteFails = true)
+        val dbUtils = DummyDBUtils(initialConfigMap, writeFails = true)
         val processor = ConfigWriterProcessor(DummyPublisher(), dbUtils)
         val resp = processRequest(processor, configMgmtReq)
 
@@ -94,7 +89,7 @@ class ConfigWriterProcessorTests {
     fun `sends RPC failure response if fails to publish configuration to Kafka`() {
         val dbUtils = DummyDBUtils()
         val processor =
-            ConfigWriterProcessor(DummyPublisher(isPublishFails = true), dbUtils)
+            ConfigWriterProcessor(DummyPublisher(publishFails = true), dbUtils)
         val resp = processRequest(processor, configMgmtReq)
 
         val expectedRecord = configMgmtReq.run {
@@ -117,7 +112,7 @@ class ConfigWriterProcessorTests {
             ConfigurationManagementRequest(section, version, config, configVersion, updateActor)
         }
 
-        val dbUtils = DummyDBUtils(isWriteFails = true)
+        val dbUtils = DummyDBUtils(writeFails = true)
         val processor = ConfigWriterProcessor(DummyPublisher(), dbUtils)
         val resp = processRequest(processor, req)
 
@@ -131,7 +126,7 @@ class ConfigWriterProcessorTests {
 
     @Test
     fun `returns null configuration if configuration for the given section cannot be read back when sending RPC failure response`() {
-        val dbUtils = DummyDBUtils(isWriteFails = true, isReadFails = true)
+        val dbUtils = DummyDBUtils(writeFails = true, readFails = true)
         val processor = ConfigWriterProcessor(DummyPublisher(), dbUtils)
         val resp = processRequest(processor, configMgmtReq)
 
@@ -142,65 +137,15 @@ class ConfigWriterProcessorTests {
         val expectedResp = ConfigurationManagementResponse(expectedEnvelope, null, null)
         assertEquals(expectedResp, resp)
     }
-}
 
-/** Calls [processor].`onNext` for the given [req], and returns the result of the future. */
-private fun processRequest(
-    processor: ConfigWriterProcessor,
-    req: ConfigurationManagementRequest
-): ConfigurationManagementResponse {
+    /** Calls [processor].`onNext` for the given [req], and returns the result of the future. */
+    private fun processRequest(
+        processor: ConfigWriterProcessor,
+        req: ConfigurationManagementRequest
+    ): ConfigurationManagementResponse {
 
-    val respFuture = ConfigurationManagementResponseFuture()
-    processor.onNext(req, respFuture)
-    return respFuture.get()
-}
-
-/**
- * A [Publisher] that tracks [publishedRecords].
- *
- * Throws on publication if [isPublishFails].
- */
-private class DummyPublisher(private val isPublishFails: Boolean = false) : Publisher {
-    var publishedRecords = mutableListOf<Record<*, *>>()
-
-    override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> = if (isPublishFails) {
-        listOf(supplyAsync { throw CordaMessageAPIIntermittentException("") })
-    } else {
-        this.publishedRecords.addAll(records)
-        listOf(CompletableFuture.completedFuture(Unit))
-    }
-
-    override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>) = throw NotImplementedError()
-    override fun close() = throw NotImplementedError()
-}
-
-/**
- * A [DBUtils] that tracks [persistedConfig] and [persistedConfigAudit].
- *
- * Throws on write if [isWriteFails]. Throws on read if [isReadFails].
- */
-private class DummyDBUtils(
-    initialConfig: Map<String, ConfigEntity> = emptyMap(),
-    private val isWriteFails: Boolean = false,
-    private val isReadFails: Boolean = false
-) : DBUtils {
-    val persistedConfig = initialConfig.toMutableMap()
-    val persistedConfigAudit
-        get() = persistedConfig.values.map { config ->
-            ConfigAuditEntity(config.section, config.config, config.configVersion, config.updateActor)
-        }
-
-    override fun writeEntities(newConfig: ConfigEntity, newConfigAudit: ConfigAuditEntity) {
-        if (isWriteFails) {
-            throw RollbackException()
-        } else {
-            this.persistedConfig[newConfig.section] = newConfig
-        }
-    }
-
-    override fun readConfigEntity(section: String) = if (isReadFails) {
-        throw IllegalStateException()
-    } else {
-        this.persistedConfig[section]
+        val respFuture = ConfigurationManagementResponseFuture()
+        processor.onNext(req, respFuture)
+        return respFuture.get()
     }
 }
