@@ -70,7 +70,9 @@ class DbWorkerPrototypeApp @Activate constructor(
     @Reference(service = EntitiesSet::class, name = DbSchema.RPC_RBAC)
     private val rbacEntitiesSet: EntitiesSet,
     @Reference(service = PermissionStorageReaderService::class)
-    private val permissionStorageReaderService: PermissionStorageReaderService
+    private val permissionStorageReaderService: PermissionStorageReaderService,
+    @Reference(service = PermissionStorageWriterService::class)
+    private val permissionStorageWriterService: PermissionStorageWriterService
 ) : Application {
 
     private companion object {
@@ -85,8 +87,6 @@ class DbWorkerPrototypeApp @Activate constructor(
     }
 
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
-
-    private var permissionStorageWriterService: PermissionStorageWriterService? = null
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
@@ -148,17 +148,8 @@ class DbWorkerPrototypeApp @Activate constructor(
             log.info("Starting PermissionStorageReaderService")
             permissionStorageReaderService.start()
 
-            log.info("Creating and starting PermissionStorageWriterService")
-            permissionStorageWriterService =
-                PermissionStorageWriterService(
-                    coordinatorFactory,
-                    subscriptionFactory,
-                    permissionStorageWriterProcessorFactory,
-                    permissionStorageReaderService,
-                    configurationReadService,
-                    entityManagerFactoryFactory,
-                    rbacEntitiesSet
-                ).also { it.start() }
+            log.info("Starting PermissionStorageWriterService")
+            permissionStorageWriterService.start()
 
             consoleLogger.info("DB Worker prototype application fully started")
         }
@@ -237,9 +228,8 @@ class DbWorkerPrototypeApp @Activate constructor(
         consoleLogger.info("Shutting down DB Worker prototype application")
         lifeCycleCoordinator?.stop()
         lifeCycleCoordinator = null
+        permissionStorageWriterService.stop()
         permissionStorageReaderService.stop()
-        permissionStorageWriterService?.stop()
-        permissionStorageWriterService = null
         permissionCacheService.stop()
     }
 }
