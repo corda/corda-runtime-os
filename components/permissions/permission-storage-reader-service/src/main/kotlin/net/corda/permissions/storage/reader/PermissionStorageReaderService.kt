@@ -1,6 +1,7 @@
 package net.corda.permissions.storage.reader
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.db.schema.DbSchema
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.lifecycle.Lifecycle
@@ -13,15 +14,26 @@ import net.corda.orm.EntitiesSet
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.permissions.cache.PermissionCacheService
 import net.corda.permissions.storage.reader.internal.PermissionStorageReaderServiceEventHandler
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 
 @Suppress("LongParameterList")
-class PermissionStorageReaderService(
+@Component(service = [PermissionStorageReaderService::class])
+class PermissionStorageReaderService @Activate constructor(
+    @Reference(service = PermissionCacheService::class)
     permissionCacheService: PermissionCacheService,
+    @Reference(service = PermissionStorageReaderFactory::class)
     permissionStorageReaderFactory: PermissionStorageReaderFactory,
+    @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = EntityManagerFactoryFactory::class)
     entityManagerFactoryFactory: EntityManagerFactoryFactory,
+    @Reference(service = EntitiesSet::class, name = DbSchema.RPC_RBAC)
     rbacEntitiesSet: EntitiesSet,
+    @Reference(service = PublisherFactory::class)
     publisherFactory: PublisherFactory,
+    @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService
 ) : Lifecycle {
 

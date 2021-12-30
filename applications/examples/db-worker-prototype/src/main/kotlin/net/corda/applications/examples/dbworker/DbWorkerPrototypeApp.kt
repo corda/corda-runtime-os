@@ -70,7 +70,9 @@ class DbWorkerPrototypeApp @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = EntitiesSet::class, name = DbSchema.RPC_RBAC)
-    private val rbacEntitiesSet: EntitiesSet
+    private val rbacEntitiesSet: EntitiesSet,
+    @Reference(service = PermissionStorageReaderService::class)
+    private val permissionStorageReaderService: PermissionStorageReaderService
 ) : Application {
 
     private companion object {
@@ -87,7 +89,6 @@ class DbWorkerPrototypeApp @Activate constructor(
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
 
     private var permissionStorageWriterService: PermissionStorageWriterService? = null
-    private var permissionStorageReaderService: PermissionStorageReaderService? = null
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
@@ -147,17 +148,8 @@ class DbWorkerPrototypeApp @Activate constructor(
             log.info("Starting PermissionCacheService")
             permissionCacheService.start()
 
-            log.info("Creating and starting PermissionStorageReaderService")
-            val localPermissionStorageReaderService = PermissionStorageReaderService(
-                permissionCacheService,
-                permissionStorageReaderFactory,
-                coordinatorFactory,
-                entityManagerFactoryFactory,
-                rbacEntitiesSet,
-                publisherFactory,
-                configurationReadService
-            ).also { it.start() }
-            permissionStorageReaderService = localPermissionStorageReaderService
+            log.info("Starting PermissionStorageReaderService")
+            permissionStorageReaderService.start()
 
             log.info("Creating and starting PermissionStorageWriterService")
             permissionStorageWriterService =
@@ -167,7 +159,7 @@ class DbWorkerPrototypeApp @Activate constructor(
                     subscriptionFactory,
                     permissionStorageWriterProcessorFactory,
                     bootstrapConfig,
-                    localPermissionStorageReaderService
+                    permissionStorageReaderService
                 ).also { it.start() }
 
             consoleLogger.info("DB Worker prototype application fully started")
@@ -255,8 +247,7 @@ class DbWorkerPrototypeApp @Activate constructor(
         consoleLogger.info("Shutting down DB Worker prototype application")
         lifeCycleCoordinator?.stop()
         lifeCycleCoordinator = null
-        permissionStorageReaderService?.stop()
-        permissionStorageReaderService = null
+        permissionStorageReaderService.stop()
         permissionStorageWriterService?.stop()
         permissionStorageWriterService = null
         permissionCacheService.stop()

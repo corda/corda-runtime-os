@@ -15,7 +15,7 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'
-    implementation 'net.corda:corda-db-schema'
+    implementation 'net.corda:corda-db-schema' // remove?
 
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
@@ -35,9 +35,9 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(':libs:permissions:permission-datamodel')
     implementation project(":libs:db:db-admin-impl")
-    implementation project(':libs:permissions:permission-storage-common')
-    implementation project(":libs:permissions:permission-storage-writer")
-    implementation project(":libs:permissions:permission-storage-reader")
+    implementation project(':libs:permissions:permission-storage-common') // remove?
+    implementation project(":libs:permissions:permission-storage-writer") // remove?
+    implementation project(":libs:permissions:permission-storage-reader") // remove?
 
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
 
