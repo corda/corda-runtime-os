@@ -9,19 +9,23 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-avro-schema"
-    implementation "net.corda:corda-base"
-    implementation "net.corda:corda-topic-schema"
+    implementation 'net.corda:corda-avro-schema'
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-topic-schema'
+    implementation 'net.corda:corda-db-schema'
 
-    implementation project(":components:permissions:permission-storage-reader-service")
+    implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:permissions:permission-storage-reader-service')
 
-    implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:messaging:messaging")
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:db:db-orm')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:messaging:messaging')
+    implementation project(':libs:permissions:permission-storage-common')
     implementation project(':libs:permissions:permission-storage-writer')
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation "javax.persistence:javax.persistence-api"
+    implementation 'javax.persistence:javax.persistence-api'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"

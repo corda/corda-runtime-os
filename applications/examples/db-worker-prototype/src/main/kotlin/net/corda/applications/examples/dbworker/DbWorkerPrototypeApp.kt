@@ -23,7 +23,6 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntitiesSet
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.osgi.api.Application
@@ -41,7 +40,6 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.StringWriter
 import java.util.*
-import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
 
 @Component
@@ -133,7 +131,6 @@ class DbWorkerPrototypeApp @Activate constructor(
                 parameters.dbPass
             )
             applyLiquibaseSchema(dbSource)
-            val emf = obtainEntityManagerFactory(dbSource)
 
             val bootstrapConfig: SmartConfig = getBootstrapConfig(
                 null, parameters.dbUrl,
@@ -155,11 +152,12 @@ class DbWorkerPrototypeApp @Activate constructor(
             permissionStorageWriterService =
                 PermissionStorageWriterService(
                     coordinatorFactory,
-                    emf,
                     subscriptionFactory,
                     permissionStorageWriterProcessorFactory,
-                    bootstrapConfig,
-                    permissionStorageReaderService
+                    permissionStorageReaderService,
+                    configurationReadService,
+                    entityManagerFactoryFactory,
+                    rbacEntitiesSet
                 ).also { it.start() }
 
             consoleLogger.info("DB Worker prototype application fully started")
@@ -191,14 +189,6 @@ class DbWorkerPrototypeApp @Activate constructor(
         schemaMigrator.updateDb(dbSource.connection, cl, LiquibaseSchemaMigrator.PUBLIC_SCHEMA)
 
         log.info("Liquibase schema applied")
-    }
-
-    private fun obtainEntityManagerFactory(dbSource: DataSource) : EntityManagerFactory {
-        return entityManagerFactoryFactory.create(
-            rbacEntitiesSet.name,
-            rbacEntitiesSet.content.toList(),
-            DbEntityManagerConfiguration(dbSource),
-        )
     }
 
     private fun getBootstrapConfig(
