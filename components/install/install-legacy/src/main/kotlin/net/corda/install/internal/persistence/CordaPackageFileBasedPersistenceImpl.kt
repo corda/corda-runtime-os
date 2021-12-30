@@ -9,6 +9,7 @@ import net.corda.install.internal.verification.StandaloneCpkVerifier
 import net.corda.packaging.CPI
 import net.corda.packaging.CPK
 import net.corda.packaging.util.TeeInputStream
+import net.corda.utilities.deleteRecursively
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.cm.ConfigurationAdmin
@@ -139,18 +140,12 @@ internal class CordaPackageFileBasedPersistenceImpl @Activate constructor(
         storedArchives.cpksById.values.forEach(CPK::close)
         storedArchives.cpksByHash.values.forEach(CPK::close)
         //wipe the expansion directory when the component is deactivated
-        if (Files.exists(expansionDirectory)) {
-            Files.walk(expansionDirectory).sorted(Comparator.reverseOrder()).forEach(Files::delete)
-        }
+        expansionDirectory.deleteRecursively()
     }
 
     @VisibleForTesting
     internal fun deleteCpkDirectory() {
-        with(cpkDirectory) {
-            if (Files.exists(this)) {
-                Files.walk(this).sorted(Comparator.reverseOrder()).forEach(Files::delete)
-            }
-        }
+        cpkDirectory.deleteRecursively()
     }
 
     /** Returns the [Path] representing the node's CPK directory. */
