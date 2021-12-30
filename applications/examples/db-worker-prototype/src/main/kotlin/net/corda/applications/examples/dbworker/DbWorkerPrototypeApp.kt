@@ -20,20 +20,11 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.DbEntityManagerConfiguration
+import net.corda.orm.EntitiesSet
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.permissions.cache.PermissionCacheService
-import net.corda.permissions.model.ChangeAudit
-import net.corda.permissions.model.Group
-import net.corda.permissions.model.GroupProperty
-import net.corda.permissions.model.Permission
-import net.corda.permissions.model.Role
-import net.corda.permissions.model.RoleGroupAssociation
-import net.corda.permissions.model.RolePermissionAssociation
-import net.corda.permissions.model.RoleUserAssociation
-import net.corda.permissions.model.User
-import net.corda.permissions.model.UserProperty
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.v5.base.util.contextLogger
@@ -73,7 +64,9 @@ class DbWorkerPrototypeApp @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
-    private val configurationReadService: ConfigurationReadService
+    private val configurationReadService: ConfigurationReadService,
+    @Reference(service = EntitiesSet::class, name = DbSchema.RPC_RBAC)
+    private val rbacEntitiesSet: EntitiesSet
 ) : Application {
 
     private companion object {
@@ -201,19 +194,8 @@ class DbWorkerPrototypeApp @Activate constructor(
 
     private fun obtainEntityManagerFactory(dbSource: DataSource) : EntityManagerFactory {
         return entityManagerFactoryFactory.create(
-            "RPC RBAC",
-            listOf(
-                User::class.java,
-                Group::class.java,
-                Role::class.java,
-                Permission::class.java,
-                UserProperty::class.java,
-                GroupProperty::class.java,
-                ChangeAudit::class.java,
-                RoleUserAssociation::class.java,
-                RoleGroupAssociation::class.java,
-                RolePermissionAssociation::class.java
-            ),
+            rbacEntitiesSet.name,
+            rbacEntitiesSet.content.toList(),
             DbEntityManagerConfiguration(dbSource),
         )
     }
