@@ -9,6 +9,10 @@ import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.permissions.storage.common.ConfigKeys.DB_CONFIG_KEY
+import net.corda.libs.permissions.storage.common.ConfigKeys.DB_PASSWORD
+import net.corda.libs.permissions.storage.common.ConfigKeys.DB_URL
+import net.corda.libs.permissions.storage.common.ConfigKeys.DB_USER
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.libs.permissions.storage.writer.factory.PermissionStorageWriterProcessorFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -130,7 +134,11 @@ class DbWorkerPrototypeApp @Activate constructor(
             applyLiquibaseSchema(dbSource)
             val emf = obtainEntityManagerFactory(dbSource)
 
-            val bootstrapConfig: SmartConfig = getBootstrapConfig(null)
+            val bootstrapConfig: SmartConfig = getBootstrapConfig(
+                null, parameters.dbUrl,
+                parameters.dbUser,
+                parameters.dbPass
+            )
 
             log.info("Starting configuration read service with bootstrap config ${bootstrapConfig}.")
             configurationReadService.start()
@@ -144,9 +152,10 @@ class DbWorkerPrototypeApp @Activate constructor(
                 permissionCacheService,
                 permissionStorageReaderFactory,
                 coordinatorFactory,
-                emf,
+                entityManagerFactoryFactory,
+                rbacEntitiesSet,
                 publisherFactory,
-                bootstrapConfig
+                configurationReadService
             ).also { it.start() }
             permissionStorageReaderService = localPermissionStorageReaderService
 
@@ -200,18 +209,30 @@ class DbWorkerPrototypeApp @Activate constructor(
         )
     }
 
-    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
+    private fun getBootstrapConfig(
+        kafkaConnectionProperties: Properties?,
+        dbUrl: String,
+        dbUser: String,
+        dbPass: String
+    ): SmartConfig {
+
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
-        return smartConfigFactory.create(ConfigFactory.empty()
-            .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
-            .withValue(
-                CONFIG_TOPIC_NAME,
-                ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME))
-            )
-            .withValue(
-                TOPIC_PREFIX,
-                ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, ""))
-            ))
+        return smartConfigFactory.create(
+            ConfigFactory.empty()
+                .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
+                .withValue(
+                    CONFIG_TOPIC_NAME,
+                    ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME))
+                )
+                .withValue(
+                    TOPIC_PREFIX,
+                    ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, ""))
+                )
+                .withValue(
+                    DB_CONFIG_KEY,
+                    ConfigValueFactory.fromMap(mapOf(DB_URL to dbUrl, DB_USER to dbUser, DB_PASSWORD to dbPass))
+                )
+        )
     }
 
     private fun getConfigValue(properties: Properties?, path: String, default: String? = null): String {

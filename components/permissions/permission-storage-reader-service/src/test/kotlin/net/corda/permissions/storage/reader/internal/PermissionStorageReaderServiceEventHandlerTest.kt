@@ -1,6 +1,15 @@
 package net.corda.permissions.storage.reader.internal
 
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.permissions.cache.PermissionCache
+import net.corda.libs.permissions.storage.common.ConfigKeys.BOOTSTRAP_CONFIG
+import net.corda.libs.permissions.storage.common.ConfigKeys.DB_CONFIG_KEY
+import net.corda.libs.permissions.storage.common.ConfigKeys.DB_PASSWORD
+import net.corda.libs.permissions.storage.common.ConfigKeys.DB_URL
+import net.corda.libs.permissions.storage.common.ConfigKeys.DB_USER
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -11,15 +20,17 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.orm.EntitiesSet
+import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.permissions.cache.PermissionCacheService
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import javax.persistence.EntityManagerFactory
 
 class PermissionStorageReaderServiceEventHandlerTest {
 
@@ -44,20 +55,33 @@ class PermissionStorageReaderServiceEventHandlerTest {
     private val handler = PermissionStorageReaderServiceEventHandler(
         permissionCacheService,
         permissionStorageReaderFactory,
-        mock(),
         publisherFactory,
-        mock()
+        mock(),
+        mock(),
+        mock(),
+        entityManagerFactoryCreationFn = ::testObtainEntityManagerFactory
     )
 
-    @Test
-    fun `processing a start event starts the publisher`() {
-        assertNull(handler.publisher)
+    private val config = SmartConfigFactoryImpl().create(
+        ConfigFactory.empty()
+            .withValue(
+                DB_CONFIG_KEY,
+                ConfigValueFactory.fromMap(mapOf(DB_URL to "dbUrl", DB_USER to "dbUser", DB_PASSWORD to "dbPass"))
+            )
+    )
 
-        handler.processEvent(StartEvent(), coordinator)
+    private val bootstrapConfig = mapOf(BOOTSTRAP_CONFIG to config)
 
-        assertNotNull(handler.publisher)
-
-        verify(publisher).start()
+    private fun testObtainEntityManagerFactory(
+        dbConfig: SmartConfig, entityManagerFactoryFactory: EntityManagerFactoryFactory,
+        entitiesSet: EntitiesSet
+    ): EntityManagerFactory {
+        Triple(
+            dbConfig,
+            entityManagerFactoryFactory,
+            entitiesSet
+        )
+        return mock()
     }
 
     @Test
@@ -75,16 +99,10 @@ class PermissionStorageReaderServiceEventHandlerTest {
 
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
+        handler.onConfigurationUpdated(setOf(BOOTSTRAP_CONFIG), bootstrapConfig)
 
         assertNotNull(handler.permissionStorageReader)
         verify(permissionStorageReader).start()
-    }
-
-    @Test
-    fun `processing an UP event from the permission cache when the service is not started throws an exception`() {
-        assertThrows<IllegalStateException> {
-            handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
-        }
     }
 
     @Test
@@ -98,6 +116,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     fun `processing a DOWN event from the permission cache when the service is started stops the storage reader`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
+        handler.onConfigurationUpdated(setOf(BOOTSTRAP_CONFIG), bootstrapConfig)
 
         assertNotNull(handler.permissionStorageReader)
 
@@ -119,6 +138,7 @@ class PermissionStorageReaderServiceEventHandlerTest {
     fun `processing a stop event stops the service's dependencies`() {
         handler.processEvent(StartEvent(), coordinator)
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
+        handler.onConfigurationUpdated(setOf(BOOTSTRAP_CONFIG), bootstrapConfig)
 
         assertNotNull(handler.registrationHandle)
         assertNotNull(handler.permissionStorageReader)

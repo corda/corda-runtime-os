@@ -35,6 +35,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(':libs:permissions:permission-datamodel')
     implementation project(":libs:db:db-admin-impl")
+    implementation project(':libs:permissions:permission-storage-common')
     implementation project(":libs:permissions:permission-storage-writer")
     implementation project(":libs:permissions:permission-storage-reader")
 
