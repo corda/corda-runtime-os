@@ -180,7 +180,7 @@ class Deploy : Runnable {
                     p2pMemory,
                     p2pCpu,
                 ),
-                LbType.fromString(lbType),
+                lbType,
             ),
             InfrastructureDetails(
                 kafkaBrokerCount,

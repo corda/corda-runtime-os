@@ -7,14 +7,6 @@ import java.io.File
 enum class LbType {
     K8S,
     NGINX;
-
-    companion object {
-        fun fromString(name: String): LbType {
-            return values().firstOrNull {
-                it.name.equals(name, ignoreCase = true)
-            } ?: K8S
-        }
-    }
 }
 data class NamespaceIdentifier(
     val namespaceName: String,

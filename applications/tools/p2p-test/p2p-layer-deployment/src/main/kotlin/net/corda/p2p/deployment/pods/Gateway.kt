@@ -29,6 +29,7 @@ class Gateway(
 
     override val readyLog = ".*Waiting for gateway to start.*".toRegex()
 
+    // In K8S load balancer the load balancer service will listen to the Gateway port, so no need to create a service.
     override val otherPorts = if (details.lbType == LbType.K8S) {
         emptyList()
     } else {

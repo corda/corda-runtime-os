@@ -1,7 +1,7 @@
 package net.corda.p2p.deployment.pods
 
 class K8sLoadBalancer(
-    private val type: String,
+    private val podSelectorType: String,
     private val ports: Collection<Port>,
 ) : Yamlable {
     override fun yamls(namespaceName: String) =
@@ -25,7 +25,7 @@ class K8sLoadBalancer(
                             "name" to it.displayName,
                         )
                     },
-                    "selector" to mapOf("type" to type)
+                    "selector" to mapOf("type" to podSelectorType)
                 )
             )
         )
