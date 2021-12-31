@@ -5,15 +5,6 @@ package net.corda.orm
  * using [EntityManagerFactoryFactory]
  */
 interface EntitiesSet {
-
-    companion object {
-        fun of(name: String, content: Set<Class<*>>): EntitiesSet {
-            return EntitiesSetImpl(name, content)
-        }
-
-        private class EntitiesSetImpl(override val name: String, override val content: Set<Class<*>>) : EntitiesSet
-    }
-
     val name: String
     val content: Set<Class<*>>
 }

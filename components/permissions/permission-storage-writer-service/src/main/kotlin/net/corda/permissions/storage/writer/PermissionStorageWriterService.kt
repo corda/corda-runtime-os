@@ -1,7 +1,6 @@
 package net.corda.permissions.storage.writer
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.db.schema.DbSchema
 import net.corda.libs.permissions.storage.writer.factory.PermissionStorageWriterProcessorFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -17,6 +16,8 @@ import net.corda.permissions.storage.writer.internal.PermissionStorageWriterServ
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality
+import org.osgi.service.component.annotations.ReferencePolicy
 
 @Suppress("LongParameterList")
 @Component(service = [PermissionStorageWriterService::class])
@@ -32,10 +33,15 @@ class PermissionStorageWriterService @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
     @Reference(service = EntityManagerFactoryFactory::class)
-    entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    @Reference(service = EntitiesSet::class, name = DbSchema.RPC_RBAC)
-    rbacEntitiesSet: EntitiesSet
+    entityManagerFactoryFactory: EntityManagerFactoryFactory
 ) : Lifecycle {
+
+    @Reference(
+        service = EntitiesSet::class,
+        cardinality = ReferenceCardinality.MULTIPLE,
+        policy = ReferencePolicy.DYNAMIC
+    )
+    private val allEntitiesSets: List<EntitiesSet> = mutableListOf()
 
     private val coordinator = coordinatorFactory.createCoordinator<PermissionStorageWriterService>(
         PermissionStorageWriterServiceEventHandler(
@@ -44,7 +50,7 @@ class PermissionStorageWriterService @Activate constructor(
             readerService,
             configurationReadService,
             entityManagerFactoryFactory,
-            rbacEntitiesSet
+            allEntitiesSets
         )
     ).also {
         it.followStatusChangesByName(

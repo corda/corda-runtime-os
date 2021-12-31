@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
+import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.permissions.storage.common.ConfigKeys
@@ -41,13 +42,17 @@ class PermissionStorageWriterServiceEventHandlerTest {
         whenever(permissionStorageReader).thenReturn(mock())
     }
 
+    private val allEntitiesSets = listOf(mock<EntitiesSet>().apply {
+        whenever(name).thenReturn(DbSchema.RPC_RBAC)
+    })
+
     private val handler = PermissionStorageWriterServiceEventHandler(
         subscriptionFactory,
         permissionStorageWriterProcessorFactory,
         readerService,
         mock(),
         mock(),
-        mock(),
+        allEntitiesSets,
         entityManagerFactoryCreationFn = ::testObtainEntityManagerFactory
     )
 

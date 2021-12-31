@@ -1,7 +1,6 @@
 package net.corda.permissions.storage.reader
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.db.schema.DbSchema
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.reader.factory.PermissionStorageReaderFactory
 import net.corda.lifecycle.Lifecycle
@@ -17,6 +16,8 @@ import net.corda.permissions.storage.reader.internal.PermissionStorageReaderServ
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceCardinality
+import org.osgi.service.component.annotations.ReferencePolicy
 
 @Suppress("LongParameterList")
 @Component(service = [PermissionStorageReaderService::class])
@@ -29,13 +30,18 @@ class PermissionStorageReaderService @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = EntityManagerFactoryFactory::class)
     entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    @Reference(service = EntitiesSet::class, name = DbSchema.RPC_RBAC)
-    rbacEntitiesSet: EntitiesSet,
     @Reference(service = PublisherFactory::class)
     publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService
 ) : Lifecycle {
+
+    @Reference(
+        service = EntitiesSet::class,
+        cardinality = ReferenceCardinality.MULTIPLE,
+        policy = ReferencePolicy.DYNAMIC
+    )
+    private val allEntitiesSets: List<EntitiesSet> = mutableListOf()
 
     val permissionStorageReader: PermissionStorageReader? get() = handler.permissionStorageReader
 
@@ -45,7 +51,7 @@ class PermissionStorageReaderService @Activate constructor(
         publisherFactory,
         configurationReadService,
         entityManagerFactoryFactory,
-        rbacEntitiesSet
+        allEntitiesSets
     )
 
     private val coordinator = coordinatorFactory.createCoordinator<PermissionStorageReaderService>(handler)

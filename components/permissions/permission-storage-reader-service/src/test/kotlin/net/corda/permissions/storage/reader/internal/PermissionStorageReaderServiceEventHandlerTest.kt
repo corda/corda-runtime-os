@@ -2,6 +2,7 @@ package net.corda.permissions.storage.reader.internal
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.permissions.cache.PermissionCache
@@ -52,13 +53,17 @@ class PermissionStorageReaderServiceEventHandlerTest {
         whenever(followStatusChangesByName(any())).thenReturn(registrationHandle)
     }
 
+    private val allEntitiesSets = listOf(mock<EntitiesSet>().apply {
+        whenever(name).thenReturn(DbSchema.RPC_RBAC)
+    })
+
     private val handler = PermissionStorageReaderServiceEventHandler(
         permissionCacheService,
         permissionStorageReaderFactory,
         publisherFactory,
         mock(),
         mock(),
-        mock(),
+        allEntitiesSets,
         entityManagerFactoryCreationFn = ::testObtainEntityManagerFactory
     )
 

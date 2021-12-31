@@ -1,6 +1,7 @@
 package net.corda.permissions.storage.reader.internal
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.storage.common.ConfigKeys.BOOTSTRAP_CONFIG
 import net.corda.libs.permissions.storage.common.ConfigKeys.DB_CONFIG_KEY
@@ -34,7 +35,7 @@ class PermissionStorageReaderServiceEventHandler(
     private val publisherFactory: PublisherFactory,
     private val configurationReadService: ConfigurationReadService,
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    private val rbacEntitiesSet: EntitiesSet,
+    private val allEntitiesSets: List<EntitiesSet>,
     private val entityManagerFactoryCreationFn:
         KFunction3<SmartConfig, EntityManagerFactoryFactory, EntitiesSet, EntityManagerFactory> =
         DbUtils::obtainEntityManagerFactory
@@ -124,7 +125,10 @@ class PermissionStorageReaderServiceEventHandler(
 
             val dbConfig = bootstrapConfig.getConfig(DB_CONFIG_KEY)
             val entityManagerFactory =
-                entityManagerFactoryCreationFn(dbConfig, entityManagerFactoryFactory, rbacEntitiesSet)
+                entityManagerFactoryCreationFn(
+                    dbConfig,
+                    entityManagerFactoryFactory,
+                    allEntitiesSets.single { it.name == DbSchema.RPC_RBAC })
 
             permissionStorageReader = permissionStorageReaderFactory.create(
                 checkNotNull(permissionCacheService.permissionCache) {

@@ -3,6 +3,7 @@ package net.corda.permissions.storage.writer.internal
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
+import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.storage.common.ConfigKeys
 import net.corda.libs.permissions.storage.common.ConfigKeys.BOOTSTRAP_CONFIG
@@ -34,7 +35,7 @@ class PermissionStorageWriterServiceEventHandler(
     private val readerService: PermissionStorageReaderService,
     private val configurationReadService: ConfigurationReadService,
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    private val rbacEntitiesSet: EntitiesSet,
+    private val allEntitiesSets: List<EntitiesSet>,
     private val entityManagerFactoryCreationFn:
     KFunction3<SmartConfig, EntityManagerFactoryFactory, EntitiesSet, EntityManagerFactory> =
         DbUtils::obtainEntityManagerFactory
@@ -95,7 +96,10 @@ class PermissionStorageWriterServiceEventHandler(
 
             val dbConfig = bootstrapConfig.getConfig(ConfigKeys.DB_CONFIG_KEY)
             val entityManagerFactory =
-                entityManagerFactoryCreationFn(dbConfig, entityManagerFactoryFactory, rbacEntitiesSet)
+                entityManagerFactoryCreationFn(
+                    dbConfig,
+                    entityManagerFactoryFactory,
+                    allEntitiesSets.single { it.name == DbSchema.RPC_RBAC })
 
             subscription = subscriptionFactory.createRPCSubscription(
                 rpcConfig = RPCConfig(
