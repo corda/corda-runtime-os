@@ -11,6 +11,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:configuration:configuration-write-service')
+    implementation project(':components:configuration:configuration-rpcops-service')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')
     implementation project(':libs:db:db-admin')

@@ -1,6 +1,7 @@
 package net.corda.processors.db.internal
 
 import com.typesafe.config.Config
+import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.configuration.write.ConfigWriteService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
@@ -24,6 +25,8 @@ import javax.sql.DataSource
 class DBProcessorImpl @Activate constructor(
     @Reference(service = ConfigWriteService::class)
     private val configWriteService: ConfigWriteService,
+    @Reference(service = ConfigRPCOpsService::class)
+    private val configRPCOpsService: ConfigRPCOpsService,
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
     @Reference(service = LiquibaseSchemaMigrator::class)
@@ -39,6 +42,9 @@ class DBProcessorImpl @Activate constructor(
         val instanceId = config.getInt(CONFIG_INSTANCE_ID)
         val entityManagerFactory = createEntityManagerFactory(dataSource)
         configWriteService.startProcessing(config, instanceId, entityManagerFactory)
+
+        configRPCOpsService.start()
+        configRPCOpsService.startProcessing(config)
     }
 
     override fun stop() {
