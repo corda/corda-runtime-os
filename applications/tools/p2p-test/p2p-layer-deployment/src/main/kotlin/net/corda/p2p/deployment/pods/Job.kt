@@ -2,7 +2,7 @@ package net.corda.p2p.deployment.pods
 
 import net.corda.p2p.deployment.Yaml
 
-abstract class Job {
+abstract class Job : Yamlable {
     abstract val app: String
     abstract val image: String
     open val rawData: Collection<RawData<*>> = emptyList()
@@ -11,7 +11,7 @@ abstract class Job {
     open val pullSecrets: Collection<String> = emptyList()
     open val labels: Map<String, String> = emptyMap()
 
-    fun yamls(namespaceName: String): Collection<Yaml> {
+    override fun yamls(namespaceName: String): Collection<Yaml> {
         return rawData.map {
             it.createConfig(namespaceName, app)
         } +
