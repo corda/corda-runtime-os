@@ -159,9 +159,9 @@ class Deploy : Runnable {
 
     @Option(
         names = ["--load-balancer-type"],
-        description = ["The load balancer type (nginx or k8s)"]
+        description = ["The load balancer type (\${COMPLETION-CANDIDATES})"]
     )
-    private var lbType = "nginx"
+    private var lbType: LbType = LbType.NGINX
 
     override fun run() {
         val namespace = Namespace(

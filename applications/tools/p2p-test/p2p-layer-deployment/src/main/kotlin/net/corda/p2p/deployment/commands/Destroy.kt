@@ -13,7 +13,7 @@ class Destroy : Runnable {
     companion object {
         @Suppress("UNCHECKED_CAST")
         fun destroy(namespacesName: Collection<String>) {
-            println("Removing namespace $namespacesName...")
+            println("Removing namespaces $namespacesName...")
             ProcessRunner.follow(
                 listOf(
                     "kubectl",
