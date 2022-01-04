@@ -1056,7 +1056,7 @@ class LinkManagerTest {
             .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
 
         loggingInterceptor.assertSingleWarning(
-            "No partitions from topic ${Schema.LINK_IN_TOPIC} are currently assigned to the inbound message processor."
+            "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor."
         )
     }
 
@@ -1080,7 +1080,7 @@ class LinkManagerTest {
         assertThat(records).isEmpty()
 
         loggingInterceptor.assertSingleWarning(
-            "No partitions from topic ${Schema.LINK_IN_TOPIC} are currently assigned to the inbound message processor."
+            "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor."
         )
     }
 }
