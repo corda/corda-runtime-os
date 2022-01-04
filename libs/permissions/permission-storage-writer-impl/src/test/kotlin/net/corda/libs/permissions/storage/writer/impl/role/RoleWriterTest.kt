@@ -267,4 +267,21 @@ class RoleWriterTest {
         assertEquals(RPCPermissionOperation.DELETE_PERMISSION_FROM_ROLE, audit.changeType)
         assertEquals(requestUserId, audit.actorUser)
     }
+
+    @Test
+    fun `remove permission from role fails when role can't be found`() {
+        val roleId = "roleId"
+
+        whenever(entityManager.find(Role::class.java, roleId)).thenReturn(null)
+
+        val request = RemovePermissionFromRoleRequest(roleId, "permId")
+        assertThatThrownBy {
+            roleWriter.removePermissionFromRole(request, requestUserId)
+        }.isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("Unable to find Role with Id")
+
+        inOrder(entityTransaction) {
+            verify(entityTransaction).begin()
+            verify(entityTransaction).rollback()
+        }
+    }
 }
