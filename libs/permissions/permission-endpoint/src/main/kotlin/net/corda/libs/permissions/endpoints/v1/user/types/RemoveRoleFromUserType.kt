@@ -11,7 +11,7 @@ data class RemoveRoleFromUserType(
     val loginName: String,
 
     /**
-     * Name of the role to remove from this user.
+     * Id of the role to remove from this user.
      */
-    val roleName: String
+    val roleId: String
 )

@@ -67,7 +67,7 @@ internal class UserWriterTest {
         }
 
         verify(entityTransaction).begin()
-        assertEquals("Failed to create new user: lankydan as they already exist.", e.message)
+        assertEquals("Failed to create new user 'lankydan' as they already exist.", e.message)
     }
 
     @Test

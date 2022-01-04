@@ -11,7 +11,7 @@ data class AddRoleToUserType(
     val loginName: String,
 
     /**
-     * Name of the role to associate with this user.
+     * Id of the role to associate with this user.
      */
-    val roleName: String
+    val roleId: String
 )

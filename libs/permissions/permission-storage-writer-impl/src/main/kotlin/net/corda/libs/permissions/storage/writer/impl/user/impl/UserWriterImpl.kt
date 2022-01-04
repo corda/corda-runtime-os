@@ -34,12 +34,12 @@ class UserWriterImpl(
         return entityManagerFactory.transaction { entityManager ->
 
             require(countUsersWithLoginName(entityManager, request.loginName) == 0L) {
-                "Failed to create new user: ${request.loginName} as they already exist."
+                "Failed to create user '${request.loginName}' as they already exist."
             }
 
             val parentGroup = if (request.parentGroupId != null) {
                 requireNotNull(entityManager.find(Group::class.java, request.parentGroupId)) {
-                    "Failed to create new user: ${request.loginName} as the specified parent group: ${request.parentGroupId} does not exist."
+                    "Failed to create user '${request.loginName}'. The specified parent group '${request.parentGroupId}' does not exist."
                 }
             } else {
                 null
@@ -51,11 +51,11 @@ class UserWriterImpl(
     }
 
     override fun addRoleToUser(request: AddRoleToUserRequest, requestUserId: String): net.corda.data.permissions.User {
-        log.debug { "Received request to add Role ${request.roleName} to User ${request.loginName}" }
+        log.debug { "Received request to add Role ${request.roleId} to User ${request.loginName}" }
         return entityManagerFactory.transaction { entityManager ->
 
             val user = validateAndGetUniqueUser(entityManager, request.loginName)
-            val role = validateAndGetUniqueRole(entityManager, request.roleName)
+            val role = validateAndGetUniqueRole(entityManager, request.roleId)
             validateRoleNotAlreadyAssignedToUser(user, role)
 
             val resultUser = persistUserRoleAssociation(entityManager, requestUserId, user, role)
@@ -65,11 +65,11 @@ class UserWriterImpl(
     }
 
     override fun removeRoleFromUser(request: RemoveRoleFromUserRequest, requestUserId: String): net.corda.data.permissions.User {
-        log.debug { "Received request to remove Role ${request.roleName} from User ${request.loginName}" }
+        log.debug { "Received request to remove Role ${request.roleId} from User ${request.loginName}" }
         return entityManagerFactory.transaction { entityManager ->
 
             val user = validateAndGetUniqueUser(entityManager, request.loginName)
-            val role = validateAndGetUniqueRole(entityManager, request.roleName)
+            val role = validateAndGetUniqueRole(entityManager, request.roleId)
             val association = validateAndGetRoleAssociatedWithUser(user, role)
 
             val resultUser = removeUserRoleAssociation(entityManager, requestUserId, user, role, association)
@@ -96,13 +96,13 @@ class UserWriterImpl(
         return users.first()
     }
 
-    private fun validateAndGetUniqueRole(entityManager: EntityManager, roleName: String): Role {
+    private fun validateAndGetUniqueRole(entityManager: EntityManager, roleId: String): Role {
         val roles = entityManager
-            .createQuery("FROM Role WHERE name = :roleName", Role::class.java)
-            .setParameter("roleName", roleName)
+            .createQuery("FROM Role WHERE id = :id", Role::class.java)
+            .setParameter("id", roleId)
             .resultList
 
-        require(roles.size == 1) { "Role $roleName does not exist." }
+        require(roles.size == 1) { "Role '$roleId' does not exist." }
 
         return roles.first()
     }
@@ -158,15 +158,15 @@ class UserWriterImpl(
 
     private fun persistUserRoleAssociation(entityManager: EntityManager, requestUserId: String, user: User, role: Role): User {
         val updateTimestamp = Instant.now()
-        val assocation = RoleUserAssociation(UUID.randomUUID().toString(), role, user, updateTimestamp)
+        val association = RoleUserAssociation(UUID.randomUUID().toString(), role, user, updateTimestamp)
         val changeAudit = ChangeAudit(
             id = UUID.randomUUID().toString(),
             updateTimestamp = updateTimestamp,
             actorUser = requestUserId,
             changeType = RPCPermissionOperation.ADD_ROLE_TO_USER,
-            details = "Role '${role.id}' added to User '${user.id}' by '$requestUserId'. RoleUserAssociation ${assocation.id} created."
+            details = "Role '${role.id}' assigned to User '${user.id}' by '$requestUserId'."
         )
-        user.roleUserAssociations.add(assocation)
+        user.roleUserAssociations.add(association)
 
         // merging user cascades and adds the association
         entityManager.merge(user)
@@ -188,11 +188,12 @@ class UserWriterImpl(
             updateTimestamp = updateTimestamp,
             actorUser = requestUserId,
             changeType = RPCPermissionOperation.REMOVE_ROLE_FROM_USER,
-            details = "Role '${role.id}' removed from User '${user.id}' by '$requestUserId'. RoleUserAssociation '${association.id}' removed."
+            details = "Role '${role.id}' unassigned from User '${user.id}' by '$requestUserId'."
         )
         user.roleUserAssociations.remove(association)
 
         // merging user cascades and remove the association.
+        entityManager.remove(association)
         entityManager.merge(user)
         entityManager.persist(changeAudit)
 

@@ -26,9 +26,9 @@ interface UserWriter {
     fun addRoleToUser(request: AddRoleToUserRequest, requestUserId: String): AvroUser
 
     /**
-     * Disassociate a Role from a User and return its Avro representation.
+     * Dissociate a Role from a User and return its Avro representation.
      *
-     * @param request RemoveRoleFromUserRequest containing the information of the Role and User to disassociate.
+     * @param request RemoveRoleFromUserRequest containing the information of the Role and User to dissociate.
      * @param requestUserId ID of the user who made the request.
      */
     fun removeRoleFromUser(request: RemoveRoleFromUserRequest, requestUserId: String): AvroUser

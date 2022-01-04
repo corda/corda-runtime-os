@@ -53,7 +53,7 @@ interface UserEndpoint : RpcOps {
      */
     @HttpRpcPOST(description = "Remove a role from a User", path = "removeRole")
     fun removeRole(
-        @HttpRpcRequestBodyParameter(description = "Details of the user and role to be disassociated", required = true)
+        @HttpRpcRequestBodyParameter(description = "Details of the user and role to be dissociated", required = true)
         removeRoleFromUserType: RemoveRoleFromUserType
     ): UserResponseType
 }

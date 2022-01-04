@@ -69,10 +69,10 @@ class PermissionUserManagerImpl(
         val future = rpcSender.sendRequest(
             PermissionManagementRequest(
                 addRoleToUserRequestDto.requestedBy,
-                "cluster",
+                null,
                 AddRoleToUserRequest(
                     addRoleToUserRequestDto.loginName,
-                    addRoleToUserRequestDto.roleName
+                    addRoleToUserRequestDto.roleId
                 )
             )
         )
@@ -89,10 +89,10 @@ class PermissionUserManagerImpl(
         val future = rpcSender.sendRequest(
             PermissionManagementRequest(
                 removeRoleFromUserRequestDto.requestedBy,
-                "cluster",
+                null,
                 RemoveRoleFromUserRequest(
                     removeRoleFromUserRequestDto.loginName,
-                    removeRoleFromUserRequestDto.roleName
+                    removeRoleFromUserRequestDto.roleId
                 )
             )
         )

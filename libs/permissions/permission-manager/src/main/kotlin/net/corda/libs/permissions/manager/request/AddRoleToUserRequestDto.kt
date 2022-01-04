@@ -13,7 +13,7 @@ data class AddRoleToUserRequestDto(
      */
     val loginName: String,
     /**
-     * Name of role to be associated.
+     * Id of role to be associated.
      */
-    val roleName: String,
+    val roleId: String,
 )

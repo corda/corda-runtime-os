@@ -17,33 +17,31 @@ class UserRoleAssociationE2eTest {
 
     private val testToolkit by TestToolkitProperty()
 
-    data class RoleDetails(val id:String, val name: String)
-
     @Test
     fun `test association of user and role`() {
 
-        val newRoleDetails = testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
+        val roleId = testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
             val name = testToolkit.uniqueName
             val proxy = client.start().proxy
 
             // Create role
             val createRoleType = CreateRoleType(name, null)
 
-            val roleDetails = with(proxy.createRole(createRoleType)) {
+            val roleId = with(proxy.createRole(createRoleType)) {
                 assertSoftly {
                     it.assertThat(roleName).isEqualTo(name)
                     it.assertThat(version).isEqualTo(0L)
                     it.assertThat(groupVisibility).isNull()
                     it.assertThat(permissions).isEmpty()
                 }
-                RoleDetails(id, roleName)
+                id
             }
 
             // Check the role does exist now. The distribution of Role record may take some time to complete on the
             // message bus, hence use of `eventually` along with `assertDoesNotThrow`.
             eventually {
                 assertDoesNotThrow {
-                    with(proxy.getRole(roleDetails.id)) {
+                    with(proxy.getRole(roleId)) {
                         assertSoftly {
                             it.assertThat(roleName).isEqualTo(name)
                             it.assertThat(version).isEqualTo(0L)
@@ -53,7 +51,7 @@ class UserRoleAssociationE2eTest {
                     }
                 }
             }
-            roleDetails
+            roleId
         }
 
         testToolkit.httpClientFor(UserEndpoint::class.java).use { client ->
@@ -85,12 +83,12 @@ class UserRoleAssociationE2eTest {
                 }
             }
 
-            val addRoleToUserType = AddRoleToUserType(userName, newRoleDetails.name)
+            val addRoleToUserType = AddRoleToUserType(userName, roleId)
             with(proxy.addRole(addRoleToUserType)) {
                 assertSoftly {
                     it.assertThat(loginName).isEqualTo(userName)
                     it.assertThat(roleAssociations).hasSize(1)
-                    it.assertThat(roleAssociations.first().id).isEqualTo(newRoleDetails.id)
+                    it.assertThat(roleAssociations.first().id).isEqualTo(roleId)
                 }
             }
         }

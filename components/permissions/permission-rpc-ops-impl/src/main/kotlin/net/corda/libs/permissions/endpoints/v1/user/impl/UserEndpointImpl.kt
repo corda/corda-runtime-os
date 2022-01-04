@@ -68,7 +68,7 @@ class UserEndpointImpl @Activate constructor(
             AddRoleToUserRequestDto(
                 principal,
                 addRoleToUserType.loginName,
-                addRoleToUserType.roleName,
+                addRoleToUserType.roleId,
             )
         )
         return result.convertToEndpointType()
@@ -81,7 +81,7 @@ class UserEndpointImpl @Activate constructor(
             RemoveRoleFromUserRequestDto(
                 principal,
                 removeRoleFromUserType.loginName,
-                removeRoleFromUserType.roleName,
+                removeRoleFromUserType.roleId,
             )
         )
         return result.convertToEndpointType()
