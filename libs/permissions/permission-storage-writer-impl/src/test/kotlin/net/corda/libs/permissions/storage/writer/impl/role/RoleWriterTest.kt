@@ -1,5 +1,6 @@
 package net.corda.libs.permissions.storage.writer.impl.role
 
+import net.corda.data.permissions.management.role.AddPermissionToRoleRequest
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -8,11 +9,12 @@ import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.libs.permissions.storage.writer.impl.role.impl.RoleWriterImpl
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
+import net.corda.permissions.model.Permission
+import net.corda.permissions.model.PermissionType
 import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.Role
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -24,6 +26,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 class RoleWriterTest {
 
@@ -119,6 +122,42 @@ class RoleWriterTest {
         val audit = capture.secondValue as ChangeAudit
         assertNotNull(audit)
         assertEquals(RPCPermissionOperation.ROLE_INSERT, audit.changeType)
+        assertEquals(requestUserId, audit.actorUser)
+    }
+
+    @Test
+    fun `add permission to role success`() {
+        val roleId = "roleId"
+        val permId = "permId"
+
+        val role = Role(roleId, Instant.now(), "role", null)
+        val permission = Permission(permId, Instant.now(), null, null,
+            PermissionType.ALLOW, "permString")
+
+        whenever(entityManager.find(Role::class.java, roleId)).thenReturn(role)
+        whenever(entityManager.find(Permission::class.java, permId)).thenReturn(permission)
+
+        val request = AddPermissionToRoleRequest(roleId, permId)
+        val avroRole = roleWriter.addPermissionToRole(request, requestUserId)
+
+        val capture = argumentCaptor<Any>()
+        inOrder(entityTransaction, entityManager) {
+            verify(entityTransaction).begin()
+            verify(entityManager).merge(capture.capture())
+            verify(entityManager).persist(capture.capture())
+            verify(entityTransaction).commit()
+        }
+
+        assertEquals(roleId, avroRole.id)
+
+        val persistedRole = capture.firstValue as Role
+        assertSame(role, persistedRole)
+
+        assertThat(persistedRole.rolePermAssociations).hasSize(1).allMatch { it.permission === permission }
+
+        val audit = capture.secondValue as ChangeAudit
+        assertNotNull(audit)
+        assertEquals(RPCPermissionOperation.ADD_PERMISSION_TO_ROLE, audit.changeType)
         assertEquals(requestUserId, audit.actorUser)
     }
 }
