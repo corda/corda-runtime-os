@@ -13,6 +13,7 @@ import net.corda.permissions.model.Permission
 import net.corda.permissions.model.PermissionType
 import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.Role
+import net.corda.permissions.model.RolePermissionAssociation
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions.*
@@ -198,6 +199,29 @@ class RoleWriterTest {
         }.isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("Unable to find Permission with Id")
 
         inOrder(entityTransaction) {
+            verify(entityTransaction).begin()
+            verify(entityTransaction).rollback()
+        }
+    }
+
+    @Test
+    fun `add permission to role fails when permission is already associated`() {
+        val roleId = "roleId"
+        val permId = "permId"
+
+        val role = Role(roleId, Instant.now(), "role", null)
+        val permission = Permission(permId, Instant.now(), null, null,
+            PermissionType.ALLOW, "permString")
+        role.rolePermAssociations.add(RolePermissionAssociation("assocId", role, permission, Instant.now()))
+
+        whenever(entityManager.find(Role::class.java, roleId)).thenReturn(role)
+
+        val request = AddPermissionToRoleRequest(roleId, permId)
+        assertThatThrownBy {
+            roleWriter.addPermissionToRole(request, requestUserId)
+        }.isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("is already associated with Role")
+
+        inOrder(entityTransaction, entityManager) {
             verify(entityTransaction).begin()
             verify(entityTransaction).rollback()
         }
