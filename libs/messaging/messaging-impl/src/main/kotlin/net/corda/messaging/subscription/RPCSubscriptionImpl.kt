@@ -53,7 +53,6 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
-    private lateinit var producer: CordaProducer
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaRPCSubscription-$topic",
@@ -114,7 +113,6 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             consumeLoopThread = null
             threadTmp
         }
-        producer.close()
         thread?.join(consumerThreadStopTimeout)
     }
 
@@ -124,15 +122,16 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc consumer.  Attempt: $attempts" }
-                producer = producerBuilder.createProducer(config.getConfig(ConfigProperties.KAFKA_PRODUCER))
-                cordaConsumerBuilder.createRPCConsumer(
-                    config.getConfig(KAFKA_CONSUMER),
-                    String::class.java,
-                    RPCRequest::class.java
-                ).use {
-                    it.subscribe(topic)
-                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
-                    pollAndProcessRecords(it)
+                producerBuilder.createProducer(config.getConfig(ConfigProperties.KAFKA_PRODUCER)).use { producer ->
+                    cordaConsumerBuilder.createRPCConsumer(
+                        config.getConfig(KAFKA_CONSUMER),
+                        String::class.java,
+                        RPCRequest::class.java
+                    ).use {
+                        it.subscribe(topic)
+                        lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+                        pollAndProcessRecords(it, producer)
+                    }
                 }
                 attempts = 0
             } catch (ex: Exception) {
@@ -151,11 +150,11 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
-    private fun pollAndProcessRecords(consumer: CordaConsumer<String, RPCRequest>) {
+    private fun pollAndProcessRecords(consumer: CordaConsumer<String, RPCRequest>, producer: CordaProducer) {
         while (!stopped) {
             val consumerRecords = consumer.poll()
             try {
-                processRecords(consumerRecords)
+                processRecords(consumerRecords, producer)
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIFatalException,
@@ -173,7 +172,10 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun processRecords(consumerRecords: List<CordaConsumerRecord<String, RPCRequest>>) {
+    private fun processRecords(
+        consumerRecords: List<CordaConsumerRecord<String, RPCRequest>>,
+        producer: CordaProducer
+    ) {
         consumerRecords.forEach {
             val rpcRequest = it.value ?: throw CordaMessageAPIIntermittentException("Should we not have a request?")
             val requestBytes = rpcRequest.payload

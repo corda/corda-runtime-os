@@ -73,7 +73,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val topic = config.getString(TOPIC_NAME)
     private val responseTopic = config.getString(RESPONSE_TOPIC)
     private val futureTracker = FutureTracker<RESPONSE>()
-    private lateinit var producer: CordaProducer
+    private var producer: CordaProducer? = null
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaRPCSender-$topic",
@@ -130,7 +130,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             consumeLoopThread = null
             threadTmp
         }
-        producer.close()
+        producer?.close()
         thread?.join(consumerThreadStopTimeout)
     }
 
@@ -273,9 +273,9 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             val record = CordaProducerRecord(topic, correlationId, request)
             futureTracker.addFuture(correlationId, future, partition)
             try {
-                producer.beginTransaction()
-                producer.sendRecords(listOf(record))
-                producer.commitTransaction()
+                producer?.beginTransaction()
+                producer?.sendRecords(listOf(record))
+                producer?.commitTransaction()
             } catch (ex: Exception) {
                 future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
                 log.error("Failed to publish. Exception: ${ex.message}", ex)
