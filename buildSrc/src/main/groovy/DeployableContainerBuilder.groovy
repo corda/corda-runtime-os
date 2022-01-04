@@ -94,11 +94,11 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
     @Input
     final Property<String> baseImageName =
-            getObjects().property(String).convention('engineering-docker-dev.software.r3.com/corda-runtime-os-base')
+            getObjects().property(String).convention('docker-remotes.software.r3.com/azul/zulu-openjdk-alpine')
 
     @Input
     final Property<String> baseImageTag =
-            getObjects().property(String).convention('5.0-alpha-9abfd77')
+            getObjects().property(String).convention('11')
 
     @Input
     final ListProperty<String> arguments =
