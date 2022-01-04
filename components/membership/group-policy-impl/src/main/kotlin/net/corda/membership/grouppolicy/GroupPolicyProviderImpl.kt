@@ -89,7 +89,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         val vNodeInfo = virtualNodeInfo
             ?: virtualNodeInfoReader.get(holdingIdentity)
         val metadata = vNodeInfo
-            ?.cpi
+            ?.cpiIdentifier
             ?.let { cpiInfoReader.get(it) }
         return groupPolicyFactory
             .createGroupPolicy(metadata?.groupPolicy)
