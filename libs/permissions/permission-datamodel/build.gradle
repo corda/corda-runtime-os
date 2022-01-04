@@ -10,6 +10,7 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-db-schema'
+    implementation project(":libs:db:db-orm")
 
     api "javax.persistence:javax.persistence-api"
 
@@ -19,7 +20,6 @@ dependencies {
     integrationTestImplementation project(":libs:db:db-core")
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")
-    integrationTestImplementation project(":libs:db:db-orm")
     integrationTestImplementation project(":testing:test-utilities")
     integrationTestImplementation project(":testing:db-testkit")
     integrationTestImplementation 'net.corda:corda-base'
