@@ -182,4 +182,24 @@ class RoleWriterTest {
             verify(entityTransaction).rollback()
         }
     }
+
+    @Test
+    fun `add permission to role fails when permission can't be found`() {
+        val roleId = "roleId"
+        val permId = "permId"
+
+        val role = Role(roleId, Instant.now(), "role", null)
+        whenever(entityManager.find(Role::class.java, roleId)).thenReturn(role)
+        whenever(entityManager.find(Permission::class.java, permId)).thenReturn(null)
+
+        val request = AddPermissionToRoleRequest(roleId, permId)
+        assertThatThrownBy {
+            roleWriter.addPermissionToRole(request, requestUserId)
+        }.isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("Unable to find Permission with Id")
+
+        inOrder(entityTransaction) {
+            verify(entityTransaction).begin()
+            verify(entityTransaction).rollback()
+        }
+    }
 }
