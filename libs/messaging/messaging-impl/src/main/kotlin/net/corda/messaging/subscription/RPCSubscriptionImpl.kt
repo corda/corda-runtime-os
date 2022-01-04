@@ -114,8 +114,8 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             consumeLoopThread = null
             threadTmp
         }
-        thread?.join(consumerThreadStopTimeout)
         producer.close()
+        thread?.join(consumerThreadStopTimeout)
     }
 
     private fun runConsumeLoop() {

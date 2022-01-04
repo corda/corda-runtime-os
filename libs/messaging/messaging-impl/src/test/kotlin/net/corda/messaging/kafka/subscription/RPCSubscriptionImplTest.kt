@@ -123,6 +123,26 @@ class RPCSubscriptionImplTest {
         verify(kafkaProducer, times(1)).sendRecordsToPartitions(captor.capture())
         val capturedValue = captor.firstValue
         assertEquals(capturedValue[0].second.value?.responseStatus, ResponseStatus.OK)
+        verify(kafkaProducer, times(1)).close()
+    }
+
+    @Test
+    fun `rpc subscription is closed properly`() {
+        val processor = TestProcessor(ResponseStatus.OK)
+        val subscription = RPCSubscriptionImpl(
+            config,
+            cordaConsumerBuilder,
+            cordaProducerBuilder,
+            processor,
+            serializer,
+            deserializer,
+            lifecycleCoordinatorFactory
+        )
+
+        subscription.start()
+        assertThat(subscription.isRunning).isTrue
+        subscription.close()
+        verify(kafkaProducer, times(1)).close()
     }
 
     @Test

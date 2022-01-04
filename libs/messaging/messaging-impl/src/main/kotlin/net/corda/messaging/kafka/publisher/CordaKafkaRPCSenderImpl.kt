@@ -33,7 +33,6 @@ import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.subscription.consumer.listener.RPCConsumerRebalanceListener
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -44,7 +43,6 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
-@Component
 class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: Config,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
@@ -132,8 +130,8 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             consumeLoopThread = null
             threadTmp
         }
-        thread?.join(consumerThreadStopTimeout)
         producer.close()
+        thread?.join(consumerThreadStopTimeout)
     }
 
     private fun runConsumeLoop() {
