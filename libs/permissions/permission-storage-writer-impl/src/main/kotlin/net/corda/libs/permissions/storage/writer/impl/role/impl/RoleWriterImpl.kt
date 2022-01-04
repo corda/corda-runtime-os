@@ -75,14 +75,17 @@ class RoleWriterImpl(
         return entityManagerFactory.transaction { entityManager ->
 
             val role = requireNotNull(entityManager.find(Role::class.java, request.roleId)) {
+                entityManager.transaction.setRollbackOnly()
                 "Unable to find Role with Id: ${request.roleId}"
             }
 
             require(role.rolePermAssociations.none { it.permission.id == request.permissionId }) {
+                entityManager.transaction.setRollbackOnly()
                 "Permission '${request.permissionId}' is already associated with Role '${request.roleId}'."
             }
 
             val permission = requireNotNull(entityManager.find(Permission::class.java, request.permissionId)) {
+                entityManager.transaction.setRollbackOnly()
                 "Unable to find Permission with Id: ${request.permissionId}"
             }
 
@@ -119,11 +122,13 @@ class RoleWriterImpl(
         return entityManagerFactory.transaction { entityManager ->
 
             val role = requireNotNull(entityManager.find(Role::class.java, request.roleId)) {
+                entityManager.transaction.setRollbackOnly()
                 "Unable to find Role with Id: ${request.roleId}"
             }
 
             val rolePermissionAssociation =
                 requireNotNull(role.rolePermAssociations.find { it.permission.id == request.permissionId }) {
+                    entityManager.transaction.setRollbackOnly()
                     "Permission with Id: ${request.permissionId} is not associated with a role: ${role.id}."
                 }
 

@@ -14,6 +14,7 @@ import net.corda.permissions.model.PermissionType
 import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.Role
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,6 +28,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicBoolean
 
 class RoleWriterTest {
 
@@ -46,6 +48,9 @@ class RoleWriterTest {
     fun setUp() {
         whenever(entityManager.transaction).thenReturn(entityTransaction)
         whenever(entityManagerFactory.createEntityManager()).thenReturn(entityManager)
+        val rollBack = AtomicBoolean(false)
+        whenever(entityTransaction.setRollbackOnly()).then { rollBack.set(true) }
+        whenever(entityTransaction.rollbackOnly).then { rollBack.get() }
     }
 
     @Test
@@ -159,5 +164,22 @@ class RoleWriterTest {
         assertNotNull(audit)
         assertEquals(RPCPermissionOperation.ADD_PERMISSION_TO_ROLE, audit.changeType)
         assertEquals(requestUserId, audit.actorUser)
+    }
+
+    @Test
+    fun `add permission to role fails when role can't be found`() {
+        val roleId = "roleId"
+
+        whenever(entityManager.find(Role::class.java, roleId)).thenReturn(null)
+
+        val request = AddPermissionToRoleRequest(roleId, "permId")
+        assertThatThrownBy {
+            roleWriter.addPermissionToRole(request, requestUserId)
+        }.isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("Unable to find Role with Id")
+
+        inOrder(entityTransaction) {
+            verify(entityTransaction).begin()
+            verify(entityTransaction).rollback()
+        }
     }
 }
