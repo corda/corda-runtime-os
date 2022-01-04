@@ -1,6 +1,5 @@
 package net.corda.configuration.rpcops
 
-import net.corda.configuration.rpcops.v1.ConfigRPCOps
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -19,14 +18,12 @@ class ConfigRPCOpsService @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = ConfigRPCOps::class)
-    private val configRPCOps: ConfigRPCOps
+    @Reference(service = ConfigRPCOpsRPCSender::class)
+    private val configRPCOpsRPCSender: ConfigRPCOpsRPCSender
 ): Lifecycle {
 
     private val coordinator = let {
-        // TODO - Joel - Check this configRPCOps is the same one as receives the requests.
-        println("JJJ - in rpc ops service $configRPCOps")
-        val eventHandler = ConfigRPCOpsEventHandler(publisherFactory, configRPCOps)
+        val eventHandler = ConfigRPCOpsEventHandler(publisherFactory, configRPCOpsRPCSender)
         coordinatorFactory.createCoordinator<ConfigRPCOpsService>(eventHandler)
     }
 

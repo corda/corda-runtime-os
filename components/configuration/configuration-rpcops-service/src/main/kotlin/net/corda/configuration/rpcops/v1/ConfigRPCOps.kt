@@ -17,9 +17,6 @@ import net.corda.messaging.api.publisher.RPCSender
     path = "config"
 )
 interface ConfigRPCOps : RpcOps {
-    // TODO - Joel - Describe.
-    var rpcSender: RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>?
-
     /** Updates cluster configuration. */
     @HttpRpcPOST(description = "Update cluster configuration", path = "updateConfig")
     fun updateConfig(
