@@ -13,6 +13,7 @@ import net.corda.libs.permissions.cache.events.RoleTopicSnapshotReceived
 import net.corda.libs.permissions.cache.events.UserTopicSnapshotReceived
 import net.corda.libs.permissions.cache.factory.PermissionCacheFactory
 import net.corda.libs.permissions.cache.factory.PermissionCacheTopicProcessorFactory
+import net.corda.libs.permissions.storage.common.ConfigKeys.BOOTSTRAP_CONFIG
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -57,7 +58,6 @@ class PermissionCacheService @Activate constructor(
     private companion object {
         val log = contextLogger()
         const val CONSUMER_GROUP = "PERMISSION_SERVICE"
-        const val BOOTSTRAP_CONFIG = "corda.boot"
     }
 
     val permissionCache: PermissionCache?
