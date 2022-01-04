@@ -48,6 +48,7 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly 'org.osgi:osgi.core'
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     runtimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
     runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
