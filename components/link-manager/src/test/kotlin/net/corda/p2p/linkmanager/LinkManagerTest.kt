@@ -1056,7 +1056,8 @@ class LinkManagerTest {
             .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
 
         loggingInterceptor.assertSingleWarning(
-            "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor. Session $SESSION_ID will not be initiated."
+            "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
+                    " Session $SESSION_ID will not be initiated."
         )
     }
 
@@ -1080,7 +1081,8 @@ class LinkManagerTest {
         assertThat(records).isEmpty()
 
         loggingInterceptor.assertSingleWarning(
-            "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor."
+            "No partitions from topic link.in are currently assigned to the inbound message processor." +
+                    " Not going to reply to session initiation for session $SESSION_ID."
         )
     }
 }

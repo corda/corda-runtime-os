@@ -348,24 +348,34 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         private fun processSessionMessage(message: LinkInMessage): List<Record<String, *>> {
             val response = sessionManager.processSessionMessage(message)
-            val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
-            return if (response != null && partitionsAssigned.isNotEmpty()) {
-                when(val payload = message.payload) {
+            if (response != null) {
+                when (val payload = message.payload) {
                     is InitiatorHelloMessage -> {
-                        listOf(
-                            Record(LINK_IN_TOPIC, generateKey(), response),
-                            Record(SESSION_OUT_PARTITIONS, payload.header.sessionId, SessionPartitions(partitionsAssigned))
-                        )
+                        val partitionsAssigned =
+                            inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
+                        if (partitionsAssigned.isNotEmpty()) {
+                            return listOf(
+                                Record(LINK_IN_TOPIC, generateKey(), response),
+                                Record(
+                                    SESSION_OUT_PARTITIONS,
+                                    payload.header.sessionId,
+                                    SessionPartitions(partitionsAssigned)
+                                )
+                            )
+                        } else {
+                            logger.warn(
+                                "No partitions from topic ${LINK_IN_TOPIC} are currently assigned to the inbound message processor." +
+                                        " Not going to reply to session initiation for session ${payload.header.sessionId}."
+                            )
+                            return emptyList()
+                        }
                     }
                     else -> {
-                        listOf(Record(LINK_OUT_TOPIC, generateKey(), response))
+                        return listOf(Record(LINK_OUT_TOPIC, generateKey(), response))
                     }
                 }
-            } else if(partitionsAssigned.isEmpty()) {
-                logger.warn("No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor.")
-                emptyList()
             } else {
-                emptyList()
+                return emptyList()
             }
         }
 
