@@ -253,12 +253,11 @@ internal class HttpRpcServerInternal(
             try {
                 val paramValues = parameters.map { ParameterRetrieverFactory.create(it).get(ctx) }.toTypedArray()
 
-                log.info("Invoke method \"${method.method.name}\" with paramValues \"${paramValues.joinToString(",")}\".")
+                log.debug { "Invoke method \"${method.method.name}\" with paramValues \"${paramValues.joinToString(",")}\"." }
 
                 @Suppress("SpreadOperator")
                 //TODO if one parameter is a list and it's exposed as a query parameter, we may need to cast list elements here
                 val result = invokeDelegatedMethod(*paramValues)
-                log.info("Result received: $result")
                 if (result != null) {
                     ctx.json(result)
                 }
