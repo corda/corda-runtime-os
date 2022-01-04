@@ -202,14 +202,14 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         if (remotePublish.get()) {
             builder.containerize(
                     Containerizer.to(RegistryImage.named("${targetRepo}:${tag}")
-                            .addCredential(registryUsername.get(), registryPassword.get())))
+                            .addCredential(registryUsername.get(), registryPassword.get())).setAlwaysCacheBaseImage(true))
         } else {
             builder.containerize(
-                    Containerizer.to(DockerDaemonImage.named("${targetRepo}:${tag}"))
+                    Containerizer.to(DockerDaemonImage.named("${targetRepo}:${tag}")).setAlwaysCacheBaseImage(true)
             )
         }
 
-        logger.quiet("Publishing '${targetRepo}:${tag}' ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with '${projectName}.jar', from base '${baseImageName.get()}:${baseImageTag}'")
+        logger.quiet("Publishing '${targetRepo}:${tag}' ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with '${projectName}.jar', from base '${baseImageName.get()}:${baseImageTag.get()}'")
     }
 
     /**
