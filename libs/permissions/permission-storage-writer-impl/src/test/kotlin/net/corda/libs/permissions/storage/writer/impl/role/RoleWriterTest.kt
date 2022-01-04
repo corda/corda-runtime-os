@@ -6,6 +6,7 @@ import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.Query
 import net.corda.data.permissions.management.role.CreateRoleRequest
+import net.corda.data.permissions.management.role.RemovePermissionFromRoleRequest
 import net.corda.libs.permissions.storage.writer.impl.role.impl.RoleWriterImpl
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
@@ -225,5 +226,45 @@ class RoleWriterTest {
             verify(entityTransaction).begin()
             verify(entityTransaction).rollback()
         }
+    }
+
+    @Test
+    fun `remove permission from role success`() {
+        val roleId = "roleId"
+        val permId = "permId"
+
+        val role = Role(roleId, Instant.now(), "role", null)
+        val permission = Permission(permId, Instant.now(), null, null,
+            PermissionType.ALLOW, "permString")
+        val association = RolePermissionAssociation("assocId", role, permission, Instant.now())
+        role.rolePermAssociations.add(association)
+
+        whenever(entityManager.find(Role::class.java, roleId)).thenReturn(role)
+
+        val request = RemovePermissionFromRoleRequest(roleId, permId)
+        val avroRole = roleWriter.removePermissionFromRole(request, requestUserId)
+
+        val capture = argumentCaptor<Any>()
+        inOrder(entityTransaction, entityManager) {
+            verify(entityTransaction).begin()
+            verify(entityManager).merge(capture.capture())
+            verify(entityManager).remove(capture.capture())
+            verify(entityManager).persist(capture.capture())
+            verify(entityTransaction).commit()
+        }
+
+        assertEquals(roleId, avroRole.id)
+
+        val persistedRole = capture.firstValue as Role
+        assertSame(role, persistedRole)
+        assertThat(persistedRole.rolePermAssociations).hasSize(0)
+
+        val deletedAssociation = capture.secondValue as RolePermissionAssociation
+        assertSame(association, deletedAssociation)
+
+        val audit = capture.thirdValue as ChangeAudit
+        assertNotNull(audit)
+        assertEquals(RPCPermissionOperation.DELETE_PERMISSION_FROM_ROLE, audit.changeType)
+        assertEquals(requestUserId, audit.actorUser)
     }
 }
