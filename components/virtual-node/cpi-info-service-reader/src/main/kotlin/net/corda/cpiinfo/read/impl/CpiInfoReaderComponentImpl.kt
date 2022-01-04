@@ -1,8 +1,7 @@
 package net.corda.cpiinfo.read.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.CpiInfoListener
-import net.corda.cpiinfo.CpiInfoReader
+import net.corda.cpiinfo.read.CpiInfoListener
 import net.corda.cpiinfo.read.CpiInfoReaderComponent
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus

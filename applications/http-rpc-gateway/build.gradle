@@ -90,4 +90,5 @@ tasks.register('e2eTest', Test) {
 
     testClassesDirs = project.sourceSets["e2eTest"].output.classesDirs
     classpath = project.sourceSets["e2eTest"].runtimeClasspath
+    outputs.upToDateWhen { false }
 }

@@ -50,4 +50,5 @@ dependencies {
     runtimeOnly "org.ow2.asm:asm:$asmVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     runtimeOnly project(':libs:crypto:crypto-impl')
+    runtimeOnly project(':libs:sandbox-internal')
 }

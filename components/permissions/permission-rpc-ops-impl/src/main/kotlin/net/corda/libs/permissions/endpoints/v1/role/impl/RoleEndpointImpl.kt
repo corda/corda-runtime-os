@@ -45,7 +45,7 @@ class RoleEndpointImpl @Activate constructor(
             createRoleType.convertToDto(principal)
         )
 
-        return createRoleResult.getOrThrow().convertToEndpointType()
+        return createRoleResult.convertToEndpointType()
     }
 
     override fun getRole(id: String): RoleResponseType {

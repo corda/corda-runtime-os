@@ -11,7 +11,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.VirtualNodeInfo
@@ -51,7 +51,7 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
         publish(
             listOf(
                 Record(
-                    Schemas.VIRTUAL_NODE_INFO_TOPIC,
+                    VIRTUAL_NODE_INFO_TOPIC,
                     virtualNodeInfo.holdingIdentity.toAvro(),
                     virtualNodeInfo.toAvro()
                 )
@@ -63,7 +63,7 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
         publish(
             listOf(
                 Record(
-                    Schemas.VIRTUAL_NODE_INFO_TOPIC,
+                    VIRTUAL_NODE_INFO_TOPIC,
                     virtualNodeInfo.holdingIdentity.toAvro(),
                     null
                 )
@@ -100,14 +100,16 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     }
 
     /** Post a [ConfigChangedEvent]  */
-    private fun onConfigChangeEvent(event: ConfigChangedEvent) = coordinator.postEvent(event)
+    private fun onConfigChangeEvent(event: ConfigChangedEvent)  {
+        coordinator.postEvent(event)
+        coordinator.updateStatus(LifecycleStatus.DOWN)
+    }
 
     /**
      * Once we finally get a config, we can create a publisher connected to the
      * correct Kafka instance, and flag that we're up.
      */
     private fun onConfig(coordinator: LifecycleCoordinator, config: SmartConfig) {
-        coordinator.updateStatus(LifecycleStatus.DOWN)
         publisher?.close()
         publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID, instanceId), config)
         coordinator.updateStatus(LifecycleStatus.UP)

@@ -15,7 +15,6 @@ import net.corda.v5.application.flows.FlowSession
 import net.corda.v5.application.identity.Party
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.concurrent.getOrThrow
-import net.corda.v5.base.util.Try
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
@@ -70,40 +69,37 @@ class FlowFiberImpl<R>(
     override fun run() {
         setLoggingContext()
         log.debug { "Calling flow: $logic" }
-        val resultOrError = executeFlowLogic()
-        log.debug { "flow ended $id. isSuccess: ${resultOrError.isSuccess}" }
 
-        housekeepingState = when (resultOrError) {
-            is Try.Success -> {
-                housekeepingState.copy(output = FlowIORequest.FlowFinished(resultOrError.value))
-            }
-            is Try.Failure -> {
-                housekeepingState.copy(output = FlowIORequest.FlowFailed(resultOrError.exception))
-            }
+        housekeepingState = try {
+            val result = executeFlowLogic()
+            log.debug { "flow ended $id successfully}" }
+            housekeepingState.copy(output = FlowIORequest.FlowFinished(result))
+        } catch (t: Throwable) {
+            terminateUnrecoverableError(t)
+            logFlowError(t)
+            housekeepingState.copy(output = FlowIORequest.FlowFailed(t))
         }
+
         housekeepingState.suspended.complete(null)
     }
 
     @Suspendable
-    private fun executeFlowLogic(): Try<R> {
-        return try {
-            //TODOs: we might need the sandbox class loader
-            Thread.currentThread().contextClassLoader = logic.javaClass.classLoader
-            log.info("Executing flow and about to make initial checkpoint")
-            suspend(FlowIORequest.ForceCheckpoint)
-            log.info("Made initial checkpoint")
-            val result = logic.call()
-            Try.Success(result)
-        } catch (t: Throwable) {
-            if (t.isUnrecoverable()) {
-                errorAndTerminate(
-                    "Caught unrecoverable error from flow. Forcibly terminating the JVM, this might leave " +
-                            "resources open, and most likely will.",
-                    t
-                )
-            }
-            logFlowError(t)
-            Try.Failure(t)
+    private fun executeFlowLogic(): R {
+        //TODOs: we might need the sandbox class loader
+        Thread.currentThread().contextClassLoader = logic.javaClass.classLoader
+        log.info("Executing flow and about to make initial checkpoint")
+        suspend(FlowIORequest.ForceCheckpoint)
+        log.info("Made initial checkpoint")
+        return logic.call()
+    }
+
+    private fun terminateUnrecoverableError(t: Throwable) {
+        if (t.isUnrecoverable()) {
+            errorAndTerminate(
+                "Caught unrecoverable error from flow. Forcibly terminating the JVM, this might leave " +
+                        "resources open, and most likely will.",
+                t
+            )
         }
     }
 

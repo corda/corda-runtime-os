@@ -11,7 +11,7 @@ import net.corda.p2p.linkmanager.LinkManagerNetworkMap
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.MockNetworkMap
-import net.corda.p2p.schema.Schema
+import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -138,7 +138,7 @@ class InMemorySessionReplayerTest {
         val recordsCapture = argumentCaptor<List<Record<*, *>>>()
         verify(publisherWithDominoLogic.constructed().last()).publish(recordsCapture.capture())
         val record = recordsCapture.allValues.single().single()
-        assertThat(record.topic).isEqualTo(Schema.LINK_OUT_TOPIC)
+        assertThat(record.topic).isEqualTo(LINK_OUT_TOPIC)
         assertThat((record.value as? LinkOutMessage)?.payload).isEqualTo(helloMessage)
         assertThat(sessionKey!!.ourId).isEqualTo(US)
         assertThat(sessionKey!!.responderId).isEqualTo(COUNTER_PARTY)

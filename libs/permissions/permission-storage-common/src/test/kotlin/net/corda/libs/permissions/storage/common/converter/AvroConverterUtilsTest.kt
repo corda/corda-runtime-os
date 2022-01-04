@@ -1,5 +1,6 @@
 package net.corda.libs.permissions.storage.common.converter
 
+import net.corda.data.permissions.PermissionAssociation
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import net.corda.permissions.model.Group
@@ -16,7 +17,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import net.corda.data.permissions.PermissionType as AvroPermissionType
 
 internal class AvroConverterUtilsTest {
 
@@ -80,7 +80,7 @@ internal class AvroConverterUtilsTest {
     }
 
     @Test
-    fun `convert Role to avro Role`() {
+    fun `convert Role to Avro Role`() {
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val change = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val later = Instant.now().truncatedTo(ChronoUnit.MILLIS)
@@ -126,32 +126,20 @@ internal class AvroConverterUtilsTest {
         assertNull(avroRole.groupVisibility)
 
         assertEquals(2, avroRole.permissions.size)
-        val permissionAssoc1 = avroRole.permissions[0]
+        val permissionAssoc1: PermissionAssociation = avroRole.permissions[0]
         assertEquals(change, permissionAssoc1.changeDetails.updateTimestamp)
 
-        val convertedPermission1 = permissionAssoc1.permission
-        assertEquals("perm1", convertedPermission1.id)
-        assertEquals(later, convertedPermission1.lastChangeDetails.updateTimestamp)
-        assertNull(convertedPermission1.groupVisibility)
-        assertEquals("virtNode3", convertedPermission1.virtualNode)
-        assertEquals(AvroPermissionType.ALLOW, convertedPermission1.type)
-        assertEquals("*", convertedPermission1.permissionString)
+        assertEquals("perm1", permissionAssoc1.permissionId)
 
         val permissionAssoc2 = avroRole.permissions[1]
         assertEquals(change, permissionAssoc2.changeDetails.updateTimestamp)
 
-        val convertedPermission2 = permissionAssoc2.permission
-        assertEquals("perm2", convertedPermission2.id)
-        assertEquals(later, convertedPermission2.lastChangeDetails.updateTimestamp)
-        assertNull(convertedPermission2.groupVisibility)
-        assertEquals("virtNode4", convertedPermission2.virtualNode)
-        assertEquals(AvroPermissionType.DENY, convertedPermission2.type)
-        assertEquals("*", convertedPermission2.permissionString)
-
+        assertEquals("perm2", permissionAssoc2.permissionId)
+        assertEquals(change, permissionAssoc2.changeDetails.updateTimestamp)
     }
 
     @Test
-    fun `convert model group to avro group`() {
+    fun `convert model group to Avro group`() {
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val later = Instant.now().truncatedTo(ChronoUnit.MILLIS)
 

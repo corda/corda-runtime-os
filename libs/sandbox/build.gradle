@@ -1,54 +1,16 @@
-import aQute.bnd.gradle.Bundle
-
 plugins {
     id 'corda.common-library'
-    id 'corda.osgi-test-conventions'
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'org.jetbrains.kotlin.jvm'
 }
 
 description 'Corda Sandbox'
 
-configurations {
-    cpks {
-        canBeConsumed = false
-        transitive = false
-    }
-}
-
 dependencies {
-    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    compileOnly "org.osgi:osgi.annotation"
-    compileOnly "org.osgi:osgi.core"
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+    api platform("net.corda:corda-api:$cordaApiVersion")
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda:corda-packaging'
-    implementation 'net.corda:corda-serialization'
-
-    testCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
-
-    cpks project(path: 'sandbox-cpk-one', configuration: 'cordaCPK')
-    cpks project(path: 'sandbox-cpk-two', configuration: 'cordaCPK')
-    cpks project(path: 'sandbox-cpk-three', configuration: 'cordaCPK')
-    cpks project(path: 'sandbox-irresolvable-cpk', configuration: 'cordaCPK')
-
-    integrationTestCompileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
-    integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    integrationTestImplementation project(":components:install:install-legacy")
-    integrationTestImplementation "net.corda:corda-application"
-    integrationTestImplementation 'net.corda:corda-packaging'
-    integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
-    integrationTestRuntimeOnly project(":libs:sandbox-hooks")
-}
-
-def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
-    from configurations.cpks
-}
-
-tasks.named('testingBundle', Bundle) {
-    dependsOn integrationTestResources
+    api 'net.corda:corda-packaging'
+    api 'net.corda:corda-serialization'
 }

@@ -63,6 +63,29 @@ class EvolvabilityTests {
     }
 
     @Test
+    fun simpleOrderSwapSameTypeWithDefaultConstructorParam() {
+        val sf = testDefaultFactory()
+        val resource = "EvolvabilityTests.simpleOrderSwapSameTypeWithDefaultConstructorParam"
+
+        val A = 1
+        val B = 2
+
+        // Original version of the class for the serialised version of this class
+        // data class C (val a: Int, val b: Int, val c: Int = 5)
+        // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(C(A, B)).bytes)
+
+        // new version of the class, in this case the order of the parameters has been swapped
+        data class C(val b: Int, val a: Int, val c: Int = 5)
+
+        val url = EvolvabilityTests::class.java.getResource(resource)
+        val sc2 = url.readBytes()
+        val deserializedC = DeserializationInput(sf).deserialize(bytes = SerializedBytes<C>(sc2))
+
+        assertEquals(A, deserializedC.a)
+        assertEquals(B, deserializedC.b)
+    }
+
+    @Test
     fun simpleOrderSwapDifferentType() {
         val sf = testDefaultFactory()
         val A = 1

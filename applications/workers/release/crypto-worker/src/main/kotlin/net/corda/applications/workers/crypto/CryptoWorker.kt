@@ -42,8 +42,9 @@ class CryptoWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, CryptoWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val config = getBootstrapConfig(params.defaultParams, smartConfigFactory)
-        processor.start(params.defaultParams.instanceId, params.defaultParams.topicPrefix, config)
+        val config = getBootstrapConfig(smartConfigFactory, params.defaultParams)
+
+        processor.start(config)
     }
 
     override fun shutdown() {

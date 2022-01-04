@@ -1,13 +1,14 @@
 package net.corda.permissions.cache
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.Group
+import net.corda.data.permissions.Permission
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.cache.events.GroupTopicSnapshotReceived
+import net.corda.libs.permissions.cache.events.PermissionTopicSnapshotReceived
 import net.corda.libs.permissions.cache.events.RoleTopicSnapshotReceived
 import net.corda.libs.permissions.cache.events.UserTopicSnapshotReceived
 import net.corda.libs.permissions.cache.factory.PermissionCacheFactory
@@ -25,11 +26,15 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
-import net.corda.rpc.schema.Schema
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ENTITY_TOPIC
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_GROUP_TOPIC
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
+import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.concurrent.ConcurrentHashMap
 
 private data class NewConfigurationReceivedEvent(val config: SmartConfig): LifecycleEvent
 
@@ -63,14 +68,17 @@ class PermissionCacheService @Activate constructor(
     private var userSubscription: CompactedSubscription<String, User>? = null
     private var groupSubscription: CompactedSubscription<String, Group>? = null
     private var roleSubscription: CompactedSubscription<String, Role>? = null
+    private var permissionSubscription: CompactedSubscription<String, Permission>? = null
     private var configHandle: AutoCloseable? = null
     private var registration: RegistrationHandle? = null
 
     private var userSnapshotReceived: Boolean = false
     private var groupSnapshotReceived: Boolean = false
     private var roleSnapshotReceived: Boolean = false
+    private var permissionSnapshotReceived: Boolean = false
 
-    private fun allSnapshotsReceived(): Boolean = userSnapshotReceived && groupSnapshotReceived && roleSnapshotReceived
+    private fun allSnapshotsReceived(): Boolean = userSnapshotReceived && groupSnapshotReceived &&
+            roleSnapshotReceived && permissionSnapshotReceived
 
     private fun eventHandler(event: LifecycleEvent) {
         when (event) {
@@ -112,6 +120,11 @@ class PermissionCacheService @Activate constructor(
                 roleSnapshotReceived = true
                 if (allSnapshotsReceived()) setStatusUp()
             }
+            is PermissionTopicSnapshotReceived -> {
+                log.info("Permission topic snapshot received.")
+                permissionSnapshotReceived = true
+                if (allSnapshotsReceived()) setStatusUp()
+            }
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies and setting status to DOWN.")
                 configHandle?.close()
@@ -122,11 +135,14 @@ class PermissionCacheService @Activate constructor(
                 groupSubscription = null
                 roleSubscription?.stop()
                 roleSubscription = null
+                permissionSubscription?.stop()
+                permissionSubscription = null
                 _permissionCache?.stop()
                 _permissionCache = null
                 userSnapshotReceived = false
                 groupSnapshotReceived = false
                 roleSnapshotReceived = false
+                permissionSnapshotReceived = false
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }
@@ -141,13 +157,16 @@ class PermissionCacheService @Activate constructor(
         val userData = ConcurrentHashMap<String, User>()
         val groupData = ConcurrentHashMap<String, Group>()
         val roleData = ConcurrentHashMap<String, Role>()
+        val permissionData = ConcurrentHashMap<String, Permission>()
         userSubscription = createUserSubscription(userData, config)
             .also { it.start() }
         groupSubscription = createGroupSubscription(groupData, config)
             .also { it.start() }
         roleSubscription = createRoleSubscription(roleData, config)
             .also { it.start() }
-        _permissionCache = permissionCacheFactory.createPermissionCache(userData, groupData, roleData)
+        permissionSubscription = createPermissionSubscription(permissionData, config)
+            .also { it.start() }
+        _permissionCache = permissionCacheFactory.createPermissionCache(userData, groupData, roleData, permissionData)
             .also { it.start() }
     }
 
@@ -163,7 +182,7 @@ class PermissionCacheService @Activate constructor(
         kafkaConfig: SmartConfig
     ): CompactedSubscription<String, User> {
         return subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_USER_TOPIC),
+            SubscriptionConfig(CONSUMER_GROUP, RPC_PERM_USER_TOPIC),
             permissionCacheTopicProcessorFactory.createUserTopicProcessor(userData) {
                 coordinator.postEvent(UserTopicSnapshotReceived())
             },
@@ -176,7 +195,7 @@ class PermissionCacheService @Activate constructor(
         kafkaConfig: SmartConfig
     ): CompactedSubscription<String, Group> {
         return subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_GROUP_TOPIC),
+            SubscriptionConfig(CONSUMER_GROUP, RPC_PERM_GROUP_TOPIC),
             permissionCacheTopicProcessorFactory.createGroupTopicProcessor(groupData) {
                 coordinator.postEvent(GroupTopicSnapshotReceived())
             },
@@ -189,9 +208,22 @@ class PermissionCacheService @Activate constructor(
         kafkaConfig: SmartConfig
     ): CompactedSubscription<String, Role> {
         return subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CONSUMER_GROUP, Schema.RPC_PERM_ROLE_TOPIC),
+            SubscriptionConfig(CONSUMER_GROUP, RPC_PERM_ROLE_TOPIC),
             permissionCacheTopicProcessorFactory.createRoleTopicProcessor(roleData) {
                 coordinator.postEvent(RoleTopicSnapshotReceived())
+            },
+            kafkaConfig
+        )
+    }
+
+    private fun createPermissionSubscription(
+        permissionData: ConcurrentHashMap<String, Permission>,
+        kafkaConfig: SmartConfig
+    ): CompactedSubscription<String, Permission> {
+        return subscriptionFactory.createCompactedSubscription(
+            SubscriptionConfig(CONSUMER_GROUP, RPC_PERM_ENTITY_TOPIC),
+            permissionCacheTopicProcessorFactory.createPermissionTopicProcessor(permissionData) {
+                coordinator.postEvent(PermissionTopicSnapshotReceived())
             },
             kafkaConfig
         )

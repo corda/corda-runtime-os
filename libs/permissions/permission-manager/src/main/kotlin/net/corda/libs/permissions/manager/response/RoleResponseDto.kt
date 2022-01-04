@@ -11,5 +11,5 @@ data class RoleResponseDto(
     val lastUpdatedTimestamp: Instant,
     val roleName: String,
     val groupVisibility: String?,
-    val permissions: List<PermissionResponseDto>
+    val permissions: List<PermissionAssociationResponseDto>
 )

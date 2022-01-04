@@ -1,7 +1,7 @@
 package net.corda.cpiinfo.read.impl
 
-import net.corda.cpiinfo.CpiInfoListener
-import net.corda.cpiinfo.CpiInfoReader
+import net.corda.cpiinfo.read.CpiInfoListener
+import net.corda.cpiinfo.read.CpiInfoReader
 import net.corda.data.packaging.CPIIdentifier
 import net.corda.data.packaging.CPIMetadata
 import net.corda.messaging.api.processor.CompactedProcessor

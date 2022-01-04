@@ -61,10 +61,16 @@ class PermissionValidatorImpl(
         val roles = roleIds.mapNotNull { permissionCache.getRole(it) }
 
         val permissionRequested: String = permissionUrl.permissionRequested
-        val allPermissions = roles.flatMap { it.permissions.map { permissionAssociation -> permissionAssociation.permission } }
+        val allPermissions = roles.flatMap {
+            it.permissions.map { permissionAssociation ->
+                requireNotNull(permissionCache.getPermission(permissionAssociation.permissionId)) {
+                    "Permission for ${permissionAssociation.permissionId} cannot be found in the cache"
+                }
+            }
+        }
 
         // Perform checks, with deny taking priority over allow
-        val (denies, allows) = allPermissions.partition { it.type == PermissionType.DENY }
+        val (denies, allows) = allPermissions.partition { it.permissionType == PermissionType.DENY }
         if (denies.any { wildcardMatch(it, permissionRequested) }) {
             logger.debug { "Explicitly denied by: '${denies.first { wildcardMatch(it, permissionRequested) }}'" }
             return false

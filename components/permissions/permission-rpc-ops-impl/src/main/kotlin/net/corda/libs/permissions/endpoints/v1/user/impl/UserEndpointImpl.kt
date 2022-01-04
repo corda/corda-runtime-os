@@ -45,7 +45,7 @@ class UserEndpointImpl @Activate constructor(
             createUserType.convertToDto(principal)
         )
 
-        return createUserResult.getOrThrow().convertToEndpointType()
+        return createUserResult.convertToEndpointType()
     }
 
     override fun getUser(loginName: String): UserResponseType {

@@ -48,8 +48,12 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
-import net.corda.p2p.schema.Schema
-import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -129,14 +133,14 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
     ) { outboundMessageProcessor.processAuthenticatedMessage(it, true) }
 
     private val inboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schema.LINK_IN_TOPIC, instanceId),
+        SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, LINK_IN_TOPIC, instanceId),
         InboundMessageProcessor(sessionManager, linkManagerNetworkMap, inboundAssignmentListener),
         configuration,
         partitionAssignmentListener = inboundAssignmentListener
     )
 
     private val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schema.P2P_OUT_TOPIC, instanceId),
+        SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, P2P_OUT_TOPIC, instanceId),
         outboundMessageProcessor,
         configuration,
         partitionAssignmentListener = null
@@ -227,7 +231,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 listOf(Record(P2P_IN_TOPIC, generateKey(), AppMessage(message)))
             } else {
                 val linkOutMessage = linkOutFromUnauthenticatedMessage(message, networkMap)
-                listOf(Record(Schema.LINK_OUT_TOPIC, generateKey(), linkOutMessage))
+                listOf(Record(LINK_OUT_TOPIC, generateKey(), linkOutMessage))
             }
         }
 
@@ -268,16 +272,11 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         }
 
         private fun recordsForNewSession(state: SessionState.NewSessionNeeded): List<Record<String, *>> {
-            val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
-            return if(partitions.isEmpty()) {
-                logger.warn("No partitions from topic ${Schema.LINK_IN_TOPIC} are currently assigned to the inbound message processor.")
-                emptyList()
-            } else {
-                val records = mutableListOf<Record<String, *>>()
-                records.add(Record(Schema.LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage))
-                records.add(Record(Schema.SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions)))
-                records
-            }
+            val records = mutableListOf<Record<String, *>>()
+            records.add(Record(LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage))
+            val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
+            records.add(Record(SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions)))
+            return records
         }
 
         private fun recordsForSessionEstablished(
@@ -295,12 +294,12 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         private fun recordForLMSentMarker(message: AuthenticatedMessageAndKey, messageId: String): Record<String, AppMessageMarker> {
             val marker = AppMessageMarker(LinkManagerSentMarker(message), Instant.now().toEpochMilli())
-            return Record(Schema.P2P_OUT_MARKERS, messageId, marker)
+            return Record(P2P_OUT_MARKERS, messageId, marker)
         }
 
         private fun recordForLMReceivedMarker(messageId: String): Record<String, AppMessageMarker> {
             val marker = AppMessageMarker(LinkManagerReceivedMarker(), Instant.now().toEpochMilli())
-            return Record(Schema.P2P_OUT_MARKERS, messageId, marker)
+            return Record(P2P_OUT_MARKERS, messageId, marker)
         }
     }
 
@@ -343,22 +342,19 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         private fun processSessionMessage(message: LinkInMessage): List<Record<String, *>> {
             val response = sessionManager.processSessionMessage(message)
-            val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions(Schema.LINK_IN_TOPIC).toList()
-            return if (response != null && partitionsAssigned.isNotEmpty()) {
+            return if (response != null) {
                 when(val payload = message.payload) {
                     is InitiatorHelloMessage -> {
+                        val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
                         listOf(
-                            Record(Schema.LINK_OUT_TOPIC, generateKey(), response),
-                            Record(Schema.SESSION_OUT_PARTITIONS, payload.header.sessionId, SessionPartitions(partitionsAssigned))
+                            Record(LINK_OUT_TOPIC, generateKey(), response),
+                            Record(SESSION_OUT_PARTITIONS, payload.header.sessionId, SessionPartitions(partitionsAssigned))
                         )
                     }
                     else -> {
-                        listOf(Record(Schema.LINK_OUT_TOPIC, generateKey(), response))
+                        listOf(Record(LINK_OUT_TOPIC, generateKey(), response))
                     }
                 }
-            } else if(partitionsAssigned.isEmpty()) {
-                logger.warn("No partitions from topic ${Schema.LINK_IN_TOPIC} are currently assigned to the inbound message processor.")
-                emptyList()
             } else {
                 emptyList()
             }
@@ -462,7 +458,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 networkMap
             ) ?: return null
             return Record(
-                Schema.LINK_OUT_TOPIC,
+                LINK_OUT_TOPIC,
                 generateKey(),
                 ack
             )
@@ -480,7 +476,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 networkMap
             ) ?: return null
             return Record(
-                Schema.LINK_OUT_TOPIC,
+                LINK_OUT_TOPIC,
                 generateKey(),
                 ack
             )
@@ -488,7 +484,7 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         private fun makeMarkerForAckMessage(message: AuthenticatedMessageAck): Record<String, AppMessageMarker> {
             return Record(
-                Schema.P2P_OUT_MARKERS,
+                P2P_OUT_MARKERS,
                 message.messageId,
                 AppMessageMarker(LinkManagerReceivedMarker(), Instant.now().toEpochMilli())
             )
@@ -589,7 +585,7 @@ fun recordsForSessionEstablished(
     val key = LinkManager.generateKey()
     sessionManager.dataMessageSent(session)
     linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session, networkMap)?. let {
-        records.add(Record(Schema.LINK_OUT_TOPIC, key, it))
+        records.add(Record(LINK_OUT_TOPIC, key, it))
     }
     return records
 }

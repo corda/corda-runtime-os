@@ -2,6 +2,7 @@ package net.corda.p2p.linkmanager.sessions
 
 import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -18,7 +19,6 @@ import net.corda.p2p.HeartbeatMessage
 import net.corda.p2p.LinkInMessage
 import net.corda.p2p.LinkOutMessage
 import net.corda.p2p.app.AuthenticatedMessage
-import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
@@ -30,7 +30,6 @@ import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
-import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.LinkManagerCryptoService
 import net.corda.p2p.linkmanager.LinkManagerNetworkMap
@@ -47,7 +46,9 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.ourId
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerHashNotInNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.peerNotInTheNetworkMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.Companion.validationFailedWarning
-import net.corda.p2p.schema.Schema
+import net.corda.p2p.linkmanager.utilities.AutoClosableScheduledExecutorService
+import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
@@ -57,13 +58,13 @@ import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 @Suppress("LongParameterList", "TooManyFunctions")
 open class SessionManagerImpl(
@@ -234,7 +235,7 @@ open class SessionManagerImpl(
         sessionReplayer.removeAllMessagesFromReplay()
         heartbeatManager.stopTrackingAllSessions()
         val tombstoneRecords = (activeOutboundSessionsById.keys + pendingOutboundSessions.keys + activeInboundSessions.keys
-                + pendingInboundSessions.keys).map { Record(Schema.SESSION_OUT_PARTITIONS, it, null) }
+                + pendingInboundSessions.keys).map { Record(SESSION_OUT_PARTITIONS, it, null) }
         activeOutboundSessions.clear()
         activeOutboundSessionsById.clear()
         pendingOutboundSessions.clear()
@@ -258,7 +259,7 @@ open class SessionManagerImpl(
             pendingOutboundSessions.remove(sessionId)
             pendingOutboundSessionKeys.remove(sessionKey)
             pendingOutboundSessionMessageQueues.destroyQueue(sessionKey)
-            publisher.publish(listOf(Record(Schema.SESSION_OUT_PARTITIONS, sessionId, null)))
+            publisher.publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, null)))
         }
     }
 
@@ -737,7 +738,7 @@ open class SessionManagerImpl(
             val future = publisher.publish(
                 listOf(
                     Record(
-                        Schema.LINK_OUT_TOPIC,
+                        LINK_OUT_TOPIC,
                         UUID.randomUUID().toString(),
                         message
                     )
