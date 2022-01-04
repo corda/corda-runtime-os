@@ -274,7 +274,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
         private fun recordsForNewSession(state: SessionState.NewSessionNeeded): List<Record<String, *>> {
             val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
             return if(partitions.isEmpty()) {
-                logger.warn("No partitions from topic ${LINK_IN_TOPIC} are currently assigned to the inbound message processor.")
+                logger.warn("No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
+                        " Session ${state.sessionId} will not be initiated.")
                 emptyList()
             } else {
                 val records = mutableListOf<Record<String, *>>()
