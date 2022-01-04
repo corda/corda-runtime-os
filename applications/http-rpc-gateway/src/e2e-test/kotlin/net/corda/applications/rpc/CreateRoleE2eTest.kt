@@ -128,7 +128,7 @@ class CreateRoleE2eTest {
 
             // Try to add same association again when it already exists
             assertThatThrownBy { proxy.addPermission(roleId, permId) }.isInstanceOf(InternalErrorException::class.java)
-                .hasMessageContaining("Error while committing the transaction")
+                .hasMessageContaining("Permission '$permId' is already associated with Role '$roleId'.")
 
             val roleWithPermissionRemoved = proxy.removePermission(roleId, permId)
             assertTrue(roleWithPermissionRemoved.permissions.isEmpty())

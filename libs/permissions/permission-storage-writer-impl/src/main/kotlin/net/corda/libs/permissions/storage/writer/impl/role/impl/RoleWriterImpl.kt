@@ -78,6 +78,10 @@ class RoleWriterImpl(
                 "Unable to find Role with Id: ${request.roleId}"
             }
 
+            require(role.rolePermAssociations.none { it.permission.id == request.permissionId }) {
+                "Permission '${request.permissionId}' is already associated with Role '${request.roleId}'."
+            }
+
             val permission = requireNotNull(entityManager.find(Permission::class.java, request.permissionId)) {
                 "Unable to find Permission with Id: ${request.permissionId}"
             }
