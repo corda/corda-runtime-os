@@ -14,6 +14,7 @@ dependencies {
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-topic-schema'
 
+    implementation project(':components:configuration:configuration-read-service')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:http-rpc:http-rpc-common')
     implementation project(':libs:lifecycle:lifecycle')

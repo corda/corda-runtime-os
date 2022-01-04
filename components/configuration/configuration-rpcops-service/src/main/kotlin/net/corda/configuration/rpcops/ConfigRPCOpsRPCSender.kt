@@ -7,7 +7,7 @@ import net.corda.v5.base.concurrent.getOrThrow
 import org.osgi.service.component.annotations.Component
 import java.time.Duration
 
-// TODO - Joel - Describe.
+// TODO - Joel - Put this back into `ConfigRPCOpsImpl`.
 @Component(service = [ConfigRPCOpsRPCSender::class])
 class ConfigRPCOpsRPCSender {
     // TODO - Joel - Set this timeout based on the configuration.

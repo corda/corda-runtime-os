@@ -11,12 +11,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-// TODO - Joel - There's an issue with two copies of this component being created - one by the service, and one used
-//  for HTTP. Probs create a new component that the event handler sets up, and this component delegates to. May not
-//  need an interface/impl split for the endpoints in that case. This new component should have start and stop methods
-//  that the event handler can call (rather than event handler holding rpcSender ref). New component should probs have
-//  a lifecycle too (since it is startable/stoppable).
-
 /** An implementation of [ConfigRPCOps]. */
 @Suppress("Unused")
 @Component(service = [ConfigRPCOps::class, PluggableRPCOps::class], immediate = true)

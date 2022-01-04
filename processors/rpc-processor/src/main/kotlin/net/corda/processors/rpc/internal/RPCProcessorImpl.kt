@@ -45,8 +45,6 @@ class RPCProcessorImpl @Activate constructor(
         httpRpcGateway.start()
 
         configRPCOpsService.start()
-        // TODO - Joel - This is wrong, it should be reading from the config read service.
-        configRPCOpsService.startProcessing(config)
 
         val publisherConfig = PublisherConfig("joels-client", 999)
         val publisher = publisherFactory.createPublisher(publisherConfig, config)
