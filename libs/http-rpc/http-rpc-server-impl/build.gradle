@@ -34,7 +34,7 @@ dependencies {
     // Transitive dependency bump to eliminate critical violation in NexusIQ report - see nexus iq report.
     // Constraints block can be removed when Swagger is upgraded to the next version
     constraints {
-        implementation('com.fasterxml.jackson.core:jackson-databind:2.13+') {
+        implementation("com.fasterxml.jackson.core:$jacksonVersion") {
             because 'sonatype-2021-4682'
         }
     }
@@ -48,6 +48,7 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly 'org.osgi:osgi.core'
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     runtimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
     runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
