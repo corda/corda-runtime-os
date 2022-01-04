@@ -15,7 +15,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.config.MembershipConfig
 import net.corda.membership.config.MembershipConfigConstants.CONFIG_KEY
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
-import net.corda.membership.impl.read.component.MembershipGroupReadServiceImpl
+import net.corda.membership.impl.read.component.MembershipGroupReaderProviderImpl
 import net.corda.membership.impl.read.lifecycle.MembershipGroupReadLifecycleHandler.Impl.MembershipGroupConfigurationHandler
 import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
 import net.corda.membership.lifecycle.MembershipConfigReceived
@@ -48,7 +48,7 @@ class MembershipGroupReadLifecycleHandlerTest {
     val coordinatorFactory: LifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
         doReturn(readServiceCoordinator).whenever(this).createCoordinator(any(), any())
     }
-    private val membershipGroupReadService: MembershipGroupReadServiceImpl = MembershipGroupReadServiceImpl(
+    private val membershipGroupReadService: MembershipGroupReaderProviderImpl = MembershipGroupReaderProviderImpl(
         virtualNodeInfoReader, cpiInfoReader, configurationReadService, mock(), coordinatorFactory
     )
     private val membershipGroupReadSubscriptions: MembershipGroupReadSubscriptions = mock()

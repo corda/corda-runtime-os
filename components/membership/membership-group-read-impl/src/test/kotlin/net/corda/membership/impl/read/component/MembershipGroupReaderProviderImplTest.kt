@@ -25,13 +25,13 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 /**
- * Tests for [MembershipGroupReadServiceImpl]. Test are kept to a minimum because the implementation doesn't contain
+ * Tests for [MembershipGroupReaderProviderImpl]. Test are kept to a minimum because the implementation doesn't contain
  * much actual implementation code but rather uses other classes which have more specific purposes. Each are tested
  * separately to this class.
  */
-class MembershipGroupReadServiceImplTest {
+class MembershipGroupReaderProviderImplTest {
 
-    private lateinit var membershipGroupReadService: MembershipGroupReadServiceImpl
+    private lateinit var membershipGroupReadService: MembershipGroupReaderProviderImpl
 
     private val memberName = aliceName
 
@@ -52,7 +52,7 @@ class MembershipGroupReadServiceImplTest {
 
     @BeforeEach
     fun setUp() {
-        membershipGroupReadService = MembershipGroupReadServiceImpl(
+        membershipGroupReadService = MembershipGroupReaderProviderImpl(
             virtualNodeInfoReader,
             cpiInfoReader,
             configurationReadService,
@@ -91,6 +91,6 @@ class MembershipGroupReadServiceImplTest {
         val e = assertThrows<CordaRuntimeException> {
             membershipGroupReadService.getGroupReader(HoldingIdentity(memberName.toString(), GROUP_ID_1))
         }
-        assertEquals(MembershipGroupReadServiceImpl.ACCESS_TOO_EARLY, e.message)
+        assertEquals(MembershipGroupReaderProviderImpl.ACCESS_TOO_EARLY, e.message)
     }
 }

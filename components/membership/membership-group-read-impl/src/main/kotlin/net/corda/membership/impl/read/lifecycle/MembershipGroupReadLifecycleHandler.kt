@@ -16,7 +16,7 @@ import net.corda.membership.config.MembershipConfig
 import net.corda.membership.config.MembershipConfigConstants
 import net.corda.membership.impl.config.MembershipConfigImpl
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
-import net.corda.membership.impl.read.component.MembershipGroupReadServiceImpl
+import net.corda.membership.impl.read.component.MembershipGroupReaderProviderImpl
 import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
 import net.corda.membership.lifecycle.MembershipConfigReceived
 import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
@@ -29,7 +29,7 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
      * Default implementation.
      */
     class Impl(
-        private val membershipGroupReadService: MembershipGroupReadServiceImpl,
+        private val membershipGroupReadService: MembershipGroupReaderProviderImpl,
         private val membershipGroupReadSubscriptions: MembershipGroupReadSubscriptions,
         private val membershipGroupReadCache: MembershipGroupReadCache
     ) : MembershipGroupReadLifecycleHandler {

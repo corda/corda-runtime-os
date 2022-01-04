@@ -11,7 +11,7 @@ import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.impl.read.lifecycle.MembershipGroupReadLifecycleHandler
 import net.corda.membership.impl.read.reader.MembershipGroupReaderFactory
 import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
-import net.corda.membership.read.MembershipGroupReadService
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -22,7 +22,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 /**
- * Membership component implementing [MembershipGroupReadService].
+ * Membership component implementing [MembershipGroupReaderProvider].
  *
  * This component is to be used for internal lookups of membership group data. This includes member lists, group
  * parameters, CPI whitelists and group policies.
@@ -32,8 +32,8 @@ import org.osgi.service.component.annotations.Reference
  * will not be available until subscriptions have been created meaning lookups done before configuration has been
  * received will return no results.
  */
-@Component(service = [MembershipGroupReadService::class])
-class MembershipGroupReadServiceImpl @Activate constructor(
+@Component(service = [MembershipGroupReaderProvider::class])
+class MembershipGroupReaderProviderImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReaderComponent::class)
     val virtualNodeInfoReader: VirtualNodeInfoReaderComponent,
     @Reference(service = CpiInfoReaderComponent::class)
@@ -44,7 +44,7 @@ class MembershipGroupReadServiceImpl @Activate constructor(
     val subscriptionFactory: SubscriptionFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     val coordinatorFactory: LifecycleCoordinatorFactory
-) : MembershipGroupReadService, Lifecycle {
+) : MembershipGroupReaderProvider, Lifecycle {
 
     companion object {
         const val ACCESS_TOO_EARLY = "Tried to read group data before starting the component."
@@ -71,7 +71,7 @@ class MembershipGroupReadServiceImpl @Activate constructor(
 
     // Component lifecycle coordinator
     private val coordinator =
-        coordinatorFactory.createCoordinator<MembershipGroupReadService>(lifecycleHandler)
+        coordinatorFactory.createCoordinator<MembershipGroupReaderProvider>(lifecycleHandler)
 
     // Component is running when it's coordinator has started.
     override val isRunning
