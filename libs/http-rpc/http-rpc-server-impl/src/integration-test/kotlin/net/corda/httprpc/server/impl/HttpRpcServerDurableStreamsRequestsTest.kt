@@ -59,7 +59,7 @@ class HttpRpcServerDurableStreamsRequestsTest {
 
         val response = HttpRpcServerTestBase.client.call(net.corda.httprpc.tools.HttpVerb.POST, WebRequest<Any>("numberseq/retrieve", requestBody), HttpRpcServerTestBase.userName, HttpRpcServerTestBase.password)
 
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+        assertEquals(HttpStatus.SC_OK, response.responseStatus, response.toString())
         assertEquals(responseBody, response.body)
     }
 
