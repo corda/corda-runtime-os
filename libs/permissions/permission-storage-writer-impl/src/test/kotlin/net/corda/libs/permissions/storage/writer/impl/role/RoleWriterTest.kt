@@ -284,4 +284,28 @@ class RoleWriterTest {
             verify(entityTransaction).rollback()
         }
     }
+
+    @Test
+    fun `remove permission from role fails when permission is not associated`() {
+        val roleId = "roleId"
+        val permId = "permId"
+
+        val role = Role(roleId, Instant.now(), "role", null)
+        val permission = Permission(permId, Instant.now(), null, null,
+            PermissionType.ALLOW, "permString")
+        val association = RolePermissionAssociation("assocId", role, permission, Instant.now())
+        role.rolePermAssociations.add(association)
+
+        whenever(entityManager.find(Role::class.java, roleId)).thenReturn(role)
+
+        val request = RemovePermissionFromRoleRequest(roleId, "oddPermId")
+        assertThatThrownBy {
+            roleWriter.removePermissionFromRole(request, requestUserId)
+        }.isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("is not associated with a role")
+
+        inOrder(entityTransaction) {
+            verify(entityTransaction).begin()
+            verify(entityTransaction).rollback()
+        }
+    }
 }
