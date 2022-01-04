@@ -3,7 +3,9 @@ package net.corda.libs.permissions.manager.impl
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
+import net.corda.data.permissions.management.role.AddPermissionToRoleRequest
 import net.corda.data.permissions.management.role.CreateRoleRequest
+import net.corda.data.permissions.management.role.RemovePermissionFromRoleRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.manager.PermissionRoleManager
@@ -28,7 +30,7 @@ class PermissionRoleManagerImpl(
         val future = rpcSender.sendRequest(
             PermissionManagementRequest(
                 createRoleRequestDto.requestedBy,
-                "cluster",
+                null,
                 CreateRoleRequest(
                     createRoleRequestDto.roleName,
                     createRoleRequestDto.groupVisibility
@@ -48,5 +50,47 @@ class PermissionRoleManagerImpl(
     override fun getRole(roleRequestDto: GetRoleRequestDto): RoleResponseDto? {
         val cachedRole: Role = permissionCache.getRole(roleRequestDto.roleId) ?: return null
         return cachedRole.convertToResponseDto()
+    }
+
+    override fun addPermissionToRole(roleId: String, permissionId: String, principal: String): RoleResponseDto {
+        val future = rpcSender.sendRequest(
+            PermissionManagementRequest(
+                principal,
+                null,
+                AddPermissionToRoleRequest(
+                    roleId,
+                    permissionId
+                )
+            )
+        )
+
+        val futureResponse = future.getOrThrow(writerTimeout)
+
+        val result = futureResponse.response
+        if (result !is Role)
+            throw PermissionManagerException("Unknown response for Add Permission to Role: $result")
+
+        return result.convertToResponseDto()
+    }
+
+    override fun removePermissionFromRole(roleId: String, permissionId: String, principal: String): RoleResponseDto {
+        val future = rpcSender.sendRequest(
+            PermissionManagementRequest(
+                principal,
+                null,
+                RemovePermissionFromRoleRequest(
+                    roleId,
+                    permissionId
+                )
+            )
+        )
+
+        val futureResponse = future.getOrThrow(writerTimeout)
+
+        val result = futureResponse.response
+        if (result !is Role)
+            throw PermissionManagerException("Unknown response for Remove Permission from Role: $result")
+
+        return result.convertToResponseDto()
     }
 }
