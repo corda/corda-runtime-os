@@ -94,11 +94,11 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
     @Input
     final Property<String> baseImageName =
-            getObjects().property(String).convention('azul/zulu-openjdk-alpine')
+            getObjects().property(String).convention('engineering-docker-dev.software.r3.com/corda-runtime-os-base')
 
     @Input
     final Property<String> baseImageTag =
-            getObjects().property(String).convention('11')
+            getObjects().property(String).convention('5.0-alpha-9abfd77')
 
     @Input
     final ListProperty<String> arguments =
@@ -132,6 +132,8 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         Files.copy(Paths.get(overrideFile.getAsFile().get().getPath()), Paths.get(jarLocation), StandardCopyOption.REPLACE_EXISTING)
 
         RegistryImage baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
+                .addCredential(registryUsername.get(), registryPassword.get())
+
 
         JibContainerBuilder builder = Jib.from(baseImage)
                 .setCreationTime(Instant.now())
