@@ -34,6 +34,7 @@ class UserWriterImpl(
 
             val parentGroup = if (request.parentGroupId != null) {
                 requireNotNull(entityManager.find(Group::class.java, request.parentGroupId)) {
+                    entityManager.transaction.setRollbackOnly()
                     "Failed to create new user: $loginName as the specified parent group: ${request.parentGroupId} does not exist."
                 }
             } else {
@@ -78,6 +79,9 @@ class UserWriterImpl(
             .setParameter("loginName", loginName)
             .singleResult as Long
 
-        require(result == 0L) { "Failed to create new user: $loginName as they already exist." }
+        require(result == 0L) {
+            entityManager.transaction.setRollbackOnly()
+            "Failed to create new user: $loginName as they already exist."
+        }
     }
 }
