@@ -8,7 +8,6 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.subscription.factory.CordaSubscriptionFactory
 import org.junit.jupiter.api.BeforeEach
@@ -22,7 +21,6 @@ class CordaSubscriptionFactoryTest {
 
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
     private val cordaAvroSerializer: CordaAvroSerializer<Any> = mock()
-    private val publisherFactory: PublisherFactory = mock()
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private lateinit var factory: CordaSubscriptionFactory
@@ -35,7 +33,6 @@ class CordaSubscriptionFactoryTest {
         config = ConfigFactory.load()
         factory = CordaSubscriptionFactory(
             cordaAvroSerializationFactory,
-            publisherFactory,
             lifecycleCoordinatorFactory,
             mock(),
             mock(),

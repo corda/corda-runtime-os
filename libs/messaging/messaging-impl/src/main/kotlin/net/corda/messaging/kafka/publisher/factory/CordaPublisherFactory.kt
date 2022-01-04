@@ -7,6 +7,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CORDA_PRODUCER
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.GROUP
+import net.corda.messagebus.api.configuration.ConfigProperties.Companion.INSTANCE_ID
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.configuration.ConfigProperties.Companion.PATTERN_PUBLISHER
@@ -76,14 +77,13 @@ class CordaPublisherFactory @Activate constructor(
             PATTERN_RPC_SENDER
         )
 
-        val producerBuilder = KafkaProducerBuilderImpl(avroSchemaRegistry)
         val serializer = avroSerializationFactory.createAvroSerializer<REQUEST> {  }
         val deserializer = avroSerializationFactory.createAvroDeserializer({}, rpcConfig.responseType)
 
         return CordaKafkaRPCSenderImpl(
             publisherConfig,
             cordaConsumerBuilder,
-            producerBuilder,
+            cordaProducerBuilder,
             serializer,
             deserializer,
             lifecycleCoordinatorFactory

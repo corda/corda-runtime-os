@@ -13,7 +13,6 @@ import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -58,8 +57,6 @@ import java.util.concurrent.atomic.AtomicInteger
 class CordaSubscriptionFactory @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CordaProducerBuilder::class)
@@ -225,7 +222,6 @@ class CordaSubscriptionFactory @Activate constructor(
             clientIdCounter.getAndIncrement(),
             PATTERN_RPC_RESPONDER
         )
-        val producerBuilder = KafkaProducerBuilderImpl(avroSchemaRegistry)
 
         val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE>{ }
         val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, rpcConfig.requestType)
@@ -233,7 +229,7 @@ class CordaSubscriptionFactory @Activate constructor(
         return RPCSubscriptionImpl(
             config,
             cordaConsumerBuilder,
-            producerBuilder,
+            cordaProducerBuilder,
             responderProcessor,
             cordaAvroSerializer,
             cordaAvroDeserializer,

@@ -14,13 +14,13 @@ import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUME
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.producer.CordaProducer
+import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.kafka.producer.builder.ProducerBuilder
-import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
@@ -39,7 +39,7 @@ import kotlin.concurrent.withLock
 class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: Config,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
-    private val producerBuilder: ProducerBuilder,
+    private val producerBuilder: CordaProducerBuilder,
     private val responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>,
     private val serializer: CordaAvroSerializer<RESPONSE>,
     private val deserializer: CordaAvroDeserializer<REQUEST>,
@@ -53,7 +53,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
-    private lateinit var producer: CordaKafkaProducer
+    private lateinit var producer: CordaProducer
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaRPCSubscription-$topic",
@@ -181,7 +181,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             val future = CompletableFuture<RESPONSE>()
 
             future.whenComplete { response, error ->
-                val record: Record<String, RPCResponse>?
+                val record: CordaProducerRecord<String, RPCResponse>?
                 when {
                     //the order of these is important due to how the futures api is
                     future.isCancelled -> {
@@ -233,8 +233,8 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         key: String,
         status: ResponseStatus,
         payload: ByteArray
-    ): Record<String, RPCResponse> {
-        return Record(
+    ): CordaProducerRecord<String, RPCResponse> {
+        return CordaProducerRecord(
             topic,
             key,
             RPCResponse(
