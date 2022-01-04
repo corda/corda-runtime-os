@@ -1,0 +1,32 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Kafka Message Bus Impl'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:messaging:message-bus")
+    implementation project(":libs:schema-registry:schema-registry")
+    implementation project(":libs:configuration:configuration-core")
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-base"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":testing:test-utilities")
+
+    testRuntimeOnly 'org.osgi:osgi.core'
+}
+

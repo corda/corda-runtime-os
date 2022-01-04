@@ -28,7 +28,7 @@ class ConfigProperties {
         const val SUBSCRIBE_MAX_RETRIES = "subscribe.retries"
         const val COMMIT_OFFSET_MAX_RETRIES = "commit.retries"
 
-        const val GROUP_ID = "consumer.id"
+        const val GROUP_ID = "group.id"
         const val PRODUCER_CLIENT_ID = "producer.client.id"
         const val CONSUMER_GROUP_ID = "consumer.group.id"
         const val CONSUMER_MAX_POLL_INTERVAL = "consumer.max.poll.interval.ms"

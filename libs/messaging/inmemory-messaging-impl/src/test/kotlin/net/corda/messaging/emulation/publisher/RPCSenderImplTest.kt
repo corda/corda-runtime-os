@@ -3,7 +3,7 @@ package net.corda.messaging.emulation.publisher
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
-import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.emulation.rpc.RPCTopicService
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
