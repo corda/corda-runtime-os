@@ -40,7 +40,7 @@ class TestStateAndEventListenerStrings(
             Thread.sleep(delayOnCommit)
         }
 
-        if (!expectedCommitState.isNullOrEmpty() && updatedStates == expectedCommitState[onCommitCount]) {
+        if (expectedCommitState?.contains(updatedStates) == true) {
             commitStateLatch?.countDown()
         }
         println("======== COMMIT =======")

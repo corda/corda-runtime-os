@@ -1,6 +1,5 @@
 package net.corda.permissions.cache
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.Group
 import net.corda.data.permissions.Role
@@ -23,13 +22,14 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.rpc.schema.Schema
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.concurrent.ConcurrentHashMap
 
 private data class NewConfigurationReceivedEvent(val config: SmartConfig): LifecycleEvent
 

@@ -26,7 +26,8 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
-    runtimeOnly project(":libs:messaging:kafka-messaging-impl")
+    runtimeOnly project(":libs:messaging:messaging-impl")
+    runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly project(":libs:configuration:configuration-read-impl")

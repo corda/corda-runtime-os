@@ -1,6 +1,6 @@
 package net.corda.messaging.emulation.subscription.stateandevent
 
-import net.corda.messaging.api.subscription.PartitionAssignmentListener
+import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.emulation.topic.model.CommitStrategy
 import net.corda.messaging.emulation.topic.model.Consumer
 import net.corda.messaging.emulation.topic.model.OffsetStrategy
@@ -16,7 +16,7 @@ internal class EventConsumer<K : Any, E : Any>(
     override val offsetStrategy = OffsetStrategy.EARLIEST
     override val commitStrategy = CommitStrategy.COMMIT_AFTER_PROCESSING
     override val partitionStrategy = PartitionStrategy.DIVIDE_PARTITIONS
-    override val partitionAssignmentListener = object : PartitionAssignmentListener{
+    override val partitionAssignmentListener = object : PartitionAssignmentListener {
         override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {
             subscription.subscription.topicService.manualUnAssignPartitions(
                 subscription.subscription.stateSubscription.consumer,
