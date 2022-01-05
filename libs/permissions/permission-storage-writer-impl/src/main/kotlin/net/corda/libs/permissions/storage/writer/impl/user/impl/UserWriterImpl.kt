@@ -151,7 +151,6 @@ class UserWriterImpl(
             parentGroup = parentGroup,
             updateTimestamp = updateTimestamp
         )
-        user.version = 0
 
         entityManager.persist(user)
 
@@ -200,7 +199,7 @@ class UserWriterImpl(
             id = UUID.randomUUID().toString(),
             updateTimestamp = updateTimestamp,
             actorUser = requestUserId,
-            changeType = RPCPermissionOperation.REMOVE_ROLE_FROM_USER,
+            changeType = RPCPermissionOperation.DELETE_ROLE_FROM_USER,
             details = "Role '${role.id}' unassigned from User '${user.id}' by '$requestUserId'."
         )
         user.roleUserAssociations.remove(association)

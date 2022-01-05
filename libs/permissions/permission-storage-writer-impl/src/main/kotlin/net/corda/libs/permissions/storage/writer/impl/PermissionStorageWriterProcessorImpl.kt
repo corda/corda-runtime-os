@@ -68,16 +68,6 @@ class PermissionStorageWriterProcessorImpl(
                     permissionStorageReader.publishUpdatedRole(avroRole)
                     avroRole
                 }
-                is AddRoleToUserRequest -> {
-                    val avroUser = userWriter.addRoleToUser(permissionRequest, request.requestUserId)
-                    permissionStorageReader.publishUpdatedUser(avroUser)
-                    avroUser
-                }
-                is RemoveRoleFromUserRequest -> {
-                    val avroUser = userWriter.removeRoleFromUser(permissionRequest, request.requestUserId)
-                    permissionStorageReader.publishUpdatedUser(avroUser)
-                    avroUser
-                }
                 else -> throw IllegalArgumentException("Received invalid permission request type")
             }
             respFuture.complete(PermissionManagementResponse(response))
