@@ -130,8 +130,8 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             consumeLoopThread = null
             threadTmp
         }
-        producer?.close()
         thread?.join(consumerThreadStopTimeout)
+        producer?.close()
     }
 
     private fun runConsumeLoop() {
