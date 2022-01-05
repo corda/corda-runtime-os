@@ -8,7 +8,7 @@
       "type": "string"
     },
     {
-      "name": "roleName",
+      "name": "roleId",
       "type": "string"
     }
   ]
