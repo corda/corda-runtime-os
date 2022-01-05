@@ -17,4 +17,14 @@ interface PermissionRoleManager {
      * Get a role in the RBAC Permission System identified by its ID.
      */
     fun getRole(roleRequestDto: GetRoleRequestDto): RoleResponseDto?
+
+    /**
+     * Add permission to a role
+     */
+    fun addPermissionToRole(roleId: String, permissionId: String, principal: String): RoleResponseDto
+
+    /**
+     * Remove permission from a role
+     */
+    fun removePermissionFromRole(roleId: String, permissionId: String, principal: String): RoleResponseDto
 }
