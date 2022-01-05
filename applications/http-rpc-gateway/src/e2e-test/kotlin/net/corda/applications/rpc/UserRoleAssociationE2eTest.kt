@@ -88,7 +88,7 @@ class UserRoleAssociationE2eTest {
                 assertSoftly {
                     it.assertThat(loginName).isEqualTo(userName)
                     it.assertThat(roleAssociations).hasSize(1)
-                    it.assertThat(roleAssociations.first().id).isEqualTo(roleId)
+                    it.assertThat(roleAssociations.first().roleId).isEqualTo(roleId)
                 }
             }
         }

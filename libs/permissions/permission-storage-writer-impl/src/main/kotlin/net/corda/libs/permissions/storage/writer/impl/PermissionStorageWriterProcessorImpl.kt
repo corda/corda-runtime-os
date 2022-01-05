@@ -28,6 +28,7 @@ class PermissionStorageWriterProcessorImpl(
         val log = contextLogger()
     }
 
+    @Suppress("ComplexMethod")
     override fun onNext(request: PermissionManagementRequest, respFuture: CompletableFuture<PermissionManagementResponse>) {
         try {
             val response = when (val permissionRequest = request.request) {
@@ -66,6 +67,16 @@ class PermissionStorageWriterProcessorImpl(
                     val avroRole = roleWriter.removePermissionFromRole(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishUpdatedRole(avroRole)
                     avroRole
+                }
+                is AddRoleToUserRequest -> {
+                    val avroUser = userWriter.addRoleToUser(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishUpdatedUser(avroUser)
+                    avroUser
+                }
+                is RemoveRoleFromUserRequest -> {
+                    val avroUser = userWriter.removeRoleFromUser(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishUpdatedUser(avroUser)
+                    avroUser
                 }
                 else -> throw IllegalArgumentException("Received invalid permission request type")
             }

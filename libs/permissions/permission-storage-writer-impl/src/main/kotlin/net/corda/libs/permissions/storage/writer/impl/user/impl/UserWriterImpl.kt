@@ -33,17 +33,8 @@ class UserWriterImpl(
         log.debug { "Received request to create new user: $loginName" }
         return entityManagerFactory.transaction { entityManager ->
 
-            require(countUsersWithLoginName(entityManager, request.loginName) == 0L) {
-                "Failed to create user '${request.loginName}' as they already exist."
-            }
-
-            val parentGroup = if (request.parentGroupId != null) {
-                requireNotNull(entityManager.find(Group::class.java, request.parentGroupId)) {
-                    "Failed to create user '${request.loginName}'. The specified parent group '${request.parentGroupId}' does not exist."
-                }
-            } else {
-                null
-            }
+            validateUserDoesNotAlreadyExist(entityManager, request)
+            val parentGroup = validateAndGetOptionalParentGroup(request, entityManager)
 
             val user = persistNewUser(request, parentGroup, entityManager, requestUserId, loginName)
             user.toAvroUser()
@@ -56,7 +47,7 @@ class UserWriterImpl(
 
             val user = validateAndGetUniqueUser(entityManager, request.loginName)
             val role = validateAndGetUniqueRole(entityManager, request.roleId)
-            validateRoleNotAlreadyAssignedToUser(user, role)
+            validateRoleNotAlreadyAssignedToUser(entityManager, user, role)
 
             val resultUser = persistUserRoleAssociation(entityManager, requestUserId, user, role)
 
@@ -70,7 +61,7 @@ class UserWriterImpl(
 
             val user = validateAndGetUniqueUser(entityManager, request.loginName)
             val role = validateAndGetUniqueRole(entityManager, request.roleId)
-            val association = validateAndGetRoleAssociatedWithUser(user, role)
+            val association = validateAndGetRoleAssociatedWithUser(entityManager, user, role)
 
             val resultUser = removeUserRoleAssociation(entityManager, requestUserId, user, role, association)
 
@@ -78,11 +69,28 @@ class UserWriterImpl(
         }
     }
 
-    private fun countUsersWithLoginName(entityManager: EntityManager, loginName: String): Long {
-        return entityManager
+    private fun validateUserDoesNotAlreadyExist(entityManager: EntityManager, request: CreateUserRequest) {
+        val count = entityManager
             .createQuery("SELECT count(1) FROM User WHERE loginName = :loginName")
-            .setParameter("loginName", loginName)
+            .setParameter("loginName", request.loginName)
             .singleResult as Long
+
+        require(count == 0L) {
+            entityManager.transaction.setRollbackOnly()
+            "User with login '${request.loginName}' already exists."
+        }
+    }
+
+    private fun validateAndGetOptionalParentGroup(request: CreateUserRequest, entityManager: EntityManager): Group? {
+        val parentGroup = if (request.parentGroupId != null) {
+            requireNotNull(entityManager.find(Group::class.java, request.parentGroupId)) {
+                entityManager.transaction.setRollbackOnly()
+                "The specified parent group '${request.parentGroupId}' does not exist."
+            }
+        } else {
+            null
+        }
+        return parentGroup
     }
 
     private fun validateAndGetUniqueUser(entityManager: EntityManager, loginName: String): User {
@@ -91,7 +99,10 @@ class UserWriterImpl(
             .setParameter("loginName", loginName)
             .resultList
 
-        require(users.size == 1) { "User $loginName does not exist." }
+        require(users.size == 1) {
+            entityManager.transaction.setRollbackOnly()
+            "User '$loginName' does not exist."
+        }
 
         return users.first()
     }
@@ -102,20 +113,25 @@ class UserWriterImpl(
             .setParameter("id", roleId)
             .resultList
 
-        require(roles.size == 1) { "Role '$roleId' does not exist." }
+        require(roles.size == 1) {
+            entityManager.transaction.setRollbackOnly()
+            "Role '$roleId' does not exist."
+        }
 
         return roles.first()
     }
 
-    private fun validateRoleNotAlreadyAssignedToUser(user: User, role: Role) {
+    private fun validateRoleNotAlreadyAssignedToUser(entityManager: EntityManager, user: User, role: Role) {
         require(user.roleUserAssociations.none { it.role == role }) {
-            "Role ${role.name} is already associated with User ${user.loginName}."
+            entityManager.transaction.setRollbackOnly()
+            "Role '${role.id}' is already associated with User '${user.loginName}'."
         }
     }
 
-    private fun validateAndGetRoleAssociatedWithUser(user: User, role: Role): RoleUserAssociation {
+    private fun validateAndGetRoleAssociatedWithUser(entityManager: EntityManager, user: User, role: Role): RoleUserAssociation {
         return requireNotNull(user.roleUserAssociations.singleOrNull { it.role == role }) {
-            "Role '${role.name}' is not associated with User '${user.loginName}'."
+            entityManager.transaction.setRollbackOnly()
+            "Role '${role.id}' is not associated with User '${user.loginName}'."
         }
     }
 
@@ -192,7 +208,6 @@ class UserWriterImpl(
         )
         user.roleUserAssociations.remove(association)
 
-        // merging user cascades and remove the association.
         entityManager.remove(association)
         entityManager.merge(user)
         entityManager.persist(changeAudit)

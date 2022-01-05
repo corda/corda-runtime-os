@@ -84,7 +84,7 @@ fun UserResponseDto.convertToEndpointType(): UserResponseType {
 /**
  * Convert a RoleAssociationResponseDto to a v1 RoleAssociationResponseType to be returned to the HTTP caller.
  */
-fun RoleAssociationResponseDto.convertToEndpointType() = RoleAssociationResponseType(id, createdTimestamp)
+fun RoleAssociationResponseDto.convertToEndpointType() = RoleAssociationResponseType(roleId, createdTimestamp)
 
 /**
  * Convert a PropertyResponseDto to a v1 PropertyResponseType to be returned to the HTTP caller.

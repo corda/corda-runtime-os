@@ -10,7 +10,7 @@ data class RoleAssociationResponseType(
     /**
      * Id of the Role.
      */
-    val id: String,
+    val roleId: String,
 
     /**
      * Time the Role association was created.
