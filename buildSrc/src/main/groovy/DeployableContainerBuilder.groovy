@@ -94,7 +94,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
     @Input
     final Property<String> baseImageName =
-            getObjects().property(String).convention('docker-remotes.software.r3.com/azul/zulu-openjdk-alpine')
+            getObjects().property(String).convention('azul/zulu-openjdk-alpine')
 
     @Input
     final Property<String> baseImageTag =
@@ -132,8 +132,10 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         Files.copy(Paths.get(overrideFile.getAsFile().get().getPath()), Paths.get(jarLocation), StandardCopyOption.REPLACE_EXISTING)
 
         RegistryImage baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
-                .addCredential(registryUsername.get(), registryPassword.get())
 
+        if(baseImageName.get().contains("docker-remotes.software.r3.com")){
+            baseImage.addCredential(registryUsername.get(), registryPassword.get())
+        }
 
         JibContainerBuilder builder = Jib.from(baseImage)
                 .setCreationTime(Instant.now())
