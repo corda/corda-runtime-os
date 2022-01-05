@@ -1,13 +1,11 @@
 package net.corda.libs.configuration.datamodel
 
-import net.corda.db.schema.DbSchema
-import net.corda.libs.configuration.datamodel.internal.DB_TABLE_CONFIG
+import net.corda.db.schema.DbSchema.CONFIG
+import net.corda.db.schema.DbSchema.CONFIG_DB_TABLE
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
-import javax.persistence.PrePersist
-import javax.persistence.PreUpdate
 import javax.persistence.Table
 import javax.persistence.Version
 
@@ -22,7 +20,7 @@ import javax.persistence.Version
  * @param updateActor The ID of the user that last updated this section of the configuration.
  */
 @Entity
-@Table(name = DB_TABLE_CONFIG, schema = DbSchema.CONFIG)
+@Table(name = CONFIG_DB_TABLE, schema = CONFIG)
 data class ConfigEntity(
     @Id
     @Column(name = "section", nullable = false)
@@ -39,14 +37,12 @@ data class ConfigEntity(
     @Column(name = "update_actor", nullable = false)
     val updateActor: String
 ) {
-    constructor(section: String, version: Int, config: String, configVersion: Int, updateActor: String) :
-            this(section, version, config, configVersion, Instant.MIN, updateActor)
-
-    /** Sets [updateTimestamp] to the current time. */
-    @Suppress("Unused")
-    @PrePersist
-    @PreUpdate
-    private fun onCreate() {
-        updateTimestamp = Instant.now()
-    }
+    constructor(
+        section: String,
+        version: Int,
+        config: String,
+        updateTimestamp: Instant,
+        configVersion: Int,
+        updateActor: String
+    ) : this(section, version, config, configVersion, updateTimestamp, updateActor)
 }

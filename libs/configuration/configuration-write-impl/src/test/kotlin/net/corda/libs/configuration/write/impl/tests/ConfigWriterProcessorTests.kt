@@ -19,14 +19,19 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Clock
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import javax.persistence.RollbackException
 
 /** Tests of [ConfigWriterProcessor]. */
 class ConfigWriterProcessorTests {
-    private val config = ConfigEntity("section", 1, "config_one", 1, "actor_one")
-    private val configAudit = config.run { ConfigAuditEntity(section, config, version, updateActor) }
+    private val clock = mock<Clock>().apply {
+        whenever(instant()).thenReturn(Instant.MIN)
+    }
+    private val config = ConfigEntity("section", 1, "config_one", 1, clock.instant(), "actor_one")
+    private val configAudit = ConfigAuditEntity(config)
     private val configMgmtReq = config.run {
         ConfigurationManagementRequest(section, version, config, configVersion, updateActor)
     }
@@ -57,7 +62,7 @@ class ConfigWriterProcessorTests {
     @Test
     fun `writes correct configuration and audit data to the database`() {
         val dbUtils = mock<DBUtils>()
-        val processor = ConfigWriterProcessor(getPublisher(), dbUtils)
+        val processor = ConfigWriterProcessor(getPublisher(), dbUtils, clock)
         processRequest(processor, configMgmtReq)
 
         verify(dbUtils).writeEntities(config, configAudit)
@@ -72,7 +77,7 @@ class ConfigWriterProcessorTests {
         )
 
         val publisher = getPublisher()
-        val processor = ConfigWriterProcessor(publisher, mock())
+        val processor = ConfigWriterProcessor(publisher, mock(), clock)
         processRequest(processor, configMgmtReq)
 
         verify(publisher).publish(listOf(expectedRecord))
@@ -82,7 +87,7 @@ class ConfigWriterProcessorTests {
     fun `sends RPC success response after publishing configuration to Kafka`() {
         val expectedResp = ConfigurationManagementResponse(true, configMgmtReq.version, configMgmtReq.config)
 
-        val processor = ConfigWriterProcessor(getPublisher(), mock())
+        val processor = ConfigWriterProcessor(getPublisher(), mock(), clock)
         val resp = processRequest(processor, configMgmtReq)
 
         assertEquals(expectedResp, resp)
@@ -91,7 +96,7 @@ class ConfigWriterProcessorTests {
     @Test
     fun `writes configuration and audit data to the database even if publication to Kafka fails`() {
         val dbUtils = mock<DBUtils>()
-        val processor = ConfigWriterProcessor(getErroringPublisher(), dbUtils)
+        val processor = ConfigWriterProcessor(getErroringPublisher(), dbUtils, clock)
         processRequest(processor, configMgmtReq)
 
         verify(dbUtils).writeEntities(config, configAudit)
@@ -109,7 +114,7 @@ class ConfigWriterProcessorTests {
             whenever(writeEntities(any(), any())).thenThrow(RollbackException())
             whenever(readConfigEntity(config.section)).thenReturn(config)
         }
-        val processor = ConfigWriterProcessor(getPublisher(), dbUtils)
+        val processor = ConfigWriterProcessor(getPublisher(), dbUtils, clock)
         val resp = processRequest(processor, configMgmtReq)
 
         assertEquals(expectedResp, resp)
@@ -129,7 +134,7 @@ class ConfigWriterProcessorTests {
         val dbUtils = mock<DBUtils>().apply {
             whenever(readConfigEntity(config.section)).thenReturn(config)
         }
-        val processor = ConfigWriterProcessor(getErroringPublisher(), dbUtils)
+        val processor = ConfigWriterProcessor(getErroringPublisher(), dbUtils, clock)
         val resp = processRequest(processor, configMgmtReq)
 
         assertEquals(expectedResp, resp)
@@ -146,7 +151,7 @@ class ConfigWriterProcessorTests {
         val dbUtils = mock<DBUtils>().apply {
             whenever(writeEntities(any(), any())).thenThrow(RollbackException())
         }
-        val processor = ConfigWriterProcessor(getPublisher(), dbUtils)
+        val processor = ConfigWriterProcessor(getPublisher(), dbUtils, clock)
         val resp = processRequest(processor, configMgmtReq)
 
         assertEquals(expectedResp, resp)
@@ -164,7 +169,7 @@ class ConfigWriterProcessorTests {
             whenever(writeEntities(any(), any())).thenThrow(RollbackException())
             whenever(readConfigEntity(any())).thenThrow(IllegalStateException())
         }
-        val processor = ConfigWriterProcessor(getPublisher(), dbUtils)
+        val processor = ConfigWriterProcessor(getPublisher(), dbUtils, clock)
         val resp = processRequest(processor, configMgmtReq)
 
         assertEquals(expectedResp, resp)

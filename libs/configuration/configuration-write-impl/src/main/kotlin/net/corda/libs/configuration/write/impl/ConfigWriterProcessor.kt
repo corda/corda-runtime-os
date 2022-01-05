@@ -11,16 +11,22 @@ import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import java.time.Clock
 
 /**
  * An RPC responder processor that handles configuration management requests.
  *
  * Listens for configuration management requests over RPC. Persists the updated configuration to the cluster database
  * and publishes the updated configuration to Kafka.
+ *
+ * @property publisher The publisher used to publish to Kafka.
+ * @property dbUtils Encapsulates database-related functionality, so it can be injected during testing.
+ * @property clock Controls how the current instant is determined, so it can be injected during testing.
  */
 internal class ConfigWriterProcessor(
     private val publisher: Publisher,
-    private val dbUtils: DBUtils
+    private val dbUtils: DBUtils,
+    private val clock: Clock = Clock.systemUTC()
 ) : RPCResponderProcessor<ConfigurationManagementRequest, ConfigurationManagementResponse> {
 
     /**
@@ -51,8 +57,15 @@ internal class ConfigWriterProcessor(
         respFuture: ConfigurationManagementResponseFuture
     ): Boolean {
 
-        val newConfig = ConfigEntity(req.section, req.version, req.config, req.configSchemaVersion, req.updateActor)
-        val newConfigAudit = ConfigAuditEntity(req.section, req.config, req.configSchemaVersion, req.updateActor)
+        val newConfig = ConfigEntity(
+            req.section,
+            req.version,
+            req.config,
+            req.configSchemaVersion,
+            clock.instant(),
+            req.updateActor
+        )
+        val newConfigAudit = ConfigAuditEntity(newConfig)
 
         return try {
             dbUtils.writeEntities(newConfig, newConfigAudit)
