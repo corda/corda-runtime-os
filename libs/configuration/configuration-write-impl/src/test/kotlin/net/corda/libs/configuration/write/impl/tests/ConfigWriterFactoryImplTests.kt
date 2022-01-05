@@ -4,75 +4,53 @@ import com.typesafe.config.ConfigFactory
 import net.corda.config.schema.Schema
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.configuration.write.impl.CLIENT_NAME_DB
 import net.corda.libs.configuration.write.impl.CLIENT_NAME_RPC
 import net.corda.libs.configuration.write.impl.ConfigWriterFactoryImpl
-import net.corda.libs.configuration.write.impl.ConfigWriterProcessor
 import net.corda.libs.configuration.write.impl.GROUP_NAME
-import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 /** Tests of [ConfigWriterFactoryImpl]. */
 class ConfigWriterFactoryImplTests {
-    private val dummyInstanceId = 777
-    private val dummyConfig = SmartConfigFactoryImpl().create(
-        ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue"))
-    )
-
-    // A mock `SubscriptionFactory` that returns `DummyRPCSubscription`s.
-    private val dummySubscriptionFactory = mock<SubscriptionFactory>().apply {
-        whenever(
-            createRPCSubscription<ConfigurationManagementRequest, ConfigurationManagementResponse>(any(), any(), any())
-        ).doReturn(DummyRPCSubscription())
+    /** Returns a mock [SubscriptionFactory]. */
+    private fun getSubscriptionFactory() = mock<SubscriptionFactory>().apply {
+        whenever(createRPCSubscription<Any, Any>(any(), any(), any())).doReturn(mock())
     }
 
-    // A mock `PublisherFactory` that returns `DummyPublisherSubscription`s.
-    private val dummyPublisherFactory = mock<PublisherFactory>().apply {
-        whenever(createPublisher(any(), any())).thenReturn(DummyPublisher())
+    /** Returns a mock [PublisherFactory]. */
+    private fun getPublisherFactory() = mock<PublisherFactory>().apply {
+        whenever(createPublisher(any(), any())).thenReturn(mock())
     }
 
     @Test
     fun `factory does not start the config writer`() {
-        val configWriterFactory = ConfigWriterFactoryImpl(dummySubscriptionFactory, dummyPublisherFactory)
-        val configWriter = configWriterFactory.create(dummyConfig, dummyInstanceId, mock())
+        val configWriterFactory = ConfigWriterFactoryImpl(getSubscriptionFactory(), getPublisherFactory())
+        val configWriter = configWriterFactory.create(mock(), 0, mock())
         assertFalse(configWriter.isRunning)
     }
 
     @Test
     fun `factory creates a publisher with the correct configuration`() {
-        val expectedPublisherConfig = PublisherConfig(CLIENT_NAME_DB, dummyInstanceId)
+        val expectedPublisherConfig = PublisherConfig(CLIENT_NAME_DB, 777)
+        val expectedConfig = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
 
-        var publisherConfig: PublisherConfig? = null
-        var kafkaConfig: SmartConfig? = null
+        val publisherFactory = getPublisherFactory()
+        val configWriterFactory = ConfigWriterFactoryImpl(getSubscriptionFactory(), publisherFactory)
+        configWriterFactory.create(expectedConfig, expectedPublisherConfig.instanceId!!, mock())
 
-        // A mock `PublisherFactory` that captures the argument to the creation of a `DummyPublisherSubscription`.
-        val capturingPublisherFactory = mock<PublisherFactory>().apply {
-            whenever(createPublisher(any(), any())).doAnswer { invocation ->
-                publisherConfig = invocation.getArgument(0)
-                kafkaConfig = invocation.getArgument(1)
-                DummyPublisher()
-            }
-        }
-
-        val configWriterFactory = ConfigWriterFactoryImpl(dummySubscriptionFactory, capturingPublisherFactory)
-        configWriterFactory.create(dummyConfig, dummyInstanceId, mock())
-
-        assertEquals(expectedPublisherConfig, publisherConfig)
-        assertEquals(dummyConfig, kafkaConfig)
+        verify(publisherFactory).createPublisher(expectedPublisherConfig, expectedConfig)
     }
 
     @Test
@@ -83,30 +61,14 @@ class ConfigWriterFactoryImplTests {
             Schema.CONFIG_MGMT_REQUEST_TOPIC,
             ConfigurationManagementRequest::class.java,
             ConfigurationManagementResponse::class.java,
-            dummyInstanceId
+            777
         )
+        val expectedConfig = SmartConfigFactoryImpl().create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
 
-        var rpcConfig: RPCConfig<Any, Any>? = null
-        var nodeConfig: SmartConfig? = null
-        var processor: RPCResponderProcessor<ConfigurationManagementRequest, ConfigurationManagementResponse>? = null
+        val subscriptionFactory = getSubscriptionFactory()
+        val configWriterFactory = ConfigWriterFactoryImpl(subscriptionFactory, getPublisherFactory())
+        configWriterFactory.create(expectedConfig, expectedRPCConfig.instanceId!!, mock())
 
-        // A mock `SubscriptionFactory` that captures the argument to the creation of a `DummyRPCSubscription`.
-        val capturingSubscriptionFactory = mock<SubscriptionFactory>().apply {
-            whenever(
-                createRPCSubscription<ConfigurationManagementRequest, ConfigurationManagementResponse>(any(), any(), any())
-            ).doAnswer { invocation ->
-                rpcConfig = invocation.getArgument(0)
-                nodeConfig = invocation.getArgument(1)
-                processor = invocation.getArgument(2)
-                DummyRPCSubscription()
-            }
-        }
-
-        val configWriterFactory = ConfigWriterFactoryImpl(capturingSubscriptionFactory, dummyPublisherFactory)
-        configWriterFactory.create(dummyConfig, dummyInstanceId, mock())
-
-        assertEquals(expectedRPCConfig, rpcConfig)
-        assertEquals(dummyConfig, nodeConfig)
-        assertTrue(processor is ConfigWriterProcessor)
+        verify(subscriptionFactory).createRPCSubscription(eq(expectedRPCConfig), eq(expectedConfig), any())
     }
 }
