@@ -1,13 +1,13 @@
-package net.corda.messagebus.kafka.producer.builder.impl
+package net.corda.messagebus.kafka.producer.builder
 
 import com.typesafe.config.Config
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
-import net.corda.messagebus.kafka.producer.wrapper.impl.CordaKafkaProducerImpl
+import net.corda.messagebus.kafka.producer.CordaKafkaProducerImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializerImpl
+import net.corda.messagebus.toProperties
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.kafka.utils.toProperties
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs.CLIENT_ID_CONFIG

@@ -1,4 +1,4 @@
-package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka
+package net.corda.messagebus.kafka
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory

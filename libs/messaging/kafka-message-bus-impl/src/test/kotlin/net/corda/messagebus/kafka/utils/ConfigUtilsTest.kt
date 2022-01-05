@@ -1,8 +1,8 @@
-package net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.utils
+package net.corda.messagebus.kafka.utils
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.messaging.kafka.utils.mergeProperties
+import net.corda.messagebus.mergeProperties
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 

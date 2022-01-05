@@ -1,4 +1,4 @@
-package net.corda.messagebus.kafka.producer.wrapper.impl
+package net.corda.messagebus.kafka.producer
 
 import com.typesafe.config.Config
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLOSE_TIMEOUT
@@ -7,11 +7,11 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.getStringOrNull
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.utils.toKafkaRecords
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.kafka.utils.getStringOrNull
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.CommitFailedException

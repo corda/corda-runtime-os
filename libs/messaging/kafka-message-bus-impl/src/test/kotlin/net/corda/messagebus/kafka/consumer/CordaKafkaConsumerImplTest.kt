@@ -6,14 +6,14 @@ import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
+import net.corda.messagebus.kafka.PATTERN_PUBSUB
+import net.corda.messagebus.kafka.createStandardTestConfig
 import net.corda.messagebus.kafka.utils.toKafka
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.kafka.subscription.createMockConsumerAndAddRecords
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecords
-import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.PATTERN_PUBSUB
-import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener

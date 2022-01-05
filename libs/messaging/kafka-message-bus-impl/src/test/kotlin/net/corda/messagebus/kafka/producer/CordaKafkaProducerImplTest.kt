@@ -1,11 +1,10 @@
-package net.corda.messaging.kafka.producer.wrapper.impl
+package net.corda.messagebus.kafka.producer
 
 import com.typesafe.config.Config
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
-import net.corda.messagebus.kafka.producer.wrapper.impl.CordaKafkaProducerImpl
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordList
