@@ -48,7 +48,6 @@ class PermissionWriterImpl(
                 request.permissionType.toDbModelPermissionType(),
                 request.permissionString
             )
-            permission.version = 0
 
             entityManager.persist(permission)
 
