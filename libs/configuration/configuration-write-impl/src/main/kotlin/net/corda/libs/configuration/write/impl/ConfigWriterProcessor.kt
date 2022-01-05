@@ -6,7 +6,6 @@ import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
-import net.corda.libs.configuration.write.impl.dbutils.DBUtils
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -20,12 +19,12 @@ import java.time.Clock
  * and publishes the updated configuration to Kafka.
  *
  * @property publisher The publisher used to publish to Kafka.
- * @property dbUtils Encapsulates database-related functionality, so it can be injected during testing.
+ * @property configEntityRepository The interface for interacting with configuration entities in the cluster database.
  * @property clock Controls how the current instant is determined, so it can be injected during testing.
  */
 internal class ConfigWriterProcessor(
     private val publisher: Publisher,
-    private val dbUtils: DBUtils,
+    private val configEntityRepository: ConfigEntityRepository,
     private val clock: Clock = Clock.systemUTC()
 ) : RPCResponderProcessor<ConfigurationManagementRequest, ConfigurationManagementResponse> {
 
@@ -68,7 +67,7 @@ internal class ConfigWriterProcessor(
         val newConfigAudit = ConfigAuditEntity(newConfig)
 
         return try {
-            dbUtils.writeEntities(newConfig, newConfigAudit)
+            configEntityRepository.writeEntities(newConfig, newConfigAudit)
             true
         } catch (e: Exception) {
             val errMsg = "Entities $newConfig and $newConfigAudit couldn't be written to the database."
@@ -111,7 +110,7 @@ internal class ConfigWriterProcessor(
         respFuture: ConfigurationManagementResponseFuture, errMsg: String, cause: Exception, section: String
     ) {
         val currentConfig = try {
-            dbUtils.readConfigEntity(section)
+            configEntityRepository.readConfigEntity(section)
         } catch (e: IllegalStateException) {
             // We ignore this additional error, and report the one we were already planning to report.
             null
