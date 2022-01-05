@@ -10,7 +10,7 @@ import picocli.CommandLine
  * providing static membership information for mocking a membership group.
  */
 @CommandLine.Command(name = "groupPolicy", description = ["Generates GroupPolicy.json file."])
-class GenerateGroupPolicy : Runnable {
+class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPolicyOutput()) : Runnable {
     override fun run() {
         val objectMapper = jacksonObjectMapper()
         val groupPolicy = generateGroupPolicyContent()
@@ -20,7 +20,7 @@ class GenerateGroupPolicy : Runnable {
         pp.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
 
         val jsonString = objectMapper.writer(pp).writeValueAsString(groupPolicy)
-        println(jsonString)
+        output.generateOutput(jsonString)
     }
 
     /**
@@ -121,5 +121,18 @@ class GenerateGroupPolicy : Runnable {
             )
         )
         return groupPolicy
+    }
+}
+
+interface GroupPolicyOutput {
+    fun generateOutput(content: String)
+}
+
+class ConsoleGroupPolicyOutput : GroupPolicyOutput {
+    /**
+     * Receives the content of the file and prints it to the console output. It makes the testing easier.
+     */
+    override fun generateOutput(content: String) {
+        println(content)
     }
 }

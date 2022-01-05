@@ -4,6 +4,7 @@ plugins {
 
 val pf4jVersion: String by project
 val jacksonVersion: String by project
+val junit5Version: String by project
 
 dependencies {
     compileOnly(project(":api"))
@@ -13,4 +14,5 @@ dependencies {
     kapt("org.pf4j:pf4j:${pf4jVersion}")
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:$junit5Version")
 }
