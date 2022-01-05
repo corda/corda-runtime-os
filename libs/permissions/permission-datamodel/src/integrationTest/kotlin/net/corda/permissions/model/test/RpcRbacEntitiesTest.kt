@@ -9,16 +9,8 @@ import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
-import net.corda.permissions.model.ChangeAudit
-import net.corda.permissions.model.Group
-import net.corda.permissions.model.GroupProperty
-import net.corda.permissions.model.Permission
-import net.corda.permissions.model.Role
-import net.corda.permissions.model.RoleGroupAssociation
-import net.corda.permissions.model.RolePermissionAssociation
-import net.corda.permissions.model.RoleUserAssociation
+import net.corda.permissions.model.RpcRbacEntitiesSet
 import net.corda.permissions.model.User
-import net.corda.permissions.model.UserProperty
 import net.corda.test.util.LoggingUtils.emphasise
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions
@@ -79,22 +71,9 @@ class RpcRbacEntitiesTest {
 
             logger.info("Create Entities".emphasise())
 
-            emf = entityManagerFactoryFactory.create(
-                "RPC RBAC",
-                listOf(
-                    User::class.java,
-                    Group::class.java,
-                    Role::class.java,
-                    Permission::class.java,
-                    UserProperty::class.java,
-                    GroupProperty::class.java,
-                    ChangeAudit::class.java,
-                    RoleUserAssociation::class.java,
-                    RoleGroupAssociation::class.java,
-                    RolePermissionAssociation::class.java
-                ),
-                dbConfig
-            )
+            val entitiesSet = RpcRbacEntitiesSet()
+
+            emf = entityManagerFactoryFactory.create(entitiesSet.name, entitiesSet.content.toList(), dbConfig)
         }
 
         @Suppress("unused")
