@@ -348,14 +348,14 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
 
         private fun processSessionMessage(message: LinkInMessage): List<Record<String, *>> {
             val response = sessionManager.processSessionMessage(message)
-            if (response != null) {
+            return if (response != null) {
                 when (val payload = message.payload) {
                     is InitiatorHelloMessage -> {
                         val partitionsAssigned =
                             inboundAssignmentListener.getCurrentlyAssignedPartitions(LINK_IN_TOPIC).toList()
                         if (partitionsAssigned.isNotEmpty()) {
-                            return listOf(
-                                Record(LINK_IN_TOPIC, generateKey(), response),
+                            listOf(
+                                Record(LINK_OUT_TOPIC, generateKey(), response),
                                 Record(
                                     SESSION_OUT_PARTITIONS,
                                     payload.header.sessionId,
@@ -367,15 +367,15 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                                 "No partitions from topic ${LINK_IN_TOPIC} are currently assigned to the inbound message processor." +
                                         " Not going to reply to session initiation for session ${payload.header.sessionId}."
                             )
-                            return emptyList()
+                            emptyList()
                         }
                     }
                     else -> {
-                        return listOf(Record(LINK_OUT_TOPIC, generateKey(), response))
+                        listOf(Record(LINK_OUT_TOPIC, generateKey(), response))
                     }
                 }
             } else {
-                return emptyList()
+                emptyList()
             }
         }
 
