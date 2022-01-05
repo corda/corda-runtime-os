@@ -2,6 +2,7 @@ package net.corda.configuration.publish
 
 import net.corda.libs.configuration.SmartConfig
 
+// TODO - CORE-3350 - This service is being removed. Use `ConfigWriteService` instead.
 /** Publishes configuration to Kafka, without persisting it to the cluster database. */
 interface ConfigPublishService {
     /**

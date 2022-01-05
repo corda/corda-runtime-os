@@ -13,7 +13,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.io.BufferedReader
 
-class ConfigWriterImplTest {
+class ConfigPublisherImplTest {
     private lateinit var configPublisher: ConfigPublisher
     private var publisher: Publisher = mock()
 

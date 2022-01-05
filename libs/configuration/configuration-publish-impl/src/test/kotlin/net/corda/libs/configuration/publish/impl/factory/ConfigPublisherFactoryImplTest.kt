@@ -10,7 +10,7 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 
-class ConfigPublishFactoryImplTest {
+class ConfigPublisherFactoryImplTest {
     private lateinit var cordaPublisherFactory: ConfigPublisherFactoryImpl
     private var publisherFactory: PublisherFactory = mock()
     private var publisher: Publisher = mock()
