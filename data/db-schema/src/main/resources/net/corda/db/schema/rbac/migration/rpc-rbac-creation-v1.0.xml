@@ -211,9 +211,6 @@
             <column name="update_ts" type="TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
-            <column name="version" type="INT">
-                <constraints nullable="false"/>
-            </column>
             <column name="user_id" type="VARCHAR(36)">
                 <constraints nullable="false"/>
             </column>
@@ -246,9 +243,6 @@
                 <constraints nullable="false"/>
             </column>
             <column name="update_ts" type="TIMESTAMP">
-                <constraints nullable="false"/>
-            </column>
-            <column name="version" type="INT">
                 <constraints nullable="false"/>
             </column>
             <column name="group_id" type="VARCHAR(36)">
@@ -320,9 +314,6 @@
                 <constraints nullable="false"/>
             </column>
             <column name="update_ts" type="TIMESTAMP">
-                <constraints nullable="false"/>
-            </column>
-            <column name="version" type="INT">
                 <constraints nullable="false"/>
             </column>
             <column name="role_id" type="VARCHAR(36)">
