@@ -48,7 +48,6 @@ class RoleWriterImpl(
                 name = request.roleName,
                 groupVisibility = groupVisibility
             )
-            role.version = 0
 
             entityManager.persist(role)
 

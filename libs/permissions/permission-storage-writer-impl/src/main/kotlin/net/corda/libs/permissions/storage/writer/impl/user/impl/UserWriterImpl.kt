@@ -53,7 +53,6 @@ class UserWriterImpl(
                 parentGroup = parentGroup,
                 updateTimestamp = updateTimestamp
             )
-            user.version = 0
 
             entityManager.persist(user)
 
