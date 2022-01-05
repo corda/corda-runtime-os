@@ -1,7 +1,7 @@
 package net.corda.libs.permissions.manager.request
 
 /**
- * Request object for dissociating a Role from a User in the permission system.
+ * Request object for un-assigning a Role from a User in the permission system.
  */
 data class RemoveRoleFromUserRequestDto(
     /**
@@ -9,11 +9,11 @@ data class RemoveRoleFromUserRequestDto(
      */
     val requestedBy: String,
     /**
-     * User loginName to have role dissociated.
+     * Login name of the User to change.
      */
     val loginName: String,
     /**
-     * Id of role to be dissociated.
+     * Id of role to be unassigned.
      */
     val roleId: String,
 )

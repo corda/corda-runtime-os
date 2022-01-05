@@ -1,17 +1,18 @@
 package net.corda.applications.rpc
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit.DAYS
 import net.corda.applications.rpc.http.TestToolkitProperty
+import net.corda.httprpc.client.exceptions.InternalErrorException
+import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
+import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.test.util.eventually
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import java.time.Instant
-import java.time.temporal.ChronoUnit.DAYS
-import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
-import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
-import net.corda.libs.permissions.endpoints.v1.user.types.AddRoleToUserType
 
 class UserRoleAssociationE2eTest {
 
@@ -26,7 +27,6 @@ class UserRoleAssociationE2eTest {
 
             // Create role
             val createRoleType = CreateRoleType(name, null)
-
             val roleId = with(proxy.createRole(createRoleType)) {
                 assertSoftly {
                     it.assertThat(roleName).isEqualTo(name)
@@ -62,7 +62,6 @@ class UserRoleAssociationE2eTest {
             val password = testToolkit.uniqueName
             val passwordExpirySet = Instant.now().plus(1, DAYS).truncatedTo(DAYS)
             val createUserType = CreateUserType(userName, userName, true, password, passwordExpirySet, null)
-
             with(proxy.createUser(createUserType)) {
                 assertSoftly {
                     it.assertThat(loginName).isEqualTo(userName)
@@ -83,12 +82,38 @@ class UserRoleAssociationE2eTest {
                 }
             }
 
-            val addRoleToUserType = AddRoleToUserType(userName, roleId)
-            with(proxy.addRole(addRoleToUserType)) {
+            // add the role to the user
+            with(proxy.addRole(userName, roleId)) {
                 assertSoftly {
                     it.assertThat(loginName).isEqualTo(userName)
                     it.assertThat(roleAssociations).hasSize(1)
                     it.assertThat(roleAssociations.first().roleId).isEqualTo(roleId)
+                }
+            }
+
+            // add the role again to assert validation
+            Assertions.assertThatThrownBy { proxy.addRole(userName, roleId) }
+                .isInstanceOf(InternalErrorException::class.java)
+                .hasMessageContaining("Role '$roleId' is already associated with User '$userName'.")
+
+            // remove role
+            with(proxy.removeRole(userName, roleId)) {
+                assertSoftly {
+                    it.assertThat(loginName).isEqualTo(userName)
+                    it.assertThat(roleAssociations).hasSize(0)
+                }
+            }
+
+            // get user, assert the change is persisted
+            eventually {
+                assertDoesNotThrow {
+                    with(proxy.getUser(userName)) {
+                        assertSoftly {
+                            it.assertThat(loginName).isEqualTo(userName)
+                            it.assertThat(passwordExpiry).isEqualTo(passwordExpirySet)
+                            it.assertThat(roleAssociations.size).isEqualTo(0)
+                        }
+                    }
                 }
             }
         }

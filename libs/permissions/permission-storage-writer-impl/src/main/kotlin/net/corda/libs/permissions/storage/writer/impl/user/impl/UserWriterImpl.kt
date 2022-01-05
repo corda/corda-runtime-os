@@ -108,17 +108,14 @@ class UserWriterImpl(
     }
 
     private fun validateAndGetUniqueRole(entityManager: EntityManager, roleId: String): Role {
-        val roles = entityManager
-            .createQuery("FROM Role WHERE id = :id", Role::class.java)
-            .setParameter("id", roleId)
-            .resultList
+        val role = entityManager.find(Role::class.java, roleId)
 
-        require(roles.size == 1) {
+        requireNotNull(role) {
             entityManager.transaction.setRollbackOnly()
             "Role '$roleId' does not exist."
         }
 
-        return roles.first()
+        return role
     }
 
     private fun validateRoleNotAlreadyAssignedToUser(entityManager: EntityManager, user: User, role: Role) {

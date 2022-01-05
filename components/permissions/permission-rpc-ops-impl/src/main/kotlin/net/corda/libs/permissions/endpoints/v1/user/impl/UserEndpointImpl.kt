@@ -7,9 +7,7 @@ import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
 import net.corda.libs.permissions.endpoints.v1.converter.convertToEndpointType
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
-import net.corda.libs.permissions.endpoints.v1.user.types.AddRoleToUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
-import net.corda.libs.permissions.endpoints.v1.user.types.RemoveRoleFromUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -61,28 +59,20 @@ class UserEndpointImpl @Activate constructor(
         return userResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("User", loginName)
     }
 
-    override fun addRole(addRoleToUserType: AddRoleToUserType): UserResponseType {
+    override fun addRole(loginName: String, roleId: String): UserResponseType {
         val principal = getRpcThreadLocalContext()
 
         val result = permissionServiceComponent.permissionManager.addRoleToUser(
-            AddRoleToUserRequestDto(
-                principal,
-                addRoleToUserType.loginName,
-                addRoleToUserType.roleId,
-            )
+            AddRoleToUserRequestDto(principal, loginName, roleId)
         )
         return result.convertToEndpointType()
     }
 
-    override fun removeRole(removeRoleFromUserType: RemoveRoleFromUserType): UserResponseType {
+    override fun removeRole(loginName: String, roleId: String): UserResponseType {
         val principal = getRpcThreadLocalContext()
 
         val result = permissionServiceComponent.permissionManager.removeRoleFromUser(
-            RemoveRoleFromUserRequestDto(
-                principal,
-                removeRoleFromUserType.loginName,
-                removeRoleFromUserType.roleId,
-            )
+            RemoveRoleFromUserRequestDto(principal, loginName, roleId)
         )
         return result.convertToEndpointType()
     }

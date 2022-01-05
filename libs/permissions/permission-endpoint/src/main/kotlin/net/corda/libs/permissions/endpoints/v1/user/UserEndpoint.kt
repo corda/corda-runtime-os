@@ -6,9 +6,7 @@ import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.libs.permissions.endpoints.v1.user.types.AddRoleToUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
-import net.corda.libs.permissions.endpoints.v1.user.types.RemoveRoleFromUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 
 /**
@@ -40,20 +38,24 @@ interface UserEndpoint : RpcOps {
     ): UserResponseType
 
     /**
-     * Add a role to a User in the RBAC permission system.
+     * Assign a Role to a User in the RBAC permission system.
      */
-    @HttpRpcPOST(description = "Add a role to a User", path = "addRole")
+    @HttpRpcPOST(description = "Assign a Role to a User", path = "addRole")
     fun addRole(
-        @HttpRpcRequestBodyParameter(description = "Details of the user and role to be associated", required = true)
-        addRoleToUserType: AddRoleToUserType
+        @HttpRpcRequestBodyParameter(description = "User login name to be changed", required = true)
+        loginName: String,
+        @HttpRpcRequestBodyParameter(description = "Id of the role to associate with this user", required = true)
+        roleId: String
     ): UserResponseType
 
     /**
-     * Remove a role from a User in the RBAC permission system.
+     * Un-assign a Role from a User in the RBAC permission system.
      */
-    @HttpRpcPOST(description = "Remove a role from a User", path = "removeRole")
+    @HttpRpcPOST(description = "Un-assign a role from a user", path = "removeRole")
     fun removeRole(
-        @HttpRpcRequestBodyParameter(description = "Details of the user and role to be dissociated", required = true)
-        removeRoleFromUserType: RemoveRoleFromUserType
+        @HttpRpcRequestBodyParameter(description = "User login name to be changed", required = true)
+        loginName: String,
+        @HttpRpcRequestBodyParameter(description = "Id of the role to un-assign from this user", required = true)
+        roleId: String
     ): UserResponseType
 }

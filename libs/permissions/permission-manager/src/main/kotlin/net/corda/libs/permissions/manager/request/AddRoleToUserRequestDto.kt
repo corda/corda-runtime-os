@@ -1,7 +1,7 @@
 package net.corda.libs.permissions.manager.request
 
 /**
- * Request object for adding a Role to a User in the permission system.
+ * Request object for assigning a Role to a User in the permission system.
  */
 data class AddRoleToUserRequestDto(
     /**
@@ -9,7 +9,7 @@ data class AddRoleToUserRequestDto(
      */
     val requestedBy: String,
     /**
-     * User loginName to have role associated.
+     * Login name of the User to change.
      */
     val loginName: String,
     /**

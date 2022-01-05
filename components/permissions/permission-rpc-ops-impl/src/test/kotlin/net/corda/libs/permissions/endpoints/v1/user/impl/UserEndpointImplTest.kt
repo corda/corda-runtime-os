@@ -22,8 +22,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import net.corda.libs.permissions.endpoints.v1.user.types.AddRoleToUserType
-import net.corda.libs.permissions.endpoints.v1.user.types.RemoveRoleFromUserType
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
@@ -157,7 +155,7 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.addRoleToUser(capture.capture())).thenReturn(userResponseDtoWithRole)
 
         endpoint.start()
-        val responseType = endpoint.addRole(AddRoleToUserType("userLogin1", "roleId1"))
+        val responseType = endpoint.addRole("userLogin1", "roleId1")
 
         assertEquals(1, capture.allValues.size)
         assertEquals("anRpcUser", capture.firstValue.requestedBy)
@@ -186,7 +184,7 @@ internal class UserEndpointImplTest {
 
         endpoint.start()
         val e = assertThrows<IllegalArgumentException> {
-            endpoint.addRole(AddRoleToUserType("userLogin1", "roleId1"))
+            endpoint.addRole("userLogin1", "roleId1")
         }
         assertEquals("Exc", e.message)
     }
@@ -199,7 +197,7 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.removeRoleFromUser(capture.capture())).thenReturn(userResponseDto)
 
         endpoint.start()
-        val responseType = endpoint.removeRole(RemoveRoleFromUserType("userLogin1", "roleId1"))
+        val responseType = endpoint.removeRole("userLogin1", "roleId1")
 
         assertEquals(1, capture.allValues.size)
         assertEquals("anRpcUser", capture.firstValue.requestedBy)
@@ -226,7 +224,7 @@ internal class UserEndpointImplTest {
 
         endpoint.start()
         val e = assertThrows<IllegalArgumentException> {
-            endpoint.removeRole(RemoveRoleFromUserType("userLogin1", "roleId1"))
+            endpoint.removeRole("userLogin1", "roleId1")
         }
         assertEquals("Exc", e.message)
     }

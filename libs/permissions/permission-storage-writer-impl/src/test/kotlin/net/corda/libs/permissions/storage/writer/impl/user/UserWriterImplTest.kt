@@ -170,9 +170,7 @@ internal class UserWriterImplTest {
         whenever(userQuery.setParameter("loginName", "userLogin1")).thenReturn(userQuery)
         whenever(userQuery.resultList).thenReturn(listOf(user))
 
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-        whenever(roleQuery.setParameter("id", "role1")).thenReturn(roleQuery)
-        whenever(roleQuery.resultList).thenReturn(emptyList<Role>())
+        whenever(entityManager.find(Role::class.java, "role1")).thenReturn(null)
 
         val e = assertThrows<IllegalArgumentException> {
             userWriter.addRoleToUser(AddRoleToUserRequest("userLogin1", "role1"), "requestUserId")
@@ -189,9 +187,7 @@ internal class UserWriterImplTest {
         whenever(userQuery.setParameter("loginName", "userLogin1")).thenReturn(userQuery)
         whenever(userQuery.resultList).thenReturn(listOf(user))
 
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-        whenever(roleQuery.setParameter("id", "role1")).thenReturn(roleQuery)
-        whenever(roleQuery.resultList).thenReturn(listOf(role))
+        whenever(entityManager.find(Role::class.java, "role1")).thenReturn(role)
 
         user.roleUserAssociations.add(RoleUserAssociation("assoc1", role, user, Instant.now()))
 
@@ -210,9 +206,7 @@ internal class UserWriterImplTest {
         whenever(userQuery.setParameter("loginName", "userLogin1")).thenReturn(userQuery)
         whenever(userQuery.resultList).thenReturn(listOf(user))
 
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-        whenever(roleQuery.setParameter("id", "role1")).thenReturn(roleQuery)
-        whenever(roleQuery.resultList).thenReturn(listOf(role))
+        whenever(entityManager.find(Role::class.java, "role1")).thenReturn(role)
 
         val avroUser = userWriter.addRoleToUser(AddRoleToUserRequest("userLogin1", "role1"), "requestUserId")
 
@@ -261,9 +255,7 @@ internal class UserWriterImplTest {
         whenever(userQuery.setParameter("loginName", "userLogin1")).thenReturn(userQuery)
         whenever(userQuery.resultList).thenReturn(listOf(user))
 
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-        whenever(roleQuery.setParameter("id", "role1")).thenReturn(roleQuery)
-        whenever(roleQuery.resultList).thenReturn(emptyList<Role>())
+        whenever(entityManager.find(Role::class.java, "role1")).thenReturn(null)
 
         val e = assertThrows<IllegalArgumentException> {
             userWriter.removeRoleFromUser(RemoveRoleFromUserRequest("userLogin1", "role1"), "requestUserId")
@@ -280,9 +272,7 @@ internal class UserWriterImplTest {
         whenever(userQuery.setParameter("loginName", "userLogin1")).thenReturn(userQuery)
         whenever(userQuery.resultList).thenReturn(listOf(user))
 
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-        whenever(roleQuery.setParameter("id", "role1")).thenReturn(roleQuery)
-        whenever(roleQuery.resultList).thenReturn(listOf(role))
+        whenever(entityManager.find(Role::class.java, "role1")).thenReturn(role)
 
         val e = assertThrows<IllegalArgumentException> {
             userWriter.removeRoleFromUser(RemoveRoleFromUserRequest("userLogin1", "role1"), "requestUserId")
@@ -300,9 +290,7 @@ internal class UserWriterImplTest {
         whenever(userQuery.setParameter("loginName", "userLogin1")).thenReturn(userQuery)
         whenever(userQuery.resultList).thenReturn(listOf(user))
 
-        whenever(entityManager.createQuery(any(), eq(Role::class.java))).thenReturn(roleQuery)
-        whenever(roleQuery.setParameter("id", "role1")).thenReturn(roleQuery)
-        whenever(roleQuery.resultList).thenReturn(listOf(role))
+        whenever(entityManager.find(Role::class.java, "role1")).thenReturn(role)
 
         val assoc = RoleUserAssociation("assoc1", role, user, Instant.now())
         user.roleUserAssociations.add(assoc)
