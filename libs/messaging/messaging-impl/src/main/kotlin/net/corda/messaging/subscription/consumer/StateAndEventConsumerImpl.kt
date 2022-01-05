@@ -27,6 +27,8 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     companion object {
         //short timeout for poll of paused partitions when waiting for processor to finish
         private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
+        //short timeout for state polling so as to not starve the event poller
+        private val STATE_POLL_TIMEOUT = Duration.ofMillis(100)
     }
 
     //single threaded executor per state and event consumer
@@ -69,7 +71,7 @@ class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         }
 
         val partitionsSynced = mutableSetOf<CordaTopicPartition>()
-        val states = stateConsumer.poll()
+        val states = stateConsumer.poll(STATE_POLL_TIMEOUT)
         for (state in states) {
             log.debug { "Updating state: $state" }
             updateInMemoryState(state)
