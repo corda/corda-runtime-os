@@ -9,7 +9,6 @@ import javax.persistence.Id
 import javax.persistence.JoinColumn
 import javax.persistence.ManyToOne
 import javax.persistence.Table
-import javax.persistence.Version
 
 /**
  * Associates Permissions and Roles.
@@ -32,10 +31,4 @@ class RolePermissionAssociation(
 
     @Column(name = "update_ts", nullable = false)
     var updateTimestamp: Instant,
-) {
-    /**
-     * Version column for optimistic locking.
-     */
-    @Version
-    var version: Int = -1
-}
+)
