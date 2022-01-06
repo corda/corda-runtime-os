@@ -154,12 +154,10 @@ class DbWorkerPrototypeApp @Activate constructor(
             )
         )
         StringWriter().use {
-            // Cannot use DbSchema.RPC_RBAC schema for LB here as this schema needs to be created ahead of change
-            // set being applied
-            schemaMigrator.createUpdateSql(dbSource.connection, cl, it, LiquibaseSchemaMigrator.PUBLIC_SCHEMA)
+            schemaMigrator.createUpdateSql(dbSource.connection, cl, it)
             log.info("Schema creation SQL: $it")
         }
-        schemaMigrator.updateDb(dbSource.connection, cl, LiquibaseSchemaMigrator.PUBLIC_SCHEMA)
+        schemaMigrator.updateDb(dbSource.connection, cl)
 
         log.info("Liquibase schema applied")
     }

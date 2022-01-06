@@ -1,6 +1,5 @@
 package net.corda.db.admin.impl
 
-import net.corda.db.admin.LiquibaseSchemaMigrator.Companion.PUBLIC_SCHEMA
 import net.corda.db.core.InMemoryDataSourceFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -40,8 +39,8 @@ class LiquibaseSchemaMigratorImplTest {
 
         val lbm = LiquibaseSchemaMigratorImpl()
 
-        lbm.updateDb(ds.connection, cl1, PUBLIC_SCHEMA)
-        lbm.updateDb(ds.connection, cl2, PUBLIC_SCHEMA)
+        lbm.updateDb(ds.connection, cl1)
+        lbm.updateDb(ds.connection, cl2)
 
         val tables = mutableListOf<String>()
         ds.connection.use {
@@ -68,7 +67,7 @@ class LiquibaseSchemaMigratorImplTest {
     fun `when createUpdateSql generate DB schema`() {
         val lbm = LiquibaseSchemaMigratorImpl()
         val writer1 = StringWriter()
-        lbm.createUpdateSql(ds.connection, cl1, writer1, PUBLIC_SCHEMA)
+        lbm.createUpdateSql(ds.connection, cl1, writer1)
         val sql1 = writer1.toString()
 
         // Create first script
@@ -95,7 +94,7 @@ class LiquibaseSchemaMigratorImplTest {
 
         // Create another script
         val writer2 = StringWriter()
-        lbm.createUpdateSql(ds.connection, cl2, writer2, PUBLIC_SCHEMA)
+        lbm.createUpdateSql(ds.connection, cl2, writer2)
         val sql2 = writer2.toString()
         println("Second SQL Script:")
         println(sql2)

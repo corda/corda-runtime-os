@@ -1,7 +1,6 @@
 package net.corda.permissions.model.test
 
 import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.db.admin.LiquibaseSchemaMigrator.Companion.PUBLIC_SCHEMA
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
@@ -23,7 +22,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.io.StringWriter
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class)
@@ -62,12 +61,10 @@ class RpcRbacEntitiesTest {
                 )
             )
             StringWriter().use {
-                // Cannot use DbSchema.RPC_RBAC schema for LB here as this schema needs to be created ahead of change
-                // set being applied
-                lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it, PUBLIC_SCHEMA)
+                lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it)
                 logger.info("Schema creation SQL: $it")
             }
-            lbm.updateDb(dbConfig.dataSource.connection, cl, PUBLIC_SCHEMA)
+            lbm.updateDb(dbConfig.dataSource.connection, cl)
 
             logger.info("Create Entities".emphasise())
 
