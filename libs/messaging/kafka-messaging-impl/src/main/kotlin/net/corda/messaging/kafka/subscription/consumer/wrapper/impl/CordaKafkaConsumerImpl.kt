@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription.consumer.wrapper.impl
 
 import com.typesafe.config.Config
+import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CLOSE_TIMEOUT
@@ -8,7 +9,6 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.COMMIT_OF
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.POLL_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.SUBSCRIBE_MAX_RETRIES
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.CommonClientConfigs
@@ -51,7 +51,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     private val consumerCloseTimeout = Duration.ofMillis(config.getLong(CLOSE_TIMEOUT))
     private val consumerSubscribeMaxRetries = config.getLong(SUBSCRIBE_MAX_RETRIES)
     private val consumerCommitOffsetMaxRetries = config.getLong(COMMIT_OFFSET_MAX_RETRIES)
-    private val topicPrefix = config.getString(TOPIC_PREFIX)
+    private val topicPrefix = config.getString(TOPIC_PREFIX_PATH)
     private val topic = config.getString(TOPIC_NAME)
     private val topicWithPrefix = "$topicPrefix$topic"
     private val groupName = config.getString(CommonClientConfigs.GROUP_ID_CONFIG)

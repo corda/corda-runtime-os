@@ -3,6 +3,7 @@ package net.corda.messaging.emulation.publisher.factory
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
@@ -32,7 +33,6 @@ class CordaPublisherFactory @Activate constructor(
 ) : PublisherFactory {
 
     companion object {
-        const val PUBLISHER_INSTANCE_ID = "instanceId"
         const val PUBLISHER_CLIENT_ID = "clientId"
     }
 
@@ -46,7 +46,7 @@ class CordaPublisherFactory @Activate constructor(
 
         val instanceId = publisherConfig.instanceId
         if (instanceId != null) {
-            config = config.withValue(PUBLISHER_INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId))
+            config = config.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId))
         }
         return CordaPublisher(config, topicService)
     }

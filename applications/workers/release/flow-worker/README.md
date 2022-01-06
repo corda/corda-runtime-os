@@ -32,9 +32,7 @@ java -jar build/bin/corda-flow-worker-setup-5.0.0.0-SNAPSHOT.jar --config config
 
 ```shell
 cd applications\workers\release\flow-worker
-java -jar build/bin/corda-flow-worker-5.0.0.0-SNAPSHOT.jar  --instanceId 1 \
-    --additionalParams config.topic.name="config.topic" \
-    --additionalParams corda.cpi.cacheDir="C:\dev\corda-runtime-os\testing\cpbs\helloworld\build\libs"
+java -jar build/bin/corda-flow-worker-5.0.0.0-SNAPSHOT.jar  --instanceId 1
 ```
 
 You may find it helpful to in Intellij to create a "JAR Application configuration" to run this step, and additionally

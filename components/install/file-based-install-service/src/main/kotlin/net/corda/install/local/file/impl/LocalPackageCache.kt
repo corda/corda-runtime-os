@@ -118,6 +118,7 @@ class LocalPackageCache @Activate constructor(
             }
             is StartEvent -> {
                 logger.debug { "${javaClass.name} service starting..." }
+                onStartEvent()
             }
             is StopEvent -> {
                 logger.debug { "${javaClass.name} service stopping." }
@@ -169,6 +170,10 @@ class LocalPackageCache @Activate constructor(
     }
 
     private fun setup() {
+        lifecycleCoordinator.start()
+    }
+
+    private fun onStartEvent() {
         configurationReadService.registerForUpdates { changedKeys, config ->
             if (CFG_KEY in changedKeys) {
                 scanDirectoryAndBuildCache(config[CFG_KEY]!!)
@@ -182,10 +187,10 @@ class LocalPackageCache @Activate constructor(
                 }
             }
         }
-        lifecycleCoordinator.start()
     }
 
     private fun scanDirectoryAndBuildCache(config: Config) {
+        logger.info("scanDirectoryAndBuildCache")
         packageCacheLock.write {
             val repositoryFolder = (
                     config.getString("cacheDir")

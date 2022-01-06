@@ -11,11 +11,13 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class ConfigReaderImpl(
+class
+ConfigReaderImpl(
     private val configurationRepository: ConfigRepository,
     private val subscriptionFactory: SubscriptionFactory,
     private val boostrapConfig: SmartConfig,
@@ -23,7 +25,6 @@ class ConfigReaderImpl(
 ) : ConfigReader, CompactedProcessor<String, Configuration> {
 
     companion object {
-        private const val CONFIG_TOPIC_PATH = "config.topic.name"
         internal const val CONFIGURATION_READER = "CONFIGURATION_READER"
     }
 
@@ -49,7 +50,7 @@ class ConfigReaderImpl(
                     subscriptionFactory.createCompactedSubscription(
                         SubscriptionConfig(
                             CONFIGURATION_READER,
-                            boostrapConfig.getString(CONFIG_TOPIC_PATH)
+                            CONFIG_TOPIC
                         ),
                         this,
                         boostrapConfig

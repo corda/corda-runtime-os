@@ -1,6 +1,7 @@
 package net.corda.messaging.emulation.publisher
 
 import com.typesafe.config.Config
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -21,12 +22,11 @@ class CordaPublisher(
 
     private companion object {
         private val log: Logger = contextLogger()
-        const val PUBLISHER_INSTANCE_ID = "instanceId"
         const val PUBLISHER_CLIENT_ID = "clientId"
     }
 
     private val clientId = config.getString(PUBLISHER_CLIENT_ID)
-    private val instanceId = if (config.hasPath(PUBLISHER_INSTANCE_ID)) config.getString(PUBLISHER_INSTANCE_ID) else null
+    private val instanceId = if (config.hasPath(INSTANCE_ID)) config.getString(INSTANCE_ID) else null
 
     override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
         return runAndCreateFutures(records.size) {

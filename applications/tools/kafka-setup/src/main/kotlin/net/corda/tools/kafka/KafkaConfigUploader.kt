@@ -6,8 +6,10 @@ import net.corda.configuration.publish.ConfigPublishService
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -36,8 +38,7 @@ class KafkaConfigUploader @Activate constructor(
     private companion object {
         private val logger: Logger = contextLogger()
         val consoleLogger: Logger = LoggerFactory.getLogger("Console")
-        const val TOPIC_PREFIX = "messaging.topic.prefix"
-        const val CONFIG_TOPIC_NAME = "config.topic.name"
+        const val TOPIC_PREFIX = "messaging.${TOPIC_PREFIX_PATH}"
         const val KAFKA_BOOTSTRAP_SERVER = "bootstrap.servers"
         const val KAFKA_COMMON_BOOTSTRAP_SERVER = "messaging.kafka.common.bootstrap.servers"
     }
@@ -71,7 +72,7 @@ class KafkaConfigUploader @Activate constructor(
             if (configurationFile != null) {
                 logger.info("Writing config to topic")
                 configPublish.updateConfig(
-                    getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME),
+                    CONFIG_TOPIC,
                     getBootstrapConfig(kafkaConnectionProperties),
                     configurationFile.readText()
                 )
@@ -88,7 +89,6 @@ class KafkaConfigUploader @Activate constructor(
                 KAFKA_COMMON_BOOTSTRAP_SERVER,
                 ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, KAFKA_BOOTSTRAP_SERVER))
             )
-            .withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME)))
             .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX))))
     }
 
