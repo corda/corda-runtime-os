@@ -1,11 +1,11 @@
 package net.corda.crypto
 
-import net.corda.crypto.PasswordEncodeUtils.AES_PROVIDER
-import net.corda.crypto.PasswordEncodeUtils.encodePassPhrase
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
+import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 class Encryptor(
@@ -14,7 +14,11 @@ class Encryptor(
     companion object {
         private const val IV_LENGTH = 16
         private const val TRANSFORMATION = "AES/CBC/PKCS5Padding"
+        private const val DERIVE_ALGORITHM = "PBKDF2WithHmacSHA256"
+        private const val DERIVE_ITERATION_COUNT = 65536
         const val WRAPPING_KEY_ALGORITHM = "AES"
+        const val AES_KEY_LENGTH = 256
+        const val AES_PROVIDER = "SunJCE"
 
         private val secureRandom = SecureRandom()
 
@@ -30,9 +34,23 @@ class Encryptor(
                 key = SecretKeySpec(encoded, WRAPPING_KEY_ALGORITHM)
             )
         }
+
+        fun encodePassPhrase(passphrase: String, salt: String, iterCount: Int = DERIVE_ITERATION_COUNT): ByteArray {
+            /* Derive the key, given password and salt. */
+            val factory = SecretKeyFactory.getInstance(
+                DERIVE_ALGORITHM,
+                AES_PROVIDER
+            )
+            val spec = PBEKeySpec(passphrase.toCharArray(), salt.toByteArray(), iterCount, AES_KEY_LENGTH)
+            val tmp = factory.generateSecret(spec)
+            return tmp.encoded
+        }
+
     }
 
-    fun encrypt(other: Encryptor): ByteArray = encrypt(other.key.encoded)
+    fun wrap(other: Encryptor): ByteArray = encrypt(other.key.encoded)
+
+    fun unwrap(other: ByteArray): Encryptor = Encryptor(SecretKeySpec(decrypt(other), WRAPPING_KEY_ALGORITHM))
 
     fun encrypt(raw: ByteArray): ByteArray {
         val ivBytes = ByteArray(IV_LENGTH).apply {

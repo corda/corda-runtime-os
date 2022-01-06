@@ -1,16 +1,14 @@
 package net.corda.crypto.impl.persistence
 
 import net.corda.crypto.Encryptor
-import net.corda.crypto.PasswordEncodeUtils.AES_KEY_LENGTH
-import net.corda.crypto.PasswordEncodeUtils.AES_PROVIDER
+import net.corda.crypto.Encryptor.Companion.AES_KEY_LENGTH
+import net.corda.crypto.Encryptor.Companion.AES_PROVIDER
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import java.security.PrivateKey
 import java.security.spec.PKCS8EncodedKeySpec
 import javax.crypto.KeyGenerator
-import javax.crypto.SecretKey
-import javax.crypto.spec.SecretKeySpec
 
 class WrappingKey(
     private val encryptor: Encryptor,
@@ -49,13 +47,13 @@ class WrappingKey(
         }
     }
 
-    fun wrap(key: WrappingKey): ByteArray = encryptor.encrypt(key.encryptor)
+    fun wrap(key: WrappingKey): ByteArray = encryptor.wrap(key.encryptor)
 
     fun wrap(key: PrivateKey): ByteArray = encryptor.encrypt(key.encoded)
 
     fun unwrapWrappingKey(key: ByteArray): WrappingKey = WrappingKey(
         schemeMetadata = schemeMetadata,
-        encryptor = Encryptor(encryptor.decrypt(key).decodeSecretKey())
+        encryptor = encryptor.unwrap(key)
     )
 
     fun unwrap(key: ByteArray): PrivateKey = encryptor.decrypt(key).decodePrivateKey()
@@ -66,7 +64,4 @@ class WrappingKey(
         val keyFactory = schemeMetadata.findKeyFactory(scheme)
         return schemeMetadata.toSupportedPrivateKey(keyFactory.generatePrivate(PKCS8EncodedKeySpec(this)))
     }
-
-    private fun ByteArray.decodeSecretKey(): SecretKey =
-        SecretKeySpec(this, 0, size, WRAPPING_KEY_ALGORITHM)
 }

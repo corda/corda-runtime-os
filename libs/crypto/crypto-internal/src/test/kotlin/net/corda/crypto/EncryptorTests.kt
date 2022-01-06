@@ -1,6 +1,6 @@
 package net.corda.crypto
 
-import net.corda.crypto.PasswordEncodeUtils.encodePassPhrase
+import net.corda.crypto.Encryptor.Companion.encodePassPhrase
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -26,6 +26,7 @@ class EncryptorTests {
             assertArrayEquals(data, decrypted)
         }
     }
+
     @Test
     fun `Should successfully encrypt and then decrypt 1 byte length data`() {
         val data = byteArrayOf(33)
@@ -81,6 +82,23 @@ class EncryptorTests {
             val encrypted = encryptor1.encrypt(data)
             val decrypted = encryptor2.decrypt(encrypted)
             assertEquals(encryptor1, encryptor2)
+            assertFalse(data.contentEquals(encrypted))
+            assertArrayEquals(data, decrypted)
+        }
+    }
+
+    @Test
+    fun `Should unwrap and then use it`() {
+        val passphrase = UUID.randomUUID().toString()
+        val salt = UUID.randomUUID().toString()
+        val master = Encryptor.derive(passphrase, salt)
+        val random = Random(Instant.now().toEpochMilli())
+        (0 until 100).forEach { _ ->
+            val data = random.nextBytes(random.nextInt(1, 193))
+            val wrapped = master.wrap(Encryptor.derive(passphrase, salt))
+            val unwrapped = master.unwrap(wrapped)
+            val encrypted = unwrapped.encrypt(data)
+            val decrypted = unwrapped.decrypt(encrypted)
             assertFalse(data.contentEquals(encrypted))
             assertArrayEquals(data, decrypted)
         }
