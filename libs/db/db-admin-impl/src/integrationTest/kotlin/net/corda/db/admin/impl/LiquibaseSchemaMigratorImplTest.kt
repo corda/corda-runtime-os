@@ -27,16 +27,12 @@ class LiquibaseSchemaMigratorImplTest {
     fun `clear db`() {
         ds.connection.use {
             it.prepareStatement("DROP SCHEMA PUBLIC CASCADE").execute()
+            it.prepareStatement("DROP SCHEMA ANOTHER_SCHEMA CASCADE").execute()
         }
     }
 
     @Test
     fun `when updateDb create DB schema`() {
-        ds.connection.use {
-            it.prepareStatement("CREATE SCHEMA IF NOT EXISTS bobby;").execute()
-            it.prepareStatement("CREATE TABLE bobby.foo(LastName varchar(255));").execute()
-        }
-
         val lbm = LiquibaseSchemaMigratorImpl()
 
         lbm.updateDb(ds.connection, cl1)
