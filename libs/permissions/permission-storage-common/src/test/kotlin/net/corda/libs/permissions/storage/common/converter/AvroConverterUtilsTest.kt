@@ -41,7 +41,6 @@ internal class AvroConverterUtilsTest {
             "roleName1",
             null,
         )
-        user.version = 0
         user.userProperties.add(UserProperty(
             "prop1",
             now,
