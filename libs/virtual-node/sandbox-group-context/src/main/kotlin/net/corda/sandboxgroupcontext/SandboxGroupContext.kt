@@ -1,6 +1,7 @@
 package net.corda.sandboxgroupcontext
 
 import net.corda.sandbox.SandboxGroup
+import net.corda.serialization.NonSerializable
 
 /**
  * A context object that is essentially a decorated [SandboxGroup].  It should contain everything required to
@@ -14,7 +15,7 @@ import net.corda.sandbox.SandboxGroup
  * The [VirtualNodeContext] member contains the unique key information that distinguishes a [SandboxGroupContext]
  * from another.
  */
-interface SandboxGroupContext : SandboxGroupContextData {
+interface SandboxGroupContext : SandboxGroupContextData, NonSerializable {
     /**
      * Get an object from *this* [SandboxGroupContext] instance's object cache using the given key.
      *

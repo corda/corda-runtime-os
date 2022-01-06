@@ -2,9 +2,9 @@ package net.corda.flow.manager.impl.pipeline
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
-import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.fiber.requests.FlowIORequest
+import net.corda.flow.manager.fiber.FlowContinuation
 import net.corda.flow.manager.FlowEventProcessor
+import net.corda.flow.manager.fiber.FlowIORequest
 import net.corda.flow.manager.impl.FlowEventContext
 import net.corda.flow.manager.impl.handlers.FlowProcessingException
 import net.corda.flow.manager.impl.handlers.events.FlowEventHandler
@@ -13,6 +13,7 @@ import net.corda.flow.manager.impl.runner.FlowRunner
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
+import java.nio.ByteBuffer
 
 /**
  * [FlowEventPipelineImpl] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].
@@ -40,14 +41,14 @@ data class FlowEventPipelineImpl(
     }
 
     override fun runOrContinue(): FlowEventPipelineImpl {
-        return when (val continuation = flowEventHandler.runOrContinue(context)) {
+        log.info(
+            "Run or continue after receiving ${context.inputEventPayload::class.java.name} using" +
+                    " ${flowEventHandler::class.java.name}"
+        )
+
+        return when (val outcome = flowEventHandler.runOrContinue(context)) {
             is FlowContinuation.Run, is FlowContinuation.Error -> {
-                val (checkpoint, output) = flowRunner.runFlow(
-                    requireCheckpoint(context) { "The flow must have a checkpoint to start or resume" },
-                    context.inputEvent,
-                    continuation
-                ).waitForCheckpoint()
-                copy(context = context.copy(checkpoint = checkpoint), output = output)
+                updateContextFromFlowExecution(outcome)
             }
             is FlowContinuation.Continue -> this
         }
@@ -93,5 +94,31 @@ data class FlowEventPipelineImpl(
             log.error("$it. Context: $context")
             throw FlowProcessingException(it)
         }
+    }
+
+    private fun updateContextFromFlowExecution(outcome: FlowContinuation): FlowEventPipelineImpl {
+        val flowResultFuture = flowRunner.runFlow(
+            context,
+            outcome
+        )
+
+        /*
+        Need to think about a timeout for the get(), what do we do if a flow does not complete?
+        */
+        when (val flowResult = flowResultFuture.get()) {
+            is FlowIORequest.FlowFinished -> {
+                context.checkpoint!!.fiber = ByteBuffer.wrap(byteArrayOf())
+                return copy(output = flowResult)
+            }
+            is FlowIORequest.FlowSuspended<*> -> {
+                context.checkpoint!!.fiber = ByteBuffer.wrap(flowResult.fiber)
+                return copy(output = flowResult.output)
+            }
+            is FlowIORequest.FlowFailed -> {
+                TODO("Flow Failure Path TBD")
+            }
+        }
+
+        return this
     }
 }

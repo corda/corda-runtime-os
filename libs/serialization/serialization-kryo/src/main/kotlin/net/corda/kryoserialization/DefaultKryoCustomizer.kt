@@ -24,6 +24,8 @@ import net.corda.kryoserialization.serializers.LoggerSerializer
 import net.corda.kryoserialization.serializers.StackTraceSerializer
 import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
+import net.corda.kryoserialization.serializers.NonSerializableSerializer
+import net.corda.serialization.NonSerializable
 import net.corda.utilities.LazyMappedList
 import org.objenesis.instantiator.ObjectInstantiator
 import org.objenesis.strategy.InstantiatorStrategy
@@ -100,6 +102,7 @@ class DefaultKryoCustomizer {
                 register(LoggerFactory.getLogger(this::class.java)::class.java, LOGGER_ID)
 
                 addDefaultSerializer(AutoCloseable::class.java, AutoCloseableSerializer)
+                addDefaultSerializer(NonSerializable::class.java, NonSerializableSerializer)
 
                 //Add external serializers
                 for ((clazz, serializer) in serializers.toSortedMap(compareBy { it.name })) {
