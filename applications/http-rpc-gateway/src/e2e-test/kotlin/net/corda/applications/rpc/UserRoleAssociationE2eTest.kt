@@ -82,6 +82,11 @@ class UserRoleAssociationE2eTest {
                 }
             }
 
+            // add a fake role to assert validation of role ID being real.
+            Assertions.assertThatThrownBy { proxy.addRole(userName, "fakeRoleId") }
+                .isInstanceOf(InternalErrorException::class.java)
+                .hasMessageContaining("Role 'fakeRoleId' does not exist.")
+
             // add the role to the user
             with(proxy.addRole(userName, roleId)) {
                 assertSoftly {
@@ -116,6 +121,17 @@ class UserRoleAssociationE2eTest {
                     }
                 }
             }
+
+            // remove the role again to assert validation of role being associated.
+            Assertions.assertThatThrownBy { proxy.removeRole(userName, roleId) }
+                .isInstanceOf(InternalErrorException::class.java)
+                .hasMessageContaining("Role '$roleId' is not associated with User '$userName'.")
+
+            // remove a fake role to assert validation does not expose role names in the system.
+            Assertions.assertThatThrownBy { proxy.removeRole(userName, "fakeRoleId") }
+                .isInstanceOf(InternalErrorException::class.java)
+                .hasMessageContaining("Role 'fakeRoleId' is not associated with User '$userName'.")
+
         }
     }
 }

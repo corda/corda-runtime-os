@@ -58,7 +58,6 @@ internal class UserWriterImplTest {
     private val entityManagerFactory = mock<EntityManagerFactory>()
     private val query = mock<Query>()
     private val userQuery = mock<TypedQuery<User>>()
-    private val roleQuery = mock<TypedQuery<Role>>()
     private val group = mock<Group>()
 
     private val userWriter = UserWriterImpl(entityManagerFactory)
@@ -211,9 +210,14 @@ internal class UserWriterImplTest {
         val avroUser = userWriter.addRoleToUser(AddRoleToUserRequest("userLogin1", "role1"), "requestUserId")
 
         val capture = argumentCaptor<Any>()
+
         verify(entityManager.transaction, times(0)).setRollbackOnly()
-        verify(entityManager, times(1)).merge(capture.capture())
-        verify(entityManager, times(1)).persist(capture.capture())
+        inOrder(entityTransaction, entityManager) {
+            verify(entityTransaction).begin()
+            verify(entityManager, times(1)).merge(capture.capture())
+            verify(entityManager, times(1)).persist(capture.capture())
+            verify(entityTransaction).commit()
+        }
 
         assertEquals(2, capture.allValues.size)
         val persistedUser = capture.firstValue as User
@@ -250,29 +254,10 @@ internal class UserWriterImplTest {
     }
 
     @Test
-    fun `remove role from user fails when role does not exist`() {
-        whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
-        whenever(userQuery.setParameter("loginName", "userLogin1")).thenReturn(userQuery)
-        whenever(userQuery.resultList).thenReturn(listOf(user))
-
-        whenever(entityManager.find(Role::class.java, "role1")).thenReturn(null)
-
-        val e = assertThrows<IllegalArgumentException> {
-            userWriter.removeRoleFromUser(RemoveRoleFromUserRequest("userLogin1", "role1"), "requestUserId")
-        }
-
-        verify(entityManager.transaction, times(1)).setRollbackOnly()
-
-        assertEquals("Role 'role1' does not exist.", e.message)
-    }
-
-    @Test
     fun `remove role from user fails when role is not assigned to user`() {
         whenever(entityManager.createQuery(any(), eq(User::class.java))).thenReturn(userQuery)
         whenever(userQuery.setParameter("loginName", "userLogin1")).thenReturn(userQuery)
         whenever(userQuery.resultList).thenReturn(listOf(user))
-
-        whenever(entityManager.find(Role::class.java, "role1")).thenReturn(role)
 
         val e = assertThrows<IllegalArgumentException> {
             userWriter.removeRoleFromUser(RemoveRoleFromUserRequest("userLogin1", "role1"), "requestUserId")
@@ -290,18 +275,21 @@ internal class UserWriterImplTest {
         whenever(userQuery.setParameter("loginName", "userLogin1")).thenReturn(userQuery)
         whenever(userQuery.resultList).thenReturn(listOf(user))
 
-        whenever(entityManager.find(Role::class.java, "role1")).thenReturn(role)
-
         val assoc = RoleUserAssociation("assoc1", role, user, Instant.now())
         user.roleUserAssociations.add(assoc)
 
         val avroUser = userWriter.removeRoleFromUser(RemoveRoleFromUserRequest("userLogin1", "role1"), "requestUserId")
 
         val capture = argumentCaptor<Any>()
+
         verify(entityManager.transaction, times(0)).setRollbackOnly()
-        verify(entityManager, times(1)).remove(capture.capture())
-        verify(entityManager, times(1)).merge(capture.capture())
-        verify(entityManager, times(1)).persist(capture.capture())
+        inOrder(entityTransaction, entityManager) {
+            verify(entityTransaction).begin()
+            verify(entityManager, times(1)).remove(capture.capture())
+            verify(entityManager, times(1)).merge(capture.capture())
+            verify(entityManager, times(1)).persist(capture.capture())
+            verify(entityTransaction).commit()
+        }
 
         assertEquals(3, capture.allValues.size)
         val removedAssociation = capture.firstValue as RoleUserAssociation
