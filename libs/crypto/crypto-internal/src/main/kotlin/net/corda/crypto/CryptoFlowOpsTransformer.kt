@@ -116,22 +116,51 @@ class CryptoFlowOpsTransformer(
     }
 
     /**
-     * Checks what was the request and transforms using appropriate transformer [CryptoPublicKey]
+     * Returns request's type.
+     *
+     * @throws [IllegalArgumentException] if the request type is not one of
+     * [SignWithSpecFlowCommand], [SignFlowCommand], [GenerateFreshKeyFlowCommand], [FilterMyKeysFlowQuery]
+     */
+    fun inferRequestType(response: FlowOpsResponse): Class<*>? {
+        return when (response.getContextValue(REQUEST_OP_KEY)) {
+            SignWithSpecFlowCommand::class.java.simpleName -> SignWithSpecFlowCommand::class.java
+            SignFlowCommand::class.java.simpleName -> SignFlowCommand::class.java
+            GenerateFreshKeyFlowCommand::class.java.simpleName -> GenerateFreshKeyFlowCommand::class.java
+            FilterMyKeysFlowQuery::class.java.simpleName -> FilterMyKeysFlowQuery::class.java
+            else -> null
+        }
+    }
+
+    /**
+     * Transforms the response type.
+     *
+     * @return [PublicKey] for [GenerateFreshKeyFlowCommand] request and [CryptoPublicKey] response type,
+     * [List<PublicKey>] for [FilterMyKeysFlowQuery] request and [CryptoPublicKeys] response type
+     * [DigitalSignature.WithKey] for [SignFlowCommand] or [SignWithSpecFlowCommand] request
+     * with [CryptoSignatureWithKey] response type
+     *
+     * @throws [IllegalArgumentException] if the request type is not one of
+     * [SignWithSpecFlowCommand], [SignFlowCommand], [GenerateFreshKeyFlowCommand], [FilterMyKeysFlowQuery]
+     * or the response is not one of
+     * [CryptoPublicKey], [CryptoPublicKeys], [CryptoSignatureWithKey]
+     *
+     * @throws [IllegalStateException]  if the response contains error.
      */
     fun transform(response: FlowOpsResponse): Any {
-        return when (val requestOp = response.getContextValue(REQUEST_OP_KEY)) {
-            SignWithSpecFlowCommand::class.java.simpleName -> transformCryptoSignatureWithKey(response)
-            SignFlowCommand::class.java.simpleName -> transformCryptoSignatureWithKey(response)
-            GenerateFreshKeyFlowCommand::class.java.simpleName -> transformCryptoPublicKey(response)
-            FilterMyKeysFlowQuery::class.java.simpleName -> transformCryptoPublicKeys(response)
-            else -> IllegalArgumentException("Unknown request type: $REQUEST_OP_KEY=$requestOp")
+        return when (inferRequestType(response)) {
+            SignWithSpecFlowCommand::class.java -> transformCryptoSignatureWithKey(response)
+            SignFlowCommand::class.java -> transformCryptoSignatureWithKey(response)
+            GenerateFreshKeyFlowCommand::class.java -> transformCryptoPublicKey(response)
+            FilterMyKeysFlowQuery::class.java -> transformCryptoPublicKeys(response)
+            else -> throw IllegalArgumentException(
+                "Unknown request type: $REQUEST_OP_KEY=${response.getContextValue(REQUEST_OP_KEY)}")
         }
     }
 
     /**
      * Transforms [CryptoPublicKey]
      */
-    fun transformCryptoPublicKey(response: FlowOpsResponse): PublicKey {
+    private fun transformCryptoPublicKey(response: FlowOpsResponse): PublicKey {
         val resp = response.validateAndGet<CryptoPublicKey>()
         return schemeMetadata.decodePublicKey(resp.key.array())
     }
@@ -139,7 +168,7 @@ class CryptoFlowOpsTransformer(
     /**
      * Transforms [CryptoPublicKeys]
      */
-    fun transformCryptoPublicKeys(response: FlowOpsResponse): Iterable<PublicKey> {
+    private fun transformCryptoPublicKeys(response: FlowOpsResponse): List<PublicKey> {
         val resp = response.validateAndGet<CryptoPublicKeys>()
         return resp.keys.map {
             schemeMetadata.decodePublicKey(it.array())
@@ -149,7 +178,7 @@ class CryptoFlowOpsTransformer(
     /**
      * Transforms [CryptoSignatureWithKey]
      */
-    fun transformCryptoSignatureWithKey(response: FlowOpsResponse): DigitalSignature.WithKey {
+    private fun transformCryptoSignatureWithKey(response: FlowOpsResponse): DigitalSignature.WithKey {
         val resp = response.validateAndGet<CryptoSignatureWithKey>()
         return DigitalSignature.WithKey(
             by = schemeMetadata.decodePublicKey(resp.publicKey.array()),
@@ -160,7 +189,7 @@ class CryptoFlowOpsTransformer(
     /**
      * Creates [FlowOpsRequest] for specified tenant and operation
      */
-    fun createRequest(tenantId: String, request: Any): FlowOpsRequest =
+    private fun createRequest(tenantId: String, request: Any): FlowOpsRequest =
         FlowOpsRequest(
             createWireRequestContext(tenantId, request),
             request
@@ -169,7 +198,7 @@ class CryptoFlowOpsTransformer(
     /**
      * Creates [CryptoRequestContext] for specified tenant and operation
      */
-    fun createWireRequestContext(
+    private fun createWireRequestContext(
         tenantId: String,
         request: Any
     ): CryptoRequestContext {
@@ -187,40 +216,41 @@ class CryptoFlowOpsTransformer(
     /**
      * Transforms map to [KeyValuePairList]
      */
-    fun Map<String, String>.toWire(): KeyValuePairList {
+    private fun Map<String, String>.toWire(): KeyValuePairList {
         return KeyValuePairList(
             map {
                 KeyValuePair(it.key, it.value)
             }
         )
     }
-}
+    /**
+     * Returns the value of the context key or null if it's not found.
+     */
+    private fun FlowOpsResponse.getContextValue(key: String): String? =
+        context.other.items.firstOrNull { it.key == key }?.value
 
-/**
- * Returns the value of the context key or null if it's not found.
- */
-fun FlowOpsResponse.getContextValue(key: String): String? =
-    context.other.items.firstOrNull { it.key == key }?.value
-
-/**
- * Validates that the response doesn't contain error and that it's of expected type.
- *
- * @return The enclosed response obeject.
- */
-inline fun <reified EXPECTED> FlowOpsResponse.validateAndGet(): EXPECTED {
-    if (response is CryptoNoContentValue) {
-        val error = getContextValue(CryptoFlowOpsTransformer.RESPONSE_ERROR_KEY)
-        if (error.isNullOrBlank()) {
-            throw IllegalStateException("Unexpected response value")
-        } else {
-            throw IllegalStateException("Request failed: $error")
+    /**
+     * Validates that the response doesn't contain error and that it's of expected type.
+     *
+     * @return The enclosed response object.
+     *
+     * @throws [IllegalStateException] if the response contains error.
+     */
+    private inline fun <reified EXPECTED> FlowOpsResponse.validateAndGet(): EXPECTED {
+        if (response is CryptoNoContentValue) {
+            val error = getContextValue(RESPONSE_ERROR_KEY)
+            if (error.isNullOrBlank()) {
+                throw IllegalStateException("Unexpected response value")
+            } else {
+                throw IllegalStateException("Request failed: $error")
+            }
         }
+        if (response !is EXPECTED) {
+            throw IllegalStateException(
+                "Unexpected response type, expected '${EXPECTED::class.java.name}'" +
+                        "but received '${response::class.java.name}'"
+            )
+        }
+        return response as EXPECTED
     }
-    if (response !is EXPECTED) {
-        throw IllegalStateException(
-            "Unexpected response type, expected '${EXPECTED::class.java.name}'" +
-                    "but received '${response::class.java.name}'"
-        )
-    }
-    return response as EXPECTED
 }

@@ -33,7 +33,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers
+import org.hamcrest.Matchers.empty
 import org.hamcrest.Matchers.instanceOf
 import org.hamcrest.core.IsInstanceOf
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -59,11 +59,9 @@ import java.util.concurrent.CompletableFuture
 import kotlin.test.assertTrue
 
 class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComponentImpl>() {
-    private val knownTenantId = UUID.randomUUID().toString()
-    private val knownAlias = UUID.randomUUID().toString()
-    private val knownOperationContext = mapOf(
-        UUID.randomUUID().toString() to UUID.randomUUID().toString()
-    )
+    private lateinit var knownTenantId: String
+    private lateinit var knownAlias: String
+    private lateinit var knownOperationContext: Map<String, String>
     private lateinit var schemeMetadata: CipherSchemeMetadata
     private lateinit var sender: RPCSender<RpcOpsRequest, RpcOpsResponse>
     private lateinit var publisherFactory: PublisherFactory
@@ -71,6 +69,11 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
     @BeforeEach
     fun setup() {
         super.setup {
+            knownTenantId = UUID.randomUUID().toString()
+            knownAlias = UUID.randomUUID().toString()
+            knownOperationContext = mapOf(
+                UUID.randomUUID().toString() to UUID.randomUUID().toString()
+            )
             val cryptoMocks = CryptoMocks()
             schemeMetadata = cryptoMocks.schemeMetadata
             sender = mock()
@@ -111,7 +114,7 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
         kotlin.test.assertEquals(knownTenantId, context.tenantId)
         result.assertThatIsBetween(context.requestTimestamp)
         kotlin.test.assertEquals(CryptoOpsClientImpl::class.simpleName, context.requestingComponent)
-        assertThat(context.other.items, Matchers.empty())
+        assertThat(context.other.items, empty())
     }
 
     private fun assertOperationContext(context: KeyValuePairList) {
