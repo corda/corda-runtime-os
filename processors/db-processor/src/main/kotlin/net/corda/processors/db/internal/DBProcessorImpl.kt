@@ -1,6 +1,8 @@
 package net.corda.processors.db.internal
 
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.write.ConfigWriteService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
@@ -88,26 +90,25 @@ class DBProcessorImpl @Activate constructor(
 
     /** Creates a [DataSource] using the [config]. */
     private fun createDataSource(config: Config): DataSource {
-        val driver = getConfigStringOrDefault(config, CONFIG_DB_DRIVER, CONFIG_DB_DRIVER_DEFAULT)
-        val jdbcUrl = getConfigStringOrDefault(config, CONFIG_JDBC_URL, CONFIG_JDBC_URL_DEFAULT)
+        val fallbackConfig = ConfigFactory.empty()
+            .withValue(CONFIG_DB_DRIVER, ConfigValueFactory.fromAnyRef(CONFIG_DB_DRIVER_DEFAULT))
+            .withValue(CONFIG_JDBC_URL, ConfigValueFactory.fromAnyRef(CONFIG_JDBC_URL_DEFAULT))
+            .withValue(CONFIG_MAX_POOL_SIZE, ConfigValueFactory.fromAnyRef(CONFIG_MAX_POOL_SIZE_DEFAULT))
+        val configWithFallback = config.withFallback(fallbackConfig)
+
+        val driver = configWithFallback.getString(CONFIG_DB_DRIVER)
+        val jdbcUrl = configWithFallback.getString(CONFIG_JDBC_URL)
+        val maxPoolSize = configWithFallback.getInt(CONFIG_MAX_POOL_SIZE)
+        
         val username = getConfigStringOrNull(config, CONFIG_DB_USER) ?: throw DBProcessorException(
             "No username provided to connect to cluster database. Pass the `-d cluster.user` flag at worker startup."
         )
         val password = getConfigStringOrNull(config, CONFIG_DB_PASS) ?: throw DBProcessorException(
             "No password provided to connect to cluster database. Pass the `-d cluster.pass` flag at worker startup."
         )
-        val maxPoolSize = getConfigIntOrDefault(config, CONFIG_MAX_POOL_SIZE, CONFIG_MAX_POOL_SIZE_DEFAULT)
 
         return HikariDataSourceFactory().create(driver, jdbcUrl, username, password, false, maxPoolSize)
     }
-
-    /** Returns the string at [path] from [config], or [default] if the path doesn't exist. */
-    private fun getConfigStringOrDefault(config: Config, path: String, default: String) =
-        if (config.hasPath(path)) config.getString(path) else default
-
-    /** Returns the integer at [path] from [config], or [default] if the path doesn't exist. */
-    private fun getConfigIntOrDefault(config: Config, path: String, default: Int) =
-        if (config.hasPath(path)) config.getInt(path) else default
 
     /** Returns the string at [path] from [config], or null if the path doesn't exist. */
     private fun getConfigStringOrNull(config: Config, path: String) =
