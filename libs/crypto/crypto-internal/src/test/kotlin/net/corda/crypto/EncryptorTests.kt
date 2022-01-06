@@ -12,6 +12,7 @@ import java.util.UUID
 import javax.crypto.spec.SecretKeySpec
 import kotlin.random.Random
 
+@Suppress("ForEachOnRange")
 class EncryptorTests {
     @Test
     fun `Should successfully encrypt and then decrypt zero length data`() {
