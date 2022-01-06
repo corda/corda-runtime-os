@@ -37,16 +37,6 @@ class PermissionStorageWriterProcessorImpl(
                     permissionStorageReader.publishNewUser(avroUser)
                     avroUser
                 }
-                is AddRoleToUserRequest -> {
-                    val avroUser = userWriter.addRoleToUser(permissionRequest, request.requestUserId)
-                    permissionStorageReader.publishNewUser(avroUser)
-                    avroUser
-                }
-                is RemoveRoleFromUserRequest -> {
-                    val avroUser = userWriter.removeRoleFromUser(permissionRequest, request.requestUserId)
-                    permissionStorageReader.publishNewUser(avroUser)
-                    avroUser
-                }
                 is CreateRoleRequest -> {
                     val avroRole = roleWriter.createRole(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishNewRole(avroRole)
@@ -57,6 +47,16 @@ class PermissionStorageWriterProcessorImpl(
                         request.virtualNodeId)
                     permissionStorageReader.publishNewPermission(avroPermission)
                     avroPermission
+                }
+                is AddRoleToUserRequest -> {
+                    val avroUser = userWriter.addRoleToUser(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishUpdatedUser(avroUser)
+                    avroUser
+                }
+                is RemoveRoleFromUserRequest -> {
+                    val avroUser = userWriter.removeRoleFromUser(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishUpdatedUser(avroUser)
+                    avroUser
                 }
                 is AddPermissionToRoleRequest -> {
                     val avroRole = roleWriter.addPermissionToRole(permissionRequest, request.requestUserId)

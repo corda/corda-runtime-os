@@ -206,8 +206,9 @@ class PermissionStorageWriterProcessorImplTest {
     }
 
     @Test
-    fun `receiving AddRoleToUserRequest calls roleWriter and publishes updated user`() {
+    fun `receiving AddRoleToUserRequest calls userWriter and publishes updated user`() {
         val avroUser = AvroUser().apply {
+            id = "userId1"
             loginName = "userLogin1"
             enabled = true
             roleAssociations = listOf(RoleAssociation(ChangeDetails(Instant.now()), "roleId"))
@@ -236,8 +237,9 @@ class PermissionStorageWriterProcessorImplTest {
     }
 
     @Test
-    fun `receiving RemoveRoleFromUserRequest calls roleWriter and publishes updated user`() {
+    fun `receiving RemoveRoleFromUserRequest calls userWriter and publishes updated user`() {
         val avroUser = AvroUser().apply {
+            id = "userId1"
             loginName = "userLogin1"
             enabled = true
         }
