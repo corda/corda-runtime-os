@@ -1,6 +1,5 @@
 package net.corda.libs.configuration.write.impl
 
-import net.corda.config.schema.Schema.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfig
@@ -12,6 +11,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

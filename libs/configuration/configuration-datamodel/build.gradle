@@ -12,6 +12,14 @@ dependencies {
     implementation 'javax.persistence:javax.persistence-api'
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    integrationTestImplementation project(':libs:db:db-admin')
+    integrationTestImplementation project(':libs:db:db-admin-impl')
+    integrationTestImplementation project(':libs:db:db-orm')
+    integrationTestImplementation project(':libs:db:db-orm-impl')
+    integrationTestImplementation project(':testing:db-testkit')
+
+    integrationTestRuntime "org.hsqldb:hsqldb:$hsqldbVersion"
 }
 
 tasks.named('jar', Jar) {

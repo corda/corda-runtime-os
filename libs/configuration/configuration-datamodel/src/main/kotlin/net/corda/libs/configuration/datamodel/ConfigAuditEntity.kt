@@ -11,7 +11,6 @@ import javax.persistence.Entity
 import javax.persistence.GeneratedValue
 import javax.persistence.GenerationType.SEQUENCE
 import javax.persistence.Id
-import javax.persistence.PrePersist
 import javax.persistence.SequenceGenerator
 import javax.persistence.Table
 
@@ -48,7 +47,7 @@ data class ConfigAuditEntity(
         0,
         configEntity.section,
         configEntity.config,
-        configEntity.configVersion,
+        configEntity.schemaVersion,
         configEntity.updateTimestamp,
         configEntity.updateActor
     )

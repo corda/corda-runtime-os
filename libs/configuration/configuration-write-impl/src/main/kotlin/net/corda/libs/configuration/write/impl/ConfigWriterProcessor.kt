@@ -4,7 +4,6 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
-import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -38,8 +37,9 @@ internal class ConfigWriterProcessor(
     override fun onNext(request: ConfigurationManagementRequest, respFuture: ConfigurationManagementResponseFuture) {
         // TODO - CORE-3318 - Ensure we don't perform any blocking operations in the processor.
         // TODO - CORE-3319 - Strategy for DB and Kafka retries.
-        if (publishConfigToDB(request, respFuture)) {
-            publishConfigToKafka(request, respFuture)
+        val configEntity = publishConfigToDB(request, respFuture)
+        if (configEntity != null) {
+            publishConfigToKafka(configEntity, respFuture)
         }
     }
 
@@ -49,56 +49,44 @@ internal class ConfigWriterProcessor(
      * If the transaction fails, the exception is caught and [respFuture] is completed unsuccessfully. The transaction
      * is not retried.
      *
-     * @return True if the commit was successful, false if the commit failed.
+     * @return The committed config entity if the commit was successful, or null otherwise.
      */
     private fun publishConfigToDB(
         req: ConfigurationManagementRequest,
         respFuture: ConfigurationManagementResponseFuture
-    ): Boolean {
-
-        val newConfig = ConfigEntity(
-            req.section,
-            req.version,
-            req.config,
-            req.configSchemaVersion,
-            clock.instant(),
-            req.updateActor
-        )
-        val newConfigAudit = ConfigAuditEntity(newConfig)
-
+    ): ConfigEntity? {
         return try {
-            configEntityRepository.writeEntities(newConfig, newConfigAudit)
-            true
+            configEntityRepository.writeEntities(req, clock)
         } catch (e: Exception) {
-            val errMsg = "Entities $newConfig and $newConfigAudit couldn't be written to the database."
+            val errMsg = "New configuration represented by $req couldn't be written to the database. Cause: $e"
             handleException(respFuture, errMsg, e, req.section)
-            false
+            null
         }
     }
 
     /**
-     * Publishes the updated config described by [req] on the [CONFIG_TOPIC] Kafka topic.
+     * Publishes the updated config represented by [configEntity] on the [CONFIG_TOPIC] Kafka topic.
      *
      * If the publication fails, the exception is caught and [respFuture] is completed unsuccessfully. Publication is
      * not retried. Otherwise, [respFuture] is completed successfully.
      */
     private fun publishConfigToKafka(
-        req: ConfigurationManagementRequest,
+        configEntity: ConfigEntity,
         respFuture: ConfigurationManagementResponseFuture
     ) {
-
-        val configRecord = Record(CONFIG_TOPIC, req.section, Configuration(req.config, req.version.toString()))
+        val config = Configuration(configEntity.config, configEntity.version.toString())
+        val configRecord = Record(CONFIG_TOPIC, configEntity.section, config)
         val future = publisher.publish(listOf(configRecord)).first()
 
         try {
             future.get()
         } catch (e: Exception) {
-            val errMsg = "Record $configRecord was written to the database, but couldn't be published."
-            handleException(respFuture, errMsg, e, req.section)
+            val errMsg = "Record $configRecord was written to the database, but couldn't be published. Cause: $e"
+            handleException(respFuture, errMsg, e, configEntity.section)
             return
         }
 
-        respFuture.complete(ConfigurationManagementResponse(true, req.version, req.config))
+        respFuture.complete(ConfigurationManagementResponse(true, configEntity.version, configEntity.config))
     }
 
     /**

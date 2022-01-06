@@ -1,7 +1,6 @@
 package net.corda.libs.configuration.write.impl.tests
 
 import com.typesafe.config.ConfigFactory
-import net.corda.config.schema.Schema
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfigFactoryImpl
@@ -13,6 +12,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -58,7 +58,7 @@ class ConfigWriterFactoryImplTests {
         val expectedRPCConfig = RPCConfig(
             GROUP_NAME,
             CLIENT_NAME_RPC,
-            Schema.CONFIG_MGMT_REQUEST_TOPIC,
+            CONFIG_MGMT_REQUEST_TOPIC,
             ConfigurationManagementRequest::class.java,
             ConfigurationManagementResponse::class.java,
             777
