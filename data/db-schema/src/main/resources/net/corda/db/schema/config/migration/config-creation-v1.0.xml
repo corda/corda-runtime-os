@@ -1,0 +1,63 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <property name="schema.name" value="CONFIG"/>
+
+    <changeSet author="R3.Corda" id="config-creation-v1.0">
+
+        <sql>
+            CREATE SCHEMA IF NOT EXISTS CONFIG;
+        </sql>
+
+        <createTable tableName="config" schemaName="${schema.name}">
+            <column name="section" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="config" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="schema_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_actor" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="section" constraintName="config_pk" tableName="config"
+                       schemaName="${schema.name}"/>
+
+        <createTable tableName="config_audit" schemaName="${schema.name}">
+            <column name="change_number" type="SERIAL">
+                <constraints nullable="false"/>
+            </column>
+            <column name="section" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="config" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="config_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_ts" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_actor" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey columnNames="change_number" constraintName="config_audit_pk" tableName="config_audit"
+                       schemaName="${schema.name}"/>
+        <createSequence sequenceName="config_audit_id_seq"/>
+
+    </changeSet>
+</databaseChangeLog>

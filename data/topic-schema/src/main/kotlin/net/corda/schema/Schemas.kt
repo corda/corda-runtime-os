@@ -50,6 +50,7 @@ class Schemas {
     class Config {
         companion object {
             const val CONFIG_TOPIC = "config.topic"
+            const val CONFIG_MGMT_REQUEST_TOPIC = "config-management-request.topic"
         }
     }
 

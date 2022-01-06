@@ -7,4 +7,10 @@ package net.corda.db.schema
  */
 object DbSchema  {
     const val RPC_RBAC = "RPC_RBAC"
+
+    const val CONFIG = "CONFIG"
+    const val CONFIG_DB_TABLE = "config"
+    const val CONFIG_AUDIT_DB_TABLE = "config_audit"
+    const val CONFIG_AUDIT_ID_SEQUENCE = "config_audit_id_seq"
+    const val CONFIG_AUDIT_ID_SEQUENCE_ALLOC_SIZE = 1
 }
