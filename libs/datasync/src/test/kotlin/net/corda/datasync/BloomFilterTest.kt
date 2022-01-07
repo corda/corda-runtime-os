@@ -117,19 +117,21 @@ class BloomFilterTest {
     }
 
     @Test
-    fun `creating bloom filter throws exception throws exception if expected item count is zero`() {
+    fun `creating bloom filter throws exception if false positive rate is not strictly between zero and one`() {
         val expectedItemCount = 10
-        val falsePositiveRate = 0.99999999999999999999
+        val falsePositiveRates = setOf(-1.0, 0.0, 1.0, 2.0)
 
-        assertThrows<IllegalArgumentException> {
-            createBloomFilter(
-                expectedItemCount, falsePositiveRate, 99
-            )
+        falsePositiveRates.forEach { rate ->
+            assertThrows<IllegalArgumentException> {
+                createBloomFilter(
+                    expectedItemCount, rate, 99
+                )
+            }
         }
     }
 
     @Test
-    fun `searching for an element in the bloom filter throws exception if filter length is zero`() {
+    fun `searching for an element in the bloom filter returns false when filter length is zero`() {
         val expectedItemCount = 0
         val falsePositiveRate = 0.5
 
@@ -146,7 +148,7 @@ class BloomFilterTest {
     }
 
     @Test
-    fun `searching for an element in the bloom filter throws exception if number of hashes is zero`() {
+    fun `searching for an element in the bloom filter returns false when number of hashes is zero`() {
         val expectedItemCount = 0
         val falsePositiveRate = 0.5
 
