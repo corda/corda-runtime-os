@@ -1,14 +1,11 @@
 package net.corda.crypto.impl.persistence
 
 import net.corda.crypto.Encryptor
-import net.corda.crypto.Encryptor.Companion.AES_KEY_LENGTH
-import net.corda.crypto.Encryptor.Companion.AES_PROVIDER
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import java.security.PrivateKey
 import java.security.spec.PKCS8EncodedKeySpec
-import javax.crypto.KeyGenerator
 
 class WrappingKey(
     private val encryptor: Encryptor,
@@ -37,14 +34,11 @@ class WrappingKey(
             )
         }
 
-        fun createWrappingKey(schemeMetadata: CipherSchemeMetadata): WrappingKey {
-            val keyGenerator = KeyGenerator.getInstance(WRAPPING_KEY_ALGORITHM, AES_PROVIDER)
-            keyGenerator.init(AES_KEY_LENGTH)
-            return WrappingKey(
+        fun createWrappingKey(schemeMetadata: CipherSchemeMetadata): WrappingKey =
+            WrappingKey(
                 schemeMetadata = schemeMetadata,
-                encryptor = Encryptor(keyGenerator.generateKey())
+                encryptor = Encryptor.generate()
             )
-        }
     }
 
     fun wrap(key: WrappingKey): ByteArray = encryptor.wrap(key.encryptor)
