@@ -2,13 +2,10 @@ package net.corda.configuration.rpcops.v1
 
 import net.corda.configuration.rpcops.v1.types.ConfigResponseType
 import net.corda.configuration.rpcops.v1.types.UpdateConfigType
-import net.corda.data.config.ConfigurationManagementRequest
-import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.messaging.api.publisher.RPCSender
 
 /** RPC operations for cluster configuration management. */
 @HttpRpcResource(

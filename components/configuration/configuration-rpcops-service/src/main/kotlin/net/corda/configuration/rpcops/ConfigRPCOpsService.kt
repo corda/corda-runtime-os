@@ -4,7 +4,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
-import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

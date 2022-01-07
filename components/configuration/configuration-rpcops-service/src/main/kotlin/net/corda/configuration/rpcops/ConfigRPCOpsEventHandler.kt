@@ -1,6 +1,5 @@
 package net.corda.configuration.rpcops
 
-import net.corda.config.schema.Schema.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
@@ -18,6 +17,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigRPCOpsService]. */
 internal class ConfigRPCOpsEventHandler(

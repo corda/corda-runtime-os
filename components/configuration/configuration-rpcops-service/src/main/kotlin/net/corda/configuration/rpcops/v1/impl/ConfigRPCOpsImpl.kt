@@ -25,11 +25,11 @@ class ConfigRPCOpsImpl @Activate constructor(
         val req = ConfigurationManagementRequest("blah", 1, "lah", 2, "hah")
         val resp = configRPCOpsRpcSender.sendRequest(req)
 
-        val response = resp.response
-        if (response is ExceptionEnvelope) {
+        val status = resp.status
+        if (status is ExceptionEnvelope) {
             // TODO - Joel - Use properties of exception envelope to throw meaningful exception.
-            response.errorMessage
-            response.errorType
+            status.errorMessage
+            status.errorType
             resp.currentConfiguration
             resp.currentVersion
         }

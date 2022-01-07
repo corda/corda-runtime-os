@@ -10,14 +10,10 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.processors.rpc.RPCProcessor
-import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.v5.base.util.contextLogger
-import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.file.Files
-import java.nio.file.Path
 
 /** The processor for a `RPCWorker`. */
 @Component(service = [RPCProcessor::class])
