@@ -55,7 +55,6 @@ internal class ConfigWriterProcessor(
         req: ConfigurationManagementRequest,
         respFuture: ConfigurationManagementResponseFuture
     ): ConfigEntity? {
-
         return try {
             configEntityRepository.writeEntities(req, clock)
         } catch (e: Exception) {
