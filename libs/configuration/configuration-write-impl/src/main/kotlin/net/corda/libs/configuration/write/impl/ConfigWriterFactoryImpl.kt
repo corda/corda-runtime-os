@@ -1,18 +1,17 @@
 package net.corda.libs.configuration.write.impl
 
-import net.corda.config.schema.Schema.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.write.ConfigWriter
 import net.corda.libs.configuration.write.ConfigWriterException
 import net.corda.libs.configuration.write.ConfigWriterFactory
-import net.corda.libs.configuration.write.impl.dbutils.DBUtilsImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
+import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -28,7 +27,11 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
     private val publisherFactory: PublisherFactory
 ) : ConfigWriterFactory {
 
-    override fun create(config: SmartConfig, instanceId: Int, entityManagerFactory: EntityManagerFactory): ConfigWriter {
+    override fun create(
+        config: SmartConfig,
+        instanceId: Int,
+        entityManagerFactory: EntityManagerFactory
+    ): ConfigWriter {
         val publisher = createPublisher(config, instanceId)
         val subscription = createRPCSubscription(config, instanceId, publisher, entityManagerFactory)
         return ConfigWriterImpl(subscription, publisher)
@@ -69,8 +72,8 @@ internal class ConfigWriterFactoryImpl @Activate constructor(
             ConfigurationManagementResponse::class.java,
             instanceId
         )
-        val dbUtils = DBUtilsImpl(entityManagerFactory)
-        val processor = ConfigWriterProcessor(publisher, dbUtils)
+        val configEntityRepository = ConfigEntityRepository(entityManagerFactory)
+        val processor = ConfigWriterProcessor(publisher, configEntityRepository)
 
         return try {
             subscriptionFactory.createRPCSubscription(rpcConfig, config, processor)

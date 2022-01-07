@@ -15,7 +15,6 @@ abstract class HttpRpcServerTestBase {
         val password = "admin"
         fun findFreePort() = ServerSocket(0).use { it.localPort }
         val securityManager = RPCSecurityManagerFactoryStubImpl().createRPCSecurityManager()
-        val classLoader = ClassLoader.getSystemClassLoader()
         val context = HttpRpcContext("1", "api", "HttpRpcContext test title ", "HttpRpcContext test description")
     }
 }

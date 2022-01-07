@@ -30,6 +30,13 @@ interface PermissionStorageReader : Lifecycle {
     fun publishNewRole(role: AvroRole)
 
     /**
+     * Broadcasts an updated role onto the messaging bus.
+     *
+     * @param role The role to be published.
+     */
+    fun publishUpdatedRole(role: AvroRole)
+
+    /**
      * Broadcasts a new permission onto the messaging bus.
      *
      * @param permission The permission to be published.

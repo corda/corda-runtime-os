@@ -59,6 +59,28 @@ class RoleEndpointImpl @Activate constructor(
         return roleResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("Role", id)
     }
 
+    override fun addPermission(roleId: String, permissionId: String): RoleResponseType {
+        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val principal = rpcContext.principal
+
+        val updatedRoleResult = permissionServiceComponent.permissionManager.addPermissionToRole(
+            roleId, permissionId, principal
+        )
+
+        return updatedRoleResult.convertToEndpointType()
+    }
+
+    override fun removePermission(roleId: String, permissionId: String): RoleResponseType {
+        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val principal = rpcContext.principal
+
+        val updatedRoleResult = permissionServiceComponent.permissionManager.removePermissionFromRole(
+            roleId, permissionId, principal
+        )
+
+        return updatedRoleResult.convertToEndpointType()
+    }
+
     override val isRunning: Boolean
         get() = coordinator.isRunning
 

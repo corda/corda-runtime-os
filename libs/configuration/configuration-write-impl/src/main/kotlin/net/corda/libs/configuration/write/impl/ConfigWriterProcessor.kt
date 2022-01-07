@@ -4,23 +4,27 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
-import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
-import net.corda.libs.configuration.write.impl.dbutils.DBUtils
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
+import java.time.Clock
 
 /**
  * An RPC responder processor that handles configuration management requests.
  *
  * Listens for configuration management requests over RPC. Persists the updated configuration to the cluster database
  * and publishes the updated configuration to Kafka.
+ *
+ * @property publisher The publisher used to publish to Kafka.
+ * @property configEntityRepository The interface for interacting with configuration entities in the cluster database.
+ * @property clock Controls how the current instant is determined, so it can be injected during testing.
  */
 internal class ConfigWriterProcessor(
     private val publisher: Publisher,
-    private val dbUtils: DBUtils
+    private val configEntityRepository: ConfigEntityRepository,
+    private val clock: Clock = Clock.systemUTC()
 ) : RPCResponderProcessor<ConfigurationManagementRequest, ConfigurationManagementResponse> {
 
     /**
@@ -33,8 +37,9 @@ internal class ConfigWriterProcessor(
     override fun onNext(request: ConfigurationManagementRequest, respFuture: ConfigurationManagementResponseFuture) {
         // TODO - CORE-3318 - Ensure we don't perform any blocking operations in the processor.
         // TODO - CORE-3319 - Strategy for DB and Kafka retries.
-        if (publishConfigToDB(request, respFuture)) {
-            publishConfigToKafka(request, respFuture)
+        val configEntity = publishConfigToDB(request, respFuture)
+        if (configEntity != null) {
+            publishConfigToKafka(configEntity, respFuture)
         }
     }
 
@@ -44,49 +49,45 @@ internal class ConfigWriterProcessor(
      * If the transaction fails, the exception is caught and [respFuture] is completed unsuccessfully. The transaction
      * is not retried.
      *
-     * @return True if the commit was successful, false if the commit failed.
+     * @return The committed config entity if the commit was successful, or null otherwise.
      */
     private fun publishConfigToDB(
         req: ConfigurationManagementRequest,
         respFuture: ConfigurationManagementResponseFuture
-    ): Boolean {
-
-        val newConfig = ConfigEntity(req.section, req.version, req.config, req.configVersion, req.updateActor)
-        val newConfigAudit = ConfigAuditEntity(req.section, req.config, req.configVersion, req.updateActor)
+    ): ConfigEntity? {
 
         return try {
-            dbUtils.writeEntities(newConfig, newConfigAudit)
-            true
+            configEntityRepository.writeEntities(req, clock)
         } catch (e: Exception) {
-            val errMsg = "Entities $newConfig and $newConfigAudit couldn't be written to the database."
+            val errMsg = "New configuration represented by $req couldn't be written to the database. Cause: $e"
             handleException(respFuture, errMsg, e, req.section)
-            false
+            null
         }
     }
 
     /**
-     * Publishes the updated config described by [req] on the [CONFIG_TOPIC] Kafka topic.
+     * Publishes the updated config represented by [configEntity] on the [CONFIG_TOPIC] Kafka topic.
      *
      * If the publication fails, the exception is caught and [respFuture] is completed unsuccessfully. Publication is
      * not retried. Otherwise, [respFuture] is completed successfully.
      */
     private fun publishConfigToKafka(
-        req: ConfigurationManagementRequest,
+        configEntity: ConfigEntity,
         respFuture: ConfigurationManagementResponseFuture
     ) {
-
-        val configRecord = Record(CONFIG_TOPIC, req.section, Configuration(req.config, req.version.toString()))
+        val config = Configuration(configEntity.config, configEntity.version.toString())
+        val configRecord = Record(CONFIG_TOPIC, configEntity.section, config)
         val future = publisher.publish(listOf(configRecord)).first()
 
         try {
             future.get()
         } catch (e: Exception) {
-            val errMsg = "Record $configRecord was written to the database, but couldn't be published."
-            handleException(respFuture, errMsg, e, req.section)
+            val errMsg = "Record $configRecord was written to the database, but couldn't be published. Cause: $e"
+            handleException(respFuture, errMsg, e, configEntity.section)
             return
         }
 
-        respFuture.complete(ConfigurationManagementResponse(true, req.version, req.config))
+        respFuture.complete(ConfigurationManagementResponse(true, configEntity.version, configEntity.config))
     }
 
     /**
@@ -98,7 +99,7 @@ internal class ConfigWriterProcessor(
         respFuture: ConfigurationManagementResponseFuture, errMsg: String, cause: Exception, section: String
     ) {
         val currentConfig = try {
-            dbUtils.readConfigEntity(section)
+            configEntityRepository.readConfigEntity(section)
         } catch (e: IllegalStateException) {
             // We ignore this additional error, and report the one we were already planning to report.
             null

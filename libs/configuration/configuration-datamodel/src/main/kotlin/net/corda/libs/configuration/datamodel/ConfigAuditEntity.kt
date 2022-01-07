@@ -1,15 +1,16 @@
 package net.corda.libs.configuration.datamodel
 
-import net.corda.db.schema.DbSchema
+import net.corda.db.schema.DbSchema.CONFIG
+import net.corda.db.schema.DbSchema.CONFIG_AUDIT_DB_TABLE
+import net.corda.db.schema.DbSchema.CONFIG_AUDIT_ID_SEQUENCE
+import net.corda.db.schema.DbSchema.CONFIG_AUDIT_ID_SEQUENCE_ALLOC_SIZE
 import net.corda.libs.configuration.datamodel.internal.CONFIG_AUDIT_GENERATOR
-import net.corda.libs.configuration.datamodel.internal.DB_TABLE_CONFIG_AUDIT
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.GeneratedValue
 import javax.persistence.GenerationType.SEQUENCE
 import javax.persistence.Id
-import javax.persistence.PrePersist
 import javax.persistence.SequenceGenerator
 import javax.persistence.Table
 
@@ -24,10 +25,14 @@ import javax.persistence.Table
  * @param updateActor The ID of the user that last updated this section of the configuration.
  */
 @Entity
-@Table(name = DB_TABLE_CONFIG_AUDIT, schema = DbSchema.CONFIG)
+@Table(name = CONFIG_AUDIT_DB_TABLE, schema = CONFIG)
 data class ConfigAuditEntity(
     @Id
-    @SequenceGenerator(name = CONFIG_AUDIT_GENERATOR, sequenceName = "config_audit_id_seq", allocationSize = 1)
+    @SequenceGenerator(
+        name = CONFIG_AUDIT_GENERATOR,
+        sequenceName = CONFIG_AUDIT_ID_SEQUENCE,
+        allocationSize = CONFIG_AUDIT_ID_SEQUENCE_ALLOC_SIZE
+    )
     @GeneratedValue(strategy = SEQUENCE, generator = CONFIG_AUDIT_GENERATOR)
     @Column(name = "change_number", nullable = false)
     val changeNumber: Int,
@@ -42,13 +47,12 @@ data class ConfigAuditEntity(
     @Column(name = "update_actor", nullable = false)
     val updateActor: String
 ) {
-    constructor(section: String, config: String, configVersion: Int, updateActor: String) :
-            this(0, section, config, configVersion, Instant.MIN, updateActor)
-
-    /** Sets [updateTimestamp] to the current time. */
-    @Suppress("Unused")
-    @PrePersist
-    private fun onCreate() {
-        updateTimestamp = Instant.now()
-    }
+    constructor(configEntity: ConfigEntity) : this(
+        0,
+        configEntity.section,
+        configEntity.config,
+        configEntity.schemaVersion,
+        configEntity.updateTimestamp,
+        configEntity.updateActor
+    )
 }

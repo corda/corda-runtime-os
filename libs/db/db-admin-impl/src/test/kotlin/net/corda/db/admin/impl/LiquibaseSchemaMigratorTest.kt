@@ -7,7 +7,6 @@ import liquibase.database.DatabaseConnection
 import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.db.admin.LiquibaseSchemaMigrator.Companion.PUBLIC_SCHEMA
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -40,7 +39,7 @@ class LiquibaseSchemaMigratorTest {
 
     @Test
     fun `when updateDb create LB object`() {
-        migrator.updateDb(connection, dbChange, PUBLIC_SCHEMA)
+        migrator.updateDb(connection, dbChange)
         verify(lbFactory).invoke(
             check {
                 assertThat(it).startsWith("master-changelog")
@@ -54,13 +53,13 @@ class LiquibaseSchemaMigratorTest {
 
     @Test
     fun `when updateDb call Liquibase API`() {
-        migrator.updateDb(connection, dbChange, PUBLIC_SCHEMA)
+        migrator.updateDb(connection, dbChange)
         verify(lb).update(any<Contexts>())
     }
 
     @Test
     fun `when createUpdateSql create LB object`() {
-        migrator.createUpdateSql(connection, dbChange, writer, PUBLIC_SCHEMA)
+        migrator.createUpdateSql(connection, dbChange, writer)
         verify(lbFactory).invoke(
             check {
                 assertThat(it).startsWith("master-changelog")
@@ -74,7 +73,7 @@ class LiquibaseSchemaMigratorTest {
 
     @Test
     fun `when createUpdateSql call Liquibase API`() {
-        migrator.createUpdateSql(connection, dbChange, writer, PUBLIC_SCHEMA)
+        migrator.createUpdateSql(connection, dbChange, writer)
         verify(lb).update(any<Contexts>(), eq(writer))
     }
 }

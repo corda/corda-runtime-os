@@ -68,7 +68,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
 
         val mediaType = requestBody.content["application/json"]
         assertNotNull(mediaType)
-        assertEquals("#/components/schemas/CalendarDaysoftheyearRequest", mediaType.schema.`$ref`)
+        assertEquals("#/components/schemas/DaysOfTheYearRequest", mediaType.schema.`$ref`)
 
         val responseOk = path.post.responses["200"]
         assertNotNull(responseOk)

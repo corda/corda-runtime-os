@@ -7,6 +7,10 @@ import net.corda.packaging.CPK
 import net.corda.packaging.PackagingException
 import net.corda.packaging.util.UncloseableInputStream
 import net.corda.packaging.util.ZipTweaker
+import net.corda.test.util.eventually
+import net.corda.utilities.deleteRecursively
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.AfterEach
@@ -17,8 +21,8 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.fail
-import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.Constants.BUNDLE_SYMBOLICNAME
 import org.osgi.service.cm.ConfigurationAdmin
 import java.io.ByteArrayInputStream
@@ -37,6 +41,11 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 class CordaPackagePersistenceTests {
+
+    companion object {
+        private val log = contextLogger()
+    }
+
     private lateinit var flowsCpkLocation : Path
     private lateinit var workflowCpkLocation : Path
     private lateinit var contractCpkLocation : Path
@@ -48,8 +57,10 @@ class CordaPackagePersistenceTests {
     private lateinit var contractCpk : CPK
     private lateinit var cordaPackagePersistence : CordaPackageFileBasedPersistenceImpl
 
+    private val junitTestDir = Files.createTempDirectory("CordaPackagePersistenceTests")
+
     @BeforeEach
-    fun setup(@TempDir junitTestDir : Path) {
+    fun setup() {
         flowsCpkLocation = pathOf("test.cpk.flows")
         flowsCpk = cpk(flowsCpkLocation, junitTestDir)
         workflowCpkLocation = pathOf("test.cpk.workflow")
@@ -67,6 +78,21 @@ class CordaPackagePersistenceTests {
         flowsCpk.close()
         workflowCpk.close()
         contractCpk.close()
+        // When executed on CI with K8s on Windows, the file operations seems to be quite slow/asynchronous.
+        // In particular when it comes to deleting of directories and their content, it may lead to
+        // having a directory structure in the inconsistent state. Therefore, being a bit more lenient here
+        // by retrying deletion of the directories with `eventually` and catching any exception and logging them rather
+        // than failing the test.
+        try {
+            eventually(duration = 10.seconds) {
+                assertDoesNotThrow {
+                    cordaPackagePersistence.deleteCpkDirectory()
+                    junitTestDir.deleteRecursively()
+                }
+            }
+        } catch (th: Throwable) {
+            log.warn("Error whilst cleaning-up directories", th)
+        }
     }
 
     private fun pathOf(propertyName: String): Path {

@@ -54,7 +54,7 @@ class User(
      * Version column for optimistic locking.
      */
     @Version
-    var version: Int = -1
+    var version: Int = 0
 
     /**
      * Users have properties.

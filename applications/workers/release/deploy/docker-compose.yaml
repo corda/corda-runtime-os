@@ -9,7 +9,7 @@ services:
     container_name: db-worker
     # Created with `gradlew applications:workers:release:db:publishOSGiImage`.
     image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker:latest-local"
-    command: -m kafka.common.bootstrap.servers=kafka:9092
+    command: -m kafka.common.bootstrap.servers=kafka:9092 -d cluster.user=user -d cluster.pass=pass
 
   flow-worker:
     container_name: flow-worker

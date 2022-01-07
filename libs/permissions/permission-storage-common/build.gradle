@@ -11,5 +11,8 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-avro-schema"
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:db:db-core')
+    implementation project(':libs:db:db-orm')
     implementation project(':libs:permissions:permission-datamodel')
 }
