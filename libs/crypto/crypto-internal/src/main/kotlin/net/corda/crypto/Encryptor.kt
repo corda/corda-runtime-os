@@ -70,11 +70,14 @@ class Encryptor(
 
     /**
      * Encrypts (or wraps) the "other" encryptor.
+     *
+     * @return [ByteArray] which represents `other` [Encryptor].
+     * The [Encryptor] can be restored from [ByteArray] by using `unwrap()` method.
      */
     fun wrap(other: Encryptor): ByteArray = encrypt(other.key.encoded)
 
     /**
-     * Decrypts (or wraps) the "other" encryptor.
+     * Decrypts (or unwraps) the "other" encryptor.
      */
     fun unwrap(other: ByteArray): Encryptor = Encryptor(SecretKeySpec(decrypt(other), WRAPPING_KEY_ALGORITHM))
 
