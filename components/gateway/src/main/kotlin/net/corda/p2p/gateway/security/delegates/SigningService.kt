@@ -7,7 +7,7 @@ import java.security.spec.PSSParameterSpec
 
 interface SigningService {
     val aliases: Collection<Alias>
-    enum class Hash(val hashName: String, val saltLength: Int) {
+    enum class Hash(val hashName: String, private val saltLength: Int) {
         SHA256("SHA-256", 32),
         SHA384("SHA-384", 48),
         SHA512("SHA-512", 64);
