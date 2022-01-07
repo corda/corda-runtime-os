@@ -4,11 +4,11 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
 import net.corda.crypto.impl.persistence.KeyValuePersistenceBase
-import net.corda.crypto.impl.persistence.IHaveMemberId
+import net.corda.crypto.impl.persistence.IHaveTenantId
 import net.corda.crypto.impl.persistence.KeyValueMutator
 import java.util.concurrent.TimeUnit
 
-class KafkaKeyValuePersistence<V: IHaveMemberId, E: IHaveMemberId>(
+class KafkaKeyValuePersistence<V: IHaveTenantId, E: IHaveTenantId>(
     private val proxy: KafkaProxy<E>,
     private val memberId: String,
     config: CryptoPersistenceConfig,

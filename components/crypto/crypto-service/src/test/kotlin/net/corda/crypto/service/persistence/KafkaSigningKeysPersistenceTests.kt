@@ -62,7 +62,7 @@ class KafkaSigningKeysPersistenceTests {
         assertEquals(original.publicKeyHash, publishedRecord.first)
         assertEquals(original.alias, publishedRecord.second.alias)
         assertArrayEquals(original.publicKey, publishedRecord.second.publicKey.array())
-        assertEquals(original.memberId, publishedRecord.second.memberId)
+        assertEquals(original.tenantId, publishedRecord.second.memberId)
         assertEquals(original.externalId, UUID.fromString(publishedRecord.second.externalId))
         assertEquals(original.masterKeyAlias, publishedRecord.second.masterKeyAlias)
         assertArrayEquals(original.privateKeyMaterial, publishedRecord.second.privateKeyMaterial.array())
@@ -76,7 +76,7 @@ class KafkaSigningKeysPersistenceTests {
             publicKeyHash = "hash1",
             alias = "alias1",
             publicKey = "Hello World!".toByteArray(),
-            memberId = memberId,
+            tenantId = memberId,
             externalId = UUID.randomUUID(),
             masterKeyAlias = "MK",
             privateKeyMaterial = "material".toByteArray(),
@@ -95,7 +95,7 @@ class KafkaSigningKeysPersistenceTests {
         assertEquals(original.publicKeyHash, cachedRecord.publicKeyHash)
         assertEquals("alias1", cachedRecord.alias)
         assertArrayEquals(original.publicKey, cachedRecord.publicKey)
-        assertEquals(original.memberId, cachedRecord.memberId)
+        assertEquals(original.tenantId, cachedRecord.tenantId)
         assertEquals(original.externalId, cachedRecord.externalId)
         assertEquals(original.masterKeyAlias, cachedRecord.masterKeyAlias)
         assertArrayEquals(original.privateKeyMaterial, cachedRecord.privateKeyMaterial)
@@ -109,7 +109,7 @@ class KafkaSigningKeysPersistenceTests {
             publicKeyHash = "hash1",
             alias = "alias1",
             publicKey = "Hello World!".toByteArray(),
-            memberId = memberId,
+            tenantId = memberId,
             externalId = UUID.randomUUID(),
             masterKeyAlias = "MK",
             privateKeyMaterial = "material".toByteArray(),
@@ -119,7 +119,7 @@ class KafkaSigningKeysPersistenceTests {
             publicKeyHash = "hash2",
             alias = "alias1",
             publicKey = "Hello World2!".toByteArray(),
-            memberId = memberId2,
+            tenantId = memberId2,
             externalId = UUID.randomUUID(),
             masterKeyAlias = "MK",
             privateKeyMaterial = "material2".toByteArray(),
@@ -133,8 +133,8 @@ class KafkaSigningKeysPersistenceTests {
             2
         )
         assertEquals(2, records.size)
-        val publishedRecord = records.first { it.second.memberId == original.memberId }
-        val publishedRecord2 = records.first { it.second.memberId == original2.memberId }
+        val publishedRecord = records.first { it.second.memberId == original.tenantId }
+        val publishedRecord2 = records.first { it.second.memberId == original2.tenantId }
         assertPublishedRecord(publishedRecord, original)
         assertPublishedRecord(publishedRecord2, original2)
         val cachedRecord = signingPersistence.get(original.publicKeyHash)
@@ -142,7 +142,7 @@ class KafkaSigningKeysPersistenceTests {
         assertEquals(original.publicKeyHash, cachedRecord.publicKeyHash)
         assertEquals("alias1", cachedRecord.alias)
         assertArrayEquals(original.publicKey, cachedRecord.publicKey)
-        assertEquals(original.memberId, cachedRecord.memberId)
+        assertEquals(original.tenantId, cachedRecord.tenantId)
         assertEquals(original.externalId, cachedRecord.externalId)
         assertEquals(original.masterKeyAlias, cachedRecord.masterKeyAlias)
         assertArrayEquals(original.privateKeyMaterial, cachedRecord.privateKeyMaterial)
@@ -152,7 +152,7 @@ class KafkaSigningKeysPersistenceTests {
         assertEquals(original2.publicKeyHash, cachedRecord2.publicKeyHash)
         assertEquals("alias1", cachedRecord2.alias)
         assertArrayEquals(original2.publicKey, cachedRecord2.publicKey)
-        assertEquals(original2.memberId, cachedRecord2.memberId)
+        assertEquals(original2.tenantId, cachedRecord2.tenantId)
         assertEquals(original2.externalId, cachedRecord2.externalId)
         assertEquals(original2.masterKeyAlias, cachedRecord2.masterKeyAlias)
         assertArrayEquals(original2.privateKeyMaterial, cachedRecord2.privateKeyMaterial)
@@ -169,7 +169,7 @@ class KafkaSigningKeysPersistenceTests {
             publicKeyHash = publicKey.sha256Bytes().toHexString(),
             alias = "alias1",
             publicKey = publicKey,
-            memberId = memberId,
+            tenantId = memberId,
             externalId = UUID.randomUUID(),
             masterKeyAlias = "MK",
             privateKeyMaterial = "material".toByteArray(),
@@ -187,7 +187,7 @@ class KafkaSigningKeysPersistenceTests {
         assertEquals(original.publicKeyHash, cachedRecord1.publicKeyHash)
         assertEquals("alias1", cachedRecord1.alias)
         assertArrayEquals(original.publicKey, cachedRecord1.publicKey)
-        assertEquals(original.memberId, cachedRecord1.memberId)
+        assertEquals(original.tenantId, cachedRecord1.tenantId)
         assertEquals(original.externalId, cachedRecord1.externalId)
         assertEquals(original.masterKeyAlias, cachedRecord1.masterKeyAlias)
         assertArrayEquals(original.privateKeyMaterial, cachedRecord1.privateKeyMaterial)
@@ -198,7 +198,7 @@ class KafkaSigningKeysPersistenceTests {
         assertEquals(original.publicKeyHash, cachedRecord2.publicKeyHash)
         assertEquals("alias1", cachedRecord2.alias)
         assertArrayEquals(original.publicKey, cachedRecord2.publicKey)
-        assertEquals(original.memberId, cachedRecord2.memberId)
+        assertEquals(original.tenantId, cachedRecord2.tenantId)
         assertEquals(original.externalId, cachedRecord2.externalId)
         assertEquals(original.masterKeyAlias, cachedRecord2.masterKeyAlias)
         assertArrayEquals(original.privateKeyMaterial, cachedRecord2.privateKeyMaterial)
@@ -228,7 +228,7 @@ class KafkaSigningKeysPersistenceTests {
             now
         )
         val keyInfo = KafkaSigningKeyProxy.toKeyInfo(record)
-        assertEquals(record.memberId, keyInfo.memberId)
+        assertEquals(record.memberId, keyInfo.tenantId)
         assertEquals(record.alias, keyInfo.alias)
         assertArrayEquals(record.publicKey.array(), keyInfo.publicKey)
         assertNull(keyInfo.externalId)
@@ -245,7 +245,7 @@ class KafkaSigningKeysPersistenceTests {
         val publicKey = "publicKey".toByteArray()
         val now = Instant.now()
         val keyInfo = SigningPersistentKeyInfo(
-            memberId = memberId,
+            tenantId = memberId,
             alias = "alias1",
             publicKey = publicKey,
             externalId = null,
@@ -256,7 +256,7 @@ class KafkaSigningKeysPersistenceTests {
             publicKeyHash = publicKey.sha256Bytes().toHexString()
         )
         val record = KafkaSigningKeyProxy.toRecord(keyInfo)
-        assertEquals(keyInfo.memberId, record.memberId)
+        assertEquals(keyInfo.tenantId, record.memberId)
         assertEquals(keyInfo.alias, record.alias)
         assertArrayEquals(keyInfo.publicKey, record.publicKey.array())
         assertNull(keyInfo.externalId)

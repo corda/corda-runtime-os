@@ -4,7 +4,7 @@ import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.config.DefaultConfigConsts
 import net.corda.crypto.impl.config.defaultCryptoService
 import net.corda.crypto.impl.config.publicKeys
-import net.corda.crypto.impl.persistence.IHaveMemberId
+import net.corda.crypto.impl.persistence.IHaveTenantId
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
@@ -84,7 +84,7 @@ class KafkaInfrastructure {
             )
         )
 
-        inline fun <reified V : IHaveMemberId, E : IHaveMemberId> KeyValuePersistence<V, E>.wait(
+        inline fun <reified V : IHaveTenantId, E : IHaveTenantId> KeyValuePersistence<V, E>.wait(
             key: String,
             timeout: Duration = Duration.ofSeconds(2),
             retryDelay: Duration = Duration.ofMillis(50),
@@ -154,7 +154,7 @@ class KafkaInfrastructure {
         return records.toList()
     }
 
-    inline fun <reified V : IHaveMemberId, E : IHaveMemberId> publish(
+    inline fun <reified V : IHaveTenantId, E : IHaveTenantId> publish(
         clientId: String,
         persistence: KeyValuePersistence<V, E>?,
         topic: String,

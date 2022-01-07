@@ -30,7 +30,7 @@ class DefaultCryptoKeyCacheImpl(
         logger.debug("Saving key with alias={} for member={}", alias, memberId)
         val partitionedAlias = effectiveAlias(alias)
         val entity = DefaultCryptoPersistentKeyInfo(
-            memberId = memberId,
+            tenantId = memberId,
             alias = partitionedAlias,
             publicKey = schemeMetadata.encodeAsByteArray(keyPair.public),
             privateKey = masterKey.wrap(keyPair.private),
@@ -44,7 +44,7 @@ class DefaultCryptoKeyCacheImpl(
         logger.debug("Saving wrapping key with alias={} for member={}", alias, memberId)
         val partitionedAlias = effectiveAlias(alias)
         val entity = DefaultCryptoPersistentKeyInfo(
-            memberId = memberId,
+            tenantId = memberId,
             alias = partitionedAlias,
             publicKey = null,
             privateKey = masterKey.wrap(key),
@@ -63,13 +63,13 @@ class DefaultCryptoKeyCacheImpl(
     private fun mutate(entity: DefaultCryptoPersistentKeyInfo): DefaultCryptoCachedKeyInfo =
         if (entity.publicKey != null) {
             DefaultCryptoCachedKeyInfo(
-                memberId = entity.memberId,
+                tenantId = entity.tenantId,
                 publicKey = schemeMetadata.decodePublicKey(entity.publicKey!!),
                 privateKey = masterKey.unwrap(entity.privateKey)
             )
         } else {
             DefaultCryptoCachedKeyInfo(
-                memberId = entity.memberId,
+                tenantId = entity.tenantId,
                 wrappingKey = masterKey.unwrapWrappingKey(entity.privateKey)
             )
         }

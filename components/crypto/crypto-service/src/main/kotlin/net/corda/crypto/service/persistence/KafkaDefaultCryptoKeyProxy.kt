@@ -31,7 +31,7 @@ class KafkaDefaultCryptoKeyProxy(
         internal fun toKeyInfo(value: DefaultCryptoKeyRecord): DefaultCryptoPersistentKeyInfo {
             val publicKey = value.publicKey?.array()
             return DefaultCryptoPersistentKeyInfo(
-                memberId = value.memberId,
+                tenantId = value.memberId,
                 alias = value.alias,
                 publicKey = publicKey,
                 privateKey = value.privateKey.array(),
@@ -42,7 +42,7 @@ class KafkaDefaultCryptoKeyProxy(
 
         internal fun toRecord(entity: DefaultCryptoPersistentKeyInfo) =
             DefaultCryptoKeyRecord(
-                entity.memberId,
+                entity.tenantId,
                 entity.alias,
                 if (entity.publicKey == null) {
                     null
@@ -118,14 +118,14 @@ class KafkaDefaultCryptoKeyProxy(
     override fun getValue(memberId: String, key: String): DefaultCryptoPersistentKeyInfo? {
         logger.debug("Requesting a record '{}' with key='{}' for member='{}'", valueClass.name, key, memberId)
         val value = keyMap[key]
-        return if (value == null || value.memberId != memberId) {
+        return if (value == null || value.tenantId != memberId) {
             if (value != null) {
                 logger.warn(
                     "The requested record '{}' with key='{}' for member='{}' is actually for '{}' member",
                     valueClass.name,
                     key,
                     memberId,
-                    value.memberId
+                    value.tenantId
                 )
             }
             null

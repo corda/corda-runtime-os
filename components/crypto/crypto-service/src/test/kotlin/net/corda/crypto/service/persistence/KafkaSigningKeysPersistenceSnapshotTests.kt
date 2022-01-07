@@ -36,7 +36,7 @@ class KafkaSigningKeysPersistenceSnapshotTests {
             publicKeyHash = publicKey1.sha256Bytes().toHexString(),
             alias = "alias1",
             publicKey = publicKey1,
-            memberId = memberId,
+            tenantId = memberId,
             externalId = UUID.randomUUID(),
             masterKeyAlias = "MK",
             privateKeyMaterial = "material1".toByteArray(),
@@ -46,7 +46,7 @@ class KafkaSigningKeysPersistenceSnapshotTests {
             publicKeyHash = publicKey2.sha256Bytes().toHexString(),
             alias = "alias2",
             publicKey = publicKey2,
-            memberId = memberId,
+            tenantId = memberId,
             externalId = UUID.randomUUID(),
             masterKeyAlias = "MK",
             privateKeyMaterial = "material2".toByteArray(),
@@ -90,7 +90,7 @@ class KafkaSigningKeysPersistenceSnapshotTests {
         assertEquals(original1.publicKeyHash, cachedRecord1.publicKeyHash)
         assertEquals(original1.alias, cachedRecord1.alias)
         assertArrayEquals(original1.publicKey, cachedRecord1.publicKey)
-        assertEquals(original1.memberId, cachedRecord1.memberId)
+        assertEquals(original1.tenantId, cachedRecord1.tenantId)
         assertEquals(original1.externalId, cachedRecord1.externalId)
         assertEquals(original1.masterKeyAlias, cachedRecord1.masterKeyAlias)
         assertArrayEquals(original1.privateKeyMaterial, cachedRecord1.privateKeyMaterial)
@@ -100,7 +100,7 @@ class KafkaSigningKeysPersistenceSnapshotTests {
         assertEquals(original2.publicKeyHash, cachedRecord2.publicKeyHash)
         assertEquals(original2.alias, cachedRecord2.alias)
         assertArrayEquals(original2.publicKey, cachedRecord2.publicKey)
-        assertEquals(original2.memberId, cachedRecord2.memberId)
+        assertEquals(original2.tenantId, cachedRecord2.tenantId)
         assertEquals(original2.externalId, cachedRecord2.externalId)
         assertEquals(original2.masterKeyAlias, cachedRecord2.masterKeyAlias)
         assertArrayEquals(original2.privateKeyMaterial, cachedRecord2.privateKeyMaterial)

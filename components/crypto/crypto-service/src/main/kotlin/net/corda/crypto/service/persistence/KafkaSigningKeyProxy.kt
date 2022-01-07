@@ -34,7 +34,7 @@ class KafkaSigningKeyProxy(
         internal fun toKeyInfo(value: SigningKeyRecord): SigningPersistentKeyInfo {
             val publicKey = value.publicKey.array()
             return SigningPersistentKeyInfo(
-                memberId = value.memberId,
+                tenantId = value.memberId,
                 publicKeyHash = publicKey.sha256Bytes().toHexString(),
                 alias = value.alias,
                 publicKey = publicKey,
@@ -51,7 +51,7 @@ class KafkaSigningKeyProxy(
         }
 
         internal fun toRecord(entity: SigningPersistentKeyInfo) = SigningKeyRecord(
-            entity.memberId,
+            entity.tenantId,
             entity.alias,
             ByteBuffer.wrap(entity.publicKey),
             entity.externalId?.toString(),
@@ -129,14 +129,14 @@ class KafkaSigningKeyProxy(
     override fun getValue(memberId: String, key: String): SigningPersistentKeyInfo? {
         logger.debug("Requesting a record '{}' with key='{}' for member='{}'", valueClass.name, key, memberId)
         val value = keyMap[key]
-        return if (value == null || value.memberId != memberId) {
+        return if (value == null || value.tenantId != memberId) {
             if (value != null) {
                 logger.warn(
                     "The requested record '{}' with key='{}' for member='{}' is actually for '{}' member",
                     valueClass.name,
                     key,
                     memberId,
-                    value.memberId
+                    value.tenantId
                 )
             }
             null

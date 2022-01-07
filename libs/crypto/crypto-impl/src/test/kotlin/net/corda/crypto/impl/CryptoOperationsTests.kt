@@ -135,7 +135,7 @@ class CryptoOperationsTests {
         ) {
             val generatedKeyData = getGeneratedKeyInfo(generatedPublicKey)
             assertNotNull(generatedKeyData)
-            assertEquals(factory.memberId, generatedKeyData.memberId)
+            assertEquals(factory.memberId, generatedKeyData.tenantId)
             assertEquals(
                 "${factory.memberId}:${generatedPublicKey.sha256Bytes().toHexString()}",
                 generatedKeyData.publicKeyHash
@@ -155,7 +155,7 @@ class CryptoOperationsTests {
         private fun verifyFreshKeyData(freshKey: PublicKey, uuid: UUID?, signatureScheme: SignatureScheme) {
             val freshKeyData = getGeneratedKeyInfo(freshKey)
             assertNotNull(freshKeyData)
-            assertEquals(factory.memberId, freshKeyData.memberId)
+            assertEquals(factory.memberId, freshKeyData.tenantId)
             assertEquals("${factory.memberId}:${freshKey.sha256Bytes().toHexString()}", freshKeyData.publicKeyHash)
             if (uuid != null)
                 assertEquals(uuid, freshKeyData.externalId)

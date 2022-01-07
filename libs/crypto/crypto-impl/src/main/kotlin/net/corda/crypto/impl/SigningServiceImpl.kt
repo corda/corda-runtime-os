@@ -4,9 +4,7 @@ import net.corda.crypto.impl.persistence.SigningKeyCache
 import net.corda.crypto.SigningService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.WrappedPrivateKey
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
@@ -17,44 +15,44 @@ import java.security.PublicKey
 
 open class SigningServiceImpl(
     private val cache: SigningKeyCache,
-    private val cryptoService: CryptoService,
+    private val cryptoServiceFactory: CryptoServiceFactory,
     private val schemeMetadata: CipherSchemeMetadata,
-    defaultSignatureSchemeCodeName: String
+    override val tenantId: String
 ) : SigningService {
     companion object {
         private val logger = contextLogger()
     }
 
-    override val supportedSchemes: Array<SignatureScheme>
-        get() = cryptoService.supportedSchemes()
+    override fun getSupportedSchemes(category: String): List<String> {
+        logger.info("getSupportedSchemes(category={})", category)
+        return cryptoService(category).getSupportedSchemes()
+    }
 
-    private val defaultSignatureScheme: SignatureScheme =
-        schemeMetadata.findSignatureScheme(defaultSignatureSchemeCodeName)
-
-    init {
-        logger.info("Initializing with default scheme $defaultSignatureSchemeCodeName")
-        val map = cryptoService.supportedWrappingSchemes().map { it.codeName }
-        if (defaultSignatureScheme.codeName !in map) {
-            throw CryptoServiceException(
-                "The default signature schema '${defaultSignatureScheme.codeName}' is not supported, " +
-                        "supported [${map.joinToString(", ")}]"
-            )
+    override fun findPublicKey(alias: String): PublicKey? {
+        logger.info("findPublicKey(alias={})", alias)
+        val publicKey = cache.find(alias)?.publicKey
+        return if(publicKey != null) {
+            schemeMetadata.decodePublicKey(publicKey)
+        } else {
+            null
         }
     }
 
-    override fun findPublicKey(alias: String): PublicKey? =
-        cryptoService.findPublicKey(alias)
-
-    override fun generateKeyPair(alias: String, context: Map<String, String>): PublicKey =
+    override fun generateKeyPair(category: String, alias: String, context: Map<String, String>): PublicKey =
         try {
-            logger.info("Generating key pair for alias={}", alias)
-            val publicKey = cryptoService.generateKeyPair(alias, defaultSignatureScheme, context)
-            cache.save(publicKey, defaultSignatureScheme, alias)
+            logger.info("generateKeyPair(category={}, alias={})", category, alias)
+            val cryptoService = cryptoService(category)
+            val publicKey = cryptoService.generateKeyPair(alias, context)
+            cache.save(
+                publicKey = publicKey,
+                scheme = cryptoService.defaultSignatureScheme,
+                category = category,
+                alias = alias)
             publicKey
         } catch (e: CryptoServiceException) {
             throw e
         } catch (e: Throwable) {
-            throw CryptoServiceException("Cannot generate key pair for alias $alias", e)
+            throw CryptoServiceException("Cannot generate key pair for category=$category and alias=$alias", e)
         }
 
     override fun sign(publicKey: PublicKey, data: ByteArray, context: Map<String, String>): DigitalSignature.WithKey =
@@ -160,4 +158,7 @@ open class SigningServiceImpl(
         } catch (e: Throwable) {
             throw CryptoServiceException("Failed to sign using key with alias $alias", e)
         }
+
+    private fun cryptoService(category: String): CryptoServiceConfiguredInstance =
+        cryptoServiceFactory.getInstance(tenantId = tenantId, category = category)
 }

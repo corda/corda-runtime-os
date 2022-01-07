@@ -9,7 +9,7 @@ package net.corda.crypto.impl.persistence
  * @param V: the cached item type
  * @param E: the persistent entity type
  */
-interface KeyValuePersistence<V: IHaveMemberId, E: IHaveMemberId> {
+interface KeyValuePersistence<V: IHaveTenantId, E: IHaveTenantId> {
     /**
      * Persist the specified value and associates mutated value of it with the specified key in this cache (in that order).
      * If the underlying storage previously contained a value for the key, the behaviour is unpredictable

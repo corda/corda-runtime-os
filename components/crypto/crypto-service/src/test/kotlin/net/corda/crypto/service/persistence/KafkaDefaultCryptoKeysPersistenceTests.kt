@@ -36,12 +36,12 @@ class KafkaDefaultCryptoKeysPersistenceTests {
         defaultPersistence = factory.createDefaultCryptoPersistence(
             memberId = memberId
         ) {
-            DefaultCryptoCachedKeyInfo(memberId = it.memberId)
+            DefaultCryptoCachedKeyInfo(tenantId = it.tenantId)
         }
         defaultPersistence2 = factory.createDefaultCryptoPersistence(
             memberId = memberId2
         ) {
-            DefaultCryptoCachedKeyInfo(memberId = it.memberId)
+            DefaultCryptoCachedKeyInfo(tenantId = it.tenantId)
         }
     }
 
@@ -58,7 +58,7 @@ class KafkaDefaultCryptoKeysPersistenceTests {
         assertNotNull(publishedRecord.second)
         assertEquals(original.alias, publishedRecord.first)
         assertEquals(original.alias, publishedRecord.second.alias)
-        assertEquals(original.memberId, publishedRecord.second.memberId)
+        assertEquals(original.tenantId, publishedRecord.second.memberId)
         assertArrayEquals(original.publicKey, publishedRecord.second.publicKey.array())
         assertArrayEquals(original.privateKey, publishedRecord.second.privateKey.array())
         assertEquals(original.algorithmName, publishedRecord.second.algorithmName)
@@ -72,7 +72,7 @@ class KafkaDefaultCryptoKeysPersistenceTests {
         val original = DefaultCryptoPersistentKeyInfo(
             alias = "$memberId:alias1",
             publicKey = "Public Key!".toByteArray(),
-            memberId = memberId,
+            tenantId = memberId,
             privateKey = "Private Key!".toByteArray(),
             algorithmName = "algo",
             version = 2
@@ -86,7 +86,7 @@ class KafkaDefaultCryptoKeysPersistenceTests {
         assertPublishedRecord(publishedRecord, original)
         val cachedRecord = defaultPersistence.get(original.alias)
         assertNotNull(cachedRecord)
-        assertEquals(original.memberId, cachedRecord.memberId)
+        assertEquals(original.tenantId, cachedRecord.tenantId)
     }
 
     @Test
@@ -96,7 +96,7 @@ class KafkaDefaultCryptoKeysPersistenceTests {
         val original = DefaultCryptoPersistentKeyInfo(
             alias = "$memberId:alias1",
             publicKey = "Public Key!".toByteArray(),
-            memberId = memberId,
+            tenantId = memberId,
             privateKey = "Private Key!".toByteArray(),
             algorithmName = "algo",
             version = 2
@@ -104,7 +104,7 @@ class KafkaDefaultCryptoKeysPersistenceTests {
         val original2 = DefaultCryptoPersistentKeyInfo(
             alias = "$memberId2:alias1",
             publicKey = "Public Key2!".toByteArray(),
-            memberId = memberId2,
+            tenantId = memberId2,
             privateKey = "Private Key2!".toByteArray(),
             algorithmName = "algo",
             version = 2
@@ -123,10 +123,10 @@ class KafkaDefaultCryptoKeysPersistenceTests {
         assertPublishedRecord(publishedRecord2, original2)
         val cachedRecord = defaultPersistence.get(original.alias)
         assertNotNull(cachedRecord)
-        assertEquals(original.memberId, cachedRecord.memberId)
+        assertEquals(original.tenantId, cachedRecord.tenantId)
         val cachedRecord2 = defaultPersistence2.get(original2.alias)
         assertNotNull(cachedRecord2)
-        assertEquals(original2.memberId, cachedRecord2.memberId)
+        assertEquals(original2.tenantId, cachedRecord2.tenantId)
         assertNull(defaultPersistence.get(original2.alias))
         assertNull(defaultPersistence2.get(original.alias))
     }
@@ -138,7 +138,7 @@ class KafkaDefaultCryptoKeysPersistenceTests {
         val original = DefaultCryptoPersistentKeyInfo(
             alias = "$memberId:alias1",
             publicKey = "Public Key!".toByteArray(),
-            memberId = memberId,
+            tenantId = memberId,
             privateKey = "Private Key!".toByteArray(),
             algorithmName = "algo",
             version = 2
@@ -152,11 +152,11 @@ class KafkaDefaultCryptoKeysPersistenceTests {
         )
         val cachedRecord1 = defaultPersistence.get(original.alias)
         assertNotNull(cachedRecord1)
-        assertEquals(original.memberId, cachedRecord1.memberId)
+        assertEquals(original.tenantId, cachedRecord1.tenantId)
         // again - will return from cache
         val cachedRecord2 = defaultPersistence.get(original.alias)
         assertNotNull(cachedRecord2)
-        assertEquals(original.memberId, cachedRecord2.memberId)
+        assertEquals(original.tenantId, cachedRecord2.tenantId)
     }
 
     @Test
@@ -180,7 +180,7 @@ class KafkaDefaultCryptoKeysPersistenceTests {
             now
         )
         val keyInfo = KafkaDefaultCryptoKeyProxy.toKeyInfo(record)
-        assertEquals(record.memberId, keyInfo.memberId)
+        assertEquals(record.memberId, keyInfo.tenantId)
         assertEquals(record.alias, keyInfo.alias)
         assertNull(keyInfo.publicKey)
         assertArrayEquals(record.privateKey.array(), keyInfo.privateKey)
@@ -193,7 +193,7 @@ class KafkaDefaultCryptoKeysPersistenceTests {
     fun `Should convert key info containing null values to record`() {
         val now = Instant.now()
         val keyInfo = DefaultCryptoPersistentKeyInfo(
-            memberId = memberId,
+            tenantId = memberId,
             alias = "alias1",
             publicKey = null,
             privateKey = "privateKey".toByteArray(),
@@ -201,7 +201,7 @@ class KafkaDefaultCryptoKeysPersistenceTests {
             version =  2
         )
         val record = KafkaDefaultCryptoKeyProxy.toRecord(keyInfo)
-        assertEquals(keyInfo.memberId, record.memberId)
+        assertEquals(keyInfo.tenantId, record.memberId)
         assertEquals(keyInfo.alias, record.alias)
         assertNull(keyInfo.publicKey)
         assertArrayEquals(keyInfo.privateKey, record.privateKey.array())

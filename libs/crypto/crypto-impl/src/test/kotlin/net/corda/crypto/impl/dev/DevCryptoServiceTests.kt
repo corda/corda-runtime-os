@@ -1,6 +1,5 @@
 package net.corda.crypto.impl.dev
 
-import net.corda.crypto.CryptoCategories
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
 import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
@@ -224,7 +223,7 @@ class DevCryptoServiceTests {
     private fun validateGeneratedKeySpecs(alias: String, signingCacheShouldExists: Boolean): KeyPair {
         val keyPairInfo = getGeneratedKeyPair(alias)
         assertNotNull(keyPairInfo)
-        assertEquals(factory.memberId, keyPairInfo.memberId)
+        assertEquals(factory.memberId, keyPairInfo.tenantId)
         assertNotNull(keyPairInfo.privateKey)
         assertNotNull(keyPairInfo.publicKey)
         assertEquals(keyPairInfo.privateKey!!.algorithm, "EdDSA")
@@ -236,7 +235,7 @@ class DevCryptoServiceTests {
             assertNotNull(signingKeyInfo)
             assertEquals(alias, signingKeyInfo.alias)
             assertArrayEquals(schemeMetadata.encodeAsByteArray(keyPairInfo.publicKey!!), signingKeyInfo.publicKey)
-            assertEquals(factory.memberId, signingKeyInfo.memberId)
+            assertEquals(factory.memberId, signingKeyInfo.tenantId)
             assertNull(signingKeyInfo.externalId)
         } else {
             assertNull(signingKeyInfo)

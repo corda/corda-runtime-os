@@ -21,7 +21,15 @@ interface SigningService {
     val tenantId: String
 
     /**
-     * Returns the public key for the given alias.
+     * Returns the list of schemes codes which are supported by the associated HSM integration.
+     */
+    fun getSupportedSchemes(category: String): List<String>
+
+    /**
+     * Returns the public key for the given alias. The lookup is done on the entries which the instance has information
+     * about, it doesn't query the underlying HSM.
+     *
+     * @param alias the tenant defined key alias for the key pair
      */
     fun findPublicKey(alias: String): PublicKey?
 
@@ -33,6 +41,22 @@ interface SigningService {
      * @return A collection of [PublicKey]s that this node owns.
      */
     fun filterMyKeys(candidateKeys: Iterable<PublicKey>): Iterable<PublicKey>
+
+    /**
+     * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
+     *
+     * @param category The key category, such as TLS, LEDGER, etc. Don't use FRESH_KEY category as there is separate API
+     * for the fresh keys which is base around wrapped keys.
+     * @param alias the tenant defined key alias for the key pair to be generated.
+     * @param context the optional key/value operation context.
+     *
+     * @return The public part of the pair.
+     */
+    fun generateKeyPair(
+        category: String,
+        alias: String,
+        context: Map<String, String> = EMPTY_CONTEXT
+    ): PublicKey
 
     /**
      * Generates a new random [KeyPair] and adds it to the internal key storage.
@@ -80,6 +104,8 @@ interface SigningService {
      * Sign a byte array using the private key identified by the input alias.
      * Returns the signature bytes formatted according to the signature scheme (signAlgorithm).
      * Default signature scheme for the key scheme is used.
+     *
+     * @param alias the tenant defined key alias for the key pair to be generated.
      */
     fun sign(alias: String, data: ByteArray, context: Map<String, String> = EMPTY_CONTEXT): ByteArray
 
@@ -87,6 +113,8 @@ interface SigningService {
      * Sign a byte array using the private key identified by the input alias.
      * Returns the signature bytes formatted according to the signature scheme (signAlgorithm).
      * The [signatureSpec] is used to override the default signature scheme
+     *
+     * @param alias the tenant defined key alias for the key pair to be generated.
      */
     fun sign(
         alias: String,

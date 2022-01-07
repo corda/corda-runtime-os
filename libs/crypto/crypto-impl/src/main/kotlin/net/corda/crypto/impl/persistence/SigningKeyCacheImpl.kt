@@ -32,22 +32,20 @@ class SigningKeyCacheImpl(
             it.alias = fromEffectiveAlias(it.alias)
         }
 
-    override fun save(
-        publicKey: PublicKey,
-        scheme: SignatureScheme,
-        alias: String
-    ) {
-        val key = toEntityKey(publicKey)
-        val computedAlias = effectiveAlias(alias)
+    override fun save(info: PublicKeyInfo ) {
+        val key = toEntityKey(info.publicKey)
+        val computedAlias = effectiveAlias(info.alias)
         val entity = SigningPersistentKeyInfo(
-            memberId = memberId,
+            tenantId = memberId,
             publicKeyHash = key,
             externalId = null,
-            publicKey = keyEncoder.encodeAsByteArray(publicKey),
+            publicKey = keyEncoder.encodeAsByteArray(info.publicKey),
+            category = info.category,
             alias = computedAlias,
+            hsmAlias = info.hsmAlias,
             masterKeyAlias = null,
             privateKeyMaterial = null,
-            schemeCodeName = scheme.codeName,
+            schemeCodeName = info.scheme.codeName,
             version = 1
         )
         persistence.put(key, entity)
@@ -63,7 +61,7 @@ class SigningKeyCacheImpl(
         val publicKey = wrappedKeyPair.publicKey
         val keyHash = toEntityKey(publicKey)
         val entity = SigningPersistentKeyInfo(
-            memberId = memberId,
+            tenantId = memberId,
             publicKeyHash = keyHash,
             externalId = externalId,
             publicKey = keyEncoder.encodeAsByteArray(publicKey),

@@ -116,7 +116,6 @@ class CryptoFactoryImpl @Activate constructor(
         private val logger: Logger
     ) : CryptoFactory, AutoCloseable {
         private val signingCaches = ConcurrentHashMap<String, SigningKeyCache>()
-        private val freshKeyServices = ConcurrentHashMap<String, FreshKeySigningService>()
         private val signingServices = ConcurrentHashMap<String, SigningService>()
 
         private val jsonMapper = JsonMapper.builder().enable(MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES).build()
@@ -130,26 +129,6 @@ class CryptoFactoryImpl @Activate constructor(
             cipherSuiteFactory.getSchemeMap()
         }
 
-        override fun getFreshKeySigningService(memberId: String): FreshKeySigningService =
-            try {
-                logger.debug("Getting the fresh key service for memberId=$memberId")
-                freshKeyServices.getOrPut(memberId) {
-                    logger.info("Creating the fresh key service for memberId=$memberId")
-                    val ledgerConfig = getServiceConfig(memberId, CryptoConsts.CryptoCategories.LEDGER)
-                    val freshKeysConfig = getServiceConfig(memberId, CryptoConsts.CryptoCategories.FRESH_KEYS)
-                    val ledgerCryptoService = getCryptoService(memberId, CryptoConsts.CryptoCategories.LEDGER, ledgerConfig)
-                    val freshKeysCryptoService = getCryptoService(memberId, CryptoConsts.CryptoCategories.FRESH_KEYS, freshKeysConfig)
-                    FreshKeySigningServiceImpl(
-                        cache = getSigningKeyCache(memberId, libraryConfig.publicKeys),
-                        cryptoService = ledgerCryptoService,
-                        freshKeysCryptoService = freshKeysCryptoService,
-                        defaultFreshKeySignatureSchemeCodeName = freshKeysConfig.defaultSignatureScheme,
-                        schemeMetadata = cipherSchemeMetadata
-                    )
-                }
-            } catch (e: Throwable) {
-                throw CryptoServiceLibraryException("Failed to get fresh key service for '$memberId'", e)
-            }
 
         override fun getSigningService(memberId: String, category: String): SigningService =
             try {

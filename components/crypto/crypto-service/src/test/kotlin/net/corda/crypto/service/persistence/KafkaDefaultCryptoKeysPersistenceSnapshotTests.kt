@@ -30,7 +30,7 @@ class KafkaDefaultCryptoKeysPersistenceSnapshotTests {
         original1 = DefaultCryptoPersistentKeyInfo(
             alias = "$memberId:alias1",
             publicKey = "Public Key1".toByteArray(),
-            memberId = memberId,
+            tenantId = memberId,
             privateKey = "Private Key1".toByteArray(),
             algorithmName = "algo",
             version = 2
@@ -38,7 +38,7 @@ class KafkaDefaultCryptoKeysPersistenceSnapshotTests {
         original2 = DefaultCryptoPersistentKeyInfo(
             alias = "$memberId:alias12",
             publicKey = "Public Key2".toByteArray(),
-            memberId = memberId,
+            tenantId = memberId,
             privateKey = "Private Key2".toByteArray(),
             algorithmName = "algo",
             version = 2
@@ -62,7 +62,7 @@ class KafkaDefaultCryptoKeysPersistenceSnapshotTests {
         defaultPersistence = factory.createDefaultCryptoPersistence(
             memberId = memberId
         ) {
-            DefaultCryptoCachedKeyInfo(memberId = it.memberId)
+            DefaultCryptoCachedKeyInfo(tenantId = it.tenantId)
         }
     }
 
@@ -77,10 +77,10 @@ class KafkaDefaultCryptoKeysPersistenceSnapshotTests {
     fun `Should load snapshot and get default crypto cache value`() {
         val cachedRecord1 = defaultPersistence.wait(original1.alias)
         assertNotNull(cachedRecord1)
-        assertEquals(original1.memberId, cachedRecord1.memberId)
+        assertEquals(original1.tenantId, cachedRecord1.tenantId)
         val cachedRecord2 = defaultPersistence.get(original2.alias)
         assertNotNull(cachedRecord2)
-        assertEquals(original1.memberId, cachedRecord2.memberId)
+        assertEquals(original1.tenantId, cachedRecord2.tenantId)
         val cachedRecord3 = defaultPersistence.get(UUID.randomUUID().toString())
         assertNull(cachedRecord3)
     }
