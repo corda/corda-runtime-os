@@ -1,8 +1,10 @@
 package net.corda.membership.grouppolicy.factory
 
+import net.corda.membership.impl.GroupPolicyExtension.Companion.mgmKeyAlias
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,7 +20,7 @@ class GroupPolicyFactoryTest {
         const val whitespaceString = "                  "
         const val invalidFormatGroupPolicy = "{{[{[{[{[{[{[ \"groupId\": \"ABC123\" }"
 
-        const val x500Name = "x500Name"
+        const val name = "name"
         const val keyAlias = "keyAlias"
         const val memberStatus = "memberStatus"
         const val endpointUrl1 = "endpointUrl-1"
@@ -32,7 +34,8 @@ class GroupPolicyFactoryTest {
         const val registrationProtocolFactory = "registrationProtocolFactory"
         const val synchronisationProtocolFactory = "synchronisationProtocolFactory"
         const val protocolParameters = "protocolParameters"
-        const val staticMemberTemplate = "staticMemberTemplate"
+        const val staticNetwork = "staticNetwork"
+        const val staticMembers = "members"
         const val identityPKI = "identityPKI"
         const val identityKeyPolicy = "identityKeyPolicy"
         const val identityTrustStore = "identityTrustStore"
@@ -40,10 +43,14 @@ class GroupPolicyFactoryTest {
         const val mgmInfo = "mgmInfo"
         const val cipherSuite = "cipherSuite"
         const val roles = "roles"
+
+        const val groupPolicyWithStaticNetwork = "/SampleGroupPolicy.json"
+        const val groupPolicyWithoutStaticNetwork = "/SampleGroupPolicyWithoutStaticNetwork.json"
     }
 
     private lateinit var groupPolicyFactory: GroupPolicyFactory
     private val testGroupId = "ABC123"
+    private val testMgmKeyAlias = "mgm-alias"
 
     @BeforeEach
     fun setUp() {
@@ -81,7 +88,7 @@ class GroupPolicyFactoryTest {
         assertEquals("net.corda.v5.mgm.MGMRegistrationProtocolFactory", result[registrationProtocolFactory])
         assertEquals("net.corda.v5.mgm.MGMSynchronisationProtocolFactory", result[synchronisationProtocolFactory])
         assertTrue(result[protocolParameters] is Map<*, *>)
-        assertTrue(result[staticMemberTemplate] is List<*>)
+        assertTrue(result[staticNetwork] is Map<*, *>)
 
         // Protocol parameters
         val protocolParameters = result[protocolParameters] as Map<*, *>
@@ -104,22 +111,24 @@ class GroupPolicyFactoryTest {
         assertTrue(protocolParameters[roles] is Map<*, *>)
         assertEquals(2, (protocolParameters[roles] as Map<*, *>).size)
 
-        // Static member template
-        val staticMemberTemplate = result[staticMemberTemplate] as List<*>
-        assertEquals(3, staticMemberTemplate.size)
+        // Static network
+        val staticNetwork = result[staticNetwork] as Map<*, *>
+        assertEquals(2, staticNetwork.size)
 
-        val alice: Map<String, String> = uncheckedCast(staticMemberTemplate[0])
+        val staticMembers = staticNetwork[staticMembers] as List<*>
+
+        val alice: Map<String, String> = uncheckedCast(staticMembers[0])
         assertEquals(6, alice.size)
-        assertEquals(alice[x500Name], "C=GB, L=London, O=Alice")
+        assertEquals(alice[name], "C=GB, L=London, O=Alice")
         assertEquals(alice[keyAlias], "alice-alias")
         assertEquals(alice[rotatedKeyAlias1], "alice-historic-alias-1")
         assertEquals(alice[memberStatus], "ACTIVE")
         assertEquals(alice[endpointUrl1], "https://alice.corda5.r3.com:10000")
         assertEquals(alice[endpointProtocol1], 1)
 
-        val bob: Map<String, String> = uncheckedCast(staticMemberTemplate[1])
+        val bob: Map<String, String> = uncheckedCast(staticMembers[1])
         assertEquals(7, bob.size)
-        assertEquals(bob[x500Name], "C=GB, L=London, O=Bob")
+        assertEquals(bob[name], "C=GB, L=London, O=Bob")
         assertEquals(bob[keyAlias], "bob-alias")
         assertEquals(bob[rotatedKeyAlias1], "bob-historic-alias-1")
         assertEquals(bob[rotatedKeyAlias2], "bob-historic-alias-2")
@@ -127,9 +136,9 @@ class GroupPolicyFactoryTest {
         assertEquals(bob[endpointUrl1], "https://bob.corda5.r3.com:10000")
         assertEquals(bob[endpointProtocol1], 1)
 
-        val charlie: Map<String, String> = uncheckedCast(staticMemberTemplate[2])
+        val charlie: Map<String, String> = uncheckedCast(staticMembers[2])
         assertEquals(7, charlie.size)
-        assertEquals(charlie[x500Name], "C=GB, L=London, O=Charlie")
+        assertEquals(charlie[name], "C=GB, L=London, O=Charlie")
         assertEquals(charlie[keyAlias], "charlie-alias")
         assertEquals(charlie[memberStatus], "SUSPENDED")
         assertEquals(charlie[endpointUrl1], "https://charlie.corda5.r3.com:10000")
@@ -138,8 +147,20 @@ class GroupPolicyFactoryTest {
         assertEquals(charlie[endpointProtocol2], 1)
     }
 
-    private fun getSampleGroupPolicy(): String {
-        val url = this::class.java.getResource("/SampleGroupPolicy.json")
+    @Test
+    fun `Parse group policy - verify MGM private key alias`() {
+        val result = groupPolicyFactory.createGroupPolicy(getSampleGroupPolicy())
+        assertEquals(testMgmKeyAlias, result.mgmKeyAlias)
+    }
+
+    @Test
+    fun `Parse group policy without static network - verify MGM private key alias is null`() {
+        val result = groupPolicyFactory.createGroupPolicy(getSampleGroupPolicy(groupPolicyWithoutStaticNetwork))
+        assertNull(result.mgmKeyAlias)
+    }
+
+    private fun getSampleGroupPolicy(resource: String? = groupPolicyWithStaticNetwork): String {
+        val url = this::class.java.getResource(resource)
         requireNotNull(url)
         return url.readText()
     }

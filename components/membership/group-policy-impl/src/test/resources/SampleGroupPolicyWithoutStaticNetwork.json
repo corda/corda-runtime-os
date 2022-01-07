@@ -1,0 +1,73 @@
+{
+  "fileFormatVersion": 1,
+  "groupId": "ABC123",
+  "registrationProtocolFactory": "net.corda.v5.mgm.MGMRegistrationProtocolFactory",
+  "synchronisationProtocolFactory": "net.corda.v5.mgm.MGMSynchronisationProtocolFactory",
+  "protocolParameters": {
+    "identityTrustStore": [
+      "-----BEGIN CERTIFICATE-----\nMIICCDCJDBZFSiI=\n-----END CERTIFICATE-----\n",
+      "-----BEGIN CERTIFICATE-----\nMIIFPDCzIlifT20M\n-----END CERTIFICATE-----"
+    ],
+    "tlsTrustStore": [
+      "-----BEGIN CERTIFICATE-----\nMIIDxTCCE6N36B9K\n-----END CERTIFICATE-----\n",
+      "-----BEGIN CERTIFICATE-----\nMIIDdTCCKSZp4A==\n-----END CERTIFICATE-----",
+      "-----BEGIN CERTIFICATE-----\nMIIFPDCCIlifT20M\n-----END CERTIFICATE-----"
+    ],
+    "mgmInfo": {
+      "name": "C=GB, L=London, O=Corda Network, OU=MGM, CN=Corda Network MGM",
+      "sessionKey": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHK+B3YGgcIALw==\n-----END PUBLIC KEY-----\n",
+      "certificate": [
+        "-----BEGIN CERTIFICATE-----\nMIICxjCCRG11cu1\n-----END CERTIFICATE-----\n",
+        "-----BEGIN CERTIFICATE-----\nMIIB/TCCDJOIjhJ\n-----END CERTIFICATE-----\n",
+        "-----BEGIN CERTIFICATE-----\nMIICCDCCDZFSiI=\n-----END CERTIFICATE-----\n",
+        "-----BEGIN CERTIFICATE-----\nMIIFPDCClifT20M\n-----END CERTIFICATE-----"
+      ],
+      "ecdhKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDH8Tc=\n-----END PUBLIC KEY-----\n",
+      "keys": [
+        "-----BEGIN PUBLIC KEY-----\nMFkwEwYHgcIALw==\n-----END PUBLIC KEY-----\n"
+      ],
+      "endpoints": [
+        {
+          "url": "https://mgm.corda5.r3.com:10000",
+          "protocolVersion": 1
+        },
+        {
+          "url": "https://mgm-dr.corda5.r3.com:10000",
+          "protocolVersion": 1
+        }
+      ],
+      "platformVersion": 1,
+      "softwareVersion": "5.0.0",
+      "serial": 1
+    },
+    "identityPKI": "Standard",
+    "identityKeyPolicy": "Combined",
+    "cipherSuite": {
+      "corda.provider": "default",
+      "corda.signature.provider": "default",
+      "corda.signature.default": "ECDSA_SECP256K1_SHA256",
+      "corda.signature.FRESH_KEYS": "ECDSA_SECP256K1_SHA256",
+      "corda.digest.default": "SHA256",
+      "corda.cryptoservice.provider": "default"
+    },
+    "roles" : {
+      "default" : {
+        "validator" : "net.corda.v5.mgm.DefaultMemberInfoValidator",
+        "requiredMemberInfo" : [
+        ],
+        "optionalMemberInfo" : [
+        ]
+      },
+      "notary" : {
+        "validator" : "net.corda.v5.mgm.NotaryMemberInfoValidator",
+        "requiredMemberInfo" : [
+          "notaryServiceParty"
+        ],
+        "optionalMemberInfo" : [
+        ]
+      }
+    }
+  },
+  "staticNetwork": {
+  }
+}
