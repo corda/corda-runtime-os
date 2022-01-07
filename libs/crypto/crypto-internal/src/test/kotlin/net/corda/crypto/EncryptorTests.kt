@@ -96,9 +96,10 @@ class EncryptorTests {
         val random = Random(Instant.now().toEpochMilli())
         (0 until 100).forEach { _ ->
             val data = random.nextBytes(random.nextInt(1, 193))
-            val wrapped = master.wrap(Encryptor.derive(passphrase, salt))
+            val encryptor = Encryptor.derive(passphrase, salt)
+            val encrypted = encryptor.encrypt(data)
+            val wrapped = master.wrap(encryptor)
             val unwrapped = master.unwrap(wrapped)
-            val encrypted = unwrapped.encrypt(data)
             val decrypted = unwrapped.decrypt(encrypted)
             assertFalse(data.contentEquals(encrypted))
             assertArrayEquals(data, decrypted)
