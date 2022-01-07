@@ -23,6 +23,13 @@ interface PermissionStorageReader : Lifecycle {
     fun publishNewUser(user: AvroUser)
 
     /**
+     * Broadcasts an updated user onto the messaging bus.
+     *
+     * @param user The user to be published.
+     */
+    fun publishUpdatedUser(user: AvroUser)
+
+    /**
      * Broadcasts a new role onto the messaging bus.
      *
      * @param role The role to be published.

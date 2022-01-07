@@ -35,7 +35,7 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 
-class RoleWriterTest {
+class RoleWriterImplTest {
 
     private val requestUserId = "requestor"
     private val createRoleRequest = CreateRoleRequest("role1", null)

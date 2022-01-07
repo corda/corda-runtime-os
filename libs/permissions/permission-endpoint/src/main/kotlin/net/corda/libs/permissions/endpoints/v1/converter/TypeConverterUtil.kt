@@ -5,6 +5,7 @@ import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionAssoci
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
+import net.corda.libs.permissions.endpoints.v1.role.types.RoleAssociationResponseType
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.PropertyResponseType
@@ -15,6 +16,7 @@ import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.response.PermissionAssociationResponseDto
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.libs.permissions.manager.response.PropertyResponseDto
+import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.libs.permissions.manager.common.PermissionTypeDto as InternalPermissionTypeEnum
@@ -74,9 +76,15 @@ fun UserResponseDto.convertToEndpointType(): UserResponseType {
         ssoAuth,
         passwordExpiry,
         parentGroup,
-        properties.map { it.convertToEndpointType() }
+        properties.map { it.convertToEndpointType() },
+        roles.map { it.convertToEndpointType() }
     )
 }
+
+/**
+ * Convert a RoleAssociationResponseDto to a v1 RoleAssociationResponseType to be returned to the HTTP caller.
+ */
+fun RoleAssociationResponseDto.convertToEndpointType() = RoleAssociationResponseType(roleId, createdTimestamp)
 
 /**
  * Convert a PropertyResponseDto to a v1 PropertyResponseType to be returned to the HTTP caller.

@@ -6,6 +6,7 @@ import net.corda.data.permissions.PermissionAssociation as AvroPermissionAssocia
 import net.corda.data.permissions.PermissionType as AvroPermissionType
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.libs.permissions.manager.response.PropertyResponseDto
+import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.data.permissions.User as AvroUser
@@ -44,6 +45,9 @@ fun AvroUser.convertToResponseDto(): UserResponseDto {
                 it.value
             )
         },
+        roleAssociations.map {
+            RoleAssociationResponseDto(it.roleId, it.changeDetails.updateTimestamp)
+        }
     )
 }
 
