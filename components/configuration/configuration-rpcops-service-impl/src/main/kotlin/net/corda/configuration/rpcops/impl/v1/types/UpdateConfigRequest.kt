@@ -1,7 +1,7 @@
-package net.corda.configuration.rpcops.v1.types
+package net.corda.configuration.rpcops.impl.v1.types
 
 /** Request type for cluster configuration updates. */
-data class UpdateConfigType(
+data class UpdateConfigRequest(
     // TODO - Joel - Put properties here.
     val placeholder: String
 )

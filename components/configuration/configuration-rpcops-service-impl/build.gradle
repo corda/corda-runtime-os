@@ -18,6 +18,7 @@ dependencies {
     implementation project(':libs:messaging:messaging')
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 }

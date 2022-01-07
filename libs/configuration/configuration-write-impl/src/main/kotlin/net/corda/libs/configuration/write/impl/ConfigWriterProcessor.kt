@@ -58,6 +58,7 @@ internal class ConfigWriterProcessor(
         return try {
             configEntityRepository.writeEntities(req, clock)
         } catch (e: Exception) {
+            // TODO - Joel - Return special exception envelope for incompatible version number.
             val errMsg = "New configuration represented by $req couldn't be written to the database. Cause: $e"
             handleException(respFuture, errMsg, e, req.section)
             null
@@ -106,6 +107,7 @@ internal class ConfigWriterProcessor(
 
         respFuture.complete(
             ConfigurationManagementResponse(
+                // TODO - Joel - Consider returning "{}" and -1 instead of nulls.
                 ExceptionEnvelope(cause.javaClass.name, errMsg), currentConfig?.version, currentConfig?.config
             )
         )

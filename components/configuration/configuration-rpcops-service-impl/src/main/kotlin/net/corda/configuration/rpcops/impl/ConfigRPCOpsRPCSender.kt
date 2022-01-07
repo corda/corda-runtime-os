@@ -1,4 +1,4 @@
-package net.corda.configuration.rpcops
+package net.corda.configuration.rpcops.impl
 
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
@@ -15,7 +15,8 @@ class ConfigRPCOpsRPCSender {
 
     var rpcSender: RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>? = null
 
-    fun sendRequest(request: ConfigurationManagementRequest) =
+    fun sendRequest(request: ConfigurationManagementRequest): ConfigurationManagementResponse {
         // TODO - Joel - Handle rpcSender being null.
-        rpcSender?.sendRequest(request)?.getOrThrow(requestTimeout)!!
+        return rpcSender?.sendRequest(request)?.getOrThrow(requestTimeout)!!
+    }
 }

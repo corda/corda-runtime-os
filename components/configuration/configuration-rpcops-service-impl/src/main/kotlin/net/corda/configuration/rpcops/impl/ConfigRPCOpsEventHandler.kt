@@ -1,6 +1,7 @@
-package net.corda.configuration.rpcops
+package net.corda.configuration.rpcops.impl
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfig
@@ -24,7 +25,7 @@ internal class ConfigRPCOpsEventHandler(
     private val configReadService: ConfigurationReadService,
     private val publisherFactory: PublisherFactory,
     private val configRPCOpsRpcSender: ConfigRPCOpsRPCSender,
-    configRPCOpsService: ConfigRPCOpsServiceImpl
+    private val configRPCOpsService: ConfigRPCOpsServiceImpl
 ) : LifecycleEventHandler {
 
     private companion object {
@@ -38,7 +39,6 @@ internal class ConfigRPCOpsEventHandler(
         )
     }
 
-    private val coordinator = configRPCOpsService.coordinator
     private var configReadServiceRegistration: RegistrationHandle? = null
     private var configReadServiceHandle: AutoCloseable? = null
 
@@ -59,7 +59,7 @@ internal class ConfigRPCOpsEventHandler(
     // TODO - Joel - Describe.
     private fun processStartEvent() {
         configReadServiceRegistration?.close()
-        configReadServiceRegistration = coordinator.followStatusChangesByName(
+        configReadServiceRegistration = configRPCOpsService.coordinator.followStatusChangesByName(
             setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())
         )
     }
@@ -77,10 +77,11 @@ internal class ConfigRPCOpsEventHandler(
         // TODO - Joel - Encapsulate this in a method on configRPCOpsRpcSender.
         configRPCOpsRpcSender.rpcSender?.stop()
         configRPCOpsRpcSender.rpcSender = null
-        coordinator.updateStatus(DOWN)
+        configRPCOpsService.coordinator.updateStatus(DOWN)
     }
 
     private fun onConfigurationUpdated(changedKeys: Set<String>, currentConfigSnapshot: Map<String, SmartConfig>) {
+        // TODO - Joel - Use constant here and below.
         if ("corda.boot" in changedKeys) {
             try {
                 // TODO - Joel - Encapsulate this in a method on configRPCOpsRpcSender.
@@ -88,10 +89,10 @@ internal class ConfigRPCOpsEventHandler(
                 configRPCOpsRpcSender.rpcSender =
                     publisherFactory.createRPCSender(rpcConfig, currentConfigSnapshot["corda.boot"]!!).apply { start() }
             } catch (e: Exception) {
-                coordinator.updateStatus(ERROR)
+                configRPCOpsService.coordinator.updateStatus(ERROR)
                 throw ConfigRPCOpsServiceException("TODO - Joel", e)
             }
-            coordinator.updateStatus(UP)
+            configRPCOpsService.coordinator.updateStatus(UP)
         }
     }
 }

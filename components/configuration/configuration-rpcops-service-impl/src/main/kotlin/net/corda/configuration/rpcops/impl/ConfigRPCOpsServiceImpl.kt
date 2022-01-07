@@ -1,6 +1,7 @@
-package net.corda.configuration.rpcops
+package net.corda.configuration.rpcops.impl
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -9,8 +10,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 /** An implementation of [ConfigRPCOpsService]. */
-@Component(service = [ConfigRPCOpsService::class])
-class ConfigRPCOpsServiceImpl @Activate constructor(
+@Component(immediate = true, service = [ConfigRPCOpsService::class])
+internal class ConfigRPCOpsServiceImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)

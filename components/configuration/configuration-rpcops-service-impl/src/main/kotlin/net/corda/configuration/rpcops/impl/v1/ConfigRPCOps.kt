@@ -1,7 +1,7 @@
-package net.corda.configuration.rpcops.v1
+package net.corda.configuration.rpcops.impl.v1
 
-import net.corda.configuration.rpcops.v1.types.ConfigResponseType
-import net.corda.configuration.rpcops.v1.types.UpdateConfigType
+import net.corda.configuration.rpcops.impl.v1.types.UpdateConfigResponse
+import net.corda.configuration.rpcops.impl.v1.types.UpdateConfigRequest
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
@@ -18,6 +18,6 @@ interface ConfigRPCOps : RpcOps {
     @HttpRpcPOST(description = "Update cluster configuration", path = "updateConfig")
     fun updateConfig(
         @HttpRpcRequestBodyParameter(description = "Details of the updated configuration", required = true)
-        updateConfigType: UpdateConfigType
-    ): ConfigResponseType
+        updateConfigRequest: UpdateConfigRequest
+    ): UpdateConfigResponse
 }

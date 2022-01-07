@@ -1,9 +1,9 @@
-package net.corda.configuration.rpcops.v1.impl
+package net.corda.configuration.rpcops.impl.v1.impl
 
-import net.corda.configuration.rpcops.ConfigRPCOpsRPCSender
-import net.corda.configuration.rpcops.v1.ConfigRPCOps
-import net.corda.configuration.rpcops.v1.types.ConfigResponseType
-import net.corda.configuration.rpcops.v1.types.UpdateConfigType
+import net.corda.configuration.rpcops.impl.ConfigRPCOpsRPCSender
+import net.corda.configuration.rpcops.impl.v1.ConfigRPCOps
+import net.corda.configuration.rpcops.impl.v1.types.UpdateConfigResponse
+import net.corda.configuration.rpcops.impl.v1.types.UpdateConfigRequest
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.httprpc.PluggableRPCOps
@@ -21,9 +21,12 @@ class ConfigRPCOpsImpl @Activate constructor(
     override val targetInterface = ConfigRPCOps::class.java
     override val protocolVersion = 1
 
-    override fun updateConfig(updateConfigType: UpdateConfigType): ConfigResponseType {
+    override fun updateConfig(updateConfigRequest: UpdateConfigRequest): UpdateConfigResponse {
+        // TODO - Joel - Build the request based on the argument.
         val req = ConfigurationManagementRequest("blah", 1, "lah", 2, "hah")
         val resp = configRPCOpsRpcSender.sendRequest(req)
+
+        // TODO - Joel - Retries if version is wrong, or at least flag it.
 
         val status = resp.status
         if (status is ExceptionEnvelope) {
@@ -35,6 +38,6 @@ class ConfigRPCOpsImpl @Activate constructor(
         }
 
         // TODO - Joel - Return proper response object.
-        return ConfigResponseType(resp.currentConfiguration)
+        return UpdateConfigResponse(resp.currentConfiguration)
     }
 }
