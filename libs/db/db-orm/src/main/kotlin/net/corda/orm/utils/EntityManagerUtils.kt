@@ -70,8 +70,12 @@ inline fun <R> EntityManagerFactory.transaction(block: (EntityManager) -> R): R 
 inline fun <R> EntityManager.transaction(block: (EntityManager) -> R): R {
     val currentTransaction = transaction
     currentTransaction.begin()
+
     return try {
         block(this)
+    } catch (e: Exception) {
+        currentTransaction.setRollbackOnly()
+        throw(e)
     } finally {
         if (!currentTransaction.rollbackOnly) {
             currentTransaction.commit()
