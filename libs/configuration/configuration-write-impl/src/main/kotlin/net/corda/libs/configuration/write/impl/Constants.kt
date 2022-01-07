@@ -12,6 +12,3 @@ internal typealias ConfigurationManagementRPCSubscription =
 internal const val GROUP_NAME = "config.management"
 internal const val CLIENT_NAME_DB = "config.manager.db"
 internal const val CLIENT_NAME_RPC = "config.manager.rpc"
-
-internal const val PLACEHOLDER_NO_CONFIG_VERSION = -1
-internal const val PLACEHOLDER_NO_CONFIG = "{}"

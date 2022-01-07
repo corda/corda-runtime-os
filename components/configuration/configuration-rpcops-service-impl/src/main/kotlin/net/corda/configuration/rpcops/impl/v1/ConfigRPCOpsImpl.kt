@@ -1,6 +1,8 @@
 package net.corda.configuration.rpcops.impl.v1
 
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
+import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
+import net.corda.configuration.rpcops.impl.GROUP_NAME
 import net.corda.configuration.rpcops.impl.v1.types.HTTPUpdateConfigRequest
 import net.corda.configuration.rpcops.impl.v1.types.HTTPUpdateConfigResponse
 import net.corda.data.ExceptionEnvelope
@@ -27,10 +29,10 @@ internal class ConfigRPCOpsImpl @Activate constructor(
     private val publisherFactory: PublisherFactory
 ) : ConfigRPCOps, PluggableRPCOps<ConfigRPCOps> {
     private companion object {
-        // TODO - Joel - Describe.
+        // The configuration used for the RPC sender.
         private val rpcConfig = RPCConfig(
-            "config.management",
-            "config.manager.client",
+            GROUP_NAME,
+            CLIENT_NAME_HTTP,
             CONFIG_MGMT_REQUEST_TOPIC,
             ConfigurationManagementRequest::class.java,
             ConfigurationManagementResponse::class.java
@@ -39,7 +41,9 @@ internal class ConfigRPCOpsImpl @Activate constructor(
 
     override val targetInterface = ConfigRPCOps::class.java
     override val protocolVersion = 1
+    // TODO - Joel - Make this configurable.
     private val requestTimeout = Duration.ofMillis(10000L)
+    // The RPC sender that handles incoming configuration management requests.
     private var rpcSender: RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>? = null
 
     override fun start(config: SmartConfig) {
@@ -64,10 +68,15 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         rpcSender = null
     }
 
-    // TODo - Joel - Describe.
+    /**
+     * Sends the [request] to the configuration management topic on Kafka.
+     *
+     * @throws ConfigRPCOpsServiceException If the RPC sender is not started.
+     * @throws Exception If an exception is thrown when attempting to get the future returned by the request.
+     */
     private fun sendRequest(request: ConfigurationManagementRequest): ConfigurationManagementResponse {
         val nonNullRPCSender = rpcSender ?: throw ConfigRPCOpsServiceException(
-            "Configuration update request could not be sent as the RPC sender has not been configured.")
+            "Configuration update request could not be sent as the RPC sender has not been started.")
         return nonNullRPCSender.sendRequest(request).getOrThrow(requestTimeout)
     }
 }

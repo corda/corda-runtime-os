@@ -62,11 +62,10 @@ internal class ConfigRPCOpsEventHandler(
     }
 
     private fun onConfigurationUpdated(changedKeys: Set<String>, currentConfigSnapshot: Map<String, SmartConfig>) {
-        // TODO - Joel - Use constant here and below.
-        if ("corda.boot" in changedKeys) {
+        if (CONFIG_BOOTSTRAP in changedKeys) {
             try {
                 // TODO - Joel - Handle possible null.
-                configRPCOps.start(currentConfigSnapshot["corda.boot"]!!)
+                configRPCOps.start(currentConfigSnapshot[CONFIG_BOOTSTRAP]!!)
             } catch (e: Exception) {
                 configRPCOpsService.coordinator.updateStatus(ERROR)
                 throw ConfigRPCOpsServiceException("TODO - Joel", e)

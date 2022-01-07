@@ -33,8 +33,9 @@ internal class ConfigEntityRepository(private val entityManagerFactory: EntityMa
             val existingConfig = entityManager.find(ConfigEntity::class.java, newConfig.section)
             val updatedConfig = existingConfig?.apply { update(newConfig) } ?: newConfig
 
-            // TODO - Joel - Work out why version is incremented even if exception is thrown.
             if (req.version != updatedConfig.version) {
+                // TODO - Joel - Remove this when my fix is merged.
+                entityManager.transaction.setRollbackOnly()
                 throw WrongVersionException(
                     "The request specified a version of ${req.version}, but the current version in the database is " +
                             "${updatedConfig.version}. These versions must match to update the cluster configuration."
