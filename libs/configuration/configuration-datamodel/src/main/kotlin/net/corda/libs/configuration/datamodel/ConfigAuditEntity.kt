@@ -28,7 +28,11 @@ import javax.persistence.Table
 @Table(name = CONFIG_AUDIT_DB_TABLE, schema = CONFIG)
 data class ConfigAuditEntity(
     @Id
-    @SequenceGenerator(name = CONFIG_AUDIT_GENERATOR, sequenceName = CONFIG_AUDIT_ID_SEQUENCE, allocationSize = CONFIG_AUDIT_ID_SEQUENCE_ALLOC_SIZE)
+    @SequenceGenerator(
+        name = CONFIG_AUDIT_GENERATOR,
+        sequenceName = CONFIG_AUDIT_ID_SEQUENCE,
+        allocationSize = CONFIG_AUDIT_ID_SEQUENCE_ALLOC_SIZE
+    )
     @GeneratedValue(strategy = SEQUENCE, generator = CONFIG_AUDIT_GENERATOR)
     @Column(name = "change_number", nullable = false)
     val changeNumber: Int,

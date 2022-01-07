@@ -74,7 +74,7 @@ class DBProcessorImpl @Activate constructor(
 
         try {
             dataSource.connection.use { connection ->
-                schemaMigrator.updateDb(connection, dbChange, LiquibaseSchemaMigrator.PUBLIC_SCHEMA)
+                schemaMigrator.updateDb(connection, dbChange)
             }
         } catch (e: SQLException) {
             throw DBProcessorException("Could not connect to cluster database.", e)
