@@ -47,7 +47,7 @@ fun BloomFilter.possiblyContains(bytes: ByteArray): Boolean {
  * @param hashSeed The seed of the filter used for calculating the hashes, must change after each round.
  */
 fun createBloomFilter(expectedItemCount: Int, falsePositiveRate: Double, hashSeed: Int): BloomFilter {
-    if ( falsePositiveRate <= 0 || falsePositiveRate >= 1) {
+    if ( falsePositiveRate <= 0.0 || falsePositiveRate >= 1.0) {
         throw IllegalArgumentException("False positive rate must be between 0 and 1.")
     }
     val filterLength = filterLengthCalc(expectedItemCount, falsePositiveRate)
