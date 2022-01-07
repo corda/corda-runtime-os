@@ -1,0 +1,26 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+
+    plugins {
+        id 'org.jetbrains.kotlin.jvm' version kotlinVersion
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+}
+
+rootProject.name = "corda-cli-plugin-host"
+
+include 'api'
+include 'app'
+include 'plugins'
+include 'plugins:mgm'
+include 'plugins:plugin1'
+include 'plugins:plugin2'
+
