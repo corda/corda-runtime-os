@@ -1,10 +1,8 @@
 package net.corda.membership.grouppolicy.factory
 
-import net.corda.membership.impl.GroupPolicyExtension.Companion.mgmKeyAlias
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.uncheckedCast
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -34,7 +32,9 @@ class GroupPolicyFactoryTest {
         const val registrationProtocolFactory = "registrationProtocolFactory"
         const val synchronisationProtocolFactory = "synchronisationProtocolFactory"
         const val protocolParameters = "protocolParameters"
+        // TODO rename constants to match with naming conventions
         const val staticNetwork = "staticNetwork"
+        const val staticMgm = "mgm"
         const val staticMembers = "members"
         const val identityPKI = "identityPKI"
         const val identityKeyPolicy = "identityKeyPolicy"
@@ -43,14 +43,10 @@ class GroupPolicyFactoryTest {
         const val mgmInfo = "mgmInfo"
         const val cipherSuite = "cipherSuite"
         const val roles = "roles"
-
-        const val groupPolicyWithStaticNetwork = "/SampleGroupPolicy.json"
-        const val groupPolicyWithoutStaticNetwork = "/SampleGroupPolicyWithoutStaticNetwork.json"
     }
 
     private lateinit var groupPolicyFactory: GroupPolicyFactory
     private val testGroupId = "ABC123"
-    private val testMgmKeyAlias = "mgm-alias"
 
     @BeforeEach
     fun setUp() {
@@ -115,6 +111,9 @@ class GroupPolicyFactoryTest {
         val staticNetwork = result[staticNetwork] as Map<*, *>
         assertEquals(2, staticNetwork.size)
 
+        val staticMgm = staticNetwork[staticMgm] as Map<*, *>
+        assertEquals(1, staticMgm.size)
+
         val staticMembers = staticNetwork[staticMembers] as List<*>
 
         val alice: Map<String, String> = uncheckedCast(staticMembers[0])
@@ -147,20 +146,8 @@ class GroupPolicyFactoryTest {
         assertEquals(charlie[endpointProtocol2], 1)
     }
 
-    @Test
-    fun `Parse group policy - verify MGM private key alias`() {
-        val result = groupPolicyFactory.createGroupPolicy(getSampleGroupPolicy())
-        assertEquals(testMgmKeyAlias, result.mgmKeyAlias)
-    }
-
-    @Test
-    fun `Parse group policy without static network - verify MGM private key alias is null`() {
-        val result = groupPolicyFactory.createGroupPolicy(getSampleGroupPolicy(groupPolicyWithoutStaticNetwork))
-        assertNull(result.mgmKeyAlias)
-    }
-
-    private fun getSampleGroupPolicy(resource: String? = groupPolicyWithStaticNetwork): String {
-        val url = this::class.java.getResource(resource)
+    private fun getSampleGroupPolicy(): String {
+        val url = this::class.java.getResource("/SampleGroupPolicy.json")
         requireNotNull(url)
         return url.readText()
     }
