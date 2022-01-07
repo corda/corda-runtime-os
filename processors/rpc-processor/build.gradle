@@ -27,9 +27,4 @@ dependencies {
     runtimeOnly project(':libs:permissions:permission-manager-impl')
     runtimeOnly project(':libs:permissions:permission-validation-impl')
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
-
-
-    compileOnly 'org.osgi:osgi.core'
-    implementation 'net.corda:corda-topic-schema'
-    implementation 'net.corda:corda-avro-schema'
 }
