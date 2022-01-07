@@ -63,7 +63,7 @@ dependencies {
     runtimeOnly project(":components:permissions:permission-management-service")
     runtimeOnly project(":components:permissions:permission-rpc-ops-impl")
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
-    runtimeOnly project(":components:configuration:configuration-rpcops-service")
+    runtimeOnly project(":components:configuration:configuration-rpcops-service-impl")
 
     runtimeOnly project(":libs:configuration:configuration-publish-impl")
     runtimeOnly project(":libs:configuration:file-configuration-read-impl")

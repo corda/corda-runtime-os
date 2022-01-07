@@ -27,7 +27,7 @@ class RPCProcessorImpl @Activate constructor(
     private val httpRpcGateway: HttpRpcGateway,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory
-): RPCProcessor {
+) : RPCProcessor {
     private companion object {
         val logger = contextLogger()
     }
@@ -45,11 +45,15 @@ class RPCProcessorImpl @Activate constructor(
         val publisherConfig = PublisherConfig("joels-client", 999)
         val publisher = publisherFactory.createPublisher(publisherConfig, config)
         publisher.start()
-        val record = Record("ConfigTopic", "corda.rpc", Configuration("""
+        val record = Record(
+            "ConfigTopic", "corda.rpc", Configuration(
+                """
             address="0.0.0.0:8888"
             context.description="Exposing RPCOps interfaces as OpenAPI WebServices"
             context.title="HTTP RPC demo"
-        """.trimIndent(), "999"))
+        """.trimIndent(), "999"
+            )
+        )
         publisher.publish(listOf(record)).first().get()
     }
 

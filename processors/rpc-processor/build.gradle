@@ -16,9 +16,11 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
+    implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
 
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
+    runtimeOnly project(':components:configuration:configuration-rpcops-service-impl')
     runtimeOnly project(':libs:configuration:configuration-read-impl')
     runtimeOnly project(':libs:http-rpc:http-rpc-server-impl')
     runtimeOnly project(':libs:http-rpc:http-rpc-stubs-impl')

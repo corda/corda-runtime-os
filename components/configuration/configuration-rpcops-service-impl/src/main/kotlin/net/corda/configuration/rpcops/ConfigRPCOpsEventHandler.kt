@@ -19,12 +19,12 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.config.RPCConfig
 import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 
-/** Handles incoming [LifecycleCoordinator] events for [ConfigRPCOpsService]. */
+/** Handles incoming [LifecycleCoordinator] events for [ConfigRPCOpsServiceImpl]. */
 internal class ConfigRPCOpsEventHandler(
     private val configReadService: ConfigurationReadService,
     private val publisherFactory: PublisherFactory,
     private val configRPCOpsRpcSender: ConfigRPCOpsRPCSender,
-    configRPCOpsService: ConfigRPCOpsService
+    configRPCOpsService: ConfigRPCOpsServiceImpl
 ) : LifecycleEventHandler {
 
     private companion object {
