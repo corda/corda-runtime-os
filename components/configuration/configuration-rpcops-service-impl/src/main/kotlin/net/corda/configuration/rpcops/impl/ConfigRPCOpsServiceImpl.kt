@@ -2,6 +2,7 @@ package net.corda.configuration.rpcops.impl
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.ConfigRPCOpsService
+import net.corda.configuration.rpcops.impl.v1.ConfigRPCOps
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -18,12 +19,12 @@ internal class ConfigRPCOpsServiceImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = ConfigRPCOpsRPCSender::class)
-    private val configRPCOpsRPCSender: ConfigRPCOpsRPCSender
+    @Reference(service = ConfigRPCOps::class)
+    private val configRPCOps: ConfigRPCOps
 ) : ConfigRPCOpsService {
 
     internal val coordinator = let {
-        val eventHandler = ConfigRPCOpsEventHandler(configReadService, publisherFactory, configRPCOpsRPCSender, this)
+        val eventHandler = ConfigRPCOpsEventHandler(this, configReadService, publisherFactory, configRPCOps)
         coordinatorFactory.createCoordinator<ConfigRPCOpsServiceImpl>(eventHandler)
     }
 

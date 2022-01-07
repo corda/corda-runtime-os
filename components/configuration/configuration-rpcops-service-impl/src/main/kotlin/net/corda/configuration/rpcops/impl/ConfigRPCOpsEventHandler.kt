@@ -2,6 +2,7 @@ package net.corda.configuration.rpcops.impl
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
+import net.corda.configuration.rpcops.impl.v1.ConfigRPCOps
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.libs.configuration.SmartConfig
@@ -22,10 +23,10 @@ import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigRPCOpsServiceImpl]. */
 internal class ConfigRPCOpsEventHandler(
+    private val configRPCOpsService: ConfigRPCOpsServiceImpl,
     private val configReadService: ConfigurationReadService,
     private val publisherFactory: PublisherFactory,
-    private val configRPCOpsRpcSender: ConfigRPCOpsRPCSender,
-    private val configRPCOpsService: ConfigRPCOpsServiceImpl
+    private val configRPCOps: ConfigRPCOps
 ) : LifecycleEventHandler {
 
     private companion object {
@@ -74,9 +75,9 @@ internal class ConfigRPCOpsEventHandler(
 
     // TODO - Joel - Describe.
     private fun processStopEvent() {
-        // TODO - Joel - Encapsulate this in a method on configRPCOpsRpcSender.
-        configRPCOpsRpcSender.rpcSender?.stop()
-        configRPCOpsRpcSender.rpcSender = null
+        // TODO - Joel - Encapsulate this in a method on configRPCOpsRpcSender. Make it implement lifecycle?
+        configRPCOps.rpcSender?.stop()
+        configRPCOps.rpcSender = null
         configRPCOpsService.coordinator.updateStatus(DOWN)
     }
 
@@ -84,9 +85,9 @@ internal class ConfigRPCOpsEventHandler(
         // TODO - Joel - Use constant here and below.
         if ("corda.boot" in changedKeys) {
             try {
+                configRPCOps.close()
                 // TODO - Joel - Encapsulate this in a method on configRPCOpsRpcSender.
-                configRPCOpsRpcSender.rpcSender?.close()
-                configRPCOpsRpcSender.rpcSender =
+                configRPCOps.rpcSender =
                     publisherFactory.createRPCSender(rpcConfig, currentConfigSnapshot["corda.boot"]!!).apply { start() }
             } catch (e: Exception) {
                 configRPCOpsService.coordinator.updateStatus(ERROR)
