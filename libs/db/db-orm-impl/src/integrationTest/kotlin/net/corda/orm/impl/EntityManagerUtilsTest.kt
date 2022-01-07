@@ -2,10 +2,12 @@ package net.corda.orm.impl
 
 import net.corda.db.testkit.InMemoryEntityManagerConfiguration
 import net.corda.orm.impl.test.entities.Cat
+import net.corda.orm.impl.test.entities.MutableEntity
 import net.corda.orm.impl.test.entities.Owner
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
@@ -18,7 +20,7 @@ class EntityManagerUtilsTest {
         val emf = createEntityManagerFactory()
 
         val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Jerry", "Black & White", owner)
+        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
         emf.transaction {
             it.persist(owner)
@@ -35,7 +37,7 @@ class EntityManagerUtilsTest {
         val emf = createEntityManagerFactory()
 
         val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Jerry", "Black & White", owner)
+        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
         emf.use {
             it.transaction.begin()
@@ -54,7 +56,7 @@ class EntityManagerUtilsTest {
         val emf = createEntityManagerFactory()
 
         val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Jerry", "Black & White", owner)
+        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
         val em = emf.createEntityManager()
         em.transaction {
@@ -72,7 +74,7 @@ class EntityManagerUtilsTest {
         val emf = createEntityManagerFactory()
 
         val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Jerry", "Black & White", owner)
+        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
         val em = emf.createEntityManager()
         em.use {
@@ -92,7 +94,7 @@ class EntityManagerUtilsTest {
         val emf = createEntityManagerFactory()
 
         val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Jerry", "Black & White", owner)
+        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
         emf.transaction {
             it.persist(owner)
@@ -111,7 +113,7 @@ class EntityManagerUtilsTest {
         val emf = createEntityManagerFactory()
 
         val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Jerry", "Black & White", owner)
+        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
         emf.use {
             it.transaction.begin()
@@ -132,7 +134,7 @@ class EntityManagerUtilsTest {
         val emf = createEntityManagerFactory()
 
         val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Jerry", "Black & White", owner)
+        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
         val em = emf.createEntityManager()
         em.use {
@@ -154,7 +156,7 @@ class EntityManagerUtilsTest {
         val emf = createEntityManagerFactory()
 
         val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Jerry", "Black & White", owner)
+        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
         val em = emf.createEntityManager()
         em.use {
@@ -176,7 +178,7 @@ class EntityManagerUtilsTest {
         val emf = createEntityManagerFactory()
 
         val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Jerry", "Black & White", owner)
+        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
         val em = emf.createEntityManager()
         em.use {
@@ -198,7 +200,7 @@ class EntityManagerUtilsTest {
         val emf = createEntityManagerFactory()
 
         val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Jerry", "Black & White", owner)
+        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
         val em = emf.createEntityManager()
         em.use {
@@ -214,10 +216,36 @@ class EntityManagerUtilsTest {
             .hasMessageContaining("closed")
     }
 
-    private fun createEntityManagerFactory() : EntityManagerFactory {
+    @Test
+    fun `EntityManager#transaction rolls back the transaction if an exception is thrown`() {
+        val expectedTag = "initialTag"
+        val entity = MutableEntity(UUID.randomUUID(), expectedTag)
+
+        val emf = createEntityManagerFactory()
+        emf.transaction { em ->
+            em.persist(entity)
+        }
+
+        try {
+            emf.transaction { em ->
+                val retrievedEntity = em.find(MutableEntity::class.java, entity.id)
+                retrievedEntity.tag = "newTag"
+                throw Exception()
+            }
+        } catch (_: Exception) {
+        }
+
+        val retrievedEntity = emf.transaction { em ->
+            em.find(MutableEntity::class.java, entity.id)
+        }
+
+        assertEquals(expectedTag, retrievedEntity.tag)
+    }
+
+    private fun createEntityManagerFactory(): EntityManagerFactory {
         return EntityManagerFactoryFactoryImpl().create(
             "cats",
-            listOf(Cat::class.java, Owner::class.java),
+            listOf(Cat::class.java, Owner::class.java, MutableEntity::class.java),
             InMemoryEntityManagerConfiguration("cats")
         )
     }
