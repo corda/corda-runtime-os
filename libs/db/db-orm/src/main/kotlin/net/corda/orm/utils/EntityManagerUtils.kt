@@ -75,7 +75,7 @@ inline fun <R> EntityManager.transaction(block: (EntityManager) -> R): R {
         block(this)
     } catch (e: Exception) {
         currentTransaction.setRollbackOnly()
-        throw(e)
+        throw e
     } finally {
         if (!currentTransaction.rollbackOnly) {
             currentTransaction.commit()
