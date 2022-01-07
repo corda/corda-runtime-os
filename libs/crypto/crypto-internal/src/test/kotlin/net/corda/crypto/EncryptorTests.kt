@@ -21,7 +21,7 @@ class EncryptorTests {
         val passphrase = UUID.randomUUID().toString()
         val salt = UUID.randomUUID().toString()
         val encryptor = Encryptor.derive(passphrase, salt)
-        (0 until 100).forEach { _ ->
+        (0 until 10).forEach { _ ->
             val encrypted = encryptor.encrypt(data)
             val decrypted = encryptor.decrypt(encrypted)
             assertFalse(data.contentEquals(encrypted))
@@ -35,7 +35,7 @@ class EncryptorTests {
         val passphrase = UUID.randomUUID().toString()
         val salt = UUID.randomUUID().toString()
         val encryptor = Encryptor.derive(passphrase, salt)
-        (0 until 100).forEach { _ ->
+        (0 until 10).forEach { _ ->
             val encrypted = encryptor.encrypt(data)
             val decrypted = encryptor.decrypt(encrypted)
             assertFalse(data.contentEquals(encrypted))
@@ -49,7 +49,7 @@ class EncryptorTests {
         val passphrase = UUID.randomUUID().toString()
         val salt = UUID.randomUUID().toString()
         val encryptor = Encryptor.derive(passphrase, salt)
-        (0 until 100).forEach { _ ->
+        (0 until 10).forEach { _ ->
             val encrypted = encryptor.encrypt(data)
             val decrypted = encryptor.decrypt(encrypted)
             assertFalse(data.contentEquals(encrypted))
@@ -61,7 +61,7 @@ class EncryptorTests {
     fun `Should successfully generate new Encryptor and then use it`() {
         val encryptor = Encryptor.generate()
         val random = Random(Instant.now().toEpochMilli())
-        (0 until 100).forEach { _ ->
+        (0 until 10).forEach { _ ->
             val data = random.nextBytes(random.nextInt(1, 193))
             val encrypted = encryptor.encrypt(data)
             val decrypted = encryptor.decrypt(encrypted)
@@ -91,7 +91,7 @@ class EncryptorTests {
         val salt = UUID.randomUUID().toString()
         val encryptor = Encryptor.derive(passphrase, salt)
         val random = Random(Instant.now().toEpochMilli())
-        (0 until 100).forEach { _ ->
+        (0 until 10).forEach { _ ->
             val data = random.nextBytes(random.nextInt(1, 193))
             val encrypted = encryptor.encrypt(data)
             val decrypted = encryptor.decrypt(encrypted)
@@ -107,7 +107,7 @@ class EncryptorTests {
         val encryptor1 = Encryptor.derive(passphrase, salt)
         val encryptor2 = Encryptor.derive(passphrase, salt)
         val random = Random(Instant.now().toEpochMilli())
-        (0 until 300).forEach { _ ->
+        (0 until 10).forEach { _ ->
             val data = random.nextBytes(random.nextInt(1, 193))
             val encrypted = encryptor1.encrypt(data)
             val decrypted = encryptor2.decrypt(encrypted)
@@ -123,7 +123,7 @@ class EncryptorTests {
         val salt = UUID.randomUUID().toString()
         val master = Encryptor.derive(passphrase, salt)
         val random = Random(Instant.now().toEpochMilli())
-        (0 until 100).forEach { _ ->
+        (0 until 10).forEach { _ ->
             val data = random.nextBytes(random.nextInt(1, 193))
             val encryptor = Encryptor.derive(passphrase, salt)
             val encrypted = encryptor.encrypt(data)
