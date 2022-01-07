@@ -15,7 +15,7 @@ import java.io.Closeable
     description = "Cluster Configuration Management APIs",
     path = "config"
 )
-interface ConfigRPCOps : RpcOps, Closeable {
+internal interface ConfigRPCOps : RpcOps, Closeable {
     // TODO - Joel - Describe.
     fun start(config: SmartConfig)
 

@@ -10,7 +10,7 @@ import net.corda.data.config.ConfigurationManagementRequest
  * @property config Updated configuration in JSON or HOCON format.
  * @property schemaVersion Schema version of the configuration.
  */
-data class HTTPUpdateConfigRequest(
+internal data class HTTPUpdateConfigRequest(
     val section: String,
     val version: Int,
     val config: String,

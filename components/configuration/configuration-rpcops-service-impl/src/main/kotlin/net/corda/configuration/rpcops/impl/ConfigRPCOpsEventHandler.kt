@@ -57,7 +57,6 @@ internal class ConfigRPCOpsEventHandler(
 
     // TODO - Joel - Describe.
     private fun processStopEvent() {
-        // TODO - Joel - Encapsulate this in a method on configRPCOpsRpcSender. Make it implement lifecycle?
         configRPCOps.close()
         configRPCOpsService.coordinator.updateStatus(DOWN)
     }

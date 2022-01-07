@@ -1,11 +1,13 @@
 package net.corda.configuration.rpcops.impl.v1
 
+import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.configuration.rpcops.impl.v1.types.HTTPUpdateConfigRequest
 import net.corda.configuration.rpcops.impl.v1.types.HTTPUpdateConfigResponse
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.HttpApiException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -20,7 +22,7 @@ import java.time.Duration
 /** An implementation of [ConfigRPCOps]. */
 @Suppress("Unused")
 @Component(service = [ConfigRPCOps::class, PluggableRPCOps::class], immediate = true)
-class ConfigRPCOpsImpl @Activate constructor(
+internal class ConfigRPCOpsImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory
 ) : ConfigRPCOps, PluggableRPCOps<ConfigRPCOps> {
@@ -49,19 +51,12 @@ class ConfigRPCOpsImpl @Activate constructor(
         // TODO - Joel - Work out how to determine update actor.
         val resp = sendRequest(req.toRPCRequest("todo - joel"))
 
-        // TODO - Joel - Retry if version is wrong, or at least flag it.
-
         val status = resp.status
-        if (status is ExceptionEnvelope) {
-            // TODO - Joel - Use properties of exception envelope to throw meaningful exception.
-            status.errorMessage
-            status.errorType
-            resp.currentConfiguration
-            resp.currentVersion
+        return if (status is ExceptionEnvelope) {
+            throw HttpApiException("${status.errorType}: ${status.errorMessage}", 500)
+        } else {
+            HTTPUpdateConfigResponse(true)
         }
-
-        // TODO - Joel - Return proper response object.
-        return HTTPUpdateConfigResponse(resp.currentConfiguration)
     }
 
     override fun close() {
@@ -71,7 +66,8 @@ class ConfigRPCOpsImpl @Activate constructor(
 
     // TODo - Joel - Describe.
     private fun sendRequest(request: ConfigurationManagementRequest): ConfigurationManagementResponse {
-        // TODO - Joel - Handle rpcSender being null.
-        return rpcSender?.sendRequest(request)?.getOrThrow(requestTimeout)!!
+        val nonNullRPCSender = rpcSender ?: throw ConfigRPCOpsServiceException(
+            "Configuration update request could not be sent as the RPC sender has not been configured.")
+        return nonNullRPCSender.sendRequest(request).getOrThrow(requestTimeout)
     }
 }

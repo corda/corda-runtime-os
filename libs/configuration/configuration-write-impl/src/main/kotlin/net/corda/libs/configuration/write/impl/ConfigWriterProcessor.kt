@@ -58,9 +58,8 @@ internal class ConfigWriterProcessor(
         return try {
             configEntityRepository.writeEntities(req, clock)
         } catch (e: Exception) {
-            // TODO - Joel - Return special exception envelope for incompatible version number.
             val errMsg = "New configuration represented by $req couldn't be written to the database. Cause: $e"
-            handleException(respFuture, errMsg, e, req.section)
+            handleException(respFuture, errMsg, e)
             null
         }
     }
@@ -83,33 +82,18 @@ internal class ConfigWriterProcessor(
             future.get()
         } catch (e: Exception) {
             val errMsg = "Record $configRecord was written to the database, but couldn't be published. Cause: $e"
-            handleException(respFuture, errMsg, e, configEntity.section)
+            handleException(respFuture, errMsg, e)
             return
         }
 
-        respFuture.complete(ConfigurationManagementResponse(true, configEntity.version, configEntity.config))
+        respFuture.complete(ConfigurationManagementResponse(true))
     }
 
     /**
-     * Logs the [errMsg] and [cause], then completes the [respFuture] with an [ExceptionEnvelope].
+     * Completes the [respFuture] with an [ExceptionEnvelope].
      *
      * @throws IllegalStateException If the current configuration cannot be read back from the cluster database.
      */
-    private fun handleException(
-        respFuture: ConfigurationManagementResponseFuture, errMsg: String, cause: Exception, section: String
-    ) {
-        val currentConfig = try {
-            configEntityRepository.readConfigEntity(section)
-        } catch (e: IllegalStateException) {
-            // We ignore this additional error, and report the one we were already planning to report.
-            null
-        }
-
-        respFuture.complete(
-            ConfigurationManagementResponse(
-                // TODO - Joel - Consider returning "{}" and -1 instead of nulls.
-                ExceptionEnvelope(cause.javaClass.name, errMsg), currentConfig?.version, currentConfig?.config
-            )
-        )
-    }
+    private fun handleException(respFuture: ConfigurationManagementResponseFuture, errMsg: String, cause: Exception) =
+        respFuture.complete(ConfigurationManagementResponse(ExceptionEnvelope(cause.javaClass.name, errMsg)))
 }

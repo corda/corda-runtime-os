@@ -3,6 +3,7 @@ package net.corda.libs.configuration.write.impl
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.libs.configuration.write.WrongVersionException
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import java.time.Clock
@@ -32,10 +33,11 @@ internal class ConfigEntityRepository(private val entityManagerFactory: EntityMa
             val existingConfig = entityManager.find(ConfigEntity::class.java, newConfig.section)
             val updatedConfig = existingConfig?.apply { update(newConfig) } ?: newConfig
 
+            // TODO - Joel - Work out why version is incremented even if exception is thrown.
             if (req.version != updatedConfig.version) {
-                throw IllegalStateException(
+                throw WrongVersionException(
                     "The request specified a version of ${req.version}, but the current version in the database is " +
-                            "${updatedConfig.version}. The versions must match for any update."
+                            "${updatedConfig.version}. These versions must match to update the cluster configuration."
                 )
             }
 
