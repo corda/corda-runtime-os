@@ -13,13 +13,11 @@ class GroupPolicyExtension {
         /** Key name for mgm's private key alias for static network creation. */
         const val MGM_KEY_ALIAS = "keyAlias"
 
-        @JvmStatic
         @Suppress("UNCHECKED_CAST")
         private val GroupPolicy.staticNetwork: Map<String, Any>
             get() = get(STATIC_NETWORK) as? Map<String, Any>
                 ?: throw IllegalStateException("Error while retrieving static network from group policy JSON.")
-
-        @JvmStatic
+        
         @Suppress("UNCHECKED_CAST")
         private val GroupPolicy.staticMgm: Map<String, Any>
             get() = if(staticNetwork.containsKey(STATIC_MGM)) {
