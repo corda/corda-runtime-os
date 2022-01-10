@@ -43,7 +43,7 @@ class TopicTemplates {
                     } 
                 ]"""
 
-        const val PUBLISHER_TEST_DURABLE_TOPIC2  = "PublisherTestDurableTopic1"
+        const val PUBLISHER_TEST_DURABLE_TOPIC2  = "PublisherTestDurableTopic2"
         const val PUBLISHER_TEST_DURABLE_TOPIC2_TEMPLATE = """topics = [ 
                     { 
                         topicName = "$TEST_TOPIC_PREFIX$PUBLISHER_TEST_DURABLE_TOPIC2" 

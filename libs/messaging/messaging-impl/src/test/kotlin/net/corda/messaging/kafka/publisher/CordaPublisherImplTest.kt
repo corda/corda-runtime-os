@@ -124,17 +124,18 @@ class CordaPublisherImplTest {
         val thread1 = Thread {
             barrier.await()
             publish(true, listOf(record, record, record))
+            barrier.await()
         }
         val thread2 = Thread {
             barrier.await()
             publish(true, listOf(record, record, record))
+            barrier.await()
         }
         thread1.start()
         thread2.start()
         barrier.await()
-        while (thread1.isAlive || thread2.isAlive) {
-            Thread.sleep(100)
-        }
+        barrier.reset()
+        barrier.await()
         verify(producer, times(2)).sendRecords(any())
         verify(producer, times(2)).beginTransaction()
         verify(producer, times(2)).commitTransaction()

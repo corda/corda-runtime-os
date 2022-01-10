@@ -109,18 +109,19 @@ class PublisherIntegrationTest {
             barrier.await()
             val futures = publisher.publishToPartition(recordsWithPartitions)
             futures.map { it.getOrThrow() }
+            barrier.await()
         }
         val thread2 = Thread {
             barrier.await()
             val futures = publisher.publishToPartition(recordsWithPartitions)
             futures.map { it.getOrThrow() }
+            barrier.await()
         }
         thread1.start()
         thread2.start()
         barrier.await()
-        while (thread1.isAlive || thread2.isAlive) {
-            Thread.sleep(100)
-        }
+        barrier.reset()
+        barrier.await()
         publisher.close()
 
         val latch = CountDownLatch(recordsWithPartitions.size * 2)
