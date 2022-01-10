@@ -2,7 +2,7 @@ package net.corda.crypto.service.persistence
 
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
-import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
+import net.corda.crypto.impl.persistence.SigningKeyRecord
 import net.corda.crypto.service.persistence.KafkaInfrastructure.Companion.wait
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.crypto.sha256Bytes
@@ -20,11 +20,11 @@ class KafkaSigningKeysPersistenceSnapshotTests {
     private lateinit var memberId: String
     private lateinit var kafka: KafkaInfrastructure
     private lateinit var factory: KeyValuePersistenceFactory
-    private lateinit var signingPersistence: KeyValuePersistence<SigningPersistentKeyInfo, SigningPersistentKeyInfo>
+    private lateinit var signingPersistence: KeyValuePersistence<SigningKeyRecord, SigningKeyRecord>
     private lateinit var publicKey1: ByteArray
     private lateinit var publicKey2: ByteArray
-    private lateinit var original1: SigningPersistentKeyInfo
-    private lateinit var original2: SigningPersistentKeyInfo
+    private lateinit var original1: SigningKeyRecord
+    private lateinit var original2: SigningKeyRecord
 
     @BeforeEach
     fun setup() {
@@ -32,8 +32,8 @@ class KafkaSigningKeysPersistenceSnapshotTests {
         kafka = KafkaInfrastructure()
         publicKey1 = "Hello World1".toByteArray()
         publicKey2 = "Hello World2".toByteArray()
-        original1 = SigningPersistentKeyInfo(
-            publicKeyHash = publicKey1.sha256Bytes().toHexString(),
+        original1 = SigningKeyRecord(
+            keyDerivedId = publicKey1.sha256Bytes().toHexString(),
             alias = "alias1",
             publicKey = publicKey1,
             tenantId = memberId,
@@ -42,8 +42,8 @@ class KafkaSigningKeysPersistenceSnapshotTests {
             privateKeyMaterial = "material1".toByteArray(),
             schemeCodeName = "CODE"
         )
-        original2 = SigningPersistentKeyInfo(
-            publicKeyHash = publicKey2.sha256Bytes().toHexString(),
+        original2 = SigningKeyRecord(
+            keyDerivedId = publicKey2.sha256Bytes().toHexString(),
             alias = "alias2",
             publicKey = publicKey2,
             tenantId = memberId,
@@ -54,23 +54,23 @@ class KafkaSigningKeysPersistenceSnapshotTests {
         )
 
         factory = kafka.createFactory(KafkaInfrastructure.customConfig) {
-            kafka.publish<SigningPersistentKeyInfo, SigningPersistentKeyInfo>(
+            kafka.publish<SigningKeyRecord, SigningKeyRecord>(
                 KafkaInfrastructure.signingClientId(KafkaInfrastructure.customConfig),
                 null,
                 KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig),
-                original1.publicKeyHash,
+                original1.keyDerivedId,
                 KafkaSigningKeyProxy.toRecord(original1)
             )
-            kafka.publish<SigningPersistentKeyInfo, SigningPersistentKeyInfo>(
+            kafka.publish<SigningKeyRecord, SigningKeyRecord>(
                 KafkaInfrastructure.signingClientId(KafkaInfrastructure.customConfig),
                 null,
                 KafkaInfrastructure.signingTopicName(KafkaInfrastructure.customConfig),
-                original2.publicKeyHash,
+                original2.keyDerivedId,
                 KafkaSigningKeyProxy.toRecord(original2)
             )
         }
         signingPersistence = factory.createSigningPersistence(
-            memberId = memberId
+            tenantId = memberId
         ) {
             it
         }
@@ -85,9 +85,9 @@ class KafkaSigningKeysPersistenceSnapshotTests {
     @Test
     @Timeout(5)
     fun `Should load snapshot and get signing cache value`() {
-        val cachedRecord1 =  signingPersistence.wait(original1.publicKeyHash)
+        val cachedRecord1 =  signingPersistence.wait(original1.keyDerivedId)
         assertNotNull(cachedRecord1)
-        assertEquals(original1.publicKeyHash, cachedRecord1.publicKeyHash)
+        assertEquals(original1.keyDerivedId, cachedRecord1.keyDerivedId)
         assertEquals(original1.alias, cachedRecord1.alias)
         assertArrayEquals(original1.publicKey, cachedRecord1.publicKey)
         assertEquals(original1.tenantId, cachedRecord1.tenantId)
@@ -95,9 +95,9 @@ class KafkaSigningKeysPersistenceSnapshotTests {
         assertEquals(original1.masterKeyAlias, cachedRecord1.masterKeyAlias)
         assertArrayEquals(original1.privateKeyMaterial, cachedRecord1.privateKeyMaterial)
         assertEquals(original1.schemeCodeName, cachedRecord1.schemeCodeName)
-        val cachedRecord2 = signingPersistence.get(original2.publicKeyHash)
+        val cachedRecord2 = signingPersistence.get(original2.keyDerivedId)
         assertNotNull(cachedRecord2)
-        assertEquals(original2.publicKeyHash, cachedRecord2.publicKeyHash)
+        assertEquals(original2.keyDerivedId, cachedRecord2.keyDerivedId)
         assertEquals(original2.alias, cachedRecord2.alias)
         assertArrayEquals(original2.publicKey, cachedRecord2.publicKey)
         assertEquals(original2.tenantId, cachedRecord2.tenantId)

@@ -1,7 +1,7 @@
 package net.corda.crypto.service.persistence
 
-import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
-import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
+import net.corda.crypto.impl.persistence.SoftCryptoKeyRecordInfo
+import net.corda.crypto.impl.persistence.SoftCryptoKeyRecord
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
 import net.corda.data.crypto.persistence.DefaultCryptoKeyRecord
@@ -24,8 +24,8 @@ class KafkaDefaultCryptoKeysPersistenceWithDefaultConfigTests {
     private lateinit var memberId2: String
     private lateinit var kafka: KafkaInfrastructure
     private lateinit var factory: KeyValuePersistenceFactory
-    private lateinit var defaultPersistence: KeyValuePersistence<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
-    private lateinit var defaultPersistence2: KeyValuePersistence<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
+    private lateinit var defaultPersistence: KeyValuePersistence<SoftCryptoKeyRecordInfo, SoftCryptoKeyRecord>
+    private lateinit var defaultPersistence2: KeyValuePersistence<SoftCryptoKeyRecordInfo, SoftCryptoKeyRecord>
 
     @BeforeEach
     fun setup() {
@@ -34,14 +34,14 @@ class KafkaDefaultCryptoKeysPersistenceWithDefaultConfigTests {
         kafka = KafkaInfrastructure()
         factory = kafka.createFactory(KafkaInfrastructure.defaultConfig)
         defaultPersistence = factory.createDefaultCryptoPersistence(
-            memberId = memberId
+            tenantId = memberId
         ) {
-            DefaultCryptoCachedKeyInfo(tenantId = it.tenantId)
+            SoftCryptoKeyRecordInfo(tenantId = it.tenantId)
         }
         defaultPersistence2 = factory.createDefaultCryptoPersistence(
-            memberId = memberId2
+            tenantId = memberId2
         ) {
-            DefaultCryptoCachedKeyInfo(tenantId = it.tenantId)
+            SoftCryptoKeyRecordInfo(tenantId = it.tenantId)
         }
     }
 
@@ -53,7 +53,7 @@ class KafkaDefaultCryptoKeysPersistenceWithDefaultConfigTests {
 
     private fun assertPublishedRecord(
         publishedRecord: Pair<String, DefaultCryptoKeyRecord>,
-        original: DefaultCryptoPersistentKeyInfo
+        original: SoftCryptoKeyRecord
     ) {
         assertNotNull(publishedRecord.second)
         assertEquals(original.alias, publishedRecord.first)
@@ -69,7 +69,7 @@ class KafkaDefaultCryptoKeysPersistenceWithDefaultConfigTests {
     @Timeout(5)
     fun `Should round trip persist and get default crypto cache value`() {
         // alias is prefixed by the member id when it's used by the DefaultCryptoKeyCacheImpl
-        val original = DefaultCryptoPersistentKeyInfo(
+        val original = SoftCryptoKeyRecord(
             alias = "$memberId:alias1",
             publicKey = "Public Key!".toByteArray(),
             tenantId = memberId,
@@ -94,7 +94,7 @@ class KafkaDefaultCryptoKeysPersistenceWithDefaultConfigTests {
     @Timeout(5)
     fun `Should filter default crypto cache values based on member id`() {
         // alias is prefixed by the member id when it's used by the DefaultCryptoKeyCacheImpl
-        val original = DefaultCryptoPersistentKeyInfo(
+        val original = SoftCryptoKeyRecord(
             alias = "$memberId:alias1",
             publicKey = "Public Key!".toByteArray(),
             tenantId = memberId,
@@ -102,7 +102,7 @@ class KafkaDefaultCryptoKeysPersistenceWithDefaultConfigTests {
             algorithmName = "algo",
             version = 2
         )
-        val original2 = DefaultCryptoPersistentKeyInfo(
+        val original2 = SoftCryptoKeyRecord(
             alias = "$memberId2:alias1",
             publicKey = "Public Key2!".toByteArray(),
             tenantId = memberId2,
@@ -135,7 +135,7 @@ class KafkaDefaultCryptoKeysPersistenceWithDefaultConfigTests {
     @Timeout(5)
     fun `Should get default crypto cache record from subscription when it's not cached yet`() {
         // alias is prefixed by the member id when it's used by the DefaultCryptoKeyCacheImpl
-        val original = DefaultCryptoPersistentKeyInfo(
+        val original = SoftCryptoKeyRecord(
             alias = "$memberId:alias1",
             publicKey = "Public Key!".toByteArray(),
             tenantId = memberId,
@@ -192,7 +192,7 @@ class KafkaDefaultCryptoKeysPersistenceWithDefaultConfigTests {
     @Timeout(5)
     fun `Should convert key info containing null values to record`() {
         val now = Instant.now()
-        val keyInfo = DefaultCryptoPersistentKeyInfo(
+        val keyInfo = SoftCryptoKeyRecord(
             tenantId = memberId,
             alias = "alias1",
             publicKey = null,

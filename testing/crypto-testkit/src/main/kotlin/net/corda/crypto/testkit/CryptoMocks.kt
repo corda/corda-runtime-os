@@ -1,11 +1,7 @@
 package net.corda.crypto.testkit
 
 import net.corda.crypto.impl.CipherSchemeMetadataProviderImpl
-import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactoryProvider
-import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.cipher.suite.schemes.SignatureScheme
 
 class CryptoMocks(
     schemeMetadataOverride: CipherSchemeMetadata? = null

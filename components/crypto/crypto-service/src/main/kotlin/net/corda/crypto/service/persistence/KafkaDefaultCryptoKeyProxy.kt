@@ -3,7 +3,7 @@ package net.corda.crypto.service.persistence
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
 import net.corda.crypto.impl.config.DefaultConfigConsts
-import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
+import net.corda.crypto.impl.persistence.SoftCryptoKeyRecord
 import net.corda.data.crypto.persistence.DefaultCryptoKeyRecord
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -24,13 +24,13 @@ class KafkaDefaultCryptoKeyProxy(
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     config: CryptoPersistenceConfig
-) : CompactedProcessor<String, DefaultCryptoKeyRecord>, KafkaProxy<DefaultCryptoPersistentKeyInfo> {
+) : CompactedProcessor<String, DefaultCryptoKeyRecord>, KafkaProxy<SoftCryptoKeyRecord> {
     companion object {
         private val logger: Logger = contextLogger()
 
-        internal fun toKeyInfo(value: DefaultCryptoKeyRecord): DefaultCryptoPersistentKeyInfo {
+        internal fun toKeyInfo(value: DefaultCryptoKeyRecord): SoftCryptoKeyRecord {
             val publicKey = value.publicKey?.array()
-            return DefaultCryptoPersistentKeyInfo(
+            return SoftCryptoKeyRecord(
                 tenantId = value.memberId,
                 alias = value.alias,
                 publicKey = publicKey,
@@ -40,7 +40,7 @@ class KafkaDefaultCryptoKeyProxy(
             )
         }
 
-        internal fun toRecord(entity: DefaultCryptoPersistentKeyInfo) =
+        internal fun toRecord(entity: SoftCryptoKeyRecord) =
             DefaultCryptoKeyRecord(
                 entity.tenantId,
                 entity.alias,
@@ -56,7 +56,7 @@ class KafkaDefaultCryptoKeyProxy(
             )
     }
 
-    private var keyMap = ConcurrentHashMap<String, DefaultCryptoPersistentKeyInfo>()
+    private var keyMap = ConcurrentHashMap<String, SoftCryptoKeyRecord>()
 
     private val groupName: String = config.persistenceConfig.getString(
         DefaultConfigConsts.Kafka.GROUP_NAME_KEY,
@@ -89,7 +89,7 @@ class KafkaDefaultCryptoKeyProxy(
 
     override fun onSnapshot(currentData: Map<String, DefaultCryptoKeyRecord>) {
         logger.debug("Processing snapshot of {} items", currentData.size)
-        val map = ConcurrentHashMap<String, DefaultCryptoPersistentKeyInfo>()
+        val map = ConcurrentHashMap<String, SoftCryptoKeyRecord>()
         for (record in currentData) {
             map[record.key] = toKeyInfo(record.value)
         }
@@ -109,22 +109,22 @@ class KafkaDefaultCryptoKeyProxy(
         }
     }
 
-    override fun publish(key: String, entity: DefaultCryptoPersistentKeyInfo): CompletableFuture<Unit> {
+    override fun publish(key: String, entity: SoftCryptoKeyRecord): CompletableFuture<Unit> {
         logger.debug("Publishing a record '{}' with key='{}'", valueClass.name, key)
         val record = toRecord(entity)
         return pub.publish(listOf(Record(topicName, key, record)))[0]
     }
 
-    override fun getValue(memberId: String, key: String): DefaultCryptoPersistentKeyInfo? {
-        logger.debug("Requesting a record '{}' with key='{}' for member='{}'", valueClass.name, key, memberId)
+    override fun getValue(tenantId: String, key: String): SoftCryptoKeyRecord? {
+        logger.debug("Requesting a record '{}' with key='{}' for member='{}'", valueClass.name, key, tenantId)
         val value = keyMap[key]
-        return if (value == null || value.tenantId != memberId) {
+        return if (value == null || value.tenantId != tenantId) {
             if (value != null) {
                 logger.warn(
                     "The requested record '{}' with key='{}' for member='{}' is actually for '{}' member",
                     valueClass.name,
                     key,
-                    memberId,
+                    tenantId,
                     value.tenantId
                 )
             }

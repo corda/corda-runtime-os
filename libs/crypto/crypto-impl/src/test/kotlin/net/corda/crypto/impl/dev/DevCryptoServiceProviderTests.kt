@@ -1,6 +1,5 @@
 package net.corda.crypto.impl.dev
 
-import net.corda.crypto.CryptoCategories
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -22,12 +21,14 @@ import kotlin.test.assertTrue
 class DevCryptoServiceProviderTests {
     private val masterKeyAlias = "wrapping-key-alias"
     private lateinit var factory: CryptoServicesTestFactory
+    private lateinit var services: CryptoServicesTestFactory.CryptoServices
     private lateinit var schemeMetadata: CipherSchemeMetadata
     private lateinit var signatureVerifier: SignatureVerificationService
 
     @BeforeEach
     fun setup() {
         factory = CryptoServicesTestFactory()
+        services = factory.createCryptoServices()
         schemeMetadata = factory.schemeMetadata
         signatureVerifier = factory.verifier
     }
@@ -80,7 +81,8 @@ class DevCryptoServiceProviderTests {
     @Test
     @Timeout(30)
     fun `Should throw unrecoverable CryptoServiceLibraryException if there is no InMemoryPersistentCacheFactory`() {
-        val provider = DevCryptoServiceProvider(
+        val provider = DevCryptoServiceProvider()
+        provider.activate(
             listOf(mock())
         )
         val exception = assertThrows<CryptoServiceLibraryException> {
@@ -92,14 +94,16 @@ class DevCryptoServiceProviderTests {
     private fun newAlias(): String = UUID.randomUUID().toString()
 
     private fun createCryptoServiceProvider(): DevCryptoServiceProvider {
-        return DevCryptoServiceProvider(
-            listOf(InMemoryKeyValuePersistenceFactoryProvider())
-        )
+        return DevCryptoServiceProvider().also {
+            it.activate(
+                listOf(InMemoryKeyValuePersistenceFactory())
+            )
+        }
     }
 
     private fun DevCryptoServiceProvider.createCryptoService(category: String): CryptoService = getInstance(
         CryptoServiceContext(
-            memberId = factory.memberId,
+            memberId = services.tenantId,
             category = category,
             cipherSuiteFactory = factory,
             config = DevCryptoServiceConfiguration()

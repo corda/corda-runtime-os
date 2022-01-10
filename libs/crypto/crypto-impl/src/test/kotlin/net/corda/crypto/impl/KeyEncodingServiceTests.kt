@@ -26,6 +26,7 @@ import kotlin.test.assertTrue
 class KeyEncodingServiceTests {
     companion object {
         private lateinit var factory: CryptoServicesTestFactory
+        private lateinit var services: CryptoServicesTestFactory.CryptoServices
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var keyEncoder: KeyEncodingService
 
@@ -38,6 +39,7 @@ class KeyEncodingServiceTests {
         fun setup() {
             schemeMetadata = CipherSchemeMetadataProviderImpl().getInstance()
             factory = CryptoServicesTestFactory(schemeMetadata)
+            services = factory.createCryptoServices()
             keyEncoder = schemeMetadata
         }
 
@@ -50,7 +52,7 @@ class KeyEncodingServiceTests {
             defaultSignatureSchemeCodeName: String
         ): Pair<SigningService, SignatureVerificationService> =
             Pair(
-                factory.createSigningService(
+                services.createSigningService(
                     schemeMetadata.findSignatureScheme(defaultSignatureSchemeCodeName)
                 ),
                 factory.verifier
@@ -66,7 +68,7 @@ class KeyEncodingServiceTests {
     ) {
         val (signer, verifier) = getServices(signatureScheme.codeName)
         val alias = newAlias()
-        val originalPublicKey = signer.generateKeyPair(alias)
+        val originalPublicKey = signer.generateKeyPair(services.category, alias)
         val encodedPublicKey = keyEncoder.encodeAsString(originalPublicKey)
         assert(encodedPublicKey.startsWith("-----BEGIN PUBLIC KEY-----")) { encodedPublicKey }
         assert(encodedPublicKey.contains("-----END PUBLIC KEY-----")) { encodedPublicKey }
@@ -87,7 +89,7 @@ class KeyEncodingServiceTests {
     ) {
         val (signer, verifier) = getServices(signatureScheme.codeName)
         val alias = newAlias()
-        val originalPublicKey = signer.generateKeyPair(alias)
+        val originalPublicKey = signer.generateKeyPair(services.category, alias)
         val encodedPublicKey = keyEncoder.encodeAsByteArray(originalPublicKey)
         val decodedPublicKey = keyEncoder.decodePublicKey(encodedPublicKey)
         assertEquals(decodedPublicKey, originalPublicKey)
@@ -104,9 +106,9 @@ class KeyEncodingServiceTests {
         signatureScheme: SignatureScheme
     ) {
         val (signer, _) = getServices(signatureScheme.codeName)
-        val alicePublicKey = signer.generateKeyPair(newAlias())
-        val bobPublicKey = signer.generateKeyPair(newAlias())
-        val charliePublicKey = signer.generateKeyPair(newAlias())
+        val alicePublicKey = signer.generateKeyPair(services.category, newAlias())
+        val bobPublicKey = signer.generateKeyPair(services.category, newAlias())
+        val charliePublicKey = signer.generateKeyPair(services.category, newAlias())
         val aliceAndBob = CompositeKey.Builder().addKeys(alicePublicKey, bobPublicKey).build()
         val aliceAndBobOrCharlie = CompositeKey.Builder().addKeys(aliceAndBob, charliePublicKey).build(threshold = 1)
         val encoded = keyEncoder.encodeAsByteArray(aliceAndBobOrCharlie)
@@ -121,9 +123,9 @@ class KeyEncodingServiceTests {
         signatureScheme: SignatureScheme
     ) {
         val (signer, _) = getServices(signatureScheme.codeName)
-        val alicePublicKey = signer.generateKeyPair(newAlias())
-        val bobPublicKey = signer.generateKeyPair(newAlias())
-        val charliePublicKey = signer.generateKeyPair(newAlias())
+        val alicePublicKey = signer.generateKeyPair(services.category, newAlias())
+        val bobPublicKey = signer.generateKeyPair(services.category, newAlias())
+        val charliePublicKey = signer.generateKeyPair(services.category, newAlias())
         val aliceAndBob = CompositeKey.Builder().addKeys(alicePublicKey, bobPublicKey).build()
         val aliceAndBobOrCharlie = CompositeKey.Builder().addKeys(aliceAndBob, charliePublicKey).build(threshold = 1)
         val encoded = keyEncoder.encodeAsString(aliceAndBobOrCharlie)
@@ -138,9 +140,9 @@ class KeyEncodingServiceTests {
         signatureScheme: SignatureScheme
     ) {
         val (signer, _) = getServices(signatureScheme.codeName)
-        val alicePublicKey = signer.generateKeyPair(newAlias())
-        val bobPublicKey = signer.generateKeyPair(newAlias())
-        val charliePublicKey = signer.generateKeyPair(newAlias())
+        val alicePublicKey = signer.generateKeyPair(services.category, newAlias())
+        val bobPublicKey = signer.generateKeyPair(services.category, newAlias())
+        val charliePublicKey = signer.generateKeyPair(services.category, newAlias())
         val aliceAndBob = CompositeKey.Builder()
             .addKey(alicePublicKey, 2)
             .addKey(bobPublicKey, 1)
@@ -161,9 +163,9 @@ class KeyEncodingServiceTests {
         signatureScheme: SignatureScheme
     ) {
         val (signer, _) = getServices(signatureScheme.codeName)
-        val alicePublicKey = signer.generateKeyPair(newAlias())
-        val bobPublicKey = signer.generateKeyPair(newAlias())
-        val charliePublicKey = signer.generateKeyPair(newAlias())
+        val alicePublicKey = signer.generateKeyPair(services.category, newAlias())
+        val bobPublicKey = signer.generateKeyPair(services.category, newAlias())
+        val charliePublicKey = signer.generateKeyPair(services.category, newAlias())
         val aliceAndBob = CompositeKey.Builder()
             .addKey(alicePublicKey, 2)
             .addKey(bobPublicKey, 1)
@@ -184,9 +186,9 @@ class KeyEncodingServiceTests {
         signatureScheme: SignatureScheme
     ) {
         val (signer, _) = getServices(signatureScheme.codeName)
-        val alicePublicKey = signer.generateKeyPair(newAlias())
-        val bobPublicKey = signer.generateKeyPair(newAlias())
-        val charliePublicKey = signer.generateKeyPair(newAlias())
+        val alicePublicKey = signer.generateKeyPair(services.category, newAlias())
+        val bobPublicKey = signer.generateKeyPair(services.category, newAlias())
+        val charliePublicKey = signer.generateKeyPair(services.category, newAlias())
         val aliceAndBob = CompositeKey.Builder()
             .addKey(alicePublicKey, 2)
             .addKey(bobPublicKey, 1)
@@ -201,7 +203,7 @@ class KeyEncodingServiceTests {
         val jksFile = Files.createFile(tempDir.resolve("$subjectAlias.jks")).toFile()
         val keyStoreSave = KeyStore.getInstance("JKS")
         keyStoreSave.load(null, pwdArray)
-        signer.generateKeyPair(caAlias)
+        signer.generateKeyPair(services.category, caAlias)
         jksFile.outputStream().use {
             keyStoreSave.setCertificateEntry(
                 subjectAlias, createDevCertificate(

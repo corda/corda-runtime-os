@@ -1,6 +1,6 @@
 package net.corda.crypto.impl.config
 
-import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactoryProvider
+import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactory
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import kotlin.test.assertEquals
@@ -20,7 +20,7 @@ class CryptoLibraryConfigTests {
                 )
             ),
             "publicKeys" to mapOf(
-                "factoryName" to InMemoryKeyValuePersistenceFactoryProvider.NAME,
+                "factoryName" to InMemoryKeyValuePersistenceFactory.NAME,
                 "expireAfterAccessMins" to "120",
                 "maximumSize" to "50",
                 "persistenceConfig" to mapOf(
@@ -40,10 +40,10 @@ class CryptoLibraryConfigTests {
         assertEquals(25, config.defaultCryptoService.maximumSize)
         assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.defaultCryptoService.factoryName)
         assertEquals("keyPersistenceUrl", config.defaultCryptoService.persistenceConfig.getString("url"))
-        assertEquals(InMemoryKeyValuePersistenceFactoryProvider.NAME, config.publicKeys.factoryName)
+        assertEquals(InMemoryKeyValuePersistenceFactory.NAME, config.publicKeys.factoryName)
         assertEquals(120, config.publicKeys.expireAfterAccessMins)
         assertEquals(50, config.publicKeys.maximumSize)
-        assertEquals(InMemoryKeyValuePersistenceFactoryProvider.NAME, config.publicKeys.factoryName)
+        assertEquals(InMemoryKeyValuePersistenceFactory.NAME, config.publicKeys.factoryName)
         assertEquals("mngPersistenceUrl", config.publicKeys.persistenceConfig.getString("url"))
         assertEquals("customSchemeMetadataProvider", config.cipherSuite.schemeMetadataProvider)
         assertEquals("customSignatureVerificationProvider", config.cipherSuite.signatureVerificationProvider)

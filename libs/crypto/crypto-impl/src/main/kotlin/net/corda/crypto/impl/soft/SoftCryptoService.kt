@@ -1,6 +1,7 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.soft
 
-import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
+import net.corda.crypto.impl.SignatureInstances
+import net.corda.crypto.impl.persistence.SoftCryptoKeyCache
 import net.corda.crypto.impl.persistence.WrappingKey
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -25,8 +26,8 @@ import java.security.PublicKey
 import javax.crypto.Cipher
 
 @Suppress("TooManyFunctions")
-open class DefaultCryptoService(
-    private val cache: DefaultCryptoKeyCache,
+open class SoftCryptoService(
+    private val cache: SoftCryptoKeyCache,
     private val schemeMetadata: CipherSchemeMetadata,
     private val hashingService: DigestService
 ) : CryptoService {

@@ -6,16 +6,8 @@ import java.security.PublicKey
 import java.util.UUID
 
 interface SigningKeyCache {
-    fun save(info: PublicKeyInfo)
+    fun save(publicKey: PublicKey, scheme: SignatureScheme, category: String, alias: String, hsmAlias: String)
     fun save(wrappedKeyPair: WrappedKeyPair, masterKeyAlias: String, scheme: SignatureScheme, externalId: UUID?)
-    fun find(publicKey: PublicKey): SigningPersistentKeyInfo?
-    fun find(alias: String): SigningPersistentKeyInfo?
+    fun find(publicKey: PublicKey): SigningKeyRecord?
+    fun find(alias: String): SigningKeyRecord?
 }
-
-class PublicKeyInfo(
-    val publicKey: PublicKey,
-    val scheme: SignatureScheme,
-    val category: String,
-    val alias: String,
-    val hsmAlias: String
-)

@@ -1,11 +1,9 @@
 package net.corda.crypto.service
 
-import net.corda.crypto.CryptoCategories
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.component.config.MemberConfigReaderImpl
-import net.corda.crypto.impl.DefaultCryptoServiceProvider
+import net.corda.crypto.impl.soft.SoftCryptoServiceProvider
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
-import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactoryProvider
 import net.corda.crypto.service.persistence.KafkaKeyValuePersistenceFactoryProvider
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.test.util.createTestCase
@@ -34,7 +32,7 @@ class CryptoFactoryTests {
             ),
             cryptoMocks.persistenceFactoryProvider
         )
-        val defaultCryptoServiceProvider = DefaultCryptoServiceProvider(
+        val softCryptoServiceProvider = SoftCryptoServiceProvider(
             persistenceProviders
         )
         factory = CryptoFactoryImpl(
@@ -42,7 +40,7 @@ class CryptoFactoryTests {
             persistenceProviders,
             cipherSuiteFactory = cryptoMocks.factories.cipherSuite,
             cryptoServiceProviders = listOf(
-                defaultCryptoServiceProvider
+                softCryptoServiceProvider
             )
         )
         config = CryptoLibraryConfigImpl(
@@ -55,7 +53,7 @@ class CryptoFactoryTests {
                 )
             )
         )
-        defaultCryptoServiceProvider.handleConfigEvent(config)
+        softCryptoServiceProvider.handleConfigEvent(config)
         factory.handleConfigEvent(config)
     }
 

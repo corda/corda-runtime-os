@@ -1,7 +1,7 @@
 package net.corda.crypto.service.persistence
 
-import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
-import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
+import net.corda.crypto.impl.persistence.SoftCryptoKeyRecordInfo
+import net.corda.crypto.impl.persistence.SigningKeyRecord
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -21,12 +21,12 @@ class KafkaKeyValuePersistenceFactoryTests {
     fun `Should close publisher and subscription`() {
         val subscriptionFactory = mock<SubscriptionFactory>()
         val publisherFactory = mock<PublisherFactory>()
-        val sub = mock<CompactedSubscription<String, SigningPersistentKeyInfo>>()
+        val sub = mock<CompactedSubscription<String, SigningKeyRecord>>()
         val pub = mock<Publisher>()
         whenever(
             subscriptionFactory.createCompactedSubscription(
                 any(),
-                any<CompactedProcessor<String, SigningPersistentKeyInfo>>(),
+                any<CompactedProcessor<String, SigningKeyRecord>>(),
                 any()
             )
         ).thenReturn(sub)
@@ -50,7 +50,7 @@ class KafkaKeyValuePersistenceFactoryTests {
         val memberId = UUID.randomUUID().toString()
         val subscriptionFactory = mock<SubscriptionFactory>()
         val publisherFactory = mock<PublisherFactory>()
-        val sub = mock<CompactedSubscription<String, SigningPersistentKeyInfo>>()
+        val sub = mock<CompactedSubscription<String, SigningKeyRecord>>()
         val pub = mock<Publisher>()
         whenever(
             subscriptionFactory.createCompactedSubscription(
@@ -69,15 +69,15 @@ class KafkaKeyValuePersistenceFactoryTests {
         )
         factory.createSigningPersistence(memberId) { it }
         factory.createDefaultCryptoPersistence(UUID.randomUUID().toString()) {
-            DefaultCryptoCachedKeyInfo(memberId)
+            SoftCryptoKeyRecordInfo(memberId)
         }
         factory.createSigningPersistence(memberId) { it }
         factory.createDefaultCryptoPersistence(UUID.randomUUID().toString()) {
-            DefaultCryptoCachedKeyInfo(memberId)
+            SoftCryptoKeyRecordInfo(memberId)
         }
         factory.createSigningPersistence(memberId) { it }
         factory.createDefaultCryptoPersistence(UUID.randomUUID().toString()) {
-            DefaultCryptoCachedKeyInfo(memberId)
+            SoftCryptoKeyRecordInfo(memberId)
         }
         (factory as AutoCloseable).close()
         // twice - for the signing & crypto proxies, and that's it

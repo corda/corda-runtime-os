@@ -1,5 +1,6 @@
 package net.corda.crypto.impl
 
+import net.corda.crypto.CryptoConsts
 import net.corda.crypto.SigningService
 import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -35,6 +36,7 @@ class CipherSchemeMetadataTests {
         private lateinit var unknownSignatureSpec: SignatureSpec
         private lateinit var unknownScheme: SignatureScheme
         private lateinit var factory: CryptoServicesTestFactory
+        private lateinit var services: CryptoServicesTestFactory.CryptoServices
 
         @JvmStatic
         @BeforeAll
@@ -42,6 +44,7 @@ class CipherSchemeMetadataTests {
             schemeMetadataProvider = CipherSchemeMetadataProviderImpl()
             schemeMetadata = schemeMetadataProvider.getInstance()
             factory = CryptoServicesTestFactory(schemeMetadata)
+            services = factory.createCryptoServices()
             unknownSignatureSpec = SignatureSpec(
                 signatureName = "na",
                 signatureOID = AlgorithmIdentifier(PKCSObjectIdentifiers.RC2_CBC, null)
@@ -63,7 +66,7 @@ class CipherSchemeMetadataTests {
         fun schemes(): Array<SignatureScheme> = schemeMetadata.schemes
 
         private fun getSigner(defaultSignatureSchemeCodeName: String): SigningService =
-            factory.createSigningService(
+            services.createSigningService(
                 schemeMetadata.findSignatureScheme(defaultSignatureSchemeCodeName)
             )
     }
@@ -190,9 +193,9 @@ class CipherSchemeMetadataTests {
     ) {
         val publicKey = if (signatureScheme.codeName == COMPOSITE_KEY_CODE_NAME) {
             val signer = getSigner(EDDSA_ED25519_CODE_NAME)
-            val alicePublicKey = signer.generateKeyPair(newAlias())
-            val bobPublicKey = signer.generateKeyPair(newAlias())
-            val charliePublicKey = signer.generateKeyPair(newAlias())
+            val alicePublicKey = signer.generateKeyPair(CryptoConsts.CryptoCategories.LEDGER, newAlias())
+            val bobPublicKey = signer.generateKeyPair(CryptoConsts.CryptoCategories.LEDGER, newAlias())
+            val charliePublicKey = signer.generateKeyPair(CryptoConsts.CryptoCategories.LEDGER, newAlias())
             val aliceAndBob = CompositeKey.Builder()
                 .addKey(alicePublicKey, 2)
                 .addKey(bobPublicKey, 1)
@@ -203,7 +206,7 @@ class CipherSchemeMetadataTests {
                 .build(threshold = 3)
         } else {
             val signer = getSigner(signatureScheme.codeName)
-            signer.generateKeyPair(newAlias())
+            signer.generateKeyPair(CryptoConsts.CryptoCategories.LEDGER, newAlias())
         }
         val result = schemeMetadata.findSignatureScheme(publicKey)
         assertEquals(signatureScheme, result)

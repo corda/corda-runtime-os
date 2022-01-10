@@ -2,6 +2,7 @@ package net.corda.crypto.component.lifecycle
 
 import net.corda.crypto.impl.closeGracefully
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -10,14 +11,18 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-abstract class AbstractComponent<RESOURCE: AutoCloseable>(
-    coordinatorFactory: LifecycleCoordinatorFactory,
-    coordinatorName: LifecycleCoordinatorName,
-) : Lifecycle {
+abstract class AbstractComponent<RESOURCE: AutoCloseable> : Lifecycle {
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
-    val coordinator = coordinatorFactory.createCoordinator(coordinatorName) { event, _ ->
-        handleCoordinatorEvent(event)
+    private lateinit var coordinator: LifecycleCoordinator
+
+    protected fun setup(
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        coordinatorName: LifecycleCoordinatorName
+    ) {
+        coordinator = coordinatorFactory.createCoordinator(coordinatorName) { event, _ ->
+            handleCoordinatorEvent(event)
+        }
     }
 
     @Volatile

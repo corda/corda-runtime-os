@@ -1,10 +1,10 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.soft
 
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
 import net.corda.crypto.impl.config.defaultCryptoService
-import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
-import net.corda.crypto.impl.persistence.DefaultCryptoKeyCacheImpl
-import net.corda.crypto.impl.persistence.KeyValuePersistenceFactoryProvider
+import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
+import net.corda.crypto.impl.persistence.SoftCryptoKeyCache
+import net.corda.crypto.impl.persistence.SoftCryptoKeyCacheImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -14,6 +14,7 @@ import net.corda.v5.cipher.suite.CryptoServiceProvider
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.config.CryptoServiceConfig
 import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
+import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -22,28 +23,30 @@ import org.osgi.service.component.annotations.ReferenceCardinality
 import org.osgi.service.component.annotations.ReferencePolicyOption
 import org.slf4j.Logger
 
-@Component(service = [CryptoServiceProvider::class, DefaultCryptoServiceProvider::class])
-open class DefaultCryptoServiceProvider @Activate constructor(
-    @Reference(
-        service = KeyValuePersistenceFactoryProvider::class,
-        cardinality = ReferenceCardinality.AT_LEAST_ONE,
-        policyOption = ReferencePolicyOption.GREEDY
-    )
-    private val persistenceProviders: List<KeyValuePersistenceFactoryProvider>
-) : Lifecycle, CryptoLifecycleComponent, CryptoServiceProvider<DefaultCryptoServiceConfig> {
+@Component(service = [CryptoServiceProvider::class, SoftCryptoServiceProvider::class])
+open class SoftCryptoServiceProvider : Lifecycle, CryptoLifecycleComponent, CryptoServiceProvider<SoftCryptoServiceConfig> {
     companion object {
         private val logger: Logger = contextLogger()
     }
+    private lateinit var persistenceFactories: List<KeyValuePersistenceFactory>
 
-    private var impl = Impl(
-        persistenceProviders,
-        CryptoPersistenceConfig.default,
-        logger
-    )
+    @Activate
+    fun activate(
+        @Reference(
+            service = KeyValuePersistenceFactory::class,
+            cardinality = ReferenceCardinality.AT_LEAST_ONE,
+            policyOption = ReferencePolicyOption.GREEDY
+        )
+        persistenceFactories: List<KeyValuePersistenceFactory>
+    ) {
+        this.persistenceFactories = persistenceFactories
+    }
+
+    private var impl: Impl? = null
 
     override val name: String = CryptoServiceConfig.DEFAULT_SERVICE_NAME
 
-    override val configType: Class<DefaultCryptoServiceConfig> = DefaultCryptoServiceConfig::class.java
+    override val configType: Class<SoftCryptoServiceConfig> = SoftCryptoServiceConfig::class.java
 
     override var isRunning: Boolean = false
 
@@ -60,29 +63,30 @@ open class DefaultCryptoServiceProvider @Activate constructor(
     override fun handleConfigEvent(config: CryptoLibraryConfig) {
         logger.info("Received new configuration...")
         impl = Impl(
-            persistenceProviders,
+            persistenceFactories,
             config.defaultCryptoService,
             logger
         )
     }
 
-    override fun getInstance(context: CryptoServiceContext<DefaultCryptoServiceConfig>): CryptoService =
-        impl.getInstance(context)
+    override fun getInstance(context: CryptoServiceContext<SoftCryptoServiceConfig>): CryptoService =
+        impl?.getInstance(context)
+            ?: throw CryptoServiceException("Provider haven't been initialised yet.", true)
 
     private class Impl(
-        private val persistenceProviders: List<KeyValuePersistenceFactoryProvider>,
+        private val persistenceProviders: List<KeyValuePersistenceFactory>,
         private val config: CryptoPersistenceConfig,
         private val logger: Logger
     ) {
-        fun getInstance(context: CryptoServiceContext<DefaultCryptoServiceConfig>): CryptoService {
+        fun getInstance(context: CryptoServiceContext<SoftCryptoServiceConfig>): CryptoService {
             logger.info(
                 "Creating instance of the {} for member {} and category",
-                DefaultCryptoService::class.java.name,
+                SoftCryptoService::class.java.name,
                 context.memberId,
                 context.category
             )
             val schemeMetadata = context.cipherSuiteFactory.getSchemeMap()
-            return DefaultCryptoService(
+            return SoftCryptoService(
                 cache = makeCache(context, schemeMetadata),
                 schemeMetadata = schemeMetadata,
                 hashingService = context.cipherSuiteFactory.getDigestService()
@@ -90,17 +94,17 @@ open class DefaultCryptoServiceProvider @Activate constructor(
         }
 
         private fun makeCache(
-            context: CryptoServiceContext<DefaultCryptoServiceConfig>,
+            context: CryptoServiceContext<SoftCryptoServiceConfig>,
             schemeMetadata: CipherSchemeMetadata
-        ): DefaultCryptoKeyCache {
+        ): SoftCryptoKeyCache {
             val persistenceFactory = persistenceProviders.firstOrNull {
                 it.name == config.factoryName
-            }?.get() ?: throw CryptoServiceLibraryException(
+            } ?: throw CryptoServiceLibraryException(
                 "Cannot find ${config.factoryName}",
                 isRecoverable = false
             )
-            return DefaultCryptoKeyCacheImpl(
-                memberId = context.memberId,
+            return SoftCryptoKeyCacheImpl(
+                tenantId = context.memberId,
                 passphrase = context.config.passphrase,
                 salt = context.config.salt,
                 schemeMetadata = schemeMetadata,

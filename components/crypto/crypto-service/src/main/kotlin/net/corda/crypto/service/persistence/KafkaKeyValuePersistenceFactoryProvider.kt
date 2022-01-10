@@ -4,7 +4,6 @@ import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
-import net.corda.crypto.impl.persistence.KeyValuePersistenceFactoryProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory

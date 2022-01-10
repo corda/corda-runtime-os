@@ -3,12 +3,12 @@ package net.corda.crypto.service.persistence
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.defaultCryptoService
 import net.corda.crypto.impl.config.publicKeys
-import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
-import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
+import net.corda.crypto.impl.persistence.SoftCryptoKeyRecordInfo
+import net.corda.crypto.impl.persistence.SoftCryptoKeyRecord
 import net.corda.crypto.impl.persistence.KeyValueMutator
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
-import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
+import net.corda.crypto.impl.persistence.SigningKeyRecord
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
@@ -35,24 +35,24 @@ class KafkaKeyValuePersistenceFactory constructor(
     )
 
     override fun createSigningPersistence(
-        memberId: String,
-        mutator: KeyValueMutator<SigningPersistentKeyInfo, SigningPersistentKeyInfo>
-    ): KeyValuePersistence<SigningPersistentKeyInfo, SigningPersistentKeyInfo> {
+        tenantId: String,
+        mutator: KeyValueMutator<SigningKeyRecord, SigningKeyRecord>
+    ): KeyValuePersistence<SigningKeyRecord, SigningKeyRecord> {
         return KafkaKeyValuePersistence(
             proxy = signingProxy,
-            memberId = memberId,
+            memberId = tenantId,
             config = config.publicKeys,
             mutator = mutator
         )
     }
 
     override fun createDefaultCryptoPersistence(
-        memberId: String,
-        mutator: KeyValueMutator<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
-    ): KeyValuePersistence<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo> {
+        tenantId: String,
+        mutator: KeyValueMutator<SoftCryptoKeyRecordInfo, SoftCryptoKeyRecord>
+    ): KeyValuePersistence<SoftCryptoKeyRecordInfo, SoftCryptoKeyRecord> {
         return KafkaKeyValuePersistence(
             proxy = cryptoProxy,
-            memberId = memberId,
+            memberId = tenantId,
             config = config.defaultCryptoService,
             mutator = mutator
         )

@@ -3,7 +3,7 @@ package net.corda.crypto.service.persistence
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
 import net.corda.crypto.impl.config.DefaultConfigConsts
-import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
+import net.corda.crypto.impl.persistence.SigningKeyRecord
 import net.corda.data.crypto.persistence.SigningKeyRecord
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -27,15 +27,15 @@ class KafkaSigningKeyProxy(
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     config: CryptoPersistenceConfig
-) : CompactedProcessor<String, SigningKeyRecord>, KafkaProxy<SigningPersistentKeyInfo> {
+) : CompactedProcessor<String, SigningKeyRecord>, KafkaProxy<net.corda.crypto.impl.persistence.SigningKeyRecord> {
     companion object {
         private val logger: Logger = contextLogger()
 
-        internal fun toKeyInfo(value: SigningKeyRecord): SigningPersistentKeyInfo {
+        internal fun toKeyInfo(value: SigningKeyRecord): net.corda.crypto.impl.persistence.SigningKeyRecord {
             val publicKey = value.publicKey.array()
-            return SigningPersistentKeyInfo(
+            return net.corda.crypto.impl.persistence.SigningKeyRecord(
                 tenantId = value.memberId,
-                publicKeyHash = publicKey.sha256Bytes().toHexString(),
+                keyDerivedId = publicKey.sha256Bytes().toHexString(),
                 alias = value.alias,
                 publicKey = publicKey,
                 externalId = if (value.externalId.isNullOrBlank()) {
@@ -50,7 +50,7 @@ class KafkaSigningKeyProxy(
             )
         }
 
-        internal fun toRecord(entity: SigningPersistentKeyInfo) = SigningKeyRecord(
+        internal fun toRecord(entity: net.corda.crypto.impl.persistence.SigningKeyRecord) = SigningKeyRecord(
             entity.tenantId,
             entity.alias,
             ByteBuffer.wrap(entity.publicKey),
@@ -67,7 +67,7 @@ class KafkaSigningKeyProxy(
         )
     }
 
-    private var keyMap = ConcurrentHashMap<String, SigningPersistentKeyInfo>()
+    private var keyMap = ConcurrentHashMap<String, net.corda.crypto.impl.persistence.SigningKeyRecord>()
 
     private val groupName: String = config.persistenceConfig.getString(
         DefaultConfigConsts.Kafka.GROUP_NAME_KEY,
@@ -100,7 +100,7 @@ class KafkaSigningKeyProxy(
 
     override fun onSnapshot(currentData: Map<String, SigningKeyRecord>) {
         logger.debug("Processing snapshot of {} items", currentData.size)
-        val map = ConcurrentHashMap<String, SigningPersistentKeyInfo>()
+        val map = ConcurrentHashMap<String, net.corda.crypto.impl.persistence.SigningKeyRecord>()
         for (record in currentData) {
             map[record.key] = toKeyInfo(record.value)
         }
@@ -120,22 +120,22 @@ class KafkaSigningKeyProxy(
         }
     }
 
-    override fun publish(key: String, entity: SigningPersistentKeyInfo): CompletableFuture<Unit> {
+    override fun publish(key: String, entity: net.corda.crypto.impl.persistence.SigningKeyRecord): CompletableFuture<Unit> {
         logger.debug("Publishing a record '{}' with key='{}'", valueClass.name, key)
         val record = toRecord(entity)
         return pub.publish(listOf(Record(topicName, key, record)))[0]
     }
 
-    override fun getValue(memberId: String, key: String): SigningPersistentKeyInfo? {
-        logger.debug("Requesting a record '{}' with key='{}' for member='{}'", valueClass.name, key, memberId)
+    override fun getValue(tenantId: String, key: String): net.corda.crypto.impl.persistence.SigningKeyRecord? {
+        logger.debug("Requesting a record '{}' with key='{}' for member='{}'", valueClass.name, key, tenantId)
         val value = keyMap[key]
-        return if (value == null || value.tenantId != memberId) {
+        return if (value == null || value.tenantId != tenantId) {
             if (value != null) {
                 logger.warn(
                     "The requested record '{}' with key='{}' for member='{}' is actually for '{}' member",
                     valueClass.name,
                     key,
-                    memberId,
+                    tenantId,
                     value.tenantId
                 )
             }

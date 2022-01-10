@@ -1,7 +1,7 @@
 package net.corda.crypto.service.persistence
 
-import net.corda.crypto.impl.persistence.DefaultCryptoCachedKeyInfo
-import net.corda.crypto.impl.persistence.DefaultCryptoPersistentKeyInfo
+import net.corda.crypto.impl.persistence.SoftCryptoKeyRecordInfo
+import net.corda.crypto.impl.persistence.SoftCryptoKeyRecord
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
 import net.corda.crypto.service.persistence.KafkaInfrastructure.Companion.wait
@@ -19,15 +19,15 @@ class KafkaDefaultCryptoKeysPersistenceSnapshotTests {
     private lateinit var kafka: KafkaInfrastructure
     private lateinit var factory: KeyValuePersistenceFactory
     private lateinit var defaultPersistence:
-            KeyValuePersistence<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>
-    private lateinit var original1: DefaultCryptoPersistentKeyInfo
-    private lateinit var original2: DefaultCryptoPersistentKeyInfo
+            KeyValuePersistence<SoftCryptoKeyRecordInfo, SoftCryptoKeyRecord>
+    private lateinit var original1: SoftCryptoKeyRecord
+    private lateinit var original2: SoftCryptoKeyRecord
 
     @BeforeEach
     fun setup() {
         memberId = UUID.randomUUID().toString()
         kafka = KafkaInfrastructure()
-        original1 = DefaultCryptoPersistentKeyInfo(
+        original1 = SoftCryptoKeyRecord(
             alias = "$memberId:alias1",
             publicKey = "Public Key1".toByteArray(),
             tenantId = memberId,
@@ -35,7 +35,7 @@ class KafkaDefaultCryptoKeysPersistenceSnapshotTests {
             algorithmName = "algo",
             version = 2
         )
-        original2 = DefaultCryptoPersistentKeyInfo(
+        original2 = SoftCryptoKeyRecord(
             alias = "$memberId:alias12",
             publicKey = "Public Key2".toByteArray(),
             tenantId = memberId,
@@ -44,14 +44,14 @@ class KafkaDefaultCryptoKeysPersistenceSnapshotTests {
             version = 2
         )
         factory = kafka.createFactory(KafkaInfrastructure.customConfig) {
-            kafka.publish<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>(
+            kafka.publish<SoftCryptoKeyRecordInfo, SoftCryptoKeyRecord>(
                 KafkaInfrastructure.cryptoSvcClientId(KafkaInfrastructure.customConfig),
                 null,
                 KafkaInfrastructure.cryptoSvcTopicName(KafkaInfrastructure.customConfig),
                 original1.alias,
                 KafkaDefaultCryptoKeyProxy.toRecord(original1)
             )
-            kafka.publish<DefaultCryptoCachedKeyInfo, DefaultCryptoPersistentKeyInfo>(
+            kafka.publish<SoftCryptoKeyRecordInfo, SoftCryptoKeyRecord>(
                 KafkaInfrastructure.cryptoSvcClientId(KafkaInfrastructure.customConfig),
                 null,
                 KafkaInfrastructure.cryptoSvcTopicName(KafkaInfrastructure.customConfig),
@@ -60,9 +60,9 @@ class KafkaDefaultCryptoKeysPersistenceSnapshotTests {
             )
         }
         defaultPersistence = factory.createDefaultCryptoPersistence(
-            memberId = memberId
+            tenantId = memberId
         ) {
-            DefaultCryptoCachedKeyInfo(tenantId = it.tenantId)
+            SoftCryptoKeyRecordInfo(tenantId = it.tenantId)
         }
     }
 

@@ -1,6 +1,5 @@
 package net.corda.kryoserialization.factory
 
-import net.corda.crypto.CryptoLibraryFactory
 import net.corda.kryoserialization.impl.KryoCheckpointSerializerBuilderImpl
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.CheckpointSerializerBuilder

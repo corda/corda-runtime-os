@@ -3,12 +3,10 @@ package net.corda.crypto.service.persistence
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
-import net.corda.crypto.impl.persistence.KeyValuePersistenceBase
-import net.corda.crypto.impl.persistence.IHaveTenantId
 import net.corda.crypto.impl.persistence.KeyValueMutator
 import java.util.concurrent.TimeUnit
 
-class KafkaKeyValuePersistence<V: IHaveTenantId, E: IHaveTenantId>(
+class KafkaKeyValuePersistence<V, E>(
     private val proxy: KafkaProxy<E>,
     private val memberId: String,
     config: CryptoPersistenceConfig,
@@ -28,7 +26,7 @@ class KafkaKeyValuePersistence<V: IHaveTenantId, E: IHaveTenantId>(
 
     override fun get(key: String): V? {
         return cache.get(key) {
-            proxy.getValue(memberId = memberId, key = it)?.let { entity -> mutate(entity) }
+            proxy.getValue(tenantId = memberId, key = it)?.let { entity -> mutate(entity) }
         }
     }
 

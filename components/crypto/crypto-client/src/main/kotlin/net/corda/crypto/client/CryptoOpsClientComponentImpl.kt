@@ -1,6 +1,7 @@
 package net.corda.crypto.client
 
 import net.corda.crypto.CryptoOpsClientComponent
+import net.corda.crypto.HSMRegistrationClientComponent
 import net.corda.crypto.component.lifecycle.AbstractComponent
 import net.corda.crypto.impl.stopGracefully
 import net.corda.data.crypto.config.HSMInfo
@@ -16,19 +17,16 @@ import net.corda.schema.Schemas
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.security.PublicKey
 import java.util.UUID
 
 @Component(service = [CryptoOpsClientComponent::class])
-class CryptoOpsClientComponentImpl(
-    @Reference(service = LifecycleCoordinatorFactory::class)
-    coordinatorFactory: LifecycleCoordinatorFactory
-) : AbstractComponent<CryptoOpsClientComponentImpl.Resources>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<CryptoOpsClientComponent>()
-), CryptoOpsClientComponent {
+class CryptoOpsClientComponentImpl :
+    AbstractComponent<CryptoOpsClientComponentImpl.Resources>(),
+    CryptoOpsClientComponent {
     companion object {
         const val CLIENT_ID = "crypto.ops.rpc"
         const val GROUP_NAME = "crypto.ops.rpc"
@@ -43,14 +41,20 @@ class CryptoOpsClientComponentImpl(
     @Volatile
     private lateinit var schemeMetadata: CipherSchemeMetadata
 
-    @Reference(service = PublisherFactory::class)
-    fun putPublisherFactory(publisherFactory: PublisherFactory) {
+    @Activate
+    fun activate(
+        @Reference(service = LifecycleCoordinatorFactory::class)
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = PublisherFactory::class)
+        publisherFactory: PublisherFactory,
+        @Reference(service = CipherSchemeMetadata::class)
+        schemeMetadata: CipherSchemeMetadata
+    ) {
+        setup(
+            coordinatorFactory,
+            LifecycleCoordinatorName.forComponent<CryptoOpsClientComponent>()
+        )
         this.publisherFactory = publisherFactory
-        createResources()
-    }
-
-    @Reference(service = CipherSchemeMetadata::class)
-    fun putSchemeMetadataRef(schemeMetadata: CipherSchemeMetadata) {
         this.schemeMetadata = schemeMetadata
         createResources()
     }

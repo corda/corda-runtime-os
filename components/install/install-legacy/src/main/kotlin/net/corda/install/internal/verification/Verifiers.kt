@@ -1,7 +1,6 @@
 package net.corda.install.internal.verification
 
 import aQute.bnd.header.OSGiHeader
-import net.corda.crypto.CryptoLibraryFactory
 import net.corda.install.CpkVerificationException
 import net.corda.install.internal.CONFIG_ADMIN_BLACKLISTED_KEYS
 import net.corda.install.internal.CONFIG_ADMIN_PLATFORM_VERSION

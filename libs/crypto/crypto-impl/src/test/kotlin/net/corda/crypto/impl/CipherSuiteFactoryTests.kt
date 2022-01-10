@@ -89,7 +89,8 @@ class CipherSuiteFactoryTests {
                 override fun getInstance(cipherSuiteFactory: CipherSuiteFactory): DigestService = digestServices[2]
             }
         )
-        factory = CipherSuiteFactoryImpl(
+        factory = CipherSuiteFactoryImpl()
+        factory.activate(
             schemeMetadataProviders,
             verifierProviders,
             digestServiceProviders

@@ -2,7 +2,7 @@ package net.corda.crypto.service.persistence
 
 import java.util.concurrent.CompletableFuture
 
-interface KafkaProxy<E: Any> : AutoCloseable {
+interface KafkaProxy<E> : AutoCloseable {
     fun publish(key: String, entity: E) : CompletableFuture<Unit>
-    fun getValue(memberId: String, key: String): E?
+    fun getValue(tenantId: String, key: String): E?
 }

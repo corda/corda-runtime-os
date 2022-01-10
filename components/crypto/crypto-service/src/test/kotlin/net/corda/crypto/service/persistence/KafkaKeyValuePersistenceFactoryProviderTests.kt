@@ -2,7 +2,7 @@ package net.corda.crypto.service.persistence
 
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.config.DefaultConfigConsts
-import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
+import net.corda.crypto.impl.persistence.SigningKeyRecord
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -39,7 +39,7 @@ class KafkaKeyValuePersistenceFactoryProviderTests {
     fun setup() {
         subscriptionFactory = mock()
         publisherFactory = mock()
-        val sub = mock<CompactedSubscription<String, SigningPersistentKeyInfo>>()
+        val sub = mock<CompactedSubscription<String, SigningKeyRecord>>()
         val pub = mock<Publisher>()
         whenever(
             subscriptionFactory.createCompactedSubscription(

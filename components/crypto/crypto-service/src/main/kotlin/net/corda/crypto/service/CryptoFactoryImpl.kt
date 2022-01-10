@@ -8,17 +8,13 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
 import net.corda.crypto.impl.persistence.SigningKeyCache
 import net.corda.crypto.impl.persistence.SigningKeyCacheImpl
-import net.corda.crypto.CryptoCategories
-import net.corda.crypto.CryptoConsts
 import net.corda.crypto.SigningService
 import net.corda.crypto.impl.CryptoServiceDecorator
-import net.corda.crypto.impl.FreshKeySigningServiceImpl
 import net.corda.crypto.impl.SigningServiceImpl
 import net.corda.crypto.impl.clearCache
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.config.publicKeys
-import net.corda.crypto.impl.persistence.KeyValuePersistenceFactoryProvider
 import net.corda.crypto.component.config.MemberConfigReader
 import net.corda.lifecycle.Lifecycle
 import net.corda.v5.base.util.contextLogger

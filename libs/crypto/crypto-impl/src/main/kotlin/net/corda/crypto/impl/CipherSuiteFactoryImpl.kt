@@ -13,6 +13,7 @@ import net.corda.v5.cipher.suite.config.CryptoLibraryConfig
 import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureVerificationService
+import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -23,37 +24,45 @@ import org.slf4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [CipherSuiteFactory::class])
-open class CipherSuiteFactoryImpl @Activate constructor(
-    @Reference(
-        service = CipherSchemeMetadataProvider::class,
-        cardinality = ReferenceCardinality.AT_LEAST_ONE,
-        policyOption = ReferencePolicyOption.GREEDY
-    )
-    private val schemeMetadataProviders: List<CipherSchemeMetadataProvider>,
-    @Reference(
-        service = SignatureVerificationServiceProvider::class,
-        cardinality = ReferenceCardinality.AT_LEAST_ONE,
-        policyOption = ReferencePolicyOption.GREEDY
-    )
-    private val verifierProviders: List<SignatureVerificationServiceProvider>,
-    @Reference(
-        service = DigestServiceProvider::class,
-        cardinality = ReferenceCardinality.AT_LEAST_ONE,
-        policyOption = ReferencePolicyOption.GREEDY
-    )
-    private val digestServiceProviders: List<DigestServiceProvider>
-) : Lifecycle, CryptoLifecycleComponent, CipherSuiteFactory {
+open class CipherSuiteFactoryImpl : Lifecycle, CryptoLifecycleComponent, CipherSuiteFactory {
     companion object {
         private val logger: Logger = contextLogger()
     }
 
-    private var impl = Impl(
-        schemeMetadataProviders,
-        verifierProviders,
-        digestServiceProviders,
-        CipherSuiteConfig(emptyMap()),
-        logger
-    )
+    private lateinit var schemeMetadataProviders: List<CipherSchemeMetadataProvider>
+    private lateinit var verifierProviders: List<SignatureVerificationServiceProvider>
+    private lateinit var digestServiceProviders: List<DigestServiceProvider>
+
+    @Activate
+    fun activate(
+        @Reference(
+            service = CipherSchemeMetadataProvider::class,
+            cardinality = ReferenceCardinality.AT_LEAST_ONE,
+            policyOption = ReferencePolicyOption.GREEDY
+        )
+        schemeMetadataProviders: List<CipherSchemeMetadataProvider>,
+        @Reference(
+            service = SignatureVerificationServiceProvider::class,
+            cardinality = ReferenceCardinality.AT_LEAST_ONE,
+            policyOption = ReferencePolicyOption.GREEDY
+        )
+        verifierProviders: List<SignatureVerificationServiceProvider>,
+        @Reference(
+            service = DigestServiceProvider::class,
+            cardinality = ReferenceCardinality.AT_LEAST_ONE,
+            policyOption = ReferencePolicyOption.GREEDY
+        )
+        digestServiceProviders: List<DigestServiceProvider>
+    ) {
+        this.schemeMetadataProviders = schemeMetadataProviders
+        this.verifierProviders = verifierProviders
+        this.digestServiceProviders = digestServiceProviders
+    }
+
+    private var impl: Impl? = null
+
+    private fun impl(): Impl =
+        impl ?: throw CryptoServiceException("Factory have not been initialised yet.", true)
 
     override var isRunning: Boolean = false
 
@@ -64,7 +73,7 @@ open class CipherSuiteFactoryImpl @Activate constructor(
 
     override fun stop() {
         logger.info("Stopping...")
-        impl.closeGracefully()
+        impl?.closeGracefully()
         isRunning = false
     }
 
@@ -78,17 +87,17 @@ open class CipherSuiteFactoryImpl @Activate constructor(
             config.cipherSuite,
             logger
         )
-        currentImpl.closeGracefully()
+        currentImpl?.closeGracefully()
     }
 
     override fun getSchemeMap(): CipherSchemeMetadata =
-        impl.getSchemeMap()
+        impl().getSchemeMap()
 
     override fun getSignatureVerificationService(): SignatureVerificationService =
-        impl.getSignatureVerificationService()
+        impl().getSignatureVerificationService()
 
     override fun getDigestService(): DigestService =
-        impl.getDigestService()
+        impl().getDigestService()
 
     private class Impl(
         private val schemeMetadataProviders: List<CipherSchemeMetadataProvider>,
@@ -101,7 +110,7 @@ open class CipherSuiteFactoryImpl @Activate constructor(
         private val verifiers = ConcurrentHashMap<String, SignatureVerificationService>()
         private val digestServices = ConcurrentHashMap<String, DigestService>()
 
-        override fun getSchemeMap(): CipherSchemeMetadata  {
+        override fun getSchemeMap(): CipherSchemeMetadata {
             logger.debug("Getting {}", CipherSchemeMetadata::class.java.name)
             val name = config.schemeMetadataProvider
             return schemeMaps.getOrPut(name) {
@@ -124,7 +133,7 @@ open class CipherSuiteFactoryImpl @Activate constructor(
         }
 
         @Suppress("UNCHECKED_CAST", "MaxLineLength")
-        override fun getSignatureVerificationService(): SignatureVerificationService  {
+        override fun getSignatureVerificationService(): SignatureVerificationService {
             logger.debug("Getting {}", SignatureVerificationService::class.java.name)
             val name = config.signatureVerificationProvider
             return verifiers.getOrPut(name) {
@@ -158,7 +167,10 @@ open class CipherSuiteFactoryImpl @Activate constructor(
                 } catch (e: CryptoServiceLibraryException) {
                     throw e
                 } catch (e: Throwable) {
-                    throw CryptoServiceLibraryException("Failed to create implementation of ${DigestService::class.java.name}", e)
+                    throw CryptoServiceLibraryException(
+                        "Failed to create implementation of ${DigestService::class.java.name}",
+                        e
+                    )
                 }
             }
         }

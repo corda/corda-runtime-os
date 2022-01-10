@@ -4,7 +4,6 @@ import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.impl.config.DefaultConfigConsts
 import net.corda.crypto.impl.config.defaultCryptoService
 import net.corda.crypto.impl.config.publicKeys
-import net.corda.crypto.impl.persistence.IHaveTenantId
 import net.corda.crypto.impl.persistence.KeyValuePersistence
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator

@@ -1,9 +1,10 @@
 package net.corda.crypto.impl
 
-import net.corda.crypto.CryptoCategories
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
-import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactoryProvider
+import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactory
+import net.corda.crypto.impl.soft.SoftCryptoServiceConfig
+import net.corda.crypto.impl.soft.SoftCryptoServiceProvider
 import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
 import net.corda.test.util.createTestCase
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -21,15 +22,17 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class DefaultCryptoServiceProviderTests {
+class SoftCryptoServiceProviderTests {
     private val masterKeyAlias = "wrapping-key-alias"
     private lateinit var factory: CryptoServicesTestFactory
+    private lateinit var services: CryptoServicesTestFactory.CryptoServices
     private lateinit var schemeMetadata: CipherSchemeMetadata
     private lateinit var signatureVerifier: SignatureVerificationService
 
     @BeforeEach
     fun setup() {
         factory = CryptoServicesTestFactory()
+        services = factory.createCryptoServices()
         schemeMetadata = factory.schemeMetadata
         signatureVerifier = factory.verifier
     }
@@ -82,8 +85,9 @@ class DefaultCryptoServiceProviderTests {
     @Test
     @Timeout(30)
     fun `Should throw unrecoverable CryptoServiceLibraryException if configured factory is not found`() {
-        val provider = DefaultCryptoServiceProvider(
-            listOf(InMemoryKeyValuePersistenceFactoryProvider())
+        val provider = SoftCryptoServiceProvider()
+        provider.activate(
+            listOf(InMemoryKeyValuePersistenceFactory())
         )
         provider.start()
         provider.handleConfigEvent(
@@ -110,7 +114,7 @@ class DefaultCryptoServiceProviderTests {
                 CryptoLibraryConfigImpl(
                     mapOf(
                         "defaultCryptoService" to mapOf(
-                            "factoryName" to InMemoryKeyValuePersistenceFactoryProvider.NAME
+                            "factoryName" to InMemoryKeyValuePersistenceFactory.NAME
                         ),
                         "publicKeys" to emptyMap()
                     )
@@ -124,16 +128,17 @@ class DefaultCryptoServiceProviderTests {
 
     private fun newAlias(): String = UUID.randomUUID().toString()
 
-    private fun createCryptoServiceProvider(): DefaultCryptoServiceProvider {
-        val provider = DefaultCryptoServiceProvider(
-            listOf(InMemoryKeyValuePersistenceFactoryProvider())
+    private fun createCryptoServiceProvider(): SoftCryptoServiceProvider {
+        val provider = SoftCryptoServiceProvider()
+        provider.activate(
+            listOf(InMemoryKeyValuePersistenceFactory())
         )
         provider.start()
         provider.handleConfigEvent(
             CryptoLibraryConfigImpl(
                 mapOf(
                     "defaultCryptoService" to mapOf(
-                        "factoryName" to InMemoryKeyValuePersistenceFactoryProvider.NAME
+                        "factoryName" to InMemoryKeyValuePersistenceFactory.NAME
                     ),
                     "publicKeys" to emptyMap()
                 )
@@ -142,12 +147,12 @@ class DefaultCryptoServiceProviderTests {
         return provider
     }
 
-    private fun DefaultCryptoServiceProvider.createCryptoService(category: String): CryptoService = getInstance(
+    private fun SoftCryptoServiceProvider.createCryptoService(category: String): CryptoService = getInstance(
         CryptoServiceContext(
-            memberId = factory.memberId,
+            memberId = services.tenantId,
             category = category,
             cipherSuiteFactory = factory,
-            config = DefaultCryptoServiceConfig(
+            config = SoftCryptoServiceConfig(
                 passphrase = "PASSPHRASE",
                 salt = "SALT"
             )

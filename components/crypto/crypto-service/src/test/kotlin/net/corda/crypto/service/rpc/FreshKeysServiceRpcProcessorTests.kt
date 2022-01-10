@@ -1,6 +1,6 @@
 package net.corda.crypto.service.rpc
 
-import net.corda.crypto.impl.persistence.SigningPersistentKeyInfo
+import net.corda.crypto.impl.persistence.SigningKeyRecord
 import net.corda.crypto.service.CryptoFactory
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.data.KeyValuePair
@@ -209,7 +209,7 @@ class FreshKeysServiceRpcProcessorTests {
             }
         }
 
-        private fun get(publicKey: PublicKey): SigningPersistentKeyInfo? {
+        private fun get(publicKey: PublicKey): SigningKeyRecord? {
             return cryptoMocks.factories.cryptoServices.signingPersistence.getValue(memberId).persistence.get(
                 "$memberId:${publicKey.sha256Bytes().toHexString()}"
             )

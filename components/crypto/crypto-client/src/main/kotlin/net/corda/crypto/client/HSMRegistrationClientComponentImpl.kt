@@ -11,17 +11,14 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [HSMRegistrationClientComponent::class])
-class HSMRegistrationClientComponentImpl(
-    @Reference(service = LifecycleCoordinatorFactory::class)
-    coordinatorFactory: LifecycleCoordinatorFactory
-) : AbstractComponent<HSMRegistrationClientComponentImpl.Resources>(
-    coordinatorFactory,
-    LifecycleCoordinatorName.forComponent<HSMRegistrationClientComponent>()
-), HSMRegistrationClientComponent {
+class HSMRegistrationClientComponentImpl :
+    AbstractComponent<HSMRegistrationClientComponentImpl.Resources>(),
+    HSMRegistrationClientComponent {
     companion object {
         const val CLIENT_ID = "crypto.registration.hsm"
 
@@ -32,8 +29,17 @@ class HSMRegistrationClientComponentImpl(
     @Volatile
     private lateinit var publisherFactory: PublisherFactory
 
-    @Reference(service = PublisherFactory::class)
-    fun putPublisherFactory(publisherFactory: PublisherFactory) {
+    @Activate
+    fun activate(
+        @Reference(service = LifecycleCoordinatorFactory::class)
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = PublisherFactory::class)
+        publisherFactory: PublisherFactory
+    ) {
+        setup(
+            coordinatorFactory,
+            LifecycleCoordinatorName.forComponent<HSMRegistrationClientComponent>()
+        )
         this.publisherFactory = publisherFactory
         createResources()
     }
@@ -51,7 +57,6 @@ class HSMRegistrationClientComponentImpl(
         defaultSignatureScheme: String
     ): CryptoPublishResult =
         resources.instance.assignSoftHSM(tenantId, category, passphrase, defaultSignatureScheme)
-
 
     override fun allocateResources(): Resources = Resources(publisherFactory)
 

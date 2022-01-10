@@ -1,8 +1,8 @@
 package net.corda.crypto.impl.dev
 
 import net.corda.crypto.SigningService
-import net.corda.crypto.impl.DefaultCryptoService
-import net.corda.crypto.impl.persistence.DefaultCryptoKeyCache
+import net.corda.crypto.impl.soft.SoftCryptoService
+import net.corda.crypto.impl.persistence.SoftCryptoKeyCache
 import net.corda.crypto.impl.persistence.SigningKeyCache
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -14,11 +14,13 @@ import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
+import net.corda.v5.crypto.sha256Bytes
 import net.i2p.crypto.eddsa.EdDSAPrivateKey
 import net.i2p.crypto.eddsa.EdDSAPublicKey
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveSpec
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec
+import org.bouncycastle.util.encoders.Base32
 import java.math.BigInteger
 import java.security.KeyPair
 import java.security.MessageDigest
@@ -36,10 +38,12 @@ import java.security.PublicKey
  *
  * The auto generated keys are automatically synchronised with the key cache used by [SigningService]
  *
- * The wrapped keys are not deterministic generated using the [DefaultCryptoService] instance.
+ * The wrapped keys are not deterministic generated using the [SoftCryptoService] instance.
  */
 class DevCryptoService(
-    val keyCache: DefaultCryptoKeyCache,
+    val tenantId: String,
+    val category: String,
+    val keyCache: SoftCryptoKeyCache,
     val signingCache: SigningKeyCache,
     schemeMetadata: CipherSchemeMetadata,
     hashingService: DigestService
@@ -62,7 +66,7 @@ class DevCryptoService(
 
     private val supportedSchemeCodes: Set<String>
 
-    private val defaultCryptoService: CryptoService = DefaultCryptoService(
+    private val softCryptoService: CryptoService = SoftCryptoService(
         cache = keyCache,
         schemeMetadata = schemeMetadata,
         hashingService = hashingService
@@ -82,7 +86,7 @@ class DevCryptoService(
         supportedSchemeCodes = supportedSchemes.map { it.codeName }.toSet()
     }
 
-    override fun requiresWrappingKey(): Boolean = defaultCryptoService.requiresWrappingKey()
+    override fun requiresWrappingKey(): Boolean = softCryptoService.requiresWrappingKey()
 
     override fun supportedSchemes(): Array<SignatureScheme> = supportedSchemes
 
@@ -111,7 +115,7 @@ class DevCryptoService(
     }
 
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean) =
-        defaultCryptoService.createWrappingKey(masterKeyAlias, failIfExists)
+        softCryptoService.createWrappingKey(masterKeyAlias, failIfExists)
 
     override fun generateKeyPair(
         alias: String,
@@ -133,7 +137,7 @@ class DevCryptoService(
         if (!isSupported(wrappedSignatureScheme)) {
             throw CryptoServiceBadRequestException("Unsupported signature scheme: ${wrappedSignatureScheme.codeName}")
         }
-        return defaultCryptoService.generateWrappedKeyPair(masterKeyAlias, wrappedSignatureScheme, context)
+        return softCryptoService.generateWrappedKeyPair(masterKeyAlias, wrappedSignatureScheme, context)
     }
 
     override fun sign(
@@ -149,7 +153,7 @@ class DevCryptoService(
         if (findPublicKey(alias) == null) {
             throw CryptoServiceBadRequestException("Unable to sign: There is no private key under the alias: $alias")
         }
-        return defaultCryptoService.sign(alias, signatureScheme, data, context)
+        return softCryptoService.sign(alias, signatureScheme, data, context)
     }
 
     override fun sign(
@@ -167,20 +171,20 @@ class DevCryptoService(
                 "Unsupported signature scheme: ${wrappedKey.signatureScheme.codeName}"
             )
         }
-        return defaultCryptoService.sign(wrappedKey, data, context)
+        return softCryptoService.sign(wrappedKey, data, context)
     }
 
     @Suppress("ThrowsCount")
     private fun generateKeyPair(
         alias: String,
         signatureScheme: SignatureScheme,
-        storeInSigningCache: Boolean
+        autoGenerating: Boolean
     ): PublicKey {
         logger.debug(
             "generateKeyPair(alias={}, scheme={}, storeInSigningCache={})",
             alias,
             signatureScheme,
-            storeInSigningCache
+            autoGenerating
         )
         return try {
             val entropy = alias.toBigIntegerEntropy()
@@ -191,8 +195,14 @@ class DevCryptoService(
                 )
             }
             keyCache.save(alias, keyPair, signatureScheme)
-            if(storeInSigningCache) {
-                signingCache.save(keyPair.public, signatureScheme, alias)
+            if(autoGenerating) {
+                signingCache.save(
+                    publicKey = keyPair.public,
+                    scheme = signatureScheme,
+                    category = category,
+                    alias = alias,
+                    hsmAlias = computeHSMAlias(alias)
+                )
             }
             keyPair.public
         } catch (e: CryptoServiceException) {
@@ -246,4 +256,7 @@ class DevCryptoService(
      */
 
     private fun isSupported(scheme: SignatureScheme): Boolean = scheme.codeName in supportedSchemeCodes
+
+    private fun computeHSMAlias(alias: String): String
+            = Base32.toBase32String((tenantId + alias).encodeToByteArray().sha256Bytes()).take(30).toLowerCase()
 }
