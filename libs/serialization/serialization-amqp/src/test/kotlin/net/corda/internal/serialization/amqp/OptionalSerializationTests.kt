@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.custom.OptionalSerializer
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserialize
@@ -18,7 +17,7 @@ class OptionalSerializationTests {
     @Test
     fun setupEnclosedSerializationTest() {
         fun `java optionals should serialize`() {
-            val factory = SerializerFactoryBuilder.build(AllWhitelist, testSerializationContext.currentSandboxGroup())
+            val factory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
             factory.register(OptionalSerializer(), factory)
             val obj = Optional.ofNullable("YES")
             val bytes = TestSerializationOutput(true, factory).serialize(obj)

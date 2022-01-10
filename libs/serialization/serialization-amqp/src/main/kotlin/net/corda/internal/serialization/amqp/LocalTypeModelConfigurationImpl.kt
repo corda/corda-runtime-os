@@ -3,7 +3,6 @@ package net.corda.internal.serialization.amqp
 import com.google.common.primitives.Primitives
 import net.corda.internal.serialization.model.BaseLocalTypes
 import net.corda.internal.serialization.model.LocalTypeModelConfiguration
-import net.corda.serialization.ClassWhitelist
 import org.apache.qpid.proton.amqp.Decimal128
 import org.apache.qpid.proton.amqp.Decimal32
 import org.apache.qpid.proton.amqp.Decimal64
@@ -18,17 +17,16 @@ import java.util.EnumSet
 import java.util.UUID
 
 /**
- * [LocalTypeModelConfiguration] based on a [ClassWhitelist]
+ * [LocalTypeModelConfiguration] implementation
  */
-class WhitelistBasedTypeModelConfiguration(
-    private val whitelist: ClassWhitelist,
+class LocalTypeModelConfigurationImpl(
     private val customSerializerRegistry: CustomSerializerRegistry,
     override val baseTypes: BaseLocalTypes
 ) : LocalTypeModelConfiguration {
-    constructor(whitelist: ClassWhitelist, customSerializerRegistry: CustomSerializerRegistry)
-        : this(whitelist, customSerializerRegistry, DEFAULT_BASE_TYPES)
+    constructor(customSerializerRegistry: CustomSerializerRegistry)
+        : this(customSerializerRegistry, DEFAULT_BASE_TYPES)
 
-    override fun isExcluded(type: Type): Boolean = whitelist.isNotWhitelisted(type.asClass())
+    override fun isExcluded(type: Type): Boolean = isNotWhitelisted(type.asClass())
     override fun isOpaque(type: Type): Boolean = Primitives.unwrap(type.asClass()) in opaqueTypes ||
             customSerializerRegistry.findCustomSerializer(type.asClass(), type) != null
 }

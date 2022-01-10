@@ -3,7 +3,6 @@ package net.corda.internal.serialization.amqp
 import com.google.common.reflect.TypeToken
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.ClassWhitelist
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.annotations.CordaSerializable
 import org.apache.qpid.proton.codec.Data
@@ -115,17 +114,17 @@ internal fun Type.isSubClassOf(type: Type): Boolean {
     return TypeToken.of(this).isSubtypeOf(TypeToken.of(type).rawType)
 }
 
-fun ClassWhitelist.requireWhitelisted(type: Type) {
+fun requireWhitelisted(type: Type) {
     // See CORDA-2782 for explanation of the special exemption made for Comparable
-    if (!this.isWhitelisted(type.asClass()) && type.asClass() != java.lang.Comparable::class.java) {
+    if (!isWhitelisted(type.asClass()) && type.asClass() != java.lang.Comparable::class.java) {
         throw AMQPNotSerializableException(
                 type,
                 "Class \"$type\" is not on the whitelist or annotated with @CordaSerializable.")
     }
 }
 
-fun ClassWhitelist.isWhitelisted(clazz: Class<*>) = hasListed(clazz) || hasCordaSerializable(clazz)
-fun ClassWhitelist.isNotWhitelisted(clazz: Class<*>) = !this.isWhitelisted(clazz)
+fun isWhitelisted(clazz: Class<*>) = hasCordaSerializable(clazz)
+fun isNotWhitelisted(clazz: Class<*>) = !isWhitelisted(clazz)
 
 /**
  * Check the given [Class] has the [CordaSerializable] annotation, either directly or inherited from any of its super

@@ -2,6 +2,7 @@ package net.corda.internal.serialization.amqp;
 
 import net.corda.internal.serialization.amqp.testutils.TestDescriptorBasedSerializerRegistry;
 import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
+import net.corda.v5.base.annotations.CordaSerializable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -14,12 +15,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 public class JavaPrivatePropertyTests {
+    @CordaSerializable
     static class C {
         private String a;
 
         C(String a) { this.a = a; }
     }
 
+    @CordaSerializable
     static class C2 {
         private String a;
 
@@ -28,6 +31,7 @@ public class JavaPrivatePropertyTests {
         public String getA() { return a; }
     }
 
+    @CordaSerializable
     static class B {
         private Boolean b;
 
@@ -39,6 +43,7 @@ public class JavaPrivatePropertyTests {
         }
     }
 
+    @CordaSerializable
     static class B2 {
         private Boolean b;
 
@@ -52,6 +57,7 @@ public class JavaPrivatePropertyTests {
         }
     }
 
+    @CordaSerializable
     static class B3 {
         private Boolean b;
 
@@ -66,6 +72,7 @@ public class JavaPrivatePropertyTests {
         }
     }
 
+    @CordaSerializable
     static class C3 {
         private Integer a;
 

@@ -26,6 +26,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @SuppressWarnings("unchecked")
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 public class JavaGenericsTest {
+    @CordaSerializable
     private static class Inner {
         private final Integer v;
 
@@ -38,6 +39,7 @@ public class JavaGenericsTest {
         }
     }
 
+    @CordaSerializable
     private static class A<T> {
         private final T t;
 
@@ -162,7 +164,7 @@ public class JavaGenericsTest {
     public void shouldSupportNestedGenericsFromJavaWithCollections() throws NotSerializableException {
         ConcreteClass concreteClass = new ConcreteClass("How to make concrete, $99/class");
         HolderOfGeneric<GenericClassWithList<ConcreteClass>> genericList = new HolderOfGeneric<>(new GenericClassWithList<>(Collections.singletonList(concreteClass)));
-        SerializerFactory factory = AMQPTestUtilsKt.testDefaultFactoryWithWhitelist();
+        SerializerFactory factory = AMQPTestUtilsKt.testDefaultFactory();
         SerializationOutput ser = new SerializationOutput(factory);
         SerializedBytes<?> bytes = ser.serialize(genericList, TestSerializationContext.testSerializationContext);
         DeserializationInput des = new DeserializationInput(factory);
@@ -174,7 +176,7 @@ public class JavaGenericsTest {
     public void shouldSupportNestedGenericsFromJavaWithMaps() throws NotSerializableException {
         ConcreteClass concreteClass = new ConcreteClass("How to make concrete, $99/class");
         GenericClassWithMap<ConcreteClass, BigInteger> genericMap = new GenericClassWithMap<>(Collections.singletonMap(concreteClass, BigInteger.ONE));
-        SerializerFactory factory = AMQPTestUtilsKt.testDefaultFactoryWithWhitelist();
+        SerializerFactory factory = AMQPTestUtilsKt.testDefaultFactory();
         factory.register(new BigIntegerSerializer(), factory);
         SerializationOutput ser = new SerializationOutput(factory);
         SerializedBytes<?> bytes = ser.serialize(genericMap, TestSerializationContext.testSerializationContext);

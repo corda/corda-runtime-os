@@ -17,11 +17,6 @@ interface SerializationContext {
     val encoding: SerializationEncoding?
 
     /**
-     * A whitelist that contains (mostly for security purposes) which classes can be serialized and deserialized.
-     */
-    val whitelist: ClassWhitelist
-
-    /**
      * A whitelist that determines (mostly for security purposes)
      * whether a particular encoding may be used when deserializing.
      */
@@ -90,11 +85,6 @@ interface SerializationContext {
      * Helper method to return a new context based on this context with the deserialization class loader changed.
      */
     fun withClassLoader(classLoader: ClassLoader): SerializationContext
-
-    /**
-     * Helper method to return a new context based on this context with the given class specifically whitelisted.
-     */
-    fun withWhitelisted(clazz: Class<*>): SerializationContext
 
     /**
      * Helper method to return a new context based on this context with the given serializers added.

@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.AllWhitelist
 import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.internal.serialization.model.ConfigurableLocalTypeModel
 import net.corda.internal.serialization.model.LocalTypeInformation
@@ -36,7 +35,7 @@ class TypeModellingFingerPrinterTests {
     // See https://r3-cev.atlassian.net/browse/CORDA-2848
     @Test
 	fun `can fingerprint type with non-serializable type parameter`() {
-        val typeModel = ConfigurableLocalTypeModel(WhitelistBasedTypeModelConfiguration(AllWhitelist, customRegistry))
+        val typeModel = ConfigurableLocalTypeModel(LocalTypeModelConfigurationImpl(customRegistry))
         val typeInfo = typeModel.inspect(SuppliesTypeParameter::class.java)
 
         assertThat(typeInfo).isInstanceOf(LocalTypeInformation.Composable::class.java)

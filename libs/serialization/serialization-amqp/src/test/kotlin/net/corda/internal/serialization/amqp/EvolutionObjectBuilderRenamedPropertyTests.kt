@@ -4,6 +4,7 @@ import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.writeTestResource
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
 import org.assertj.core.api.Assertions
@@ -34,8 +35,10 @@ class EvolutionObjectBuilderRenamedPropertyTests {
         override fun verify(tx: TestTransaction) {}
     }
 
+    @CordaSerializable
     abstract class TestParty(val uncle: Int)
 
+    @CordaSerializable
     interface TestContractState {
         val participants: List<TestParty>
     }
@@ -46,6 +49,7 @@ class EvolutionObjectBuilderRenamedPropertyTests {
      * This is the original class definition in object evolution.
      */
 //    @TestBelongsToContract(TemplateContract::class)
+//    @CordaSerializable
 //    data class TemplateState(val cordappVersion: Int, val data: String, val x : Int?, override val participants: List<TestParty> = listOf()) : TestContractState
 
     /**
@@ -55,6 +59,7 @@ class EvolutionObjectBuilderRenamedPropertyTests {
      * The y property has been added and a constructor copies the value of x into y. x is now set to null by the constructor.
      */
 //    @BelongsToContract(TemplateContract::class)
+//    @CordaSerializable
 //    data class TemplateState(val cordappVersion: Int, val data: String, val x : Int?, val y : String?, override val participants: List<AbstractParty> = listOf()) : ContractState {
 //        @DeprecatedConstructorForDeserialization(1)
 //        constructor(cordappVersion: Int, data : String, x : Int?, participants: List<AbstractParty>)
@@ -69,6 +74,7 @@ class EvolutionObjectBuilderRenamedPropertyTests {
      * object to pass the value of x to the constructor when deserialized.
      */
     @TestBelongsToContract(TemplateContract::class)
+    @CordaSerializable
     data class TemplateState(val cordappVersion: Int, val data: String, val y: String?, override val participants: List<TestParty> = listOf()) : TestContractState {
         @DeprecatedConstructorForDeserialization(1)
         constructor(
