@@ -2,7 +2,7 @@ package net.corda.virtualnode
 
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.configuration.publish.ConfigPublishService
-import net.corda.cpiinfo.write.CpiInfoWriterComponent
+import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -48,8 +48,8 @@ class VirtualNodeCli @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = CpiInfoWriterComponent::class)
-    private val cpiInfoWriterComponent: CpiInfoWriterComponent,
+    @Reference(service = CpiInfoWriteService::class)
+    private val cpiInfoWriteService: CpiInfoWriteService,
 //    @Reference(service = VirtualNodeInfoWriterComponent::class)
 //    private val virtualNodeInfoWriterComponent: VirtualNodeInfoWriterComponent,
     @Reference(service = SmartConfigFactory::class)
@@ -120,7 +120,7 @@ class VirtualNodeCli @Activate constructor(
         val hash = SecureHash("Dummy", "0123456789ABCDEF".toByteArray())
         val id = CPI.Identifier.newInstance("test-cpi-name", "0.0.0", hash)
         val metadata = CPI.Metadata.newInstance(id, hash, emptyList(), "group-policy")
-        cpiInfoWriterComponent.put(metadata)
+        cpiInfoWriteService.put(metadata)
 
 //        if (thisThing) cpiInfoWriterComponent.put(cpiMetadata)
 //        if (thatThing) virtualNodeInfoWriterComponent.put(virtualNodeInfo)
@@ -172,18 +172,18 @@ class VirtualNodeCli @Activate constructor(
         registrationHandle = coordinator.followStatusChangesByName(
             setOf(
 //                LifecycleCoordinatorName.forComponent<VirtualNodeInfoWriterComponent>(),
-                LifecycleCoordinatorName.forComponent<CpiInfoWriterComponent>()
+                LifecycleCoordinatorName.forComponent<CpiInfoWriteService>()
             )
         )
 
 //        virtualNodeInfoWriterComponent.start()
-        cpiInfoWriterComponent.start()
+        cpiInfoWriteService.start()
     }
 
     override fun done() {
         log.debug("Done, stopping...")
 
 //        virtualNodeInfoWriterComponent.stop()
-        cpiInfoWriterComponent.stop()
+        cpiInfoWriteService.stop()
     }
 }
