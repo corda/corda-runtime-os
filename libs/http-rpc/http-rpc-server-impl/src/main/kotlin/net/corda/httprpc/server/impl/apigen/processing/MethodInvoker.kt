@@ -58,30 +58,40 @@ internal open class DurableStreamsMethodInvoker(private val invocationMethod: In
 
     @Suppress("ThrowsCount")
     internal fun invokeDurableStreamMethod(vararg args: Any?): Cursor.PollResult<Any> {
+        println("QQQ invokeDurableStreamMethod 1 ${args.size}")
         log.trace { """Invoke durable streams method "${invocationMethod.method.name}" with args size: ${args.size}.""" }
         require(args.isNotEmpty()) { throw IllegalArgumentException("Method returning Durable Streams was invoked without arguments.") }
+        println("QQQ invokeDurableStreamMethod 2")
 
         val (durableContexts, methodArgs) = args.partition { it is DurableStreamContext }
+        println("QQQ invokeDurableStreamMethod 3 durableContexts = $durableContexts; methodArgs = $methodArgs")
         if (durableContexts.size != 1) {
+            println("QQQ invokeDurableStreamMethod 4 size = ${durableContexts.size}")
             val message =
                 """Exactly one of the arguments is expected to be DurableStreamContext, actual: $durableContexts"""
             throw IllegalArgumentException(message)
         }
         val durableStreamContext = durableContexts.single() as DurableStreamContext
+        println("QQQ invokeDurableStreamMethod 5 durableStreamContext = $durableStreamContext")
 
         val rpcAuthContext = CURRENT_RPC_CONTEXT.get() ?: throw FailedLoginException("Missing authentication context.")
+        println("QQQ invokeDurableStreamMethod 6 rpcAuthContext = $rpcAuthContext")
         with(rpcAuthContext) {
             val rpcContextWithDurableStreamContext =
                 this.copy(invocation = this.invocation.copy(durableStreamContext = durableStreamContext))
             CURRENT_RPC_CONTEXT.set(rpcContextWithDurableStreamContext)
         }
+        println("QQQ invokeDurableStreamMethod 7 rpcAuthContext = $rpcAuthContext")
 
         @Suppress("SpreadOperator")
         val returnValue = super.invoke(*methodArgs.toTypedArray())
+        println("QQQ invokeDurableStreamMethod 8 returnValue = $returnValue")
 
         val durableCursorTransferObject = uncheckedCast<Any, Supplier<Cursor.PollResult<Any>>>(returnValue as Any)
+        println("QQQ invokeDurableStreamMethod 9 durableCursorTransferObject = $durableCursorTransferObject")
         return durableCursorTransferObject.get()
                 .also {
+                    println("QQQ invokeDurableStreamMethod 10 durableCursorTransferObject $it")
                     log.trace {
                         """Invoke durable streams method "${invocationMethod.method.name}" with args size: ${args.size} completed."""
                     }
