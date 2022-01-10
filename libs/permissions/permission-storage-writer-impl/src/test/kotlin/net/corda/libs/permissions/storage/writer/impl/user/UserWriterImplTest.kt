@@ -158,7 +158,7 @@ internal class UserWriterImplTest {
             userWriter.addRoleToUser(AddRoleToUserRequest("userLogin1", "role1"), "requestUserId")
         }
 
-        verify(entityManager.transaction, times(1)).setRollbackOnly()
+        verify(entityManager.transaction, times(2)).setRollbackOnly()
 
         assertEquals("User 'userLogin1' does not exist.", e.message)
     }
@@ -175,7 +175,7 @@ internal class UserWriterImplTest {
             userWriter.addRoleToUser(AddRoleToUserRequest("userLogin1", "role1"), "requestUserId")
         }
 
-        verify(entityManager.transaction, times(1)).setRollbackOnly()
+        verify(entityManager.transaction, times(2)).setRollbackOnly()
 
         assertEquals("Role 'role1' does not exist.", e.message)
     }
@@ -194,7 +194,7 @@ internal class UserWriterImplTest {
             userWriter.addRoleToUser(AddRoleToUserRequest("userLogin1", "role1"), "requestUserId")
         }
 
-        verify(entityManager.transaction, times(1)).setRollbackOnly()
+        verify(entityManager.transaction, times(2)).setRollbackOnly()
 
         assertEquals("Role 'role1' is already associated with User 'userLogin1'.", e.message)
     }
@@ -248,7 +248,7 @@ internal class UserWriterImplTest {
             userWriter.removeRoleFromUser(RemoveRoleFromUserRequest("userLogin1", "role1"), "requestUserId")
         }
 
-        verify(entityManager.transaction, times(1)).setRollbackOnly()
+        verify(entityManager.transaction, times(2)).setRollbackOnly()
 
         assertEquals("User 'userLogin1' does not exist.", e.message)
     }
@@ -263,7 +263,7 @@ internal class UserWriterImplTest {
             userWriter.removeRoleFromUser(RemoveRoleFromUserRequest("userLogin1", "role1"), "requestUserId")
         }
 
-        verify(entityManager.transaction, times(1)).setRollbackOnly()
+        verify(entityManager.transaction, times(2)).setRollbackOnly()
 
         assertEquals("Role 'role1' is not associated with User 'userLogin1'.", e.message)
     }
