@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -82,6 +83,15 @@ class MemberListCacheImplTest {
 
         assertMemberList(lookupWithDefaults(), memberInfo1)
         assertMemberList(lookupWithDefaults(bobIdGroup1), memberInfo2)
+    }
+
+    @Test
+    fun `Cache output cannot be cast to mutable list`() {
+        addToCacheWithDefaults()
+        val lookupResult = lookupWithDefaults()
+        assertThrows<ClassCastException> {
+            lookupResult as MutableList<MemberInfo>
+        }
     }
 
     private fun lookupWithDefaults(
