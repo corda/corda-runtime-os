@@ -18,6 +18,7 @@ cordapp {
 
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided "net.corda:corda-base"
     cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation project(":libs:serialization:serialization-amqp:serialization-cpk-library")
 }
