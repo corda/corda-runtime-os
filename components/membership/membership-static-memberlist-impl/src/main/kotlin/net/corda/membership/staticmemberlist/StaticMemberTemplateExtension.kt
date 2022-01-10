@@ -52,7 +52,7 @@ class StaticMemberTemplateExtension {
         val GroupPolicy.staticNetwork: Map<String, Any>
             get() = if(containsKey(STATIC_NETWORK_TEMPLATE)) {
                 get(STATIC_NETWORK_TEMPLATE) as? Map<String, Any>
-                    ?: throw ClassCastException("Error while retrieving static network from group policy JSON.")
+                    ?: throw ClassCastException("Casting failed for static network from group policy JSON.")
             } else {
                 emptyMap()
             }
@@ -63,7 +63,7 @@ class StaticMemberTemplateExtension {
         val GroupPolicy.staticMgm: Map<String, String>
             get() = if(staticNetwork.containsKey(STATIC_MGM)) {
                 staticNetwork.get(STATIC_MGM) as? Map<String, String>
-                    ?: throw ClassCastException("Error while retrieving static mgm from group policy JSON.")
+                    ?: throw ClassCastException("Casting failed for static mgm from group policy JSON.")
             } else {
                 emptyMap()
             }
@@ -74,7 +74,7 @@ class StaticMemberTemplateExtension {
         val GroupPolicy.staticMembers: List<Map<String, String>>
             get() = if(staticNetwork.containsKey(STATIC_MEMBERS)) {
                 staticNetwork[STATIC_MEMBERS] as? List<Map<String, String>>
-                    ?: throw ClassCastException("Error while retrieving static members from group policy JSON.")
+                    ?: throw ClassCastException("Casting failed for static members from group policy JSON.")
             } else {
                 emptyList()
             }
