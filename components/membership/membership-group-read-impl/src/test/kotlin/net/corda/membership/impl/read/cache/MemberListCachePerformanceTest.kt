@@ -18,6 +18,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.TimeUnit
+import kotlin.ConcurrentModificationException
 
 class MemberListCachePerformanceTest {
     private lateinit var memberListCache: MemberListCache
@@ -51,6 +52,10 @@ class MemberListCachePerformanceTest {
         const val PRINT_PROGRESS = true
         const val PRINT_PROGRESS_VERBOSE = false
         const val PRINT_RUN_SUMMARIES = false
+
+        // If true, the performance test will iterate over the memberlist and read a property from each member
+        // to try find concurrency issues with the nested list.
+        const val ITERATE_READ_MEMBERLIST = true
     }
 
     private val threadFactory = ThreadFactory {
@@ -127,12 +132,25 @@ class MemberListCachePerformanceTest {
     }
 
     /**
-     * Create a [CacheOperation] instance which reads data from the cache and decrements the countdown latch.
+     * Create a [CacheOperation] instance which reads member list data from the cache and decrements the countdown
+     * latch.
+     * If configured to do so, the member list will be iterated to try catch concurrency issues with the nested member
+     * list in the cache.
      */
     private fun read(holdingId: HoldingIdentity) = CacheOperation {
-        memberListCache.get(holdingId)
-        if (VERBOSE_OPERATION_OUTPUT) println("${Thread.currentThread().name} - ${clock.millis()}: Read")
-        countDownLatch.countDown()
+        try {
+            val list = memberListCache.get(holdingId)
+            if (ITERATE_READ_MEMBERLIST) {
+                list?.forEach {
+                    require(it.name.toString().isNotEmpty())
+                }
+            }
+            if (VERBOSE_OPERATION_OUTPUT) println("${Thread.currentThread().name} - ${clock.millis()}: Read")
+            countDownLatch.countDown()
+        } catch (e: ConcurrentModificationException) {
+            println("ConcurrentModificationException thrown")
+            throw e
+        }
     }
 
     /**
@@ -200,6 +218,10 @@ class MemberListCachePerformanceTest {
         val results = mutableListOf<RunResults>()
         // Iterate for number of repeated tests to get an average result
         for (i in 0 until NUM_TEST_REPETITIONS) {
+            val quarter = NUM_TEST_REPETITIONS / 4
+            if (i == quarter) println("25% done")
+            if (i == quarter*2) println("50% done")
+            if (i == quarter*3) println("75% done")
             setUpCache()
             setUpMockObjects()
             setCountDownLatch(numOperationsToExecute)
@@ -230,7 +252,7 @@ class MemberListCachePerformanceTest {
         // START PERFORMANCE TEST
         val start = clock.millis()
         executorService.invokeAll(cacheOperations)
-        countDownLatch.await()
+        countDownLatch.await(10L, TimeUnit.SECONDS)
         val end = clock.millis()
         //END PERFORMANCE TEST
         if (PRINT_PROGRESS_VERBOSE) println("Ending test. Shutting down threads.")

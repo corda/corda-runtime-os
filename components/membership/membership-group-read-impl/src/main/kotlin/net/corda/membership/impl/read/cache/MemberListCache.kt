@@ -2,8 +2,9 @@ package net.corda.membership.impl.read.cache
 
 import net.corda.v5.membership.identity.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import java.util.concurrent.locks.ReadWriteLock
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.collections.HashMap
 
 /**
  * Interface for storing the member lists in-memory including implementation class.
@@ -23,14 +24,16 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
      */
     class Impl : MemberListCache {
 
-        private val readWriteLock: ReadWriteLock = ReentrantReadWriteLock()
-        private val cache = mutableMapOf<String, MutableList<MemberInfo>>()
+        private val readWriteLock = ReentrantReadWriteLock()
+        private val cache = HashMap<String, MutableList<MemberInfo>>()
 
         private fun getMemberListOrNull(holdingIdentity: HoldingIdentity) = cache[holdingIdentity.id]
 
         private fun setMemberList(holdingIdentity: HoldingIdentity, data: MutableList<MemberInfo>) {
             cache[holdingIdentity.id] = data
         }
+
+        private fun createEmptyMemberList(): MutableList<MemberInfo> = CopyOnWriteArrayList()
 
         override fun get(holdingIdentity: HoldingIdentity): List<MemberInfo> {
             with(readWriteLock.readLock()) {
@@ -49,7 +52,7 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
                 try {
                     var memberList = getMemberListOrNull(holdingIdentity)
                     if (memberList == null) {
-                        memberList = mutableListOf()
+                        memberList = createEmptyMemberList()
                         setMemberList(holdingIdentity, memberList)
                     }
                     with(memberList) {
