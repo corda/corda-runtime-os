@@ -98,7 +98,7 @@ internal class RouteInfo(
         else -> DefaultMethodInvoker(endpoint.invocationMethod)
     }
 
-    @Suppress("SpreadOperator")
+    @Suppress("SpreadOperator", "ThrowsCount")
     fun invokeDelegatedMethod(vararg args: Any?): Any? {
         println("QQQ invokeDelegatedMethod 1")
         println("QQQ invokeDelegatedMethod 2 - ${endpoint.invocationMethod.method.name}")
