@@ -1,6 +1,5 @@
 package net.corda.libs.configuration.datamodel.tests
 
-import net.corda.db.admin.LiquibaseSchemaMigrator.Companion.PUBLIC_SCHEMA
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -43,7 +42,7 @@ class EntityManagerFactoryFactoryIntegrationTest {
                 )
             )
             dbConfig.dataSource.connection.use { connection ->
-                LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange, PUBLIC_SCHEMA)
+                LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
             }
 
             entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
