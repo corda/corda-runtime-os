@@ -2,7 +2,6 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
-import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.http.DefaultFullHttpResponse
 import io.netty.handler.codec.http.HttpContent
@@ -36,15 +35,8 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                     "Request URI: ${msg.uri()}\n" +
                     "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n")
             // initialise byte array to read the request into
-
             if (responseCode!! != HttpResponseStatus.LENGTH_REQUIRED) {
                 allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
-            }
-
-            if(msg.headers()[HttpHeaderNames.CONTENT_LENGTH].isNullOrBlank()) {
-                //TODO-close connection
-                //TODO.addListener(ChannelFutureListener.CLOSE)
-
             }
 
             if (HttpUtil.is100ContinueExpected(msg)) {
@@ -79,7 +71,6 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                 else -> {
                     val response = createResponse(null, responseCode!!)
                     ctx.writeAndFlush(response)
-                        //TODO.addListener(ChannelFutureListener.CLOSE)
                 }
             }
 
