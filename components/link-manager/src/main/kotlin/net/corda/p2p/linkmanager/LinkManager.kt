@@ -279,9 +279,10 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                 emptyList()
             } else {
                 val records = mutableListOf<Record<String, *>>()
-                records.add(Record(LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage))
-                records.add(Record(SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions)))
-                records
+                listOf(
+                    Record(LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage),
+                    Record(SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions))
+                )
             }
         }
 
