@@ -89,7 +89,7 @@ class StaticMemberTemplateExtensionTest {
 
     @Test
     fun `static member list parsing fails when invalid structure is used`() {
-        val ex = assertFailsWith<IllegalStateException> { groupPolicyWithInvalidStructure.staticMembers }
+        val ex = assertFailsWith<ClassCastException> { groupPolicyWithInvalidStructure.staticMembers }
         assertEquals("Error while retrieving static members from group policy JSON.", ex.message)
     }
 
