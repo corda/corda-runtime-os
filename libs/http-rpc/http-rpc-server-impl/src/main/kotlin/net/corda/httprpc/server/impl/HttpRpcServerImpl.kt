@@ -77,6 +77,7 @@ class HttpRpcServerImpl(
     }
 
     private fun getResources(rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>): List<Resource> {
+        println("QQQ 1")
         log.debug { "Get resources for RPCOps implementations of ${rpcOpsImpls.joinToString()}." }
         var resources = emptyList<Resource>()
         log.trace { "Generating resource model for http rpc" }

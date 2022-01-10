@@ -56,28 +56,39 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
     }
 
     private fun <T> doCall(verb: HttpVerb, webRequest: WebRequest<T>, encodeAuth: HttpRequest<*>.() -> Unit): WebResponse<String> {
+        println("QQQ doCall 1")
 
         addSslParams()
+        println("QQQ doCall 2")
 
         val path = baseAddress + webRequest.path
+        println("QQQ doCall 3 - $path")
         var request: HttpRequest<*> = when (verb) {
             HttpVerb.GET -> Unirest.get(path)
             HttpVerb.POST -> Unirest.post(path)
         }
+        println("QQQ doCall 4 - $request")
 
         request.encodeAuth()
+        println("QQQ doCall 5")
 
         if (webRequest.body != null && request is HttpRequestWithBody) request = request.body(webRequest.body)
+        println("QQQ doCall 6")
+
         webRequest.queryParameters?.forEach{ item ->
+            println("QQQ doCall 7 $item")
             if (item.value is Collection<*>) {
                 (item.value as Collection<*>).forEach { request = request.queryString(item.key, it) }
             }
             else {
                 request = request.queryString(item.key, item.value)
             }
+            println("QQQ doCall 8")
         }
 
         val response = request.asString()
+        println("QQQ doCall 9 $response")
+        println("QQQ doCall 10 ${response.body}")
         return WebResponse(response.body, response.headers.all()
                 .associateBy({ it.name }, { it.value }), response.status, response.statusText)
     }
