@@ -1,5 +1,6 @@
 package net.corda.configuration.rpcops.impl
 
+import com.typesafe.config.ConfigException
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOps
@@ -15,6 +16,8 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
 
 /** Handles incoming [LifecycleCoordinator] events for [ConfigRPCOpsServiceImpl]. */
 internal class ConfigRPCOpsEventHandler(
@@ -28,48 +31,75 @@ internal class ConfigRPCOpsEventHandler(
     /**
      * Upon receiving configuration from [configReadService], start handling RPC operations related to cluster
      * configuration management.
-     *
-     * @throws ConfigRPCOpsServiceException TODO - Joel - Describe possible exceptions.
      */
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
-            is StartEvent -> processStartEvent()
-            is RegistrationStatusChangeEvent -> processRegistrationStatusChangeEvent(event)
-            is StopEvent -> processStopEvent()
+            is StartEvent -> trackConfigReadService()
+            is RegistrationStatusChangeEvent -> tryRegisteringForConfigUpdates(event)
+            is StopEvent -> stop()
         }
     }
 
-    // TODO - Joel - Describe.
-    private fun processStartEvent() {
+    /** Starts tracking the status of the [ConfigurationReadService]. */
+    private fun trackConfigReadService() {
         configReadServiceRegistration?.close()
         configReadServiceRegistration = configRPCOpsService.coordinator.followStatusChangesByName(
             setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())
         )
     }
 
-    // TODO - Joel - Describe.
-    private fun processRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
+    /** If the [ConfigurationReadService] comes up, registers to receive updates. */
+    private fun tryRegisteringForConfigUpdates(event: RegistrationStatusChangeEvent) {
         if (event.registration == configReadServiceRegistration && event.status == UP) {
             configReadServiceHandle?.close()
-            configReadServiceHandle = configReadService.registerForUpdates(::onConfigurationUpdated)
+            configReadServiceHandle = configReadService.registerForUpdates(::processConfigUpdate)
         }
     }
 
-    // TODO - Joel - Describe.
-    private fun processStopEvent() {
+    /** Shuts down [configRPCOpsService]. */
+    private fun stop() {
         configRPCOps.close()
         configRPCOpsService.coordinator.updateStatus(DOWN)
     }
 
-    private fun onConfigurationUpdated(changedKeys: Set<String>, currentConfigSnapshot: Map<String, SmartConfig>) {
-        if (CONFIG_BOOTSTRAP in changedKeys) {
+    /**
+     * When [BOOT_CONFIG] configuration is received, start [configRPCOps]'s RPC sender.
+     *
+     * When [RPC_CONFIG] configuration is received, check for [CONFIG_KEY_CONFIG_RPC_TIMEOUT_MILLIS] and update the
+     * [configRPCOps]'s request timeout.
+     *
+     * After updating [configRPCOps], sets [configReadService]'s status to UP if [configRPCOps] is running.
+     *
+     * @throws ConfigRPCOpsServiceException If [BOOT_CONFIG] or [RPC_CONFIG] are in the [changedKeys], but no
+     *  corresponding configuration is provided in the [currentConfigSnapshot].
+     */
+    private fun processConfigUpdate(changedKeys: Set<String>, currentConfigSnapshot: Map<String, SmartConfig>) {
+        if (BOOT_CONFIG in changedKeys) {
+            val config = currentConfigSnapshot[BOOT_CONFIG] ?: throw ConfigRPCOpsServiceException(
+                "Was notified of an update to configuration key $BOOT_CONFIG, but no such configuration was found. "
+            )
             try {
-                // TODO - Joel - Handle possible null.
-                configRPCOps.start(currentConfigSnapshot[CONFIG_BOOTSTRAP]!!)
+                configRPCOps.startRPCSender(config)
             } catch (e: Exception) {
                 configRPCOpsService.coordinator.updateStatus(ERROR)
-                throw ConfigRPCOpsServiceException("TODO - Joel", e)
+                throw ConfigRPCOpsServiceException(
+                    "Could not start the RPC sender for incoming HTTP RPC configuration management requests", e
+                )
             }
+        }
+
+        if (RPC_CONFIG in changedKeys) {
+            val config = currentConfigSnapshot[RPC_CONFIG] ?: throw ConfigRPCOpsServiceException(
+                "Was notified of an update to configuration key $RPC_CONFIG, but no such configuration was found. "
+            )
+            try {
+                val timeoutMillis = config.getInt(CONFIG_KEY_CONFIG_RPC_TIMEOUT_MILLIS)
+                configRPCOps.setTimeout(timeoutMillis)
+            } catch (_: ConfigException) {
+            }
+        }
+
+        if (configRPCOpsService.isRunning) {
             configRPCOpsService.coordinator.updateStatus(UP)
         }
     }

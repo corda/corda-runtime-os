@@ -18,6 +18,8 @@ dependencies {
     implementation project(':libs:messaging:messaging')
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-topic-schema'
 
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
     runtimeOnly project(':components:configuration:configuration-rpcops-service-impl')

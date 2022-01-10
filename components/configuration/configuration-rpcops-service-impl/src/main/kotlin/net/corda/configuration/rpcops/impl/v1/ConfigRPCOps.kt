@@ -7,7 +7,7 @@ import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.libs.configuration.SmartConfig
-import java.io.Closeable
+import net.corda.lifecycle.Lifecycle
 
 /** RPC operations for cluster configuration management. */
 @HttpRpcResource(
@@ -15,14 +15,22 @@ import java.io.Closeable
     description = "Cluster Configuration Management APIs",
     path = "config"
 )
-internal interface ConfigRPCOps : RpcOps, Closeable {
-    // TODO - Joel - Describe.
-    fun start(config: SmartConfig)
+internal interface ConfigRPCOps : RpcOps, Lifecycle {
+    /** Starts the RPC sender that handles incoming HTTP RPC requests using the given [config]. */
+    fun startRPCSender(config: SmartConfig)
 
-    /** Updates cluster configuration. */
+    /** Sets the timeout for incoming HTTP RPC requests to [millis]. */
+    fun setTimeout(millis: Int)
+
+    /**
+     * Updates cluster configuration.
+     *
+     * @throws `ConfigRPCOpsServiceException` If the updated configuration could not be published.
+     * @throws `HttpApiException` If the request returns an exceptional response.
+     */
     @HttpRpcPOST(description = "Update cluster configuration", path = "updateConfig")
     fun updateConfig(
         @HttpRpcRequestBodyParameter(description = "Details of the updated configuration", required = true)
-        req: HTTPUpdateConfigRequest
+        request: HTTPUpdateConfigRequest
     ): HTTPUpdateConfigResponse
 }

@@ -14,10 +14,12 @@ dependencies {
     implementation project(':components:configuration:configuration-rpcops-service')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:http-rpc:http-rpc')
+    implementation project(":libs:http-rpc:http-rpc-common")
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"

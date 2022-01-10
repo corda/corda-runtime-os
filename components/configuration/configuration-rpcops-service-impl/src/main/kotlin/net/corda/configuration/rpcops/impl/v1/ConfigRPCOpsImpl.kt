@@ -10,6 +10,7 @@ import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.HttpApiException
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -41,21 +42,32 @@ internal class ConfigRPCOpsImpl @Activate constructor(
 
     override val targetInterface = ConfigRPCOps::class.java
     override val protocolVersion = 1
-    // TODO - Joel - Make this configurable.
-    private val requestTimeout = Duration.ofMillis(10000L)
-    // The RPC sender that handles incoming configuration management requests.
     private var rpcSender: RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>? = null
+    private var requestTimeout: Duration? = null
+    override val isRunning = rpcSender != null && requestTimeout != null
 
-    override fun start(config: SmartConfig) {
+    override fun start() = Unit
+
+    override fun stop() {
+        rpcSender?.close()
+        rpcSender = null
+    }
+
+    override fun startRPCSender(config: SmartConfig) {
         rpcSender?.close()
         rpcSender = publisherFactory.createRPCSender(rpcConfig, config).apply { start() }
     }
 
-    override fun updateConfig(req: HTTPUpdateConfigRequest): HTTPUpdateConfigResponse {
-        // TODO - Joel - Work out how to determine update actor.
-        val resp = sendRequest(req.toRPCRequest("todo - joel"))
+    override fun setTimeout(millis: Int) {
+        this.requestTimeout = Duration.ofMillis(millis.toLong())
+    }
 
-        val status = resp.status
+    override fun updateConfig(request: HTTPUpdateConfigRequest): HTTPUpdateConfigResponse {
+        val actor = CURRENT_RPC_CONTEXT.get().principal
+        val rpcRequest = request.toRPCRequest(actor)
+        val response = sendRequest(rpcRequest)
+        val status = response.status
+
         return if (status is ExceptionEnvelope) {
             throw HttpApiException("${status.errorType}: ${status.errorMessage}", 500)
         } else {
@@ -63,20 +75,22 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         }
     }
 
-    override fun close() {
-        rpcSender?.close()
-        rpcSender = null
-    }
-
     /**
      * Sends the [request] to the configuration management topic on Kafka.
      *
-     * @throws ConfigRPCOpsServiceException If the RPC sender is not started.
-     * @throws Exception If an exception is thrown when attempting to get the future returned by the request.
+     * @throws ConfigRPCOpsServiceException If the updated configuration could not be published.
      */
     private fun sendRequest(request: ConfigurationManagementRequest): ConfigurationManagementResponse {
         val nonNullRPCSender = rpcSender ?: throw ConfigRPCOpsServiceException(
-            "Configuration update request could not be sent as the RPC sender has not been started.")
-        return nonNullRPCSender.sendRequest(request).getOrThrow(requestTimeout)
+            "Configuration update request could not be sent as the RPC sender has not been started."
+        )
+        val nonNullRequestTimeout = requestTimeout ?: throw ConfigRPCOpsServiceException(
+            "Configuration update request could not be sent as the request timeout has not been set."
+        )
+        return try {
+            nonNullRPCSender.sendRequest(request).getOrThrow(nonNullRequestTimeout)
+        } catch (e: Exception) {
+            throw ConfigRPCOpsServiceException("Could not publish updated configuration.", e)
+        }
     }
 }
