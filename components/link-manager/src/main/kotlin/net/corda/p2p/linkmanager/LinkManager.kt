@@ -278,7 +278,6 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                         " Session ${state.sessionId} will not be initiated.")
                 emptyList()
             } else {
-                val records = mutableListOf<Record<String, *>>()
                 listOf(
                     Record(LINK_OUT_TOPIC, generateKey(), state.sessionInitMessage),
                     Record(SESSION_OUT_PARTITIONS, state.sessionId, SessionPartitions(partitions))
