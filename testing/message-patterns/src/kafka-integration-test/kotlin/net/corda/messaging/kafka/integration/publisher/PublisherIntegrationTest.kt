@@ -10,6 +10,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.kafka.integration.IntegrationTestProperties
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.PUBLISHER_TEST_DURABLE_TOPIC1
+import net.corda.messaging.kafka.integration.TopicTemplates.Companion.PUBLISHER_TEST_DURABLE_TOPIC2
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class)
@@ -96,4 +98,41 @@ class PublisherIntegrationTest {
         durableSub.stop()
     }
 
+    @Test
+    fun `publisher can publish records to partitions transactionally successfully from multiple threads`() {
+        publisherConfig = PublisherConfig(CLIENT_ID, 2)
+        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+
+        val recordsWithPartitions = getDemoRecords(PUBLISHER_TEST_DURABLE_TOPIC2, 5, 2).map { 1 to it }
+        val barrier = CyclicBarrier(3)
+        val thread1 = Thread {
+            barrier.await()
+            val futures = publisher.publishToPartition(recordsWithPartitions)
+            futures.map { it.getOrThrow() }
+        }
+        val thread2 = Thread {
+            barrier.await()
+            val futures = publisher.publishToPartition(recordsWithPartitions)
+            futures.map { it.getOrThrow() }
+        }
+        thread1.start()
+        thread2.start()
+        barrier.await()
+        while (thread1.isAlive || thread2.isAlive) {
+            Thread.sleep(100)
+        }
+        publisher.close()
+
+        val latch = CountDownLatch(recordsWithPartitions.size * 2)
+        val durableSub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("$PUBLISHER_TEST_DURABLE_TOPIC2-group", PUBLISHER_TEST_DURABLE_TOPIC2, 1),
+            TestDurableProcessor(latch),
+            kafkaConfig,
+            null
+        )
+        durableSub.start()
+
+        Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS))
+        durableSub.stop()
+    }
 }

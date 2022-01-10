@@ -32,6 +32,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.ExecutionException
 
 class CordaPublisherImplTest {
@@ -115,6 +116,28 @@ class CordaPublisherImplTest {
         verify(producer, times(1)).sendRecords(any())
         verify(producer, times(1)).beginTransaction()
         verify(producer, times(1)).commitTransaction()
+    }
+
+    @Test
+    fun testTransactionPublishFromMultipleThreads() {
+        val barrier = CyclicBarrier(3)
+        val thread1 = Thread {
+            barrier.await()
+            publish(true, listOf(record, record, record))
+        }
+        val thread2 = Thread {
+            barrier.await()
+            publish(true, listOf(record, record, record))
+        }
+        thread1.start()
+        thread2.start()
+        barrier.await()
+        while (thread1.isAlive || thread2.isAlive) {
+            Thread.sleep(100)
+        }
+        verify(producer, times(2)).sendRecords(any())
+        verify(producer, times(2)).beginTransaction()
+        verify(producer, times(2)).commitTransaction()
     }
 
     @Test
