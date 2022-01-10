@@ -42,7 +42,7 @@ class MemberListCachePerformanceTest {
      */
     private companion object {
         const val NUM_THREADS = 6
-        const val NUM_TEST_REPETITIONS = 500
+        const val NUM_TEST_REPETITIONS = 1000
 
         val numOperationsToExecuteArray = arrayOf(1000, 5000, 10_000, 50_000)
         val writeToReadRatios = arrayOf(0.1, 0.2, 0.3, 0.4, 0.5)
