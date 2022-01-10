@@ -295,7 +295,9 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
                 assertEquals(""""Pong for str = value"""", this.ping(TestHealthCheckAPI.PingPongData("value")))
                 assertEquals(listOf(2.0, 3.0, 4.0), this.plusOne(listOf("1", "2", "3")))
                 assertEquals(2L, this.plus(1L))
-                assertThatThrownBy { this.laterAddedCall() }.isInstanceOf(UnsupportedOperationException::class.java)
+                assertThatThrownBy {
+                    this.laterAddedCall()
+                }.isInstanceOf(UnsupportedOperationException::class.java)
             }
         }
     }

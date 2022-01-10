@@ -1,7 +1,7 @@
 package net.corda.virtualnode
 
-import net.corda.comp.kafka.config.write.KafkaConfigWrite
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
+import net.corda.configuration.publish.ConfigPublishService
 import net.corda.cpiinfo.write.CpiInfoWriterComponent
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -54,8 +54,8 @@ class VirtualNodeCli @Activate constructor(
 //    private val virtualNodeInfoWriterComponent: VirtualNodeInfoWriterComponent,
     @Reference(service = SmartConfigFactory::class)
     private val smartConfigFactory: SmartConfigFactory,
-    @Reference(service = KafkaConfigWrite::class)
-    private val configWriter: KafkaConfigWrite,
+    @Reference(service = ConfigPublishService::class)
+    private val configPublishService: ConfigPublishService,
     @Reference(service = KafkaTopicAdmin::class)
     private var topicAdmin: KafkaTopicAdmin
 ) : Application, ConfigPublisher {
@@ -135,7 +135,7 @@ class VirtualNodeCli @Activate constructor(
         if (configurationFile == null)
             return
 
-        configWriter.updateConfig(
+        configPublishService.updateConfig(
             getConfigValue(
                 SYSTEM_ENV_CONFIG_TOPIC_PATH,
                 CONFIG_TOPIC

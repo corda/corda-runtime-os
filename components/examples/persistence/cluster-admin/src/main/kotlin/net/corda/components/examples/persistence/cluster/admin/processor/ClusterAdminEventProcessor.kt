@@ -3,7 +3,6 @@ package net.corda.components.examples.persistence.cluster.admin.processor
 import net.corda.components.examples.persistence.config.admin.ConfigState
 import net.corda.data.poc.persistence.ClusterAdminEvent
 import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.db.admin.LiquibaseSchemaMigrator.Companion.PUBLIC_SCHEMA
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -34,7 +33,7 @@ class ClusterAdminEventProcessor(
                 listOf("migration/db.changelog-master.xml"),
                 classLoader = ConfigState::class.java.classLoader)
         ))
-        schemaMigrator.updateDb(dbConnection, dbChange, PUBLIC_SCHEMA)
+        schemaMigrator.updateDb(dbConnection, dbChange)
         logger.info("${events.map { it.key }} Schema migration completed")
         return emptyList()
     }
