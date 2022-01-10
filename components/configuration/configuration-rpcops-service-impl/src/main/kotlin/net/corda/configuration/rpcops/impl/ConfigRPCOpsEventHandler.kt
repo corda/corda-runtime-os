@@ -63,44 +63,55 @@ internal class ConfigRPCOpsEventHandler(
     }
 
     /**
-     * When [BOOT_CONFIG] configuration is received, start [configRPCOps]'s RPC sender.
+     * When [BOOT_CONFIG] configuration is received, starts [configRPCOps]'s RPC sender.
      *
-     * When [RPC_CONFIG] configuration is received, check for [CONFIG_KEY_CONFIG_RPC_TIMEOUT_MILLIS] and update the
-     * [configRPCOps]'s request timeout.
+     * When [RPC_CONFIG] configuration is received, if [CONFIG_KEY_CONFIG_RPC_TIMEOUT_MILLIS] is in
+     * [currentConfigSnapshot], updates [configRPCOps]'s request timeout.
      *
      * After updating [configRPCOps], sets [configReadService]'s status to UP if [configRPCOps] is running.
      *
      * @throws ConfigRPCOpsServiceException If [BOOT_CONFIG] or [RPC_CONFIG] are in the [changedKeys], but no
-     *  corresponding configuration is provided in the [currentConfigSnapshot].
+     *  corresponding configuration is provided in [currentConfigSnapshot].
      */
     private fun processConfigUpdate(changedKeys: Set<String>, currentConfigSnapshot: Map<String, SmartConfig>) {
-        if (BOOT_CONFIG in changedKeys) {
-            val config = currentConfigSnapshot[BOOT_CONFIG] ?: throw ConfigRPCOpsServiceException(
-                "Was notified of an update to configuration key $BOOT_CONFIG, but no such configuration was found. "
-            )
-            try {
-                configRPCOps.startRPCSender(config)
-            } catch (e: Exception) {
-                configRPCOpsService.coordinator.updateStatus(ERROR)
-                throw ConfigRPCOpsServiceException(
-                    "Could not start the RPC sender for incoming HTTP RPC configuration management requests", e
-                )
-            }
-        }
+        if (BOOT_CONFIG in changedKeys) processBootConfig(currentConfigSnapshot)
+        if (RPC_CONFIG in changedKeys) processRPCConfig(currentConfigSnapshot)
+        if (configRPCOpsService.isRunning) configRPCOpsService.coordinator.updateStatus(UP)
+    }
 
-        if (RPC_CONFIG in changedKeys) {
-            val config = currentConfigSnapshot[RPC_CONFIG] ?: throw ConfigRPCOpsServiceException(
-                "Was notified of an update to configuration key $RPC_CONFIG, but no such configuration was found. "
+    /**
+     * Starts [configRPCOps]'s RPC sender.
+     *
+     * @throws ConfigRPCOpsServiceException If there is no configuration for [BOOT_CONFIG] in [currentConfigSnapshot].
+     */
+    private fun processBootConfig(currentConfigSnapshot: Map<String, SmartConfig>) {
+        val config = currentConfigSnapshot[BOOT_CONFIG] ?: throw ConfigRPCOpsServiceException(
+            "Was notified of an update to configuration key $BOOT_CONFIG, but no such configuration was found. "
+        )
+        try {
+            configRPCOps.createAndStartRPCSender(config)
+        } catch (e: Exception) {
+            configRPCOpsService.coordinator.updateStatus(ERROR)
+            throw ConfigRPCOpsServiceException(
+                "Could not start the RPC sender for incoming HTTP RPC configuration management requests", e
             )
-            try {
-                val timeoutMillis = config.getInt(CONFIG_KEY_CONFIG_RPC_TIMEOUT_MILLIS)
-                configRPCOps.setTimeout(timeoutMillis)
-            } catch (_: ConfigException) {
-            }
         }
+    }
 
-        if (configRPCOpsService.isRunning) {
-            configRPCOpsService.coordinator.updateStatus(UP)
+    /**
+     * If [CONFIG_KEY_CONFIG_RPC_TIMEOUT_MILLIS] is in [currentConfigSnapshot], updates [configRPCOps]'s request
+     * timeout.
+     *
+     * @throws ConfigRPCOpsServiceException If there is no configuration for [RPC_CONFIG] in [currentConfigSnapshot].
+     */
+    private fun processRPCConfig(currentConfigSnapshot: Map<String, SmartConfig>) {
+        val config = currentConfigSnapshot[RPC_CONFIG] ?: throw ConfigRPCOpsServiceException(
+            "Was notified of an update to configuration key $RPC_CONFIG, but no such configuration was found. "
+        )
+        try {
+            val timeoutMillis = config.getInt(CONFIG_KEY_CONFIG_RPC_TIMEOUT_MILLIS)
+            configRPCOps.setTimeout(timeoutMillis)
+        } catch (_: ConfigException) {
         }
     }
 }

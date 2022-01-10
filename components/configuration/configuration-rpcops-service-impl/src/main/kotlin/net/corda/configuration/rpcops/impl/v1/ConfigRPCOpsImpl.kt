@@ -31,7 +31,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
 ) : ConfigRPCOps, PluggableRPCOps<ConfigRPCOps> {
     private companion object {
         // The configuration used for the RPC sender.
-        private val rpcConfig = RPCConfig(
+        private val RPC_CONFIG = RPCConfig(
             GROUP_NAME,
             CLIENT_NAME_HTTP,
             CONFIG_MGMT_REQUEST_TOPIC,
@@ -53,9 +53,9 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         rpcSender = null
     }
 
-    override fun startRPCSender(config: SmartConfig) {
+    override fun createAndStartRPCSender(config: SmartConfig) {
         rpcSender?.close()
-        rpcSender = publisherFactory.createRPCSender(rpcConfig, config).apply { start() }
+        rpcSender = publisherFactory.createRPCSender(RPC_CONFIG, config).apply { start() }
     }
 
     override fun setTimeout(millis: Int) {
@@ -80,9 +80,10 @@ internal class ConfigRPCOpsImpl @Activate constructor(
      *
      * @throws ConfigRPCOpsServiceException If the updated configuration could not be published.
      */
+    @Suppress("ThrowsCount")
     private fun sendRequest(request: ConfigurationManagementRequest): ConfigurationManagementResponse {
         val nonNullRPCSender = rpcSender ?: throw ConfigRPCOpsServiceException(
-            "Configuration update request could not be sent as the RPC sender has not been started."
+            "Configuration update request could not be sent as no RPC sender has been created."
         )
         val nonNullRequestTimeout = requestTimeout ?: throw ConfigRPCOpsServiceException(
             "Configuration update request could not be sent as the request timeout has not been set."
