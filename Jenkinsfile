@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.0') _
+@Library('corda-shared-build-pipeline-steps@driessamyn/no-tick/ensure-everything-is-compiled') _
 
 cordaPipeline(
     nexusAppId: 'flow-worker-5.0',
