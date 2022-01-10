@@ -1,6 +1,6 @@
 package net.corda.p2p.deployment.pods
 
-import net.corda.p2p.deployment.CordaOsDockerDevSecret
+import net.corda.p2p.deployment.DockerSecrets
 import kotlin.random.Random
 
 class Simulator(
@@ -14,9 +14,8 @@ class Simulator(
         ?.toLowerCase()
         ?.replace('_', '-')
         ?: Random.nextInt().toString()
-    override val pullSecrets = listOf(CordaOsDockerDevSecret.name)
     override val image by lazy {
-        "${CordaOsDockerDevSecret.host}/corda-os-app-simulator:$tag"
+        "${DockerSecrets.cordaHost}/corda-os-app-simulator:$tag"
     }
     override val rawData = listOf(
         TextRawData(

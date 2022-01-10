@@ -1,5 +1,6 @@
 package net.corda.p2p.deployment.pods
 
+import net.corda.p2p.deployment.DockerSecrets
 import net.corda.p2p.deployment.Yaml
 
 abstract class Job : Yamlable {
@@ -8,7 +9,6 @@ abstract class Job : Yamlable {
     open val rawData: Collection<RawData<*>> = emptyList()
     open val environmentVariables: Map<String, String> = emptyMap()
     open val command: Collection<String>? = null
-    open val pullSecrets: Collection<String> = emptyList()
     open val labels: Map<String, String> = emptyMap()
 
     override fun yamls(namespaceName: String): Collection<Yaml> {
@@ -36,9 +36,9 @@ abstract class Job : Yamlable {
                     )
                 ),
                 "spec" to mapOf(
-                    "imagePullSecrets" to pullSecrets.map {
-                        mapOf("name" to it)
-                    },
+                    "imagePullSecrets" to listOf(
+                        mapOf("name" to DockerSecrets.name)
+                    ),
                     "restartPolicy" to "Never",
                     "containers" to listOf(
                         mapOf(
