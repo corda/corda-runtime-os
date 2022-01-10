@@ -57,6 +57,7 @@ class HttpRpcServerImpl(
 
 
     override fun start() {
+        println("QQQ B")
         startStopLock.write {
             if (!running) {
                 log.info("Started the server")
@@ -67,6 +68,7 @@ class HttpRpcServerImpl(
     }
 
     override fun stop() {
+        println("QQQ V")
         startStopLock.write {
             if (running) {
                 log.info("Stop the server.")
@@ -77,7 +79,7 @@ class HttpRpcServerImpl(
     }
 
     private fun getResources(rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>): List<Resource> {
-        println("QQQ 1")
+        println("QQQ A")
         log.debug { "Get resources for RPCOps implementations of ${rpcOpsImpls.joinToString()}." }
         var resources = emptyList<Resource>()
         log.trace { "Generating resource model for http rpc" }

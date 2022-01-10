@@ -123,6 +123,8 @@ internal class HttpRpcServerInternal(
     }.apply {
         addRoutes()
         addOpenApiRoute()
+    }.also {
+        println("QQQ server = $it")
     }
 
     //https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
@@ -207,6 +209,7 @@ internal class HttpRpcServerInternal(
                 registerHandlerForRoute(routeInfo, HandlerType.GET)
             }
             resourceProvider.httpPostRoutes.map { routeInfo ->
+                println("QQQ in post $routeInfo...")
                 before(routeInfo.fullPath) {
                     with(configurationsProvider.maxContentLength()) {
                         if (it.contentLength() > this) throw BadRequestResponse(
@@ -311,23 +314,32 @@ internal class HttpRpcServerInternal(
             // We need to set thread context classloader here as
             // `org.eclipse.jetty.websocket.servlet.WebSocketServletFactory.Loader.load` relies on it to perform
             // classloading during `start` method invocation.
+            println("QQQ in start 2")
             val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
+            println("QQQ in start - bundle = $bundle")
             if (bundle != null) {
+                println("QQQ in start 3")
                 bundle.loadClass(WebSocketServletFactory::class.java.name).classLoader.let { classLoader ->
+                    println("QQQ in start 4")
                     executeWithThreadContextClassLoader(classLoader) {
+                        println("QQQ in start 5")
                         server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
                     }
                 }
             } else {
+                println("QQQ in start 6")
                 server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
             }
             log.trace { "Starting the Javalin server completed." }
         } catch (e: Exception) {
+            println("QQQ got error $e")
+            Exception("QQQ", e).printStackTrace(System.out)
             "Error when starting the Javalin server".let {
                 log.error("$it: ${e.message}")
                 throw Exception(it, e)
             }
         } finally {
+            println("QQQ in start 7")
             System.setErr(existingSystemErrStream)
         }
     }

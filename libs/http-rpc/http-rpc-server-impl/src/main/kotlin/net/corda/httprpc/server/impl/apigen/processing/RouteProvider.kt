@@ -100,6 +100,9 @@ internal class RouteInfo(
 
     @Suppress("SpreadOperator")
     fun invokeDelegatedMethod(vararg args: Any?): Any? {
+        println("QQQ invokeDelegatedMethod 1")
+        println("QQQ invokeDelegatedMethod 2 - ${endpoint.invocationMethod.method.name}")
+        println("QQQ invokeDelegatedMethod 3 - ${methodInvoker}")
         log.trace { "Invoke delegated method \"${endpoint.invocationMethod.method.name}\" with args size: ${args.size}." }
         try {
             return methodInvoker.invoke(*args)
@@ -109,7 +112,13 @@ internal class RouteInfo(
                         }
                     }
         } catch (e: InvocationTargetException) {
+            Exception("QQQ invokeDelegatedMethod got error", e).printStackTrace(System.out)
+            e.printStackTrace()
             e.cause?.let { throw it } ?: throw e
+        }
+        catch (e: Exception) {
+            Exception("QQQ invokeDelegatedMethod got another error", e).printStackTrace(System.out)
+            throw e
         }
     }
 
