@@ -1,7 +1,7 @@
 package net.corda.membership.impl.read.cache
 
 import net.corda.virtualnode.HoldingIdentity
-import java.util.Collections
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 /**
  * Interface for classes which are to be used as caches for group member data.
@@ -32,12 +32,27 @@ interface MemberDataCache<T> {
      */
     class Impl<T> : MemberDataCache<T> {
 
-        private val cache: MutableMap<String, T> = Collections.synchronizedMap(mutableMapOf())
+        private val readWriteLock = ReentrantReadWriteLock()
+        private val cache = mutableMapOf<String, T>()
 
-        override fun get(holdingIdentity: HoldingIdentity): T? = cache[holdingIdentity.id]
+        override fun get(holdingIdentity: HoldingIdentity): T? = with(readWriteLock.readLock()) {
+            lock()
+            return try {
+                cache[holdingIdentity.id]
+            } finally {
+                unlock()
+            }
+        }
 
         override fun put(holdingIdentity: HoldingIdentity, data: T) {
-            cache[holdingIdentity.id] = data
+            with(readWriteLock.writeLock()) {
+                lock()
+                try {
+                    cache[holdingIdentity.id] = data
+                } finally {
+                    unlock()
+                }
+            }
         }
     }
 }
