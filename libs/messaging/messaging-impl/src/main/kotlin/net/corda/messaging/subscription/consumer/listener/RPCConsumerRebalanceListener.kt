@@ -3,7 +3,7 @@ package net.corda.messaging.subscription.consumer.listener
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.CordaTopicPartition
-import net.corda.messaging.kafka.utils.FutureTracker
+import net.corda.messaging.utils.FutureTracker
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*

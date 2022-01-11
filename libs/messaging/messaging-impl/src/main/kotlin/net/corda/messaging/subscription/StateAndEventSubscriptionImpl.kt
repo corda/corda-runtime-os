@@ -15,13 +15,13 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.messaging.kafka.utils.getEventsByBatch
-import net.corda.messaging.kafka.utils.toCordaProducerRecords
-import net.corda.messaging.kafka.utils.toRecord
-import net.corda.messaging.kafka.utils.tryGetResult
 import net.corda.messaging.subscription.config.StateAndEventConfig
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
+import net.corda.messaging.utils.getEventsByBatch
+import net.corda.messaging.utils.toCordaProducerRecords
+import net.corda.messaging.utils.toRecord
+import net.corda.messaging.utils.tryGetResult
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.LoggerFactory

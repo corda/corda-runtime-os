@@ -43,7 +43,7 @@ import net.corda.messaging.kafka.integration.processors.TestDurableProcessorStri
 import net.corda.messaging.kafka.integration.processors.TestDurableStringProcessor
 import net.corda.messaging.kafka.integration.processors.TestStateEventProcessor
 import net.corda.messaging.kafka.integration.processors.TestStateEventProcessorStrings
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.MESSAGING_KAFKA
+import net.corda.messaging.properties.ConfigProperties.Companion.MESSAGING_KAFKA
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
