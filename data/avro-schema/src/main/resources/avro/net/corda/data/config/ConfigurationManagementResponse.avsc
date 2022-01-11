@@ -4,21 +4,11 @@
   "namespace": "net.corda.data.config",
   "fields": [
     {
-      "name": "status",
+      "name": "response",
       "type": [
-        "boolean",
+        "net.corda.data.config.Configuration",
         "net.corda.data.ExceptionEnvelope"
       ]
-    },
-    {
-      "name": "currentVersion",
-      "type": ["int", "null"],
-      "doc": "Current cluster database version for the section for which an update was requested."
-    },
-    {
-      "name": "currentConfiguration",
-      "type": ["string", "null"],
-      "doc": "Current cluster database configuration for the section for which an update was requested in JSON format."
     }
   ]
 }
