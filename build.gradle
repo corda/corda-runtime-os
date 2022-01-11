@@ -209,6 +209,13 @@ allprojects {
 
         testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
         classpath = project.sourceSets["integrationTest"].runtimeClasspath
+
+        systemProperty "postgresHost", project.getProperty("postgresHost")
+        systemProperty "postgresDb", project.getProperty("postgresDb")
+        systemProperty "postgresPort", project.getProperty("postgresPort")
+        systemProperty "postgresUser", project.getProperty("postgresUser")
+        systemProperty "postgresPassword", project.getProperty("postgresPassword")
+
         shouldRunAfter tasks.named('test')
     }
 
