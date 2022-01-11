@@ -34,6 +34,7 @@ import org.osgi.service.component.annotations.Reference
  * received will return no results.
  */
 @Component(service = [MembershipGroupReaderProvider::class])
+@Suppress("LongParameterList")
 class MembershipGroupReaderProviderImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     val virtualNodeInfoReadService: VirtualNodeInfoReadService,
