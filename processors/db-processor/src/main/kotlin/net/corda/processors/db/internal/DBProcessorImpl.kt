@@ -66,18 +66,30 @@ class DBProcessorImpl @Activate constructor(
      * @throws DBProcessorException If the cluster database cannot be connected to.
      */
     private fun migrateDatabase(dataSource: DataSource) {
-        val migrationFileLocation = "net/corda/db/schema/config/db.changelog-master.xml"
-        val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
-            ChangeLogResourceFiles(klass.packageName, listOf(migrationFileLocation), klass.classLoader)
+        val dbChanges = listOf(
+            "net/corda/db/schema/config/db.changelog-master.xml",
+            "net/corda/db/schema/rbac/db.changelog-master.xml"
+        ).map {
+            ClassloaderChangeLog(setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
+                ChangeLogResourceFiles(
+                    klass.packageName,
+                    listOf(it),
+                    klass.classLoader
+                )
+            })
         }
-        val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
 
-        try {
-            dataSource.connection.use { connection ->
-                schemaMigrator.updateDb(connection, dbChange)
+        // Applying DB Changes independently as we cannot bundle them into a single change log
+        // since there is a clash on the variables we use like `schema.name` in our Liquibase files
+        // If it is defined once by one file and cannot be re-defined by the following.
+        dbChanges.forEach { dbChange ->
+            try {
+                dataSource.connection.use { connection ->
+                    schemaMigrator.updateDb(connection, dbChange)
+                }
+            } catch (e: SQLException) {
+                throw DBProcessorException("Could not connect to cluster database.", e)
             }
-        } catch (e: SQLException) {
-            throw DBProcessorException("Could not connect to cluster database.", e)
         }
     }
 
