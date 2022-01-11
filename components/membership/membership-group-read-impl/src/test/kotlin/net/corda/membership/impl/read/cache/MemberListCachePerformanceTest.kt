@@ -18,7 +18,6 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.TimeUnit
-import kotlin.ConcurrentModificationException
 
 class MemberListCachePerformanceTest {
     private lateinit var memberListCache: MemberListCache
@@ -46,7 +45,7 @@ class MemberListCachePerformanceTest {
         const val NUM_TEST_REPETITIONS = 1000
 
         val numOperationsToExecuteArray = arrayOf(1000, 5000, 10_000, 50_000)
-        val writeToReadRatios = arrayOf(0.1, 0.2, 0.3, 0.4, 0.5)
+        val writeToReadRatios = arrayOf(0.01, 0.1, 0.2, 0.3, 0.4, 0.5)
 
         const val VERBOSE_OPERATION_OUTPUT = false
         const val PRINT_PROGRESS = true
@@ -56,6 +55,13 @@ class MemberListCachePerformanceTest {
         // If true, the performance test will iterate over the memberlist and read a property from each member
         // to try find concurrency issues with the nested list.
         const val ITERATE_READ_MEMBERLIST = true
+    }
+
+    /**
+     * Set the cache implementation
+     */
+    private fun setUpCacheImplementation() {
+        memberListCache = MemberListCache.Impl()
     }
 
     private val threadFactory = ThreadFactory {
@@ -99,13 +105,6 @@ class MemberListCachePerformanceTest {
 
         println("==== FINAL RESULTS ====")
         printResults(runResults)
-    }
-
-    /**
-     * Set the cache implementation
-     */
-    private fun setUpCache() {
-        memberListCache = MemberListCache.Impl()
     }
 
     /**
@@ -220,9 +219,9 @@ class MemberListCachePerformanceTest {
         for (i in 0 until NUM_TEST_REPETITIONS) {
             val quarter = NUM_TEST_REPETITIONS / 4
             if (i == quarter) println("25% done")
-            if (i == quarter*2) println("50% done")
-            if (i == quarter*3) println("75% done")
-            setUpCache()
+            if (i == quarter * 2) println("50% done")
+            if (i == quarter * 3) println("75% done")
+            setUpCacheImplementation()
             setUpMockObjects()
             setCountDownLatch(numOperationsToExecute)
 
@@ -278,14 +277,23 @@ class MemberListCachePerformanceTest {
             else -> 0
         }
 
+        var writes = 0
+        var reads = 0
+
         val output = CacheOperations((0 until numOperationsToExecute).map {
             if (readOccurrence > 0 && it % readOccurrence < writeToReadRatio) {
+                writes++
                 getOperation(possibleWriteOperations())
             } else {
+                reads++
                 getOperation(possibleReadOperations())
             }
         }.shuffled())
         require(output.size == numOperationsToExecute)
+
+        if (PRINT_PROGRESS_VERBOSE) {
+            println("Prepared $writes write operations and $reads read operations for testing.")
+        }
         return output
     }
 
