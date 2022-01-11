@@ -1,6 +1,6 @@
 package net.corda.membership.grouppolicy
 
-import net.corda.cpiinfo.read.CpiInfoReaderComponent
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
@@ -86,7 +86,7 @@ class GroupPolicyProviderImplTest {
             .registerCallback(any())
     }
 
-    val cpiInfoReader: CpiInfoReaderComponent = mock<CpiInfoReaderComponent>().apply {
+    val cpiInfoReader = mock<CpiInfoReadService>().apply {
         doReturn(cpiMetadata1).whenever(this).get(cpiIdentifier1)
         doReturn(cpiMetadata2).whenever(this).get(cpiIdentifier2)
         doReturn(cpiMetadata3).whenever(this).get(cpiIdentifier3)

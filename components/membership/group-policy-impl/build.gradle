@@ -16,7 +16,7 @@ dependencies {
     implementation project(":libs:membership:membership-impl")
     implementation project(":libs:membership:membership-internal")
     implementation project(":libs:virtual-node:virtual-node-info")
-    implementation project(":components:virtual-node:cpi-info-service-reader")
+    implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":components:virtual-node:virtual-node-info-service-reader")
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.typesafe:config:$typeSafeConfigVersion"

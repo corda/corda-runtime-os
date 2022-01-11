@@ -14,32 +14,32 @@ import org.junit.jupiter.api.assertThrows
 class GroupPolicyFactoryTest {
 
     companion object {
-        const val emptyString = ""
-        const val whitespaceString = "                  "
-        const val invalidFormatGroupPolicy = "{{[{[{[{[{[{[ \"groupId\": \"ABC123\" }"
+        const val EMPTY_STRING = ""
+        const val WHITESPACE_STRING = "                  "
+        const val INVALID_FORMAT_GROUP_POLICY = "{{[{[{[{[{[{[ \"groupId\": \"ABC123\" }"
 
-        const val x500Name = "x500Name"
-        const val keyAlias = "keyAlias"
-        const val memberStatus = "memberStatus"
-        const val endpointUrl1 = "endpointUrl-1"
-        const val endpointProtocol1 = "endpointProtocol-1"
-        const val endpointUrl2 = "endpointUrl-2"
-        const val endpointProtocol2 = "endpointProtocol-2"
-        const val rotatedKeyAlias1 = "rotatedKeyAlias-1"
-        const val rotatedKeyAlias2 = "rotatedKeyAlias-2"
-        const val fileFormatVersion = "fileFormatVersion"
-        const val groupId = "groupId"
-        const val registrationProtocolFactory = "registrationProtocolFactory"
-        const val synchronisationProtocolFactory = "synchronisationProtocolFactory"
-        const val protocolParameters = "protocolParameters"
-        const val staticMemberTemplate = "staticMemberTemplate"
-        const val identityPKI = "identityPKI"
-        const val identityKeyPolicy = "identityKeyPolicy"
-        const val identityTrustStore = "identityTrustStore"
-        const val tlsTrustStore = "tlsTrustStore"
-        const val mgmInfo = "mgmInfo"
-        const val cipherSuite = "cipherSuite"
-        const val roles = "roles"
+        const val X500_NAME = "x500Name"
+        const val KEY_ALIAS = "keyAlias"
+        const val MEMBER_STATUS = "memberStatus"
+        const val ENDPOINT_URL_1 = "endpointUrl-1"
+        const val ENDPOINT_PROTOCOL_1 = "endpointProtocol-1"
+        const val ENDPOINT_URL_2 = "endpointUrl-2"
+        const val ENDPOINT_PROTOCOL_2 = "endpointProtocol-2"
+        const val ROTATED_KEY_ALIAS_1 = "rotatedKeyAlias-1"
+        const val ROTATED_KEY_ALIAS_2 = "rotatedKeyAlias-2"
+        const val FILE_FORMAT_VERSION = "fileFormatVersion"
+        const val GROUP_ID = "groupId"
+        const val REGISTRATION_PROTOCOL_FACTORY = "registrationProtocolFactory"
+        const val SYNC_PROTOCOL_FACTORY = "synchronisationProtocolFactory"
+        const val PROTOCOL_PARAMETERS = "protocolParameters"
+        const val STATIC_MEMBER_TEMPLATE = "staticMemberTemplate"
+        const val IDENTITY_PKI = "identityPKI"
+        const val IDENTITY_KEY_POLICY = "identityKeyPolicy"
+        const val IDENTITY_TRUST_STORE = "identityTrustStore"
+        const val TLS_TRUST_STORE = "tlsTrustStore"
+        const val MGM_INFO = "mgmInfo"
+        const val CIPHER_SUITE = "cipherSuite"
+        const val ROLES = "roles"
     }
 
     private lateinit var groupPolicyFactory: GroupPolicyFactory
@@ -52,17 +52,17 @@ class GroupPolicyFactoryTest {
 
     @Test
     fun `Empty string as group policy throws corda runtime exception`() {
-        assertThrows<CordaRuntimeException> { groupPolicyFactory.createGroupPolicy(emptyString) }
+        assertThrows<CordaRuntimeException> { groupPolicyFactory.createGroupPolicy(EMPTY_STRING) }
     }
 
     @Test
     fun `Whitespace string as group policy throws corda runtime exception`() {
-        assertThrows<CordaRuntimeException> { groupPolicyFactory.createGroupPolicy(whitespaceString) }
+        assertThrows<CordaRuntimeException> { groupPolicyFactory.createGroupPolicy(WHITESPACE_STRING) }
     }
 
     @Test
     fun `Invalid format group policy throws corda runtime exception`() {
-        assertThrows<CordaRuntimeException> { groupPolicyFactory.createGroupPolicy(invalidFormatGroupPolicy) }
+        assertThrows<CordaRuntimeException> { groupPolicyFactory.createGroupPolicy(INVALID_FORMAT_GROUP_POLICY) }
     }
 
     @Test
@@ -76,66 +76,66 @@ class GroupPolicyFactoryTest {
         val result = groupPolicyFactory.createGroupPolicy(getSampleGroupPolicy())
 
         // Top level properties
-        assertEquals(1, result[fileFormatVersion])
-        assertEquals(testGroupId, result[groupId])
-        assertEquals("net.corda.v5.mgm.MGMRegistrationProtocolFactory", result[registrationProtocolFactory])
-        assertEquals("net.corda.v5.mgm.MGMSynchronisationProtocolFactory", result[synchronisationProtocolFactory])
-        assertTrue(result[protocolParameters] is Map<*, *>)
-        assertTrue(result[staticMemberTemplate] is List<*>)
+        assertEquals(1, result[FILE_FORMAT_VERSION])
+        assertEquals(testGroupId, result[GROUP_ID])
+        assertEquals("net.corda.v5.mgm.MGMRegistrationProtocolFactory", result[REGISTRATION_PROTOCOL_FACTORY])
+        assertEquals("net.corda.v5.mgm.MGMSynchronisationProtocolFactory", result[SYNC_PROTOCOL_FACTORY])
+        assertTrue(result[PROTOCOL_PARAMETERS] is Map<*, *>)
+        assertTrue(result[STATIC_MEMBER_TEMPLATE] is List<*>)
 
         // Protocol parameters
-        val protocolParameters = result[protocolParameters] as Map<*, *>
+        val protocolParameters = result[PROTOCOL_PARAMETERS] as Map<*, *>
         assertEquals(7, protocolParameters.size)
-        assertEquals("Standard", protocolParameters[identityPKI])
-        assertEquals("Combined", protocolParameters[identityKeyPolicy])
+        assertEquals("Standard", protocolParameters[IDENTITY_PKI])
+        assertEquals("Combined", protocolParameters[IDENTITY_KEY_POLICY])
 
-        assertTrue(protocolParameters[identityTrustStore] is List<*>)
-        assertEquals(2, (protocolParameters[identityTrustStore] as List<*>).size)
+        assertTrue(protocolParameters[IDENTITY_TRUST_STORE] is List<*>)
+        assertEquals(2, (protocolParameters[IDENTITY_TRUST_STORE] as List<*>).size)
 
-        assertTrue(protocolParameters[tlsTrustStore] is List<*>)
-        assertEquals(3, (protocolParameters[tlsTrustStore] as List<*>).size)
+        assertTrue(protocolParameters[TLS_TRUST_STORE] is List<*>)
+        assertEquals(3, (protocolParameters[TLS_TRUST_STORE] as List<*>).size)
 
-        assertTrue(protocolParameters[mgmInfo] is Map<*, *>)
-        assertEquals(9, (protocolParameters[mgmInfo] as Map<*, *>).size)
+        assertTrue(protocolParameters[MGM_INFO] is Map<*, *>)
+        assertEquals(9, (protocolParameters[MGM_INFO] as Map<*, *>).size)
 
-        assertTrue(protocolParameters[cipherSuite] is Map<*, *>)
-        assertEquals(6, (protocolParameters[cipherSuite] as Map<*, *>).size)
+        assertTrue(protocolParameters[CIPHER_SUITE] is Map<*, *>)
+        assertEquals(6, (protocolParameters[CIPHER_SUITE] as Map<*, *>).size)
 
-        assertTrue(protocolParameters[roles] is Map<*, *>)
-        assertEquals(2, (protocolParameters[roles] as Map<*, *>).size)
+        assertTrue(protocolParameters[ROLES] is Map<*, *>)
+        assertEquals(2, (protocolParameters[ROLES] as Map<*, *>).size)
 
         // Static member template
-        val staticMemberTemplate = result[staticMemberTemplate] as List<*>
+        val staticMemberTemplate = result[STATIC_MEMBER_TEMPLATE] as List<*>
         assertEquals(3, staticMemberTemplate.size)
 
         val alice: Map<String, String> = uncheckedCast(staticMemberTemplate[0])
         assertEquals(6, alice.size)
-        assertEquals(alice[x500Name], "C=GB, L=London, O=Alice")
-        assertEquals(alice[keyAlias], "alice-alias")
-        assertEquals(alice[rotatedKeyAlias1], "alice-historic-alias-1")
-        assertEquals(alice[memberStatus], "ACTIVE")
-        assertEquals(alice[endpointUrl1], "https://alice.corda5.r3.com:10000")
-        assertEquals(alice[endpointProtocol1], 1)
+        assertEquals(alice[X500_NAME], "C=GB, L=London, O=Alice")
+        assertEquals(alice[KEY_ALIAS], "alice-alias")
+        assertEquals(alice[ROTATED_KEY_ALIAS_1], "alice-historic-alias-1")
+        assertEquals(alice[MEMBER_STATUS], "ACTIVE")
+        assertEquals(alice[ENDPOINT_URL_1], "https://alice.corda5.r3.com:10000")
+        assertEquals(alice[ENDPOINT_PROTOCOL_1], 1)
 
         val bob: Map<String, String> = uncheckedCast(staticMemberTemplate[1])
         assertEquals(7, bob.size)
-        assertEquals(bob[x500Name], "C=GB, L=London, O=Bob")
-        assertEquals(bob[keyAlias], "bob-alias")
-        assertEquals(bob[rotatedKeyAlias1], "bob-historic-alias-1")
-        assertEquals(bob[rotatedKeyAlias2], "bob-historic-alias-2")
-        assertEquals(bob[memberStatus], "ACTIVE")
-        assertEquals(bob[endpointUrl1], "https://bob.corda5.r3.com:10000")
-        assertEquals(bob[endpointProtocol1], 1)
+        assertEquals(bob[X500_NAME], "C=GB, L=London, O=Bob")
+        assertEquals(bob[KEY_ALIAS], "bob-alias")
+        assertEquals(bob[ROTATED_KEY_ALIAS_1], "bob-historic-alias-1")
+        assertEquals(bob[ROTATED_KEY_ALIAS_2], "bob-historic-alias-2")
+        assertEquals(bob[MEMBER_STATUS], "ACTIVE")
+        assertEquals(bob[ENDPOINT_URL_1], "https://bob.corda5.r3.com:10000")
+        assertEquals(bob[ENDPOINT_PROTOCOL_1], 1)
 
         val charlie: Map<String, String> = uncheckedCast(staticMemberTemplate[2])
         assertEquals(7, charlie.size)
-        assertEquals(charlie[x500Name], "C=GB, L=London, O=Charlie")
-        assertEquals(charlie[keyAlias], "charlie-alias")
-        assertEquals(charlie[memberStatus], "SUSPENDED")
-        assertEquals(charlie[endpointUrl1], "https://charlie.corda5.r3.com:10000")
-        assertEquals(charlie[endpointProtocol1], 1)
-        assertEquals(charlie[endpointUrl2], "https://charlie-dr.corda5.r3.com:10001")
-        assertEquals(charlie[endpointProtocol2], 1)
+        assertEquals(charlie[X500_NAME], "C=GB, L=London, O=Charlie")
+        assertEquals(charlie[KEY_ALIAS], "charlie-alias")
+        assertEquals(charlie[MEMBER_STATUS], "SUSPENDED")
+        assertEquals(charlie[ENDPOINT_URL_1], "https://charlie.corda5.r3.com:10000")
+        assertEquals(charlie[ENDPOINT_PROTOCOL_1], 1)
+        assertEquals(charlie[ENDPOINT_URL_2], "https://charlie-dr.corda5.r3.com:10001")
+        assertEquals(charlie[ENDPOINT_PROTOCOL_2], 1)
     }
 
     private fun getSampleGroupPolicy(): String {

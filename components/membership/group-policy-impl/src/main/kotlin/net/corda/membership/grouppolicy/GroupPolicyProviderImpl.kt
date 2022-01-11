@@ -1,6 +1,6 @@
 package net.corda.membership.grouppolicy
 
-import net.corda.cpiinfo.read.CpiInfoReaderComponent
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -26,8 +26,8 @@ import java.util.Collections
 class GroupPolicyProviderImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReaderComponent::class)
     private val virtualNodeInfoReader: VirtualNodeInfoReaderComponent,
-    @Reference(service = CpiInfoReaderComponent::class)
-    private val cpiInfoReader: CpiInfoReaderComponent,
+    @Reference(service = CpiInfoReadService::class)
+    private val cpiInfoReader: CpiInfoReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Lifecycle, GroupPolicyProvider {
@@ -73,7 +73,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      * [VirtualNodeInfoReaderComponent] is used to get the [VirtualNodeInfo], unless provided as a parameter. It may be
      * the case in a virtual node info callback where we are given the changed virtual node info.
      *
-     * [CpiInfoReaderComponent] is used to get the CPI metadata containing the group policy for the CPI installed on
+     * [CpiInfoReadService] is used to get the CPI metadata containing the group policy for the CPI installed on
      * the virtual node.
      *
      * The group policy is cached to simplify lookups later.
@@ -117,7 +117,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         registrationHandle = coordinator.followStatusChangesByName(
             setOf(
                 LifecycleCoordinatorName.forComponent<VirtualNodeInfoReaderComponent>(),
-                LifecycleCoordinatorName.forComponent<CpiInfoReaderComponent>()
+                LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
             )
         )
     }
