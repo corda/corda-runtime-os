@@ -1,7 +1,5 @@
 package net.corda.messaging.kafka.integration
 
-import java.util.UUID
-
 class TopicTemplates {
     companion object {
         const val TEST_TOPIC_PREFIX  = "testPrefix"
@@ -39,7 +37,16 @@ class TopicTemplates {
         const val PUBLISHER_TEST_DURABLE_TOPIC1  = "PublisherTestDurableTopic1"
         const val PUBLISHER_TEST_DURABLE_TOPIC1_TEMPLATE = """topics = [ 
                     { 
-                        topicName = "$TEST_TOPIC_PREFIX$DURABLE_TOPIC1" 
+                        topicName = "$TEST_TOPIC_PREFIX$PUBLISHER_TEST_DURABLE_TOPIC1" 
+                        numPartitions = 2 
+                        replicationFactor = 3 
+                    } 
+                ]"""
+
+        const val PUBLISHER_TEST_DURABLE_TOPIC2  = "PublisherTestDurableTopic2"
+        const val PUBLISHER_TEST_DURABLE_TOPIC2_TEMPLATE = """topics = [ 
+                    { 
+                        topicName = "$TEST_TOPIC_PREFIX$PUBLISHER_TEST_DURABLE_TOPIC2" 
                         numPartitions = 2 
                         replicationFactor = 3 
                     } 
