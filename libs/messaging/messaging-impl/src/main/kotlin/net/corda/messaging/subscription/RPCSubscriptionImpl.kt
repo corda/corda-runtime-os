@@ -122,17 +122,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc consumer.  Attempt: $attempts" }
-                producerBuilder.createProducer(config.getConfig(ConfigProperties.KAFKA_PRODUCER)).use { producer ->
-                    cordaConsumerBuilder.createRPCConsumer(
-                        config.getConfig(KAFKA_CONSUMER),
-                        String::class.java,
-                        RPCRequest::class.java
-                    ).use {
-                        it.subscribe(topic)
-                        lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
-                        pollAndProcessRecords(it, producer)
-                    }
-                }
+                createProducerConsumerAndStartPolling()
                 attempts = 0
             } catch (ex: Exception) {
                 when (ex) {
@@ -148,6 +138,20 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             }
         }
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+    }
+
+    private fun createProducerConsumerAndStartPolling() {
+        producerBuilder.createProducer(config.getConfig(ConfigProperties.KAFKA_PRODUCER)).use { producer ->
+            cordaConsumerBuilder.createRPCConsumer(
+                config.getConfig(KAFKA_CONSUMER),
+                String::class.java,
+                RPCRequest::class.java
+            ).use {
+                it.subscribe(topic)
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+                pollAndProcessRecords(it, producer)
+            }
+        }
     }
 
     private fun pollAndProcessRecords(consumer: CordaConsumer<String, RPCRequest>, producer: CordaProducer) {
