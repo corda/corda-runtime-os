@@ -28,7 +28,8 @@ internal interface ConfigRPCOps : RpcOps, Lifecycle {
      * @throws `ConfigRPCOpsServiceException` If the updated configuration could not be published.
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
-    @HttpRpcPOST(description = "Update cluster configuration", path = "updateConfig")
+    @HttpRpcPOST(description = "Update cluster configuration", path = "config")
+    // TODO - Joel - Update documentation.
     fun updateConfig(
         @HttpRpcRequestBodyParameter(description = "Details of the updated configuration", required = true)
         request: HTTPUpdateConfigRequest

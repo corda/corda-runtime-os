@@ -86,7 +86,7 @@ internal class ConfigWriterProcessor(
             return
         }
 
-        respFuture.complete(ConfigurationManagementResponse(true))
+        respFuture.complete(ConfigurationManagementResponse(config))
     }
 
     /**

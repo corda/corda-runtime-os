@@ -6,6 +6,7 @@ import net.corda.configuration.rpcops.impl.GROUP_NAME
 import net.corda.configuration.rpcops.impl.v1.types.HTTPUpdateConfigRequest
 import net.corda.configuration.rpcops.impl.v1.types.HTTPUpdateConfigResponse
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.httprpc.PluggableRPCOps
@@ -65,13 +66,12 @@ internal class ConfigRPCOpsImpl @Activate constructor(
     override fun updateConfig(request: HTTPUpdateConfigRequest): HTTPUpdateConfigResponse {
         val actor = CURRENT_RPC_CONTEXT.get().principal
         val rpcRequest = request.toRPCRequest(actor)
-        val response = sendRequest(rpcRequest)
-        val status = response.status
+        val resp = sendRequest(rpcRequest)
 
-        return if (status is ExceptionEnvelope) {
-            throw HttpApiException("${status.errorType}: ${status.errorMessage}", 500)
-        } else {
-            HTTPUpdateConfigResponse(true)
+        return when (val response = resp.response) {
+            is ExceptionEnvelope -> throw HttpApiException("${response.errorType}: ${response.errorMessage}", 500)
+            is Configuration -> HTTPUpdateConfigResponse(response.toString())
+            else -> throw HttpApiException("Unexpected response type: ${response::class.java}", 500)
         }
     }
 

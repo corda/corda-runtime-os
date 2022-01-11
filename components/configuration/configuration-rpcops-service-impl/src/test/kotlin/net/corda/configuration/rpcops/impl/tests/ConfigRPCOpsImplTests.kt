@@ -6,6 +6,7 @@ import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsImpl
 import net.corda.configuration.rpcops.impl.v1.types.HTTPUpdateConfigRequest
 import net.corda.configuration.rpcops.impl.v1.types.HTTPUpdateConfigResponse
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.httprpc.exception.HttpApiException
@@ -26,19 +27,23 @@ import java.util.concurrent.CompletableFuture
 /** Tests of [ConfigRPCOpsImpl]. */
 class ConfigRPCOpsImplTests {
     companion object {
+        private const val actor = "test_principal"
+
         @Suppress("Unused")
         @JvmStatic
         @BeforeAll
         fun setRPCContext() {
             val rpcAuthContext = mock<RpcAuthContext>().apply {
-                whenever(principal).thenReturn("test_principal")
+                whenever(principal).thenReturn(actor)
             }
             CURRENT_RPC_CONTEXT.set(rpcAuthContext)
         }
     }
 
     private val request = HTTPUpdateConfigRequest("section", 999, "a=b", 888)
-    private val successResponse = HTTPUpdateConfigResponse(true)
+    private val config = Configuration(request.config, request.version.toString())
+    private val successFuture = CompletableFuture.supplyAsync { ConfigurationManagementResponse(config) }
+    private val successResponse = HTTPUpdateConfigResponse(config.toString())
 
     @Test
     fun `createAndStartRPCSender starts new RPC sender`() {
@@ -77,11 +82,11 @@ class ConfigRPCOpsImplTests {
         configRPCOps.setTimeout(1000)
         configRPCOps.updateConfig(request)
 
-        verify(rpcSender).sendRequest(request.toRPCRequest("test_principal"))
+        verify(rpcSender).sendRequest(request.toRPCRequest(actor))
     }
 
     @Test
-    fun `updateConfig returns HTTPUpdateConfigResponse if response status is success`() {
+    fun `updateConfig returns HTTPUpdateConfigResponse if response is success`() {
         val (_, configRPCOps) = getConfigRPCOps()
 
         configRPCOps.createAndStartRPCSender(mock())
@@ -91,7 +96,7 @@ class ConfigRPCOpsImplTests {
     }
 
     @Test
-    fun `updateConfig throws HttpApiException if response status is failure`() {
+    fun `updateConfig throws HttpApiException if response is failure`() {
         val response = ConfigurationManagementResponse(ExceptionEnvelope("ErrorType", "ErrorMessage."))
         val future = CompletableFuture.supplyAsync { response }
 
@@ -104,6 +109,20 @@ class ConfigRPCOpsImplTests {
         }
 
         assertEquals("ErrorType: ErrorMessage.", e.message)
+        assertEquals(500, e.statusCode)
+    }
+
+    @Test
+    fun `updateConfig throws HttpApiException if response is unrecognised`() {
+        val (_, configRPCOps) = getConfigRPCOps(CompletableFuture.supplyAsync { ConfigurationManagementResponse(Any()) })
+
+        configRPCOps.createAndStartRPCSender(mock())
+        configRPCOps.setTimeout(1000)
+        val e = assertThrows<HttpApiException> {
+            configRPCOps.updateConfig(request)
+        }
+
+        assertEquals("Unexpected response type: class java.lang.Object", e.message)
         assertEquals(500, e.statusCode)
     }
 
@@ -153,7 +172,7 @@ class ConfigRPCOpsImplTests {
 
     /** Returns a [ConfigRPCOps] where the RPC sender returns [future] in response to any RPC requests. */
     private fun getConfigRPCOps(
-        future: CompletableFuture<ConfigurationManagementResponse> = CompletableFuture.supplyAsync { mock() }
+        future: CompletableFuture<ConfigurationManagementResponse> = successFuture
     ): Pair<RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>, ConfigRPCOps> {
 
         val rpcSender = mock<RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>>().apply {

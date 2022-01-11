@@ -39,8 +39,7 @@ class RPCProcessorImpl @Activate constructor(
 
         configRPCOpsService.start()
 
-        // TODO - Joel - How should I set the instance IDs?
-        val publisherConfig = PublisherConfig(CONFIG_CLIENT_RPC_PROCESSOR, 999)
+        val publisherConfig = PublisherConfig(CONFIG_CLIENT_RPC_PROCESSOR, 1)
         val publisher = publisherFactory.createPublisher(publisherConfig, config)
         publisher.start()
         val record = Record(

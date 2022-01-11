@@ -34,7 +34,6 @@ internal class ConfigEntityRepository(private val entityManagerFactory: EntityMa
             val updatedConfig = existingConfig?.apply { update(newConfig) } ?: newConfig
 
             if (req.version != updatedConfig.version) {
-                // TODO - Joel - Remove this when my fix is merged.
                 entityManager.transaction.setRollbackOnly()
                 throw WrongVersionException(
                     "The request specified a version of ${req.version}, but the current version in the database is " +
