@@ -10,6 +10,7 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation project(":libs:membership:membership-identity-impl")
     implementation project(":libs:membership:membership-internal")
     implementation project(":libs:membership:membership-impl")
     implementation project(":libs:messaging:messaging")
@@ -18,11 +19,13 @@ dependencies {
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:crypto:crypto-service")
 
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
     implementation "net.corda:corda-membership"
     implementation "net.corda:corda-membership-identity"
+    api "net.corda:corda-membership-conversion"
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.slf4j:slf4j-api"

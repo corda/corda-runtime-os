@@ -1,6 +1,7 @@
 package net.corda.membership.impl.read.component
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.service.CryptoFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -43,7 +44,9 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     val subscriptionFactory: SubscriptionFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    val coordinatorFactory: LifecycleCoordinatorFactory
+    val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = CryptoFactory::class)
+    val cryptoFactory: CryptoFactory
 ) : MembershipGroupReaderProvider, Lifecycle {
 
     companion object {
@@ -59,7 +62,8 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     // Membership group topic subscriptions
     private val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
         subscriptionFactory,
-        membershipGroupReadCache
+        membershipGroupReadCache,
+        cryptoFactory.cipherSchemeMetadata
     )
 
     // Handler for lifecycle events.

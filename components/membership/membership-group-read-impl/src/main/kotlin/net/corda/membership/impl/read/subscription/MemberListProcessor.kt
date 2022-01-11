@@ -1,27 +1,61 @@
 package net.corda.membership.impl.read.subscription
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.SignedMemberInfo
+import net.corda.membership.conversion.PropertyConverterImpl
+import net.corda.membership.identity.MGMContextImpl
+import net.corda.membership.identity.MemberContextImpl
+import net.corda.membership.identity.MemberInfoExtension.Companion.groupId
+import net.corda.membership.identity.converter.EndpointInfoConverter
+import net.corda.membership.identity.converter.PublicKeyConverter
+import net.corda.membership.identity.toMemberInfo
+import net.corda.membership.identity.toSortedMap
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.virtualnode.HoldingIdentity
 
 /**
  * Processor for handling updates to the member list topic.
  * On each update the member list cache should be updated so that other services can access the latest data.
  */
 class MemberListProcessor(
-    private val membershipGroupReadCache: MembershipGroupReadCache
+    private val membershipGroupReadCache: MembershipGroupReadCache,
+    private val keyEncodingService: KeyEncodingService,
 ) : CompactedProcessor<String, SignedMemberInfo> {
     override val keyClass: Class<String>
         get() = String::class.java
     override val valueClass: Class<SignedMemberInfo>
         get() = SignedMemberInfo::class.java
+    private val converter = PropertyConverterImpl(
+        listOf(
+            EndpointInfoConverter(),
+            PublicKeyConverter(keyEncodingService),
+        )
+    )
 
     /**
      * Populate the member list cache on initial snapshot.
      */
     override fun onSnapshot(currentData: Map<String, SignedMemberInfo>) {
-        TODO("Not yet implemented")
+        currentData.forEach { (_, signedMemberInfo) ->
+            toMemberInfo(
+                MemberContextImpl(
+                    KeyValuePairList.fromByteBuffer(signedMemberInfo.memberContext).toSortedMap(),
+                    converter
+                ),
+                MGMContextImpl(
+                    KeyValuePairList.fromByteBuffer(signedMemberInfo.mgmContext).toSortedMap(),
+                    converter
+                )
+            ).apply {
+                membershipGroupReadCache.memberListCache.put(
+                    HoldingIdentity(this.name.toString(), this.groupId),
+                    this
+                )
+            }
+        }
     }
 
     /**
@@ -32,6 +66,20 @@ class MemberListProcessor(
         oldValue: SignedMemberInfo?,
         currentData: Map<String, SignedMemberInfo>
     ) {
-        TODO("Not yet implemented")
+        toMemberInfo(
+            MemberContextImpl(
+                KeyValuePairList.fromByteBuffer(newRecord.value!!.memberContext).toSortedMap(),
+                converter
+            ),
+            MGMContextImpl(
+                KeyValuePairList.fromByteBuffer(newRecord.value!!.mgmContext).toSortedMap(),
+                converter
+            )
+        ).apply {
+            membershipGroupReadCache.memberListCache.put(
+                HoldingIdentity(this.name.toString(), this.groupId),
+                this
+            )
+        }
     }
 }
