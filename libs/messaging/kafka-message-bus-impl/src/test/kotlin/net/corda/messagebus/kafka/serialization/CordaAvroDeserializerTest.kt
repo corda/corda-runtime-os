@@ -1,7 +1,6 @@
-package net.corda.messaging.kafka.subscription.net.corda.messagebus.kafka.serialization
+package net.corda.messagebus.kafka.serialization
 
 import net.corda.data.crypto.SecureHash
-import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.common.serialization.StringSerializer
