@@ -12,7 +12,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.GroupPolicy
-import net.corda.membership.grouppolicy.factory.GroupPolicyFactory
+import net.corda.membership.grouppolicy.factory.GroupPolicyParser
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -20,7 +20,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReaderComponent
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [GroupPolicyProvider::class])
 class GroupPolicyProviderImpl @Activate constructor(
@@ -35,7 +35,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     private var virtualNodeInfoCallbackHandle: AutoCloseable? = null
     private var registrationHandle: AutoCloseable? = null
 
-    private val groupPolicyFactory = GroupPolicyFactory()
+    private val groupPolicyFactory = GroupPolicyParser()
 
     private val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy>
         get() = _groupPolicies ?: throw CordaRuntimeException(
@@ -92,7 +92,7 @@ class GroupPolicyProviderImpl @Activate constructor(
             ?.cpiIdentifier
             ?.let { cpiInfoReader.get(it) }
         return groupPolicyFactory
-            .createGroupPolicy(metadata?.groupPolicy)
+            .parse(metadata?.groupPolicy)
             .apply { storeGroupPolicy(holdingIdentity, this) }
     }
 
@@ -148,7 +148,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      * component status.
      */
     private fun setStatusToUp(coordinator: LifecycleCoordinator) {
-        _groupPolicies = Collections.synchronizedMap(mutableMapOf())
+        _groupPolicies = ConcurrentHashMap()
 
         /**
          * Register callback so that if a holding identity modifies their virtual node information, the group policy

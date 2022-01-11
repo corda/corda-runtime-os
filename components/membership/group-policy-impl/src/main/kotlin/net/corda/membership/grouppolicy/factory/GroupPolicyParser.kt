@@ -7,14 +7,14 @@ import net.corda.membership.impl.GroupPolicyImpl
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 
-class GroupPolicyFactory {
+class GroupPolicyParser {
     companion object {
         private val logger = contextLogger()
         const val EMPTY_GROUP_POLICY = "GroupPolicy file is empty."
         const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed."
     }
 
-    fun createGroupPolicy(groupPolicyJson: String?): GroupPolicy {
+    fun parse(groupPolicyJson: String?): GroupPolicy {
         return GroupPolicyImpl(
             try {
                 if (groupPolicyJson.isNullOrBlank()) {

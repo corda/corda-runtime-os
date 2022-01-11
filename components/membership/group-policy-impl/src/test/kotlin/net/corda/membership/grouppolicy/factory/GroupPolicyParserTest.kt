@@ -9,9 +9,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 /**
- * Unit tests for [GroupPolicyFactory]
+ * Unit tests for [GroupPolicyParser]
  */
-class GroupPolicyFactoryTest {
+class GroupPolicyParserTest {
 
     companion object {
         const val EMPTY_STRING = ""
@@ -42,38 +42,38 @@ class GroupPolicyFactoryTest {
         const val ROLES = "roles"
     }
 
-    private lateinit var groupPolicyFactory: GroupPolicyFactory
+    private lateinit var groupPolicyParser: GroupPolicyParser
     private val testGroupId = "ABC123"
 
     @BeforeEach
     fun setUp() {
-        groupPolicyFactory = GroupPolicyFactory()
+        groupPolicyParser = GroupPolicyParser()
     }
 
     @Test
     fun `Empty string as group policy throws corda runtime exception`() {
-        assertThrows<CordaRuntimeException> { groupPolicyFactory.createGroupPolicy(EMPTY_STRING) }
+        assertThrows<CordaRuntimeException> { groupPolicyParser.parse(EMPTY_STRING) }
     }
 
     @Test
     fun `Whitespace string as group policy throws corda runtime exception`() {
-        assertThrows<CordaRuntimeException> { groupPolicyFactory.createGroupPolicy(WHITESPACE_STRING) }
+        assertThrows<CordaRuntimeException> { groupPolicyParser.parse(WHITESPACE_STRING) }
     }
 
     @Test
     fun `Invalid format group policy throws corda runtime exception`() {
-        assertThrows<CordaRuntimeException> { groupPolicyFactory.createGroupPolicy(INVALID_FORMAT_GROUP_POLICY) }
+        assertThrows<CordaRuntimeException> { groupPolicyParser.parse(INVALID_FORMAT_GROUP_POLICY) }
     }
 
     @Test
     fun `Parse group policy - verify interface properties`() {
-        val result = groupPolicyFactory.createGroupPolicy(getSampleGroupPolicy())
+        val result = groupPolicyParser.parse(getSampleGroupPolicy())
         assertEquals(testGroupId, result.groupId)
     }
 
     @Test
     fun `Parse group policy - verify internal map`() {
-        val result = groupPolicyFactory.createGroupPolicy(getSampleGroupPolicy())
+        val result = groupPolicyParser.parse(getSampleGroupPolicy())
 
         // Top level properties
         assertEquals(1, result[FILE_FORMAT_VERSION])
