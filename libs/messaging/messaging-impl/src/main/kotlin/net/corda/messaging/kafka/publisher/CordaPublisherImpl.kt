@@ -127,6 +127,7 @@ class CordaPublisherImpl(
         }
     }
 
+    @Synchronized
     private fun executeInTransaction(block: (CordaProducer) -> Unit): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()
 
