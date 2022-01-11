@@ -87,7 +87,8 @@ class ConfigWriterProcessorTests {
 
     @Test
     fun `sends RPC success response after publishing configuration to Kafka`() {
-        val expectedResp = ConfigurationManagementResponse(true, configMgmtReq.version, configMgmtReq.config)
+        val config = Configuration(configMgmtReq.config, configMgmtReq.version.toString())
+        val expectedResp = ConfigurationManagementResponse(config)
 
         val processor = ConfigWriterProcessor(getPublisher(), configEntityRepository, clock)
         val resp = processRequest(processor, configMgmtReq)
@@ -110,7 +111,7 @@ class ConfigWriterProcessorTests {
             "New configuration represented by $configMgmtReq couldn't be written to the database. Cause: " +
                     "${RollbackException()}"
         )
-        val expectedResp = ConfigurationManagementResponse(expectedEnvelope, config.version, config.config)
+        val expectedResp = ConfigurationManagementResponse(expectedEnvelope)
 
         val configEntityRepository = mock<ConfigEntityRepository>().apply {
             whenever(writeEntities(any(), any())).thenThrow(RollbackException())
@@ -132,7 +133,7 @@ class ConfigWriterProcessorTests {
             "Record $expectedRecord was written to the database, but couldn't be published. Cause: " +
                     "${ExecutionException(publisherError)}"
         )
-        val expectedResp = ConfigurationManagementResponse(expectedEnvelope, config.version, config.config)
+        val expectedResp = ConfigurationManagementResponse(expectedEnvelope)
 
         val processor = ConfigWriterProcessor(getErroringPublisher(), configEntityRepository, clock)
         val resp = processRequest(processor, configMgmtReq)
@@ -141,13 +142,13 @@ class ConfigWriterProcessorTests {
     }
 
     @Test
-    fun `returns null configuration if there is no existing configuration for the given section when sending RPC failure response`() {
+    fun `returns exception envelope if there is no existing configuration for the given section when sending RPC failure response`() {
         val expectedEnvelope = ExceptionEnvelope(
             RollbackException::class.java.name,
             "New configuration represented by $configMgmtReq couldn't be written to the database. Cause: " +
                     "${RollbackException()}"
         )
-        val expectedResp = ConfigurationManagementResponse(expectedEnvelope, null, null)
+        val expectedResp = ConfigurationManagementResponse(expectedEnvelope)
 
         val configEntityRepository = mock<ConfigEntityRepository>().apply {
             whenever(writeEntities(any(), any())).thenThrow(RollbackException())
@@ -159,13 +160,13 @@ class ConfigWriterProcessorTests {
     }
 
     @Test
-    fun `returns null configuration if configuration for the given section cannot be read back when sending RPC failure response`() {
+    fun `returns exception envelope if configuration for the given section cannot be read back when sending RPC failure response`() {
         val expectedEnvelope = ExceptionEnvelope(
             RollbackException::class.java.name,
             "New configuration represented by $configMgmtReq couldn't be written to the database. Cause: " +
                     "${RollbackException()}"
         )
-        val expectedResp = ConfigurationManagementResponse(expectedEnvelope, null, null)
+        val expectedResp = ConfigurationManagementResponse(expectedEnvelope)
 
         val configEntityRepository = mock<ConfigEntityRepository>().apply {
             whenever(writeEntities(any(), any())).thenThrow(RollbackException())

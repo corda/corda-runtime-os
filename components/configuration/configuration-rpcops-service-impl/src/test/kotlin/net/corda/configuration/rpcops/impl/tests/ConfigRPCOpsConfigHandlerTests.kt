@@ -48,7 +48,7 @@ class ConfigRPCOpsConfigHandlerTests {
     fun `sets coordinator to down and throws if RPC sender cannot be created`() {
         val coordinator = mock<LifecycleCoordinator>()
         val configRPCOps = mock<ConfigRPCOps>().apply {
-            whenever(createAndStartRPCSender(any())).thenAnswer { throw Exception() }
+            whenever(createAndStartRPCSender(any())).thenAnswer { throw IllegalStateException() }
         }
         val configHandler = ConfigRPCOpsConfigHandler(coordinator, configRPCOps)
 

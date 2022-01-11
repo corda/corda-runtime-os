@@ -158,7 +158,7 @@ class ConfigRPCOpsImplTests {
 
     @Test
     fun `updateConfig throws ConfigRPCOpsServiceException if response future completes exceptionally`() {
-        val future = CompletableFuture.supplyAsync<ConfigurationManagementResponse> { throw Exception() }
+        val future = CompletableFuture.supplyAsync<ConfigurationManagementResponse> { throw IllegalStateException() }
         val (_, configRPCOps) = getConfigRPCOps(future)
 
         configRPCOps.createAndStartRPCSender(mock())
