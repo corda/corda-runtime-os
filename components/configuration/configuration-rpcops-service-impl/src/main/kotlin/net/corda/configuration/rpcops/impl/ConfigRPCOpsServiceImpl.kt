@@ -20,8 +20,8 @@ internal class ConfigRPCOpsServiceImpl @Activate constructor(
     private val configRPCOps: ConfigRPCOps
 ) : ConfigRPCOpsService {
 
-    internal val coordinator = let {
-        val eventHandler = ConfigRPCOpsEventHandler(this, configReadService, configRPCOps)
+    private val coordinator = let {
+        val eventHandler = ConfigRPCOpsEventHandler(configReadService, configRPCOps)
         coordinatorFactory.createCoordinator<ConfigRPCOpsServiceImpl>(eventHandler)
     }
 
