@@ -5,14 +5,17 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 
 class ConfigReaderFactoryImplTest {
 
-    private val config: SmartConfig = mock()
+    private val configFactory = mock<SmartConfigFactory>()
+    private val config = mock<SmartConfig>() {
+        on { factory } doReturn configFactory
+    }
     private val subscriptionFactory: SubscriptionFactory = mock()
-    private val smartConfigFactory: SmartConfigFactory = mock()
-    private val readServiceFactoryImpl = ConfigReaderFactoryImpl(subscriptionFactory, smartConfigFactory)
+    private val readServiceFactoryImpl = ConfigReaderFactoryImpl(subscriptionFactory)
 
     @Test
     fun testCreateRepository() {

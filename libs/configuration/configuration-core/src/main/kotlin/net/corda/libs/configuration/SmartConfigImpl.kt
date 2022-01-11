@@ -9,6 +9,8 @@ import com.typesafe.config.ConfigObject
 import com.typesafe.config.ConfigOrigin
 import com.typesafe.config.ConfigResolveOptions
 import com.typesafe.config.ConfigValue
+import net.corda.libs.configuration.secret.MaskedSecretsLookupService
+import net.corda.libs.configuration.secret.SecretsLookupService
 import java.time.Duration
 import java.time.Period
 import java.time.temporal.TemporalAmount
@@ -24,10 +26,14 @@ import java.util.concurrent.TimeUnit
 @Suppress("TooManyFunctions")
 class SmartConfigImpl(
     val typeSafeConfig: Config,
-    private val secretsLookupService: SecretsLookupService = maskedSecretsLookupService
+    override val factory: SmartConfigFactory,
+    private val secretsLookupService: SecretsLookupService,
 ) : SmartConfig {
     companion object{
-        fun empty(): SmartConfig = SmartConfigImpl(ConfigFactory.empty())
+        fun empty(): SmartConfig = SmartConfigImpl(
+            ConfigFactory.empty(),
+            SmartConfigFactoryImpl(maskedSecretsLookupService),
+            maskedSecretsLookupService)
 
         private val maskedSecretsLookupService = MaskedSecretsLookupService()
     }
@@ -45,41 +51,42 @@ class SmartConfigImpl(
     }
 
     override fun isSecret(path: String): Boolean =
-        typeSafeConfig.hasPath("$path.$SECRETS_INDICATOR")
+        typeSafeConfig.hasPath("$path.${SmartConfig.SECRET_KEY}")
 
     override fun convert(config: Config): SmartConfig {
-        return SmartConfigImpl(config, secretsLookupService)
+        return SmartConfigImpl(config, factory, secretsLookupService)
     }
 
     override fun toSafeConfig(): SmartConfig {
         if(secretsLookupService is MaskedSecretsLookupService)
             return this
-        return SmartConfigImpl(typeSafeConfig, maskedSecretsLookupService)
+        return SmartConfigImpl(typeSafeConfig, factory, maskedSecretsLookupService)
     }
 
     override fun withFallback(other: ConfigMergeable?): SmartConfig {
         val o = if (other is SmartConfigImpl) { other.typeSafeConfig } else { other }
-        return SmartConfigImpl(typeSafeConfig.withFallback(o), secretsLookupService)
+        return SmartConfigImpl(typeSafeConfig.withFallback(o), factory, secretsLookupService)
     }
 
     override fun root(): SmartConfigObject =
-        SmartConfigObjectImpl(typeSafeConfig.root(), secretsLookupService)
+        SmartConfigObjectImpl(typeSafeConfig.root(), factory, secretsLookupService)
 
     override fun origin(): ConfigOrigin = typeSafeConfig.origin()
 
-    override fun resolve(): SmartConfig = SmartConfigImpl(typeSafeConfig.resolve(), secretsLookupService)
+    override fun resolve(): SmartConfig = SmartConfigImpl(typeSafeConfig.resolve(), factory, secretsLookupService)
 
     override fun resolve(options: ConfigResolveOptions?): SmartConfig =
-        SmartConfigImpl(typeSafeConfig.resolve(options), secretsLookupService)
+        SmartConfigImpl(typeSafeConfig.resolve(options), factory, secretsLookupService)
 
     override fun isResolved(): Boolean = typeSafeConfig.isResolved
 
     override fun resolveWith(source: Config): SmartConfig =
-        SmartConfigImpl(typeSafeConfig.resolveWith(source), secretsLookupService)
+        SmartConfigImpl(typeSafeConfig.resolveWith(source), factory, secretsLookupService)
 
     override fun resolveWith(source: Config, options: ConfigResolveOptions?): SmartConfig =
         SmartConfigImpl(
-            typeSafeConfig.resolveWith(SmartConfigImpl(source, secretsLookupService), options),
+            typeSafeConfig.resolveWith(SmartConfigImpl(source, factory, secretsLookupService), options),
+            factory,
             secretsLookupService)
 
     override fun checkValid(reference: Config, vararg restrictToPaths: String) {
@@ -95,7 +102,7 @@ class SmartConfigImpl(
 
     override fun entrySet(): MutableSet<MutableMap.MutableEntry<String, SmartConfigValue>> {
         val map = mutableMapOf<String, SmartConfigValue>()
-        typeSafeConfig.entrySet().forEach { map[it.key] = SmartConfigValueImpl(it.value, secretsLookupService) }
+        typeSafeConfig.entrySet().forEach { map[it.key] = SmartConfigValueImpl(it.value, factory, secretsLookupService) }
         return map.entries.toMutableSet()
     }
 
@@ -113,7 +120,7 @@ class SmartConfigImpl(
 
     override fun getString(path: String): String {
         if (isSecret(path))
-            return secretsLookupService.getValue(typeSafeConfig.getValue(path))
+            return secretsLookupService.getValue(typeSafeConfig.getConfig(path))
         return typeSafeConfig.getString(path)
     }
 
@@ -121,19 +128,19 @@ class SmartConfigImpl(
         typeSafeConfig.getEnum(enumClass, path)
 
     override fun getObject(path: String?): SmartConfigObject =
-        SmartConfigObjectImpl(typeSafeConfig.getObject(path), secretsLookupService)
+        SmartConfigObjectImpl(typeSafeConfig.getObject(path), factory, secretsLookupService)
 
     override fun getConfig(path: String?): SmartConfig =
-        SmartConfigImpl(typeSafeConfig.getConfig(path), secretsLookupService)
+        SmartConfigImpl(typeSafeConfig.getConfig(path), factory, secretsLookupService)
 
     override fun getAnyRef(path: String): Any {
         if (isSecret(path))
-            return secretsLookupService.getValue(typeSafeConfig.getValue(path))
+            return secretsLookupService.getValue(typeSafeConfig.getConfig(path))
         return typeSafeConfig.getAnyRef(path)
     }
 
     override fun getValue(path: String?): SmartConfigValue =
-        SmartConfigValueImpl(typeSafeConfig.getValue(path), secretsLookupService)
+        SmartConfigValueImpl(typeSafeConfig.getValue(path), factory, secretsLookupService)
 
     override fun getBytes(path: String?): Long = typeSafeConfig.getBytes(path)
 
@@ -200,18 +207,18 @@ class SmartConfigImpl(
     override fun getDurationList(path: String?): MutableList<Duration> = typeSafeConfig.getDurationList(path)
 
     override fun withOnlyPath(path: String?): SmartConfig =
-        SmartConfigImpl(typeSafeConfig.withOnlyPath(path), secretsLookupService)
+        SmartConfigImpl(typeSafeConfig.withOnlyPath(path), factory, secretsLookupService)
 
     override fun withoutPath(path: String?): SmartConfig =
-        SmartConfigImpl(typeSafeConfig.withoutPath(path), secretsLookupService)
+        SmartConfigImpl(typeSafeConfig.withoutPath(path), factory, secretsLookupService)
 
     override fun atPath(path: String?): SmartConfig =
-        SmartConfigImpl(typeSafeConfig.atPath(path), secretsLookupService)
+        SmartConfigImpl(typeSafeConfig.atPath(path), factory, secretsLookupService)
 
     override fun atKey(key: String?): SmartConfig =
-        SmartConfigImpl(typeSafeConfig.atKey(key), secretsLookupService)
+        SmartConfigImpl(typeSafeConfig.atKey(key), factory, secretsLookupService)
 
     override fun withValue(path: String?, value: ConfigValue?): SmartConfig =
-        SmartConfigImpl(typeSafeConfig.withValue(path, value), secretsLookupService)
+        SmartConfigImpl(typeSafeConfig.withValue(path, value), factory, secretsLookupService)
 }
 

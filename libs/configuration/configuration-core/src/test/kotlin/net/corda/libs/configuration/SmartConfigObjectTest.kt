@@ -1,6 +1,7 @@
 package net.corda.libs.configuration
 
 import com.typesafe.config.ConfigFactory
+import net.corda.libs.configuration.secret.SecretsLookupService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
@@ -11,28 +12,27 @@ class SmartConfigObjectTest {
     val configString = """
         root {
             foo: bar,
-            fred {
-                isSmartConfigSecret: true,
+            fred.configSecret {
                 token: secure-fred
-            },
-        }
+            }
+        },
         """.trimIndent()
     val config = ConfigFactory.parseString(configString)
     val otherConfig = ConfigFactory.parseString(
         """
-        jon {
-            isSmartConfigSecret: true,
+        jon.configSecret {
             token: secure-jon
         },
         """.trimIndent()
     )
 
     val secretsLookupService = mock<SecretsLookupService>() {
-        on { getValue(config.getValue("root.fred"))} doReturn "secret"
-        on { getValue(otherConfig.getValue("jon"))} doReturn "other-secret"
+        on { getValue(config.getConfig("root.fred"))} doReturn "secret"
+        on { getValue(otherConfig.getConfig("jon"))} doReturn "other-secret"
     }
+    val smartConfigFactory = mock<SmartConfigFactory>()
     val configObject: SmartConfigObject =
-        SmartConfigObjectImpl(config.getObject("root"), secretsLookupService)
+        SmartConfigObjectImpl(config.getObject("root"), smartConfigFactory, secretsLookupService)
 
     @Test
     fun `toSafeConfig never reveals secrets`() {

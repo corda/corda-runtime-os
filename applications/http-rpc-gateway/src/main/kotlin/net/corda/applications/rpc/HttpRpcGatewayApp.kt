@@ -2,7 +2,9 @@ package net.corda.applications.rpc
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.applications.rpc.internal.HttpRpcGatewayAppEventHandler
 import net.corda.components.rpc.HttpRpcGateway
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -26,8 +28,6 @@ import java.nio.file.Path
 import java.util.Properties
 import kotlin.math.absoluteValue
 import kotlin.random.Random
-import net.corda.applications.rpc.internal.HttpRpcGatewayAppEventHandler
-import net.corda.configuration.read.ConfigurationReadService
 
 @Component(service = [Application::class], immediate = true)
 @Suppress("LongParameterList", "UNUSED")
@@ -36,8 +36,6 @@ class HttpRpcGatewayApp @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = SmartConfigFactory::class)
-    private val smartConfigFactory: SmartConfigFactory,
     @Reference(service = HttpRpcGateway::class)
     private val httpRpcGateway: HttpRpcGateway,
     @Reference(service = ConfigurationReadService::class)
@@ -120,14 +118,17 @@ class HttpRpcGatewayApp @Activate constructor(
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
         val configFile = createConfigFile()
         log.debug { "Config file saved to: $configFile" }
-        return smartConfigFactory.create(ConfigFactory.empty()
+        // TODO - pick up secrets params from startup
+        val secretsConfig = ConfigFactory.empty()
+        val bootConfig = ConfigFactory.empty()
             .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
             .withValue(
                 TOPIC_PREFIX,
                 ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, ""))
             )
             .withValue(GENERAL_CONFIG_INSTANCE_ID_PATH, ConfigValueFactory.fromAnyRef(instanceId))
-            .withValue("config.file", ConfigValueFactory.fromAnyRef(configFile)))
+            .withValue("config.file", ConfigValueFactory.fromAnyRef(configFile))
+        return SmartConfigFactory.create(secretsConfig).create(bootConfig)
     }
 
     private fun getConfigValue(kafkaConnectionProperties: Properties?, path: String, default: String? = null): String {

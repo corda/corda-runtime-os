@@ -2,9 +2,11 @@ package net.corda.libs.configuration.read.file
 
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.SmartConfigFactory
 
 object ConfigUtil {
+
+    private val configFactory = SmartConfigFactory.create(ConfigFactory.empty())
 
     fun testConfigMap(): Map<String, SmartConfig> {
         val configMap = mutableMapOf<String, SmartConfig>()
@@ -15,7 +17,7 @@ object ConfigUtil {
         return configMap
     }
 
-    fun databaseConfig(version: Double): SmartConfig = SmartConfigImpl(ConfigFactory.parseString(
+    fun databaseConfig(version: Double): SmartConfig = configFactory.create(ConfigFactory.parseString(
         """
             transactionIsolationLevel = READ_COMMITTED
             schema = corda
@@ -24,7 +26,7 @@ object ConfigUtil {
         """.trimIndent()
     ))
 
-    fun securityConfig(version: Double): SmartConfig = SmartConfigImpl(ConfigFactory.parseString(
+    fun securityConfig(version: Double): SmartConfig = configFactory.create(ConfigFactory.parseString(
         """
             authService {
                 dataSource {

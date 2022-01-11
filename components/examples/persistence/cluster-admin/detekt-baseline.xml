@@ -1,7 +1,0 @@
-<?xml version="1.0" ?>
-<SmellBaseline>
-  <ManuallySuppressedIssues></ManuallySuppressedIssues>
-  <CurrentIssues>
-    <ID>ForbiddenComment:ClusterAdminEventProcessor.kt$ClusterAdminEventProcessor$// TODO: I don't think this should be taken from this package</ID>
-  </CurrentIssues>
-</SmellBaseline>
