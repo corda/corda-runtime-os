@@ -17,8 +17,7 @@ data class RPCConfig<REQUEST, RESPONSE>(
     val clientName: String,
     val requestTopic: String,
     val requestType: Class<REQUEST>,
-    val responseType: Class<RESPONSE>,
-    val instanceId: Int? = null
+    val responseType: Class<RESPONSE>
 )
 
 inline fun <reified REQUEST, RESPONSE> RPCConfig<REQUEST, RESPONSE>.requestType(): Class<out Class<REQUEST>> = requestType::class.java

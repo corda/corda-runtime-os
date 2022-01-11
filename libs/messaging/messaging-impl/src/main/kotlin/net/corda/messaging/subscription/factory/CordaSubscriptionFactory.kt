@@ -22,6 +22,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
+import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.GROUP
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_COMPACTED
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_DURABLE
@@ -221,7 +222,7 @@ class CordaSubscriptionFactory @Activate constructor(
             nodeConfig,
             clientIdCounter.getAndIncrement(),
             PATTERN_RPC_RESPONDER
-        )
+        ).withoutPath(ConfigProperties.PRODUCER_TRANSACTIONAL_ID)
 
         val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE>{ }
         val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, rpcConfig.requestType)

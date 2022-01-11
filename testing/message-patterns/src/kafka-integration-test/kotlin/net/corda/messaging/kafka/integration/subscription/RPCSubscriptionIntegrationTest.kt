@@ -96,8 +96,7 @@ class RPCSubscriptionIntegrationTest {
             CLIENT_ID,
             TopicTemplates.RPC_TOPIC,
             String::class.java,
-            String::class.java,
-            1
+            String::class.java
         )
         val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
 
@@ -177,8 +176,7 @@ class RPCSubscriptionIntegrationTest {
             CLIENT_ID,
             TopicTemplates.RPC_TOPIC,
             RPCRequest::class.java,
-            RPCResponse::class.java,
-            2
+            RPCResponse::class.java
         )
         val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
 
@@ -230,8 +228,7 @@ class RPCSubscriptionIntegrationTest {
             CLIENT_ID,
             TopicTemplates.RPC_TOPIC,
             String::class.java,
-            String::class.java,
-            3
+            String::class.java
         )
         val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
 
@@ -270,8 +267,7 @@ class RPCSubscriptionIntegrationTest {
             CLIENT_ID,
             TopicTemplates.RPC_TOPIC,
             String::class.java,
-            String::class.java,
-            4
+            String::class.java
         )
         val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
 
@@ -310,8 +306,7 @@ class RPCSubscriptionIntegrationTest {
             CLIENT_ID,
             TopicTemplates.RPC_TOPIC,
             String::class.java,
-            String::class.java,
-            5
+            String::class.java
         )
         val rpcSender = publisherFactory.createRPCSender(rpcConfig, kafkaConfig)
 

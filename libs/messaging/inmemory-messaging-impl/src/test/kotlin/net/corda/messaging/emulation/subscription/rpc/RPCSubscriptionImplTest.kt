@@ -12,6 +12,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import java.util.concurrent.atomic.AtomicInteger
 
 class RPCSubscriptionImplTest {
     private val rpcTopicService: RPCTopicService = mock()
@@ -20,11 +21,18 @@ class RPCSubscriptionImplTest {
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
         on { createCoordinator(any(), any()) } doReturn lifecycleCoordinator
     }
+    private val clientIdCounter = AtomicInteger()
 
     @Test
     fun `Start subscribes the processor to the topic`() {
         val rpcSubscription =
-            RPCSubscriptionImpl(getConfig(), rpcTopicService, responseProcessor, lifecycleCoordinatorFactory)
+            RPCSubscriptionImpl(
+                getConfig(),
+                rpcTopicService,
+                responseProcessor,
+                lifecycleCoordinatorFactory,
+                clientIdCounter.getAndIncrement().toString()
+            )
 
         rpcSubscription.start()
         assertThat(rpcSubscription.isRunning).isTrue
@@ -34,7 +42,13 @@ class RPCSubscriptionImplTest {
     @Test
     fun `Stop unsubscribes the processor from the topic`() {
         val rpcSubscription =
-            RPCSubscriptionImpl(getConfig(), rpcTopicService, responseProcessor, lifecycleCoordinatorFactory)
+            RPCSubscriptionImpl(
+                getConfig(),
+                rpcTopicService,
+                responseProcessor,
+                lifecycleCoordinatorFactory,
+                clientIdCounter.getAndIncrement().toString()
+            )
 
         rpcSubscription.stop()
         assertThat(rpcSubscription.isRunning).isFalse
@@ -47,8 +61,7 @@ class RPCSubscriptionImplTest {
             "testClientName",
             "test",
             String::class.java,
-            String::class.java,
-            1
+            String::class.java
         )
     }
 }

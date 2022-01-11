@@ -77,8 +77,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaRPCSender-$topic",
-            //we use instanceId here as transactionality is a concern in this subscription
-            config.getString(ConfigProperties.INSTANCE_ID)
+            config.getString(ConfigProperties.CLIENT_ID_COUNTER)
         )
     ) { _, _ -> }
     private val partitionListener = RPCConsumerRebalanceListener(
@@ -126,13 +125,13 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private fun stopConsumeLoop() {
         val thread = lock.withLock {
             stopped = true
+            producer?.close()
+            producer = null
             val threadTmp = consumeLoopThread
             consumeLoopThread = null
             threadTmp
         }
         thread?.join(consumerThreadStopTimeout)
-        producer?.close()
-        producer = null
     }
 
     private fun runConsumeLoop() {
@@ -274,9 +273,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             val record = CordaProducerRecord(topic, correlationId, request)
             futureTracker.addFuture(correlationId, future, partition)
             try {
-                producer?.beginTransaction()
                 producer?.sendRecords(listOf(record))
-                producer?.commitTransaction()
             } catch (ex: Exception) {
                 future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
                 log.error("Failed to publish. Exception: ${ex.message}", ex)

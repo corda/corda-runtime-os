@@ -65,9 +65,10 @@ class RPCSubscriptionImplTest {
             0
         )
     )
-    private val deserializer: CordaAvroDeserializer<HoldingIdentity> = mock<CordaAvroDeserializer<HoldingIdentity>>().also {
-        whenever(it.deserialize(any())).thenReturn(dummyRequest)
-    }
+    private val deserializer: CordaAvroDeserializer<HoldingIdentity> =
+        mock<CordaAvroDeserializer<HoldingIdentity>>().also {
+            whenever(it.deserialize(any())).thenReturn(dummyRequest)
+        }
     private val serializer: CordaAvroSerializer<HoldingIdentity> = mock<CordaAvroSerializer<HoldingIdentity>>().also {
         whenever(it.serialize(any())).thenReturn(dummyRequest.toByteBuffer().array())
     }
@@ -123,25 +124,6 @@ class RPCSubscriptionImplTest {
         verify(kafkaProducer, times(1)).sendRecordsToPartitions(captor.capture())
         val capturedValue = captor.firstValue
         assertEquals(capturedValue[0].second.value?.responseStatus, ResponseStatus.OK)
-        verify(kafkaProducer, times(1)).close()
-    }
-
-    @Test
-    fun `rpc subscription is closed properly`() {
-        val processor = TestProcessor(ResponseStatus.OK)
-        val subscription = RPCSubscriptionImpl(
-            config,
-            cordaConsumerBuilder,
-            cordaProducerBuilder,
-            processor,
-            serializer,
-            deserializer,
-            lifecycleCoordinatorFactory
-        )
-
-        subscription.start()
-        assertThat(subscription.isRunning).isTrue
-        subscription.close()
         verify(kafkaProducer, times(1)).close()
     }
 
@@ -202,7 +184,8 @@ class RPCSubscriptionImplTest {
     private fun setupStandardMocks(): Pair<CordaConsumer<String, RPCRequest>, CordaConsumerBuilder> {
         val kafkaConsumer: CordaConsumer<String, RPCRequest> = mock()
         val cordaConsumerBuilder: CordaConsumerBuilder = mock()
-        doReturn(kafkaConsumer).whenever(cordaConsumerBuilder).createRPCConsumer<String, RPCRequest>(any(), any(), any(), any())
+        doReturn(kafkaConsumer).whenever(cordaConsumerBuilder)
+            .createRPCConsumer<String, RPCRequest>(any(), any(), any(), any())
         doReturn(
             mutableMapOf(
                 CordaTopicPartition(TOPIC, 0) to 0L,

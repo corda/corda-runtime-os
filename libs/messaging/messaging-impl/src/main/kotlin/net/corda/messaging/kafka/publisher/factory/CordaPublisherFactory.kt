@@ -7,7 +7,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CORDA_PRODUCER
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.GROUP
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.INSTANCE_ID
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.configuration.ConfigProperties.Companion.PATTERN_PUBLISHER
@@ -17,6 +16,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.publisher.CordaKafkaRPCSenderImpl
 import net.corda.messaging.kafka.publisher.CordaPublisherImpl
 import net.corda.messaging.kafka.utils.ConfigUtils.Companion.resolvePublisherConfiguration
@@ -49,12 +49,17 @@ class CordaPublisherFactory @Activate constructor(
         publisherConfig: PublisherConfig,
         kafkaConfig: SmartConfig
     ): Publisher {
-        val config = resolvePublisherConfiguration(
+        var config = resolvePublisherConfiguration(
             publisherConfig.toConfig(),
             kafkaConfig,
             clientIdCounter.getAndIncrement(),
             PATTERN_PUBLISHER
         )
+
+        if(publisherConfig.instanceId == null) {
+            config = config.withoutPath(ConfigProperties.PRODUCER_TRANSACTIONAL_ID)
+        }
+
         val producer = cordaProducerBuilder.createProducer(config.getConfig(CORDA_PRODUCER))
         return CordaPublisherImpl(config, producer)
     }
@@ -68,14 +73,13 @@ class CordaPublisherFactory @Activate constructor(
             .withValue(GROUP, ConfigValueFactory.fromAnyRef(rpcConfig.groupName))
             .withValue(TOPIC, ConfigValueFactory.fromAnyRef(rpcConfig.requestTopic))
             .withValue("clientName", ConfigValueFactory.fromAnyRef(rpcConfig.clientName))
-            .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(rpcConfig.instanceId))
 
         val publisherConfig = resolvePublisherConfiguration(
             publisherConfiguration,
             kafkaConfig,
             clientIdCounter.getAndIncrement(),
             PATTERN_RPC_SENDER
-        )
+        ).withoutPath(ConfigProperties.PRODUCER_TRANSACTIONAL_ID)
 
         val serializer = avroSerializationFactory.createAvroSerializer<REQUEST> {  }
         val deserializer = avroSerializationFactory.createAvroDeserializer({}, rpcConfig.responseType)

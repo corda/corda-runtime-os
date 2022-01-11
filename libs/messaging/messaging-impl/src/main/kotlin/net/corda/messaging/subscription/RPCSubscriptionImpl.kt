@@ -56,8 +56,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaRPCSubscription-$topic",
-            //we use instanceId here as transactionality is a concern in this subscription
-            config.getString(ConfigProperties.INSTANCE_ID)
+            config.getString(ConfigProperties.CLIENT_ID_COUNTER)
         )
     ) { _, _ -> }
 
@@ -221,9 +220,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 }
 
                 try {
-                    producer.beginTransaction()
                     producer.sendRecordsToPartitions(listOf(Pair(rpcRequest.replyPartition, record)))
-                    producer.commitTransaction()
                 } catch (ex: Exception) {
                     //intentionally swallowed
                     log.warn("Error publishing response", ex)
