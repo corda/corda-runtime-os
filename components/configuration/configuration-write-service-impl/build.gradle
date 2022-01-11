@@ -3,20 +3,21 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Kafka Config Write Component"
+description "Configuration Write Service Impl"
 
 dependencies {
-    compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda:corda-base"
+    implementation project(':components:configuration:configuration-write-service')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-write')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation 'javax.persistence:javax.persistence-api'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'net.corda:corda-base'
     implementation 'org.slf4j:slf4j-api'
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

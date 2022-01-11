@@ -4,8 +4,12 @@ import java.util.concurrent.CompletableFuture
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.permission.CreatePermissionRequest
+import net.corda.data.permissions.management.role.AddPermissionToRoleRequest
 import net.corda.data.permissions.management.role.CreateRoleRequest
+import net.corda.data.permissions.management.role.RemovePermissionFromRoleRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
+import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
 import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWriter
@@ -24,6 +28,7 @@ class PermissionStorageWriterProcessorImpl(
         val log = contextLogger()
     }
 
+    @Suppress("ComplexMethod")
     override fun onNext(request: PermissionManagementRequest, respFuture: CompletableFuture<PermissionManagementResponse>) {
         try {
             val response = when (val permissionRequest = request.request) {
@@ -42,6 +47,26 @@ class PermissionStorageWriterProcessorImpl(
                         request.virtualNodeId)
                     permissionStorageReader.publishNewPermission(avroPermission)
                     avroPermission
+                }
+                is AddRoleToUserRequest -> {
+                    val avroUser = userWriter.addRoleToUser(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishUpdatedUser(avroUser)
+                    avroUser
+                }
+                is RemoveRoleFromUserRequest -> {
+                    val avroUser = userWriter.removeRoleFromUser(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishUpdatedUser(avroUser)
+                    avroUser
+                }
+                is AddPermissionToRoleRequest -> {
+                    val avroRole = roleWriter.addPermissionToRole(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishUpdatedRole(avroRole)
+                    avroRole
+                }
+                is RemovePermissionFromRoleRequest -> {
+                    val avroRole = roleWriter.removePermissionFromRole(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishUpdatedRole(avroRole)
+                    avroRole
                 }
                 else -> throw IllegalArgumentException("Received invalid permission request type")
             }

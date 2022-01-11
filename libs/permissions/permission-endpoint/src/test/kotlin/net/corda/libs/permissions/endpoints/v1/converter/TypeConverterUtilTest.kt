@@ -7,6 +7,7 @@ import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.manager.response.PermissionAssociationResponseDto
 import net.corda.libs.permissions.manager.response.PropertyResponseDto
+import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -56,7 +57,8 @@ class TypeConverterUtilTest {
             ssoAuth = false,
             passwordExpiry = now,
             parentGroup = "group1",
-            properties = listOf(PropertyResponseDto(earlier, "key1", "value1"))
+            properties = listOf(PropertyResponseDto(earlier, "key1", "value1")),
+            roles = listOf(RoleAssociationResponseDto("roleId1", now))
         )
 
         val type = dto.convertToEndpointType()
@@ -74,6 +76,8 @@ class TypeConverterUtilTest {
         assertEquals(earlier, type.properties[0].lastChangedTimestamp)
         assertEquals("key1", type.properties[0].key)
         assertEquals("value1", type.properties[0].value)
+        assertEquals("roleId1", type.roleAssociations[0].roleId)
+        assertEquals(now, type.roleAssociations[0].createTimestamp)
     }
 
     @Test

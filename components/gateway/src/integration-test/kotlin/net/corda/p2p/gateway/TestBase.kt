@@ -5,10 +5,10 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
 import net.corda.libs.configuration.SmartConfigFactoryImpl
+import net.corda.libs.configuration.publish.CordaConfigurationKey
+import net.corda.libs.configuration.publish.CordaConfigurationVersion
+import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
 import net.corda.libs.configuration.read.kafka.factory.ConfigReaderFactoryImpl
-import net.corda.libs.configuration.write.CordaConfigurationKey
-import net.corda.libs.configuration.write.CordaConfigurationVersion
-import net.corda.libs.configuration.write.kafka.ConfigWriterImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -126,7 +126,7 @@ open class TestBase {
                 .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
                 .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
             CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory).createPublisher(PublisherConfig((topicName))).use { publisher ->
-                val configurationPublisher = ConfigWriterImpl(topicName, publisher)
+                val configurationPublisher = ConfigPublisherImpl(topicName, publisher)
                 configurationPublisher.updateConfiguration(
                     CordaConfigurationKey(
                         "myKey",
@@ -143,7 +143,7 @@ open class TestBase {
             CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory)
                 .createPublisher(PublisherConfig((topicName)))
                 .use { publisher ->
-                    val configurationPublisher = ConfigWriterImpl(topicName, publisher)
+                    val configurationPublisher = ConfigPublisherImpl(topicName, publisher)
                     configurationPublisher.updateConfiguration(
                         CordaConfigurationKey(
                             "myKey",

@@ -1,0 +1,29 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Configuration Data Model'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'javax.persistence:javax.persistence-api'
+    implementation 'net.corda:corda-db-schema'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    integrationTestImplementation project(':libs:db:db-admin')
+    integrationTestImplementation project(':libs:db:db-admin-impl')
+    integrationTestImplementation project(':libs:db:db-orm')
+    integrationTestImplementation project(':libs:db:db-orm-impl')
+    integrationTestImplementation project(':testing:db-testkit')
+
+    integrationTestRuntime "org.hsqldb:hsqldb:$hsqldbVersion"
+}
+
+tasks.named('jar', Jar) {
+    bnd '''\
+DynamicImport-Package: org.hibernate.proxy
+'''
+}

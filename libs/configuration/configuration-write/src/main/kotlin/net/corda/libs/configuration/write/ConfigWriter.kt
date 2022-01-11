@@ -1,31 +1,12 @@
 package net.corda.libs.configuration.write
 
-import com.typesafe.config.Config
+import net.corda.lifecycle.Lifecycle
 
-interface ConfigWriter {
-    /**
-     * When appending, the storage layer is checked for existing configuration for the given [configKey].
-     * If any exist it will be retrieved. The given [config] object will be merged with the existing one.
-     * The new properties will be added. Properties that exist in both configuration objects will have their value
-     * updated to the new one. Old properties will be kept.
-     * The merged configuration object is then persisted
-     *
-     * @param configKey used to uniquely identify the config
-     * @param config Changes to be recorded
-     */
-    fun appendConfiguration(
-        configKey: CordaConfigurationKey,
-        config: Config
-    )
-
-    /**
-     * When updating, the stored configuration object for the [configKey] will be completely replaced by the given [config] object
-     *
-     * @param configKey used to uniquely identify the config
-     * @param config Changes to be recorded
-     */
-    fun updateConfiguration(
-        configKey: CordaConfigurationKey,
-        config: Config
-    )
-}
+/**
+ * Upon [start], listens for configuration management requests using an
+ * `RPCSubscription<ConfigurationManagementRequest, ConfigurationManagementResponse>`. Persists the updated
+ * configuration to the cluster database and publishes the updated configuration to Kafka.
+ *
+ * Upon [stop], stops listening for configuration management requests and publishing updated configuration.
+ */
+interface ConfigWriter : Lifecycle
