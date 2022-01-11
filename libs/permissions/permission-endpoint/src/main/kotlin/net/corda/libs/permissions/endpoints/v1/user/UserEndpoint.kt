@@ -37,4 +37,25 @@ interface UserEndpoint : RpcOps {
         loginName: String
     ): UserResponseType
 
+    /**
+     * Assign a Role to a User in the RBAC permission system.
+     */
+    @HttpRpcPOST(description = "Assign a Role to a User", path = "addRole")
+    fun addRole(
+        @HttpRpcRequestBodyParameter(description = "User login name to be changed", required = true)
+        loginName: String,
+        @HttpRpcRequestBodyParameter(description = "Id of the role to associate with this user", required = true)
+        roleId: String
+    ): UserResponseType
+
+    /**
+     * Un-assign a Role from a User in the RBAC permission system.
+     */
+    @HttpRpcPOST(description = "Un-assign a role from a user", path = "removeRole")
+    fun removeRole(
+        @HttpRpcRequestBodyParameter(description = "User login name to be changed", required = true)
+        loginName: String,
+        @HttpRpcRequestBodyParameter(description = "Id of the role to un-assign from this user", required = true)
+        roleId: String
+    ): UserResponseType
 }

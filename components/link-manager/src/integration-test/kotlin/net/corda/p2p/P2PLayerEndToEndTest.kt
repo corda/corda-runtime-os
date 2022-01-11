@@ -8,6 +8,10 @@ import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfigFactoryImpl
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.publish.ConfigPublisher
+import net.corda.libs.configuration.publish.CordaConfigurationKey
+import net.corda.libs.configuration.publish.CordaConfigurationVersion
+import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
 import net.corda.libs.configuration.read.kafka.factory.ConfigReaderFactoryImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
@@ -18,10 +22,6 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.PROTOCOL_MODE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
-import net.corda.libs.configuration.write.ConfigWriter
-import net.corda.libs.configuration.write.CordaConfigurationKey
-import net.corda.libs.configuration.write.CordaConfigurationVersion
-import net.corda.libs.configuration.write.kafka.ConfigWriterImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -64,7 +64,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 class P2PLayerEndToEndTest {
@@ -190,14 +190,14 @@ class P2PLayerEndToEndTest {
     }
 
     private fun publishConfig() {
-        publishGatewayConfig(hostA.configWriter, hostA.gatewayConfig)
-        publishLinkManagerConfig(hostA.configWriter, hostA.linkManagerConfig)
-        publishGatewayConfig(hostB.configWriter, hostB.gatewayConfig)
-        publishLinkManagerConfig(hostB.configWriter, hostB.linkManagerConfig)
+        publishGatewayConfig(hostA.configPublisher, hostA.gatewayConfig)
+        publishLinkManagerConfig(hostA.configPublisher, hostA.linkManagerConfig)
+        publishGatewayConfig(hostB.configPublisher, hostB.gatewayConfig)
+        publishLinkManagerConfig(hostB.configPublisher, hostB.linkManagerConfig)
     }
 
-    private fun publishGatewayConfig(configWriter: ConfigWriter, gatewayConfig: Config) {
-        configWriter.updateConfiguration(
+    private fun publishGatewayConfig(configPublisher: ConfigPublisher, gatewayConfig: Config) {
+        configPublisher.updateConfiguration(
             CordaConfigurationKey(
                 "p2p-e2e-test-runner",
                 CordaConfigurationVersion("p2p", 0, 1),
@@ -207,8 +207,8 @@ class P2PLayerEndToEndTest {
         )
     }
 
-    private fun publishLinkManagerConfig(configWriter: ConfigWriter, linkManagerConfig: Config) {
-        configWriter.updateConfiguration(
+    private fun publishLinkManagerConfig(configPublisher: ConfigPublisher, linkManagerConfig: Config) {
+        configPublisher.updateConfiguration(
             CordaConfigurationKey(
                 "p2p-e2e-test-runner",
                 CordaConfigurationVersion(LinkManagerConfiguration.PACKAGE_NAME, 0, 1),
@@ -290,8 +290,8 @@ class P2PLayerEndToEndTest {
         val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
         val configReadService = ConfigurationReadServiceImpl(lifecycleCoordinatorFactory, ConfigReaderFactoryImpl(subscriptionFactory, SmartConfigFactoryImpl()))
-        val configWriter = publisherFactory.createPublisher(PublisherConfig("config-writer")).let {
-            ConfigWriterImpl(CONFIG_TOPIC_NAME, it)
+        val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer")).let {
+            ConfigPublisherImpl(CONFIG_TOPIC_NAME, it)
         }
         val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         val linkManagerConfig = ConfigFactory.parseString(linkManagerConfigTemplate.replace("<x500-name>", x500Name))

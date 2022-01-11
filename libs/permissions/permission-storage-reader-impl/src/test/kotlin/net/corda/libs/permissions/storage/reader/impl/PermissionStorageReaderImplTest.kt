@@ -31,6 +31,7 @@ import java.time.Instant
 import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.PermissionType as AvroPermissionType
+import net.corda.data.permissions.Property as AvroProperty
 import net.corda.data.permissions.Role as AvroRole
 import net.corda.data.permissions.User as AvroUser
 
@@ -56,7 +57,7 @@ class PermissionStorageReaderImplTest {
 
         val avroPermission = AvroPermission(
             permission.id,
-            -1,
+            0,
             ChangeDetails(permission.updateTimestamp),
             permission.virtualNode,
             AvroPermissionType.ALLOW,
@@ -98,7 +99,7 @@ class PermissionStorageReaderImplTest {
 
         val avroRole = AvroRole(
             role.id,
-            -1,
+            0,
             ChangeDetails(role.updateTimestamp),
             role.name,
             parentGroup.id,
@@ -112,7 +113,7 @@ class PermissionStorageReaderImplTest {
 
         val avroRole2 = AvroRole(
             role2.id,
-            -1,
+            0,
             ChangeDetails(role2.updateTimestamp),
             role2.name,
             parentGroup.id,
@@ -168,14 +169,14 @@ class PermissionStorageReaderImplTest {
 
         val avroGroup = AvroGroup(
             group.id,
-            -1,
+            0,
             ChangeDetails(group.updateTimestamp),
             group.name,
             parentGroup.id,
             listOf(
-                net.corda.data.permissions.Property(
+                AvroProperty(
                     groupProperty.id,
-                    -1,
+                    0,
                     ChangeDetails(groupProperty.updateTimestamp),
                     groupProperty.key,
                     groupProperty.value
@@ -186,14 +187,14 @@ class PermissionStorageReaderImplTest {
 
         val avroGroup2 = AvroGroup(
             group2.id,
-            -1,
+            0,
             ChangeDetails(group2.updateTimestamp),
             group2.name,
             parentGroup.id,
             listOf(
-                net.corda.data.permissions.Property(
+                AvroProperty(
                     groupProperty.id,
-                    -1,
+                    0,
                     ChangeDetails(groupProperty.updateTimestamp),
                     groupProperty.key,
                     groupProperty.value
@@ -246,7 +247,7 @@ class PermissionStorageReaderImplTest {
 
         val avroUser = AvroUser(
             user.id,
-            -1,
+            0,
             ChangeDetails(user.updateTimestamp),
             user.loginName,
             user.fullName,
@@ -267,7 +268,7 @@ class PermissionStorageReaderImplTest {
 
         val avroUser2 = AvroUser(
             user2.id,
-            -1,
+            0,
             ChangeDetails(user2.updateTimestamp),
             user2.loginName,
             user2.fullName,

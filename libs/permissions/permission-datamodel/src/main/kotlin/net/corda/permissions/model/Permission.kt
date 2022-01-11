@@ -59,7 +59,7 @@ class Permission(
      * Version column for optimistic locking.
      */
     @Version
-    var version: Int = -1
+    var version: Int = 0
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

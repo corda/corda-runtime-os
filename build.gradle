@@ -342,6 +342,10 @@ subprojects {
             if (project.hasProperty('isPreTest')) {
                 preTest = isPreTest.toBoolean()
             }
+
+            if (project.hasProperty('baseImage')) {
+                baseImageName = baseImage
+            }
         }
     }
 }

@@ -133,6 +133,10 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
         RegistryImage baseImage = RegistryImage.named("${baseImageName.get()}:${baseImageTag.get()}")
 
+        if(baseImageName.get().contains("docker-remotes.software.r3.com")){
+            baseImage.addCredential(registryUsername.get(), registryPassword.get())
+        }
+
         JibContainerBuilder builder = Jib.from(baseImage)
                 .setCreationTime(Instant.now())
                 .addLayer(Arrays.asList(Paths.get(jarLocation)), AbsoluteUnixPath.get(CONTAINER_LOCATION))
@@ -200,14 +204,14 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         if (remotePublish.get()) {
             builder.containerize(
                     Containerizer.to(RegistryImage.named("${targetRepo}:${tag}")
-                            .addCredential(registryUsername.get(), registryPassword.get())))
+                            .addCredential(registryUsername.get(), registryPassword.get())).setAlwaysCacheBaseImage(true))
         } else {
             builder.containerize(
-                    Containerizer.to(DockerDaemonImage.named("${targetRepo}:${tag}"))
+                    Containerizer.to(DockerDaemonImage.named("${targetRepo}:${tag}")).setAlwaysCacheBaseImage(true)
             )
         }
 
-        logger.quiet("Publishing '${targetRepo}:${tag}' ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with '${projectName}.jar', from base '${baseImageName.get()}:${baseImageTag}'")
+        logger.quiet("Publishing '${targetRepo}:${tag}' ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with '${projectName}.jar', from base '${baseImageName.get()}:${baseImageTag.get()}'")
     }
 
     /**

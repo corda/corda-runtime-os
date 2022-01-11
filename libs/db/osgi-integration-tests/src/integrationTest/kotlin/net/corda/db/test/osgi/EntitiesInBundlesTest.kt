@@ -1,7 +1,6 @@
 package net.corda.db.test.osgi
 
 import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.db.admin.LiquibaseSchemaMigrator.Companion.PUBLIC_SCHEMA
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.testkit.DbUtils.getEntityManagerConfiguration
 import net.corda.orm.EntityManagerConfiguration
@@ -96,10 +95,10 @@ class EntitiesInBundlesTest {
                         dogClass.packageName, listOf("migration/db.changelog-master.xml"), classLoader = dogClass.classLoader)
             ))
             StringWriter().use {
-                lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it, PUBLIC_SCHEMA)
+                lbm.createUpdateSql(dbConfig.dataSource.connection, cl, it)
                 logger.info("Schema creation SQL: $it")
             }
-            lbm.updateDb(dbConfig.dataSource.connection, cl, PUBLIC_SCHEMA)
+            lbm.updateDb(dbConfig.dataSource.connection, cl)
 
             logger.info("Create Entities".emphasise())
 

@@ -18,7 +18,7 @@ class EntityManagerFactoryFactoryIntegrationTest {
         )
 
         val owner = Owner(UUID.randomUUID(), "Fred", 25)
-        val cat = Cat(UUID.randomUUID(), "Jerry", "Black & White", owner)
+        val cat = Cat(UUID.randomUUID(), "Tom", "Black & White", owner)
 
         val em = emf.createEntityManager()
         em.transaction.begin()

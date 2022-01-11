@@ -3,19 +3,32 @@ package net.corda.applications.rpc
 import net.corda.applications.rpc.http.TestToolkitProperty
 import net.corda.httprpc.client.exceptions.InternalErrorException
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
+import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
+import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
+import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.SoftAssertions.assertSoftly
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.MethodOrderer
+import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestMethodOrder
 import org.junit.jupiter.api.assertDoesNotThrow
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class CreateRoleE2eTest {
 
     private val testToolkit by TestToolkitProperty()
 
+    companion object {
+        private var sharedRoleId: String? = null
+    }
+
     @Test
+    @Order(1)
     fun `test getRole and createRole HTTP APIs including validation`() {
         testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
             val name = testToolkit.uniqueName
@@ -53,19 +66,77 @@ class CreateRoleE2eTest {
                 }
             }
 
-            // Try to create a role with the same name again and verify that it fails
-            assertThatThrownBy { proxy.createRole(CreateRoleType(name, null)) }
-                .isInstanceOf(InternalErrorException::class.java)
-                .hasMessageContaining("Failed to create new role: $name as they already exist")
-
             val groupName = "non-existing-group"
             val name2 = testToolkit.uniqueName
 
-            // Try to create a role with the same name again and verify that it fails
+            // Try to create a role with a group that does not exist
             assertThatThrownBy { proxy.createRole(CreateRoleType(name2, groupName)) }
                 .isInstanceOf(InternalErrorException::class.java)
                 .hasMessageContaining("Failed to create new Role: $name2 as the specified group visibility: $groupName does not exist.")
 
+            sharedRoleId = roleId
+        }
+    }
+
+    @Test
+    @Order(2)
+    fun `test add and remove permission to a role`() {
+        val roleId = requireNotNull(sharedRoleId)
+
+        // Create permission
+        val permission = testToolkit.httpClientFor(PermissionEndpoint::class.java).use { client ->
+            val proxy = client.start().proxy
+
+            // Create permission
+            val setPermString = testToolkit.uniqueName + "-PermissionString"
+            val createPermType = CreatePermissionType(PermissionType.ALLOW, setPermString, null, null)
+
+            val perm = proxy.createPermission(createPermType)
+
+            // Check that the permission does exist now. The distribution of entity records may take some time to complete on the
+            // message bus, hence use of `eventually` along with `assertDoesNotThrow`.
+            eventually {
+                assertDoesNotThrow {
+                    assertNotNull(proxy.getPermission(perm.id))
+                }
+            }
+            perm
+        }
+
+        val permId = permission.id
+        val permTs = permission.updateTimestamp
+
+        // Test adding/removing permission to a role
+        testToolkit.httpClientFor(RoleEndpoint::class.java).use { client ->
+            val proxy = client.start().proxy
+
+            // Try to remove association when it does not exist
+            assertThatThrownBy { proxy.removePermission(roleId, permId) }.isInstanceOf(InternalErrorException::class.java)
+                .hasMessageContaining("not associated with a role")
+
+            val roleWithPermission = proxy.addPermission(roleId, permId)
+            assertEquals(permId, roleWithPermission.permissions[0].id)
+
+            eventually {
+                assertDoesNotThrow {
+                    val role = proxy.getRole(roleId)
+                    val permissionAssociationResponseType = role.permissions[0]
+                    assertEquals(permId, permissionAssociationResponseType.id)
+                    assertTrue(permissionAssociationResponseType.createdTimestamp.isAfter(permTs))
+                }
+            }
+
+            // Try to add same association again when it already exists
+            assertThatThrownBy { proxy.addPermission(roleId, permId) }.isInstanceOf(InternalErrorException::class.java)
+                .hasMessageContaining("Permission '$permId' is already associated with Role '$roleId'.")
+
+            val roleWithPermissionRemoved = proxy.removePermission(roleId, permId)
+            assertTrue(roleWithPermissionRemoved.permissions.isEmpty())
+            eventually {
+                assertDoesNotThrow {
+                    assertTrue(proxy.getRole(roleId).permissions.isEmpty())
+                }
+            }
         }
     }
 }
