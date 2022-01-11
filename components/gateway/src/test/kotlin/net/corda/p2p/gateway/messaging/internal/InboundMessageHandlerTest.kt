@@ -460,4 +460,27 @@ class InboundMessageHandlerTest {
         )
         payload = ByteBuffer.wrap(content.toByteArray())
     }.build()
+
+    @Test
+    fun `onMessage authenticated message with empty partition will reply with an error`() {
+        whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(emptyList())
+        setRunning()
+        val msgId = "msg-id"
+        val gatewayMessage = GatewayMessage(msgId, authenticatedP2PDataMessage(""))
+        handler.onRequest(
+            HttpRequest(
+                source = InetSocketAddress("www.r3.com", 1231),
+                payload = gatewayMessage.toByteBuffer().array(),
+                destination = InetSocketAddress("www.r3.com", 344),
+            )
+
+        )
+
+        verify(server.constructed().first())
+            .writeResponse(
+                HttpResponseStatus.GONE,
+                InetSocketAddress("www.r3.com", 1231),
+                GatewayResponse(msgId).toByteBuffer().array()
+            )
+    }
 }

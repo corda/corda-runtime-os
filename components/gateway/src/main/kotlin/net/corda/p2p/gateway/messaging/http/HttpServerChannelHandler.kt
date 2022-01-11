@@ -83,5 +83,4 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
         val response = DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE, Unpooled.EMPTY_BUFFER)
         ctx.write(response)
     }
-
 }

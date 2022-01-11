@@ -1023,4 +1023,66 @@ class LinkManagerTest {
                     " which indicates a spoofing attempt! The message was discarded"
         )
     }
+
+    @Test
+    fun `OutboundMessageProcessor warns if no partitions are assigned and only produces LinkManagerSentMarker`() {
+        val mockSessionManager = Mockito.mock(SessionManager::class.java)
+        val sessionInitMessage = LinkOutMessage()
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(
+            SessionManager.SessionState.NewSessionNeeded(SESSION_ID, sessionInitMessage)
+        )
+
+        val processor = LinkManager.OutboundMessageProcessor(
+            mockSessionManager,
+            hostingMap,
+            netMap,
+            assignedListener(emptyList()),
+        )
+        val messages = listOf(
+            EventLogRecord(
+                TOPIC, KEY, AppMessage(
+                    authenticatedMessage(
+                        FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID
+                    )
+                ), 0, 0
+            )
+        )
+        val records = processor.onNext(messages)
+        assertThat(records).hasSize(messages.size)
+
+        assertThat(records).filteredOn { it.topic == P2P_OUT_MARKERS }.hasSize(messages.size)
+            .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
+            .extracting<AppMessageMarker> { it.value as AppMessageMarker }
+            .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
+
+        loggingInterceptor.assertSingleWarning(
+            "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
+                    " Session $SESSION_ID will not be initiated."
+        )
+    }
+
+    @Test
+    fun `InboundMessageProcessor warns if no partitions are assigned and does not map new session`() {
+        val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
+        val response = LinkOutMessage(LinkOutHeader("", NetworkType.CORDA_5, FAKE_ADDRESS), responderHelloMessage())
+        Mockito.`when`(mockSessionManager.processSessionMessage(any())).thenReturn(response)
+
+        val initiatorHelloMessage = initiatorHelloMessage()
+
+        val processor = LinkManager.InboundMessageProcessor(
+            mockSessionManager,
+            Mockito.mock(LinkManagerNetworkMap::class.java),
+            assignedListener(emptyList())
+        )
+        val messages = listOf(
+            EventLogRecord(TOPIC, KEY, LinkInMessage(initiatorHelloMessage), 0, 0)
+        )
+        val records = processor.onNext(messages)
+        assertThat(records).isEmpty()
+
+        loggingInterceptor.assertSingleWarning(
+            "No partitions from topic link.in are currently assigned to the inbound message processor." +
+                    " Not going to reply to session initiation for session $SESSION_ID."
+        )
+    }
 }
