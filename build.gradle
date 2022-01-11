@@ -170,14 +170,16 @@ allprojects {
     sourceSets {
         integrationTest {
             java {
-                srcDirs += [ 'src/integration-test/java' ]
+                srcDirs += [ 'src/integrationTest/java' ]
             }
             kotlin {
-                srcDirs += [ 'src/integration-test/kotlin' ]
+                srcDirs += [ 'src/integrationTest/kotlin' ]
             }
             resources {
-                srcDirs = [ 'src/integration-test/resources' ]
+                srcDirs = [ 'src/integrationTest/resources' ]
             }
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
         }
     }
 
@@ -199,6 +201,15 @@ allprojects {
                 }
             }
         }
+    }
+
+    tasks.register('integrationTest', Test) {
+        description = "Runs integration tests."
+        group = "verification"
+
+        testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
+        classpath = project.sourceSets["integrationTest"].runtimeClasspath
+        shouldRunAfter tasks.named('test')
     }
 
     dependencies {
