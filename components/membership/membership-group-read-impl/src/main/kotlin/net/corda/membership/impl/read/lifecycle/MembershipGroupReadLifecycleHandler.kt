@@ -2,7 +2,7 @@ package net.corda.membership.impl.read.lifecycle
 
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.CpiInfoReaderComponent
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -67,7 +67,7 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
             componentRegistrationHandle = coordinator.followStatusChangesByName(
                 setOf(
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                    LifecycleCoordinatorName.forComponent<CpiInfoReaderComponent>(),
+                    LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
                     LifecycleCoordinatorName.forComponent<VirtualNodeInfoReaderComponent>(),
                 )
             )

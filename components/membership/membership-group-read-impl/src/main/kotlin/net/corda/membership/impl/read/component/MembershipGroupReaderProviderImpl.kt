@@ -1,7 +1,7 @@
 package net.corda.membership.impl.read.component
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.CpiInfoReaderComponent
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.StartEvent
@@ -36,8 +36,8 @@ import org.osgi.service.component.annotations.Reference
 class MembershipGroupReaderProviderImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReaderComponent::class)
     val virtualNodeInfoReader: VirtualNodeInfoReaderComponent,
-    @Reference(service = CpiInfoReaderComponent::class)
-    val cpiInfoReader: CpiInfoReaderComponent,
+    @Reference(service = CpiInfoReadService::class)
+    val cpiInfoReader: CpiInfoReadService,
     @Reference(service = ConfigurationReadService::class)
     val configurationReadService: ConfigurationReadService,
     @Reference(service = SubscriptionFactory::class)

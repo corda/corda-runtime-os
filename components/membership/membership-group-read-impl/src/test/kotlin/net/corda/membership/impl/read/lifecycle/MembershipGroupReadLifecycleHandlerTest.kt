@@ -1,7 +1,7 @@
 package net.corda.membership.impl.read.lifecycle
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.CpiInfoReaderComponent
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigObject
 import net.corda.lifecycle.LifecycleCoordinator
@@ -40,7 +40,7 @@ class MembershipGroupReadLifecycleHandlerTest {
     val configRegistrationHandle: AutoCloseable = mock()
 
     val virtualNodeInfoReader: VirtualNodeInfoReaderComponent = mock()
-    val cpiInfoReader: CpiInfoReaderComponent = mock()
+    val cpiInfoReader: CpiInfoReadService = mock()
     val configurationReadService: ConfigurationReadService = mock<ConfigurationReadService>().apply {
         doReturn(configRegistrationHandle).whenever(this).registerForUpdates(any())
     }
@@ -81,7 +81,7 @@ class MembershipGroupReadLifecycleHandlerTest {
             eq(
                 setOf(
                     LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                    LifecycleCoordinatorName.forComponent<CpiInfoReaderComponent>(),
+                    LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
                     LifecycleCoordinatorName.forComponent<VirtualNodeInfoReaderComponent>(),
                 )
             )

@@ -1,7 +1,7 @@
 package net.corda.membership.impl.read.component
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.cpiinfo.read.CpiInfoReaderComponent
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
@@ -42,7 +42,7 @@ class MembershipGroupReaderProviderImplTest {
         doAnswer { coordinatorIsRunning = false }.whenever(this).stop()
     }
 
-    private val cpiInfoReader: CpiInfoReaderComponent = mock()
+    private val cpiInfoReader: CpiInfoReadService = mock()
     private val virtualNodeInfoReader: VirtualNodeInfoReaderComponent = mock()
     private val subscriptionFactory: SubscriptionFactory = mock()
     private val configurationReadService: ConfigurationReadService = mock()
