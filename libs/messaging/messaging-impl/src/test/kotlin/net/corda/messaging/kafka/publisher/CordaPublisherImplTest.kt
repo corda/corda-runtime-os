@@ -134,7 +134,6 @@ class CordaPublisherImplTest {
         thread1.start()
         thread2.start()
         barrier.await()
-        barrier.reset()
         barrier.await()
         verify(producer, times(2)).sendRecords(any())
         verify(producer, times(2)).beginTransaction()

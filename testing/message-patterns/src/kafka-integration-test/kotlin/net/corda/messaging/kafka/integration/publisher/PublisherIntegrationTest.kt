@@ -120,7 +120,6 @@ class PublisherIntegrationTest {
         thread1.start()
         thread2.start()
         barrier.await()
-        barrier.reset()
         barrier.await()
         publisher.close()
 
