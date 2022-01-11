@@ -1,6 +1,6 @@
 package net.corda.crypto.testkit
 
-import net.corda.crypto.impl.CipherSchemeMetadataProviderImpl
+import net.corda.cipher.suite.impl.CipherSchemeMetadataProviderImpl
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 
 class CryptoMocks(

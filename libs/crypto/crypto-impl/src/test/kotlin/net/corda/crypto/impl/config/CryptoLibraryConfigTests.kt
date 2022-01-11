@@ -26,11 +26,6 @@ class CryptoLibraryConfigTests {
                 "persistenceConfig" to mapOf(
                     "url" to "mngPersistenceUrl"
                 )
-            ),
-            "cipherSuite" to mapOf(
-                "schemeMetadataProvider" to "customSchemeMetadataProvider",
-                "signatureVerificationProvider" to "customSignatureVerificationProvider",
-                "digestProvider" to "customDigestProvider",
             )
         )
         val config = CryptoLibraryConfigImpl(raw)
@@ -45,18 +40,6 @@ class CryptoLibraryConfigTests {
         assertEquals(50, config.publicKeys.maximumSize)
         assertEquals(InMemoryKeyValuePersistenceFactory.NAME, config.publicKeys.factoryName)
         assertEquals("mngPersistenceUrl", config.publicKeys.persistenceConfig.getString("url"))
-        assertEquals("customSchemeMetadataProvider", config.cipherSuite.schemeMetadataProvider)
-        assertEquals("customSignatureVerificationProvider", config.cipherSuite.signatureVerificationProvider)
-        assertEquals("customDigestProvider", config.cipherSuite.digestProvider)
-    }
-
-    @Test
-    @Timeout(5)
-    fun `Should return object with default values if 'cipherSuite' is not specified`() {
-        val config = CryptoLibraryConfigImpl(emptyMap())
-        assertEquals("default", config.cipherSuite.schemeMetadataProvider)
-        assertEquals("default", config.cipherSuite.signatureVerificationProvider)
-        assertEquals("default", config.cipherSuite.digestProvider)
     }
 
     @Test
@@ -79,15 +62,6 @@ class CryptoLibraryConfigTests {
         assertEquals(100, config.maximumSize)
         assertEquals(CryptoPersistenceConfig.DEFAULT_FACTORY_NAME, config.factoryName)
         assertTrue(config.persistenceConfig.isEmpty())
-    }
-
-    @Test
-    @Timeout(5)
-    fun `CipherSuiteConfig should return default values if the value is not provided`() {
-        val config = CipherSuiteConfig(emptyMap())
-        assertEquals("default", config.schemeMetadataProvider)
-        assertEquals("default", config.signatureVerificationProvider)
-        assertEquals("default", config.digestProvider)
     }
 
     @Test

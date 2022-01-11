@@ -2,17 +2,13 @@ package net.corda.crypto.impl
 
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CipherSchemeMetadata.Companion.BANNED_DIGESTS
-import net.corda.v5.cipher.suite.CipherSchemeMetadataProvider
 import net.corda.v5.cipher.suite.schemes.DigestScheme
 import net.corda.v5.cipher.suite.schemes.SignatureScheme
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
-import org.osgi.service.component.annotations.Component
 import java.security.MessageDigest
 
-@Component(service = [CipherSchemeMetadataProvider::class])
-class CipherSchemeMetadataProviderImpl : CipherSchemeMetadataProvider {
+class CipherSchemeMetadataFactory {
     companion object {
-        const val SERVICE_NAME = "default"
         val MESSAGE_DIGEST_TYPE: String = MessageDigest::class.java.simpleName
         private val DIGEST_CANDIDATES = listOf(
             "BLAKE2B-256",
@@ -93,7 +89,5 @@ class CipherSchemeMetadataProviderImpl : CipherSchemeMetadataProvider {
         )
     }
 
-    override val name: String = SERVICE_NAME
-
-    override fun getInstance(): CipherSchemeMetadata = cipherSchemeMetadata
+    fun getInstance(): CipherSchemeMetadata = cipherSchemeMetadata
 }

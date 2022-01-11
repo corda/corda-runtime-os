@@ -5,7 +5,6 @@ import net.corda.crypto.impl.persistence.SigningKeyRecord
 import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
 import net.corda.test.util.createTestCase
 import net.corda.v5.base.types.OpaqueBytes
-import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.WrappedPrivateKey
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_CODE_NAME
@@ -22,7 +21,6 @@ import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoServiceBadRequestException
 import net.corda.v5.crypto.exceptions.CryptoServiceException
-import net.corda.v5.crypto.sha256Bytes
 import net.i2p.crypto.eddsa.EdDSAKey
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -123,9 +121,7 @@ class CryptoOperationsTests {
         }
 
         private fun getGeneratedSigningKeyRecord(publicKey: PublicKey): SigningKeyRecord? {
-            return services.persistenceFactory.signingData[
-                "${services.tenantId}:${publicKey.sha256Bytes().toHexString()}"
-            ]?.second
+            return services.signingKeyCache.find(publicKey)
         }
 
         private fun newAlias(): String = UUID.randomUUID().toString()

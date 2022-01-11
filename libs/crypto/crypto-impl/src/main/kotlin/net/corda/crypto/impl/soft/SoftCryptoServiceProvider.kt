@@ -16,7 +16,6 @@ import net.corda.v5.cipher.suite.config.CryptoServiceConfig
 import net.corda.v5.cipher.suite.lifecycle.CryptoLifecycleComponent
 import net.corda.v5.crypto.exceptions.CryptoServiceException
 import net.corda.v5.crypto.exceptions.CryptoServiceLibraryException
-import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality
@@ -28,19 +27,14 @@ open class SoftCryptoServiceProvider : Lifecycle, CryptoLifecycleComponent, Cryp
     companion object {
         private val logger: Logger = contextLogger()
     }
-    private lateinit var persistenceFactories: List<KeyValuePersistenceFactory>
 
-    @Activate
-    fun activate(
-        @Reference(
-            service = KeyValuePersistenceFactory::class,
-            cardinality = ReferenceCardinality.AT_LEAST_ONE,
-            policyOption = ReferencePolicyOption.GREEDY
-        )
-        persistenceFactories: List<KeyValuePersistenceFactory>
-    ) {
-        this.persistenceFactories = persistenceFactories
-    }
+    @Volatile
+    @Reference(
+        service = KeyValuePersistenceFactory::class,
+        cardinality = ReferenceCardinality.AT_LEAST_ONE,
+        policyOption = ReferencePolicyOption.GREEDY
+    )
+    lateinit var persistenceFactories: List<KeyValuePersistenceFactory>
 
     private var impl: Impl? = null
 

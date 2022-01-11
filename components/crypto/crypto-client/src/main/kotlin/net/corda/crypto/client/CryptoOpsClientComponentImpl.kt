@@ -1,7 +1,6 @@
 package net.corda.crypto.client
 
 import net.corda.crypto.CryptoOpsClientComponent
-import net.corda.crypto.HSMRegistrationClientComponent
 import net.corda.crypto.component.lifecycle.AbstractComponent
 import net.corda.crypto.impl.stopGracefully
 import net.corda.data.crypto.config.HSMInfo
@@ -36,26 +35,23 @@ class CryptoOpsClientComponentImpl :
     }
 
     @Volatile
-    private lateinit var publisherFactory: PublisherFactory
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    lateinit var coordinatorFactory: LifecycleCoordinatorFactory
 
     @Volatile
-    private lateinit var schemeMetadata: CipherSchemeMetadata
+    @Reference(service = PublisherFactory::class)
+    lateinit var publisherFactory: PublisherFactory
+
+    @Volatile
+    @Reference(service = CipherSchemeMetadata::class)
+    lateinit var schemeMetadata: CipherSchemeMetadata
 
     @Activate
-    fun activate(
-        @Reference(service = LifecycleCoordinatorFactory::class)
-        coordinatorFactory: LifecycleCoordinatorFactory,
-        @Reference(service = PublisherFactory::class)
-        publisherFactory: PublisherFactory,
-        @Reference(service = CipherSchemeMetadata::class)
-        schemeMetadata: CipherSchemeMetadata
-    ) {
+    fun activate() {
         setup(
             coordinatorFactory,
             LifecycleCoordinatorName.forComponent<CryptoOpsClientComponent>()
         )
-        this.publisherFactory = publisherFactory
-        this.schemeMetadata = schemeMetadata
         createResources()
     }
 

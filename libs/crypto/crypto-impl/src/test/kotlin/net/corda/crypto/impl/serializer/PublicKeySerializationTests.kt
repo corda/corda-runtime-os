@@ -28,7 +28,7 @@ class PublicKeySerializationTests {
             on { it.getSchemeMap() }.thenReturn(keyEncodingService)
         }
         val publicKeySerializer = PublicKeySerializer()
-        publicKeySerializer.activate(cryptoLibraryFactory)
+        publicKeySerializer.factory = cryptoLibraryFactory
 
         argumentCaptor<ByteArray> {
             val writeOps = mock<WriteObject>()

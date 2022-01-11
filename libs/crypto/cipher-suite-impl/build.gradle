@@ -1,0 +1,46 @@
+plugins {
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+    id 'corda.common-library'
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "org.slf4j:slf4j-api"
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
+    implementation "net.i2p.crypto:eddsa:$eddsaVersion"
+    implementation "net.corda:corda-crypto"
+    implementation "net.corda:corda-cipher-suite"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+    implementation project(":libs:crypto:crypto-impl")
+    implementation project(":libs:crypto:crypto-internal")
+    implementation project(":libs:utilities")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:serialization:serialization-internal')
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":testing:test-utilities")
+}
+
+description 'Common crypto implementation'
+
+tasks.named('jar', Jar) {
+    bnd """\
+Import-Package:\
+    org.bouncycastle.jcajce.provider.asymmetric,\
+    org.bouncycastle.jcajce.provider.config,\
+    org.bouncycastle.jcajce.provider.digest,\
+    org.bouncycastle.jcajce.provider.keystore,\
+    org.bouncycastle.jcajce.provider.symmetric,\
+    org.bouncycastle.jcajce.provider.util,\
+    net.i2p.crypto.eddsa.math;resolution:=optional,\
+    *
+"""
+}

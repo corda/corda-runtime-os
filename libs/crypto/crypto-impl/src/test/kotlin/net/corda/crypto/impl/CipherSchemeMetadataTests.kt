@@ -31,7 +31,7 @@ import kotlin.test.assertNotEquals
 
 class CipherSchemeMetadataTests {
     companion object {
-        private lateinit var schemeMetadataProvider: CipherSchemeMetadataProviderImpl
+        private lateinit var schemeMetadataFactory: CipherSchemeMetadataFactory
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var unknownSignatureSpec: SignatureSpec
         private lateinit var unknownScheme: SignatureScheme
@@ -41,8 +41,8 @@ class CipherSchemeMetadataTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            schemeMetadataProvider = CipherSchemeMetadataProviderImpl()
-            schemeMetadata = schemeMetadataProvider.getInstance()
+            schemeMetadataFactory = CipherSchemeMetadataFactory()
+            schemeMetadata = schemeMetadataFactory.getInstance()
             factory = CryptoServicesTestFactory(schemeMetadata)
             services = factory.createCryptoServices()
             unknownSignatureSpec = SignatureSpec(
@@ -120,14 +120,14 @@ class CipherSchemeMetadataTests {
     @Timeout(30)
     fun `Should contain predefined list of signature schemes`() {
         assertEquals(8, schemeMetadata.schemes.size)
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataProvider.providerMap.RSA_SHA256))
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataProvider.providerMap.ECDSA_SECP256K1_SHA256))
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataProvider.providerMap.ECDSA_SECP256R1_SHA256))
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataProvider.providerMap.EDDSA_ED25519_NONE))
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataProvider.providerMap.SM2_SM3))
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataProvider.providerMap.GOST3410_GOST3411))
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataProvider.providerMap.SPHINCS256_SHA512))
-        assertTrue(schemeMetadata.schemes.contains(schemeMetadataProvider.providerMap.COMPOSITE_KEY))
+        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.RSA_SHA256))
+        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.ECDSA_SECP256K1_SHA256))
+        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.ECDSA_SECP256R1_SHA256))
+        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.EDDSA_ED25519_NONE))
+        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.SM2_SM3))
+        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.GOST3410_GOST3411))
+        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.SPHINCS256_SHA512))
+        assertTrue(schemeMetadata.schemes.contains(schemeMetadataFactory.providerMap.COMPOSITE_KEY))
     }
 
     @Test

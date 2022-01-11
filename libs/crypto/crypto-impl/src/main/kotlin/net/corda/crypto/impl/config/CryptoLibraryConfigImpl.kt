@@ -19,6 +19,4 @@ val CryptoLibraryConfig.publicKeys: CryptoPersistenceConfig get() =
 val CryptoLibraryConfig.memberConfig: CryptoConfigMap get() =
         getOptionalConfig(this, this::memberConfig.name) ?: CryptoConfigMap(emptyMap())
 
-val CryptoLibraryConfig.cipherSuite: CipherSuiteConfig
-    get() = CipherSuiteConfig(getOptionalConfig(this, this::cipherSuite.name) ?: emptyMap())
 

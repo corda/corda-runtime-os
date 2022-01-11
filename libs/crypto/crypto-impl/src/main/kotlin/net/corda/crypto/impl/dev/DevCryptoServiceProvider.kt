@@ -33,19 +33,13 @@ class DevCryptoServiceProvider : CryptoServiceProvider<DevCryptoServiceConfigura
     private val signingCache =
         ConcurrentHashMap<String, SigningKeyCache>()
 
-    private lateinit var persistenceFactories: List<KeyValuePersistenceFactory>
-
-    @Activate
-    fun activate(
-        @Reference(
-            service = KeyValuePersistenceFactory::class,
-            cardinality = ReferenceCardinality.AT_LEAST_ONE,
-            policyOption = ReferencePolicyOption.GREEDY
-        )
-        persistenceFactories: List<KeyValuePersistenceFactory>
-    ) {
-        this.persistenceFactories = persistenceFactories
-    }
+    @Volatile
+    @Reference(
+        service = KeyValuePersistenceFactory::class,
+        cardinality = ReferenceCardinality.AT_LEAST_ONE,
+        policyOption = ReferencePolicyOption.GREEDY
+    )
+    lateinit var persistenceFactories: List<KeyValuePersistenceFactory>
 
     override val name: String = SERVICE_NAME
 

@@ -49,7 +49,9 @@ class HSMRegistrationClientComponentTests : AbstractComponentTests<HSMRegistrati
             on { createPublisher(any(), any()) } doReturn publisher
         }
         val instance = HSMRegistrationClientComponentImpl()
-        instance.activate(coordinatorFactory, publisherFactory)
+        instance.coordinatorFactory = coordinatorFactory
+        instance.publisherFactory = publisherFactory
+        instance.activate()
         instance
     }
 

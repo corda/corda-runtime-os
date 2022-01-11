@@ -37,7 +37,7 @@ class KeyEncodingServiceTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            schemeMetadata = CipherSchemeMetadataProviderImpl().getInstance()
+            schemeMetadata = CipherSchemeMetadataFactory().getInstance()
             factory = CryptoServicesTestFactory(schemeMetadata)
             services = factory.createCryptoServices()
             keyEncoder = schemeMetadata

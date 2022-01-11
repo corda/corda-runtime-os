@@ -81,11 +81,10 @@ class CryptoOpsClientComponentTests : AbstractComponentTests<CryptoOpsClientComp
                 on { createRPCSender<RpcOpsRequest, RpcOpsResponse>(any(), any()) } doReturn sender
             }
             val instance = CryptoOpsClientComponentImpl()
-            instance.activate(
-                coordinatorFactory,
-                publisherFactory,
-                schemeMetadata
-            )
+            instance.coordinatorFactory = coordinatorFactory
+            instance.publisherFactory = publisherFactory
+            instance.schemeMetadata = schemeMetadata
+            instance.activate()
             instance
         }
     }

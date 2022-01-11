@@ -69,7 +69,7 @@ class DevCryptoServiceTests {
             schemeMetadata = factory.schemeMetadata
             signatureVerifier = factory.verifier
             devCryptoServiceProvider = DevCryptoServiceProvider().also {
-                it.activate(listOf(InMemoryKeyValuePersistenceFactory()))
+                it.persistenceFactories = listOf(InMemoryKeyValuePersistenceFactory())
             }
             cryptoService = devCryptoServiceProvider.getInstance(
                 CryptoServiceContext(

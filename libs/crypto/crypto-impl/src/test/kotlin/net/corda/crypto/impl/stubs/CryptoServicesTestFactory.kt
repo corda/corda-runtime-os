@@ -2,11 +2,12 @@ package net.corda.crypto.impl.stubs
 
 import net.corda.crypto.CryptoConsts
 import net.corda.crypto.SigningService
-import net.corda.crypto.impl.CipherSchemeMetadataProviderImpl
+import net.corda.crypto.impl.CipherSchemeMetadataFactory
 import net.corda.crypto.impl.CryptoServiceConfiguredInstance
 import net.corda.crypto.impl.CryptoServiceFactory
+import net.corda.crypto.impl.DigestServiceImpl
+import net.corda.crypto.impl.DoubleSHA256DigestFactory
 import net.corda.crypto.impl.soft.SoftCryptoService
-import net.corda.crypto.impl.DigestServiceProviderImpl
 import net.corda.crypto.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.impl.SigningServiceImpl
 import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactory
@@ -24,10 +25,10 @@ class CryptoServicesTestFactory(
     schemeMetadataOverride: CipherSchemeMetadata? = null
 ) : CipherSuiteFactory {
     val schemeMetadata: CipherSchemeMetadata =
-        schemeMetadataOverride ?: CipherSchemeMetadataProviderImpl().getInstance()
+        schemeMetadataOverride ?: CipherSchemeMetadataFactory().getInstance()
 
     val digest: DigestService by lazy {
-        DigestServiceProviderImpl(null).getInstance(this)
+        DigestServiceImpl(schemeMetadata, listOf(DoubleSHA256DigestFactory()), null)
     }
 
     val verifier: SignatureVerificationService by lazy {

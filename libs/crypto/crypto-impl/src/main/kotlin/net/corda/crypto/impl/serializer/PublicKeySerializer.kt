@@ -5,7 +5,6 @@ import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.InternalDirectSerializer.ReadObject
 import net.corda.serialization.InternalDirectSerializer.WriteObject
 import net.corda.v5.cipher.suite.CipherSuiteFactory
-import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.security.PublicKey
@@ -16,15 +15,8 @@ import java.security.PublicKey
 @Component(service = [InternalCustomSerializer::class])
 class PublicKeySerializer : BaseDirectSerializer<PublicKey>() {
 
-    private lateinit var factory: CipherSuiteFactory
-
-    @Activate
-    fun activate(
-        @Reference(service = CipherSuiteFactory::class)
-        factory: CipherSuiteFactory
-    ) {
-        this.factory = factory
-    }
+    @Reference(service = CipherSuiteFactory::class)
+    lateinit var factory: CipherSuiteFactory
 
     override val type: Class<PublicKey> get() = PublicKey::class.java
     override val withInheritance: Boolean get() = true

@@ -82,9 +82,7 @@ class DevCryptoServiceProviderTests {
     @Timeout(30)
     fun `Should throw unrecoverable CryptoServiceLibraryException if there is no InMemoryPersistentCacheFactory`() {
         val provider = DevCryptoServiceProvider()
-        provider.activate(
-            listOf(mock())
-        )
+        provider.persistenceFactories = listOf(mock())
         val exception = assertThrows<CryptoServiceLibraryException> {
             provider.createCryptoService(CryptoConsts.CryptoCategories.FRESH_KEYS)
         }
@@ -95,9 +93,7 @@ class DevCryptoServiceProviderTests {
 
     private fun createCryptoServiceProvider(): DevCryptoServiceProvider {
         return DevCryptoServiceProvider().also {
-            it.activate(
-                listOf(InMemoryKeyValuePersistenceFactory())
-            )
+            it.persistenceFactories = listOf(InMemoryKeyValuePersistenceFactory())
         }
     }
 

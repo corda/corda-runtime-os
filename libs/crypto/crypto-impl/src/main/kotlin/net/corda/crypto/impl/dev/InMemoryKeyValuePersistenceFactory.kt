@@ -15,11 +15,11 @@ class InMemoryKeyValuePersistenceFactory : KeyValuePersistenceFactory {
         const val NAME = "dev"
     }
 
-    val signingData =
-        ConcurrentHashMap<String, Pair<SigningKeyRecord?, SigningKeyRecord>>()
+    private val signingData =
+        ConcurrentHashMap<String, SigningKeyRecord>()
 
-    val cryptoData =
-        ConcurrentHashMap<String, Pair<SoftCryptoKeyRecordInfo?, SoftCryptoKeyRecord>>()
+    private val cryptoData =
+        ConcurrentHashMap<String, SoftCryptoKeyRecordInfo>()
 
     override val name: String = NAME
 

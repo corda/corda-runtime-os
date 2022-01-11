@@ -1,5 +1,6 @@
-package net.corda.crypto.impl
+package net.corda.cipher.suite.impl
 
+import net.corda.crypto.impl.SignatureVerificationServiceImpl
 import net.corda.v5.cipher.suite.CipherSuiteFactory
 import net.corda.v5.cipher.suite.SignatureVerificationServiceProvider
 import net.corda.v5.crypto.SignatureVerificationService

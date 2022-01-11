@@ -27,20 +27,19 @@ class HSMRegistrationClientComponentImpl :
     }
 
     @Volatile
-    private lateinit var publisherFactory: PublisherFactory
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    lateinit var coordinatorFactory: LifecycleCoordinatorFactory
+
+    @Volatile
+    @Reference(service = PublisherFactory::class)
+    lateinit var publisherFactory: PublisherFactory
 
     @Activate
-    fun activate(
-        @Reference(service = LifecycleCoordinatorFactory::class)
-        coordinatorFactory: LifecycleCoordinatorFactory,
-        @Reference(service = PublisherFactory::class)
-        publisherFactory: PublisherFactory
-    ) {
+    fun activate() {
         setup(
             coordinatorFactory,
             LifecycleCoordinatorName.forComponent<HSMRegistrationClientComponent>()
         )
-        this.publisherFactory = publisherFactory
         createResources()
     }
 

@@ -86,9 +86,7 @@ class SoftCryptoServiceProviderTests {
     @Timeout(30)
     fun `Should throw unrecoverable CryptoServiceLibraryException if configured factory is not found`() {
         val provider = SoftCryptoServiceProvider()
-        provider.activate(
-            listOf(InMemoryKeyValuePersistenceFactory())
-        )
+        provider.persistenceFactories = listOf(InMemoryKeyValuePersistenceFactory())
         provider.start()
         provider.handleConfigEvent(
             CryptoLibraryConfigImpl(
@@ -130,9 +128,7 @@ class SoftCryptoServiceProviderTests {
 
     private fun createCryptoServiceProvider(): SoftCryptoServiceProvider {
         val provider = SoftCryptoServiceProvider()
-        provider.activate(
-            listOf(InMemoryKeyValuePersistenceFactory())
-        )
+        provider.persistenceFactories = listOf(InMemoryKeyValuePersistenceFactory())
         provider.start()
         provider.handleConfigEvent(
             CryptoLibraryConfigImpl(
