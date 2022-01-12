@@ -51,6 +51,7 @@ class LocalPackageCache @Activate constructor(
 
     private companion object {
         private const val CFG_KEY = "corda.cpi"
+        private const val CACHE_DIR_PATH = "custom.corda.cpi.cacheDir"
         private val logger = contextLogger()
         private val cpiMapCollector: Collector<CPI, TreeMap<CPI.Identifier, CPI>, NavigableMap<CPI.Identifier, CPI>> =
             Collector.of(
@@ -182,15 +183,14 @@ class LocalPackageCache @Activate constructor(
             if (ConfigKeys.BOOT_CONFIG in changedKeys) {
                 val cfg = config[ConfigKeys.BOOT_CONFIG]!!.toSafeConfig()
 
-                if (cfg.hasPath(CFG_KEY)) {
-                    scanDirectoryAndBuildCache(cfg.getConfig(CFG_KEY)!!)
+                if (cfg.hasPath(CACHE_DIR_PATH)) {
+                    scanDirectoryAndBuildCache(cfg.getConfig(CACHE_DIR_PATH)!!)
                 }
             }
         }
     }
 
     private fun scanDirectoryAndBuildCache(config: Config) {
-        logger.info("scanDirectoryAndBuildCache")
         packageCacheLock.write {
             val repositoryFolder = (
                     config.getString("cacheDir")
