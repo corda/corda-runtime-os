@@ -15,9 +15,6 @@ import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
-import net.corda.permissions.cache.PermissionCacheService
-import net.corda.permissions.storage.reader.PermissionStorageReaderService
-import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.db.DBProcessorException
 import net.corda.v5.base.util.contextLogger
@@ -38,13 +35,7 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
     @Reference(service = LiquibaseSchemaMigrator::class)
-    private val schemaMigrator: LiquibaseSchemaMigrator,
-    @Reference(service = PermissionCacheService::class)
-    private val permissionCacheService: PermissionCacheService,
-    @Reference(service = PermissionStorageReaderService::class)
-    private val permissionStorageReaderService: PermissionStorageReaderService,
-    @Reference(service = PermissionStorageWriterService::class)
-    private val permissionStorageWriterService: PermissionStorageWriterService
+    private val schemaMigrator: LiquibaseSchemaMigrator
 ) : DBProcessor {
 
     companion object {
@@ -70,21 +61,9 @@ class DBProcessorImpl @Activate constructor(
         log.info("Starting configuration read service with bootstrap config ${config}.")
         configurationReadService.start()
         configurationReadService.bootstrapConfig(config)
-
-        log.info("Starting PermissionCacheService")
-        permissionCacheService.start()
-
-        log.info("Starting PermissionStorageReaderService")
-        permissionStorageReaderService.start()
-
-        log.info("Starting PermissionStorageWriterService")
-        permissionStorageWriterService.start()
     }
 
     override fun stop() {
-        permissionStorageWriterService.stop()
-        permissionStorageReaderService.stop()
-        permissionCacheService.stop()
         configWriteService.stop()
         configurationReadService.stop()
     }

@@ -24,7 +24,7 @@ dependencies {
     implementation project(':libs:db:db-admin-impl')
     implementation project(":libs:db:db-core")
     implementation project(':libs:db:db-orm')
-    implementation project(':libs:lifecycle:lifecycle')
+    api project(':libs:lifecycle:lifecycle')
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-db-schema'
