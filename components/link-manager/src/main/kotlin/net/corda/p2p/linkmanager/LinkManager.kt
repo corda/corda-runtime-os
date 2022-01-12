@@ -360,8 +360,8 @@ class LinkManager(@Reference(service = SubscriptionFactory::class)
                             )
                         } else {
                             logger.warn(
-                                "No partitions from topic ${Schema.LINK_IN_TOPIC} are currently assigned to the inbound message processor." +
-                                        " Not going to reply to session initiation for session ${payload.header.sessionId}."
+                                "No partitions from ${Schema.LINK_IN_TOPIC} are assigned to inbound message processor." +
+                                        " Not going to reply to session init for session ${payload.header.sessionId}."
                             )
                             emptyList()
                         }
