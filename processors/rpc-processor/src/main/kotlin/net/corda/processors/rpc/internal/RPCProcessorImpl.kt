@@ -20,10 +20,14 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [RPCProcessor::class])
 @Suppress("Unused")
 class RPCProcessorImpl @Activate constructor(
-    @Reference(service = ConfigurationReadService::class) private val configReadService: ConfigurationReadService,
-    @Reference(service = ConfigRPCOpsService::class) private val configRPCOpsService: ConfigRPCOpsService,
-    @Reference(service = HttpRpcGateway::class) private val httpRpcGateway: HttpRpcGateway,
-    @Reference(service = PublisherFactory::class) private val publisherFactory: PublisherFactory
+    @Reference(service = ConfigurationReadService::class)
+    private val configReadService: ConfigurationReadService,
+    @Reference(service = ConfigRPCOpsService::class)
+    private val configRPCOpsService: ConfigRPCOpsService,
+    @Reference(service = HttpRpcGateway::class)
+    private val httpRpcGateway: HttpRpcGateway,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory
 ) : RPCProcessor {
     private companion object {
         val logger = contextLogger()
@@ -46,7 +50,13 @@ class RPCProcessorImpl @Activate constructor(
             CONFIG_TOPIC,
             RPC_CONFIG,
             Configuration(
-                CONFIG_HTTP_RPC + "\n" + CONFIG_CONFIG_MGMT_REQUEST_TIMEOUT, "1"
+                CONFIG_HTTP_RPC
+                        + "\n"
+                        + CONFIG_CONFIG_MGMT_REQUEST_TIMEOUT
+                        + "\n"
+                        // TODO - Joel - Remove hardcoding of bootstrap servers.
+                        + "messaging.kafka.common.bootstrap.servers=\"kafka:9092\""
+                        + "\n", "1"
             )
         )
         publisher.publish(listOf(record)).forEach { future -> future.get() }
