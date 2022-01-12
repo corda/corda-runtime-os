@@ -27,6 +27,7 @@ import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Clock
+import java.time.Duration
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -41,6 +42,10 @@ class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
     private val clock: Clock = Clock.systemUTC()
 ) : StateAndEventSubscription<K, S, E> {
+
+    companion object {
+        private val EVENT_POLL_TIMEOUT = Duration.ofMillis(100)
+    }
 
     private val log = LoggerFactory.getLogger(config.loggerName)
 
@@ -179,7 +184,7 @@ class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         var pollAndProcessSuccessful = false
         while (!pollAndProcessSuccessful && !stopped) {
             try {
-                for (batch in getEventsByBatch(eventConsumer.poll())) {
+                for (batch in getEventsByBatch(eventConsumer.poll(EVENT_POLL_TIMEOUT))) {
                     tryProcessBatchOfEvents(batch)
                 }
                 pollAndProcessSuccessful = true

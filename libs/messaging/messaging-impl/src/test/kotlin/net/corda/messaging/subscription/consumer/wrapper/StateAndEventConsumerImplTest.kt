@@ -131,8 +131,8 @@ class StateAndEventConsumerImplTest {
         consumer.pollAndUpdateStates(true)
 
         verify(stateConsumer, times(1)).assignment()
-        verify(stateConsumer, times(1)).poll()
-        verify(stateConsumer, times(1)).poll()
+        verify(stateConsumer, times(1)).poll(any())
+        verify(stateConsumer, times(1)).poll(any())
         verify(stateAndEventListener, times(1)).onPartitionSynced(any())
     }
 
@@ -155,8 +155,8 @@ class StateAndEventConsumerImplTest {
         consumer.pollAndUpdateStates(false)
 
         verify(stateConsumer, times(1)).assignment()
-        verify(stateConsumer, times(1)).poll()
-        verify(stateConsumer, times(1)).poll()
+        verify(stateConsumer, times(1)).poll(any())
+        verify(stateConsumer, times(1)).poll(any())
         verify(stateAndEventListener, times(0)).onPartitionSynced(any())
     }
 
@@ -187,7 +187,7 @@ class StateAndEventConsumerImplTest {
         verify(eventConsumer, times(1)).paused()
         verify(eventConsumer, times(1)).pause(any())
         verify(eventConsumer, times(1)).resume(any())
-        verify(stateConsumer, atLeast(1)).poll()
+        verify(stateConsumer, atLeast(1)).poll(any())
         verify(stateAndEventListener, times(0)).onPartitionSynced(any())
     }
 
@@ -217,7 +217,7 @@ class StateAndEventConsumerImplTest {
         val state = CordaConsumerRecord(TOPIC_PREFIX + TOPIC, 0, 0, "key", "state5", 0)
 
         doAnswer { topicPartitions }.whenever(stateConsumer).assignment()
-        doAnswer { listOf(state) }.whenever(stateConsumer).poll()
+        doAnswer { listOf(state) }.whenever(stateConsumer).poll(any())
         doAnswer { Long.MAX_VALUE }.whenever(stateConsumer).position(any())
 
         return Mocks(listener, eventConsumer, stateConsumer, topicPartitions)

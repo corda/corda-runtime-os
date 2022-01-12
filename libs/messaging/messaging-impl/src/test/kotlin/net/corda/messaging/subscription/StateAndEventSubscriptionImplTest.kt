@@ -81,7 +81,7 @@ class StateAndEventSubscriptionImplTest {
         doAnswer { stateConsumer }.whenever(stateAndEventConsumer).stateConsumer
         doAnswer { producer }.whenever(builder).createProducer(any())
         doAnswer { setOf(topicPartition) }.whenever(stateConsumer).assignment()
-        doAnswer { listOf(state) }.whenever(stateConsumer).poll()
+        doAnswer { listOf(state) }.whenever(stateConsumer).poll(any())
         doAnswer { Pair(stateAndEventConsumer, rebalanceListener) }.whenever(builder)
             .createStateEventConsumerAndRebalanceListener<Any, Any, Any>(any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())
 
@@ -98,7 +98,7 @@ class StateAndEventSubscriptionImplTest {
                 latch.countDown()
                 listOf(mockConsumerRecords[latch.count.toInt() - 1])
             }
-        }.whenever(eventConsumer).poll()
+        }.whenever(eventConsumer).poll(any())
 
         doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
         doReturn("1".toByteArray()).`when`(cordaAvroSerializer).serialize(any())
@@ -144,7 +144,7 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull()
         )
         verify(builder, times(1)).createProducer(any())
-        verify(eventConsumer, times(6)).poll()
+        verify(eventConsumer, times(6)).poll(any())
         verify(producer, times(4)).beginTransaction()
         verify(producer, times(4)).sendRecords(any())
         verify(producer, times(4)).sendRecordOffsetsToTransaction(any(), any())
@@ -189,7 +189,7 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull()
         )
         verify(builder, times(1)).createProducer(any())
-        verify(eventConsumer, times(1)).poll()
+        verify(eventConsumer, times(1)).poll(any())
         verifyNoInteractions(producer)
     }
 
@@ -220,7 +220,7 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull()
         )
         verify(builder, times(1)).createProducer(any())
-        verify(eventConsumer, times(6)).poll()
+        verify(eventConsumer, times(6)).poll(any())
         verify(producer, times(5)).beginTransaction()
         verify(producer, times(5)).sendRecords(any())
         verify(producer, times(5)).sendRecordOffsetsToTransaction(any(), any())
@@ -249,7 +249,7 @@ class StateAndEventSubscriptionImplTest {
                 eventsPaused = true
                 records
             }
-        }.whenever(eventConsumer).poll()
+        }.whenever(eventConsumer).poll(any())
         val subscription = StateAndEventSubscriptionImpl<Any, Any, Any>(
             stateAndEventConfig,
             builder,
@@ -299,7 +299,7 @@ class StateAndEventSubscriptionImplTest {
                 eventsPaused = true
                 records
             }
-        }.whenever(eventConsumer).poll()
+        }.whenever(eventConsumer).poll(any())
 
         val subscription = StateAndEventSubscriptionImpl<Any, Any, Any>(
             stateAndEventConfig,
@@ -344,7 +344,7 @@ class StateAndEventSubscriptionImplTest {
                 eventsPaused = true
                 records
             }
-        }.whenever(eventConsumer).poll()
+        }.whenever(eventConsumer).poll(any())
 
         //null response from waitForFunctionToFinish indicates slow function exceeded timeout
         doAnswer {
