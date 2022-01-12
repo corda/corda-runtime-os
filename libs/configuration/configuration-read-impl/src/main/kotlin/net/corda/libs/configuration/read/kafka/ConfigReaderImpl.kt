@@ -61,7 +61,7 @@ class ConfigReaderImpl(
                     subscription!!.start()
                     stopped = false
                 } else {
-                    log.warn("'$CONFIG_TOPIC_PATH' is not available in the bootstrap configuration." +
+                    log.warn("'$CONFIG_TOPIC_PATH' is not available in the bootstrap configuration. " +
                             "Subscription will not be setup.")
                 }
             }

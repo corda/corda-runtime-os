@@ -40,9 +40,9 @@ services:
     command: |
       "
       echo -e 'Creating kafka topics'
-      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic config-management-request.topic
-      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic config-management-request.topic.resp
-      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic config.topic --config "cleanup.policy=compact"
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.config-management-request.topic
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.config-management-request.topic.resp
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.config.topic --config "cleanup.policy=compact"
 
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.management
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.management.resp
@@ -104,11 +104,14 @@ services:
     ports:
       - "5006:5006"
     environment:
-      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006 -DinstanceId=1 \
-        -Dmessaging.topic.prefix=http."
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006"
     command:
       - -m
       - kafka.common.bootstrap.servers=kafka:9092
+      - -t
+      - http.
+      - -i
+      - "1"
       - -d
       - cluster.user=user
       - -d
