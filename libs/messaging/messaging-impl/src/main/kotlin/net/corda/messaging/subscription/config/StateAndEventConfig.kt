@@ -2,14 +2,14 @@ package net.corda.messaging.subscription.config
 
 import com.typesafe.config.Config
 import net.corda.messagebus.api.configuration.ConfigProperties
-import net.corda.messaging.api.configuration.ConfigProperties.Companion.DEAD_LETTER_QUEUE_SUFFIX
-import net.corda.messaging.api.configuration.ConfigProperties.Companion.EVENT_CONSUMER
-import net.corda.messaging.api.configuration.ConfigProperties.Companion.EVENT_CONSUMER_CLOSE_TIMEOUT
-import net.corda.messaging.api.configuration.ConfigProperties.Companion.EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES
-import net.corda.messaging.api.configuration.ConfigProperties.Companion.EVENT_CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.api.configuration.ConfigProperties.Companion.EVENT_GROUP_ID
-import net.corda.messaging.api.configuration.ConfigProperties.Companion.STATE_CONSUMER
-import net.corda.messaging.api.configuration.ConfigProperties.Companion.STATE_TOPIC_NAME
+import net.corda.messaging.properties.ConfigProperties.Companion.DEAD_LETTER_QUEUE_SUFFIX
+import net.corda.messaging.properties.ConfigProperties.Companion.EVENT_CONSUMER
+import net.corda.messaging.properties.ConfigProperties.Companion.EVENT_CONSUMER_CLOSE_TIMEOUT
+import net.corda.messaging.properties.ConfigProperties.Companion.EVENT_CONSUMER_POLL_AND_PROCESS_RETRIES
+import net.corda.messaging.properties.ConfigProperties.Companion.EVENT_CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messaging.properties.ConfigProperties.Companion.EVENT_GROUP_ID
+import net.corda.messaging.properties.ConfigProperties.Companion.STATE_CONSUMER
+import net.corda.messaging.properties.ConfigProperties.Companion.STATE_TOPIC_NAME
 import java.time.Duration
 
 data class StateAndEventConfig(
