@@ -43,22 +43,19 @@ class RPCProcessorImpl @Activate constructor(
 
         configRPCOpsService.start()
 
-        val publisherConfig = PublisherConfig(CONFIG_CLIENT_RPC_PROCESSOR, 1)
+        val publisherConfig = PublisherConfig(CLIENT_ID_RPC_PROCESSOR, 1)
         val publisher = publisherFactory.createPublisher(publisherConfig, config)
         publisher.start()
-        val record = Record(
-            CONFIG_TOPIC,
-            RPC_CONFIG,
-            Configuration(
-                CONFIG_HTTP_RPC
-                        + "\n"
-                        + CONFIG_CONFIG_MGMT_REQUEST_TIMEOUT
-                        + "\n"
-                        // TODO - Joel - Remove hardcoding of bootstrap servers.
-                        + "messaging.kafka.common.bootstrap.servers=\"kafka:9092\""
-                        + "\n", "1"
-            )
-        )
+
+        val bootstrapServersConfig = if (config.hasPath(CONFIG_KEY_BOOTSTRAP_SERVERS)) {
+            val bootstrapServers = config.getString(CONFIG_KEY_BOOTSTRAP_SERVERS)
+            "\n$CONFIG_KEY_BOOTSTRAP_SERVERS=\"$bootstrapServers\""
+        } else {
+            ""
+        }
+        val configValue = "$CONFIG_HTTP_RPC\n$CONFIG_CONFIG_MGMT_REQUEST_TIMEOUT$bootstrapServersConfig"
+
+        val record = Record(CONFIG_TOPIC, RPC_CONFIG, Configuration(configValue, "1"))
         publisher.publish(listOf(record)).forEach { future -> future.get() }
     }
 
