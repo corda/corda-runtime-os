@@ -20,11 +20,11 @@ import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.kafka.properties.ConfigProperties
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
-import net.corda.messaging.kafka.utils.render
+import net.corda.messaging.properties.ConfigProperties
+import net.corda.messaging.properties.ConfigProperties.Companion.KAFKA_CONSUMER
+import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
+import net.corda.messaging.utils.render
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
