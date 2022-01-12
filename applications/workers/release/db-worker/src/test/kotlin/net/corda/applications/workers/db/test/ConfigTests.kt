@@ -40,6 +40,7 @@ class ConfigTests {
         val expectedKeys = setOf(
             KEY_INSTANCE_ID,
             KEY_TOPIC_PREFIX,
+            KEY_CONFIG_TOPIC_NAME,
             "$CUSTOM_CONFIG_PATH.$CUSTOM_KEY_ONE",
             "$MSG_CONFIG_PATH.$MSG_KEY_ONE",
             "$DB_CONFIG_PATH.$DB_KEY_ONE"
@@ -72,7 +73,7 @@ class ConfigTests {
         val config = processor.config!!
 
         // Instance ID and topic prefix are always present, with default values if none are provided.
-        val expectedKeys = setOf(KEY_INSTANCE_ID, KEY_TOPIC_PREFIX)
+        val expectedKeys = setOf(KEY_INSTANCE_ID, KEY_TOPIC_PREFIX, KEY_CONFIG_TOPIC_NAME)
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
     }
@@ -91,7 +92,7 @@ class ConfigTests {
         dbWorker.startup(args)
         val config = processor.config!!
 
-        val expectedKeys = setOf(KEY_INSTANCE_ID, KEY_TOPIC_PREFIX)
+        val expectedKeys = setOf(KEY_INSTANCE_ID, KEY_TOPIC_PREFIX, KEY_CONFIG_TOPIC_NAME)
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
 
