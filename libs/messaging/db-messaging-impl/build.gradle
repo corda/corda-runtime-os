@@ -37,26 +37,3 @@ dependencies {
     integrationTestImplementation "io.dropwizard.metrics:metrics-core:$dropwizardMetricsVersion"
     integrationTestImplementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
-
-/**
- * TODO: Once the new setup to perform integration testing under OSGi using the bootstrapper is ready,
- *       we can migrate to it and remove the below.
- */
-sourceSets {
-    integrationTest {
-        compileClasspath += main.output + test.output
-        runtimeClasspath += main.output + test.output
-    }
-}
-
-tasks.register('integrationTest', Test) {
-    description = "Runs integration tests."
-
-    testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
-    classpath = project.sourceSets["integrationTest"].runtimeClasspath
-    systemProperty "postgresHost", project.getProperty("postgresHost")
-    systemProperty "postgresDb", project.getProperty("postgresDb")
-    systemProperty "postgresPort", project.getProperty("postgresPort")
-    systemProperty "postgresUser", project.getProperty("postgresUser")
-    systemProperty "postgresPassword", project.getProperty("postgresPassword")
-}
