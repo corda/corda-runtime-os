@@ -56,14 +56,7 @@ sourceSets {
     }
 }
 
-tasks.register('integrationTest', Test) {
-    description = "Runs integration tests."
+tasks.named('integrationTest') {
     final String hostsFilePath = new File(project.sourceSets["integrationTest"].output.resourcesDir.absolutePath, "hosts").absolutePath
     jvmArgs "-Djdk.net.hosts.file=$hostsFilePath"
-    testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
-    classpath = project.sourceSets["integrationTest"].runtimeClasspath
-}
-
-tasks.named('check') {
-    dependsOn integrationTest
 }
