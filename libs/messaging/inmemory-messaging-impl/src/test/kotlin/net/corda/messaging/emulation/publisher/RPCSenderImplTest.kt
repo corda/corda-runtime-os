@@ -14,6 +14,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicInteger
 
 class RPCSenderImplTest {
     private val rpcTopicService: RPCTopicService = mock()
@@ -21,11 +22,17 @@ class RPCSenderImplTest {
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
         on { createCoordinator(any(), any()) } doReturn lifecycleCoordinator
     }
+    private val clientIdCounter = AtomicInteger()
 
 
     @Test
     fun `Start sets running to true`() {
-        val rpcSender = RPCSenderImpl(getConfig(), rpcTopicService, lifecycleCoordinatorFactory)
+        val rpcSender = RPCSenderImpl(
+            getConfig(),
+            rpcTopicService,
+            lifecycleCoordinatorFactory,
+            clientIdCounter.getAndIncrement().toString()
+        )
 
         Assertions.assertThat(rpcSender.isRunning).isFalse
         rpcSender.start()
@@ -34,7 +41,12 @@ class RPCSenderImplTest {
 
     @Test
     fun `Stop sets running to true`() {
-        val rpcSender = RPCSenderImpl(getConfig(), rpcTopicService, lifecycleCoordinatorFactory)
+        val rpcSender = RPCSenderImpl(
+            getConfig(),
+            rpcTopicService,
+            lifecycleCoordinatorFactory,
+            clientIdCounter.getAndIncrement().toString()
+        )
 
         rpcSender.start()
         Assertions.assertThat(rpcSender.isRunning).isTrue
@@ -45,7 +57,12 @@ class RPCSenderImplTest {
     @Test
     fun `Send while sender is not running should throw`() {
         val request = "r1"
-        val rpcSender = RPCSenderImpl(getConfig(), rpcTopicService, lifecycleCoordinatorFactory)
+        val rpcSender = RPCSenderImpl(
+            getConfig(),
+            rpcTopicService,
+            lifecycleCoordinatorFactory,
+            clientIdCounter.getAndIncrement().toString()
+        )
 
         assertThrows<CordaRPCAPISenderException> { rpcSender.sendRequest(request) }
     }
@@ -53,7 +70,12 @@ class RPCSenderImplTest {
     @Test
     fun `Send should publish the request on the configured topic`() {
         val request = "r1"
-        val rpcSender = RPCSenderImpl(getConfig(), rpcTopicService, lifecycleCoordinatorFactory)
+        val rpcSender = RPCSenderImpl(
+            getConfig(),
+            rpcTopicService,
+            lifecycleCoordinatorFactory,
+            clientIdCounter.getAndIncrement().toString()
+        )
 
         rpcSender.start()
         val requestCompletion = rpcSender.sendRequest(request)
@@ -69,8 +91,7 @@ class RPCSenderImplTest {
             "testClientName",
             "test",
             String::class.java,
-            String::class.java,
-            1
+            String::class.java
         )
     }
 }
