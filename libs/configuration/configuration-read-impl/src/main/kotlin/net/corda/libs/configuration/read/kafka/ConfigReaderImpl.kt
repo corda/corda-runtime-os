@@ -16,8 +16,7 @@ import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class
-ConfigReaderImpl(
+class ConfigReaderImpl(
     private val configurationRepository: ConfigRepository,
     private val subscriptionFactory: SubscriptionFactory,
     private val boostrapConfig: SmartConfig,
