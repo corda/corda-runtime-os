@@ -69,9 +69,7 @@ tasks.named('check') {
     dependsOn testOSGi
 }
 
-tasks.register('integrationTest', Test) {
-    description = "Runs integration tests."
-    group = "verification"
+tasks.named('integrationTest') {
     dependsOn testOSGi
     enabled = false
 }

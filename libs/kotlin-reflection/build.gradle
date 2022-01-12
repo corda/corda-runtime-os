@@ -82,7 +82,7 @@ def testOSGi = tasks.register('testOSGi', TestOSGi) {
     bndrun = resolve.flatMap { it.outputBndrun }
 }
 
-tasks.register('integrationTest', Test) {
+tasks.named('integrationTest') {
     dependsOn testOSGi
     enabled = false
 }
