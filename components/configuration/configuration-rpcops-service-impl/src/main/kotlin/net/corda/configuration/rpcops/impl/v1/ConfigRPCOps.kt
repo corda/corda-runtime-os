@@ -29,7 +29,7 @@ internal interface ConfigRPCOps : RpcOps, Lifecycle {
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
     @HttpRpcPOST(
-        path = "config",
+        path = "update",
         title = "Update cluster configuration",
         description = "Updates a section of the cluster configuration.",
         responseDescription = "The updated cluster configuration for the specified section."
