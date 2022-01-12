@@ -1081,8 +1081,8 @@ class LinkManagerTest {
         assertThat(records).isEmpty()
 
         loggingInterceptor.assertSingleWarning(
-            "No partitions from topic link.in are currently assigned to the inbound message processor." +
-                    " Not going to reply to session initiation for session $SESSION_ID."
+            "No partitions from link.in are assigned to inbound message processor." +
+                    " Not going to reply to session init for session $SESSION_ID."
         )
     }
 }
