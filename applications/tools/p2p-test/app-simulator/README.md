@@ -151,7 +151,7 @@ Note: in order to use this query, you must have configured the sender to produce
 
 #### Calculating latencies & aggregate statistics
 
-In order to calculate the latency of the delivery of every message (in ms), you can run the following query (replace <sender-id> with the right value):
+In order to calculate the latency of the delivered messages (in ms), you can run the following query:
 ```
 select 
 	to_timestamp(floor((extract('epoch' from rm.sent_timestamp) / 30 )) * 30) at time zone 'utc' as time_window,
@@ -161,10 +161,11 @@ select
 	avg(rm.delivery_latency_ms) as average_latency,
 	percentile_disc(0.99) within group (order by rm.delivery_latency_ms) as p99_latency
 from received_messages rm 
-where sender_id = '<your-sender-id>'
 group by time_window
 order by time_window asc
 ```
+
+If you want to calculate latencies only for a specific sender, you can add a `where sender_id = '<your-sender-id>'` clause (replace `<sender-id>` with the right value).
 
 ## Deploying a postgres database
 

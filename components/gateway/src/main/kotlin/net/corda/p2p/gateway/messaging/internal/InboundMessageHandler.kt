@@ -25,7 +25,7 @@ import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpServerListener
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
-import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import net.corda.v5.base.util.contextLogger
 import java.nio.ByteBuffer
 import java.util.*
@@ -110,12 +110,14 @@ internal class InboundMessageHandler(
             p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, UUID.randomUUID().toString(), p2pMessage)))
             return HttpResponseStatus.OK
         }
-
         val sessionId = getSessionId(p2pMessage) ?: return HttpResponseStatus.INTERNAL_SERVER_ERROR
         val partitions = sessionPartitionMapper.getPartitions(sessionId)
         return if (partitions == null) {
             logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
-            HttpResponseStatus.INTERNAL_SERVER_ERROR
+            HttpResponseStatus.GONE
+        } else if (partitions.isEmpty()) {
+            logger.warn("No partitions exist for session ($sessionId), discarding the message and returning an error.")
+            HttpResponseStatus.GONE
         } else {
             // this is simplistic (stateless) load balancing amongst the partitions owned by the LM that "hosts" the session.
             val selectedPartition = partitions.random()

@@ -7,6 +7,7 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
+import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -15,7 +16,6 @@ import java.util.concurrent.TimeUnit
 
 class FlowMapperListener(
     private val scheduledTaskState: ScheduledTaskState,
-    private val eventTopic: String,
     private val clock: Clock = Clock.systemUTC()
 ) : StateAndEventListener<String, FlowMapperState> {
     private val publisher = scheduledTaskState.publisher
@@ -39,7 +39,7 @@ class FlowMapperListener(
                     publisher?.publish(
                         listOf(
                             Record(
-                                eventTopic, key, FlowMapperEvent(
+                                FLOW_MAPPER_EVENT_TOPIC, key, FlowMapperEvent(
                                     MessageDirection.INBOUND,
                                     ExecuteCleanup()
                                 )
@@ -82,7 +82,10 @@ class FlowMapperListener(
         scheduledTasks[eventKey] = executorService.schedule(
             {
                 log.debug { "Clearing up mapper state for key $eventKey" }
-                publisher?.publish(listOf(Record(eventTopic, eventKey, ExecuteCleanup())))
+                publisher?.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, eventKey, FlowMapperEvent(
+                    MessageDirection.INBOUND,
+                    ExecuteCleanup()
+                ))))
             },
             expiryTime - clock.millis(),
             TimeUnit.MILLISECONDS

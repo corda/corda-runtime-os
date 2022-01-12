@@ -3,7 +3,7 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
-description 'Permission service implementation'
+description 'Permission Validation Implementation'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'

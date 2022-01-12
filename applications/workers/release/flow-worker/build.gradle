@@ -1,6 +1,6 @@
 plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
-    id 'corda.common-app'
+    id 'corda.quasar-app'
 }
 
 description 'Flow Worker'
@@ -18,16 +18,4 @@ dependencies {
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-}
-
-tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
-    description "Builds the docker image for the deployable OSGi application"
-
-    if (project.hasProperty('jibRemotePublish')) {
-        remotePublish = jibRemotePublish.toBoolean()
-    }
-
-    if (project.hasProperty('releaseCandidate')) {
-        releaseCandidate = releaseCandidate.toBoolean()
-    }
 }

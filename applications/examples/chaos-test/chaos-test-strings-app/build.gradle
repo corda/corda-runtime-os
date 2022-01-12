@@ -19,7 +19,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
 
-    implementation project(":applications:common")
+    implementation project(":applications:tools:common-setup")
     implementation project(":components:examples:config-reader")
     implementation project(":components:examples:chaos-test:chaos-test-strings-pub")
     implementation project(":components:examples:chaos-test:chaos-test-strings-durable-sub")
@@ -28,11 +28,11 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-read')
 
-    runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
-    runtimeOnly project(":libs:messaging:messaging-impl")
-    runtimeOnly project(":libs:configuration:configuration-write-impl")
+    runtimeOnly project(":libs:configuration:configuration-publish-impl")
     runtimeOnly project(":libs:configuration:configuration-read-impl")
     runtimeOnly project(":libs:kafka-utils:topic-admin-impl")
+    runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
+    runtimeOnly project(":libs:messaging:messaging-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
 

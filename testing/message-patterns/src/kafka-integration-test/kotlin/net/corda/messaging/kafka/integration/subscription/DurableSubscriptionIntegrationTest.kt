@@ -23,7 +23,11 @@ import net.corda.messaging.kafka.integration.TopicTemplates.Companion.DURABLE_TO
 import net.corda.messaging.kafka.integration.TopicTemplates.Companion.TEST_TOPIC_PREFIX
 import net.corda.messaging.kafka.integration.getDemoRecords
 import net.corda.messaging.kafka.integration.getKafkaProperties
+import net.corda.messaging.kafka.integration.getStringRecords
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
+import net.corda.messaging.kafka.integration.processors.TestDurableStringProcessor
+import net.corda.messaging.kafka.properties.ConfigProperties
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.MESSAGING_KAFKA
 import net.corda.messaging.properties.ConfigProperties.Companion.MESSAGING_KAFKA
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
@@ -32,6 +36,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
@@ -52,6 +57,7 @@ class DurableSubscriptionIntegrationTest {
         //automatically created topics
         const val DURABLE_TOPIC2 = "DurableTopic2"
         const val DURABLE_TOPIC3 = "DurableTopic3"
+        const val DURABLE_TOPIC4 = "DurableTopic4"
     }
 
     @InjectService(timeout = 4000)
@@ -159,22 +165,58 @@ class DurableSubscriptionIntegrationTest {
     }
 
     @Test
-    fun `transactional publish records, start two durable subscription, stop subs, publish again and start subs`() {
-        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC3, 1)
+    fun `asynch publish the wrong records and then start durable subscription`() {
+        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC3)
         publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
-        val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC3, 5, 2))
-        assertThat(futures.size).isEqualTo(1)
-        futures[0].get()
+        val futures = publisher.publish(getStringRecords(DURABLE_TOPIC3, 5, 2))
+        assertThat(futures.size).isEqualTo(10)
+        futures.forEach { it.get(10, TimeUnit.SECONDS) }
+        val futures2 = publisher.publish(getDemoRecords(DURABLE_TOPIC3, 5, 2))
+        assertThat(futures2.size).isEqualTo(10)
+        futures2.forEach { it.get(10, TimeUnit.SECONDS) }
+        publisher.close()
 
-        val latch = CountDownLatch(30)
-        val durableSub1 = subscriptionFactory.createDurableSubscription(
+        val latch = CountDownLatch(10)
+        val dlqLatch = CountDownLatch(10)
+        val durableSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC3-group", DURABLE_TOPIC3, 1),
             TestDurableProcessor(latch),
             kafkaConfig,
             null
         )
+        val dlqDurableSub = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("$DURABLE_TOPIC3-group-dlq", "$DURABLE_TOPIC3.DLQ", 2),
+            TestDurableStringProcessor(dlqLatch),
+            kafkaConfig,
+            null
+        )
+        durableSub.start()
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS))
+        durableSub.stop()
+
+        dlqDurableSub.start()
+        assertTrue(dlqLatch.await(5, TimeUnit.SECONDS))
+        durableSub.stop()
+    }
+
+    @Test
+    fun `transactional publish records, start two durable subscription, stop subs, publish again and start subs`() {
+        publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC4, 1)
+        publisher = publisherFactory.createPublisher(publisherConfig, kafkaConfig)
+        val futures = publisher.publish(getDemoRecords(DURABLE_TOPIC4, 5, 2))
+        assertThat(futures.size).isEqualTo(1)
+        futures[0].get()
+
+        val latch = CountDownLatch(30)
+        val durableSub1 = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("$DURABLE_TOPIC4-group", DURABLE_TOPIC4, 1),
+            TestDurableProcessor(latch),
+            kafkaConfig,
+            null
+        )
         val durableSub2 = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$DURABLE_TOPIC3-group", DURABLE_TOPIC3, 2),
+            SubscriptionConfig("$DURABLE_TOPIC4-group", DURABLE_TOPIC4, 2),
             TestDurableProcessor(latch),
             kafkaConfig,
             null
@@ -186,7 +228,7 @@ class DurableSubscriptionIntegrationTest {
         durableSub1.stop()
         durableSub2.stop()
 
-        publisher.publish(getDemoRecords(DURABLE_TOPIC3, 10, 2)).forEach { it.get() }
+        publisher.publish(getDemoRecords(DURABLE_TOPIC4, 10, 2)).forEach { it.get() }
 
         durableSub1.start()
         durableSub2.start()

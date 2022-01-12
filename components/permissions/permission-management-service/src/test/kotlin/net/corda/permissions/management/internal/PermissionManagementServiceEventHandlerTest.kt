@@ -3,6 +3,7 @@ package net.corda.permissions.management.internal
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.cache.PermissionCache
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.factory.PermissionManagerFactory
@@ -31,6 +32,7 @@ internal class PermissionManagementServiceEventHandlerTest {
     private val permissionCache = mock<PermissionCache>()
     private val permissionCacheService = mock<PermissionCacheService>()
 
+    private val config = mock<SmartConfig>()
     private val rpcSender = mock<RPCSender<PermissionManagementRequest, PermissionManagementResponse>>()
     private val publisherFactory = mock<PublisherFactory>()
 
@@ -57,7 +59,7 @@ internal class PermissionManagementServiceEventHandlerTest {
         whenever(publisherFactory.createRPCSender(any<RPCConfig<PermissionManagementRequest, PermissionManagementResponse>>(), any()))
             .thenReturn(rpcSender)
 
-        whenever(permissionManagerFactory.create(rpcSender, permissionCache))
+        whenever(permissionManagerFactory.create(config, rpcSender, permissionCache))
             .thenReturn(permissionManager)
 
         whenever(coordinator.followStatusChangesByName(

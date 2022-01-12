@@ -1,6 +1,5 @@
 package net.corda.applications.testclients
 
-import net.corda.applications.common.ConfigHelper
 import net.corda.components.examples.config.reader.ConfigReader
 import net.corda.components.examples.config.reader.ConfigReader.Companion.MESSAGING_CONFIG
 import net.corda.components.examples.config.reader.ConfigReceivedEvent
@@ -149,7 +148,7 @@ class ChaosTestApp @Activate constructor(
     }
 
     private fun getBootstrapConfig(instanceId: Int?): SmartConfig {
-        return smartConfigFactory.create(ConfigHelper.Companion.getBootstrapConfig(instanceId))
+        return smartConfigFactory.create(getBootstrapConfig(instanceId))
     }
 
     override fun shutdown() {

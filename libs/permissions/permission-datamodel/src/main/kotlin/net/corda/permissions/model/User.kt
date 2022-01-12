@@ -54,7 +54,7 @@ class User(
      * Version column for optimistic locking.
      */
     @Version
-    var version: Int = -1
+    var version: Int = 0
 
     /**
      * Users have properties.
@@ -65,7 +65,7 @@ class User(
     /**
      * Users can also be directly associated with roles.
      */
-    @OneToMany(mappedBy = "role", orphanRemoval = true, cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "user", orphanRemoval = true, cascade = [CascadeType.ALL])
     var roleUserAssociations: MutableSet<RoleUserAssociation> = mutableSetOf()
 
     override fun equals(other: Any?): Boolean {

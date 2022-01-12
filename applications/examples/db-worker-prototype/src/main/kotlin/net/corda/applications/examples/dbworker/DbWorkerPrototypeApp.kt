@@ -2,34 +2,27 @@ package net.corda.applications.examples.dbworker
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.permissions.storage.writer.factory.PermissionStorageWriterProcessorFactory
+import net.corda.libs.permissions.storage.common.ConfigKeys.DB_CONFIG_KEY
+import net.corda.libs.permissions.storage.common.ConfigKeys.DB_PASSWORD
+import net.corda.libs.permissions.storage.common.ConfigKeys.DB_URL
+import net.corda.libs.permissions.storage.common.ConfigKeys.DB_USER
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.orm.DbEntityManagerConfiguration
-import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.permissions.model.ChangeAudit
-import net.corda.permissions.model.Group
-import net.corda.permissions.model.GroupProperty
-import net.corda.permissions.model.Permission
-import net.corda.permissions.model.Role
-import net.corda.permissions.model.RoleGroupAssociation
-import net.corda.permissions.model.RolePermissionAssociation
-import net.corda.permissions.model.RoleUserAssociation
-import net.corda.permissions.model.User
-import net.corda.permissions.model.UserProperty
+import net.corda.permissions.cache.PermissionCacheService
+import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
@@ -41,26 +34,27 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.StringWriter
 import java.util.*
-import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
 
 @Component
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "UNUSED")
 class DbWorkerPrototypeApp @Activate constructor(
-    @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = LiquibaseSchemaMigrator::class)
     private val schemaMigrator: LiquibaseSchemaMigrator,
-    @Reference(service = EntityManagerFactoryFactory::class)
-    private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
     @Reference(service = SmartConfigFactory::class)
     private val smartConfigFactory: SmartConfigFactory,
-    @Reference(service = PermissionStorageWriterProcessorFactory::class)
-    private val permissionStorageWriterProcessorFactory: PermissionStorageWriterProcessorFactory
+    @Reference(service = PermissionCacheService::class)
+    private val permissionCacheService: PermissionCacheService,
+    @Reference(service = ConfigurationReadService::class)
+    private val configurationReadService: ConfigurationReadService,
+    @Reference(service = PermissionStorageReaderService::class)
+    private val permissionStorageReaderService: PermissionStorageReaderService,
+    @Reference(service = PermissionStorageWriterService::class)
+    private val permissionStorageWriterService: PermissionStorageWriterService
 ) : Application {
 
     private companion object {
@@ -75,8 +69,6 @@ class DbWorkerPrototypeApp @Activate constructor(
     }
 
     private var lifeCycleCoordinator: LifecycleCoordinator? = null
-
-    private var permissionStorageWriterService: PermissionStorageWriterService? = null
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
@@ -121,19 +113,25 @@ class DbWorkerPrototypeApp @Activate constructor(
                 parameters.dbPass
             )
             applyLiquibaseSchema(dbSource)
-            val emf = obtainEntityManagerFactory(dbSource)
 
-            val nodeConfig: SmartConfig = getBootstrapConfig(null)
+            val bootstrapConfig: SmartConfig = getBootstrapConfig(
+                null, parameters.dbUrl,
+                parameters.dbUser,
+                parameters.dbPass
+            )
 
-            log.info("Creating and starting PermissionStorageWriterService")
-            permissionStorageWriterService =
-                PermissionStorageWriterService(
-                    coordinatorFactory,
-                    emf,
-                    subscriptionFactory,
-                    permissionStorageWriterProcessorFactory,
-                    nodeConfig
-                ).also { it.start() }
+            log.info("Starting configuration read service with bootstrap config ${bootstrapConfig}.")
+            configurationReadService.start()
+            configurationReadService.bootstrapConfig(bootstrapConfig)
+
+            log.info("Starting PermissionCacheService")
+            permissionCacheService.start()
+
+            log.info("Starting PermissionStorageReaderService")
+            permissionStorageReaderService.start()
+
+            log.info("Starting PermissionStorageWriterService")
+            permissionStorageWriterService.start()
 
             consoleLogger.info("DB Worker prototype application fully started")
         }
@@ -156,47 +154,38 @@ class DbWorkerPrototypeApp @Activate constructor(
             )
         )
         StringWriter().use {
-            // Cannot use DbSchema.RPC_RBAC schema for LB here as this schema needs to be created ahead of change
-            // set being applied
-            schemaMigrator.createUpdateSql(dbSource.connection, cl, it, LiquibaseSchemaMigrator.PUBLIC_SCHEMA)
+            schemaMigrator.createUpdateSql(dbSource.connection, cl, it)
             log.info("Schema creation SQL: $it")
         }
-        schemaMigrator.updateDb(dbSource.connection, cl, LiquibaseSchemaMigrator.PUBLIC_SCHEMA)
+        schemaMigrator.updateDb(dbSource.connection, cl)
 
         log.info("Liquibase schema applied")
     }
 
-    private fun obtainEntityManagerFactory(dbSource: DataSource) : EntityManagerFactory {
-        return entityManagerFactoryFactory.create(
-            "RPC RBAC",
-            listOf(
-                User::class.java,
-                Group::class.java,
-                Role::class.java,
-                Permission::class.java,
-                UserProperty::class.java,
-                GroupProperty::class.java,
-                ChangeAudit::class.java,
-                RoleUserAssociation::class.java,
-                RoleGroupAssociation::class.java,
-                RolePermissionAssociation::class.java
-            ),
-            DbEntityManagerConfiguration(dbSource),
-        )
-    }
+    private fun getBootstrapConfig(
+        kafkaConnectionProperties: Properties?,
+        dbUrl: String,
+        dbUser: String,
+        dbPass: String
+    ): SmartConfig {
 
-    private fun getBootstrapConfig(kafkaConnectionProperties: Properties?): SmartConfig {
         val bootstrapServer = getConfigValue(kafkaConnectionProperties, BOOTSTRAP_SERVERS)
-        return smartConfigFactory.create(ConfigFactory.empty()
-            .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
-            .withValue(
-                CONFIG_TOPIC_NAME,
-                ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME))
-            )
-            .withValue(
-                TOPIC_PREFIX,
-                ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, ""))
-            ))
+        return smartConfigFactory.create(
+            ConfigFactory.empty()
+                .withValue(KAFKA_COMMON_BOOTSTRAP_SERVER, ConfigValueFactory.fromAnyRef(bootstrapServer))
+                .withValue(
+                    CONFIG_TOPIC_NAME,
+                    ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, CONFIG_TOPIC_NAME))
+                )
+                .withValue(
+                    TOPIC_PREFIX,
+                    ConfigValueFactory.fromAnyRef(getConfigValue(kafkaConnectionProperties, TOPIC_PREFIX, ""))
+                )
+                .withValue(
+                    DB_CONFIG_KEY,
+                    ConfigValueFactory.fromMap(mapOf(DB_URL to dbUrl, DB_USER to dbUser, DB_PASSWORD to dbPass))
+                )
+        )
     }
 
     private fun getConfigValue(properties: Properties?, path: String, default: String? = null): String {
@@ -219,8 +208,9 @@ class DbWorkerPrototypeApp @Activate constructor(
         consoleLogger.info("Shutting down DB Worker prototype application")
         lifeCycleCoordinator?.stop()
         lifeCycleCoordinator = null
-        permissionStorageWriterService?.stop()
-        permissionStorageWriterService = null
+        permissionStorageWriterService.stop()
+        permissionStorageReaderService.stop()
+        permissionCacheService.stop()
     }
 }
 

@@ -2,7 +2,8 @@ package net.corda.applications.workers.rpc
 
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.HealthMonitor
-import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getAdditionalConfig
+import net.corda.applications.workers.workercommon.PathAndConfig
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
@@ -15,6 +16,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine.Mixin
+import picocli.CommandLine.Option
 
 /** The worker for handling RPC requests. */
 @Suppress("Unused")
@@ -32,6 +34,7 @@ class RPCWorker @Activate constructor(
 
     private companion object {
         private val logger = contextLogger()
+        private const val RPC_CONFIG_PATH = "rpc"
     }
 
     /** Parses the arguments, then initialises and starts the [processor]. */
@@ -42,8 +45,10 @@ class RPCWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, RPCWorker::class.java, shutDownService)) return
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
-        val config = getAdditionalConfig(params.defaultParams, smartConfigFactory)
-        processor.start(params.defaultParams.instanceId, params.defaultParams.topicPrefix, config)
+        val rpcConfig = PathAndConfig(RPC_CONFIG_PATH, params.rpcParams)
+        val config = getBootstrapConfig(smartConfigFactory, params.defaultParams, listOf(rpcConfig))
+
+        processor.start(config)
     }
 
     override fun shutdown() {
@@ -57,4 +62,7 @@ class RPCWorker @Activate constructor(
 private class RPCWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
+
+    @Option(names = ["-r", "--rpcParams"], description = ["RPC parameters for the worker."])
+    var rpcParams = emptyMap<String, String>()
 }

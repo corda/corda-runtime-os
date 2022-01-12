@@ -5,6 +5,7 @@ import net.corda.data.config.Configuration
 import net.corda.data.poc.persistence.ConfigAdminEvent
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.orm.utils.transaction
 import org.slf4j.Logger
 import javax.persistence.EntityManagerFactory
 
@@ -15,22 +16,18 @@ class ConfigAdminProcessor(
 ) :
     DurableProcessor<String, ConfigAdminEvent> {
 
-    override val keyClass: Class<String>
-        get() = String::class.java
-    override val valueClass: Class<ConfigAdminEvent>
-        get() = ConfigAdminEvent::class.java
+    override val keyClass = String::class.java
+    override val valueClass = ConfigAdminEvent::class.java
 
     override fun onNext(events: List<Record<String, ConfigAdminEvent>>): List<Record<*, *>> {
         logger.info("Received ${events.map { it.key + "/" + it.value }}")
         val outputRecords = mutableListOf<Record<*, *>>()
 
-        if(events.isEmpty())
+        if (events.isEmpty())
             return emptyList()
 
         logger.info("Update config values")
-        val em = entityManagerFactory.createEntityManager()
-        try {
-            em.transaction.begin()
+        entityManagerFactory.transaction { em ->
 
             for (event in events) {
                 val eventKey = event.key
@@ -54,13 +51,8 @@ class ConfigAdminProcessor(
                     logger.error("Skipping Null message for $eventKey.")
                 }
             }
-
-            em.transaction.commit()
-            logger.info("Config values committed")
         }
-        finally {
-            em.close()
-        }
+        logger.info("Config values committed")
 
         return outputRecords
     }

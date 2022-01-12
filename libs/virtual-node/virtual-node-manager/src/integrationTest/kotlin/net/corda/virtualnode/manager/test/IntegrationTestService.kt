@@ -10,7 +10,7 @@ import net.corda.virtualnode.manager.test.Constants.PLATFORM_PUBLIC_BUNDLE_NAMES
 import org.junit.jupiter.api.fail
 import org.osgi.framework.FrameworkUtil
 import java.io.InputStream
-import java.net.URI
+import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -27,13 +27,13 @@ class IntegrationTestService constructor(
         sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
     }
 
-    private fun loadResource(resourceName: String): URI {
+    private fun getResource(resourceName: String): URL {
         return (this::class.java.classLoader.getResource(resourceName)
-            ?: fail("Failed to load $resourceName")).toURI()
+            ?: fail("Missing resource $resourceName"))
     }
 
     private fun getInputStream(resourceName: String): InputStream =
-        loadResource(resourceName).toURL().openStream().buffered()
+        getResource(resourceName).openStream().buffered()
 
     fun loadCPIFromResource(resourceName: String): CPI = getInputStream(resourceName).use {
         CPI.from(
@@ -43,8 +43,8 @@ class IntegrationTestService constructor(
         )
     }
 
-    fun createSandboxGroupFor(cpks: Collection<CPK>): SandboxGroup =
-        sandboxCreationService.createSandboxGroup(cpks.toSet())
+    fun createSandboxGroupFor(cpks: Set<CPK>): SandboxGroup =
+        sandboxCreationService.createSandboxGroup(cpks)
 
     fun registerCrypto(sandboxGroup: SandboxGroup) = registration.register(sandboxGroup)
 

@@ -10,13 +10,13 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.mapper.FlowMapperTopics
+import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class SessionEventExecutorTest {
 
-    private val flowMapperTopics = FlowMapperTopics("P2P.out", "FlowMapperEvent", "FlowEvent")
 
     @Test
     fun testSessionEventExecutorSessionInitOutbound() {
@@ -24,7 +24,7 @@ class SessionEventExecutorTest {
         val flowKey = FlowKey("", holdingIdentity)
         val payload = SessionEvent(1, 1, SessionInit("", "", flowKey, holdingIdentity))
 
-        val result = SessionEventExecutor("sessionId", flowMapperTopics, MessageDirection.OUTBOUND, payload, null).execute()
+        val result = SessionEventExecutor("sessionId", MessageDirection.OUTBOUND, payload, null).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 
@@ -35,7 +35,7 @@ class SessionEventExecutorTest {
 
         assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
-        assertThat(outboundEvent.topic).isEqualTo("P2P.out")
+        assertThat(outboundEvent.topic).isEqualTo(P2P_OUT_TOPIC)
         assertThat(outboundEvent.key).isEqualTo("sessionId-INITIATED")
         assertThat(outboundEvent.value!!::class).isEqualTo(FlowMapperEvent::class)
     }
@@ -44,7 +44,7 @@ class SessionEventExecutorTest {
     fun testSessionEventExecutorSessionInitInbound() {
         val holdingIdentity = HoldingIdentity()
         val payload = SessionEvent(1, 1, SessionInit("", "", null, holdingIdentity))
-        val result = SessionEventExecutor("sessionId-INITIATED", flowMapperTopics, MessageDirection.INBOUND, payload, null).execute()
+        val result = SessionEventExecutor("sessionId-INITIATED", MessageDirection.INBOUND, payload, null).execute()
 
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
@@ -56,7 +56,7 @@ class SessionEventExecutorTest {
 
         assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
-        assertThat(outboundEvent.topic).isEqualTo("FlowEvent")
+        assertThat(outboundEvent.topic).isEqualTo(FLOW_EVENT_TOPIC)
         assertThat(outboundEvent.key::class).isEqualTo(FlowKey::class)
         assertThat(outboundEvent.value!!::class).isEqualTo(FlowEvent::class)
     }
@@ -65,14 +65,14 @@ class SessionEventExecutorTest {
     fun testSessionEventExecutorSessionDataOutbound() {
         val payload = SessionEvent(1, 1, SessionData(null))
 
-        val result = SessionEventExecutor("sessionId", flowMapperTopics, MessageDirection.OUTBOUND, payload, FlowMapperState()).execute()
+        val result = SessionEventExecutor("sessionId", MessageDirection.OUTBOUND, payload, FlowMapperState()).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 
         assertThat(state).isNotNull
         assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
-        assertThat(outboundEvent.topic).isEqualTo("P2P.out")
+        assertThat(outboundEvent.topic).isEqualTo(P2P_OUT_TOPIC)
         assertThat(outboundEvent.key).isEqualTo("sessionId-INITIATED")
         assertThat(outboundEvent.value!!::class).isEqualTo(FlowMapperEvent::class)
     }
@@ -83,7 +83,7 @@ class SessionEventExecutorTest {
         val payload = SessionEvent(1, 1, SessionData(null))
 
         val result = SessionEventExecutor(
-            "sessionId-INITIATED", flowMapperTopics, MessageDirection.INBOUND, payload, FlowMapperState(
+            "sessionId-INITIATED", MessageDirection.INBOUND, payload, FlowMapperState(
                 flowKey, null, FlowMapperStateType.OPEN
             )
         ).execute()
@@ -93,7 +93,7 @@ class SessionEventExecutorTest {
         assertThat(state).isNotNull
         assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
-        assertThat(outboundEvent.topic).isEqualTo("FlowEvent")
+        assertThat(outboundEvent.topic).isEqualTo(FLOW_EVENT_TOPIC)
         assertThat(outboundEvent.key).isEqualTo(flowKey)
         assertThat(outboundEvent.value!!::class).isEqualTo(FlowEvent::class)
     }

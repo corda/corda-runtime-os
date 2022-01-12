@@ -83,7 +83,15 @@ class StateAndEventSubscriptionImplTest {
         doAnswer { setOf(topicPartition) }.whenever(stateConsumer).assignment()
         doAnswer { listOf(state) }.whenever(stateConsumer).poll()
         doAnswer { Pair(stateAndEventConsumer, rebalanceListener) }.whenever(builder)
-            .createStateEventConsumerAndRebalanceListener<Any, Any, Any>(any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())
+            .createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
+                any(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull()
+            )
 
         val mockConsumerRecords = generateMockCordaConsumerRecordList(iterations, TOPIC, 0)
         var eventsPaused = false
@@ -138,6 +146,8 @@ class StateAndEventSubscriptionImplTest {
         val eventConsumer = stateAndEventConsumer.eventConsumer
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
             any(),
+            anyOrNull(),
+            anyOrNull(),
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),
@@ -217,6 +227,8 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
             anyOrNull()
         )
         verify(builder, times(1)).createProducer(any())
@@ -269,6 +281,8 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
             anyOrNull()
         )
         verify(builder, times(1)).createProducer(any())
@@ -317,6 +331,8 @@ class StateAndEventSubscriptionImplTest {
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
             any(),
+            anyOrNull(),
+            anyOrNull(),
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),
@@ -378,8 +394,13 @@ class StateAndEventSubscriptionImplTest {
         subscription.stop()
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
-            any(), anyOrNull(),
-            anyOrNull(), anyOrNull(), anyOrNull()
+            any(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
         )
         verify(builder, times(1)).createProducer(any())
         verify(producer, times(1)).beginTransaction()

@@ -119,7 +119,8 @@ class CompactedSubscriptionImpl<K : Any, V : Any>(
                 cordaConsumerBuilder.createCompactedConsumer(
                     config.getConfig(KAFKA_CONSUMER),
                     processor.keyClass,
-                    processor.valueClass
+                    processor.valueClass,
+                    ::onError
                 ).use {
                     val partitions = it.getPartitions(
                         topic,
@@ -145,6 +146,10 @@ class CompactedSubscriptionImpl<K : Any, V : Any>(
             }
         }
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+    }
+
+    private fun onError(topic: String, bytes: ByteArray) {
+        log.error("Failed to deserialize record from $topic with bytes $bytes")
     }
 
     private fun getLatestValues(): MutableMap<K, V> {

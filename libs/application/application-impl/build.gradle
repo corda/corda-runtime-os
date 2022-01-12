@@ -13,6 +13,11 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
     implementation "net.corda:corda-application"
+
+    implementation project(":libs:flows:dependency-injection")
+    implementation project(":libs:flows:flow-fiber")
+    implementation project(":libs:virtual-node:sandbox-group-context")
+
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation 'org.slf4j:slf4j-api'

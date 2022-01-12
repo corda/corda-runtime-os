@@ -52,12 +52,12 @@ import net.corda.p2p.linkmanager.utilities.MockNetworkMap
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
-import net.corda.p2p.schema.Schema
-import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
-import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
-import net.corda.p2p.schema.Schema.Companion.P2P_OUT_MARKERS
-import net.corda.p2p.schema.Schema.Companion.P2P_OUT_TOPIC
-import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
+import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -284,7 +284,7 @@ class LinkManagerTest {
         reference.set(mock())
         val listener = InboundAssignmentListener(reference)
         for (partition in partitions) {
-            listener.onPartitionsAssigned(listOf(Schema.LINK_IN_TOPIC to partition))
+            listener.onPartitionsAssigned(listOf(LINK_IN_TOPIC to partition))
         }
         return listener
     }
@@ -519,7 +519,7 @@ class LinkManagerTest {
             .extracting<LinkOutMessage> { it.value as LinkOutMessage }
             .allSatisfy { assertThat(it).isSameAs(sessionInitMessage) }
 
-        assertThat(records).filteredOn { it.topic == Schema.SESSION_OUT_PARTITIONS }.hasSize(messages.size)
+        assertThat(records).filteredOn { it.topic == SESSION_OUT_PARTITIONS }.hasSize(messages.size)
             .allSatisfy { assertThat(it.key).isSameAs(SESSION_ID) }
             .extracting<SessionPartitions> { it.value as SessionPartitions }
             .allSatisfy { assertThat(it.partitions.toIntArray()).isEqualTo(inboundSubscribedTopics.toIntArray()) }
@@ -1021,6 +1021,68 @@ class LinkManagerTest {
             "The identity in the message's destination header ({\"x500Name\": \"PartyD\", \"groupId\": \"Group\"})" +
                     " does not match the session's destination identity ({\"x500Name\": \"PartyB\", \"groupId\": \"Group\"})," +
                     " which indicates a spoofing attempt! The message was discarded"
+        )
+    }
+
+    @Test
+    fun `OutboundMessageProcessor warns if no partitions are assigned and only produces LinkManagerSentMarker`() {
+        val mockSessionManager = Mockito.mock(SessionManager::class.java)
+        val sessionInitMessage = LinkOutMessage()
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(
+            SessionManager.SessionState.NewSessionNeeded(SESSION_ID, sessionInitMessage)
+        )
+
+        val processor = LinkManager.OutboundMessageProcessor(
+            mockSessionManager,
+            hostingMap,
+            netMap,
+            assignedListener(emptyList()),
+        )
+        val messages = listOf(
+            EventLogRecord(
+                TOPIC, KEY, AppMessage(
+                    authenticatedMessage(
+                        FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID
+                    )
+                ), 0, 0
+            )
+        )
+        val records = processor.onNext(messages)
+        assertThat(records).hasSize(messages.size)
+
+        assertThat(records).filteredOn { it.topic == P2P_OUT_MARKERS }.hasSize(messages.size)
+            .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
+            .extracting<AppMessageMarker> { it.value as AppMessageMarker }
+            .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
+
+        loggingInterceptor.assertSingleWarning(
+            "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
+                    " Session $SESSION_ID will not be initiated."
+        )
+    }
+
+    @Test
+    fun `InboundMessageProcessor warns if no partitions are assigned and does not map new session`() {
+        val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
+        val response = LinkOutMessage(LinkOutHeader("", NetworkType.CORDA_5, FAKE_ADDRESS), responderHelloMessage())
+        Mockito.`when`(mockSessionManager.processSessionMessage(any())).thenReturn(response)
+
+        val initiatorHelloMessage = initiatorHelloMessage()
+
+        val processor = LinkManager.InboundMessageProcessor(
+            mockSessionManager,
+            Mockito.mock(LinkManagerNetworkMap::class.java),
+            assignedListener(emptyList())
+        )
+        val messages = listOf(
+            EventLogRecord(TOPIC, KEY, LinkInMessage(initiatorHelloMessage), 0, 0)
+        )
+        val records = processor.onNext(messages)
+        assertThat(records).isEmpty()
+
+        loggingInterceptor.assertSingleWarning(
+            "No partitions from topic link.in are currently assigned to the inbound message processor." +
+                    " Not going to reply to session initiation for session $SESSION_ID."
         )
     }
 }

@@ -33,12 +33,13 @@ import java.util.concurrent.ConcurrentHashMap
  * This service does NOT want to be part of crypto as it uses [SandboxContextService] and would introduce
  * unnecessary coupling between the bundles / packages / jars / whatever.
  */
+@Suppress("unused")
 @Component(service = [DigestAlgorithmFactoryProviderMediator::class])
 class DigestAlgorithmFactoryProviderMediatorImpl @Activate constructor(
     @Reference private val sandboxContextService: SandboxContextService,
     @Reference private val digestAlgorithmFactoryProviderRegistry: DigestAlgorithmFactoryProviderRegistry
 ) : DigestAlgorithmFactoryProviderMediator {
-    companion object {
+    private companion object {
         val log = contextLogger()
     }
 
@@ -49,10 +50,9 @@ class DigestAlgorithmFactoryProviderMediatorImpl @Activate constructor(
         fun map(): Map<String, DigestAlgorithmFactory> = factories
 
         fun put(algorithmName: String, digestAlgorithmFactory: DigestAlgorithmFactory) {
-            if (factories.containsKey(algorithmName)) {
+            if (factories.putIfAbsent(algorithmName, digestAlgorithmFactory) != null) {
                 throw IllegalArgumentException("Digest name $algorithmName already exists - cannot register the same thing twice")
             }
-            factories[algorithmName] = digestAlgorithmFactory
         }
     }
 
@@ -67,7 +67,7 @@ class DigestAlgorithmFactoryProviderMediatorImpl @Activate constructor(
      * service as a callback.  Note that we also unregister if we're deactivated.
      */
     init {
-        digestAlgorithmFactoryProviderRegistry.register { factoriesForCallingSandboxGroup() }
+        digestAlgorithmFactoryProviderRegistry.register(::factoriesForCallingSandboxGroup)
     }
 
     /**
@@ -84,13 +84,13 @@ class DigestAlgorithmFactoryProviderMediatorImpl @Activate constructor(
      * The sandbox group of the caller is determined by the [SandboxContextService].
      */
     private fun factoriesForCallingSandboxGroup(): Map<String, DigestAlgorithmFactory> {
-        try {
+        return try {
             val sandboxGroup = sandboxContextService.getCallingSandboxGroup()
-            return factoriesPerSandboxGroup[sandboxGroup]?.map() ?: emptyMap()
+            factoriesPerSandboxGroup[sandboxGroup]?.map() ?: emptyMap()
         } catch (e: SandboxException) {
             log.error("Sandbox group for caller could not be determined", e)
+            emptyMap()
         }
-        return emptyMap()
     }
 
     /**

@@ -4,7 +4,7 @@ import net.corda.libs.configuration.SmartConfig
 
 /** The processor for a `CryptoWorker`. */
 interface CryptoProcessor {
-    fun start(instanceId: Int, topicPrefix: String, config: SmartConfig)
+    fun start(config: SmartConfig)
 
     fun stop()
 }

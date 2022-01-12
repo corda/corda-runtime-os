@@ -17,6 +17,8 @@ import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.EventLogProcessor
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.properties.ConfigProperties.Companion.INSTANCE_ID
@@ -28,8 +30,26 @@ import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceLis
 import net.corda.messaging.utils.render
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toEventLogRecord
+import net.corda.messaging.kafka.producer.builder.ProducerBuilder
+import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
+import net.corda.messaging.kafka.properties.ConfigProperties
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.INSTANCE_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_PRODUCER
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_CLIENT_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_NAME
+import net.corda.messaging.kafka.subscription.consumer.builder.ConsumerBuilder
+import net.corda.messaging.kafka.subscription.consumer.listener.ForwardingRebalanceListener
+import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
+import net.corda.messaging.kafka.utils.render
+import net.corda.messaging.kafka.utils.toEventLogRecord
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -74,6 +94,7 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
     private val topic = config.getString(TOPIC_NAME)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val producerClientId: String = config.getString(PRODUCER_CLIENT_ID)
+    private lateinit var deadLetterRecords: MutableList<ByteArray>
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaDurableSubscription-$topic",
@@ -156,21 +177,33 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 log.debug { "Attempt: $attempts" }
+                deadLetterRecords = mutableListOf()
+                producer = cordaProducerBuilder.createProducer(config.getConfig(KAFKA_PRODUCER))
                 consumer = if (partitionAssignmentListener != null) {
                     val consumerGroup = config.getString(CONSUMER_GROUP_ID)
                     val rebalanceListener =
                         ForwardingRebalanceListener(topic, consumerGroup, partitionAssignmentListener)
                     cordaConsumerBuilder.createDurableConsumer(
-                        config.getConfig(KAFKA_CONSUMER), processor.keyClass,
-                        processor.valueClass, cordaConsumerRebalanceListener = rebalanceListener
+                        config.getConfig(KAFKA_CONSUMER),
+                        processor.keyClass,
+                        processor.valueClass,
+                        { topic, data ->
+                            log.error("Failed to deserialize record from $topic")
+                            deadLetterRecords.add(data)
+                        },
+                        cordaConsumerRebalanceListener = rebalanceListener
                     )
                 } else {
                     cordaConsumerBuilder.createDurableConsumer(
                         config.getConfig(KAFKA_CONSUMER),
-                        processor.keyClass, processor.valueClass
+                        processor.keyClass,
+                        processor.valueClass,
+                        { topic, data ->
+                            log.error("Failed to deserialize record from $topic")
+                            deadLetterRecords.add(data)
+                        }
                     )
                 }
-                producer = cordaProducerBuilder.createProducer(config.getConfig(KAFKA_PRODUCER))
                 consumer.use { cordaConsumer ->
                     cordaConsumer.subscribe(topic)
                     producer.use { cordaProducer ->
@@ -280,6 +313,15 @@ class EventLogSubscriptionImpl<K : Any, V : Any>(
         try {
             producer.beginTransaction()
             producer.sendRecords(processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() }).toCordaProducerRecords())
+            if(deadLetterRecords.isNotEmpty()) {
+                producer.sendRecords(deadLetterRecords.map {
+                    Record(
+                        topic + config.getString(ConfigProperties.DEAD_LETTER_QUEUE_SUFFIX),
+                        UUID.randomUUID().toString(),
+                        it
+                    )
+                })
+            }
             producer.sendAllOffsetsToTransaction(consumer)
             producer.commitTransaction()
         } catch (ex: Exception) {

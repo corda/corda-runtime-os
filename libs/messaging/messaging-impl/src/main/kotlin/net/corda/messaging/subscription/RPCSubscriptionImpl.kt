@@ -187,45 +187,43 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
             future.whenComplete { response, error ->
                 val record: CordaProducerRecord<String, RPCResponse>?
-                when {
-                    //the order of these is important due to how the futures api is
-                    future.isCancelled -> {
-                        record = buildRecord(
-                            rpcRequest.replyTopic,
-                            rpcRequest.correlationKey,
-                            ResponseStatus.CANCELLED,
-                            ExceptionEnvelope(
-                                error.javaClass.name,
-                                "Future was cancelled"
-                            ).toByteBuffer().array()
-                        )
-                    }
-                    future.isCompletedExceptionally -> {
-                        record = buildRecord(
-                            rpcRequest.replyTopic,
-                            rpcRequest.correlationKey,
-                            ResponseStatus.FAILED,
-                            ExceptionEnvelope(error.javaClass.name, error.message).toByteBuffer().array()
-                        )
-                    }
-                    else -> {
-                        val serializedResponse = serializer.serialize(response)
-                        record = buildRecord(
-                            rpcRequest.replyTopic,
-                            rpcRequest.correlationKey,
-                            ResponseStatus.OK,
-                            serializedResponse!!
-                        )
-                    }
-                }
-
                 try {
-                    producer.sendRecordsToPartitions(listOf(Pair(rpcRequest.replyPartition, record)))
+                    when {
+                        //the order of these is important due to how the futures api is
+                        future.isCancelled -> {
+                            record = buildRecord(
+                                rpcRequest.replyTopic,
+                                rpcRequest.correlationKey,
+                                ResponseStatus.CANCELLED,
+                                ExceptionEnvelope(
+                                    error.javaClass.name,
+                                    "Future was cancelled"
+                                ).toByteBuffer().array()
+                            )
+                        }
+                        future.isCompletedExceptionally -> {
+                            record = buildRecord(
+                                rpcRequest.replyTopic,
+                                rpcRequest.correlationKey,
+                                ResponseStatus.FAILED,
+                                ExceptionEnvelope(error.javaClass.name, error.message).toByteBuffer().array()
+                            )
+                        }
+                        else -> {
+                            val serializedResponse = serializer.serialize(rpcRequest.replyTopic, response)
+                            record = buildRecord(
+                                rpcRequest.replyTopic,
+                                rpcRequest.correlationKey,
+                                ResponseStatus.OK,
+                                serializedResponse!!
+                            )
+                        }
+                    }
+                    publisher.publishToPartition(listOf(Pair(rpcRequest.replyPartition, record)))
                 } catch (ex: Exception) {
                     //intentionally swallowed
                     log.warn("Error publishing response", ex)
                 }
-
             }
             responderProcessor.onNext(request!!, future)
         }

@@ -56,9 +56,6 @@ class AMQPwithOSGiSerializationTests {
         lateinit var installService: InstallService
 
         @InjectService
-        lateinit var sandboxContextService: SandboxContextService
-
-        @InjectService
         lateinit var sandboxCreationService: SandboxCreationService
 
         private val cordappVersion = System.getProperty("test.cordapp.version") ?: fail("Version number missing")
@@ -159,7 +156,6 @@ class AMQPwithOSGiSerializationTests {
                 objectReferencesEnabled = false,
                 useCase = SerializationContext.UseCase.Testing,
                 encoding = null,
-                classInfoService = sandboxContextService,
                 sandboxGroup = sandboxGroup
             )
 
@@ -229,7 +225,6 @@ class AMQPwithOSGiSerializationTests {
             objectReferencesEnabled = false,
             useCase = SerializationContext.UseCase.Testing,
             encoding = null,
-            classInfoService = sandboxContextService,
             sandboxGroup = sandboxGroup
         )
 

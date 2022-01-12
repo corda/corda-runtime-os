@@ -5,8 +5,8 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.Checkpoint
-import net.corda.flow.manager.FlowEventExecutorFactory
-import net.corda.flow.manager.FlowMetaDataFactory
+import net.corda.flow.manager.FlowEventProcessor
+import net.corda.flow.manager.factory.FlowEventProcessorFactory
 import net.corda.flow.service.stubs.StateAndEventSubscriptionStub
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
@@ -15,7 +15,6 @@ import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.sandbox.service.SandboxService
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -31,8 +30,7 @@ import java.util.concurrent.TimeUnit
 class FlowExecutorTest {
 
     companion object {
-        private const val GROUP_NAME_KEY = "consumer.group"
-        private const val TOPIC_KEY = "consumer.topic"
+        private const val GROUP_NAME_KEY = "manager.consumer.group"
         private const val INSTANCE_ID_KEY = "instance-id"
     }
 
@@ -41,13 +39,13 @@ class FlowExecutorTest {
         ConfigFactory.empty().withValue(
             INSTANCE_ID_KEY, ConfigValueFactory
                 .fromAnyRef(1)
-        ).withValue(TOPIC_KEY, ConfigValueFactory.fromAnyRef("Topic1"))
-        .withValue(GROUP_NAME_KEY, ConfigValueFactory.fromAnyRef("Group1"))
+        ).withValue(GROUP_NAME_KEY, ConfigValueFactory.fromAnyRef("Group1"))
     )
     private val subscriptionFactory: SubscriptionFactory = mock()
-    private val flowMetaDataFactory: FlowMetaDataFactory = mock()
-    private val flowEventExecutorFactory: FlowEventExecutorFactory = mock()
-    private val sandboxService: SandboxService = mock()
+    private val flowEventProcessor: FlowEventProcessor = mock()
+    private val flowEventProcessorFactory = mock<FlowEventProcessorFactory>().apply {
+        whenever(create()).thenReturn(flowEventProcessor)
+    }
 
     @Test
     fun testFlowExecutor() {
@@ -63,8 +61,7 @@ class FlowExecutorTest {
             anyOrNull()
         )
 
-        val flowExecutor =
-            FlowExecutor(coordinatorFactory, config, subscriptionFactory, flowMetaDataFactory, flowEventExecutorFactory)
+        val flowExecutor = FlowExecutor(coordinatorFactory, config, subscriptionFactory, flowEventProcessorFactory)
 
         flowExecutor.start()
         assertTrue(startLatch.await(5, TimeUnit.SECONDS))

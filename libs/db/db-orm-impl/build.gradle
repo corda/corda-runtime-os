@@ -31,12 +31,3 @@ dependencies {
     integrationTestImplementation project(":testing:db-testkit")
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
 }
-
-// TODO: integrationTest/integration-test inconsistency
-tasks.register('integrationTest', Test) {
-    description = "Runs integration tests."
-    group = "verification"
-
-    testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
-    classpath = project.sourceSets["integrationTest"].runtimeClasspath
-}

@@ -42,7 +42,7 @@ class Group(
      * Version column for optimistic locking.
      */
     @Version
-    var version: Int = -1
+    var version: Int = 0
 
     /**
      * Groups can have multiple roles associated with it.

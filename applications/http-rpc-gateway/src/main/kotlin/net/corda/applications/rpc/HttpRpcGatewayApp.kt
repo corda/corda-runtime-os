@@ -30,7 +30,7 @@ import net.corda.applications.rpc.internal.HttpRpcGatewayAppEventHandler
 import net.corda.configuration.read.ConfigurationReadService
 
 @Component(service = [Application::class], immediate = true)
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "UNUSED")
 class HttpRpcGatewayApp @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
@@ -41,7 +41,7 @@ class HttpRpcGatewayApp @Activate constructor(
     @Reference(service = HttpRpcGateway::class)
     private val httpRpcGateway: HttpRpcGateway,
     @Reference(service = ConfigurationReadService::class)
-    private val configurationReadService: ConfigurationReadService,
+    private val configurationReadService: ConfigurationReadService
 ) : Application {
 
     private companion object {
