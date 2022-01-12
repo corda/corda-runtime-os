@@ -40,7 +40,7 @@ corda {
         subscription {
                 consumer {
                     close.timeout = 6000
-                    poll.timeout = 6000
+                    poll.timeout = 500
                     thread.stop.timeout = 6000
                     processor.retries = 3
                     subscribe.retries = 3
@@ -62,7 +62,7 @@ together to form the key for the kafka record `messaging.subscription` that has 
 ```properties
 consumer {
     close.timeout = 6000
-    poll.timeout = 6000
+    poll.timeout = 500
     thread.stop.timeout = 6000
     processor.retries = 3
     subscribe.retries = 3
