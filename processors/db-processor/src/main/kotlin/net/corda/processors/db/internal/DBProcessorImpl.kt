@@ -3,6 +3,7 @@ package net.corda.processors.db.internal
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.write.ConfigWriteService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
@@ -32,6 +33,8 @@ import javax.sql.DataSource
 class DBProcessorImpl @Activate constructor(
     @Reference(service = ConfigWriteService::class)
     private val configWriteService: ConfigWriteService,
+    @Reference(service = ConfigurationReadService::class)
+    private val configurationReadService: ConfigurationReadService,
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
     @Reference(service = LiquibaseSchemaMigrator::class)
@@ -56,6 +59,17 @@ class DBProcessorImpl @Activate constructor(
         log.info("Starting ConfigWriteService")
         configWriteService.start()
 
+        val instanceId = config.getInt(CONFIG_INSTANCE_ID)
+        val entityManagerFactory = createEntityManagerFactory(dataSource)
+        configWriteService.startProcessing(config, instanceId, entityManagerFactory)
+
+        // At the moment `configWriteService` does not seem to be piping initial configuration to
+        // `configurationReadService`, hence have to do it manually for now.
+        // Not even message is published on the config Kafka topic.
+        log.info("Starting configuration read service with bootstrap config ${config}.")
+        configurationReadService.start()
+        configurationReadService.bootstrapConfig(config)
+
         log.info("Starting PermissionCacheService")
         permissionCacheService.start()
 
@@ -64,10 +78,6 @@ class DBProcessorImpl @Activate constructor(
 
         log.info("Starting PermissionStorageWriterService")
         permissionStorageWriterService.start()
-
-        val instanceId = config.getInt(CONFIG_INSTANCE_ID)
-        val entityManagerFactory = createEntityManagerFactory(dataSource)
-        configWriteService.startProcessing(config, instanceId, entityManagerFactory)
     }
 
     override fun stop() {
@@ -75,6 +85,7 @@ class DBProcessorImpl @Activate constructor(
         permissionStorageReaderService.stop()
         permissionCacheService.stop()
         configWriteService.stop()
+        configurationReadService.stop()
     }
 
     /**

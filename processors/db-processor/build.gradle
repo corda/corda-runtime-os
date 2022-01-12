@@ -12,6 +12,8 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(':components:configuration:configuration-write-service')
+    implementation project(':components:configuration:configuration-read-service')
+
     implementation project(':components:permissions:permission-storage-writer-service')
     implementation project(':components:permissions:permission-storage-reader-service')
     implementation project(':components:permissions:permission-cache-service')
