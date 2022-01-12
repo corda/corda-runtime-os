@@ -26,8 +26,6 @@ import net.corda.messaging.kafka.integration.getKafkaProperties
 import net.corda.messaging.kafka.integration.getStringRecords
 import net.corda.messaging.kafka.integration.processors.TestDurableProcessor
 import net.corda.messaging.kafka.integration.processors.TestDurableStringProcessor
-import net.corda.messaging.kafka.properties.ConfigProperties
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.MESSAGING_KAFKA
 import net.corda.messaging.properties.ConfigProperties.Companion.MESSAGING_KAFKA
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.millis
@@ -36,7 +34,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService

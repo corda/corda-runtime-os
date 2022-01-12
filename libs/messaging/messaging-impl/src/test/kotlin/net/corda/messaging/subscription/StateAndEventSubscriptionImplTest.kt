@@ -196,7 +196,9 @@ class StateAndEventSubscriptionImplTest {
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),
-            anyOrNull()
+            anyOrNull(),
+            any(),
+            any()
         )
         verify(builder, times(1)).createProducer(any())
         verify(eventConsumer, times(1)).poll()

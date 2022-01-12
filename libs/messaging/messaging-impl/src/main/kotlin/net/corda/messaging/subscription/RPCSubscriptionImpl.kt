@@ -210,7 +210,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                             )
                         }
                         else -> {
-                            val serializedResponse = serializer.serialize(rpcRequest.replyTopic, response)
+                            val serializedResponse = serializer.serialize(response)
                             record = buildRecord(
                                 rpcRequest.replyTopic,
                                 rpcRequest.correlationKey,
@@ -219,7 +219,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                             )
                         }
                     }
-                    publisher.publishToPartition(listOf(Pair(rpcRequest.replyPartition, record)))
+                    producer.sendRecordsToPartitions(listOf(Pair(rpcRequest.replyPartition, record)))
                 } catch (ex: Exception) {
                     //intentionally swallowed
                     log.warn("Error publishing response", ex)

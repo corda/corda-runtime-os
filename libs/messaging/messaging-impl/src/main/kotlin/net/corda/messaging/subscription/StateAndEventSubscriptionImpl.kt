@@ -9,6 +9,7 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.api.producer.CordaProducer
+import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -141,12 +142,12 @@ class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     processor.stateValueClass,
                     processor.eventValueClass,
                     stateAndEventListener,
-                    { topic, data ->
-                        log.error("Failed to deserialize state record from $topic")
+                    { data ->
+                        log.error("Failed to deserialize state record from $stateTopic")
                         deadLetterRecords.add(data)
                     },
-                    { topic, data ->
-                        log.error("Failed to deserialize event record from $topic")
+                    { data ->
+                        log.error("Failed to deserialize event record from $eventTopic")
                         deadLetterRecords.add(data)
                     }
                 )
