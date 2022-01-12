@@ -15,6 +15,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.properties.ConfigProperties.Companion.GROUP
 import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_PUBLISHER
 import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_RPC_SENDER
+import net.corda.messaging.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.publisher.CordaPublisherImpl
 import net.corda.messaging.publisher.CordaRPCSenderImpl
@@ -56,7 +57,7 @@ class CordaPublisherFactory @Activate constructor(
         )
 
         if(publisherConfig.instanceId == null) {
-            config = config.withoutPath(ConfigProperties.PRODUCER_TRANSACTIONAL_ID)
+            config = config.withoutPath(PRODUCER_TRANSACTIONAL_ID)
         }
 
         val producer = cordaProducerBuilder.createProducer(config.getConfig(CORDA_PRODUCER))
@@ -78,7 +79,7 @@ class CordaPublisherFactory @Activate constructor(
             kafkaConfig,
             clientIdCounter.getAndIncrement(),
             PATTERN_RPC_SENDER
-        ).withoutPath(ConfigProperties.PRODUCER_TRANSACTIONAL_ID)
+        ).withoutPath(PRODUCER_TRANSACTIONAL_ID)
 
         val serializer = avroSerializationFactory.createAvroSerializer<REQUEST> {  }
         val deserializer = avroSerializationFactory.createAvroDeserializer({}, rpcConfig.responseType)

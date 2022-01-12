@@ -29,6 +29,7 @@ import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_EVENTLO
 import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_PUBSUB
 import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_RPC_RESPONDER
 import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_STATEANDEVENT
+import net.corda.messaging.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.subscription.CompactedSubscriptionImpl
 import net.corda.messaging.subscription.DurableSubscriptionImpl
@@ -221,7 +222,7 @@ class CordaSubscriptionFactory @Activate constructor(
             nodeConfig,
             clientIdCounter.getAndIncrement(),
             PATTERN_RPC_RESPONDER
-        ).withoutPath(ConfigProperties.PRODUCER_TRANSACTIONAL_ID)
+        ).withoutPath(PRODUCER_TRANSACTIONAL_ID)
 
         val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE>{ }
         val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, rpcConfig.requestType)

@@ -13,11 +13,12 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.producer.CordaProducer
+import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.createStandardTestConfig
 import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_RPC_RESPONDER
 import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC

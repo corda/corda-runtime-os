@@ -56,7 +56,7 @@ class CordaRPCSenderImplTest {
         doAnswer { kafkaProducer }.whenever(cordaProducerBuilder).createProducer(any())
         doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
 
-        cordaSenderImpl = CordaKafkaRPCSenderImpl(
+        cordaSenderImpl = CordaRPCSenderImpl(
             config,
             mock(),
             cordaProducerBuilder,
