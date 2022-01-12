@@ -13,6 +13,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messaging.TOPIC_PREFIX
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.createStandardTestConfig
@@ -30,6 +31,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
@@ -106,9 +108,10 @@ class StateAndEventSubscriptionImplTest {
 
     @Test
     @Timeout(TEST_TIMEOUT_SECONDS *100)
-    fun `state and event subscription retries`() {
+    fun `state and event subscription retries after intermittent exception`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(5)
 
+        // Note this exception can be (and probably _is_) thrown from the processor
         var exceptionThrown = false
         doAnswer {
             if (!exceptionThrown) {
@@ -146,6 +149,48 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(4)).sendRecords(any())
         verify(producer, times(4)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(4)).commitTransaction()
+    }
+
+    @Test
+    @Timeout(TEST_TIMEOUT_SECONDS *100)
+    fun `state and event subscription does not retry after fatal exception`() {
+        val (builder, producer, stateAndEventConsumer) = setupMocks(5)
+
+        // Note this exception can be (and probably _is_) thrown from the processor
+        var exceptionThrown = false
+        doAnswer {
+            if (!exceptionThrown) {
+                exceptionThrown = true
+                throw CordaMessageAPIFatalException("No coming back")
+            } else {
+                CompletableFuture.completedFuture(null)
+            }
+        }.whenever(stateAndEventConsumer).waitForFunctionToFinish(any(), any(), any())
+
+        val subscription = StateAndEventSubscriptionImpl<String, String, String>(
+            stateAndEventConfig,
+            builder,
+            mock(),
+            cordaAvroSerializer,
+            lifecycleCoordinatorFactory
+        )
+
+        subscription.start()
+        while (subscription.isRunning) {
+            Thread.sleep(10)
+        }
+
+        val eventConsumer = stateAndEventConsumer.eventConsumer
+        verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
+            any(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
+        )
+        verify(builder, times(1)).createProducer(any())
+        verify(eventConsumer, times(1)).poll()
+        verifyNoInteractions(producer)
     }
 
     @Test
