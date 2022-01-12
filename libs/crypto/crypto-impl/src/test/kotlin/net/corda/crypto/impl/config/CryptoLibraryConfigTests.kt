@@ -1,6 +1,6 @@
 package net.corda.crypto.impl.config
 
-import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactory
+import net.corda.crypto.impl.persistence.InMemoryKeyValuePersistenceFactory
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import kotlin.test.assertEquals

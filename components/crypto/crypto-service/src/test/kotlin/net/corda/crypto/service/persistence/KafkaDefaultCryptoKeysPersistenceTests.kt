@@ -1,9 +1,6 @@
 package net.corda.crypto.service.persistence
 
-import net.corda.crypto.impl.persistence.SoftCryptoKeyRecordInfo
-import net.corda.crypto.impl.persistence.SoftCryptoKeyRecord
 import net.corda.crypto.impl.persistence.KeyValuePersistence
-import net.corda.crypto.impl.persistence.KeyValuePersistenceFactory
 import net.corda.data.crypto.persistence.DefaultCryptoKeyRecord
 import org.hamcrest.MatcherAssert
 import org.hamcrest.Matchers

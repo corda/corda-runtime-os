@@ -10,7 +10,7 @@ import net.corda.crypto.impl.DoubleSHA256DigestFactory
 import net.corda.crypto.impl.soft.SoftCryptoService
 import net.corda.crypto.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.impl.SigningServiceImpl
-import net.corda.crypto.impl.dev.InMemoryKeyValuePersistenceFactory
+import net.corda.crypto.impl.persistence.InMemoryKeyValuePersistenceFactory
 import net.corda.crypto.impl.persistence.SoftCryptoKeyCache
 import net.corda.crypto.impl.persistence.SoftCryptoKeyCacheImpl
 import net.corda.crypto.impl.persistence.SigningKeyCacheImpl
