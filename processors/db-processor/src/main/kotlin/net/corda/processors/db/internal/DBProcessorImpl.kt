@@ -66,6 +66,7 @@ class DBProcessorImpl @Activate constructor(
         // At the moment `configWriteService` does not seem to be piping initial configuration to
         // `configurationReadService`, hence have to do it manually for now.
         // Not even message is published on the config Kafka topic.
+        // This is very likely to be related to CORE-3316.
         log.info("Starting configuration read service with bootstrap config ${config}.")
         configurationReadService.start()
         configurationReadService.bootstrapConfig(config)
