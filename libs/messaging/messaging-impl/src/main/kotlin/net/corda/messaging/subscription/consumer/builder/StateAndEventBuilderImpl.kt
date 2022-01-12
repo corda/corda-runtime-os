@@ -38,10 +38,12 @@ class StateAndEventBuilderImpl @Activate constructor(
         kClazz: Class<K>,
         sClazz: Class<S>,
         eClazz: Class<E>,
-        stateAndEventListener: StateAndEventListener<K, S>?
+        stateAndEventListener: StateAndEventListener<K, S>?,
+        onStateError: (ByteArray) -> Unit,
+        onEventError: (ByteArray) -> Unit
     ): Pair<StateAndEventConsumer<K, S, E>, CordaConsumerRebalanceListener> {
-        val stateConsumer = cordaConsumerBuilder.createCompactedConsumer(config.stateConsumerConfig, kClazz, sClazz)
-        val eventConsumer = cordaConsumerBuilder.createDurableConsumer(config.eventConsumerConfig, kClazz, eClazz)
+        val stateConsumer = cordaConsumerBuilder.createCompactedConsumer(config.stateConsumerConfig, kClazz, sClazz, onStateError)
+        val eventConsumer = cordaConsumerBuilder.createDurableConsumer(config.eventConsumerConfig, kClazz, eClazz, onEventError)
         validateConsumers(config, stateConsumer, eventConsumer)
 
         val partitionState =

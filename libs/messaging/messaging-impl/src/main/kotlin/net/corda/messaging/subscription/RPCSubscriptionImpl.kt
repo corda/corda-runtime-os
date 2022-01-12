@@ -201,7 +201,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                             )
                         }
                         else -> {
-                            val serializedResponse = serializer.serialize(rpcRequest.replyTopic, response)
+                            val serializedResponse = serializer.serialize(response)
                             record = buildRecord(
                                 rpcRequest.replyTopic,
                                 rpcRequest.correlationKey,

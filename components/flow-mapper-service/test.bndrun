@@ -24,10 +24,10 @@
     order=sortbynameversion,\
     begin=-1
 -runbundles: \
-	avro;version='[1.10.1,1.10.2)',\
-	com.fasterxml.jackson.core.jackson-annotations;version='[2.11.3,2.11.4)',\
-	com.fasterxml.jackson.core.jackson-core;version='[2.11.3,2.11.4)',\
-	com.fasterxml.jackson.core.jackson-databind;version='[2.11.3,2.11.4)',\
+	avro;version='[1.11.0,1.11.1)',\
+	com.fasterxml.jackson.core.jackson-annotations;version='[2.12.5,2.12.6)',\
+	com.fasterxml.jackson.core.jackson-core;version='[2.12.5,2.12.6)',\
+	com.fasterxml.jackson.core.jackson-databind;version='[2.12.5,2.12.6)',\
 	com.google.guava;version='[30.1.1,30.1.2)',\
 	com.google.guava.failureaccess;version='[1.0.1,1.0.2)',\
 	com.typesafe.config;version='[1.4.1,1.4.2)',\

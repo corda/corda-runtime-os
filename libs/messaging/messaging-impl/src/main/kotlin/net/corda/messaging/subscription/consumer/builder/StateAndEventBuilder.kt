@@ -14,5 +14,7 @@ interface StateAndEventBuilder {
         sClazz: Class<S>,
         eClazz: Class<E>,
         stateAndEventListener: StateAndEventListener<K, S>? = null,
+        onStateError: (ByteArray) -> Unit,
+        onEventError: (ByteArray) -> Unit,
     ): Pair<StateAndEventConsumer<K, S, E>, CordaConsumerRebalanceListener>
 }

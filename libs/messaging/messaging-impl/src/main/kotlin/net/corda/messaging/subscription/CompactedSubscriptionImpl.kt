@@ -148,7 +148,7 @@ class CompactedSubscriptionImpl<K : Any, V : Any>(
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
-    private fun onError(topic: String, bytes: ByteArray) {
+    private fun onError(bytes: ByteArray) {
         log.error("Failed to deserialize record from $topic with bytes $bytes")
     }
 
