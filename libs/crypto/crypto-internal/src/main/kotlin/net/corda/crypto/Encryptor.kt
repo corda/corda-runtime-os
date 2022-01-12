@@ -1,11 +1,12 @@
 package net.corda.crypto
 
 import java.security.SecureRandom
+import java.util.concurrent.ConcurrentLinkedQueue
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
@@ -16,22 +17,25 @@ class Encryptor(
     private val key: SecretKey
 ) {
     companion object {
-        private const val IV_LENGTH = 16
-        private const val TRANSFORMATION = "AES/CBC/PKCS5Padding"
+        private const val GCM_NONCE_LENGTH = 12 // in bytes
+        private const val GCM_TAG_LENGTH = 16 // in bytes
+        private const val GSM_TRANSFORMATION = "AES/GCM/NoPadding"
+        private const val GCM_KEY_SIZE = 256
+        private const val GCM_PROVIDER = "SunJCE"
         private const val DERIVE_ALGORITHM = "PBKDF2WithHmacSHA256"
         private const val DERIVE_ITERATION_COUNT = 65536
         const val WRAPPING_KEY_ALGORITHM = "AES"
-        const val AES_KEY_LENGTH = 256
-        const val AES_PROVIDER = "SunJCE"
 
         private val secureRandom = SecureRandom()
+
+        private val pool = ConcurrentLinkedQueue<Cipher>()
 
         /**
          * Creates an instance of [Encryptor] by generating a new AES key.
          */
         fun generate(): Encryptor {
-            val keyGenerator = KeyGenerator.getInstance(WRAPPING_KEY_ALGORITHM, AES_PROVIDER)
-            keyGenerator.init(AES_KEY_LENGTH)
+            val keyGenerator = KeyGenerator.getInstance(WRAPPING_KEY_ALGORITHM, GCM_PROVIDER)
+            keyGenerator.init(GCM_KEY_SIZE)
             return Encryptor(keyGenerator.generateKey())
         }
 
@@ -59,13 +63,37 @@ class Encryptor(
             /* Derive the key, given password and salt. */
             val factory = SecretKeyFactory.getInstance(
                 DERIVE_ALGORITHM,
-                AES_PROVIDER
+                GCM_PROVIDER
             )
-            val spec = PBEKeySpec(passphrase.toCharArray(), salt.toByteArray(), iterCount, AES_KEY_LENGTH)
+            val spec = PBEKeySpec(passphrase.toCharArray(), salt.toByteArray(), iterCount, GCM_KEY_SIZE)
             val tmp = factory.generateSecret(spec)
             return tmp.encoded
         }
 
+        private fun withGcmCipherInstance(block: Cipher.() -> ByteArray): ByteArray {
+            val cipher = pool.poll()
+                ?: Cipher.getInstance(GSM_TRANSFORMATION, GCM_PROVIDER)
+            try {
+                return cipher.block()
+            } finally {
+                pool.offer(cipher)
+            }
+        }
+
+        private fun concatByteArrays(vararg concat: ByteArray): ByteArray {
+            if (concat.isEmpty()) {
+                return ByteArray(0)
+            }
+            val length = concat.sumOf { it.size }
+            val output = ByteArray(length)
+            var offset = 0
+            for (segment in concat) {
+                val segmentSize = segment.size
+                System.arraycopy(segment, 0, output, offset, segmentSize)
+                offset += segmentSize
+            }
+            return output
+        }
     }
 
     /**
@@ -84,24 +112,27 @@ class Encryptor(
     /**
      * Encrypts the given byte array.
      */
-    fun encrypt(raw: ByteArray): ByteArray {
-        val ivBytes = ByteArray(IV_LENGTH).apply {
+    fun encrypt(plainText: ByteArray): ByteArray {
+        val nonce = ByteArray(GCM_NONCE_LENGTH).apply {
             secureRandom.nextBytes(this)
         }
-        return ivBytes + Cipher.getInstance(TRANSFORMATION, AES_PROVIDER).apply {
-            init(Cipher.ENCRYPT_MODE, key, IvParameterSpec(ivBytes))
-        }.doFinal(raw)
+        return withGcmCipherInstance {
+            init(Cipher.ENCRYPT_MODE, key, GCMParameterSpec(GCM_TAG_LENGTH * 8, nonce))
+            concatByteArrays(nonce, doFinal(plainText))
+        }
     }
 
     /**
      * Decrypts the given byte array.
      */
-    fun decrypt(raw: ByteArray): ByteArray {
-        val ivBytes = raw.sliceArray(0 until IV_LENGTH)
-        val keyBytes = raw.sliceArray(IV_LENGTH until raw.size)
-        return Cipher.getInstance(TRANSFORMATION, AES_PROVIDER).apply {
-            init(Cipher.DECRYPT_MODE, key, IvParameterSpec(ivBytes))
-        }.doFinal(keyBytes)
+    fun decrypt(cipherText: ByteArray): ByteArray {
+        val nonce = cipherText.sliceArray(0 until GCM_NONCE_LENGTH)
+        val cipherTextAndTag = cipherText.sliceArray(GCM_NONCE_LENGTH until cipherText.size)
+        return withGcmCipherInstance {
+            val spec = GCMParameterSpec(GCM_TAG_LENGTH * 8, nonce)
+            init(Cipher.DECRYPT_MODE, key, spec)
+            doFinal(cipherTextAndTag)
+        }
     }
 
     override fun hashCode(): Int {
