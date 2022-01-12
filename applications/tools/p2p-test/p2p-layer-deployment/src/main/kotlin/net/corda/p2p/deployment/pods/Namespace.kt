@@ -1,6 +1,6 @@
 package net.corda.p2p.deployment.pods
 
-import net.corda.p2p.deployment.CordaOsDockerDevSecret
+import net.corda.p2p.deployment.DockerSecrets
 import net.corda.p2p.deployment.commands.MyUserName
 import java.io.File
 
@@ -63,7 +63,7 @@ class Namespace(
                     )
                 )
             ),
-            CordaOsDockerDevSecret.secret(identifier.namespaceName),
+            DockerSecrets.secret(identifier.namespaceName),
         )
     }
 

@@ -4,9 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import java.lang.System.getenv
 import java.util.Base64
 
-object CordaOsDockerDevSecret {
-    const val name = "corda-os-docker-secret"
-    const val host = "corda-os-docker.software.r3.com"
+object DockerSecrets {
+    const val name = "p2p-docker-secret"
+    const val cordaHost = "corda-os-docker.software.r3.com"
+    const val cacheHost = "docker-remotes.software.r3.com"
     fun secret(namespace: String) = mapOf(
         "apiVersion" to "v1",
         "kind" to "Secret",
@@ -31,9 +32,12 @@ object CordaOsDockerDevSecret {
         mapOf(
             "auths" to
                 mapOf(
-                    host to mapOf(
+                    cordaHost to mapOf(
                         "auth" to base64auth
-                    )
+                    ),
+                    cacheHost to mapOf(
+                        "auth" to base64auth
+                    ),
                 )
         )
     }

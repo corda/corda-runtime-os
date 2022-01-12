@@ -1,5 +1,6 @@
 package net.corda.p2p.deployment.pods
 
+import net.corda.p2p.deployment.DockerSecrets
 import net.corda.p2p.deployment.Yaml
 
 abstract class Pod : Yamlable {
@@ -10,7 +11,6 @@ abstract class Pod : Yamlable {
     open val environmentVariables: Map<String, String> = emptyMap()
     open val labels: Map<String, String> = emptyMap()
     open val hosts: Collection<String>? = null
-    open val pullSecrets: Collection<String> = emptyList()
     open val readyLog: Regex? = null
     open val resourceRequest: ResourceRequest? = null
 
@@ -57,13 +57,21 @@ abstract class Pod : Yamlable {
             "template" to mapOf(
                 "metadata" to mapOf("labels" to mapOf("app" to app) + labels),
                 "spec" to mapOf(
-                    "imagePullSecrets" to pullSecrets.map {
-                        mapOf("name" to it)
-                    },
+                    "imagePullSecrets" to listOf(
+                        mapOf("name" to DockerSecrets.name)
+                    ),
                     "containers" to listOf(
                         mapOf(
                             "name" to app,
-                            "image" to image,
+                            "image" to image.let { image ->
+                                if ((!image.startsWith(DockerSecrets.cordaHost)) &&
+                                    (!image.startsWith(DockerSecrets.cacheHost))
+                                ) {
+                                    "${DockerSecrets.cacheHost}/$image"
+                                } else {
+                                    image
+                                }
+                            },
                             "imagePullPolicy" to "IfNotPresent",
                             "ports" to ports.map {
                                 mapOf(
