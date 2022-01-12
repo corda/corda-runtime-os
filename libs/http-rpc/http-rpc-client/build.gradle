@@ -45,16 +45,3 @@ dependencies {
     integrationTestImplementation project(':libs:http-rpc:ssl-cert-read')
 }
 
-sourceSets {
-    integrationTest {
-        compileClasspath += main.output + test.output
-        runtimeClasspath += main.output + test.output
-    }
-}
-
-tasks.register('integrationTest', Test) {
-    description = "Runs integration tests."
-
-    testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
-    classpath = project.sourceSets["integrationTest"].runtimeClasspath
-}
