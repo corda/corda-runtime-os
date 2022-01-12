@@ -15,7 +15,6 @@ import net.corda.messaging.utils.toCordaProducerRecord
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.time.Duration
@@ -30,7 +29,6 @@ import java.util.concurrent.CompletableFuture
  * Producer will automatically attempt resends based on [kafkaConfig].
  * Any Exceptions thrown during publish are returned in a [CompletableFuture]
  */
-@Component
 class CordaPublisherImpl(
     private val kafkaConfig: Config,
     private val cordaProducer: CordaProducer,

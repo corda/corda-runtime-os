@@ -17,13 +17,14 @@ import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CORDA_C
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC_NAME
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.producer.CordaProducer
+import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.properties.ConfigProperties.Companion.RESPONSE_TOPIC
 import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
@@ -32,7 +33,6 @@ import net.corda.messaging.utils.FutureTracker
 import net.corda.messaging.utils.render
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import org.osgi.service.component.annotations.Component
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -43,11 +43,10 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
-@Component
 class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: Config,
-    private val publisher: Publisher,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
+    private val cordaProducerBuilder: CordaProducerBuilder,
     private val serializer: CordaAvroSerializer<REQUEST>,
     private val deserializer: CordaAvroDeserializer<RESPONSE>,
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
@@ -74,11 +73,11 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val topic = config.getString(TOPIC_NAME)
     private val responseTopic = config.getString(RESPONSE_TOPIC)
     private val futureTracker = FutureTracker<RESPONSE>()
+    private var producer: CordaProducer? = null
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-RPCSender-$topic",
-            //we use instanceId here as transactionality is a concern in this subscription
-            config.getString(ConfigProperties.INSTANCE_ID)
+            config.getString(ConfigProperties.CLIENT_ID_COUNTER)
         )
     ) { _, _ -> }
     private val partitionListener = RPCConsumerRebalanceListener(
@@ -126,6 +125,8 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private fun stopConsumeLoop() {
         val thread = lock.withLock {
             stopped = true
+            producer?.close()
+            producer = null
             val threadTmp = consumeLoopThread
             consumeLoopThread = null
             threadTmp
@@ -139,6 +140,7 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc response consumer.  Attempt: $attempts" }
+                producer = cordaProducerBuilder.createProducer(config.getConfig(ConfigProperties.CORDA_PRODUCER))
                 cordaConsumerBuilder.createRPCConsumer(
                     config.getConfig(CORDA_CONSUMER),
                     String::class.java,
@@ -268,10 +270,10 @@ class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 ByteBuffer.wrap(reqBytes)
             )
 
-            val record = Record(topic, correlationId, request)
+            val record = CordaProducerRecord(topic, correlationId, request)
             futureTracker.addFuture(correlationId, future, partition)
             try {
-                publisher.publish(listOf(record))
+                producer?.sendRecords(listOf(record))
             } catch (ex: Exception) {
                 future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
                 log.error("Failed to publish. Exception: ${ex.message}", ex)

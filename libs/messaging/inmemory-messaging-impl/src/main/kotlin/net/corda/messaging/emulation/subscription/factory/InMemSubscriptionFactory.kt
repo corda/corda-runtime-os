@@ -131,7 +131,8 @@ class InMemSubscriptionFactory @Activate constructor(
             rpcConfig,
             rpcTopicService,
             responderProcessor,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            clientIdCounter.getAndIncrement().toString()
         )
     }
 }

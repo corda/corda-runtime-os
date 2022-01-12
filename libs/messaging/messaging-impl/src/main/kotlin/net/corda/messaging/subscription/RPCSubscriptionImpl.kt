@@ -14,11 +14,12 @@ import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUME
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.producer.CordaProducer
+import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.properties.ConfigProperties
 import net.corda.messaging.properties.ConfigProperties.Companion.KAFKA_CONSUMER
@@ -37,8 +38,8 @@ import kotlin.concurrent.withLock
 @Suppress("LongParameterList")
 class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val config: Config,
-    private val publisher: Publisher,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
+    private val producerBuilder: CordaProducerBuilder,
     private val responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>,
     private val serializer: CordaAvroSerializer<RESPONSE>,
     private val deserializer: CordaAvroDeserializer<REQUEST>,
@@ -55,8 +56,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "$groupName-KafkaRPCSubscription-$topic",
-            //we use instanceId here as transactionality is a concern in this subscription
-            config.getString(ConfigProperties.INSTANCE_ID)
+            config.getString(ConfigProperties.CLIENT_ID_COUNTER)
         )
     ) { _, _ -> }
 
@@ -121,15 +121,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc consumer.  Attempt: $attempts" }
-                cordaConsumerBuilder.createRPCConsumer(
-                    config.getConfig(KAFKA_CONSUMER),
-                    String::class.java,
-                    RPCRequest::class.java
-                ).use {
-                    it.subscribe(topic)
-                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
-                    pollAndProcessRecords(it)
-                }
+                createProducerConsumerAndStartPolling()
                 attempts = 0
             } catch (ex: Exception) {
                 when (ex) {
@@ -147,11 +139,25 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
-    private fun pollAndProcessRecords(consumer: CordaConsumer<String, RPCRequest>) {
+    private fun createProducerConsumerAndStartPolling() {
+        producerBuilder.createProducer(config.getConfig(ConfigProperties.KAFKA_PRODUCER)).use { producer ->
+            cordaConsumerBuilder.createRPCConsumer(
+                config.getConfig(KAFKA_CONSUMER),
+                String::class.java,
+                RPCRequest::class.java
+            ).use {
+                it.subscribe(topic)
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+                pollAndProcessRecords(it, producer)
+            }
+        }
+    }
+
+    private fun pollAndProcessRecords(consumer: CordaConsumer<String, RPCRequest>, producer: CordaProducer) {
         while (!stopped) {
             val consumerRecords = consumer.poll()
             try {
-                processRecords(consumerRecords)
+                processRecords(consumerRecords, producer)
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIFatalException,
@@ -169,7 +175,10 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun processRecords(consumerRecords: List<CordaConsumerRecord<String, RPCRequest>>) {
+    private fun processRecords(
+        consumerRecords: List<CordaConsumerRecord<String, RPCRequest>>,
+        producer: CordaProducer
+    ) {
         consumerRecords.forEach {
             val rpcRequest = it.value ?: throw CordaMessageAPIIntermittentException("Should we not have a request?")
             val requestBytes = rpcRequest.payload
@@ -177,7 +186,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             val future = CompletableFuture<RESPONSE>()
 
             future.whenComplete { response, error ->
-                val record: Record<String, RPCResponse>?
+                val record: CordaProducerRecord<String, RPCResponse>?
                 when {
                     //the order of these is important due to how the futures api is
                     future.isCancelled -> {
@@ -211,7 +220,7 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 }
 
                 try {
-                    publisher.publishToPartition(listOf(Pair(rpcRequest.replyPartition, record)))
+                    producer.sendRecordsToPartitions(listOf(Pair(rpcRequest.replyPartition, record)))
                 } catch (ex: Exception) {
                     //intentionally swallowed
                     log.warn("Error publishing response", ex)
@@ -227,8 +236,8 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         key: String,
         status: ResponseStatus,
         payload: ByteArray
-    ): Record<String, RPCResponse> {
-        return Record(
+    ): CordaProducerRecord<String, RPCResponse> {
+        return CordaProducerRecord(
             topic,
             key,
             RPCResponse(

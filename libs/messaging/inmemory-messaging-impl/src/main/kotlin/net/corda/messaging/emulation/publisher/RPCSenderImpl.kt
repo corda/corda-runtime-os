@@ -12,14 +12,15 @@ import java.util.concurrent.CompletableFuture
 class RPCSenderImpl<REQUEST, RESPONSE>(
     private val rpcConfig: RPCConfig<REQUEST, RESPONSE>,
     private val rpcTopicService: RPCTopicService,
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val clientIdCounter: String
 ) : RPCSender<REQUEST, RESPONSE> {
 
     private var running = false
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
             "${rpcConfig.groupName}-RPCSender-${rpcConfig.requestTopic}",
-            rpcConfig.instanceId.toString()
+            clientIdCounter
         )
     ) { _, _ -> }
 

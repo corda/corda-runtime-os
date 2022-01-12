@@ -15,6 +15,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.properties.ConfigProperties.Companion.GROUP
 import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_PUBLISHER
 import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_RPC_SENDER
+import net.corda.messaging.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.publisher.CordaPublisherImpl
 import net.corda.messaging.publisher.CordaRPCSenderImpl
@@ -48,12 +49,17 @@ class CordaPublisherFactory @Activate constructor(
         publisherConfig: PublisherConfig,
         kafkaConfig: SmartConfig
     ): Publisher {
-        val config = resolvePublisherConfiguration(
+        var config = resolvePublisherConfiguration(
             publisherConfig.toConfig(),
             kafkaConfig,
             clientIdCounter.getAndIncrement(),
             PATTERN_PUBLISHER
         )
+
+        if(publisherConfig.instanceId == null) {
+            config = config.withoutPath(PRODUCER_TRANSACTIONAL_ID)
+        }
+
         val producer = cordaProducerBuilder.createProducer(config.getConfig(CORDA_PRODUCER))
         return CordaPublisherImpl(config, producer)
     }
@@ -73,17 +79,15 @@ class CordaPublisherFactory @Activate constructor(
             kafkaConfig,
             clientIdCounter.getAndIncrement(),
             PATTERN_RPC_SENDER
-        )
-
-        val publisher = createPublisher(PublisherConfig(rpcConfig.clientName), kafkaConfig)
+        ).withoutPath(PRODUCER_TRANSACTIONAL_ID)
 
         val serializer = avroSerializationFactory.createAvroSerializer<REQUEST> {  }
         val deserializer = avroSerializationFactory.createAvroDeserializer({}, rpcConfig.responseType)
 
         return CordaRPCSenderImpl(
             publisherConfig,
-            publisher,
             cordaConsumerBuilder,
+            cordaProducerBuilder,
             serializer,
             deserializer,
             lifecycleCoordinatorFactory

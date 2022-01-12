@@ -13,8 +13,6 @@ import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -31,6 +29,7 @@ import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_EVENTLO
 import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_PUBSUB
 import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_RPC_RESPONDER
 import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_STATEANDEVENT
+import net.corda.messaging.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
 import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC
 import net.corda.messaging.subscription.CompactedSubscriptionImpl
 import net.corda.messaging.subscription.DurableSubscriptionImpl
@@ -59,8 +58,6 @@ import java.util.concurrent.atomic.AtomicInteger
 class CordaSubscriptionFactory @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CordaProducerBuilder::class)
@@ -225,16 +222,15 @@ class CordaSubscriptionFactory @Activate constructor(
             nodeConfig,
             clientIdCounter.getAndIncrement(),
             PATTERN_RPC_RESPONDER
-        )
+        ).withoutPath(PRODUCER_TRANSACTIONAL_ID)
 
         val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE>{ }
         val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, rpcConfig.requestType)
-        val publisher = publisherFactory.createPublisher(PublisherConfig(rpcConfig.clientName), nodeConfig)
 
         return RPCSubscriptionImpl(
             config,
-            publisher,
             cordaConsumerBuilder,
+            cordaProducerBuilder,
             responderProcessor,
             cordaAvroSerializer,
             cordaAvroDeserializer,
