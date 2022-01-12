@@ -23,6 +23,7 @@ class DefaultWorkerParams {
         names = ["-t", "--topicPrefix"],
         description = ["The prefix to use for Kafka topics. Defaults to the empty string."]
     )
+    // This needs revision as arguably it belongs to the `messagingParams`
     var topicPrefix = ""
 
     @Option(names = ["-n", "--noHealthMonitor"], description = ["Disables the health monitor."])
