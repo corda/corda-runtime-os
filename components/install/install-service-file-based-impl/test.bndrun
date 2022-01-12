@@ -8,23 +8,24 @@
 
 -runvm: \
     --add-opens, 'java.base/java.net=ALL-UNNAMED'
+
+# Enable debugging.
+# -runjdb: 1044
+
 -runsystempackages: \
     javax.xml.stream;version=1.0.0,\
     javax.xml.stream.events;version=1.0.0,\
     javax.xml.stream.util;version=1.0.0,\
     sun.security.x509
 
-# Enable debugging.
-# -runjdb: 1044
-
 -runrequires: \
-    bnd.identity;id='net.corda.install',\
-    bnd.identity;id='net.corda.file-based-install-service',\
+    bnd.identity;id='net.corda.install-service',\
+    bnd.identity;id='net.corda.install-service-file-based-impl',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple',\
-    bnd.identity;id='file-based-install-service-tests'
+    bnd.identity;id='install-service-file-based-impl-tests'
 
 # This will help us keep -runbundles sorted
 -runstartlevel: \
@@ -40,7 +41,7 @@
 	com.google.guava;version='[30.1.1,30.1.2)',\
 	com.google.guava.failureaccess;version='[1.0.1,1.0.2)',\
 	com.typesafe.config;version='[1.4.1,1.4.2)',\
-	file-based-install-service-tests;version='[5.0.0,5.0.1)',\
+	install-service-file-based-impl-tests;version='[5.0.0,5.0.1)',\
 	junit-jupiter-api;version='[5.8.2,5.8.3)',\
 	junit-jupiter-engine;version='[5.8.2,5.8.3)',\
 	junit-jupiter-params;version='[5.8.2,5.8.3)',\
@@ -55,7 +56,9 @@
 	net.corda.configuration-read-service-impl;version='[5.0.0,5.0.1)',\
 	net.corda.crypto;version='[5.0.0,5.0.1)',\
 	net.corda.crypto-internal;version='[5.0.0,5.0.1)',\
-	net.corda.file-based-install-service;version='[5.0.0,5.0.1)',\
+	net.corda.file-configuration-read-impl;version='[5.0.0,5.0.1)',\
+	net.corda.install-service;version='[5.0.0,5.0.1)',\
+	net.corda.install-service-file-based-impl;version='[5.0.0,5.0.1)',\
 	net.corda.inmemory-messaging-impl;version='[5.0.0,5.0.1)',\
 	net.corda.install;version='[5.0.0,5.0.1)',\
 	net.corda.kotlin-stdlib-jdk7.osgi-bundle;version='[1.4.32,1.4.33)',\
@@ -75,4 +78,3 @@
 	org.osgi.util.promise;version='[1.1.1,1.1.2)',\
 	slf4j.api;version='[1.7.32,1.7.33)',\
 	slf4j.simple;version='[1.7.32,1.7.33)'
-

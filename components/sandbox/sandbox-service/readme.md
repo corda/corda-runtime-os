@@ -9,8 +9,7 @@ of the `testOSGi` task.  You may find it helpful to add the `clean` task to the
 "Before launch" section.
 
 ```shell
--D-runjdb=5005
-```
+ ```
 
 Alternatively, you can specify this on the command line when running the `testOSGi` 
 gradle task.

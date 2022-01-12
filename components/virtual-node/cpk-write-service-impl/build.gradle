@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Sandbox Context Group Service Reader"
+description "CPK Write Service Impl"
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -14,9 +14,8 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
-    implementation "net.corda:corda-config-schema"
-
     implementation "net.corda:corda-packaging-avro-converters"
+    implementation "net.corda:corda-config-schema"
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:lifecycle:lifecycle")
@@ -24,23 +23,21 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    implementation project(':libs:virtual-node:sandbox-group-context')
-    implementation project(":libs:sandbox")
-    implementation project(":libs:sandbox-hooks")
-
-    implementation project(":components:virtual-node:virtual-node-common")
-    implementation project(":components:install:install-service")
+    api project(":components:virtual-node:cpk-write-service")
+    implementation project(":components:virtual-node:cpk-service-common")
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":components:configuration:configuration-read-service")
 
+    runtimeOnly project(":components:configuration:configuration-read-service-impl")
+
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
-    testImplementation 'net.corda:corda-serialization'
+    testImplementation project(":components:virtual-node:cpk-service-common")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
 
-    testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
 }

@@ -16,7 +16,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(":components:virtual-node:cpi-info-read-service")
-    implementation project(":components:virtual-node:virtual-node-info-service-reader")
+    implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":components:configuration:configuration-read-service")
 
     implementation "net.corda:corda-avro-schema"

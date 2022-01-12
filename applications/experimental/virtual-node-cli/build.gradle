@@ -20,7 +20,7 @@ dependencies {
     implementation project(':osgi-framework-api')
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(":components:virtual-node:virtual-node-common")
-    implementation project(":components:virtual-node:virtual-node-info-service-writer")
+    implementation project(":components:virtual-node:virtual-node-info-write-service")
     api project(":components:virtual-node:cpi-info-write-service")
     implementation project(':components:kafka-topic-admin')
     implementation project(":applications:tools:common-setup")
@@ -36,7 +36,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:configuration:configuration-core")
 
-    implementation project(":components:virtual-node:virtual-node-info-service-writer")
+    implementation project(":components:virtual-node:virtual-node-info-write-service")
     implementation project(":components:virtual-node:cpi-info-write-service")
 
     runtimeOnly project(":components:configuration:configuration-read-service")
