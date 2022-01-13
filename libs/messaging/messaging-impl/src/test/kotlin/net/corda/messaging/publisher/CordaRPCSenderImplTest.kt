@@ -5,11 +5,13 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.createStandardTestConfig
 import net.corda.messaging.properties.ConfigProperties.Companion.PATTERN_RPC_SENDER
+import net.corda.messaging.subscription.consumer.builder.CordaConsumerBuilder
 import net.corda.v5.base.concurrent.getOrThrow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -52,13 +54,16 @@ class CordaRPCSenderImplTest {
     @Test
     fun `test producer is closed properly`() {
         val cordaProducer: CordaProducer = mock()
+        val cordaConsumer: CordaConsumer<Any, Any> = mock()
         val cordaProducerBuilder: CordaProducerBuilder = mock()
+        val cordaConsumerBuilder: CordaConsumerBuilder = mock()
         doAnswer { cordaProducer }.whenever(cordaProducerBuilder).createProducer(any())
+        doAnswer { cordaConsumer }.whenever(cordaConsumerBuilder).createRPCConsumer<Any, Any>(any(), any(), any(), any())
         doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
 
         cordaSenderImpl = CordaRPCSenderImpl(
             config,
-            mock(),
+            cordaConsumerBuilder,
             cordaProducerBuilder,
             serializer,
             deserializer,

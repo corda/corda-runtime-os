@@ -22,7 +22,6 @@ import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.properties.ConfigProperties.Companion.DEAD_LETTER_QUEUE_SUFFIX
-import net.corda.messaging.properties.ConfigProperties.Companion.INSTANCE_ID
 import net.corda.messaging.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.properties.ConfigProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC_NAME

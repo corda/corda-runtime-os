@@ -3,13 +3,11 @@ package net.corda.messagebus.api.configuration
 class ConfigProperties {
     companion object {
         const val TOPIC = "topic"
-        const val TOPIC_PREFIX = "topic.prefix"
         const val TOPIC_NAME = "topic.name"
 
         const val GROUP = "group"
         const val GROUP_INSTANCE_ID = "group.instance.id"
 
-        const val INSTANCE_ID = "instanceId"
         const val CLIENT_ID_COUNTER = "clientIdCounter"
 
         const val CORDA_PRODUCER = "producer"

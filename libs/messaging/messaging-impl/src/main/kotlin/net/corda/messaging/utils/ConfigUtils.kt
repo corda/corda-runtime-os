@@ -10,7 +10,6 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.properties.ConfigProperties
 import net.corda.messaging.properties.ConfigProperties.Companion.GROUP
-import net.corda.messaging.properties.ConfigProperties.Companion.INSTANCE_ID
 import net.corda.messaging.properties.ConfigProperties.Companion.TOPIC
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil

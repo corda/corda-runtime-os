@@ -8,7 +8,6 @@ import net.corda.messagebus.api.configuration.ConfigProperties.Companion.COMMIT_
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.POLL_TIMEOUT
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.SUBSCRIBE_MAX_RETRIES
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC_NAME
-import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
