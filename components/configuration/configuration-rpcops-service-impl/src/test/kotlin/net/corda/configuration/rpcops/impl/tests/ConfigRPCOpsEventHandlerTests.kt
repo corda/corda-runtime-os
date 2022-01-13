@@ -5,6 +5,7 @@ import net.corda.configuration.rpcops.impl.ConfigRPCOpsEventHandler
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus.DOWN
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
@@ -14,6 +15,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -109,15 +111,22 @@ class ConfigRPCOpsEventHandlerTests {
         verify(configRPCOps).close()
         verify(registrationHandle).close()
         verify(updateHandle).close()
-        verify(coordinator).updateStatus(DOWN)
     }
 
     @Test
     fun `closes all resources and sets status to ERROR if the configuration read service errors`() {
         val configRPCOps = mock<ConfigRPCOpsInternal>()
         val (configReadService, updateHandle) = getConfigReadServiceAndUpdateHandle()
-        val (coordinator, registrationHandle) = getCoordinatorAndRegistrationHandle()
+
         val eventHandler = ConfigRPCOpsEventHandler(configReadService, configRPCOps)
+        val registrationHandle = mock<RegistrationHandle>()
+        val eventCaptor = argumentCaptor<LifecycleEvent>()
+        val coordinator = mock<LifecycleCoordinator>().apply {
+            whenever(followStatusChangesByName(componentsToFollow)).thenReturn(registrationHandle)
+            whenever(postEvent(eventCaptor.capture())).then {
+                eventHandler.processEvent(eventCaptor.firstValue, this)
+            }
+        }
 
         eventHandler.processEvent(StartEvent(), coordinator)
         eventHandler.processEvent(RegistrationStatusChangeEvent(registrationHandle, UP), coordinator)
@@ -126,7 +135,6 @@ class ConfigRPCOpsEventHandlerTests {
         verify(configRPCOps).close()
         verify(registrationHandle).close()
         verify(updateHandle).close()
-        verify(coordinator).updateStatus(ERROR)
     }
 
     /** Creates a [ConfigurationReadService] that returns a static update handle for any registration for updates. */

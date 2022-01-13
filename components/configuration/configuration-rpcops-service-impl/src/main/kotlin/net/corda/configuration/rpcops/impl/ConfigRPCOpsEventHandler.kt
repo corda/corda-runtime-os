@@ -6,8 +6,6 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.LifecycleStatus.DOWN
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.lifecycle.RegistrationStatusChangeEvent
@@ -31,7 +29,7 @@ internal class ConfigRPCOpsEventHandler(
         when (event) {
             is StartEvent -> followConfigReadServiceStatus(coordinator)
             is RegistrationStatusChangeEvent -> tryRegisteringForConfigUpdates(coordinator, event)
-            is StopEvent -> stop(coordinator, DOWN)
+            is StopEvent -> stop()
         }
     }
 
@@ -55,19 +53,16 @@ internal class ConfigRPCOpsEventHandler(
                     configUpdateHandle?.close()
                     configUpdateHandle = configReadService.registerForUpdates(configHandler)
                 }
-                ERROR -> {
-                    stop(coordinator, ERROR)
-                }
+                ERROR -> coordinator.postEvent(StopEvent(errored = true))
                 else -> Unit
             }
         }
     }
 
     /** Shuts down the service. */
-    private fun stop(coordinator: LifecycleCoordinator, status: LifecycleStatus) {
+    private fun stop() {
         configRPCOps.close()
         configReadServiceRegistrationHandle?.close()
         configUpdateHandle?.close()
-        coordinator.updateStatus(status)
     }
 }
