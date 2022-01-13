@@ -98,6 +98,7 @@ internal class ConfigWriterProcessor(
      *
      * @throws IllegalStateException If the current configuration cannot be read back from the cluster database.
      */
+    @Suppress("LongParameterList")
     private fun handleException(
         respFuture: ConfigurationManagementResponseFuture,
         errMsg: String,
