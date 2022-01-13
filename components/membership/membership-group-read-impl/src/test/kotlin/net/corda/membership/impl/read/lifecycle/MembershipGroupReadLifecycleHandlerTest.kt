@@ -49,7 +49,9 @@ class MembershipGroupReadLifecycleHandlerTest {
     val coordinatorFactory: LifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
         doReturn(readServiceCoordinator).whenever(this).createCoordinator(any(), any())
     }
-    private val cryptoFactory: CryptoFactory = mock()
+    private val cryptoFactory: CryptoFactory = mock<CryptoFactory>().apply {
+        whenever(this.cipherSchemeMetadata).thenReturn(mock())
+    }
     private val membershipGroupReadService: MembershipGroupReaderProviderImpl = MembershipGroupReaderProviderImpl(
         virtualNodeInfoReadService, cpiInfoReader, configurationReadService, mock(), coordinatorFactory, cryptoFactory
     )

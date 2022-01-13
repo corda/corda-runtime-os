@@ -50,7 +50,9 @@ class MembershipGroupReaderProviderImplTest {
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
         doReturn(coordinator).whenever(this).createCoordinator(any(), any())
     }
-    private val cryptoFactory: CryptoFactory = mock()
+    private val cryptoFactory: CryptoFactory = mock<CryptoFactory>().apply {
+        whenever(this.cipherSchemeMetadata).thenReturn(mock())
+    }
 
     @BeforeEach
     fun setUp() {
