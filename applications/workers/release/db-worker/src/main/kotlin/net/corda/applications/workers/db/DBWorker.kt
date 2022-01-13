@@ -11,7 +11,6 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
-import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -36,8 +35,6 @@ class DBWorker @Activate constructor(
     private companion object {
         private val logger = contextLogger()
         private const val DB_CONFIG_PATH = "database"
-        // Introduce a constant in the right place and do global replace
-        private const val CONFIG_TOPIC_PATH = "config.topic"
     }
 
     /** Parses the arguments, then initialises and starts the [processor]. */
@@ -49,10 +46,7 @@ class DBWorker @Activate constructor(
         setUpHealthMonitor(healthMonitor, params.defaultParams)
 
         val databaseConfig = PathAndConfig(DB_CONFIG_PATH, params.databaseParams)
-        val configurationTopic =
-            PathAndConfig(CONFIG_TOPIC_PATH, listOf(("name" to Schemas.Config.CONFIG_TOPIC)).toMap())
-        val config =
-            getBootstrapConfig(smartConfigFactory, params.defaultParams, listOf(databaseConfig, configurationTopic))
+        val config = getBootstrapConfig(smartConfigFactory, params.defaultParams, listOf(databaseConfig))
 
         processor.start(config)
     }
