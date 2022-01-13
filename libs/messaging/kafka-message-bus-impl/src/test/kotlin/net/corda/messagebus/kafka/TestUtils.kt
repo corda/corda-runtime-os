@@ -3,6 +3,7 @@ package net.corda.messagebus.kafka
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLIENT_ID_COUNTER
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.GROUP
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.INSTANCE_ID

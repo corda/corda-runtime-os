@@ -72,6 +72,7 @@
 	net.corda.sandbox-internal;version='[5.0.0,5.0.1)',\
 	net.corda.sandbox-service;version='[5.0.0,5.0.1)',\
 	net.corda.serialization;version='[5.0.0,5.0.1)',\
+	net.corda.test-utilities;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-info;version='[5.0.0,5.0.1)',\
 	org.apache.commons.commons-compress;version='[1.21.0,1.21.1)',\
 	org.apache.felix.configadmin;version='[1.9.20,1.9.21)',\

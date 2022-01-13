@@ -17,12 +17,15 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.getUniqueObject
 import net.corda.sandboxgroupcontext.putUniqueObject
+import net.corda.test.util.eventually
+import net.corda.v5.base.util.seconds
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.io.TempDir
@@ -33,6 +36,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 /**
  * These tests probably need deleting when we switch to a different implementation
@@ -113,8 +117,8 @@ class FileBasedInstallServiceTests {
 
             // wait until install service is 'ready' and has called us back with the
             // 'installed' cpi/cpbs.
-            while (!ready) {
-                Thread.sleep(100)
+            eventually(duration = 10.seconds) {
+                assertThat(ready).isTrue
             }
 
             sandboxService.start()
@@ -144,6 +148,7 @@ class FileBasedInstallServiceTests {
      * behaviour for now.
      */
     @Test
+    @Timeout(value = 10, unit = TimeUnit.SECONDS)
     fun `run flows using sandboxgroupcontext and install service`() {
         // Run flow 1 in cpb 1
         val sandboxGroupCtx1 = useSandboxService(CPB_ONE)

@@ -7,6 +7,7 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -55,8 +56,9 @@ class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val topic = config.getString(TOPIC_NAME)
     private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
         LifecycleCoordinatorName(
-            "$groupName-KafkaRPCSubscription-$topic",
-            config.getString(ConfigProperties.CLIENT_ID_COUNTER)
+            "$groupName-RPCSubscription-$topic",
+            //we use instanceId here as transactionality is a concern in this subscription
+            config.getString(INSTANCE_ID)
         )
     ) { _, _ -> }
 

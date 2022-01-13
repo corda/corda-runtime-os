@@ -19,10 +19,10 @@
     order=sortbynameversion,\
     begin=-1
 -runbundles: \
-	avro;version='[1.10.1,1.10.2)',\
-	com.fasterxml.jackson.core.jackson-annotations;version='[2.11.3,2.11.4)',\
-	com.fasterxml.jackson.core.jackson-core;version='[2.11.3,2.11.4)',\
-	com.fasterxml.jackson.core.jackson-databind;version='[2.11.3,2.11.4)',\
+	avro;version='[1.11.0,1.11.1)',\
+	com.fasterxml.jackson.core.jackson-annotations;version='[2.12.5,2.12.6)',\
+	com.fasterxml.jackson.core.jackson-core;version='[2.12.5,2.12.6)',\
+	com.fasterxml.jackson.core.jackson-databind;version='[2.12.5,2.12.6)',\
 	com.typesafe.config;version='[1.4.1,1.4.2)',\
 	flow-mapper-impl-tests;version='[5.0.0,5.0.1)',\
 	junit-jupiter-api;version='[5.8.2,5.8.3)',\

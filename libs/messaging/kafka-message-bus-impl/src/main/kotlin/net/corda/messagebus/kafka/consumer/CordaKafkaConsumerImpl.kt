@@ -1,6 +1,7 @@
 package net.corda.messagebus.kafka.consumer
 
 import com.typesafe.config.Config
+import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.CLOSE_TIMEOUT
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.COMMIT_OFFSET_MAX_RETRIES
@@ -54,7 +55,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     private val consumerCloseTimeout = Duration.ofMillis(config.getLong(CLOSE_TIMEOUT))
     private val consumerSubscribeMaxRetries = config.getLong(SUBSCRIBE_MAX_RETRIES)
     private val consumerCommitOffsetMaxRetries = config.getLong(COMMIT_OFFSET_MAX_RETRIES)
-    private val topicPrefix = config.getString(TOPIC_PREFIX)
+    private val topicPrefix = config.getString(TOPIC_PREFIX_PATH)
     private val topic = config.getString(TOPIC_NAME)
     private val groupName = config.getString(CommonClientConfigs.GROUP_ID_CONFIG)
 

@@ -5,6 +5,7 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -50,7 +51,6 @@ class FlowMapperService @Activate constructor(
 
     private companion object {
         private val logger = contextLogger()
-        private const val INSTANCE_ID = "instance-id"
         private const val CONSUMER_GROUP = "mapper.consumer.group"
     }
 

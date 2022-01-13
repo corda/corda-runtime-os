@@ -10,6 +10,7 @@ import net.corda.libs.configuration.publish.CordaConfigurationVersion
 import net.corda.libs.configuration.publish.impl.ConfigPublisherImpl
 import net.corda.libs.configuration.read.kafka.factory.ConfigReaderFactoryImpl
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -23,6 +24,7 @@ import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.http.SniCalculator
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.toBase64
@@ -88,16 +90,19 @@ open class TestBase {
 
     protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
 
-    protected inner class ConfigPublisher {
+    protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory?=null) {
+        init {
+            coordinatorFactory = coordinatorFactory?:lifecycleCoordinatorFactory
+        }
         private val configurationTopicService = TopicServiceImpl()
         private val rpcTopicService = RPCTopicServiceImpl()
         private val topicName = "config.${UUID.randomUUID().toString().replace("-", "")}"
 
         val readerService by lazy {
             ConfigurationReadServiceImpl(
-                LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl()),
+                coordinatorFactory!!,
                 ConfigReaderFactoryImpl(
-                    InMemSubscriptionFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory),
+                    InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!),
                     smartConfigFactory
                 ),
             ).also {
@@ -126,7 +131,7 @@ open class TestBase {
                 .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
                 .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
             CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory).createPublisher(PublisherConfig((topicName))).use { publisher ->
-                val configurationPublisher = ConfigPublisherImpl(topicName, publisher)
+                val configurationPublisher = ConfigPublisherImpl(CONFIG_TOPIC, publisher)
                 configurationPublisher.updateConfiguration(
                     CordaConfigurationKey(
                         "myKey",
@@ -156,8 +161,8 @@ open class TestBase {
         }
     }
 
-    protected fun createConfigurationServiceFor(configuration: GatewayConfiguration): ConfigurationReadService {
-        val publisher = ConfigPublisher()
+    protected fun createConfigurationServiceFor(configuration: GatewayConfiguration, coordinatorFactory: LifecycleCoordinatorFactory?=null): ConfigurationReadService {
+        val publisher = ConfigPublisher(coordinatorFactory)
         publisher.publishConfig(configuration)
         return publisher.readerService
     }

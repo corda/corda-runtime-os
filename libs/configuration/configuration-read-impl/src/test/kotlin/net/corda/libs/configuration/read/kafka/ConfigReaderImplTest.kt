@@ -13,12 +13,13 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.mock
-import java.io.BufferedReader
 
 class ConfigReaderImplTest {
 
@@ -31,19 +32,16 @@ class ConfigReaderImplTest {
 
     @BeforeEach
     fun beforeEach() {
-        val config = SmartConfigImpl(
-            BufferedReader(this::class.java.classLoader.getResourceAsStream("kafka.conf")!!.reader()).use {
-                ConfigFactory.parseString(it.readText())
-            })
+        val emptyConfig =  SmartConfigImpl(ConfigFactory.empty())
 
         configUpdateUtil = ConfigListenerTestUtil()
-        configRepository = ConfigRepository(SmartConfigImpl(ConfigFactory.empty()))
-        configReader = ConfigReaderImpl(configRepository, subscriptionFactory, config, smartConfigFactory)
+        configRepository = ConfigRepository(emptyConfig)
+        configReader = ConfigReaderImpl(configRepository, subscriptionFactory, emptyConfig, smartConfigFactory)
         Mockito.`when`(
             subscriptionFactory.createCompactedSubscription(
-                SubscriptionConfig(CONFIGURATION_READER, "default-topic"),
+                SubscriptionConfig(CONFIGURATION_READER, CONFIG_TOPIC),
                 configReader,
-                config
+                emptyConfig
             )
         ).thenReturn(subscription)
 

@@ -1,12 +1,16 @@
 package net.corda.messagebus.kafka.producer
 
 import com.typesafe.config.Config
+import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.messagebus.api.configuration.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
+import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.subscription.generateMockConsumerRecordList
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
@@ -41,7 +45,7 @@ class CordaKafkaProducerImplTest {
     @BeforeEach
     fun setup() {
         doReturn(ConsumerGroupMetadata("")).whenever(consumer).groupMetadata()
-        doReturn("").whenever(config).getString(TOPIC_PREFIX)
+        doReturn("").whenever(config).getString(TOPIC_PREFIX_PATH)
         cordaKafkaProducer = CordaKafkaProducerImpl(config, producer)
     }
 
