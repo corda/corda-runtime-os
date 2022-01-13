@@ -40,8 +40,8 @@ services:
     command: |
       "
       echo -e 'Creating kafka topics'
-      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.config-management-request.topic
-      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.config-management-request.topic.resp
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.config.management.request
+      kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.config.management.request.resp
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.config.topic --config "cleanup.policy=compact"
 
       kafka-topics.sh --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --create --topic http.rpc.permissions.management

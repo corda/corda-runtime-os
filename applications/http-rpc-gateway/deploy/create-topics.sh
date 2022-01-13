@@ -13,8 +13,8 @@ fi
 
 echo "(Re)create topics"
 docker exec kafka bash -c "$create_kafka_topics --create --topic ${topic_prefix}config.topic --config \"cleanup.policy=compact\""
-docker exec kafka bash -c "$create_kafka_topics --create --topic ${topic_prefix}config-management-request.topic"
-docker exec kafka bash -c "$create_kafka_topics --create --topic ${topic_prefix}config-management-request.topic.resp"
+docker exec kafka bash -c "$create_kafka_topics --create --topic ${topic_prefix}config.management.request"
+docker exec kafka bash -c "$create_kafka_topics --create --topic ${topic_prefix}config.management.request.resp"
 
 docker exec kafka bash -c "$create_kafka_topics --create --topic ${topic_prefix}rpc.permissions.management"
 docker exec kafka bash -c "$create_kafka_topics --create --topic ${topic_prefix}rpc.permissions.management.resp"
