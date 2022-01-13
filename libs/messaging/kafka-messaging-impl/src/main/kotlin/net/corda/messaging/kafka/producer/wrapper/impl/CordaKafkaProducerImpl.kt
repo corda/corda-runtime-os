@@ -1,12 +1,13 @@
 package net.corda.messaging.kafka.producer.wrapper.impl
 
+
 import com.typesafe.config.Config
+import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CLOSE_TIMEOUT
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.consumer.wrapper.CordaKafkaConsumer
 import net.corda.messaging.kafka.utils.getRecordListOffsets
 import net.corda.messaging.kafka.utils.getStringOrNull
@@ -44,7 +45,7 @@ class CordaKafkaProducerImpl(
     private val producer: Producer<Any, Any>
 ) : CordaKafkaProducer {
     private val closeTimeout = config.getLong(CLOSE_TIMEOUT)
-    private val topicPrefix = config.getString(TOPIC_PREFIX)
+    private val topicPrefix = config.getString(TOPIC_PREFIX_PATH)
     private val clientId = config.getString(CommonClientConfigs.CLIENT_ID_CONFIG)
     private val transactionalId = config.getStringOrNull(ProducerConfig.TRANSACTIONAL_ID_CONFIG)
 

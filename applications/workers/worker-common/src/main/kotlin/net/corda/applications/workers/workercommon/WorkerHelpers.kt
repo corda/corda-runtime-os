@@ -3,11 +3,11 @@ package net.corda.applications.workers.workercommon
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.applications.workers.workercommon.internal.CUSTOM_CONFIG_PATH
-import net.corda.applications.workers.workercommon.internal.INSTANCE_ID_PATH
 import net.corda.applications.workers.workercommon.internal.MSG_CONFIG_PATH
-import net.corda.applications.workers.workercommon.internal.TOPIC_PREFIX_PATH
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
+import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX
 import net.corda.osgi.api.Shutdown
 import org.osgi.framework.FrameworkUtil
 import picocli.CommandLine
@@ -53,8 +53,8 @@ class WorkerHelpers {
             return smartConfigFactory.create(
                 ConfigFactory
                     .parseMap(messagingParamsMap + additionalParamsMap + extraParamsMap)
-                    .withValue(INSTANCE_ID_PATH, ConfigValueFactory.fromAnyRef(defaultParams.instanceId))
-                    .withValue(TOPIC_PREFIX_PATH, ConfigValueFactory.fromAnyRef(defaultParams.topicPrefix))
+                    .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(defaultParams.instanceId))
+                    .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(defaultParams.topicPrefix))
             )
         }
 

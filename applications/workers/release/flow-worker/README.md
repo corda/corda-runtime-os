@@ -25,16 +25,18 @@ docker-compose -f single-kafka-cluster.yml down
 
 ```shell
 cd applications\tools\flow-worker-setup
-java -jar build/bin/corda-flow-worker-setup-5.0.0.0-SNAPSHOT.jar --config config.conf --topic topics.conf --instanceId=1
+java -jar build/bin/corda-flow-worker-setup-5.0.0.0-SNAPSHOT.jar --config config.conf --topic topics.conf --instanceId=1 
 ```
 
 ### Run Test App
+There are two options for passing the CPK Cache directory to the worker, either it can be published on the configuration kafka topic
+by the setup app (see the application/tools/flow-worker-setpup/config.conf as an example)
+or it can be specified as an optional param on the command line (see example below)
 
 ```shell
 cd applications\workers\release\flow-worker
 java -jar build/bin/corda-flow-worker-5.0.0.0-SNAPSHOT.jar  --instanceId 1 \
-    --additionalParams config.topic.name="config.topic" \
-    --additionalParams corda.cpi.cacheDir="C:\dev\corda-runtime-os\testing\cpbs\helloworld\build\libs"
+--additionalParams corda.cpi.cacheDir="./../../../testing/cpbs/helloworld/build/libs"
 ```
 
 You may find it helpful to in Intellij to create a "JAR Application configuration" to run this step, and additionally

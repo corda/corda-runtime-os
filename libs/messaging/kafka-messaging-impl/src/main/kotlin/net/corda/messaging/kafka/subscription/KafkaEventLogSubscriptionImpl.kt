@@ -1,6 +1,7 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -16,7 +17,6 @@ import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_GROUP_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_POLL_AND_PROCESS_RETRIES
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.CONSUMER_THREAD_STOP_TIMEOUT
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.INSTANCE_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_CONSUMER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.KAFKA_PRODUCER
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_CLIENT_ID
