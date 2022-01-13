@@ -12,7 +12,6 @@ import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.v5.base.annotations.CordaSerializable
 
 @HttpRpcResource(path = "customjson")
 interface CustomSerializationAPI : RpcOps {
@@ -28,10 +27,8 @@ interface CustomSerializationAPI : RpcOps {
 
 @JsonSerialize(using = CustomSerializer::class)
 @JsonDeserialize(using = CustomDeserializer::class)
-@CordaSerializable
 class CustomString(val s: String)
 
-@CordaSerializable
 open class CustomUnsafeString(val data: String) {
     companion object {
         var flag: Boolean = false
@@ -44,7 +41,6 @@ open class CustomUnsafeString(val data: String) {
 
 @JsonSerialize(using = CustomMarshalStringSerializer::class)
 @JsonDeserialize(using = CustomMarshalStringDeserializer::class)
-@CordaSerializable
 class CustomMarshalString(val s: String)
 
 class CustomNonSerializableString(val unsafe: String) : CustomUnsafeString(unsafe) {

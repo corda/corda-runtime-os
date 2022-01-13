@@ -2,6 +2,8 @@ package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigValueFactory
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.kafka.producer.wrapper.CordaKafkaProducer
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -39,6 +42,8 @@ class KafkaStateAndEventSubscriptionImplTest {
 
     private val config: Config = createStandardTestConfig().getConfig(PATTERN_STATEANDEVENT)
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
+    private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private val stateAndEventConfig = getStateAndEventConfig(config)
 
     data class Mocks(
@@ -75,7 +80,15 @@ class KafkaStateAndEventSubscriptionImplTest {
         doAnswer { setOf(topicPartition) }.whenever(stateConsumer).assignment()
         doAnswer { listOf(state) }.whenever(stateConsumer).poll()
         doAnswer { Pair(stateAndEventConsumer, rebalanceListener) }.whenever(builder)
-            .createStateEventConsumerAndRebalanceListener(any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())
+            .createStateEventConsumerAndRebalanceListener(
+                any(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull(),
+                anyOrNull()
+            )
 
         val mockConsumerRecords = generateMockConsumerRecordList(iterations, TOPIC, 0)
         var eventsPaused = false
@@ -91,6 +104,8 @@ class KafkaStateAndEventSubscriptionImplTest {
                 listOf(mockConsumerRecords[latch.count.toInt() - 1])
             }
         }.whenever(eventConsumer).poll()
+
+        doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
 
         return Mocks(builder, producer, stateAndEventConsumer)
     }
@@ -114,7 +129,8 @@ class KafkaStateAndEventSubscriptionImplTest {
             stateAndEventConfig,
             builder,
             mock(),
-            avroSchemaRegistry
+            avroSchemaRegistry,
+            lifecycleCoordinatorFactory
         )
 
         subscription.start()
@@ -125,6 +141,8 @@ class KafkaStateAndEventSubscriptionImplTest {
         val eventConsumer = stateAndEventConsumer.eventConsumer
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(
             any(),
+            anyOrNull(),
+            anyOrNull(),
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),
@@ -146,7 +164,8 @@ class KafkaStateAndEventSubscriptionImplTest {
             stateAndEventConfig,
             builder,
             mock(),
-            avroSchemaRegistry
+            avroSchemaRegistry,
+            lifecycleCoordinatorFactory
         )
 
         subscription.start()
@@ -158,6 +177,8 @@ class KafkaStateAndEventSubscriptionImplTest {
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(
             any(),
+            anyOrNull(),
+            anyOrNull(),
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),
@@ -198,7 +219,8 @@ class KafkaStateAndEventSubscriptionImplTest {
             stateAndEventConfig,
             builder,
             mock(),
-            avroSchemaRegistry
+            avroSchemaRegistry,
+            lifecycleCoordinatorFactory
         )
 
         subscription.start()
@@ -209,6 +231,8 @@ class KafkaStateAndEventSubscriptionImplTest {
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(
             any(),
+            anyOrNull(),
+            anyOrNull(),
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),
@@ -248,7 +272,8 @@ class KafkaStateAndEventSubscriptionImplTest {
             stateAndEventConfig,
             builder,
             mock(),
-            avroSchemaRegistry
+            avroSchemaRegistry,
+            lifecycleCoordinatorFactory
         )
 
         subscription.start()
@@ -259,6 +284,8 @@ class KafkaStateAndEventSubscriptionImplTest {
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(
             any(),
+            anyOrNull(),
+            anyOrNull(),
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),
@@ -309,7 +336,8 @@ class KafkaStateAndEventSubscriptionImplTest {
             shortWaitProcessorConfig,
             builder,
             mock(),
-            avroSchemaRegistry
+            avroSchemaRegistry,
+            lifecycleCoordinatorFactory
         )
 
         subscription.start()
@@ -319,8 +347,13 @@ class KafkaStateAndEventSubscriptionImplTest {
         subscription.stop()
 
         verify(builder, times(1)).createStateEventConsumerAndRebalanceListener(
-            any(), anyOrNull(),
-            anyOrNull(), anyOrNull(), anyOrNull()
+            any(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
         )
         verify(builder, times(1)).createProducer(any())
         verify(producer, times(1)).beginTransaction()

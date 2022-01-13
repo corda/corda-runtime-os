@@ -5,6 +5,8 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -71,6 +73,8 @@ class KafkaRPCSubscriptionImplTest {
     private val deserializer = CordaAvroDeserializer(schemaRegistry, mock(), HoldingIdentity::class.java)
     private val serializer = CordaAvroSerializer<HoldingIdentity>(schemaRegistry)
     private val publisher: Publisher = mock()
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
+    private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private lateinit var kafkaConsumer: CordaKafkaConsumer<String, RPCRequest>
     private lateinit var consumerBuilder: ConsumerBuilder<String, RPCRequest>
 
@@ -90,6 +94,8 @@ class KafkaRPCSubscriptionImplTest {
         doAnswer {
             listOf(TopicPartition(TOPIC, 0))
         }.whenever(kafkaConsumer).getPartitions(any(), any())
+
+        doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
     }
 
     @Test
@@ -101,7 +107,8 @@ class KafkaRPCSubscriptionImplTest {
             consumerBuilder,
             processor,
             serializer,
-            deserializer
+            deserializer,
+            lifecycleCoordinatorFactory
         )
 
         subscription.start()
@@ -125,7 +132,8 @@ class KafkaRPCSubscriptionImplTest {
             consumerBuilder,
             processor,
             serializer,
-            deserializer
+            deserializer,
+            lifecycleCoordinatorFactory
         )
 
         subscription.start()
@@ -153,7 +161,8 @@ class KafkaRPCSubscriptionImplTest {
             consumerBuilder,
             processor,
             serializer,
-            deserializer
+            deserializer,
+            lifecycleCoordinatorFactory
         )
 
         subscription.start()

@@ -16,6 +16,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
     compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -24,6 +25,7 @@ dependencies {
 
     implementation "net.corda:corda-packaging"
     implementation "net.corda:corda-serialization"
+    implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')
     implementation project(":components:install:install-legacy")
     implementation project(path: ':libs:kotlin-reflection', configuration: 'bundle')
@@ -38,20 +40,15 @@ dependencies {
 
     implementation project(":osgi-framework-api")
 
-    implementation project(':libs:serialization:serialization-amqp')
-    implementation project(':components:install:install-legacy')
-
     cpks project(path: ':applications:examples:serialization-amqp:type-evolution-poc:evolution-example-cpk', configuration: 'cordaCPK')
 
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle:$ariesDynamicBundleVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
 
-    runtimeOnly "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"
-    implementation "org.osgi:org.osgi.service.cm:$osgiCmVersion"
-    runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     runtimeOnly "org.ow2.asm:asm:$asmVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     runtimeOnly project(':libs:crypto:crypto-impl')
+    runtimeOnly project(':libs:sandbox-internal')
 }

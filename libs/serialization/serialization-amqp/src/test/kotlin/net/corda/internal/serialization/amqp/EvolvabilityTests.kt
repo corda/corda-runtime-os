@@ -6,6 +6,7 @@ import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testName
+import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.v5.base.annotations.SerializableCalculatedProperty
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.annotations.ConstructorForDeserialization
@@ -52,6 +53,29 @@ class EvolvabilityTests {
 
         // new version of the class, in this case the order of the parameters has been swapped
         data class C(val b: Int, val a: Int)
+
+        val url = EvolvabilityTests::class.java.getResource(resource)
+        val sc2 = url.readBytes()
+        val deserializedC = DeserializationInput(sf).deserialize(bytes = SerializedBytes<C>(sc2))
+
+        assertEquals(A, deserializedC.a)
+        assertEquals(B, deserializedC.b)
+    }
+
+    @Test
+    fun simpleOrderSwapSameTypeWithDefaultConstructorParam() {
+        val sf = testDefaultFactory()
+        val resource = "EvolvabilityTests.simpleOrderSwapSameTypeWithDefaultConstructorParam"
+
+        val A = 1
+        val B = 2
+
+        // Original version of the class for the serialised version of this class
+        // data class C (val a: Int, val b: Int, val c: Int = 5)
+        // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(C(A, B)).bytes)
+
+        // new version of the class, in this case the order of the parameters has been swapped
+        data class C(val b: Int, val a: Int, val c: Int = 5)
 
         val url = EvolvabilityTests::class.java.getResource(resource)
         val sc2 = url.readBytes()
@@ -478,7 +502,8 @@ class EvolvabilityTests {
         // Repeat, but receiving a message with the newer version of Inner
         val newVersion = SerializationOutput(sf).serializeAndReturnSchema(Outer(oa, Inner(ia, "new value")))
         val model = AMQPRemoteTypeModel()
-        val remoteTypeInfo = model.interpret(SerializationSchemas(newVersion.schema, newVersion.transformsSchema))
+        val remoteTypeInfo = model.interpret(SerializationSchemas(newVersion.schema, newVersion.transformsSchema),
+            testSerializationContext.currentSandboxGroup())
         println(remoteTypeInfo)
 
         val newOuter = DeserializationInput(sf).deserialize(SerializedBytes<Outer>(newVersion.obj.bytes))

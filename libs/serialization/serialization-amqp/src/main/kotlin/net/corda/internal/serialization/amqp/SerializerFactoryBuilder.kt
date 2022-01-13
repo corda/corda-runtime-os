@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp
 
 import com.google.common.primitives.Primitives
+import net.corda.internal.serialization.amqp.standard.AMQPPrimitiveSerializer
 import net.corda.internal.serialization.model.ClassTypeLoader
 import net.corda.internal.serialization.model.ConfigurableLocalTypeModel
 import net.corda.internal.serialization.model.FingerPrinter
@@ -8,6 +9,7 @@ import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeLoader
 import net.corda.internal.serialization.model.TypeModellingFingerPrinter
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.ClassWhitelist
 import java.io.NotSerializableException
 import java.lang.reflect.Method
@@ -88,9 +90,10 @@ object SerializerFactoryBuilder {
     }) as Map<Class<*>, Class<*>>
 
     @JvmStatic
-    fun build(whitelist: ClassWhitelist): SerializerFactory {
+    fun build(whitelist: ClassWhitelist, sandboxGroup: SandboxGroup): SerializerFactory {
         return makeFactory(
             whitelist,
+            sandboxGroup,
             DefaultDescriptorBasedSerializerRegistry(),
             allowEvolution = true,
             overrideFingerPrinter = null,
@@ -103,6 +106,7 @@ object SerializerFactoryBuilder {
     @JvmStatic
     fun build(
             whitelist: ClassWhitelist,
+            sandboxGroup: SandboxGroup,
             descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
                     DefaultDescriptorBasedSerializerRegistry(),
             allowEvolution: Boolean = true,
@@ -111,6 +115,7 @@ object SerializerFactoryBuilder {
             mustPreserveDataWhenEvolving: Boolean = false): SerializerFactory {
         return makeFactory(
                 whitelist,
+                sandboxGroup,
                 descriptorBasedSerializerRegistry,
                 allowEvolution,
                 overrideFingerPrinter,
@@ -120,6 +125,7 @@ object SerializerFactoryBuilder {
 
     @Suppress("LongParameterList")
     private fun makeFactory(whitelist: ClassWhitelist,
+                            sandboxGroup: SandboxGroup,
                             descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
                             allowEvolution: Boolean,
                             overrideFingerPrinter: FingerPrinter?,
@@ -130,10 +136,11 @@ object SerializerFactoryBuilder {
         val typeModelConfiguration = WhitelistBasedTypeModelConfiguration(whitelist, customSerializerRegistry)
         val localTypeModel = ConfigurableLocalTypeModel(typeModelConfiguration)
 
-        val fingerPrinter = overrideFingerPrinter ?: TypeModellingFingerPrinter(customSerializerRegistry)
+        val fingerPrinter = overrideFingerPrinter ?: TypeModellingFingerPrinter(customSerializerRegistry, sandboxGroup)
 
         val localSerializerFactory = DefaultLocalSerializerFactory(
             whitelist,
+            sandboxGroup,
             localTypeModel,
             fingerPrinter,
             descriptorBasedSerializerRegistry,

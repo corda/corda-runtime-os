@@ -14,7 +14,6 @@ import net.corda.httprpc.server.impl.apigen.models.ResponseBody
 import net.corda.httprpc.server.impl.apigen.processing.streams.DurableReturnResult
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
 import net.corda.httprpc.tools.annotations.validation.HttpRpcInterfaceValidator
-import net.corda.v5.base.util.Try
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.stream.returnsDurableCursorBuilder
@@ -40,7 +39,8 @@ class APIStructureRetriever(private val opsImplList: List<PluggableRPCOps<*>>) {
         private val log = contextLogger()
     }
 
-    val structure: Try<List<Resource>> by lazy { Try.on { retrieveResources() } }
+    val structure: List<Resource> by lazy { retrieveResources() }
+
     private val delegationTargetsMap by lazy { retrieveImplMap() }
 
     private fun retrieveImplMap(): Map<Class<out RpcOps>, PluggableRPCOps<*>> {

@@ -3,29 +3,35 @@ package net.corda.sandbox.service.impl
 import net.corda.install.InstallService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.packaging.CPI
 import net.corda.sandbox.SandboxCreationService
-import net.corda.sandbox.SandboxGroup
 import net.corda.sandbox.service.SandboxService
-import net.corda.sandbox.service.SandboxType
 import net.corda.sandbox.service.helper.initPublicSandboxes
+import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
+import net.corda.sandboxgroupcontext.SandboxGroupType
+import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.io.File
 import java.net.URI
 import java.nio.file.Paths
-import java.util.concurrent.ConcurrentHashMap
 
+@Suppress("UNUSED")
 @Component(service = [SandboxService::class])
 class SandboxServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -34,16 +40,16 @@ class SandboxServiceImpl @Activate constructor(
     private val installService: InstallService,
     @Reference(service = SandboxCreationService::class)
     private val sandboxCreationService: SandboxCreationService,
+    @Reference(service = SandboxGroupContextComponent::class)
+    private val sandboxGroupContextService: SandboxGroupContextComponent,
     @Reference(service = ConfigurationAdmin::class)
     private val configurationAdmin: ConfigurationAdmin
 ) : SandboxService {
-
     companion object {
         private val logger = contextLogger()
 
         //tmp stuff until cpi service is available
         private val configuredBaseDir: String? = System.getProperty("base.directory")
-        private val cpbDirPath: String? = System.getProperty("cpb.directory")
         private val baseDirectory = if (!configuredBaseDir.isNullOrEmpty()) {
             Paths.get(URI.create(configuredBaseDir))
         } else {
@@ -51,72 +57,72 @@ class SandboxServiceImpl @Activate constructor(
         }.toAbsolutePath().toString()
     }
 
-    private var cache = ConcurrentHashMap<SandboxCacheKey, SandboxGroup>()
-    //tmp stuff until cpi service is available
-    private var cpiIdentifierById = ConcurrentHashMap<String, CPI.Identifier>()
     private val coordinator = coordinatorFactory.createCoordinator<SandboxService>(::eventHandler)
+    private var registrationHandle: RegistrationHandle? = null
 
-    override fun getSandboxGroupFor(cpiId: String, identity: String, sandboxType: SandboxType): SandboxGroup {
-        return cache.computeIfAbsent(SandboxCacheKey(identity, cpiId)) {
-            //hacky stuff until cpi service component is available. e.g dummy load logic doesnt handle multiple groups
-            val cpiIdentifier = cpiIdentifierById[cpiId]
-                ?: throw CordaRuntimeException("Could not get cpi identifier")
-            val cpb = installService.getCpb(cpiIdentifier)
-                ?: throw CordaRuntimeException("Could not get cpi from its identifier $cpiIdentifier")
-            sandboxCreationService.createSandboxGroup(cpb.cpks)
+    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        when (event) {
+            is StartEvent -> onStart(coordinator)
+            is StopEvent -> onStop()
+            is RegistrationStatusChangeEvent -> onRegistrationChangeEvent(event, coordinator)
         }
+    }
+
+    private fun onRegistrationChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
+        if (event.status == LifecycleStatus.UP) {
+            coordinator.updateStatus(LifecycleStatus.UP)
+        } else {
+            coordinator.stop()
+        }
+    }
+
+    private fun onStart(coordinator: LifecycleCoordinator) {
+        logger.debug { "${javaClass.name} starting" }
+        initPublicSandboxes(configurationAdmin, sandboxCreationService, baseDirectory)
+        registrationHandle?.close()
+        registrationHandle = coordinator.followStatusChangesByName(
+            setOf(
+                LifecycleCoordinatorName.forComponent<InstallService>(),
+                LifecycleCoordinatorName.forComponent<SandboxGroupContextComponent>()
+            )
+        )
+    }
+
+    private fun onStop() {
+        logger.debug { "${javaClass.name} stopping" }
+        registrationHandle?.close()
+        registrationHandle = null
+        coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
-    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.debug { "SandboxService received: $event" }
-        when (event) {
-            is StartEvent -> {
-                logger.debug { "Starting sandbox component." }
-                initPublicSandboxes(configurationAdmin, sandboxCreationService, baseDirectory)
-                cache = ConcurrentHashMap()
-                cpiIdentifierById = ConcurrentHashMap()
-                loadCpbs(getCPBFiles())
-                coordinator.updateStatus(LifecycleStatus.UP, "Connected to configuration repository.")
-            }
-            is StopEvent -> {
-                logger.debug { "Stopping sandbox component." }
-                cache.clear()
-                cpiIdentifierById.clear()
-            }
-        }
-    }
-
-    private fun getCPBFiles(): List<String> {
-        if (cpbDirPath == null) {
-            return emptyList()
-        }
-        return File(cpbDirPath).listFiles().filter { it.name.endsWith("cpb") }.map { it.toPath().toString() }
-    }
-
-    /**
-     * Bit of a hack until we have a CPIService. Doesn't handle multiple identities
-     */
-    private fun loadCpbs(
-        CPBs: List<String>,
-    ) {
-        for (cpbFile in CPBs) {
-            val cpbInputStream = File(cpbFile).inputStream()
-            val cpb = installService.loadCpb(cpbInputStream)
-            val cpiIdentifier = cpb.metadata.id
-            cpiIdentifierById[cpiIdentifier.name] = cpiIdentifier
-        }
-    }
-
     override fun start() {
+        installService.start()
+        sandboxGroupContextService.start()
         coordinator.start()
     }
 
-    override fun stop() {
-        coordinator.stop()
+    override fun stop() = coordinator.stop()
+
+    override fun getOrCreateByCpiIdentifier(
+        holdingIdentity: HoldingIdentity,
+        cpiIdentifier: CPI.Identifier,
+        sandboxGroupType: SandboxGroupType,
+        initializer: SandboxGroupContextInitializer
+    ): SandboxGroupContext {
+        val cpb = installService.get(cpiIdentifier).get()
+            ?: throw CordaRuntimeException("Could not get cpi from its identifier $cpiIdentifier")
+        val identifiers = cpb.cpks.map { it.metadata.id }.toSet()
+        val virtualNodeContext = VirtualNodeContext(holdingIdentity, identifiers, sandboxGroupType)
+        return sandboxGroupContextService.getOrCreate(virtualNodeContext, initializer)
     }
 
-    data class SandboxCacheKey(val identity: String, val cpiId: String)
+    override fun getOrCreate(
+        virtualNodeContext: VirtualNodeContext,
+        initializer: SandboxGroupContextInitializer
+    ): SandboxGroupContext {
+        return sandboxGroupContextService.getOrCreate(virtualNodeContext, initializer)
+    }
 }

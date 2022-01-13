@@ -2,6 +2,9 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.identity.HoldingIdentity
+import net.corda.data.p2p.gateway.GatewayMessage
+import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -13,7 +16,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.LinkInMessage
-import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.crypto.AuthenticatedDataMessage
@@ -26,12 +28,10 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.ResponderHandshakeMessage
 import net.corda.p2p.crypto.ResponderHelloMessage
 import net.corda.p2p.crypto.internal.InitiatorHandshakeIdentity
-import net.corda.data.p2p.gateway.GatewayMessage
-import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
-import net.corda.p2p.schema.Schema.Companion.LINK_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -270,7 +270,7 @@ class InboundMessageHandlerTest {
 
         verify(server.constructed().first())
             .writeResponse(
-                HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                HttpResponseStatus.GONE,
                 InetSocketAddress("www.r3.com", 1231),
                 GatewayResponse(msgId).toByteBuffer().array()
             )
@@ -460,4 +460,27 @@ class InboundMessageHandlerTest {
         )
         payload = ByteBuffer.wrap(content.toByteArray())
     }.build()
+
+    @Test
+    fun `onMessage authenticated message with empty partition will reply with an error`() {
+        whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(emptyList())
+        setRunning()
+        val msgId = "msg-id"
+        val gatewayMessage = GatewayMessage(msgId, authenticatedP2PDataMessage(""))
+        handler.onRequest(
+            HttpRequest(
+                source = InetSocketAddress("www.r3.com", 1231),
+                payload = gatewayMessage.toByteBuffer().array(),
+                destination = InetSocketAddress("www.r3.com", 344),
+            )
+
+        )
+
+        verify(server.constructed().first())
+            .writeResponse(
+                HttpResponseStatus.GONE,
+                InetSocketAddress("www.r3.com", 1231),
+                GatewayResponse(msgId).toByteBuffer().array()
+            )
+    }
 }

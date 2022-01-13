@@ -89,8 +89,7 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
     }
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
-        logger.warn("Closing channel due to unrecoverable exception ${cause.message}")
-        logger.debug(cause.stackTraceToString())
+        logger.warn("Closing channel due to unrecoverable exception ${cause.message}", cause)
         ctx.close()
     }
 

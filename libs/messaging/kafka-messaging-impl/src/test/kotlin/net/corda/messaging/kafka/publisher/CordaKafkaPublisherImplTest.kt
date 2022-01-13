@@ -2,6 +2,7 @@ package net.corda.messaging.kafka.publisher
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -14,7 +15,6 @@ import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PATTERN_P
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_CLIENT_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_CLOSE_TIMEOUT
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.PRODUCER_TRANSACTIONAL_ID
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC_PREFIX
 import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.createStandardTestConfig
 import net.corda.v5.base.util.uncheckedCast
 import org.apache.kafka.clients.producer.MockProducer
@@ -63,7 +63,7 @@ class CordaKafkaPublisherImplTest {
         publisherConfig = PublisherConfig("clientId")
         kafkaConfig = createStandardTestConfig().getConfig(PATTERN_PUBLISHER)
             .withValue(PRODUCER_CLOSE_TIMEOUT, ConfigValueFactory.fromAnyRef(1))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("prefix"))
+            .withValue(TOPIC_PREFIX_PATH, ConfigValueFactory.fromAnyRef("prefix"))
             .withValue(PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("clientId1"))
     }
 

@@ -1,0 +1,3 @@
+cluster:
+  zookeepers: 3
+  brokers: 6

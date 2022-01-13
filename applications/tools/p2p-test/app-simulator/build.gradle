@@ -35,13 +35,5 @@ dependencies {
 
     runtimeOnly project(":libs:messaging:kafka-messaging-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
-}
-tasks.register('publishOSGiImage', net.corda.gradle.DeployableContainerBuilder) {
-    if (project.hasProperty('jibRemotePublish')) {
-        remotePublish = jibRemotePublish.toBoolean()
-    }
-
-    if (project.hasProperty('releaseCandidate')) {
-        releaseCandidate = releaseCandidate.toBoolean()
-    }
+    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
 }

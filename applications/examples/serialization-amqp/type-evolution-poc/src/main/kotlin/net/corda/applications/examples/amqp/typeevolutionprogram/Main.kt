@@ -60,7 +60,7 @@ class Main @Activate constructor(
         val loadCpb: CPI = installService.loadCpb(ByteArrayInputStream(outputStream.toByteArray()))
         val sandboxGroup = sandboxCreationService.createSandboxGroup(loadCpb.cpks)
 
-        val factory = SerializerFactoryBuilder.build(AllWhitelist)
+        val factory = SerializerFactoryBuilder.build(AllWhitelist, sandboxGroup)
 
         // Save output
 //        val output = SerializationOutput(factory)

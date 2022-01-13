@@ -137,7 +137,7 @@ private fun List<EndpointParameter>.toMediaType(
 internal fun Endpoint.toOperation(path: String, schemaModelProvider: SchemaModelProvider): Operation {
     log.trace { "Map Endpoint: \"$this\" to Operation." }
     return Operation()
-        .operationId("${method}$path".toValidMethodName())//Swagger will use this as the method name when generating the client
+        .operationId("${method}$path".toValidMethodName()) //Swagger will use this as the method name when generating the client
         .description(description)
         .responses(
             ApiResponses()
@@ -151,13 +151,14 @@ internal fun Endpoint.toOperation(path: String, schemaModelProvider: SchemaModel
         .parameters(parameters.filter { it.type != ParameterType.BODY }
             .map { it.toOpenApiParameter(schemaModelProvider) })
         .requestBody(parameters.filter { it.type == ParameterType.BODY }
-            .toRequestBody(schemaModelProvider, path.pathToSchemaSchemaName()))
+            .toRequestBody(schemaModelProvider, title.toValidSchemaName()))
         .also { log.trace { "Map Endpoint: \"$this\" to Operation: \"$it\" completed." } }
 }
 
 @VisibleForTesting
 fun String.toValidMethodName() = toLowerCase().replace(Regex("\\W"), "_")
-private fun String.pathToSchemaSchemaName() = this.split("/").joinToString("") { it.capitalize() }
+
+private fun String.toValidSchemaName() = capitalize().replace(Regex("\\W"), "")
 
 @Suppress("TooGenericExceptionThrown")
 private fun ApiResponse.withResponseBodyFrom(

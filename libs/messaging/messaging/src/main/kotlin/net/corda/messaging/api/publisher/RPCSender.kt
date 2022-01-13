@@ -1,6 +1,7 @@
 package net.corda.messaging.api.publisher
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorName
 import java.util.concurrent.CompletableFuture
 
 
@@ -15,6 +16,12 @@ import java.util.concurrent.CompletableFuture
  *
  */
 interface RPCSender<REQUEST, RESPONSE> : Lifecycle {
+
+    /**
+     * The name of the lifecycle coordinator inside the subscription. You can register a different coordinator to listen
+     * for status changes from this subscription by calling [followStatusChangesByName] and passing in this value.
+     */
+    val subscriptionName: LifecycleCoordinatorName
 
     /**
      * Send request via RPC

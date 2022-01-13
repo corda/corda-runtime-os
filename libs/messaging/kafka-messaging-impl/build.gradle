@@ -13,6 +13,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(":libs:configuration:configuration-core")
+    implementation project(':libs:configuration:configuration-schema:messaging-configuration')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-avro-schema"

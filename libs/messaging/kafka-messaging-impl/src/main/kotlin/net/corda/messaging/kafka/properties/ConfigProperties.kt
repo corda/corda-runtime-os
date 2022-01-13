@@ -8,10 +8,8 @@ class ConfigProperties {
         const val TOPIC = "topic"
         const val DEAD_LETTER_QUEUE_SUFFIX = "topic.deadLetterQueueSuffix"
         const val GROUP = "group"
-        const val INSTANCE_ID = "instanceId"
         const val CLIENT_ID_COUNTER = "clientIdCounter"
 
-        const val TOPIC_PREFIX = "topic.prefix"
         const val TOPIC_NAME = "topic.name"
         const val RESPONSE_TOPIC = "responseTopic"
 

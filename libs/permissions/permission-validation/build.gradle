@@ -3,7 +3,7 @@ plugins {
     id 'com.r3.internal.gradle.plugins.r3Publish'
 }
 
-description 'Configuration Read API'
+description 'Permission Validation API'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -13,4 +13,5 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:permissions:permission-cache")
 }

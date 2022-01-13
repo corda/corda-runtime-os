@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.data.identity.HoldingIdentity
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -10,9 +11,9 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.protocol.ProtocolConstants
-import net.corda.p2p.schema.TestSchema
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.NetworkMapEntry
+import net.corda.schema.TestSchema.Companion.NETWORK_MAP_TOPIC
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.nio.ByteBuffer
 import java.security.MessageDigest
@@ -22,11 +23,12 @@ import java.util.concurrent.atomic.AtomicReference
 
 class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                      subscriptionFactory: SubscriptionFactory,
-                     instanceId: Int): LinkManagerNetworkMap {
+                     instanceId: Int,
+                     configuration: SmartConfig): LinkManagerNetworkMap {
 
     private val processor = NetworkMapEntryProcessor()
-    private val subscriptionConfig = SubscriptionConfig("network-map", TestSchema.NETWORK_MAP_TOPIC, instanceId)
-    private val subscription = subscriptionFactory.createCompactedSubscription(subscriptionConfig, processor)
+    private val subscriptionConfig = SubscriptionConfig("network-map", NETWORK_MAP_TOPIC, instanceId)
+    private val subscription = subscriptionFactory.createCompactedSubscription(subscriptionConfig, processor, configuration)
     private val keyDeserialiser = KeyDeserialiser()
 
     private val readyFuture = AtomicReference<CompletableFuture<Unit>>()
@@ -36,7 +38,7 @@ class StubNetworkMap(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
         val future = CompletableFuture<Unit>()
         readyFuture.set(future)
         subscription.start()
-        resources.keep (subscription)
+        resources.keep { subscription.stop() }
         return future
     }
 

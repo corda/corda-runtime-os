@@ -1,10 +1,11 @@
 package net.corda.internal.serialization.amqp;
 
+import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
+import net.corda.sandbox.SandboxGroup;
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.serialization.SerializedBytes;
 import net.corda.internal.serialization.amqp.custom.BigIntegerSerializer;
 import net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt;
-import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -28,7 +29,7 @@ public class JavaGenericsTest {
     private static class Inner {
         private final Integer v;
 
-        private Inner(Integer v) {
+        public Inner(Integer v) {
             this.v = v;
         }
 
@@ -40,7 +41,7 @@ public class JavaGenericsTest {
     private static class A<T> {
         private final T t;
 
-        private A(T t) {
+        public A(T t) {
             this.t = t;
         }
 
@@ -53,7 +54,7 @@ public class JavaGenericsTest {
     private static class ConcreteClass {
         private final String theItem;
 
-        private ConcreteClass(String theItem) {
+        public ConcreteClass(String theItem) {
             this.theItem = theItem;
         }
 
@@ -81,7 +82,7 @@ public class JavaGenericsTest {
     private static class GenericClassWithList<CC> {
         private final List<CC> items;
 
-        private GenericClassWithList(List<CC> items) {
+        public GenericClassWithList(List<CC> items) {
             this.items = items;
         }
 
@@ -108,7 +109,7 @@ public class JavaGenericsTest {
     private static class GenericClassWithMap<CC, GG> {
         private final Map<CC, GG> theMap;
 
-        private GenericClassWithMap(Map<CC, GG> theMap) {
+        public GenericClassWithMap(Map<CC, GG> theMap) {
             this.theMap = new LinkedHashMap<>(theMap);
         }
 
@@ -135,7 +136,7 @@ public class JavaGenericsTest {
     private static class HolderOfGeneric<G> {
         private final G theGeneric;
 
-        private HolderOfGeneric(G theGeneric) {
+        public HolderOfGeneric(G theGeneric) {
             this.theGeneric = theGeneric;
         }
 

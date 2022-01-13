@@ -2,7 +2,7 @@ package net.corda.crypto.service
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.MapperFeature
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
@@ -119,10 +119,10 @@ class CryptoFactoryImpl @Activate constructor(
         private val freshKeyServices = ConcurrentHashMap<String, FreshKeySigningService>()
         private val signingServices = ConcurrentHashMap<String, SigningService>()
 
-        private val objectMapper = ObjectMapper()
+        private val jsonMapper = JsonMapper.builder().enable(MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES).build()
+        private val objectMapper = jsonMapper
             .registerModule(JavaTimeModule())
-            .registerModule(KotlinModule())
-            .enable(MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES)
+            .registerModule(KotlinModule.Builder().build())
             .enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 

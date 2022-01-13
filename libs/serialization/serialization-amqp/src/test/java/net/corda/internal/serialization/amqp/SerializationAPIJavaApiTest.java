@@ -89,15 +89,6 @@ public class SerializationAPIJavaApiTest {
         }
 
         @Test
-        public void getDeserializationClassLoader() {
-            when(serializationContext.getDeserializationClassLoader()).thenReturn(classLoader);
-            var result = serializationContext.getDeserializationClassLoader();
-
-            assertThat(result).isNotNull();
-            assertThat(result).isEqualTo(classLoader);
-        }
-
-        @Test
         public void getWhitelist() {
             when(serializationContext.getWhitelist()).thenReturn(classWhitelist);
             var result = serializationContext.getWhitelist();
@@ -162,30 +153,12 @@ public class SerializationAPIJavaApiTest {
         }
 
         @Test
-        public void getClassInfoService() {
-            when(serializationContext.getClassInfoService()).thenReturn(proxy);
-            var result = serializationContext.getClassInfoService();
-
-            assertThat(result).isNotNull();
-            assertThat(result).isEqualTo(proxy);
-        }
-
-        @Test
         public void getSandboxGroup() {
             when(serializationContext.getSandboxGroup()).thenReturn(obj);
             var result = serializationContext.getSandboxGroup();
 
             assertThat(result).isNotNull();
             assertThat(result).isEqualTo(obj);
-        }
-
-        @Test
-        public void withClassInfoService() {
-            when(serializationContext.withClassInfoService(obj)).thenReturn(serializationContext);
-            var result = serializationContext.withClassInfoService(obj);
-
-            assertThat(result).isNotNull();
-            assertThat(result).isEqualTo(serializationContext);
         }
 
         @Test

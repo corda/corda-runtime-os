@@ -50,7 +50,8 @@ In the sender mode, the configuration file should have the following form:
         peerGroupId: "group-1",
         ourX500Name: "O=Bob,L=London,C=GB",
         ourGroupId: "group-1",
-        loadGenerationType: "CONTINUOUS", 
+        loadGenerationType: "CONTINUOUS",  
+        // totalNumberOfMessages: 1000 - only required when loadGenerationType = ONE_OFF
         batchSize: 10,
         interBatchDelay: 0ms,
         messageSizeBytes: 10000
@@ -150,7 +151,7 @@ Note: in order to use this query, you must have configured the sender to produce
 
 #### Calculating latencies & aggregate statistics
 
-In order to calculate the latency of the delivery of every message (in ms), you can run the following query (replace <sender-id> with the right value):
+In order to calculate the latency of the delivered messages (in ms), you can run the following query:
 ```
 select 
 	to_timestamp(floor((extract('epoch' from rm.sent_timestamp) / 30 )) * 30) at time zone 'utc' as time_window,
@@ -160,10 +161,11 @@ select
 	avg(rm.delivery_latency_ms) as average_latency,
 	percentile_disc(0.99) within group (order by rm.delivery_latency_ms) as p99_latency
 from received_messages rm 
-where sender_id = '<your-sender-id>'
 group by time_window
 order by time_window asc
 ```
+
+If you want to calculate latencies only for a specific sender, you can add a `where sender_id = '<your-sender-id>'` clause (replace `<sender-id>` with the right value).
 
 ## Deploying a postgres database
 
@@ -185,7 +187,7 @@ To build a docker image of the tool run:
 ./gradlew :applications:tools:p2p-test:app-simulator:publishOSGiImage
 ```
 
-The created image will be `engineering-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT`
+The created image will be `corda-os-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT`
 
 ### Example of using the image
 1. Start the kafka cluster([see](../../../../testing/message-patterns/README.md))
@@ -203,7 +205,7 @@ docker run \
   --rm \
   -e KAFKA_SERVERS="broker1:9093" \
  --network kafka-docker_default \
-  engineering-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
+  corda-os-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
 ```
   * Sender without database:
 ```bash
@@ -212,7 +214,7 @@ docker run \
   --rm \
   -e KAFKA_SERVERS="broker1:9093" \
  --network kafka-docker_default \
-  engineering-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
+  corda-os-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
 ```
   * Receiver:
 ```bash
@@ -221,7 +223,7 @@ docker run \
   --rm \
   -e KAFKA_SERVERS="broker1:9093" \
  --network kafka-docker_default \
-  engineering-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
+  corda-os-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
 ```
   * Sink:
 ```bash
@@ -230,5 +232,5 @@ docker run \
   --rm \
   -e KAFKA_SERVERS="broker1:9093" \
  --network kafka-docker_default \
-  engineering-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
+  corda-os-docker-dev.software.r3.com/corda-os-app-simulator:5.0.0.0-SNAPSHOT
 ```

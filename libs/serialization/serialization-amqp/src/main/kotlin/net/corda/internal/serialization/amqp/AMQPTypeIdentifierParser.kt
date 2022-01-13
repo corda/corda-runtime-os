@@ -2,7 +2,7 @@ package net.corda.internal.serialization.amqp
 
 import com.google.common.primitives.Primitives
 import net.corda.internal.serialization.model.TypeIdentifier
-import net.corda.serialization.SerializationContext
+import net.corda.sandbox.SandboxGroup
 import org.apache.qpid.proton.amqp.Decimal128
 import org.apache.qpid.proton.amqp.Decimal32
 import org.apache.qpid.proton.amqp.Decimal64
@@ -34,18 +34,11 @@ object AMQPTypeIdentifierParser {
      * @param typeString The AMQP type string to parse
      * @return A [TypeIdentifier] representing the type represented by the input string.
      */
-    fun parse(typeString: String): TypeIdentifier {
+    fun parse(typeString: String, sandboxGroup: SandboxGroup): TypeIdentifier {
         validate(typeString)
         return typeString.fold<ParseState>(ParseState.ParsingRawType(null)) { state, c ->
-                    state.accept(c)
+                    state.accept(c, sandboxGroup)
                 }.getTypeIdentifier()
-    }
-
-    fun parse(typeString: String, context: SerializationContext): TypeIdentifier {
-        validate(typeString)
-        return typeString.fold<ParseState>(ParseState.ParsingRawType(null)) { state, c ->
-            state.accept(c)
-        }.getTypeIdentifier(context)
     }
 
     // Make sure our inputs aren't designed to blow things up.
@@ -82,9 +75,8 @@ object AMQPTypeIdentifierParser {
 
     private sealed class ParseState {
         abstract val parent: ParsingParameterList?
-        abstract fun accept(c: Char): ParseState
+        abstract fun accept(c: Char, sandboxGroup: SandboxGroup): ParseState
         abstract fun getTypeIdentifier(): TypeIdentifier
-        abstract fun getTypeIdentifier(context: SerializationContext): TypeIdentifier
 
         fun unexpected(c: Char): ParseState = throw IllegalTypeNameParserStateException("Unexpected character: '$c'")
         fun notInParameterList(c: Char): ParseState =
@@ -94,14 +86,14 @@ object AMQPTypeIdentifierParser {
          * We are parsing a raw type name, either at the top level or as part of a list of type parameters.
          */
         data class ParsingRawType(override val parent: ParsingParameterList?, val buffer: StringBuilder = StringBuilder()) : ParseState() {
-            override fun accept(c: Char) = when (c) {
+            override fun accept(c: Char, sandboxGroup: SandboxGroup) = when (c) {
                 ',' ->
                     if (parent == null) notInParameterList(c)
                     else ParsingRawType(parent.addParameter(getTypeIdentifier()))
                 '[' -> ParsingArray(getTypeIdentifier(), parent)
                 ']' -> unexpected(c)
                 '<' -> ParsingRawType(ParsingParameterList(getTypeName(), parent))
-                '>' -> parent?.addParameter(getTypeIdentifier())?.accept(c) ?: notInParameterList(c)
+                '>' -> parent?.addParameter(getTypeIdentifier())?.accept(c, sandboxGroup) ?: notInParameterList(c)
                 else -> apply { buffer.append(c) }
             }
 
@@ -120,15 +112,6 @@ object AMQPTypeIdentifierParser {
                     else -> TypeIdentifier.Unparameterised(typeName)
                 }
             }
-
-            override fun getTypeIdentifier(context: SerializationContext): TypeIdentifier {
-                return when (val typeName = getTypeName()) {
-                    "*" -> TypeIdentifier.TopType
-                    "?" -> TypeIdentifier.UnknownType
-                    in simplified -> simplified[typeName]!!
-                    else -> TypeIdentifier.Unparameterised(typeName)
-                }
-            }
         }
 
         /**
@@ -136,7 +119,7 @@ object AMQPTypeIdentifierParser {
          * parameter we have, or end the list.
          */
         data class ParsingParameterList(val typeName: String, override val parent: ParsingParameterList?, val parameters: List<TypeIdentifier> = emptyList()) : ParseState() {
-            override fun accept(c: Char) = when (c) {
+            override fun accept(c: Char, sandboxGroup: SandboxGroup) = when (c) {
                 ' ' -> this
                 ',' -> ParsingRawType(this)
                 '[' ->
@@ -154,27 +137,23 @@ object AMQPTypeIdentifierParser {
             fun addParameter(parameter: TypeIdentifier) = copy(parameters = parameters + parameter)
 
             override fun getTypeIdentifier() = TypeIdentifier.Parameterised(typeName, null, parameters)
-
-            override fun getTypeIdentifier(context: SerializationContext) = TypeIdentifier.Parameterised(typeName, null, parameters)
         }
 
         /**
          * We are adding array-ness to some type identifier.
          */
         data class ParsingArray(val componentType: TypeIdentifier, override val parent: ParsingParameterList?) : ParseState() {
-            override fun accept(c: Char) = when (c) {
+            override fun accept(c: Char, sandboxGroup: SandboxGroup) = when (c) {
                 ' ' -> this
-                'p' -> ParsingArray(forcePrimitive(componentType), parent)
+                'p' -> ParsingArray(forcePrimitive(componentType, sandboxGroup), parent)
                 ']' -> parent?.addParameter(getTypeIdentifier()) ?: Complete(getTypeIdentifier())
                 else -> unexpected(c)
             }
 
             override fun getTypeIdentifier() = TypeIdentifier.ArrayOf(componentType)
 
-            override fun getTypeIdentifier(context: SerializationContext) = TypeIdentifier.ArrayOf(componentType)
-
-            private fun forcePrimitive(componentType: TypeIdentifier): TypeIdentifier =
-                    TypeIdentifier.forClass(Primitives.unwrap(componentType.getLocalType().asClass()))
+            private fun forcePrimitive(componentType: TypeIdentifier, sandboxGroup: SandboxGroup): TypeIdentifier =
+                    TypeIdentifier.forClass(Primitives.unwrap(componentType.getLocalType(sandboxGroup).asClass()))
         }
 
         /**
@@ -182,15 +161,13 @@ object AMQPTypeIdentifierParser {
          */
         data class Complete(val identifier: TypeIdentifier) : ParseState() {
             override val parent: ParsingParameterList? get() = null
-            override fun accept(c: Char): ParseState = when (c) {
+            override fun accept(c: Char, sandboxGroup: SandboxGroup): ParseState = when (c) {
                 ' ' -> this
                 '[' -> ParsingArray(identifier, null)
                 else -> unexpected(c)
             }
 
             override fun getTypeIdentifier() = identifier
-
-            override fun getTypeIdentifier(context: SerializationContext) = identifier
         }
     }
 

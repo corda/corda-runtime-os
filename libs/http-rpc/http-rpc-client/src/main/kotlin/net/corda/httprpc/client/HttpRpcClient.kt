@@ -2,9 +2,9 @@ package net.corda.httprpc.client
 
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.config.HttpRpcClientConfig
-import net.corda.httprpc.client.impl.HttpRpcClientProxyHandler
-import net.corda.httprpc.client.impl.HttpRpcConnectionListenerDistributor
-import net.corda.httprpc.client.impl.remote.RemoteUnirestClient
+import net.corda.httprpc.client.connect.HttpRpcClientProxyHandler
+import net.corda.httprpc.client.connect.HttpRpcConnectionListenerDistributor
+import net.corda.httprpc.client.connect.remote.RemoteUnirestClient
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -19,10 +19,10 @@ import kotlin.concurrent.scheduleAtFixedRate
 
 /**
  * [HttpRpcClient] is meant to run outside of Corda Node JVM and provide connectivity to a node using the HTTP-RPC protocol.
- * Since Corda Node can expose multiple RPC interfaces through HTTP, it is required to specify which [RPCOps] interface should be used.
+ * Since Corda Node can expose multiple RPC interfaces through HTTP, it is required to specify which [RpcOps] interface should be used.
  *
  * @property baseAddress The base address of the server.
- * @property rpcOpsClass The [RPCOps] interface for which the proxy will be created.
+ * @property rpcOpsClass The [RpcOps] interface for which the proxy will be created.
  * @property clientConfig The configuration for the client to use.
  * @property healthCheckInterval The interval on which health check calls to the server will happen, ensuring connectivity.
  */

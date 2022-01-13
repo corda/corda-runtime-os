@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -9,11 +10,10 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.ECDSA_SIGNATURE_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RSA_SIGNATURE_ALGO
-import net.corda.p2p.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.p2p.test.KeyAlgorithm
 import net.corda.p2p.test.KeyPairEntry
+import net.corda.schema.TestSchema.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.v5.base.util.contextLogger
-import java.lang.IllegalStateException
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
@@ -22,7 +22,8 @@ import java.util.concurrent.atomic.AtomicReference
 
 class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
                         subscriptionFactory: SubscriptionFactory,
-                        instanceId: Int): LinkManagerCryptoService {
+                        instanceId: Int,
+                        configuration: SmartConfig): LinkManagerCryptoService {
 
     companion object {
         val logger = contextLogger()
@@ -31,7 +32,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     private val keyPairEntryProcessor = KeyPairEntryProcessor()
     private val subscriptionConfig = SubscriptionConfig("crypto-service", CRYPTO_KEYS_TOPIC, instanceId)
     private val subscription =
-        subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor)
+        subscriptionFactory.createCompactedSubscription(subscriptionConfig, keyPairEntryProcessor, configuration)
 
     private val rsaSignature = Signature.getInstance(RSA_SIGNATURE_ALGO)
     private val ecdsaSignature = Signature.getInstance(ECDSA_SIGNATURE_ALGO)
@@ -43,7 +44,7 @@ class StubCryptoService(lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
         val future = CompletableFuture<Unit>()
         readyFuture.set(future)
         subscription.start()
-        resources.keep (subscription)
+        resources.keep { subscription.stop() }
         return future
     }
 

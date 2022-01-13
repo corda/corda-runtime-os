@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp;
 
+import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
 import net.corda.v5.serialization.SerializedBytes;
 import net.corda.v5.serialization.annotations.ConstructorForDeserialization;
-import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
 import org.apache.qpid.proton.codec.DecoderImpl;
 import org.apache.qpid.proton.codec.EncoderImpl;
 import org.junit.jupiter.api.Test;
@@ -69,7 +69,7 @@ public class JavaSerializationOutputTests {
         private final String bob;
         private final int count;
 
-        private UnAnnotatedFoo(String fred, int count) {
+        public UnAnnotatedFoo(String fred, int count) {
             this.bob = fred;
             this.count = count;
         }
@@ -107,7 +107,7 @@ public class JavaSerializationOutputTests {
         private final String fred;
         private final Integer count;
 
-        private BoxedFoo(String fred, Integer count) {
+        public BoxedFoo(String fred, Integer count) {
             this.fred = fred;
             this.count = count;
         }
@@ -146,7 +146,7 @@ public class JavaSerializationOutputTests {
         private final String fred;
         private final Integer count;
 
-        private BoxedFooNotNull(String fred, Integer count) {
+        public BoxedFooNotNull(String fred, Integer count) {
             this.fred = fred;
             this.count = count;
         }

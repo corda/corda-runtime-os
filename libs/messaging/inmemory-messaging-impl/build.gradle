@@ -17,10 +17,12 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:configuration:configuration-core")
+    implementation project(':libs:configuration:configuration-schema:messaging-configuration')
     implementation 'org.slf4j:slf4j-api'
 
     integrationTestApi project(":testing:test-utilities")
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":libs:lifecycle:lifecycle-impl")
 }

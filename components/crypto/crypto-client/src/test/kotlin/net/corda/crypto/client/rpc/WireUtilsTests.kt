@@ -14,9 +14,9 @@ class WireUtilsTests {
             "key2" to "value2"
         )
         val result = map.toWire()
-        assertEquals(2, result.size)
-        assertTrue(result.any { it.key == "key1" && it.value == "value1" })
-        assertTrue(result.any { it.key == "key2" && it.value == "value2" })
+        assertEquals(2, result.items.size)
+        assertTrue(result.items.any { it.key == "key1" && it.value == "value1" })
+        assertTrue(result.items.any { it.key == "key2" && it.value == "value2" })
     }
 
     @Test
@@ -24,6 +24,6 @@ class WireUtilsTests {
     fun `Should transform empty map`() {
         val map = emptyMap<String, String>()
         val result = map.toWire()
-        assertTrue(result.isEmpty())
+        assertTrue(result.items.isEmpty())
     }
 }

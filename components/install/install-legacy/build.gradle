@@ -49,6 +49,8 @@ dependencies {
         exclude group: 'mockito-core'
     }
     testImplementation "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+    testImplementation project(":testing:test-utilities")
+
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
@@ -61,7 +63,7 @@ dependencies {
     cpks project(path: 'split-packages-two', configuration: 'cordaCPK')
     cpks "net.corda:corda-smoketest-linearstate-flow-contracts:$cordaDevPreviewVersion:cordapp@cpk"
     cpks "net.corda:corda-smoketest-linearstate-sample-workflows:$cordaDevPreviewVersion:cordapp@cpk"
-    cpks "net.corda:corda-flows:$cordaDevPreviewVersion:cordapp@cpk"
+    cpks project(path: ':components:install:test-resources:system-cpk', configuration: 'cordaCPK')
 }
 
 tasks.named('jar', Jar) {

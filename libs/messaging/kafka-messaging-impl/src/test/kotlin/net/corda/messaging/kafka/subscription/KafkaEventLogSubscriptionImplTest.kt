@@ -1,14 +1,8 @@
 package net.corda.messaging.kafka.subscription
 
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import com.typesafe.config.Config
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.kafka.producer.builder.ProducerBuilder
@@ -22,6 +16,14 @@ import net.corda.messaging.kafka.subscription.net.corda.messaging.kafka.stubs.St
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -39,6 +41,8 @@ class KafkaEventLogSubscriptionImplTest {
     private val mockCordaConsumer: CordaKafkaConsumer<String, ByteBuffer> = mock()
     private val mockCordaProducer: CordaKafkaProducer = mock()
     private val mockConsumerRecords = generateMockConsumerRecordList(mockRecordCount, "topic", 1)
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
+    private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private var pollInvocationCount : Int = 0
     private var builderInvocationCount : Int = 0
     private lateinit var kafkaEventLogSubscription: KafkaEventLogSubscriptionImpl<String, ByteBuffer>
@@ -65,6 +69,7 @@ class KafkaEventLogSubscriptionImplTest {
         builderInvocationCount = 0
         doReturn(mockCordaConsumer).whenever(consumerBuilder).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
         doReturn(mockCordaProducer).whenever(producerBuilder).createProducer(any())
+        doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
     }
 
     /**
@@ -77,7 +82,8 @@ class KafkaEventLogSubscriptionImplTest {
             consumerBuilder,
             producerBuilder,
             processor,
-            null
+            null,
+            lifecycleCoordinatorFactory
         )
         kafkaEventLogSubscription.start()
 
@@ -105,7 +111,8 @@ class KafkaEventLogSubscriptionImplTest {
             consumerBuilder,
             producerBuilder,
             processor,
-            null
+            null,
+            lifecycleCoordinatorFactory
         )
 
         kafkaEventLogSubscription.start()
@@ -113,7 +120,7 @@ class KafkaEventLogSubscriptionImplTest {
 
         verify(mockCordaConsumer, times(0)).poll()
         verify(consumerBuilder, times(1)).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
-        verify(producerBuilder, times(0)).createProducer(any())
+        verify(producerBuilder, times(1)).createProducer(any())
         assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
     }
 
@@ -129,14 +136,15 @@ class KafkaEventLogSubscriptionImplTest {
             consumerBuilder,
             producerBuilder,
             processor,
-            null
+            null,
+            lifecycleCoordinatorFactory
         )
 
         kafkaEventLogSubscription.start()
         while (kafkaEventLogSubscription.isRunning) { Thread.sleep(10) }
 
         verify(mockCordaConsumer, times(0)).poll()
-        verify(consumerBuilder, times(1)).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
+        verify(consumerBuilder, times(0)).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
         verify(producerBuilder, times(1)).createProducer(any())
         verify(mockCordaProducer, times(0)).beginTransaction()
         assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
@@ -162,7 +170,8 @@ class KafkaEventLogSubscriptionImplTest {
             consumerBuilder,
             producerBuilder,
             processor,
-            null
+            null,
+            lifecycleCoordinatorFactory
         )
 
         kafkaEventLogSubscription.start()
@@ -170,7 +179,7 @@ class KafkaEventLogSubscriptionImplTest {
 
         assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
         verify(consumerBuilder, times(2)).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
-        verify(producerBuilder, times(1)).createProducer(any())
+        verify(producerBuilder, times(2)).createProducer(any())
         verify(mockCordaProducer, times(0)).beginTransaction()
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+1)).poll()
@@ -197,7 +206,8 @@ class KafkaEventLogSubscriptionImplTest {
             consumerBuilder,
             producerBuilder,
             processor,
-            null
+            null,
+            lifecycleCoordinatorFactory
         )
 
         kafkaEventLogSubscription.start()
@@ -206,7 +216,7 @@ class KafkaEventLogSubscriptionImplTest {
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount+1)).poll()
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(consumerBuilder, times(2)).createDurableConsumer(any(), any(), any(), any(), anyOrNull())
-        verify(producerBuilder, times(1)).createProducer(any())
+        verify(producerBuilder, times(2)).createProducer(any())
         verify(mockCordaProducer, times(consumerPollAndProcessRetriesCount+1)).beginTransaction()
         verify(mockCordaProducer, times(0)).sendRecords(any())
         verify(mockCordaProducer, times(0)).sendAllOffsetsToTransaction(any())
@@ -224,7 +234,8 @@ class KafkaEventLogSubscriptionImplTest {
             consumerBuilder,
             producerBuilder,
             processor,
-            null
+            null,
+            lifecycleCoordinatorFactory
         )
 
         kafkaEventLogSubscription.start()

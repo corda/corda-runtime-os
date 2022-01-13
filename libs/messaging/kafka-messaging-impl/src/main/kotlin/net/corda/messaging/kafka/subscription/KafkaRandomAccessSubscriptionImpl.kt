@@ -2,6 +2,10 @@ package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigValueFactory
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.RandomAccessSubscription
@@ -23,7 +27,8 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
     private val config: Config,
     private val consumerBuilder: ConsumerBuilder<K, V>,
     private val keyClass: Class<K>,
-    private val valueClass: Class<V>
+    private val valueClass: Class<V>,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ): RandomAccessSubscription<K, V> {
 
     private val log = LoggerFactory.getLogger(
@@ -34,12 +39,23 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
     private var running = false
     private val startStopLock = ReentrantReadWriteLock()
 
+    private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
     private var consumer: CordaKafkaConsumer<K, V>? = null
     private var assignedPartitions = emptySet<Int>()
 
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "$groupName-KafkaRandomAccessSubscription-$topic",
+            config.getString(INSTANCE_ID)
+        )
+    ) { _, _ -> }
+
     override val isRunning: Boolean
         get() = running
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
 
     override fun start() {
         startStopLock.write {
@@ -51,11 +67,23 @@ class KafkaRandomAccessSubscriptionImpl<K : Any, V : Any>(
                 consumer!!.assignPartitionsManually(allPartitions)
                 assignedPartitions = allPartitions
                 running = true
+                lifecycleCoordinator.start()
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             }
         }
     }
 
     override fun stop() {
+        stopConsumeLoop()
+        lifecycleCoordinator.stop()
+    }
+
+    override fun close() {
+        stopConsumeLoop()
+        lifecycleCoordinator.close()
+    }
+
+    private fun stopConsumeLoop() {
         startStopLock.write {
             if (running) {
                 consumer!!.close()

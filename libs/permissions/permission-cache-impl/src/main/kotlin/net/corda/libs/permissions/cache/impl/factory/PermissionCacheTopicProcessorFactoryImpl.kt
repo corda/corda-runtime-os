@@ -2,6 +2,7 @@ package net.corda.libs.permissions.cache.impl.factory
 
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.permissions.Group
+import net.corda.data.permissions.Permission
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
 import net.corda.libs.permissions.cache.factory.PermissionCacheTopicProcessorFactory
@@ -9,7 +10,7 @@ import net.corda.libs.permissions.cache.impl.processor.PermissionTopicProcessor
 import net.corda.libs.permissions.cache.processor.PermissionCacheTopicProcessor
 import org.osgi.service.component.annotations.Component
 
-@Component(service = [PermissionCacheTopicProcessorFactory::class], immediate = true)
+@Component(service = [PermissionCacheTopicProcessorFactory::class])
 class PermissionCacheTopicProcessorFactoryImpl : PermissionCacheTopicProcessorFactory {
     override fun createUserTopicProcessor(
         userData: ConcurrentHashMap<String, User>,
@@ -30,5 +31,12 @@ class PermissionCacheTopicProcessorFactoryImpl : PermissionCacheTopicProcessorFa
         onSnapshotCallback: () -> Unit,
     ): PermissionCacheTopicProcessor<String, Role> {
         return PermissionTopicProcessor(String::class.java, Role::class.java, roleData, onSnapshotCallback)
+    }
+
+    override fun createPermissionTopicProcessor(
+        permissionData: ConcurrentHashMap<String, Permission>,
+        onSnapshotCallback: () -> Unit,
+    ): PermissionCacheTopicProcessor<String, Permission> {
+        return PermissionTopicProcessor(String::class.java, Permission::class.java, permissionData, onSnapshotCallback)
     }
 }

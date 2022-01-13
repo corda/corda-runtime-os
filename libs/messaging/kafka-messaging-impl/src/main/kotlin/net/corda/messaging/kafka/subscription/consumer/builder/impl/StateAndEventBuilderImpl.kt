@@ -22,7 +22,7 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
     private val stateConsumerBuilder: ConsumerBuilder<K, S>,
     private val eventConsumerBuilder: ConsumerBuilder<K, E>,
     private val producerBuilder: ProducerBuilder,
-    private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>,
+    private val mapFactory: SubscriptionMapFactory<K, Pair<Long, S>>
 ) : StateAndEventBuilder<K, S, E> {
 
     private val log = LoggerFactory.getLogger(this::class.java)
@@ -35,13 +35,18 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
         kClazz: Class<K>,
         sClazz: Class<S>,
         eClazz: Class<E>,
-        stateAndEventListener: StateAndEventListener<K, S>?
+        stateAndEventListener: StateAndEventListener<K, S>?,
+        onStateError: (String, ByteArray) -> Unit,
+        onEventError: (String, ByteArray) -> Unit
     ): Pair<StateAndEventConsumer<K, S, E>, ConsumerRebalanceListener> {
-        val stateConsumer = stateConsumerBuilder.createCompactedConsumer(config.stateConsumerConfig, kClazz, sClazz)
-        val eventConsumer = eventConsumerBuilder.createDurableConsumer(config.eventConsumerConfig, kClazz, eClazz)
+        val stateConsumer =
+            stateConsumerBuilder.createCompactedConsumer(config.stateConsumerConfig, kClazz, sClazz, onStateError)
+        val eventConsumer =
+            eventConsumerBuilder.createDurableConsumer(config.eventConsumerConfig, kClazz, eClazz, onEventError)
         validateConsumers(config, stateConsumer, eventConsumer)
 
-        val partitionState = StateAndEventPartitionState(mutableMapOf<Int, MutableMap<K, Pair<Long, S>>>(), mutableMapOf())
+        val partitionState =
+            StateAndEventPartitionState(mutableMapOf<Int, MutableMap<K, Pair<Long, S>>>(), mutableMapOf())
 
         val stateAndEventConsumer =
             StateAndEventConsumerImpl(config, eventConsumer, stateConsumer, partitionState, stateAndEventListener)
@@ -61,8 +66,10 @@ class StateAndEventBuilderImpl<K : Any, S : Any, E : Any>(
         eventConsumer: CordaKafkaConsumer<K, E>
     ) {
         val consumerThreadStopTimeout = config.consumerThreadStopTimeout
-        val statePartitions = stateConsumer.getPartitions(config.stateTopic, Duration.ofSeconds(consumerThreadStopTimeout))
-        val eventPartitions = eventConsumer.getPartitions(config.eventTopic, Duration.ofSeconds(consumerThreadStopTimeout))
+        val statePartitions =
+            stateConsumer.getPartitions(config.stateTopic, Duration.ofSeconds(consumerThreadStopTimeout))
+        val eventPartitions =
+            eventConsumer.getPartitions(config.eventTopic, Duration.ofSeconds(consumerThreadStopTimeout))
         if (statePartitions.size != eventPartitions.size) {
             val errorMsg = "Mismatch between state and event partitions."
             log.debug {

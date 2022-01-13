@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.data.identity.HoldingIdentity
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -22,7 +23,6 @@ import net.corda.p2p.SessionPartitions
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.data.identity.HoldingIdentity
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.crypto.AuthenticatedDataMessage
@@ -52,12 +52,12 @@ import net.corda.p2p.linkmanager.utilities.MockNetworkMap
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
-import net.corda.p2p.schema.Schema
-import net.corda.p2p.schema.Schema.Companion.LINK_OUT_TOPIC
-import net.corda.p2p.schema.Schema.Companion.P2P_IN_TOPIC
-import net.corda.p2p.schema.Schema.Companion.P2P_OUT_MARKERS
-import net.corda.p2p.schema.Schema.Companion.P2P_OUT_TOPIC
-import net.corda.p2p.schema.Schema.Companion.SESSION_OUT_PARTITIONS
+import net.corda.schema.Schemas.P2P.Companion.LINK_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
+import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.AfterEach
@@ -90,6 +90,7 @@ class LinkManagerTest {
     companion object {
         private val FIRST_SOURCE = HoldingIdentity("PartyA", "Group")
         private val SECOND_SOURCE = HoldingIdentity("PartyA", "AnotherGroup")
+        private val FAKE_SOURCE = HoldingIdentity("FakeParty", "FakeGroup")
         private val FIRST_DEST = HoldingIdentity("PartyB", "Group")
         private val SECOND_DEST = HoldingIdentity("PartyC", "Group")
         private val LOCAL_PARTY = HoldingIdentity("PartyD", "Group")
@@ -112,7 +113,8 @@ class LinkManagerTest {
         private val netMap = MockNetworkMap(
             listOf(
                 FIRST_SOURCE.toHoldingIdentity(), SECOND_SOURCE.toHoldingIdentity(),
-                FIRST_DEST.toHoldingIdentity(), SECOND_DEST.toHoldingIdentity()
+                FIRST_DEST.toHoldingIdentity(), SECOND_DEST.toHoldingIdentity(),
+                FAKE_SOURCE.toHoldingIdentity(), LOCAL_PARTY.toHoldingIdentity()
             )
         ).getSessionNetworkMapForNode(FIRST_SOURCE.toHoldingIdentity())
 
@@ -282,7 +284,7 @@ class LinkManagerTest {
         reference.set(mock())
         val listener = InboundAssignmentListener(reference)
         for (partition in partitions) {
-            listener.onPartitionsAssigned(listOf(Schema.LINK_IN_TOPIC to partition))
+            listener.onPartitionsAssigned(listOf(LINK_IN_TOPIC to partition))
         }
         return listener
     }
@@ -318,7 +320,7 @@ class LinkManagerTest {
 
         val sessionManager = Mockito.mock(SessionManager::class.java)
 
-        val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, mock(), mock(), 1)
+        val queue = LinkManager.PendingSessionMessageQueuesImpl(mockPublisherFactory, mock(), mock())
         queue.start()
         createResources!!(mock())
 
@@ -357,7 +359,8 @@ class LinkManagerTest {
         val resourcesHolder = mock<ResourcesHolder>()
         linkManager.createInboundResources(resourcesHolder)
         verify(subscription).start()
-        verify(resourcesHolder).keep(subscription)
+        //TODOs : this will be refactored as part of CORE-3147
+        //verify(resourcesHolder).keep(subscription)
     }
 
     @Test
@@ -375,7 +378,8 @@ class LinkManagerTest {
         linkManager.createInboundResources(mock())
         linkManager.createOutboundResources(resourcesHolder)
         verify(subscription).start()
-        verify(resourcesHolder).keep(subscription)
+        //TODOs : this will be refactored as part of CORE-3147
+        //verify(resourcesHolder).keep(subscription)
     }
 
     @Test
@@ -515,7 +519,7 @@ class LinkManagerTest {
             .extracting<LinkOutMessage> { it.value as LinkOutMessage }
             .allSatisfy { assertThat(it).isSameAs(sessionInitMessage) }
 
-        assertThat(records).filteredOn { it.topic == Schema.SESSION_OUT_PARTITIONS }.hasSize(messages.size)
+        assertThat(records).filteredOn { it.topic == SESSION_OUT_PARTITIONS }.hasSize(messages.size)
             .allSatisfy { assertThat(it.key).isSameAs(SESSION_ID) }
             .extracting<SessionPartitions> { it.value as SessionPartitions }
             .allSatisfy { assertThat(it.partitions.toIntArray()).isEqualTo(inboundSubscribedTopics.toIntArray()) }
@@ -949,5 +953,136 @@ class LinkManagerTest {
         verify(mockSessionManager, never()).messageAcknowledged(any())
         loggingInterceptor.assertErrorContains("Could not deserialize message for session $SESSION_ID.")
         loggingInterceptor.assertErrorContains("The message was discarded.")
+    }
+
+    private fun sendDataMessageWithSpoofedIdentity(session: SessionPair, source: HoldingIdentity, destination: HoldingIdentity) {
+        val header = AuthenticatedMessageHeader(destination, source, null, MESSAGE_ID, "", "system-1")
+        val messageAndKey = AuthenticatedMessageAndKey(AuthenticatedMessage(header, PAYLOAD), KEY)
+        val linkOutMessage = linkOutMessageFromAuthenticatedMessageAndKey(messageAndKey, session.initiatorSession, netMap)
+        val linkInMessage = LinkInMessage(linkOutMessage!!.payload)
+
+        val messages = listOf(
+            EventLogRecord(TOPIC, KEY, linkInMessage, 0, 0)
+        )
+
+        val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
+        Mockito.`when`(mockSessionManager.getSessionById(any())).thenReturn(
+            SessionManager.SessionDirection.Inbound(SessionManager.SessionKey(
+                FIRST_DEST.toHoldingIdentity(),
+                FIRST_SOURCE.toHoldingIdentity()),
+                session.responderSession
+            )
+        )
+
+        val processor = LinkManager.InboundMessageProcessor(mockSessionManager, netMap, assignedListener(listOf(1)))
+
+        val records = processor.onNext(messages)
+        assertThat(records).isEmpty()
+    }
+
+    @Test
+    fun `InboundMessageProcessor discards AuthenticatedMessages when the source in the Header is spoofed`() {
+        val session = createSessionPair()
+        sendDataMessageWithSpoofedIdentity(session, FAKE_SOURCE, FIRST_DEST)
+        loggingInterceptor.assertSingleWarning(
+            "The identity in the message's source header ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
+                    " does not match the session's source identity ({\"x500Name\": \"PartyA\", \"groupId\": \"Group\"})," +
+                    " which indicates a spoofing attempt! The message was discarded."
+        )
+    }
+
+    @Test
+    fun `InboundMessageProcessor discards AuthenticatedEncryptedMessages when the source in the Header is spoofed`() {
+        val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
+        sendDataMessageWithSpoofedIdentity(session, FAKE_SOURCE, FIRST_DEST)
+        loggingInterceptor.assertSingleWarning(
+            "The identity in the message's source header ({\"x500Name\": \"FakeParty\", \"groupId\": \"FakeGroup\"})" +
+                    " does not match the session's source identity ({\"x500Name\": \"PartyA\", \"groupId\": \"Group\"})," +
+                    " which indicates a spoofing attempt! The message was discarded."
+        )
+    }
+
+    @Test
+    fun `InboundMessageProcessor discards AuthenticatedMessages when the destination in the Header is spoofed`() {
+        val session = createSessionPair()
+        sendDataMessageWithSpoofedIdentity(session, FIRST_SOURCE, LOCAL_PARTY)
+        loggingInterceptor.assertSingleWarning(
+            "The identity in the message's destination header ({\"x500Name\": \"PartyD\", \"groupId\": \"Group\"})" +
+                    " does not match the session's destination identity ({\"x500Name\": \"PartyB\", \"groupId\": \"Group\"})," +
+                    " which indicates a spoofing attempt! The message was discarded"
+        )
+    }
+
+    @Test
+    fun `InboundMessageProcessor discards AuthenticatedEncryptedMessages when the destination in the Header is spoofed`() {
+        val session = createSessionPair(ProtocolMode.AUTHENTICATED_ENCRYPTION)
+        sendDataMessageWithSpoofedIdentity(session, FIRST_SOURCE, LOCAL_PARTY)
+        loggingInterceptor.assertSingleWarning(
+            "The identity in the message's destination header ({\"x500Name\": \"PartyD\", \"groupId\": \"Group\"})" +
+                    " does not match the session's destination identity ({\"x500Name\": \"PartyB\", \"groupId\": \"Group\"})," +
+                    " which indicates a spoofing attempt! The message was discarded"
+        )
+    }
+
+    @Test
+    fun `OutboundMessageProcessor warns if no partitions are assigned and only produces LinkManagerSentMarker`() {
+        val mockSessionManager = Mockito.mock(SessionManager::class.java)
+        val sessionInitMessage = LinkOutMessage()
+        Mockito.`when`(mockSessionManager.processOutboundMessage(any())).thenReturn(
+            SessionManager.SessionState.NewSessionNeeded(SESSION_ID, sessionInitMessage)
+        )
+
+        val processor = LinkManager.OutboundMessageProcessor(
+            mockSessionManager,
+            hostingMap,
+            netMap,
+            assignedListener(emptyList()),
+        )
+        val messages = listOf(
+            EventLogRecord(
+                TOPIC, KEY, AppMessage(
+                    authenticatedMessage(
+                        FIRST_SOURCE, FIRST_DEST, "0", MESSAGE_ID
+                    )
+                ), 0, 0
+            )
+        )
+        val records = processor.onNext(messages)
+        assertThat(records).hasSize(messages.size)
+
+        assertThat(records).filteredOn { it.topic == P2P_OUT_MARKERS }.hasSize(messages.size)
+            .allSatisfy { assertThat(it.key).isEqualTo(MESSAGE_ID) }
+            .extracting<AppMessageMarker> { it.value as AppMessageMarker }
+            .allSatisfy { assertThat(it.marker).isInstanceOf(LinkManagerSentMarker::class.java) }
+
+        loggingInterceptor.assertSingleWarning(
+            "No partitions from topic $LINK_IN_TOPIC are currently assigned to the inbound message processor." +
+                    " Session $SESSION_ID will not be initiated."
+        )
+    }
+
+    @Test
+    fun `InboundMessageProcessor warns if no partitions are assigned and does not map new session`() {
+        val mockSessionManager = Mockito.mock(SessionManagerImpl::class.java)
+        val response = LinkOutMessage(LinkOutHeader("", NetworkType.CORDA_5, FAKE_ADDRESS), responderHelloMessage())
+        Mockito.`when`(mockSessionManager.processSessionMessage(any())).thenReturn(response)
+
+        val initiatorHelloMessage = initiatorHelloMessage()
+
+        val processor = LinkManager.InboundMessageProcessor(
+            mockSessionManager,
+            Mockito.mock(LinkManagerNetworkMap::class.java),
+            assignedListener(emptyList())
+        )
+        val messages = listOf(
+            EventLogRecord(TOPIC, KEY, LinkInMessage(initiatorHelloMessage), 0, 0)
+        )
+        val records = processor.onNext(messages)
+        assertThat(records).isEmpty()
+
+        loggingInterceptor.assertSingleWarning(
+            "No partitions from topic link.in are currently assigned to the inbound message processor." +
+                    " Not going to reply to session initiation for session $SESSION_ID."
+        )
     }
 }

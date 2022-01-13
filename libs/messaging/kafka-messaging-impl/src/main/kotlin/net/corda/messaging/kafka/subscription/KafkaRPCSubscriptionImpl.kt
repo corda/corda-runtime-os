@@ -5,6 +5,10 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -36,7 +40,8 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val consumerBuilder: ConsumerBuilder<String, RPCRequest>,
     private val responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>,
     private val serializer: CordaAvroSerializer<RESPONSE>,
-    private val deserializer: CordaAvroDeserializer<REQUEST>
+    private val deserializer: CordaAvroDeserializer<REQUEST>,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : RPCSubscription<REQUEST, RESPONSE> {
 
     private val log = LoggerFactory.getLogger(
@@ -46,6 +51,13 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "$groupName-KafkaRPCSubscription-$topic",
+            //we use instanceId here as transactionality is a concern in this subscription
+            config.getString(INSTANCE_ID)
+        )
+    ) { _, _ -> }
 
     private val errorMsg = "Failed to read records from group $groupName, topic $topic"
 
@@ -57,11 +69,15 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     override val isRunning: Boolean
         get() = !stopped
 
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
+
     override fun start() {
         log.debug { "Starting subscription with config:\n${config.render()}" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
+                lifecycleCoordinator.start()
                 consumeLoopThread = thread(
                     start = true,
                     isDaemon = true,
@@ -76,14 +92,26 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
     override fun stop() {
         if (!stopped) {
-            val thread = lock.withLock {
-                stopped = true
-                val threadTmp = consumeLoopThread
-                consumeLoopThread = null
-                threadTmp
-            }
-            thread?.join(consumerThreadStopTimeout)
+            stopConsumeLoop()
+            lifecycleCoordinator.stop()
         }
+    }
+
+    override fun close() {
+        if (!stopped) {
+            stopConsumeLoop()
+            lifecycleCoordinator.close()
+        }
+    }
+
+    private fun stopConsumeLoop() {
+        val thread = lock.withLock {
+            stopped = true
+            val threadTmp = consumeLoopThread
+            consumeLoopThread = null
+            threadTmp
+        }
+        thread?.join(consumerThreadStopTimeout)
     }
 
     private fun runConsumeLoop() {
@@ -98,6 +126,7 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     RPCRequest::class.java
                 ).use {
                     it.subscribeToTopic()
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                     pollAndProcessRecords(it)
                 }
                 attempts = 0
@@ -108,11 +137,13 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     }
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
+                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
                         stop()
                     }
                 }
             }
         }
+        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<String, RPCRequest>) {
@@ -146,45 +177,43 @@ class KafkaRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
             future.whenComplete { response, error ->
                 val record: Record<String, RPCResponse>?
-                when {
-                    //the order of these is important due to how the futures api is
-                    future.isCancelled -> {
-                        record = buildRecord(
-                            rpcRequest.replyTopic,
-                            rpcRequest.correlationKey,
-                            ResponseStatus.CANCELLED,
-                            ExceptionEnvelope(
-                                error.javaClass.name,
-                                "Future was cancelled"
-                            ).toByteBuffer().array()
-                        )
-                    }
-                    future.isCompletedExceptionally -> {
-                        record = buildRecord(
-                            rpcRequest.replyTopic,
-                            rpcRequest.correlationKey,
-                            ResponseStatus.FAILED,
-                            ExceptionEnvelope(error.javaClass.name, error.message).toByteBuffer().array()
-                        )
-                    }
-                    else -> {
-                        val serializedResponse = serializer.serialize(rpcRequest.replyTopic, response)
-                        record = buildRecord(
-                            rpcRequest.replyTopic,
-                            rpcRequest.correlationKey,
-                            ResponseStatus.OK,
-                            serializedResponse!!
-                        )
-                    }
-                }
-
                 try {
+                    when {
+                        //the order of these is important due to how the futures api is
+                        future.isCancelled -> {
+                            record = buildRecord(
+                                rpcRequest.replyTopic,
+                                rpcRequest.correlationKey,
+                                ResponseStatus.CANCELLED,
+                                ExceptionEnvelope(
+                                    error.javaClass.name,
+                                    "Future was cancelled"
+                                ).toByteBuffer().array()
+                            )
+                        }
+                        future.isCompletedExceptionally -> {
+                            record = buildRecord(
+                                rpcRequest.replyTopic,
+                                rpcRequest.correlationKey,
+                                ResponseStatus.FAILED,
+                                ExceptionEnvelope(error.javaClass.name, error.message).toByteBuffer().array()
+                            )
+                        }
+                        else -> {
+                            val serializedResponse = serializer.serialize(rpcRequest.replyTopic, response)
+                            record = buildRecord(
+                                rpcRequest.replyTopic,
+                                rpcRequest.correlationKey,
+                                ResponseStatus.OK,
+                                serializedResponse!!
+                            )
+                        }
+                    }
                     publisher.publishToPartition(listOf(Pair(rpcRequest.replyPartition, record)))
                 } catch (ex: Exception) {
                     //intentionally swallowed
                     log.warn("Error publishing response", ex)
                 }
-
             }
             responderProcessor.onNext(request!!, future)
         }

@@ -475,7 +475,7 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
             throw NotSerializableException("Type '${type.typeName} has synthetic fields and is likely a nested inner class.")
 
         return LocalConstructorInformation(
-                observedConstructor.javaConstructor!!.apply { isAccessible = true },
+                observedConstructor.javaConstructor!!,
                 observedConstructor.parameters.map {
                     val parameterType = it.type.javaType
                     LocalConstructorParameterInformation(
@@ -526,17 +526,12 @@ private fun constructorForDeserialization(type: Type): KFunction<Any>? {
     val nonDefaultCtors = kotlinCtors.filter { it != defaultCtor }
 
     val preferredCandidate = clazz.kotlin.primaryConstructor ?:
-    when(nonDefaultCtors.size) {
+    when (nonDefaultCtors.size) {
         1 -> nonDefaultCtors.first()
         0 -> defaultCtor
         else -> null
-    } ?: return null
-
-    return try {
-        preferredCandidate.apply { isAccessible = true }
-    } catch (e: SecurityException) {
-        null
     }
+    return preferredCandidate
 }
 
 /**

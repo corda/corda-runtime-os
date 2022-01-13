@@ -1,0 +1,74 @@
+version: "3.9"
+services:
+  crypto-worker:
+    container_name: crypto-worker
+    # Created with `gradlew applications:workers:release:crypto:publishOSGiImage`.
+    image: "corda-os-docker-dev.software.r3.com/corda-os-crypto-worker:latest-local"
+
+  db-worker:
+    container_name: db-worker
+    # Created with `gradlew applications:workers:release:db:publishOSGiImage`.
+    image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker:latest-local"
+    command: -m kafka.common.bootstrap.servers=kafka:9092 -d cluster.user=user -d cluster.pass=pass
+
+  flow-worker:
+    container_name: flow-worker
+    # Created with `gradlew applications:workers:release:flow:publishOSGiImage`.
+    image: "corda-os-docker-dev.software.r3.com/corda-os-flow-worker:latest-local"
+
+  rpc-worker:
+    container_name: rpc-worker
+    # Created with `gradlew applications:workers:release:rpc:publishOSGiImage`.
+    image: "corda-os-docker-dev.software.r3.com/corda-os-rpc-worker:latest-local"
+    command: -m kafka.common.bootstrap.servers=kafka:9092
+    ports:
+      - "8888:8888"
+
+  zookeeper:
+    container_name: zookeeper
+    # https://hub.docker.com/r/bitnami/zookeeper
+    image: "bitnami/zookeeper:latest"
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  kafka:
+    container_name: kafka
+    # https://hub.docker.com/r/bitnami/kafka
+    image: "bitnami/kafka:latest"
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093
+      - KAFKA_INTER_BROKER_LISTENER_NAME=CLIENT
+    depends_on:
+      - zookeeper
+
+  kafdrop:
+    container_name: kafdrop
+    image: obsidiandynamics/kafdrop
+    restart: "no"
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: "kafka:9092"
+      JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
+    depends_on:
+      - kafka
+
+  cluster-db:
+    container_name: cluster-db
+    image: postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: "cordacluster"
+      POSTGRES_USER: "user"
+      POSTGRES_PASSWORD: "pass"

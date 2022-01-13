@@ -3,17 +3,25 @@ package net.corda.messaging.kafka.subscription.factory
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 
 class KafkaSubscriptionFactoryTest {
 
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
+    private val publisherFactory: PublisherFactory = mock()
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
+    private val lifecycleCoordinator: LifecycleCoordinator = mock()
     private lateinit var factory: KafkaSubscriptionFactory
     private lateinit var config: Config
     private val subscriptionConfig = SubscriptionConfig("group1", "event", 1)
@@ -21,11 +29,12 @@ class KafkaSubscriptionFactoryTest {
     @BeforeEach
     fun setup() {
         config = ConfigFactory.load()
-        factory = KafkaSubscriptionFactory(avroSchemaRegistry)
+        factory = KafkaSubscriptionFactory(avroSchemaRegistry, publisherFactory, lifecycleCoordinatorFactory)
+        doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
     }
 
     @Test
-    fun createCompactedSubcreatePubSub() {
+    fun createCompacted() {
         factory.createCompactedSubscription<Any, Any>(subscriptionConfig, mock())
     }
 

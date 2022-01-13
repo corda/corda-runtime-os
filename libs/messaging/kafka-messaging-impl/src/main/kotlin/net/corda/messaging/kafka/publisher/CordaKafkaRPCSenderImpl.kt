@@ -5,6 +5,10 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
@@ -44,7 +48,8 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val publisher: Publisher,
     private val consumerBuilder: ConsumerBuilder<String, RPCResponse>,
     private val serializer: CordaAvroSerializer<REQUEST>,
-    private val deserializer: CordaAvroDeserializer<RESPONSE>
+    private val deserializer: CordaAvroDeserializer<RESPONSE>,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : RPCSender<REQUEST, RESPONSE>, RPCSubscription<REQUEST, RESPONSE> {
 
     private companion object {
@@ -55,19 +60,31 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-    private val futureTracker = FutureTracker<RESPONSE>()
+
 
     override val isRunning: Boolean
         get() = !stopped
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
 
     private val consumerThreadStopTimeout = config.getLong(CONSUMER_THREAD_STOP_TIMEOUT)
     private val groupName = config.getString(CONSUMER_GROUP_ID)
     private val topic = config.getString(TOPIC_NAME)
     private val responseTopic = config.getString(RESPONSE_TOPIC)
-    private var partitionListener = RPCConsumerRebalanceListener(
+    private val futureTracker = FutureTracker<RESPONSE>()
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "$groupName-KafkaRPCSender-$topic",
+            //we use instanceId here as transactionality is a concern in this subscription
+            config.getString(INSTANCE_ID)
+        )
+    ) { _, _ -> }
+    private val partitionListener = RPCConsumerRebalanceListener(
         responseTopic,
         "RPC Response listener",
-        futureTracker
+        futureTracker,
+        lifecycleCoordinator
     )
 
     private val errorMsg = "Failed to read records from group $groupName, topic $topic"
@@ -77,6 +94,7 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
+                lifecycleCoordinator.start()
                 consumeLoopThread = thread(
                     start = true,
                     isDaemon = true,
@@ -92,14 +110,26 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
 
     override fun stop() {
         if (!stopped) {
-            val thread = lock.withLock {
-                stopped = true
-                val threadTmp = consumeLoopThread
-                consumeLoopThread = null
-                threadTmp
-            }
-            thread?.join(consumerThreadStopTimeout)
+            stopConsumeLoop()
+            lifecycleCoordinator.stop()
         }
+    }
+
+    override fun close() {
+        if (!stopped) {
+            stopConsumeLoop()
+            lifecycleCoordinator.close()
+        }
+    }
+
+    private fun stopConsumeLoop() {
+        val thread = lock.withLock {
+            stopped = true
+            val threadTmp = consumeLoopThread
+            consumeLoopThread = null
+            threadTmp
+        }
+        thread?.join(consumerThreadStopTimeout)
     }
 
     private fun runConsumeLoop() {
@@ -127,11 +157,13 @@ class CordaKafkaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     }
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
+                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
                         stop()
                     }
                 }
             }
         }
+        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     private fun pollAndProcessRecords(consumer: CordaKafkaConsumer<String, RPCResponse>) {

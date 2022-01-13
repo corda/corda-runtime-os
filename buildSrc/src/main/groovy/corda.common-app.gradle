@@ -1,9 +1,17 @@
 import java.nio.file.Files
+import java.util.jar.Attributes
+import java.util.jar.JarEntry
 import java.util.jar.JarFile
 
+import aQute.bnd.gradle.Resolve
+import groovy.transform.CompileStatic
 import groovy.transform.TupleConstructor
 import javax.inject.Inject
-import org.osgi.framework.Constants
+
+import static org.osgi.framework.Constants.BUNDLE_MANIFESTVERSION
+import static org.osgi.framework.Constants.EXPORT_PACKAGE
+import static CreateApplicationBundlesFile.isBundle
+import static CreateApplicationBundlesFile.isJar
 
 plugins {
     id 'corda.common-library'
@@ -29,20 +37,20 @@ configurations {
         transitive = true
         canBeConsumed = false
         extendsFrom(systemPackages)
-        //This is to ensure that, when you add a project dependency to the configuration, you add the project's jar artifact,
+        // This is to ensure that, when you add a project dependency to the configuration, you add the project's jar artifact,
         // otherwise Gradle adds the project's classes directory as that is usually enough to compile/run
         attributes { attrs ->
-            attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, LibraryElements.JAR))
+            attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
         }
     }
     compileOnly {
         extendsFrom(systemPackages)
     }
     runtimeClasspath {
-        //This is to ensure that, when you add a project dependency to the configuration, you add the project's jar artifact,
+        // This is to ensure that, when you add a project dependency to the configuration, you add the project's jar artifact,
         // otherwise Gradle adds the project's classes directory as that is usually enough to compile/run
         attributes { attrs ->
-            attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, LibraryElements.JAR))
+            attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
         }
     }
     applyDependencySubstitution(systemPackages)
@@ -66,31 +74,24 @@ dependencies {
     systemPackages project(":osgi-framework-api")
 }
 
-Provider<Jar> jarTask = tasks.named("jar", Jar)
+TaskProvider<Jar> jarTask = tasks.named('jar', Jar)
 
-private boolean isBundle(JarFile jarFile) {
-    java.util.jar.Attributes mainAttributes = jarFile.manifest.mainAttributes
-    return mainAttributes.getValue(Constants.BUNDLE_SYMBOLICNAME) != null && mainAttributes.getValue(Constants.BUNDLE_VERSION) != null
-}
-
-private static boolean isJar(final File file) {
-    return file.name.endsWith(".jar")
-}
-
+@CompileStatic
 private def addSystemPackagesExtra(
         final ArtifactCollection artifacts,
         final Set<String> systemBundleExtraSet
 ) {
     artifacts.each { resolvedArtifact ->
-        final file = resolvedArtifact.file
+        final File file = resolvedArtifact.file
         if (isJar(file)) {
             new JarFile(
                     resolvedArtifact.file,
                     true, JarFile.OPEN_READ,
                     JarFile.runtimeVersion()
             ).withCloseable { jarFile ->
-                if (isBundle(jarFile)) {
-                    jarFile.manifest.mainAttributes.getValue(org.osgi.framework.Constants.EXPORT_PACKAGE)?.with { exportPackage ->
+                Attributes mainAttributes = jarFile.manifest.mainAttributes
+                if (isBundle(mainAttributes)) {
+                    mainAttributes.getValue(EXPORT_PACKAGE)?.with { exportPackage ->
                         aQute.bnd.header.OSGiHeader.parseHeader(exportPackage).entrySet().each { exportEntry ->
                             final def export = exportEntry.key + ";" + exportEntry.value.toString()
                             systemBundleExtraSet.add(export)
@@ -98,13 +99,13 @@ private def addSystemPackagesExtra(
                         }
                     }
                 } else {
-                    jarFile.versionedStream().filter { jarEntry ->
+                    jarFile.versionedStream().filter { JarEntry jarEntry ->
                         jarEntry.name.endsWith(".class")
-                    }.each { jarEntry ->
+                    }.each { JarEntry jarEntry ->
                         String entryName = jarEntry.name
                         int end = entryName.lastIndexOf('/')
                         if (end > 0) {
-                            final def export = entryName.substring(0, end).replace('/', '.')
+                            final String export = entryName.substring(0, end).replace('/', '.')
                             systemBundleExtraSet.add(export)
                             logger.info "OSGI $export included as system package extra."
                         }
@@ -128,19 +129,98 @@ private def addSystemPackagesExtra(
     jdkExtraPackages.each { export -> systemBundleExtraSet.add(export) }
 }
 
-Provider<DefaultTask> createSystemBundlesFile = tasks.register("createSystemBundleFile") {
-    inputs.files(jarTask)
-    inputs.files(configurations.runtimeClasspath)
-    File systemBundlesFile = new File(temporaryDir, "system_bundles")
-    outputs.file(systemBundlesFile)
-    doLast {
-        systemBundlesFile.withWriter { writer ->
-            writer.writeLine("bundles/${jarTask.flatMap {it.archiveFile }.map(RegularFile.&getAsFile).map(File.&getName).get()}")
-            (configurations.runtimeClasspath - configurations.systemPackages).files.grep { File file -> isJar(file) && isBundle(new JarFile(file)) }.each { File file ->
-                writer.writeLine("bundles/${file.name}")
+@CompileStatic
+@UntrackedTask(because = 'We must always calculate application bundles.')
+class DefineApplicationBundles extends DefaultTask {
+    private final ConfigurableFileCollection includeBundles
+    private final ConfigurableFileCollection excludeBundles
+    private final ConfigurableFileCollection applicationBundles
+
+    @Inject
+    DefineApplicationBundles(ObjectFactory objects) {
+        includeBundles = objects.fileCollection()
+        excludeBundles = objects.fileCollection()
+        applicationBundles = objects.fileCollection()
+    }
+
+    @PathSensitive(PathSensitivity.RELATIVE)
+    @InputFiles
+    ConfigurableFileCollection getIncludeBundles() {
+        return includeBundles
+    }
+
+    @PathSensitive(PathSensitivity.RELATIVE)
+    @InputFiles
+    ConfigurableFileCollection getExcludeBundles() {
+        return excludeBundles
+    }
+
+    @OutputFiles
+    FileCollection getApplicationBundles() {
+        return applicationBundles
+    }
+
+    @TaskAction
+    void run() {
+        applicationBundles.setFrom(includeBundles - excludeBundles)
+    }
+}
+
+@CompileStatic
+class CreateApplicationBundlesFile extends DefaultTask {
+    private final ConfigurableFileCollection applicationBundles
+    private final RegularFileProperty applicationBundleFile
+
+    @Inject
+    CreateApplicationBundlesFile(ObjectFactory objects) {
+        applicationBundles = objects.fileCollection()
+        applicationBundleFile = objects.fileProperty()
+            .fileValue(new File(temporaryDir, 'application_bundles'))
+        applicationBundleFile.disallowChanges()
+    }
+
+    @PathSensitive(PathSensitivity.RELATIVE)
+    @InputFiles
+    ConfigurableFileCollection getApplicationBundles() {
+        return applicationBundles
+    }
+
+    @OutputFile
+    RegularFileProperty getApplicationBundleFile() {
+        return applicationBundleFile
+    }
+
+    @TaskAction
+    void run() {
+        applicationBundleFile.getAsFile().get().withWriter { writer ->
+            applicationBundles.forEach { file ->
+                if (isJar(file) && isBundle(new JarFile(file))) {
+                    writer.writeLine("bundles/${file.name}")
+                }
             }
         }
     }
+
+    static boolean isBundle(final JarFile jarFile) {
+        return isBundle(jarFile.manifest.mainAttributes)
+    }
+
+    static boolean isBundle(final Attributes mainAttributes) {
+        return mainAttributes.getValue(BUNDLE_MANIFESTVERSION) != null
+    }
+
+    static boolean isJar(final File file) {
+        return file.name.endsWith('.jar')
+    }
+}
+
+def defineApplicationBundles = tasks.register('defineApplicationBundles', DefineApplicationBundles) {
+    includeBundles.from jarTask, configurations.runtimeClasspath
+    excludeBundles.from configurations.systemPackages
+}
+
+def createApplicationBundlesFile = tasks.register('createApplicationBundlesFile', CreateApplicationBundlesFile) {
+    applicationBundles.from defineApplicationBundles.map { it.applicationBundles }
 }
 
 def cordaAssembleSystemPackagesExtraTask = tasks.register("createSystemPackagesExtraFile") {
@@ -157,33 +237,106 @@ def cordaAssembleSystemPackagesExtraTask = tasks.register("createSystemPackagesE
     }
 }
 
+@CompileStatic
+class AppResolution extends DefaultTask {
+    private final ConfigurableFileCollection systemPropertyFiles
+    private final RegularFileProperty bndrunFile
+
+    @Inject
+    AppResolution(ObjectFactory objects, ProjectLayout layout) {
+        systemPropertyFiles = objects.fileCollection()
+        bndrunFile = objects.fileProperty()
+            .value(layout.buildDirectory.file('resolve.bndrun'))
+        bndrunFile.disallowChanges()
+    }
+
+    @PathSensitive(PathSensitivity.RELATIVE)
+    @InputFiles
+    ConfigurableFileCollection getSystemPropertyFiles() {
+        return systemPropertyFiles
+    }
+
+    @OutputFile
+    RegularFileProperty getBndrunFile() {
+        return bndrunFile
+    }
+
+    @TaskAction
+    void createBndrun() {
+        def systemProperties = systemPropertyFiles.collect { file ->
+            file.readLines()
+        }.flatten()
+
+        bndrunFile.getAsFile().get().withPrintWriter { writer ->
+            writer.print '''\
+-runee: JavaSE-11
+-runfw: org.apache.felix.framework
+-resolve.effective: resolve,active
+-runrequires:\
+    bnd.identity;id='\${project.group}.\${project.name}',\
+    osgi.service;filter:='(objectClass=net.corda.osgi.api.Application)'
+-runstartlevel: order=sortbynameversion,begin=-1
+'''
+            // Our launcher creates the Shutdown service dynamically, so
+            // declare it as a system capability for the resolver's sake.
+            writer.print '''\
+-runsystemcapabilities: osgi.service;objectClass:List<String>='net.corda.osgi.api.Shutdown';effective:=active
+'''
+            if (!systemProperties.isEmpty()) {
+                writer.print('-runsystempackages:')
+                systemProperties.forEach { sysprop ->
+                    writer.println(' \\')
+                    writer.print("\t$sysprop,")
+                }
+                writer.println()
+            }
+            writer.println('-runbundles:')
+        }
+    }
+}
+
+def appResolution = tasks.register('appResolution', AppResolution) {
+    systemPropertyFiles.from cordaAssembleSystemPackagesExtraTask.map { it.outputs.files }
+}
+
+def verifyApp = tasks.register('verifyApp', Resolve) {
+    bundles.from defineApplicationBundles.map { it.applicationBundles },
+            configurations.bootstrapClasspath
+    bndrun = appResolution.flatMap { it.bndrunFile }
+    writeOnChanges = false
+
+    //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
+    System.setProperty('bnd.home.dir', "$rootDir/bnd/")
+}
 
 @TupleConstructor
+@CompileStatic
 class JavaAgent implements Serializable {
     String className
     String args
 }
 
+@CompileStatic
 class OsgiRun {
-
 
     final List<JavaAgent> javaAgents = new ArrayList<JavaAgent>()
     final MapProperty<String, String> frameworkProperties
 
     @Inject
     OsgiRun(ObjectFactory objects) {
-        frameworkProperties = objects.mapProperty(String.class, String.class).convention(new HashMap<>())
+        frameworkProperties = objects.mapProperty(String, String).convention(new HashMap<>())
     }
 
-    def agent(String className, String args) {
+    boolean agent(String className, String args) {
         javaAgents.add(new JavaAgent(className, args))
     }
 }
 
-OsgiRun osgiRun = extensions.create("osgiRun", OsgiRun.class)
+OsgiRun osgiRun = extensions.create('osgiRun', OsgiRun)
 
-def appJarBaseName = "corda-" + project.name
+def appJarBaseName = "corda-${project.name}"
 
+@CompileStatic
 class FrameworkPropertyFile extends DefaultTask {
 
     @OutputFile
@@ -196,7 +349,7 @@ class FrameworkPropertyFile extends DefaultTask {
 
     @Inject
     FrameworkPropertyFile(ObjectFactory objects) {
-        frameworkProperties = objects.mapProperty(String.class, String.class)
+        frameworkProperties = objects.mapProperty(String, String)
     }
 
     @TaskAction
@@ -211,10 +364,11 @@ class FrameworkPropertyFile extends DefaultTask {
     }
 }
 
-Provider<FrameworkPropertyFile> writeFrameworkPropertyFile = tasks.register("writeFrameworkPropertyFile", FrameworkPropertyFile) {
+TaskProvider<FrameworkPropertyFile> writeFrameworkPropertyFile = tasks.register("writeFrameworkPropertyFile", FrameworkPropertyFile) {
     frameworkProperties = osgiRun.frameworkProperties
 }
 
+@CompileStatic
 class JavaAgentFile extends DefaultTask {
 
     @OutputFile
@@ -237,15 +391,13 @@ class JavaAgentFile extends DefaultTask {
     }
 }
 
-Provider<JavaAgentFile> javaAgentFileTask =  tasks.register("javaAgentFile", JavaAgentFile) {
+TaskProvider<JavaAgentFile> javaAgentFileTask =  tasks.register("javaAgentFile", JavaAgentFile) {
     javaAgents = osgiRun.javaAgents
 }
 
 def appJar = tasks.register('appJar', Jar) {
     inputs.files(configurations.bootstrapClasspath)
-    inputs.files(configurations.runtimeClasspath)
-    inputs.files(configurations.systemPackages)
-    inputs.files(jarTask)
+    finalizedBy verifyApp
 
     archivesBaseName = appJarBaseName
     destinationDirectory = layout.buildDirectory.dir("bin")
@@ -272,14 +424,15 @@ def appJar = tasks.register('appJar', Jar) {
         from(javaAgentFileTask)
     }
     from{ configurations.bootstrapClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
-    from(createSystemBundlesFile)
+    from(createApplicationBundlesFile.flatMap { it.applicationBundleFile })
     from(cordaAssembleSystemPackagesExtraTask)
     from(writeFrameworkPropertyFile)
-    into("bundles") {
-        from(jarTask)
-        from(configurations.runtimeClasspath - configurations.systemPackages) {
+    into('bundles') {
+        from(defineApplicationBundles.map { it.applicationBundles }) {
             eachFile { FileCopyDetails fileCopyDetails ->
-                if(!isJar(new File(fileCopyDetails.sourcePath))) fileCopyDetails.exclude()
+                if (!isJar(new File(fileCopyDetails.sourcePath))) {
+                    fileCopyDetails.exclude()
+                }
             }
         }
     }
@@ -294,9 +447,9 @@ publishing {
         mavenAppJar(MavenPublication) {
             artifactId appJarBaseName
 
-            afterEvaluate {
-                groupId project.group
-                version project.version
+            afterEvaluate { proj ->
+                groupId proj.group
+                version proj.version
                 artifact appJar
             }
         }

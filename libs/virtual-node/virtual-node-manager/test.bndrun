@@ -10,8 +10,6 @@
     javax.xml.stream.events;version=1.0.0,\
     javax.xml.stream.util;version=1.0.0,\
     sun.security.x509
--runproperties: \
-    base.directory=${fileuri;${task.temporaryDir}}
 
 # Enable debugging.
 # -runjdb: 1044
@@ -21,6 +19,7 @@
     bnd.identity;id='net.corda.virtual-node-manager',\
     bnd.identity;id='net.corda.crypto-impl',\
     bnd.identity;id='net.corda.sandbox-hooks',\
+    bnd.identity;id='net.corda.sandbox-internal',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple'
@@ -33,12 +32,12 @@
 	bcprov;version='[1.69.0,1.69.1)',\
 	bcutil;version='[1.69.0,1.69.1)',\
 	com.typesafe.config;version='[1.4.1,1.4.2)',\
-	junit-jupiter-api;version='[5.7.2,5.7.3)',\
-	junit-jupiter-engine;version='[5.7.2,5.7.3)',\
-	junit-jupiter-params;version='[5.7.2,5.7.3)',\
-	junit-platform-commons;version='[1.7.2,1.7.3)',\
-	junit-platform-engine;version='[1.7.2,1.7.3)',\
-	junit-platform-launcher;version='[1.7.2,1.7.3)',\
+	junit-jupiter-api;version='[5.8.2,5.8.3)',\
+	junit-jupiter-engine;version='[5.8.2,5.8.3)',\
+	junit-jupiter-params;version='[5.8.2,5.8.3)',\
+	junit-platform-commons;version='[1.8.2,1.8.3)',\
+	junit-platform-engine;version='[1.8.2,1.8.3)',\
+	junit-platform-launcher;version='[1.8.2,1.8.3)',\
 	net.corda.application;version='[5.0.0,5.0.1)',\
 	net.corda.base;version='[5.0.0,5.0.1)',\
 	net.corda.cipher-suite;version='[5.0.0,5.0.1)',\
@@ -54,7 +53,9 @@
 	net.corda.packaging;version='[5.0.0,5.0.1)',\
 	net.corda.sandbox;version='[5.0.0,5.0.1)',\
 	net.corda.sandbox-hooks;version='[5.0.0,5.0.1)',\
+	net.corda.sandbox-internal;version='[5.0.0,5.0.1)',\
 	net.corda.serialization;version='[5.0.0,5.0.1)',\
+	net.corda.serialization-internal;version='[5.0.0,5.0.1)',\
 	net.corda.utilities;version='[5.0.0,5.0.1)',\
 	net.corda.virtual-node-manager;version='[5.0.0,5.0.1)',\
 	net.i2p.crypto.eddsa;version='[0.3.0,0.3.1)',\

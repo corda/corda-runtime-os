@@ -1,6 +1,6 @@
 package net.corda.membership.identity
 
-import net.corda.data.WireKeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.v5.membership.identity.MGMContext
 import net.corda.v5.membership.identity.MemberContext
 import net.corda.v5.membership.identity.MemberInfo
@@ -16,8 +16,8 @@ fun toMemberInfo(memberContext: MemberContext, mgmContext: MGMContext): MemberIn
 /**
  * Validates the order of the key, we are making sure they are not tampered with.
  */
-fun validateKeyOrder(original: List<WireKeyValuePair>) {
-    val originalKeys = original.map { it.key }
+fun validateKeyOrder(original: KeyValuePairList) {
+    val originalKeys = original.items.map { it.key }
     val sortedKeys = originalKeys.sortedBy { it }
     if (originalKeys != sortedKeys) {
         throw IllegalArgumentException("The input was manipulated as it's expected to be ordered by first element in pairs.")
@@ -27,9 +27,9 @@ fun validateKeyOrder(original: List<WireKeyValuePair>) {
 /**
  * Recreates the sorted map structure after deserialization.
  */
-fun List<WireKeyValuePair>.toSortedMap(): SortedMap<String, String?> {
+fun KeyValuePairList.toSortedMap(): SortedMap<String, String?> {
     // before returning the ordered map, do the validation of ordering
     // (to avoid malicious attacks where extra data is attached to the end of the context)
     validateKeyOrder(this)
-    return this.associate { it.key to it.value }.toSortedMap()
+    return this.items.map { it.key to it.value }.toMap().toSortedMap()
 }

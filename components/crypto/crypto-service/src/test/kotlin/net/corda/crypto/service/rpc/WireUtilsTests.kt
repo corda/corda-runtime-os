@@ -1,6 +1,6 @@
 package net.corda.crypto.service.rpc
 
-import net.corda.data.WireKeyValuePair
+import net.corda.data.KeyValuePair
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import kotlin.test.assertEquals
@@ -11,9 +11,9 @@ class WireUtilsTests {
     @Timeout(5)
     fun `Should transform non empty wire context list to map`() {
         val list = listOf(
-            WireKeyValuePair("key1", "value1"),
-            WireKeyValuePair("key1", "value11"),
-            WireKeyValuePair("key2", "value2")
+            KeyValuePair("key1", "value1"),
+            KeyValuePair("key1", "value11"),
+            KeyValuePair("key2", "value2")
         )
         val map = list.toMap()
         assertEquals(2, map.size)
@@ -24,7 +24,7 @@ class WireUtilsTests {
     @Test
     @Timeout(5)
     fun `Should transform empty wire context list to map`() {
-        val list = emptyList<WireKeyValuePair>()
+        val list = emptyList<KeyValuePair>()
         val map = list.toMap()
         assertTrue(map.isEmpty())
     }

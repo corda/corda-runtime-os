@@ -1,11 +1,15 @@
 package net.corda.messaging.emulation.subscription.stateandevent
 
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.emulation.topic.model.Consumer
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.isA
@@ -25,12 +29,23 @@ class InMemoryStateAndEventSubscriptionTest {
         on { createConsumption(isA<StatesConsumer<String, String>>()) } doReturn statesConsumption
     }
 
+    private var lifecycleCoordinator: LifecycleCoordinator = mock()
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
+        on { createCoordinator(any(), any()) } doReturn lifecycleCoordinator
+    }
+
     private val subscription = InMemoryStateAndEventSubscription<String, String, String>(
         SubscriptionConfig("group", "topic"),
         mock(),
         mock(),
-        topicService
+        topicService,
+        lifecycleCoordinatorFactory
     )
+
+    @BeforeEach
+    fun setup() {
+        doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
+    }
 
     @Test
     fun `stateSubscriptionConfig return different config`() {

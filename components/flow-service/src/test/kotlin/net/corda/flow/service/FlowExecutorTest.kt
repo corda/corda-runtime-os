@@ -2,19 +2,20 @@ package net.corda.flow.service
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.data.flow.Checkpoint
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
-import net.corda.flow.manager.FlowManager
+import net.corda.data.flow.state.Checkpoint
+import net.corda.flow.manager.FlowEventProcessor
+import net.corda.flow.manager.factory.FlowEventProcessorFactory
 import net.corda.flow.service.stubs.StateAndEventSubscriptionStub
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.sandbox.service.SandboxService
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -30,22 +31,21 @@ import java.util.concurrent.TimeUnit
 class FlowExecutorTest {
 
     companion object {
-        private const val GROUP_NAME_KEY = "consumer.group"
-        private const val TOPIC_KEY = "consumer.topic"
-        private const val INSTANCE_ID_KEY = "instance-id"
+        private const val GROUP_NAME_KEY = "manager.consumer.group"
     }
 
     private val coordinatorFactory: LifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl())
     private val config: SmartConfig = SmartConfigImpl(
         ConfigFactory.empty().withValue(
-            INSTANCE_ID_KEY, ConfigValueFactory
+            INSTANCE_ID, ConfigValueFactory
                 .fromAnyRef(1)
-        ).withValue(TOPIC_KEY, ConfigValueFactory.fromAnyRef("Topic1"))
-        .withValue(GROUP_NAME_KEY, ConfigValueFactory.fromAnyRef("Group1"))
+        ).withValue(GROUP_NAME_KEY, ConfigValueFactory.fromAnyRef("Group1"))
     )
     private val subscriptionFactory: SubscriptionFactory = mock()
-    private val flowManager: FlowManager = mock()
-    private val sandboxService: SandboxService = mock()
+    private val flowEventProcessor: FlowEventProcessor = mock()
+    private val flowEventProcessorFactory = mock<FlowEventProcessorFactory>().apply {
+        whenever(create()).thenReturn(flowEventProcessor)
+    }
 
     @Test
     fun testFlowExecutor() {
@@ -61,8 +61,7 @@ class FlowExecutorTest {
             anyOrNull()
         )
 
-        val flowExecutor =
-            FlowExecutor(coordinatorFactory, config, subscriptionFactory, flowManager, sandboxService)
+        val flowExecutor = FlowExecutor(coordinatorFactory, config, subscriptionFactory, flowEventProcessorFactory)
 
         flowExecutor.start()
         assertTrue(startLatch.await(5, TimeUnit.SECONDS))

@@ -1,6 +1,9 @@
 package net.corda.messaging.kafka.subscription
 
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -24,6 +27,7 @@ import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Clock
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -34,6 +38,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val builder: StateAndEventBuilder<K, S, E>,
     private val processor: StateAndEventProcessor<K, S, E>,
     private val avroSchemaRegistry: AvroSchemaRegistry,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
     private val clock: Clock = Clock.systemUTC()
 ) : StateAndEventSubscription<K, S, E> {
@@ -60,6 +65,17 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val consumerPollAndProcessMaxRetries = config.consumerPollAndProcessMaxRetries
     private val processorTimeout = config.processorTimeout
     private val deadLetterQueueSuffix = config.deadLetterQueueSuffix
+    private lateinit var deadLetterRecords: MutableList<ByteArray>
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "$groupName-KafkaStateAndEventSubscription-$stateTopic.$eventTopic",
+            //we use instanceId here as transactionality is a concern in this subscription
+            config.instanceId
+        )
+    ) { _, _ -> }
+
+    private val errorMsg = "Failed to read and process records from topic $eventTopic, group $groupName, " +
+            "producerClientId $producerClientId."
 
     /**
      * Is the subscription running.
@@ -69,11 +85,15 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             return !stopped
         }
 
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = lifecycleCoordinator.name
+
     override fun start() {
         log.debug { "Starting subscription with config:\n${config}" }
         lock.withLock {
             if (consumeLoopThread == null) {
                 stopped = false
+                lifecycleCoordinator.start()
                 consumeLoopThread = thread(
                     start = true,
                     isDaemon = true,
@@ -88,14 +108,26 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     override fun stop() {
         if (!stopped) {
-            val thread = lock.withLock {
-                stopped = true
-                val threadTmp = consumeLoopThread
-                consumeLoopThread = null
-                threadTmp
-            }
-            thread?.join(consumerThreadStopTimeout)
+            stopConsumeLoop()
+            lifecycleCoordinator.stop()
         }
+    }
+
+    override fun close() {
+        if (!stopped) {
+            stopConsumeLoop()
+            lifecycleCoordinator.close()
+        }
+    }
+
+    private fun stopConsumeLoop() {
+        val thread = lock.withLock {
+            stopped = true
+            val threadTmp = consumeLoopThread
+            consumeLoopThread = null
+            threadTmp
+        }
+        thread?.join(consumerThreadStopTimeout)
     }
 
     fun runConsumeLoop() {
@@ -103,17 +135,27 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         while (!stopped) {
             attempts++
             try {
+                deadLetterRecords = mutableListOf()
                 producer = builder.createProducer(config)
                 val (stateAndEventConsumerTmp, rebalanceListener) = builder.createStateEventConsumerAndRebalanceListener(
                     config,
                     processor.keyClass,
                     processor.stateValueClass,
                     processor.eventValueClass,
-                    stateAndEventListener
+                    stateAndEventListener,
+                    { topic, data ->
+                        log.error("Failed to deserialize state record from $topic")
+                        deadLetterRecords.add(data)
+                    },
+                    { topic, data ->
+                        log.error("Failed to deserialize event record from $topic")
+                        deadLetterRecords.add(data)
+                    }
                 )
                 stateAndEventConsumer = stateAndEventConsumerTmp
                 eventConsumer = stateAndEventConsumer.eventConsumer
                 eventConsumer.subscribeToTopic(rebalanceListener)
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
 
                 while (!stopped) {
                     stateAndEventConsumer.pollAndUpdateStates(true)
@@ -123,17 +165,15 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
                         log.warn(
-                            "Failed to read and process records from topic $eventTopic, group $groupName, " +
-                                    "producerClientId $producerClientId. Attempts: $attempts. Recreating " +
+                            "$errorMsg Attempts: $attempts. Recreating " +
                                     "consumer/producer and Retrying.", ex
                         )
                     }
                     else -> {
                         log.error(
-                            "Failed to read and process records from topic $eventTopic, group $groupName, " +
-                                    "producerClientId $producerClientId. Attempts: $attempts. Closing " +
-                                    "subscription.", ex
+                            "$errorMsg Attempts: $attempts. Closing subscription.", ex
                         )
+                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
                         stop()
                     }
                 }
@@ -142,6 +182,7 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 stateAndEventConsumer.close()
             }
         }
+        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         producer.close(producerCloseTimeout)
         stateAndEventConsumer.close()
     }
@@ -184,6 +225,16 @@ class KafkaStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         producer.beginTransaction()
         producer.sendRecords(outputRecords)
+        if(deadLetterRecords.isNotEmpty())
+        {
+            producer.sendRecords(deadLetterRecords.map {
+                Record(
+                    eventTopic + deadLetterQueueSuffix,
+                    UUID.randomUUID().toString(),
+                    it
+                )
+            })
+        }
         producer.sendRecordOffsetsToTransaction(eventConsumer, events.map { it })
         producer.commitTransaction()
         log.debug { "Processing of events(size: ${events.size}) complete" }

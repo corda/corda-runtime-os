@@ -35,17 +35,19 @@
 # The version ranges will change as the versions of
 # the artifacts and/or their dependencies change.
 -runbundles: \
-	avro;version='[1.10.1,1.10.2)',\
-	com.fasterxml.jackson.core.jackson-annotations;version='[2.11.3,2.11.4)',\
-	com.fasterxml.jackson.core.jackson-core;version='[2.11.3,2.11.4)',\
-	com.fasterxml.jackson.core.jackson-databind;version='[2.11.3,2.11.4)',\
+	avro;version='[1.11.0,1.11.1)',\
+	com.fasterxml.jackson.core.jackson-annotations;version='[2.13.1,2.13.2)',\
+	com.fasterxml.jackson.core.jackson-core;version='[2.13.1,2.13.2)',\
+	com.fasterxml.jackson.core.jackson-databind;version='[2.13.1,2.13.2)',\
+	com.google.guava;version='[30.1.1,30.1.2)',\
+	com.google.guava.failureaccess;version='[1.0.1,1.0.2)',\
 	com.typesafe.config;version='[1.4.1,1.4.2)',\
-	junit-jupiter-api;version='[5.7.2,5.7.3)',\
-	junit-jupiter-engine;version='[5.7.2,5.7.3)',\
-	junit-jupiter-params;version='[5.7.2,5.7.3)',\
-	junit-platform-commons;version='[1.7.2,1.7.3)',\
-	junit-platform-engine;version='[1.7.2,1.7.3)',\
-	junit-platform-launcher;version='[1.7.2,1.7.3)',\
+	junit-jupiter-api;version='[5.8.2,5.8.3)',\
+	junit-jupiter-engine;version='[5.8.2,5.8.3)',\
+	junit-jupiter-params;version='[5.8.2,5.8.3)',\
+	junit-platform-commons;version='[1.8.2,1.8.3)',\
+	junit-platform-engine;version='[1.8.2,1.8.3)',\
+	junit-platform-launcher;version='[1.8.2,1.8.3)',\
 	message-patterns-tests;version='[5.0.0,5.0.1)',\
 	net.corda.avro-schema;version='[5.0.0,5.0.1)',\
 	net.corda.base;version='[5.0.0,5.0.1)',\

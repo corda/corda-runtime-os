@@ -1,6 +1,8 @@
 package net.corda.messaging.kafka.subscription
 
 import com.typesafe.config.Config
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -16,6 +18,7 @@ import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.TopicPartition
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.any
@@ -45,6 +48,8 @@ class KafkaCompactedSubscriptionImplTest {
     private val initialSnapshotResult = List(10) {
         ConsumerRecord(TOPIC_PREFIX + TOPIC, 0, it.toLong(), it.toString(), "0")
     }
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
+    private val lifecycleCoordinator: LifecycleCoordinator = mock()
 
     private class TestProcessor : CompactedProcessor<String, String> {
         val log = contextLogger()
@@ -81,6 +86,11 @@ class KafkaCompactedSubscriptionImplTest {
         }
     }
 
+    @BeforeEach
+    fun setup() {
+        doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
+    }
+
     @Test
     @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
     fun `compacted subscription returns correct results`() {
@@ -114,6 +124,7 @@ class KafkaCompactedSubscriptionImplTest {
             mapFactory,
             consumerBuilder,
             processor,
+            lifecycleCoordinatorFactory
         )
         subscription.start()
         while (subscription.isRunning) {
@@ -163,6 +174,7 @@ class KafkaCompactedSubscriptionImplTest {
             mapFactory,
             consumerBuilder,
             processor,
+            lifecycleCoordinatorFactory
         )
         subscription.start()
         while (subscription.isRunning) {
@@ -194,6 +206,7 @@ class KafkaCompactedSubscriptionImplTest {
             mapFactory,
             consumerBuilder,
             processor,
+            lifecycleCoordinatorFactory
         )
         subscription.start()
 
@@ -223,6 +236,7 @@ class KafkaCompactedSubscriptionImplTest {
             mapFactory,
             consumerBuilder,
             processor,
+            lifecycleCoordinatorFactory
         )
         subscription.start()
         while (subscription.isRunning) {
@@ -269,6 +283,7 @@ class KafkaCompactedSubscriptionImplTest {
             mapFactory,
             consumerBuilder,
             processor,
+            lifecycleCoordinatorFactory
         )
         subscription.start()
         while (subscription.isRunning) {

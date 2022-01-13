@@ -1,10 +1,21 @@
 package net.corda.libs.permissions.storage.writer.impl
 
+import java.time.Instant
+import net.corda.data.permissions.PermissionType
+import java.util.concurrent.CompletableFuture
+import net.corda.data.permissions.ChangeDetails
+import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
+import net.corda.data.permissions.management.permission.CreatePermissionRequest
+import net.corda.data.permissions.management.role.CreateRoleRequest
+import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
-import net.corda.permissions.model.Group
-import net.corda.permissions.model.User
+import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
+import net.corda.libs.permissions.storage.reader.PermissionStorageReader
+import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWriter
+import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
+import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
 import net.corda.v5.base.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -17,31 +28,36 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.concurrent.CompletableFuture
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
-import javax.persistence.EntityTransaction
-import javax.persistence.Query
+import net.corda.data.permissions.User as AvroUser
+import net.corda.data.permissions.Role as AvroRole
+import net.corda.data.permissions.Permission as AvroPermission
 
 class PermissionStorageWriterProcessorImplTest {
 
-    // Not static so that it can be modified in the tests
     private val createUserRequest = CreateUserRequest().apply {
         fullName = "Dan Newton"
         loginName = "lankydan"
         enabled = true
     }
+    private val createRoleRequest = CreateRoleRequest("role1", null)
 
-    private val entityTransaction = mock<EntityTransaction>()
-    private val entityManager = mock<EntityManager>().apply {
-        whenever(transaction).thenReturn(entityTransaction)
-    }
-    private val entityManagerFactory = mock<EntityManagerFactory>().apply {
-        whenever(createEntityManager()).thenReturn(entityManager)
-    }
-    private val query = mock<Query>()
+    private val createPermissionRequest = CreatePermissionRequest(PermissionType.ALLOW,
+        "permissionString", null)
 
-    private val processor = PermissionStorageWriterProcessorImpl(entityManagerFactory)
+    private val creatorUserId = "creatorUserId"
+    private val avroUser = AvroUser().apply {
+        enabled = true
+    }
+    private val avroRole = AvroRole()
+
+    private val avroPermission = AvroPermission()
+
+    private val userWriter = mock<UserWriter>()
+    private val roleWriter = mock<RoleWriter>()
+    private val permissionWriter = mock<PermissionWriter>()
+    private val permissionStorageReader = mock<PermissionStorageReader>()
+
+    private val processor = PermissionStorageWriterProcessorImpl(permissionStorageReader, userWriter, roleWriter, permissionWriter)
 
     @Test
     fun `receiving invalid request completes exceptionally`() {
@@ -49,85 +65,205 @@ class PermissionStorageWriterProcessorImplTest {
         processor.onNext(
             request = PermissionManagementRequest().apply {
                 request = Unit
+                requestUserId = creatorUserId
             },
             respFuture = future
         )
+
         assertThrows<IllegalArgumentException> { future.getOrThrow() }
-        verify(entityManager, never()).persist(any())
+
+        verify(userWriter, never()).createUser(any(), eq(creatorUserId))
+        verify(roleWriter, never()).createRole(any(), eq(creatorUserId))
+        verify(permissionStorageReader, never()).publishNewUser(any())
+        verify(permissionStorageReader, never()).publishNewRole(any())
     }
 
     @Test
-    fun `receiving CreateUserRequest persists a new user to the database`() {
-        whenever(query.setParameter(any<String>(), any())).thenReturn(query)
-        whenever(query.singleResult).thenReturn(0)
-        whenever(entityManager.createQuery(any<String>())).thenReturn(query)
+    fun `receiving CreateUserRequest calls userWriter to create user and publishes user and completes future`() {
+        whenever(userWriter.createUser(createUserRequest, creatorUserId)).thenReturn(avroUser)
+
         val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
             request = PermissionManagementRequest().apply {
                 request = createUserRequest
+                requestUserId = creatorUserId
             },
             respFuture = future
         )
-        assertTrue(future.getOrThrow().response is net.corda.data.permissions.User)
-        (future.getOrThrow().response as? net.corda.data.permissions.User)?.let { response ->
-            assertEquals(response.fullName, createUserRequest.fullName)
-            assertEquals(response.enabled, createUserRequest.enabled)
+
+        verify(permissionStorageReader, times(1)).publishNewUser(avroUser)
+
+        val response = future.getOrThrow().response
+        assertTrue(response is AvroUser)
+        (response as? AvroUser)?.let { user ->
+            assertEquals(avroUser, user)
+            assertEquals(user.enabled, createUserRequest.enabled)
         }
-        verify(entityManager, times(1)).persist(any<User>())
     }
 
     @Test
-    fun `receiving CreateUserRequest when a user with the same login name already exists completes exceptionally`() {
-        whenever(query.setParameter(any<String>(), any())).thenReturn(query)
-        whenever(query.singleResult).thenReturn(1)
-        whenever(entityManager.createQuery(any<String>())).thenReturn(query)
+    fun `receiving CreateUserRequest calls userWriter and catches exception and does not publish and completes future exceptionally`() {
+        whenever(userWriter.createUser(createUserRequest, creatorUserId)).thenThrow(IllegalArgumentException("Entity manager error."))
+
         val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
             request = PermissionManagementRequest().apply {
                 request = createUserRequest
+                requestUserId = creatorUserId
             },
             respFuture = future
         )
-        assertThrows<IllegalArgumentException> { future.getOrThrow() }
-        verify(entityManager, never()).persist(any())
+
+        verify(permissionStorageReader, times(0)).publishNewUser(any())
+
+        val e = assertThrows<IllegalArgumentException> { future.getOrThrow() }
+        assertEquals("Entity manager error.", e.message)
     }
 
     @Test
-    fun `receiving CreateUserRequest specifying a parent group that exists persists a new user to the database`() {
-        val group = mock<Group>()
-        whenever(query.setParameter(any<String>(), any())).thenReturn(query)
-        whenever(query.singleResult).thenReturn(0)
-        whenever(entityManager.createQuery(any<String>())).thenReturn(query)
-        whenever(entityManager.find(eq(Group::class.java), any())).thenReturn(group)
+    fun `receiving CreateRoleRequest calls roleWriter to create role and publishes role and completes future`() {
+        whenever(roleWriter.createRole(createRoleRequest, creatorUserId)).thenReturn(avroRole)
+
         val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
             request = PermissionManagementRequest().apply {
-                request = createUserRequest.apply {
-                    parentGroupId = "parent group"
-                }
+                request = createRoleRequest
+                requestUserId = creatorUserId
             },
             respFuture = future
         )
-        assertTrue(future.getOrThrow().response is net.corda.data.permissions.User)
-        verify(entityManager, times(1)).persist(any<User>())
+
+        verify(permissionStorageReader, times(1)).publishNewRole(avroRole)
+
+        val response = future.getOrThrow().response
+        assertTrue(response is AvroRole)
+        (response as? AvroRole)?.let { role ->
+            assertEquals(avroRole, role)
+        }
     }
 
     @Test
-    fun `receiving CreateUserRequest specifying a parent group that doesn't exist completes exceptionally`() {
-        whenever(query.setParameter(any<String>(), any())).thenReturn(query)
-        whenever(query.singleResult).thenReturn(0)
-        whenever(entityManager.createQuery(any<String>())).thenReturn(query)
-        whenever(entityManager.find(eq(Group::class.java), any())).thenReturn(null)
+    fun `receiving CreateRoleRequest calls roleWriter and catches exception and does not publish and completes future exceptionally`() {
+        whenever(roleWriter.createRole(createRoleRequest, creatorUserId)).thenThrow(IllegalArgumentException("Entity manager error."))
+
         val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
             request = PermissionManagementRequest().apply {
-                request = createUserRequest.apply {
-                    parentGroupId = "parent group"
-                }
+                request = createRoleRequest
+                requestUserId = creatorUserId
             },
             respFuture = future
         )
-        assertThrows<IllegalArgumentException> { future.getOrThrow() }
-        verify(entityManager, never()).persist(any())
+
+        verify(permissionStorageReader, times(0)).publishNewRole(any())
+
+        val e = assertThrows<IllegalArgumentException> { future.getOrThrow() }
+        assertEquals("Entity manager error.", e.message)
     }
+
+    @Test
+    fun `receiving CreatePermissionRequest calls permissionWriter to create permission and publishes permission and completes future`() {
+        whenever(permissionWriter.createPermission(createPermissionRequest, creatorUserId, null)).thenReturn(
+            avroPermission
+        )
+
+        val future = CompletableFuture<PermissionManagementResponse>()
+        processor.onNext(
+            request = PermissionManagementRequest().apply {
+                request = createPermissionRequest
+                requestUserId = creatorUserId
+            },
+            respFuture = future
+        )
+
+        val response = future.getOrThrow().response
+        assertTrue(response is AvroPermission)
+        (response as? AvroPermission)?.let { permission ->
+            assertEquals(avroPermission, permission)
+        }
+    }
+
+    @Test
+    fun `receiving CreatePermissionRequest calls permissionWriter and completes future exceptionally`() {
+        val message = "Entity manager error."
+        whenever(permissionWriter.createPermission(createPermissionRequest, creatorUserId, null)).thenThrow(
+            IllegalArgumentException(
+                message
+            )
+        )
+
+        val future = CompletableFuture<PermissionManagementResponse>()
+        processor.onNext(
+            request = PermissionManagementRequest().apply {
+                request = createPermissionRequest
+                requestUserId = creatorUserId
+            },
+            respFuture = future
+        )
+
+        val e = assertThrows<IllegalArgumentException> { future.getOrThrow() }
+        assertEquals(message, e.message)
+    }
+
+    @Test
+    fun `receiving AddRoleToUserRequest calls userWriter and publishes updated user`() {
+        val avroUser = AvroUser().apply {
+            id = "userId1"
+            loginName = "userLogin1"
+            enabled = true
+            roleAssociations = listOf(RoleAssociation(ChangeDetails(Instant.now()), "roleId"))
+        }
+
+        val avroRequest = AddRoleToUserRequest("userLogin1", "roleId")
+
+        whenever(userWriter.addRoleToUser(avroRequest, creatorUserId)).thenReturn(avroUser)
+
+        val future = CompletableFuture<PermissionManagementResponse>()
+        processor.onNext(
+            request = PermissionManagementRequest().apply {
+                request = avroRequest
+                requestUserId = creatorUserId
+            },
+            respFuture = future
+        )
+
+        verify(permissionStorageReader, times(1)).publishUpdatedUser(avroUser)
+
+        val response = future.getOrThrow().response
+        assertTrue(response is AvroUser)
+        (response as? AvroUser)?.let { user ->
+            assertEquals(avroUser, user)
+        }
+    }
+
+    @Test
+    fun `receiving RemoveRoleFromUserRequest calls userWriter and publishes updated user`() {
+        val avroUser = AvroUser().apply {
+            id = "userId1"
+            loginName = "userLogin1"
+            enabled = true
+        }
+
+        val avroRequest = RemoveRoleFromUserRequest("userLogin1", "roleId")
+
+        whenever(userWriter.removeRoleFromUser(avroRequest, creatorUserId)).thenReturn(avroUser)
+
+        val future = CompletableFuture<PermissionManagementResponse>()
+        processor.onNext(
+            request = PermissionManagementRequest().apply {
+                request = avroRequest
+                requestUserId = creatorUserId
+            },
+            respFuture = future
+        )
+
+        verify(permissionStorageReader, times(1)).publishUpdatedUser(avroUser)
+
+        val response = future.getOrThrow().response
+        assertTrue(response is AvroUser)
+        (response as? AvroUser)?.let { user ->
+            assertEquals(avroUser, user)
+        }
+    }
+
 }

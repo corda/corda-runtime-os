@@ -5,7 +5,6 @@ import net.corda.data.permissions.Permission
 import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -14,15 +13,14 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import net.corda.data.permissions.PermissionAssociation
 import net.corda.data.permissions.RoleAssociation
+import net.corda.libs.permissions.cache.PermissionCache
+import org.mockito.kotlin.whenever
 
 class PermissionValidatorImplTest {
 
     companion object {
-        private val userProcessor = UserTopicProcessor()
-        private val groupProcessor = GroupTopicProcessor()
-        private val roleProcessor = RoleTopicProcessor()
-        private val subsFactory: SubscriptionFactory = mock()
-        private val permissionService = PermissionValidatorImpl(subsFactory, userProcessor, groupProcessor, roleProcessor)
+        private val permissionCache: PermissionCache = mock()
+        private val permissionService = PermissionValidatorImpl(permissionCache)
 
         private const val virtualNode = "f39d810f-6ee6-4742-ab7c-d1fe274ab85e"
         private const val permissionString = "flow/start/com.myapp.MyFlow"
@@ -30,29 +28,30 @@ class PermissionValidatorImplTest {
         private const val permissionUrlRequest = "https://host:1234/node-rpc/5e0a07a6-c25d-413a-be34-647a792f4f58/${permissionString}"
 
         private val permission = Permission(
-            "5e0a07a6-c25d-413a-be34-647a792f4f58", 1,
+            "allowPermissionId", 1,
             ChangeDetails(Instant.now()),
             virtualNode,
+            PermissionType.ALLOW,
             permissionString,
-            PermissionType.ALLOW
-        )
+            "group1")
 
         private val permissionDenied = Permission(
-            "5e0a07a6-c25d-413a-be34-647a792f4f58", 1,
+            "denyPermissionId", 1,
             ChangeDetails(Instant.now()),
             virtualNode,
+            PermissionType.DENY,
             permissionString,
-            PermissionType.DENY
-        )
+            "group1")
 
         private val role = Role(
             "roleId1", 1,
             ChangeDetails(Instant.now()),
             "STARTFLOW-MYFLOW",
+            "group1",
             listOf(
                 PermissionAssociation(
                     ChangeDetails(Instant.now()),
-                    permission
+                    permission.id
                 )
             )
         )
@@ -61,7 +60,8 @@ class PermissionValidatorImplTest {
             1,
             ChangeDetails(Instant.now()),
             "STARTFLOW-MYFLOW",
-            listOf(PermissionAssociation(ChangeDetails(Instant.now()), permissionDenied))
+            "group1",
+            listOf(PermissionAssociation(ChangeDetails(Instant.now()), permissionDenied.id))
         )
         private val user = User(
             "user1",
@@ -112,21 +112,22 @@ class PermissionValidatorImplTest {
         @BeforeAll
         @JvmStatic
         fun setUp() {
+            whenever(permissionCache.getUser(user.loginName)).thenReturn(user)
+            whenever(permissionCache.getUser(userWithPermDenied.loginName)).thenReturn(userWithPermDenied)
+            whenever(permissionCache.getUser(disabledUser.loginName)).thenReturn(disabledUser)
 
-            listOf(role, roleWithPermDenied).associateBy { it.id }.let {
-                roleProcessor.onSnapshot(it)
-            }
+            whenever(permissionCache.getRole(role.id)).thenReturn(role)
+            whenever(permissionCache.getRole(roleWithPermDenied.id)).thenReturn(roleWithPermDenied)
 
-            listOf(user, disabledUser, userWithPermDenied).associateBy { it.id }.let {
-                userProcessor.onSnapshot(it)
-            }
+            whenever(permissionCache.getPermission(permission.id)).thenReturn(permission)
+            whenever(permissionCache.getPermission(permissionDenied.id)).thenReturn(permissionDenied)
         }
     }
 
     @Test
     fun `User with proper permission will be authorized`() {
 
-        assertTrue(permissionService.authorizeUser("requestId", user.id, permissionUrlRequest))
+        assertTrue(permissionService.authorizeUser("requestId", user.loginName, permissionUrlRequest))
     }
 
     @Test

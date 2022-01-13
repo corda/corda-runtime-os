@@ -1,0 +1,18 @@
+plugins {
+    id 'corda.common-library'
+    id 'com.r3.internal.gradle.plugins.r3Publish'
+}
+
+description 'Common Permission Storage Utilities'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-avro-schema"
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:db:db-core')
+    implementation project(':libs:db:db-orm')
+    implementation project(':libs:permissions:permission-datamodel')
+}

@@ -23,7 +23,7 @@ internal class PermissionServiceComponentEventHandler(
 ) : LifecycleEventHandler {
 
     private companion object {
-        val logger = contextLogger()
+        val log = contextLogger()
     }
 
     @VisibleForTesting
@@ -32,20 +32,22 @@ internal class PermissionServiceComponentEventHandler(
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
+                log.info("Received start event, following permission components for status updates.")
                 followServicesForStatusUpdates(coordinator)
 
-                logger.debug { "Starting the Permission Cache Service" }
+                log.debug { "Starting the Permission Cache Service" }
                 permissionCacheService.start()
-                logger.debug { "Starting the Permission Management Service" }
+                log.debug { "Starting the Permission Management Service" }
                 permissionManagementService.start()
-                logger.debug { "Starting the Permission Validation Service" }
+                log.debug { "Starting the Permission Validation Service" }
                 permissionValidationService.start()
             }
             is RegistrationStatusChangeEvent -> {
-                logger.debug { "Permission Service Component received lifecycle status ${event.status.name}." }
+                log.info("Registration status change received: ${event.status.name}.")
                 coordinator.updateStatus(event.status)
             }
             is StopEvent -> {
+                log.info("Stop event received, stopping dependencies and setting status to DOWN.")
                 registration?.close()
                 registration = null
                 permissionManagementService.stop()

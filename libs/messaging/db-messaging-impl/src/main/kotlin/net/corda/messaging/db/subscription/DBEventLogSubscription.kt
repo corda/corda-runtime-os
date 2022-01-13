@@ -1,5 +1,8 @@
 package net.corda.messaging.db.subscription
 
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -18,10 +21,9 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.v5.base.util.trace
 import org.slf4j.Logger
-import java.lang.Exception
 import java.nio.ByteBuffer
 import java.time.Duration
-import java.util.HashMap
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.locks.ReentrantLock
@@ -29,16 +31,19 @@ import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
-class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: SubscriptionConfig,
-                                             private val eventLogProcessor: EventLogProcessor<K, V>,
-                                             private val partitionAssignmentListener: PartitionAssignmentListener?,
-                                             private val avroSchemaRegistry: AvroSchemaRegistry,
-                                             private val offsetTrackersManager: OffsetTrackersManager,
-                                             private val partitionAllocator: PartitionAllocator,
-                                             private val partitionAssignor: PartitionAssignor,
-                                             private val dbAccessProvider: DBAccessProvider,
-                                             private val pollingTimeout: Duration = 1.seconds,
-                                             private val batchSize: Int = 100): Subscription<K, V> {
+class DBEventLogSubscription<K : Any, V : Any>(
+    private val subscriptionConfig: SubscriptionConfig,
+    private val eventLogProcessor: EventLogProcessor<K, V>,
+    private val partitionAssignmentListener: PartitionAssignmentListener?,
+    private val avroSchemaRegistry: AvroSchemaRegistry,
+    private val offsetTrackersManager: OffsetTrackersManager,
+    private val partitionAllocator: PartitionAllocator,
+    private val partitionAssignor: PartitionAssignor,
+    private val dbAccessProvider: DBAccessProvider,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val pollingTimeout: Duration = 1.seconds,
+    private val batchSize: Int = 100
+) : Subscription<K, V> {
 
     companion object {
         private val log: Logger = contextLogger()
@@ -47,6 +52,12 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
     @Volatile
     private var running = false
     private val startStopLock = ReentrantLock()
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName(
+            "${subscriptionConfig.groupName}-DurableSubscription-${subscriptionConfig.eventTopic}",
+            subscriptionConfig.instanceId.toString()
+        )
+    ) { _, _ -> }
 
     private var eventLoopThread: Thread? = null
 
@@ -62,10 +73,14 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
         startStopLock.withLock {
             if (!running) {
                 partitionsPerTopic = dbAccessProvider.getTopics()
-                val partitionAllocationListener = object: PartitionAllocationListener {
+                val partitionAllocationListener = object : PartitionAllocationListener {
                     override fun onPartitionsAssigned(topic: String, partitions: Set<Int>) {
                         val maxCommittedOffsetPerPartition =
-                            dbAccessProvider.getMaxCommittedOffset(subscriptionConfig.eventTopic, subscriptionConfig.groupName, partitions)
+                            dbAccessProvider.getMaxCommittedOffset(
+                                subscriptionConfig.eventTopic,
+                                subscriptionConfig.groupName,
+                                partitions
+                            )
                         maxCommittedOffsetPerPartition.forEach { (partition, offset) ->
                             maxCommittedOffsetsPerAssignedPartition[partition] = offset ?: -1
                         }
@@ -85,20 +100,40 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
                     null,
                     "DB Subscription processing thread ${subscriptionConfig.groupName}-${subscriptionConfig.eventTopic}",
                     -1
-                ) { processingLoop() }
+                ) {
+                    lifecycleCoordinator.start()
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+                    processingLoop()
+                }
                 log.info("Subscription started for group ${subscriptionConfig.groupName} on topic ${subscriptionConfig.eventTopic}")
             }
+            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         }
     }
 
     override fun stop() {
         startStopLock.withLock {
             if (running) {
-                eventLoopThread!!.join(pollingTimeout.toMillis() * 2)
-                running = false
+                stopConsumer()
+                lifecycleCoordinator.stop()
                 log.info("Subscription stopped for group ${subscriptionConfig.groupName} on topic ${subscriptionConfig.eventTopic}")
             }
         }
+    }
+
+    override fun close() {
+        startStopLock.withLock {
+            if (running) {
+                stopConsumer()
+                lifecycleCoordinator.close()
+                log.info("Subscription closed for group ${subscriptionConfig.groupName} on topic ${subscriptionConfig.eventTopic}")
+            }
+        }
+    }
+
+    private fun stopConsumer() {
+        eventLoopThread!!.join(pollingTimeout.toMillis() * 2)
+        running = false
     }
 
     private fun processingLoop() {
@@ -121,7 +156,11 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
             offsetTrackersManager.waitForOffsets(subscriptionConfig.eventTopic, offsetsToWaitFor, pollingTimeout)
 
             val fetchWindows =
-                fetchWindowCalculator.calculateWindows(subscriptionConfig.eventTopic, batchSize, partitionsAndCommittedOffsets)
+                fetchWindowCalculator.calculateWindows(
+                    subscriptionConfig.eventTopic,
+                    batchSize,
+                    partitionsAndCommittedOffsets
+                )
             val dbRecords = dbAccessProvider.readRecords(subscriptionConfig.eventTopic, fetchWindows)
 
             if (dbRecords.isNotEmpty()) {
@@ -147,15 +186,17 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
                     log.warn(message, e)
                     // another subscription must have committed new offsets (before losing the partition),
                     // so retrieve committed offsets again and retry.
-                    val maxCommittedOffsetPerPartition = dbAccessProvider.getMaxCommittedOffset(subscriptionConfig.eventTopic,
-                        subscriptionConfig.groupName, partitionsAndCommittedOffsets.keys)
+                    val maxCommittedOffsetPerPartition = dbAccessProvider.getMaxCommittedOffset(
+                        subscriptionConfig.eventTopic,
+                        subscriptionConfig.groupName, partitionsAndCommittedOffsets.keys
+                    )
                     maxCommittedOffsetPerPartition.forEach { (partition, offset) ->
                         maxCommittedOffsetsPerAssignedPartition.computeIfPresent(partition) { _, _ -> offset ?: -1 }
                     }
                 }
                 else -> {
                     log.error(message, e)
-                    //TODO - when the lifecycle framework is ready, change this to notify higher-level components on non-recoverable errors.
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, message)
                 }
             }
         }
@@ -163,7 +204,8 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
 
     private fun deserialiseRecordsFromDb(dbRecords: List<RecordDbEntry>): List<EventLogRecord<K, V>> {
         return dbRecords.map {
-            val deserialisedKey = avroSchemaRegistry.deserialize(ByteBuffer.wrap(it.key), eventLogProcessor.keyClass, null)
+            val deserialisedKey =
+                avroSchemaRegistry.deserialize(ByteBuffer.wrap(it.key), eventLogProcessor.keyClass, null)
             val deserialisedValue = if (it.value == null) {
                 null
             } else {
@@ -179,18 +221,24 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
             dbAccessProvider.writeRecords(newDbRecords) { writtenRecords, _ ->
                 writtenRecords.forEach { offsetTrackersManager.offsetReleased(it.topic, it.partition, it.offset) }
             }
-            dbAccessProvider.writeOffsets(subscriptionConfig.eventTopic, subscriptionConfig.groupName, offsetsPerPartition)
+            dbAccessProvider.writeOffsets(
+                subscriptionConfig.eventTopic,
+                subscriptionConfig.groupName,
+                offsetsPerPartition
+            )
         } else {
-            dbAccessProvider.writeOffsetsAndRecordsAtomically(subscriptionConfig.eventTopic, subscriptionConfig.groupName,
-                offsetsPerPartition, newDbRecords) { writtenRecords, _ ->
+            dbAccessProvider.writeOffsetsAndRecordsAtomically(
+                subscriptionConfig.eventTopic, subscriptionConfig.groupName,
+                offsetsPerPartition, newDbRecords
+            ) { writtenRecords, _ ->
                 writtenRecords.forEach { offsetTrackersManager.offsetReleased(it.topic, it.partition, it.offset) }
             }
         }
     }
 
-    private fun <K: Any, V: Any> toDbRecord(record: Record<K, V>): RecordDbEntry {
+    private fun <K : Any, V : Any> toDbRecord(record: Record<K, V>): RecordDbEntry {
         val serialisedKey = avroSchemaRegistry.serialize(record.key).array()
-        val serialisedValue = if(record.value != null) {
+        val serialisedValue = if (record.value != null) {
             avroSchemaRegistry.serialize(record.value!!).array()
         } else {
             null
@@ -200,5 +248,8 @@ class DBEventLogSubscription<K: Any, V: Any>(private val subscriptionConfig: Sub
 
         return RecordDbEntry(record.topic, partition, offset, serialisedKey, serialisedValue)
     }
+
+    override val subscriptionName: LifecycleCoordinatorName
+        get() = LifecycleCoordinatorName("DBEventLogSubscription")
 
 }
