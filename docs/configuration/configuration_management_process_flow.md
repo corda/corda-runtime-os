@@ -44,16 +44,16 @@ The RPC worker exposes the following endpoint:
    
 Requests are expected to take the form of POST requests with the following body:
 
-   ```
-   {
-      "request": {
-         "section": "configSection",
-         "config": "key1=val1\nkey2=val2",
-         "schemaVersion": 1,
-         "version": -1
-      }
-   }
-   ```
+    ```
+    {
+        "request": {
+            "section": "configSection",
+            "config": "key1=val1\nkey2=val2",
+            "schemaVersion": 1,
+            "version": -1
+        }
+    }
+    ```
 
 Where we have:
 
@@ -67,11 +67,14 @@ Where we have:
 Successful requests will receive a response with a success code (_2xx_) that contains the updated 
 configuration in JSON format, e.g.:
 
-   ```
-   {
-      "config": "key1=val1\nkey2=val2"
-   }
-   ```
+    ```
+    {
+        "section": "configSection",
+        "config": "key1=val1\nkey2=val2",
+        "schemaVersion": 1,
+        "version": 0
+    }
+    ```
 
 While unsuccessful requests are indicated by an error code (_5xx_).
 
