@@ -28,7 +28,7 @@ import java.sql.SQLException
 import javax.sql.DataSource
 
 /** The processor for a `DBWorker`. */
-@Suppress("Unused")
+@Suppress("Unused", "LongParameterList")
 @Component(service = [DBProcessor::class])
 class DBProcessorImpl @Activate constructor(
     @Reference(service = ConfigWriteService::class)
