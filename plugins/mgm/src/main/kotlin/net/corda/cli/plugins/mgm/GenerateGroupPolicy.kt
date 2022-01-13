@@ -43,7 +43,7 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                 "-----BEGIN CERTIFICATE-----\nMIIFPDCCIlifT20M\n-----END CERTIFICATE-----"
             ),
             "mgmInfo" to mapOf(
-                "x500Name" to "C=GB, L=London, O=Corda Network, OU=MGM, CN=Corda Network MGM",
+                "name" to "C=GB, L=London, O=Corda Network, OU=MGM, CN=Corda Network MGM",
                 "sessionKey" to "-----BEGIN PUBLIC KEY-----\nMFkwEwYHK+B3YGgcIALw==\n-----END PUBLIC KEY-----\n",
                 "certificate" to listOf(
                     "-----BEGIN CERTIFICATE-----\nMIICxjCCRG11cu1\n-----END CERTIFICATE-----\n",
@@ -92,32 +92,37 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                 )
             )
         )
-        groupPolicy["staticMemberTemplate"] = listOf(
-            mapOf(
-                "x500Name" to "C=GB, L=London, O=Alice",
-                "keyAlias" to "alice-alias",
-                "rotatedKeyAlias-1" to "alice-historic-alias-1",
-                "memberStatus" to "ACTIVE",
-                "endpointUrl-1" to "https://alice.corda5.r3.com:10000",
-                "endpointProtocol-1" to 1
+        groupPolicy["staticNetwork"] = mapOf(
+            "mgm" to mapOf(
+                "keyAlias" to "mgm-alias"
             ),
-            mapOf(
-                "x500Name" to "C=GB, L=London, O=Bob",
-                "keyAlias" to "bob-alias",
-                "rotatedKeyAlias-1" to "bob-historic-alias-1",
-                "rotatedKeyAlias-2" to "bob-historic-alias-2",
-                "memberStatus" to "ACTIVE",
-                "endpointUrl-1" to "https://bob.corda5.r3.com:10000",
-                "endpointProtocol-1" to 1
-            ),
-            mapOf(
-                "x500Name" to "C=GB, L=London, O=Charlie",
-                "keyAlias" to "charlie-alias",
-                "memberStatus" to "SUSPENDED",
-                "endpointUrl-1" to "https://charlie.corda5.r3.com:10000",
-                "endpointProtocol-1" to 1,
-                "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
-                "endpointProtocol-2" to 1
+            "members" to listOf(
+                mapOf(
+                    "name" to "C=GB, L=London, O=Alice",
+                    "keyAlias" to "alice-alias",
+                    "rotatedKeyAlias-1" to "alice-historic-alias-1",
+                    "memberStatus" to "ACTIVE",
+                    "endpointUrl-1" to "https://alice.corda5.r3.com:10000",
+                    "endpointProtocol-1" to 1
+                ),
+                mapOf(
+                    "name" to "C=GB, L=London, O=Bob",
+                    "keyAlias" to "bob-alias",
+                    "rotatedKeyAlias-1" to "bob-historic-alias-1",
+                    "rotatedKeyAlias-2" to "bob-historic-alias-2",
+                    "memberStatus" to "ACTIVE",
+                    "endpointUrl-1" to "https://bob.corda5.r3.com:10000",
+                    "endpointProtocol-1" to 1
+                ),
+                mapOf(
+                    "name" to "C=GB, L=London, O=Charlie",
+                    "keyAlias" to "charlie-alias",
+                    "memberStatus" to "SUSPENDED",
+                    "endpointUrl-1" to "https://charlie.corda5.r3.com:10000",
+                    "endpointProtocol-1" to 1,
+                    "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
+                    "endpointProtocol-2" to 1
+                )
             )
         )
         return groupPolicy
