@@ -26,19 +26,16 @@ import org.mockito.kotlin.whenever
 
 class CordaRPCSenderImplTest {
 
-    private lateinit var cordaSenderImpl: CordaRPCSenderImpl<String, String>
-
     private val config: Config = createStandardTestConfig().getConfig(PATTERN_RPC_SENDER)
-
-    private var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
-    private var lifecycleCoordinator: LifecycleCoordinator = mock()
-    private val deserializer: CordaAvroDeserializer<String> = mock()
-    private val serializer: CordaAvroSerializer<String> = mock()
 
     @Test
     fun `test send request finishes exceptionally due to lack of partitions`() {
+        val deserializer: CordaAvroDeserializer<String> = mock()
+        val serializer: CordaAvroSerializer<String> = mock()
+        val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
+        val lifecycleCoordinator: LifecycleCoordinator = mock()
         doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
-        cordaSenderImpl = CordaRPCSenderImpl(
+        val cordaSenderImpl = CordaRPCSenderImpl(
             config,
             mock(),
             mock(),
@@ -53,6 +50,10 @@ class CordaRPCSenderImplTest {
 
     @Test
     fun `test producer is closed properly`() {
+        val deserializer: CordaAvroDeserializer<String> = mock()
+        val serializer: CordaAvroSerializer<String> = mock()
+        val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
+        val lifecycleCoordinator: LifecycleCoordinator = mock()
         val cordaProducer: CordaProducer = mock()
         val cordaConsumer: CordaConsumer<Any, Any> = mock()
         val cordaProducerBuilder: CordaProducerBuilder = mock()
@@ -61,7 +62,7 @@ class CordaRPCSenderImplTest {
         doAnswer { cordaConsumer }.whenever(cordaConsumerBuilder).createRPCConsumer<Any, Any>(any(), any(), any(), any())
         doReturn(lifecycleCoordinator).`when`(lifecycleCoordinatorFactory).createCoordinator(any(), any())
 
-        cordaSenderImpl = CordaRPCSenderImpl(
+        val cordaSenderImpl = CordaRPCSenderImpl(
             config,
             cordaConsumerBuilder,
             cordaProducerBuilder,
