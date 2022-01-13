@@ -1,8 +1,7 @@
 package net.corda.crypto.service
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.impl.persistence.SigningKeyRecord
-import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
+import net.corda.crypto.service.persistence.SigningKeyRecord
 import net.corda.test.util.createTestCase
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.cipher.suite.WrappedPrivateKey

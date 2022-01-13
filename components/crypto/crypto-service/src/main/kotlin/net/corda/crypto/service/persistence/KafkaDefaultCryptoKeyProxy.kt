@@ -3,7 +3,6 @@ package net.corda.crypto.service.persistence
 import net.corda.crypto.impl.closeGracefully
 import net.corda.crypto.impl.config.CryptoPersistenceConfig
 import net.corda.crypto.impl.config.DefaultConfigConsts
-import net.corda.crypto.impl.persistence.SoftCryptoKeyRecord
 import net.corda.data.crypto.persistence.DefaultCryptoKeyRecord
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher

@@ -5,6 +5,7 @@ import net.corda.crypto.component.config.MemberConfigReaderImpl
 import net.corda.crypto.impl.soft.SoftCryptoServiceProvider
 import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
 import net.corda.crypto.service.persistence.KafkaKeyValuePersistenceFactoryProvider
+import net.corda.crypto.service.soft.SoftCryptoServiceProvider
 import net.corda.crypto.testkit.CryptoMocks
 import net.corda.test.util.createTestCase
 import net.corda.v5.cipher.suite.config.CryptoLibraryConfig

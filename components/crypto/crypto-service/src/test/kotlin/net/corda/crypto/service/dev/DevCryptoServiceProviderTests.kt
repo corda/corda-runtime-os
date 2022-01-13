@@ -1,12 +1,8 @@
-package net.corda.crypto.service
+package net.corda.crypto.service.dev
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.impl.config.CryptoLibraryConfigImpl
-import net.corda.crypto.impl.persistence.InMemoryKeyValuePersistenceFactory
-import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
-import net.corda.crypto.service.soft.SoftCryptoServiceConfig
-import net.corda.crypto.service.soft.SoftCryptoServiceProvider
-import net.corda.test.util.createTestCase
+import net.corda.crypto.service.CryptoServicesTestFactory
+import net.corda.crypto.service.persistence.InMemoryKeyValuePersistenceFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceContext
@@ -17,12 +13,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
 import java.util.UUID
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class SoftCryptoServiceProviderTests {
+class DevCryptoServiceProviderTests {
     private val masterKeyAlias = "wrapping-key-alias"
     private lateinit var factory: CryptoServicesTestFactory
     private lateinit var services: CryptoServicesTestFactory.CryptoServices
@@ -84,74 +81,29 @@ class SoftCryptoServiceProviderTests {
 
     @Test
     @Timeout(30)
-    fun `Should throw unrecoverable CryptoServiceLibraryException if configured factory is not found`() {
-        val provider = SoftCryptoServiceProvider()
-        provider.persistenceFactories = listOf(InMemoryKeyValuePersistenceFactory())
-        provider.start()
-        provider.handleConfigEvent(
-            CryptoLibraryConfigImpl(
-                mapOf(
-                    "defaultCryptoService" to emptyMap<String, String>(),
-                    "publicKeys" to emptyMap()
-                )
-            )
-        )
+    fun `Should throw unrecoverable CryptoServiceLibraryException if there is no InMemoryPersistentCacheFactory`() {
+        val provider = DevCryptoServiceProvider()
+        provider.persistenceFactories = listOf(mock())
         val exception = assertThrows<CryptoServiceLibraryException> {
             provider.createCryptoService(CryptoConsts.CryptoCategories.FRESH_KEYS)
         }
         assertFalse(exception.isRecoverable)
     }
 
-    @Test
-    @Timeout(30)
-    fun `Should be able to create instances concurrently`() {
-        val provider = createCryptoServiceProvider()
-        assertTrue(provider.isRunning)
-        (1..100).createTestCase {
-            provider.handleConfigEvent(
-                CryptoLibraryConfigImpl(
-                    mapOf(
-                        "defaultCryptoService" to mapOf(
-                            "factoryName" to InMemoryKeyValuePersistenceFactory.NAME
-                        ),
-                        "publicKeys" to emptyMap()
-                    )
-                )
-            )
-            assertNotNull(provider.createCryptoService(CryptoConsts.CryptoCategories.LEDGER))
-        }.runAndValidate()
-        provider.stop()
-        assertFalse(provider.isRunning)
-    }
-
     private fun newAlias(): String = UUID.randomUUID().toString()
 
-    private fun createCryptoServiceProvider(): SoftCryptoServiceProvider {
-        val provider = SoftCryptoServiceProvider()
-        provider.persistenceFactories = listOf(InMemoryKeyValuePersistenceFactory())
-        provider.start()
-        provider.handleConfigEvent(
-            CryptoLibraryConfigImpl(
-                mapOf(
-                    "defaultCryptoService" to mapOf(
-                        "factoryName" to InMemoryKeyValuePersistenceFactory.NAME
-                    ),
-                    "publicKeys" to emptyMap()
-                )
-            )
-        )
-        return provider
+    private fun createCryptoServiceProvider(): DevCryptoServiceProvider {
+        return DevCryptoServiceProvider().also {
+            it.persistenceFactories = listOf(InMemoryKeyValuePersistenceFactory())
+        }
     }
 
-    private fun SoftCryptoServiceProvider.createCryptoService(category: String): CryptoService = getInstance(
+    private fun DevCryptoServiceProvider.createCryptoService(category: String): CryptoService = getInstance(
         CryptoServiceContext(
             memberId = services.tenantId,
             category = category,
             cipherSuiteFactory = factory,
-            config = SoftCryptoServiceConfig(
-                passphrase = "PASSPHRASE",
-                salt = "SALT"
-            )
+            config = DevCryptoServiceConfig()
         )
     )
 }

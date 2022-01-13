@@ -1,14 +1,12 @@
-package net.corda.crypto.service
+package net.corda.crypto.service.dev
 
 import net.corda.crypto.CryptoConsts
-import net.corda.crypto.impl.persistence.InMemoryKeyValuePersistenceFactory
-import net.corda.crypto.impl.persistence.SoftCryptoKeyRecordInfo
-import net.corda.crypto.impl.persistence.SoftCryptoKeyCache
-import net.corda.crypto.impl.persistence.SigningKeyCache
-import net.corda.crypto.impl.persistence.SigningKeyRecord
-import net.corda.crypto.impl.stubs.CryptoServicesTestFactory
-import net.corda.crypto.service.dev.DevCryptoService
-import net.corda.crypto.service.dev.DevCryptoServiceProvider
+import net.corda.crypto.service.CryptoServicesTestFactory
+import net.corda.crypto.service.persistence.InMemoryKeyValuePersistenceFactory
+import net.corda.crypto.service.persistence.SigningKeyCache
+import net.corda.crypto.service.persistence.SoftCryptoKeyCache
+import net.corda.crypto.service.persistence.SoftCryptoKeyRecordInfo
+import net.corda.crypto.service.persistence.SigningKeyRecord
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoServiceContext
 import net.corda.v5.cipher.suite.WrappedPrivateKey
@@ -79,7 +77,7 @@ class DevCryptoServiceTests {
                     memberId = services.tenantId,
                     category = CryptoConsts.CryptoCategories.LEDGER,
                     cipherSuiteFactory = factory,
-                    config = DevCryptoServiceConfiguration()
+                    config = DevCryptoServiceConfig()
                 )
             ) as DevCryptoService
             cryptoServiceCache = cryptoService.keyCache
