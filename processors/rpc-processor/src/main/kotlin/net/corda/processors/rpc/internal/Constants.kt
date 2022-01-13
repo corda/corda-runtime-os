@@ -6,4 +6,4 @@ internal val CONFIG_HTTP_RPC =
         context.title="HTTP RPC"""".trimIndent()
 internal const val CONFIG_CONFIG_MGMT_REQUEST_TIMEOUT = "timeout.millis=\"10000\""
 
-internal const val CLIENT_ID_RPC_PROCESSOR = "config.manager.rpc.processor"
+internal const val CLIENT_ID_RPC_PROCESSOR = "rpc.processor"
