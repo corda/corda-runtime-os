@@ -45,8 +45,7 @@ dependencies {
     integrationTestImplementation project(":components:configuration:configuration-read-service")
     integrationTestImplementation "net.corda:corda-application"
     integrationTestRuntimeOnly project(':libs:sandbox-internal')
-
-
+    testImplementation project(":testing:test-utilities")
 
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     integrationTestRuntimeOnly project(":components:install:file-based-install-service")

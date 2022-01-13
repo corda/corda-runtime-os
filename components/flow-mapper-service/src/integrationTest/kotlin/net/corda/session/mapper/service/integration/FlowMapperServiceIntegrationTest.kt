@@ -200,7 +200,7 @@ class FlowMapperServiceIntegrationTest {
 
     private val bootConf = """
         config.topic.name="config.topic"
-        instance-id=1
+        instanceId=1
     """
 
     private val flowConf = """

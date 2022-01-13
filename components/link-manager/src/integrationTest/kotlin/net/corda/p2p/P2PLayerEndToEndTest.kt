@@ -73,7 +73,7 @@ class P2PLayerEndToEndTest {
         private const val TTL = 1_000_000L
         private const val SUBSYSTEM = "e2e.test.app"
         private val logger = contextLogger()
-        private const val CONFIG_TOPIC_NAME = "config"
+        private const val CONFIG_TOPIC_NAME = "config.topic"
         private const val GROUP_ID = "group-1"
     }
     private val bootstrapConfig = SmartConfigFactoryImpl().create(ConfigFactory.empty()

@@ -1,6 +1,8 @@
 package net.corda.messaging.kafka.types
 
 import com.typesafe.config.Config
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
+import net.corda.libs.configuration.schema.messaging.TOPIC_PREFIX_PATH
 import net.corda.messaging.kafka.properties.ConfigProperties
 import java.time.Duration
 
@@ -25,11 +27,11 @@ data class StateAndEventConfig(
 ) {
     companion object {
         fun getStateAndEventConfig(config: Config): StateAndEventConfig {
-            val topicPrefix = config.getString(ConfigProperties.TOPIC_PREFIX)
+            val topicPrefix = config.getString(TOPIC_PREFIX_PATH)
             val eventTopic = config.getString(ConfigProperties.TOPIC_NAME)
             val stateTopic = config.getString(ConfigProperties.STATE_TOPIC_NAME)
             val eventGroupID = config.getString(ConfigProperties.EVENT_GROUP_ID)
-            val instanceId = config.getString(ConfigProperties.INSTANCE_ID)
+            val instanceId = config.getString(INSTANCE_ID)
             val loggerName = "$eventGroupID.${config.getString(ConfigProperties.PRODUCER_TRANSACTIONAL_ID)}"
             val producerClientId: String = config.getString(ConfigProperties.PRODUCER_CLIENT_ID)
             val consumerThreadStopTimeout = config.getLong(ConfigProperties.EVENT_CONSUMER_THREAD_STOP_TIMEOUT)

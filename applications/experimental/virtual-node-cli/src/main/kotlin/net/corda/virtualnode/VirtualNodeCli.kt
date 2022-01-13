@@ -14,7 +14,6 @@ import net.corda.osgi.api.Shutdown
 import net.corda.packaging.CPI
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.tools.setup.common.ConfigHelper.Companion.SYSTEM_ENV_BOOTSTRAP_SERVERS_PATH
-import net.corda.tools.setup.common.ConfigHelper.Companion.SYSTEM_ENV_CONFIG_TOPIC_PATH
 import net.corda.tools.setup.common.ConfigHelper.Companion.getBootstrapConfig
 import net.corda.tools.setup.common.ConfigHelper.Companion.getConfigValue
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -136,10 +135,7 @@ class VirtualNodeCli @Activate constructor(
             return
 
         configPublishService.updateConfig(
-            getConfigValue(
-                SYSTEM_ENV_CONFIG_TOPIC_PATH,
-                CONFIG_TOPIC
-            ),
+            CONFIG_TOPIC,
             config,
             configurationFile!!.readText()
         )

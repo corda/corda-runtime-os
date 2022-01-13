@@ -5,11 +5,11 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.schema.messaging.INSTANCE_ID
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.subscription.factory.config.SubscriptionConfig
 import net.corda.messaging.kafka.properties.ConfigProperties
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.GROUP
-import net.corda.messaging.kafka.properties.ConfigProperties.Companion.INSTANCE_ID
 import net.corda.messaging.kafka.properties.ConfigProperties.Companion.TOPIC
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
