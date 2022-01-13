@@ -44,16 +44,16 @@ The RPC worker exposes the following endpoint:
    
 Requests are expected to take the form of POST requests with the following body:
 
-    ```
-    {
-        "request": {
-            "section": "configSection",
-            "config": "key1=val1\nkey2=val2",
-            "schemaVersion": 1,
-            "version": -1
-        }
+```
+{
+    "request": {
+        "section": "configSection",
+        "config": "key1=val1\nkey2=val2",
+        "schemaVersion": 1,
+        "version": -1
     }
-    ```
+}
+```
 
 Where we have:
 
@@ -67,17 +67,194 @@ Where we have:
 Successful requests will receive a response with a success code (_2xx_) that contains the updated 
 configuration in JSON format, e.g.:
 
-    ```
-    {
-        "section": "configSection",
-        "config": "key1=val1\nkey2=val2",
-        "schemaVersion": 1,
-        "version": 0
-    }
-    ```
+```
+{
+    "section": "configSection",
+    "config": "key1=val1\nkey2=val2",
+    "schemaVersion": 1,
+    "version": 0
+}
+```
 
 While unsuccessful requests are indicated by an error code (_5xx_).
 
-## RPC protocol for interaction between the RPC worker and the DB worker
+## Publication of configuration update requests to Kafka by the RPC worker
 
-TODO
+For each incoming HTTP configuration update request, the RPC worker holds the connection open and publishes a message 
+to the `config.management.request` Kafka topic. This message uses the `ConfigurationManagementRequest` Avro schema:
+
+```
+{
+  "type": "record",
+  "name": "ConfigurationManagementRequest",
+  "namespace": "net.corda.data.config",
+  "fields": [
+    {
+      "name": "section",
+      "type": "string",
+      "doc": "Section of the configuration to update."
+    },
+    {
+      "name": "config",
+      "type": "string",
+      "doc": "Updated configuration in JSON or HOCON format."
+    },
+    {
+      "name": "schemaVersion",
+      "type": "int",
+      "doc": "Schema version of the updated configuration."
+    },
+    {
+      "name": "updateActor",
+      "type": "string",
+      "doc": "ID of RPC user that requested the configuration update."
+    },
+    {
+      "name": "version",
+      "type": "int",
+      "doc": "Version of the configuration for optimistic locking."
+    }
+  ]
+}
+```
+
+The RPC worker than awaits a response message on Kafka. This message uses the `ConfigurationManagementResponse` Avro 
+schema:
+
+```
+{
+  "type": "record",
+  "name": "ConfigurationManagementResponse",
+  "namespace": "net.corda.data.config",
+  "fields": [
+    {
+      "name": "success",
+      "type": "boolean",
+      "doc": "Whether the request was successful."
+    },
+    {
+      "name": "exception",
+      "type": [
+        "null",
+        "net.corda.data.ExceptionEnvelope"
+      ],
+      "doc": "The cause of failure if the request was unsuccessful."
+    },
+    {
+      "name": "section",
+      "type": "string",
+      "doc": "The configuration section for which an update was requested."
+    },
+    {
+      "name": "config",
+      "type": "string",
+      "doc": "The current configuration in JSON format for the given section."
+    },
+    {
+      "name": "schemaVersion",
+      "type": "int",
+      "doc": "The current configuration's schema version for the given section."
+    },
+    {
+      "name": "version",
+      "type": "int",
+      "doc": "The current configuration's optimistic-locking version for the given section."
+    }
+  ]
+}
+```
+
+If the `success` field is `true`, the configuration update request was successful, and a success HTTP response is 
+sent. Otherwise, a failure HTTP response is sent, containing the error type and error message in the `exception` field. 
+In either case, the HTTP connection is closed.
+
+## Persistence of configuration updates by the DB worker
+
+The DB worker consumes `ConfigurationManagementRequest` messages from the `config.management.request` topic.
+
+For each message, the DB worker creates or updates the corresponding entry in the cluster database's `config` table:
+
+```
+<createTable tableName="config" schemaName="${schema.name}">
+    <column name="section" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+    </column>
+    <column name="config" type="TEXT">
+        <constraints nullable="false"/>
+    </column>
+    <column name="schema_version" type="INT">
+        <constraints nullable="false"/>
+    </column>
+    <column name="update_ts" type="DATETIME">
+        <constraints nullable="false"/>
+    </column>
+    <column name="update_actor" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+    </column>
+    <column name="version" type="INT">
+        <constraints nullable="false"/>
+    </column>
+</createTable>
+<addPrimaryKey columnNames="section" constraintName="config_pk" tableName="config"
+               schemaName="${schema.name}"/>
+```
+
+The DB worker also creates a new audit entry in the cluster database's `config_audit` table:
+
+```
+<createTable tableName="config_audit" schemaName="${schema.name}">
+    <column name="change_number" type="SERIAL">
+        <constraints nullable="false"/>
+    </column>
+    <column name="section" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+    </column>
+    <column name="config" type="TEXT">
+        <constraints nullable="false"/>
+    </column>
+    <column name="config_version" type="INT">
+        <constraints nullable="false"/>
+    </column>
+    <column name="update_ts" type="DATETIME">
+        <constraints nullable="false"/>
+    </column>
+    <column name="update_actor" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+    </column>
+</createTable>
+<addPrimaryKey columnNames="change_number" constraintName="config_audit_pk" tableName="config_audit"
+               schemaName="${schema.name}"/>
+<createSequence sequenceName="config_audit_id_seq"/>
+```
+
+Note that the `config` table contains a `version` column which is used for
+[optimistic locking](https://docs.jboss.org/hibernate/orm/4.0/devguide/en-US/html/ch05.html#d0e2225). Configuration
+update requests for which the `version` field does not match the current version in the database are rejected.
+
+The DB worker then publishes a message to the `config` topic. This message uses the `Configuration` Avro schema:
+
+```
+{
+  "type": "record",
+  "name": "Configuration",
+  "namespace": "net.corda.data.config",
+  "fields": [
+    {
+      "name": "value",
+      "type": "string"
+    },
+    {
+      "name": "version",
+      "type": "string"
+    }
+  ]
+}
+```
+
+This message can then be consumed by other workers via the configuration read service to learn the current state of the 
+cluster configuration.
+
+If the persistence to the database and the publication to the `config` topic succeed, the DB worker publishes a 
+`ConfigurationManagementResponse` message to the `config.management.request` response topic with the `success` field 
+set to `true`. Otherwise, it publishes a message with the `success` field set to `false`, with the `exception` field 
+documenting the cause of the failure.
