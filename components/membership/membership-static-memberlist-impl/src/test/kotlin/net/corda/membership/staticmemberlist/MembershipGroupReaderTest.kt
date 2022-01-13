@@ -1,5 +1,6 @@
 package net.corda.membership.staticmemberlist
 
+import net.corda.crypto.CryptoLibraryFactory
 import net.corda.crypto.SigningService
 import net.corda.crypto.SigningService.Companion.EMPTY_CONTEXT
 import net.corda.membership.identity.EndpointInfoImpl
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
@@ -39,6 +41,9 @@ class MembershipGroupReaderTest {
     companion object {
         private lateinit var membershipGroupReader: MembershipGroupReaderImpl
         private val keyEncodingService = Mockito.mock(KeyEncodingService::class.java)
+        private val cryptoLibraryFactory = mock<CryptoLibraryFactory>().apply {
+            whenever(getKeyEncodingService()).thenReturn(keyEncodingService)
+        }
         private val knownKey = Mockito.mock(PublicKey::class.java)
         private const val knownKeyAsString = "1234"
         private val signingService: SigningService = Mockito.mock(SigningService::class.java)
@@ -114,7 +119,7 @@ class MembershipGroupReaderTest {
             membershipGroupReader = MembershipGroupReaderImpl(
                 MemberX500Name("Alice", "London", "GB"),
                 groupPolicy,
-                keyEncodingService,
+                cryptoLibraryFactory,
                 signingService
             )
 

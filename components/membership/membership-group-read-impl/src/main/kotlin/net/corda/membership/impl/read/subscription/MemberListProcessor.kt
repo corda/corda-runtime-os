@@ -2,18 +2,15 @@ package net.corda.membership.impl.read.subscription
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.SignedMemberInfo
-import net.corda.membership.conversion.PropertyConverterImpl
 import net.corda.membership.identity.MGMContextImpl
 import net.corda.membership.identity.MemberContextImpl
 import net.corda.membership.identity.MemberInfoExtension.Companion.groupId
-import net.corda.membership.identity.converter.EndpointInfoConverter
-import net.corda.membership.identity.converter.PublicKeyConverter
 import net.corda.membership.identity.toMemberInfo
 import net.corda.membership.identity.toSortedMap
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.virtualnode.HoldingIdentity
 
 /**
@@ -22,18 +19,12 @@ import net.corda.virtualnode.HoldingIdentity
  */
 class MemberListProcessor(
     private val membershipGroupReadCache: MembershipGroupReadCache,
-    private val keyEncodingService: KeyEncodingService,
+    private val converter: PropertyConverter
 ) : CompactedProcessor<String, SignedMemberInfo> {
     override val keyClass: Class<String>
         get() = String::class.java
     override val valueClass: Class<SignedMemberInfo>
         get() = SignedMemberInfo::class.java
-    private val converter = PropertyConverterImpl(
-        listOf(
-            EndpointInfoConverter(),
-            PublicKeyConverter(keyEncodingService),
-        )
-    )
 
     /**
      * Populate the member list cache on initial snapshot.

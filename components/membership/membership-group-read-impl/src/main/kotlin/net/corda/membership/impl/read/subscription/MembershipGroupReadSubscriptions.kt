@@ -15,7 +15,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.membership.conversion.PropertyConverter
 
 /**
  * Implementations of this interface manage the subscriptions required for the membership group read service component.
@@ -33,7 +33,7 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
     class Impl(
         private val subscriptionFactory: SubscriptionFactory,
         private val groupReadCache: MembershipGroupReadCache,
-        private val keyEncodingService: KeyEncodingService
+        private val converter: PropertyConverter
     ) : MembershipGroupReadSubscriptions {
 
         private var memberListSubscription: CompactedSubscription<String, SignedMemberInfo>? = null
@@ -68,7 +68,7 @@ interface MembershipGroupReadSubscriptions : Lifecycle {
 
             memberListSubscription = subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(memberListGroupName, memberListTopicName),
-                MemberListProcessor(groupReadCache, keyEncodingService)
+                MemberListProcessor(groupReadCache, converter)
             ).also {
                 it.start()
             }

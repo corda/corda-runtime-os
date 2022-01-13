@@ -15,6 +15,7 @@ dependencies {
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-membership-conversion"
     implementation "net.corda:corda-membership-identity"
+    implementation project(":libs:crypto:crypto-internal")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

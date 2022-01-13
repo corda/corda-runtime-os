@@ -1,7 +1,6 @@
 package net.corda.membership.impl.read.component
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.service.CryptoFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -12,10 +11,11 @@ import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.impl.read.lifecycle.MembershipGroupReadLifecycleHandler
 import net.corda.membership.impl.read.reader.MembershipGroupReaderFactory
 import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -46,8 +46,8 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     val subscriptionFactory: SubscriptionFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = CryptoFactory::class)
-    val cryptoFactory: CryptoFactory
+    @Reference(service = PropertyConverter::class)
+    val converter: PropertyConverter
 ) : MembershipGroupReaderProvider, Lifecycle {
 
     companion object {
@@ -64,7 +64,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     private val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
         subscriptionFactory,
         membershipGroupReadCache,
-        cryptoFactory.cipherSchemeMetadata
+        converter
     )
 
     // Handler for lifecycle events.

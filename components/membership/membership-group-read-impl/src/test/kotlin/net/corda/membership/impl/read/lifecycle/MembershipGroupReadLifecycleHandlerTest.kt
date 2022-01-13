@@ -2,7 +2,6 @@ package net.corda.membership.impl.read.lifecycle
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.crypto.service.CryptoFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigObject
 import net.corda.lifecycle.LifecycleCoordinator
@@ -20,6 +19,7 @@ import net.corda.membership.impl.read.component.MembershipGroupReaderProviderImp
 import net.corda.membership.impl.read.lifecycle.MembershipGroupReadLifecycleHandler.Impl.MembershipGroupConfigurationHandler
 import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
 import net.corda.membership.lifecycle.MembershipConfigReceived
+import net.corda.v5.membership.conversion.PropertyConverter
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -49,11 +49,9 @@ class MembershipGroupReadLifecycleHandlerTest {
     val coordinatorFactory: LifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
         doReturn(readServiceCoordinator).whenever(this).createCoordinator(any(), any())
     }
-    private val cryptoFactory: CryptoFactory = mock<CryptoFactory>().apply {
-        whenever(this.cipherSchemeMetadata).thenReturn(mock())
-    }
+    private val converter: PropertyConverter = mock()
     private val membershipGroupReadService: MembershipGroupReaderProviderImpl = MembershipGroupReaderProviderImpl(
-        virtualNodeInfoReadService, cpiInfoReader, configurationReadService, mock(), coordinatorFactory, cryptoFactory
+        virtualNodeInfoReadService, cpiInfoReader, configurationReadService, mock(), coordinatorFactory, converter
     )
     private val membershipGroupReadSubscriptions: MembershipGroupReadSubscriptions = mock()
 
