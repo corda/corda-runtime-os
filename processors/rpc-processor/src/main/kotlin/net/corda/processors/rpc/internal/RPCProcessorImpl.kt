@@ -1,6 +1,5 @@
 package net.corda.processors.rpc.internal
 
-import com.typesafe.config.ConfigValueFactory
 import net.corda.components.rpc.HttpRpcGateway
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.ConfigRPCOpsService
@@ -10,8 +9,8 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.processors.rpc.RPCProcessor
+import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.configuration.ConfigKeys.Companion.BOOTSTRAP_SERVERS
-import net.corda.schema.configuration.ConfigKeys.Companion.CONFIG_TOPIC_NAME
 import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -37,9 +36,7 @@ class RPCProcessorImpl @Activate constructor(
 
     override fun start(config: SmartConfig) {
         configReadService.start()
-        configReadService.bootstrapConfig(
-            config.withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(CONFIG_TOPIC))
-        )
+        configReadService.bootstrapConfig(config)
 
         httpRpcGateway.start()
 
@@ -48,20 +45,23 @@ class RPCProcessorImpl @Activate constructor(
         val publisherConfig = PublisherConfig(CLIENT_ID_RPC_PROCESSOR, 1)
         val publisher = publisherFactory.createPublisher(publisherConfig, config)
         publisher.start()
+        publisher.use {
+            val bootstrapServersConfig = if (config.hasPath(BOOTSTRAP_SERVERS)) {
+                val bootstrapServers = config.getString(BOOTSTRAP_SERVERS)
+                "\n$BOOTSTRAP_SERVERS=\"$bootstrapServers\""
+            } else {
+                ""
+            }
+            val configValue = "$CONFIG_HTTP_RPC\n$CONFIG_CONFIG_MGMT_REQUEST_TIMEOUT$bootstrapServersConfig"
 
-        val bootstrapServersConfig = if (config.hasPath(BOOTSTRAP_SERVERS)) {
-            val bootstrapServers = config.getString(BOOTSTRAP_SERVERS)
-            "\n$BOOTSTRAP_SERVERS=\"$bootstrapServers\""
-        } else {
-            ""
+            val record = Record(CONFIG_TOPIC, RPC_CONFIG, Configuration(configValue, "1"))
+            publisher.publish(listOf(record)).forEach { future -> future.get() }
         }
-        val configValue = "$CONFIG_HTTP_RPC\n$CONFIG_CONFIG_MGMT_REQUEST_TIMEOUT$bootstrapServersConfig"
-
-        val record = Record(CONFIG_TOPIC, RPC_CONFIG, Configuration(configValue, "1"))
-        publisher.publish(listOf(record)).forEach { future -> future.get() }
     }
 
     override fun stop() {
-        logger.info("RPC processor stopping.")
+        configReadService.stop()
+        configRPCOpsService.stop()
+        httpRpcGateway.stop()
     }
 }
