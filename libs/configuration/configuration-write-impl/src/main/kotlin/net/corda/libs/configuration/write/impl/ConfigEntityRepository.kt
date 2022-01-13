@@ -26,7 +26,7 @@ internal class ConfigEntityRepository(private val entityManagerFactory: EntityMa
      *  @return The updated [ConfigEntity].
      */
     fun writeEntities(req: ConfigurationManagementRequest, clock: Clock): ConfigEntity {
-        val newConfig = ConfigEntity(req.section, req.config, req.configSchemaVersion, clock.instant(), req.updateActor)
+        val newConfig = ConfigEntity(req.section, req.config, req.schemaVersion, clock.instant(), req.updateActor)
         val newConfigAudit = ConfigAuditEntity(newConfig)
 
         return entityManagerFactory.createEntityManager().transaction { entityManager ->
@@ -34,7 +34,6 @@ internal class ConfigEntityRepository(private val entityManagerFactory: EntityMa
             val updatedConfig = existingConfig?.apply { update(newConfig) } ?: newConfig
 
             if (req.version != updatedConfig.version) {
-                entityManager.transaction.setRollbackOnly()
                 throw WrongVersionException(
                     "The request specified a version of ${req.version}, but the current version in the database is " +
                             "${updatedConfig.version}. These versions must match to update the cluster configuration."

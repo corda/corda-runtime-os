@@ -11,11 +11,8 @@ import net.corda.data.config.ConfigurationManagementRequest
  * @property schemaVersion Schema version of the configuration.
  */
 internal data class HTTPUpdateConfigRequest(
-    val section: String,
-    val version: Int,
-    val config: String,
-    val schemaVersion: Int
+    val section: String, val version: Int, val config: String, val schemaVersion: Int
 ) {
     internal fun toRPCRequest(actor: String) =
-        ConfigurationManagementRequest(section, version, config, schemaVersion, actor)
+        ConfigurationManagementRequest(section, config, schemaVersion, actor, version)
 }

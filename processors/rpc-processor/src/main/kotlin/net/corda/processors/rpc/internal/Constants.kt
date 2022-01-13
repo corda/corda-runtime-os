@@ -1,7 +1,6 @@
 package net.corda.processors.rpc.internal
 
-internal const val CONFIG_KEY_CONFIG_TOPIC_NAME = "config.topic.name"
-internal const val CONFIG_KEY_BOOTSTRAP_SERVERS = "messaging.kafka.common.bootstrap.servers"
+// TODO - CORE-3407 - Harmonise config topic used.
 internal const val CONFIG_TOPIC = "ConfigTopic"
 internal val CONFIG_HTTP_RPC =
     """address="0.0.0.0:8888"

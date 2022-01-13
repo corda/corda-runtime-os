@@ -10,6 +10,8 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.processors.rpc.RPCProcessor
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOTSTRAP_SERVERS
+import net.corda.schema.configuration.ConfigKeys.Companion.CONFIG_TOPIC_NAME
 import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -36,7 +38,7 @@ class RPCProcessorImpl @Activate constructor(
     override fun start(config: SmartConfig) {
         configReadService.start()
         configReadService.bootstrapConfig(
-            config.withValue(CONFIG_KEY_CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(CONFIG_TOPIC))
+            config.withValue(CONFIG_TOPIC_NAME, ConfigValueFactory.fromAnyRef(CONFIG_TOPIC))
         )
 
         httpRpcGateway.start()
@@ -47,9 +49,9 @@ class RPCProcessorImpl @Activate constructor(
         val publisher = publisherFactory.createPublisher(publisherConfig, config)
         publisher.start()
 
-        val bootstrapServersConfig = if (config.hasPath(CONFIG_KEY_BOOTSTRAP_SERVERS)) {
-            val bootstrapServers = config.getString(CONFIG_KEY_BOOTSTRAP_SERVERS)
-            "\n$CONFIG_KEY_BOOTSTRAP_SERVERS=\"$bootstrapServers\""
+        val bootstrapServersConfig = if (config.hasPath(BOOTSTRAP_SERVERS)) {
+            val bootstrapServers = config.getString(BOOTSTRAP_SERVERS)
+            "\n$BOOTSTRAP_SERVERS=\"$bootstrapServers\""
         } else {
             ""
         }

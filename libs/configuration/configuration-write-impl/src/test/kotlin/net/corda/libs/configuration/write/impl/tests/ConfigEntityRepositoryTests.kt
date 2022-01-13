@@ -24,7 +24,7 @@ class ConfigEntityRepositoryTests {
     private val config = ConfigEntity("section", "a=b", 0, Instant.MIN, "actor")
     private val configAudit = ConfigAuditEntity(config)
     private val configMgmtReq = config.run {
-        ConfigurationManagementRequest(section, version, config, schemaVersion, updateActor)
+        ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version)
     }
 
     /** Creates a mock [EntityManager]. */
@@ -69,7 +69,7 @@ class ConfigEntityRepositoryTests {
     fun `throws if asked to persist request with version that does not match existent section version`() {
         val configEntityRepository = ConfigEntityRepository(getEntityManagerFactory(getEntityManagerWithConfig()))
         val badVersionConfigMgmtReq = configMgmtReq.run {
-            ConfigurationManagementRequest(section, version + 1, config, configSchemaVersion, updateActor)
+            ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version + 1)
         }
         val e = assertThrows<WrongVersionException> {
             configEntityRepository.writeEntities(badVersionConfigMgmtReq, clock)
@@ -96,9 +96,7 @@ class ConfigEntityRepositoryTests {
         val entityManager = getEntityManagerWithConfig()
         val configEntityRepository = ConfigEntityRepository(getEntityManagerFactory(entityManager))
         val badVersionConfigMgmtReq = configMgmtReq.run {
-            ConfigurationManagementRequest(
-                section, version + 1, config, configSchemaVersion, updateActor
-            )
+            ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version + 1)
         }
         assertThrows<WrongVersionException> {
             configEntityRepository.writeEntities(badVersionConfigMgmtReq, clock)

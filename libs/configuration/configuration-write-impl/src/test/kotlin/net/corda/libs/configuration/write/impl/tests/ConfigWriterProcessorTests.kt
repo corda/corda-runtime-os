@@ -31,8 +31,9 @@ class ConfigWriterProcessorTests {
     }
     private val config = ConfigEntity("section", "config_one", 1, clock.instant(), "actor_one")
     private val configMgmtReq = config.run {
-        ConfigurationManagementRequest(section, version, config, schemaVersion, updateActor)
+        ConfigurationManagementRequest(section, config, schemaVersion, updateActor, version)
     }
+
     private val configEntityRepository = mock<ConfigEntityRepository>().apply {
         whenever(writeEntities(configMgmtReq, clock)).thenReturn(config)
         whenever(readConfigEntity(config.section)).thenReturn(config)
@@ -87,8 +88,9 @@ class ConfigWriterProcessorTests {
 
     @Test
     fun `sends RPC success response after publishing configuration to Kafka`() {
-        val config = Configuration(configMgmtReq.config, configMgmtReq.version.toString())
-        val expectedResp = ConfigurationManagementResponse(config)
+        val expectedResp = configMgmtReq.run {
+            ConfigurationManagementResponse(true, null, section, config, schemaVersion, version)
+        }
 
         val processor = ConfigWriterProcessor(getPublisher(), configEntityRepository, clock)
         val resp = processRequest(processor, configMgmtReq)
@@ -111,7 +113,9 @@ class ConfigWriterProcessorTests {
             "New configuration represented by $configMgmtReq couldn't be written to the database. Cause: " +
                     "${RollbackException()}"
         )
-        val expectedResp = ConfigurationManagementResponse(expectedEnvelope)
+        val expectedResp = configMgmtReq.run {
+            ConfigurationManagementResponse(false, expectedEnvelope, section, config, schemaVersion, version)
+        }
 
         val configEntityRepository = mock<ConfigEntityRepository>().apply {
             whenever(writeEntities(any(), any())).thenThrow(RollbackException())
@@ -133,7 +137,9 @@ class ConfigWriterProcessorTests {
             "Record $expectedRecord was written to the database, but couldn't be published. Cause: " +
                     "${ExecutionException(publisherError)}"
         )
-        val expectedResp = ConfigurationManagementResponse(expectedEnvelope)
+        val expectedResp = configMgmtReq.run {
+            ConfigurationManagementResponse(false, expectedEnvelope, section, config, schemaVersion, version)
+        }
 
         val processor = ConfigWriterProcessor(getErroringPublisher(), configEntityRepository, clock)
         val resp = processRequest(processor, configMgmtReq)
@@ -148,7 +154,9 @@ class ConfigWriterProcessorTests {
             "New configuration represented by $configMgmtReq couldn't be written to the database. Cause: " +
                     "${RollbackException()}"
         )
-        val expectedResp = ConfigurationManagementResponse(expectedEnvelope)
+        val expectedResp = configMgmtReq.run {
+            ConfigurationManagementResponse(false, expectedEnvelope, section, config, schemaVersion, version)
+        }
 
         val configEntityRepository = mock<ConfigEntityRepository>().apply {
             whenever(writeEntities(any(), any())).thenThrow(RollbackException())
@@ -166,7 +174,9 @@ class ConfigWriterProcessorTests {
             "New configuration represented by $configMgmtReq couldn't be written to the database. Cause: " +
                     "${RollbackException()}"
         )
-        val expectedResp = ConfigurationManagementResponse(expectedEnvelope)
+        val expectedResp = configMgmtReq.run {
+            ConfigurationManagementResponse(false, expectedEnvelope, section, config, schemaVersion, version)
+        }
 
         val configEntityRepository = mock<ConfigEntityRepository>().apply {
             whenever(writeEntities(any(), any())).thenThrow(RollbackException())

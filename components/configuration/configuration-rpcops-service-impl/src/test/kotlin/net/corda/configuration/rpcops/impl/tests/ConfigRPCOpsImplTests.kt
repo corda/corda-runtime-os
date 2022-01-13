@@ -6,7 +6,6 @@ import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsImpl
 import net.corda.configuration.rpcops.impl.v1.types.HTTPUpdateConfigRequest
 import net.corda.configuration.rpcops.impl.v1.types.HTTPUpdateConfigResponse
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.httprpc.exception.HttpApiException
@@ -40,10 +39,11 @@ class ConfigRPCOpsImplTests {
         }
     }
 
-    private val request = HTTPUpdateConfigRequest("section", 999, "a=b", 888)
-    private val config = Configuration(request.config, request.version.toString())
-    private val successFuture = CompletableFuture.supplyAsync { ConfigurationManagementResponse(config) }
-    private val successResponse = HTTPUpdateConfigResponse(config.toString())
+    private val req = HTTPUpdateConfigRequest("section", 999, "a=b", 888)
+    private val successFuture = CompletableFuture.supplyAsync {
+        ConfigurationManagementResponse(true, null, req.section, req.config, req.schemaVersion, req.version)
+    }
+    private val successResponse = HTTPUpdateConfigResponse(req.section, req.config, req.schemaVersion, req.version)
 
     @Test
     fun `createAndStartRPCSender starts new RPC sender`() {
@@ -80,9 +80,9 @@ class ConfigRPCOpsImplTests {
 
         configRPCOps.createAndStartRPCSender(mock())
         configRPCOps.setTimeout(1000)
-        configRPCOps.updateConfig(request)
+        configRPCOps.updateConfig(req)
 
-        verify(rpcSender).sendRequest(request.toRPCRequest(actor))
+        verify(rpcSender).sendRequest(req.toRPCRequest(actor))
     }
 
     @Test
@@ -92,12 +92,15 @@ class ConfigRPCOpsImplTests {
         configRPCOps.createAndStartRPCSender(mock())
         configRPCOps.setTimeout(1000)
 
-        assertEquals(successResponse, configRPCOps.updateConfig(request))
+        assertEquals(successResponse, configRPCOps.updateConfig(req))
     }
 
     @Test
     fun `updateConfig throws HttpApiException if response is failure`() {
-        val response = ConfigurationManagementResponse(ExceptionEnvelope("ErrorType", "ErrorMessage."))
+        val exception = ExceptionEnvelope("ErrorType", "ErrorMessage.")
+        val response = req.run {
+            ConfigurationManagementResponse(false, exception, section, config, schemaVersion, version)
+        }
         val future = CompletableFuture.supplyAsync { response }
 
         val (_, configRPCOps) = getConfigRPCOps(future)
@@ -105,7 +108,7 @@ class ConfigRPCOpsImplTests {
         configRPCOps.createAndStartRPCSender(mock())
         configRPCOps.setTimeout(1000)
         val e = assertThrows<HttpApiException> {
-            configRPCOps.updateConfig(request)
+            configRPCOps.updateConfig(req)
         }
 
         assertEquals("ErrorType: ErrorMessage.", e.message)
@@ -113,16 +116,18 @@ class ConfigRPCOpsImplTests {
     }
 
     @Test
-    fun `updateConfig throws HttpApiException if response is unrecognised`() {
-        val (_, configRPCOps) = getConfigRPCOps(CompletableFuture.supplyAsync { ConfigurationManagementResponse(Any()) })
+    fun `updateConfig throws HttpApiException if request fails but no exception is provided`() {
+        val (_, configRPCOps) = getConfigRPCOps(CompletableFuture.supplyAsync {
+            ConfigurationManagementResponse(false, null, "", "", 0, 0)
+        })
 
         configRPCOps.createAndStartRPCSender(mock())
         configRPCOps.setTimeout(1000)
         val e = assertThrows<HttpApiException> {
-            configRPCOps.updateConfig(request)
+            configRPCOps.updateConfig(req)
         }
 
-        assertEquals("Unexpected response type: class java.lang.Object", e.message)
+        assertEquals("Request was unsuccessful but no exception was provided.", e.message)
         assertEquals(500, e.statusCode)
     }
 
@@ -164,7 +169,7 @@ class ConfigRPCOpsImplTests {
         configRPCOps.createAndStartRPCSender(mock())
         configRPCOps.setTimeout(1000)
         val e = assertThrows<ConfigRPCOpsServiceException> {
-            configRPCOps.updateConfig(request)
+            configRPCOps.updateConfig(req)
         }
 
         assertEquals("Could not publish updated configuration.", e.message)

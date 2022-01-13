@@ -1,14 +1,14 @@
 package net.corda.configuration.rpcops.impl.tests
 
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
-import net.corda.configuration.rpcops.impl.CONFIG_KEY_BOOTSTRAP_SERVERS
-import net.corda.configuration.rpcops.impl.CONFIG_KEY_CONFIG_RPC_TIMEOUT_MILLIS
 import net.corda.configuration.rpcops.impl.ConfigRPCOpsConfigHandler
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOps
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
+import net.corda.schema.configuration.ConfigKeys.Companion.BOOTSTRAP_SERVERS
+import net.corda.schema.configuration.ConfigKeys.Companion.CONFIG_RPC_TIMEOUT_MILLIS
 import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -39,8 +39,8 @@ class ConfigRPCOpsConfigHandlerTests {
         val timeout = 999
         val configRPCOps = mock<ConfigRPCOps>()
         val config = mock<SmartConfig>().apply {
-            whenever(hasPath(CONFIG_KEY_CONFIG_RPC_TIMEOUT_MILLIS)).thenReturn(true)
-            whenever(getInt(CONFIG_KEY_CONFIG_RPC_TIMEOUT_MILLIS)).thenReturn(timeout)
+            whenever(hasPath(CONFIG_RPC_TIMEOUT_MILLIS)).thenReturn(true)
+            whenever(getInt(CONFIG_RPC_TIMEOUT_MILLIS)).thenReturn(timeout)
         }
         val configHandler = ConfigRPCOpsConfigHandler(mock(), configRPCOps)
 
@@ -63,7 +63,7 @@ class ConfigRPCOpsConfigHandlerTests {
     fun `creates RPC sender if RPC config is provided`() {
         val configRPCOps = mock<ConfigRPCOps>()
         val config = mock<SmartConfig>().apply {
-            whenever(hasPath(CONFIG_KEY_BOOTSTRAP_SERVERS)).thenReturn(true)
+            whenever(hasPath(BOOTSTRAP_SERVERS)).thenReturn(true)
         }
         val configHandler = ConfigRPCOpsConfigHandler(mock(), configRPCOps)
         configHandler.onNewConfiguration(setOf(RPC_CONFIG), mapOf(RPC_CONFIG to config))
@@ -78,7 +78,7 @@ class ConfigRPCOpsConfigHandlerTests {
             whenever(createAndStartRPCSender(any())).thenAnswer { throw IllegalStateException() }
         }
         val config = mock<SmartConfig>().apply {
-            whenever(hasPath(CONFIG_KEY_BOOTSTRAP_SERVERS)).thenReturn(true)
+            whenever(hasPath(BOOTSTRAP_SERVERS)).thenReturn(true)
         }
         val configHandler = ConfigRPCOpsConfigHandler(coordinator, configRPCOps)
 
