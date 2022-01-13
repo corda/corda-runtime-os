@@ -2,7 +2,7 @@ package net.corda.configuration.rpcops.impl
 
 import net.corda.configuration.read.ConfigurationHandler
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
-import net.corda.configuration.rpcops.impl.v1.ConfigRPCOps
+import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
@@ -14,7 +14,7 @@ import net.corda.schema.configuration.ConfigKeys.Companion.RPC_CONFIG
 /** Processes configuration changes for `ConfigRPCOpsService`. */
 internal class ConfigRPCOpsConfigHandler(
     private val coordinator: LifecycleCoordinator,
-    private val configRPCOps: ConfigRPCOps
+    private val configRPCOps: ConfigRPCOpsInternal
 ) : ConfigurationHandler {
 
     /**

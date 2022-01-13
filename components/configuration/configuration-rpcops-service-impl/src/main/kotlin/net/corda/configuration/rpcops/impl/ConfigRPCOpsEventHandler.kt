@@ -1,7 +1,7 @@
 package net.corda.configuration.rpcops.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.configuration.rpcops.impl.v1.ConfigRPCOps
+import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
@@ -15,7 +15,7 @@ import net.corda.lifecycle.StopEvent
 /** Handles incoming [LifecycleCoordinator] events for [ConfigRPCOpsServiceImpl]. */
 internal class ConfigRPCOpsEventHandler(
     private val configReadService: ConfigurationReadService,
-    private val configRPCOps: ConfigRPCOps
+    private val configRPCOps: ConfigRPCOpsInternal
 ) : LifecycleEventHandler {
 
     private var configReadServiceRegistrationHandle: AutoCloseable? = null

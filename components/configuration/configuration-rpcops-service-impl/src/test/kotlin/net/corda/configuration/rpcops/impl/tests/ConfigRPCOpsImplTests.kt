@@ -1,10 +1,10 @@
 package net.corda.configuration.rpcops.impl.tests
 
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
-import net.corda.configuration.rpcops.impl.v1.ConfigRPCOps
+import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsImpl
-import net.corda.configuration.rpcops.impl.v1.types.HTTPUpdateConfigRequest
-import net.corda.configuration.rpcops.impl.v1.types.HTTPUpdateConfigResponse
+import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigRequest
+import net.corda.libs.configuration.endpoints.v1.types.HTTPUpdateConfigResponse
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
@@ -76,13 +76,15 @@ class ConfigRPCOpsImplTests {
 
     @Test
     fun `updateConfig sends the correct request to the RPC sender`() {
+        val rpcRequest = req.run { ConfigurationManagementRequest(section, config, schemaVersion, actor, version) }
+
         val (rpcSender, configRPCOps) = getConfigRPCOps()
 
         configRPCOps.createAndStartRPCSender(mock())
         configRPCOps.setTimeout(1000)
         configRPCOps.updateConfig(req)
 
-        verify(rpcSender).sendRequest(req.toRPCRequest(actor))
+        verify(rpcSender).sendRequest(rpcRequest)
     }
 
     @Test
@@ -175,10 +177,10 @@ class ConfigRPCOpsImplTests {
         assertEquals("Could not publish updated configuration.", e.message)
     }
 
-    /** Returns a [ConfigRPCOps] where the RPC sender returns [future] in response to any RPC requests. */
+    /** Returns a [ConfigRPCOpsInternal] where the RPC sender returns [future] in response to any RPC requests. */
     private fun getConfigRPCOps(
         future: CompletableFuture<ConfigurationManagementResponse> = successFuture
-    ): Pair<RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>, ConfigRPCOps> {
+    ): Pair<RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>, ConfigRPCOpsInternal> {
 
         val rpcSender = mock<RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>>().apply {
             whenever(sendRequest(any())).thenReturn(future)

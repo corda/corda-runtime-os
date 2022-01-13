@@ -2,7 +2,7 @@ package net.corda.configuration.rpcops.impl.tests
 
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.configuration.rpcops.impl.ConfigRPCOpsConfigHandler
-import net.corda.configuration.rpcops.impl.v1.ConfigRPCOps
+import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus.ERROR
@@ -37,7 +37,7 @@ class ConfigRPCOpsConfigHandlerTests {
     @Test
     fun `sets RPC sender timeout if corresponding config is provided under RPC config`() {
         val timeout = 999
-        val configRPCOps = mock<ConfigRPCOps>()
+        val configRPCOps = mock<ConfigRPCOpsInternal>()
         val config = mock<SmartConfig>().apply {
             whenever(hasPath(CONFIG_RPC_TIMEOUT_MILLIS)).thenReturn(true)
             whenever(getInt(CONFIG_RPC_TIMEOUT_MILLIS)).thenReturn(timeout)
@@ -51,7 +51,7 @@ class ConfigRPCOpsConfigHandlerTests {
 
     @Test
     fun `does not throw if timeout config is not provided under RPC config`() {
-        val configRPCOps = mock<ConfigRPCOps>()
+        val configRPCOps = mock<ConfigRPCOpsInternal>()
         val configHandler = ConfigRPCOpsConfigHandler(mock(), configRPCOps)
 
         assertDoesNotThrow {
@@ -61,7 +61,7 @@ class ConfigRPCOpsConfigHandlerTests {
 
     @Test
     fun `creates RPC sender if RPC config is provided`() {
-        val configRPCOps = mock<ConfigRPCOps>()
+        val configRPCOps = mock<ConfigRPCOpsInternal>()
         val config = mock<SmartConfig>().apply {
             whenever(hasPath(BOOTSTRAP_SERVERS)).thenReturn(true)
         }
@@ -74,7 +74,7 @@ class ConfigRPCOpsConfigHandlerTests {
     @Test
     fun `sets coordinator to down and throws if RPC sender cannot be created`() {
         val coordinator = mock<LifecycleCoordinator>()
-        val configRPCOps = mock<ConfigRPCOps>().apply {
+        val configRPCOps = mock<ConfigRPCOpsInternal>().apply {
             whenever(createAndStartRPCSender(any())).thenAnswer { throw IllegalStateException() }
         }
         val config = mock<SmartConfig>().apply {
@@ -95,7 +95,7 @@ class ConfigRPCOpsConfigHandlerTests {
 
     @Test
     fun `does not throw if RPC sender config is not provided under RPC config`() {
-        val configRPCOps = mock<ConfigRPCOps>()
+        val configRPCOps = mock<ConfigRPCOpsInternal>()
         val configHandler = ConfigRPCOpsConfigHandler(mock(), configRPCOps)
 
         assertDoesNotThrow {
@@ -106,7 +106,7 @@ class ConfigRPCOpsConfigHandlerTests {
     @Test
     fun `sets status to UP if ConfigRPCOps is running`() {
         val coordinator = mock<LifecycleCoordinator>()
-        val configRPCOps = mock<ConfigRPCOps>().apply {
+        val configRPCOps = mock<ConfigRPCOpsInternal>().apply {
             whenever(isRunning).thenReturn(true)
         }
         val configHandler = ConfigRPCOpsConfigHandler(coordinator, configRPCOps)

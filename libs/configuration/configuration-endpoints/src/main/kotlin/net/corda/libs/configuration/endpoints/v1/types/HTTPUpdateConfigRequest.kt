@@ -1,6 +1,4 @@
-package net.corda.configuration.rpcops.impl.v1.types
-
-import net.corda.data.config.ConfigurationManagementRequest
+package net.corda.libs.configuration.endpoints.v1.types
 
 /**
  * The data object sent via HTTP to request a cluster configuration update.
@@ -10,9 +8,6 @@ import net.corda.data.config.ConfigurationManagementRequest
  * @property config Updated configuration in JSON or HOCON format.
  * @property schemaVersion Schema version of the configuration.
  */
-internal data class HTTPUpdateConfigRequest(
+data class HTTPUpdateConfigRequest(
     val section: String, val version: Int, val config: String, val schemaVersion: Int
-) {
-    internal fun toRPCRequest(actor: String) =
-        ConfigurationManagementRequest(section, config, schemaVersion, actor, version)
-}
+)

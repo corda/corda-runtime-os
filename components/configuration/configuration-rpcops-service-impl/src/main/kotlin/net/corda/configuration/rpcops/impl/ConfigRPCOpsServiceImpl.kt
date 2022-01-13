@@ -2,7 +2,7 @@ package net.corda.configuration.rpcops.impl
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.ConfigRPCOpsService
-import net.corda.configuration.rpcops.impl.v1.ConfigRPCOps
+import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import org.osgi.service.component.annotations.Activate
@@ -16,8 +16,8 @@ internal class ConfigRPCOpsServiceImpl @Activate constructor(
     private val configReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = ConfigRPCOps::class)
-    private val configRPCOps: ConfigRPCOps
+    @Reference(service = ConfigRPCOpsInternal::class)
+    private val configRPCOps: ConfigRPCOpsInternal
 ) : ConfigRPCOpsService {
 
     private val coordinator = let {

@@ -1,4 +1,4 @@
-package net.corda.configuration.rpcops.impl.v1.types
+package net.corda.libs.configuration.endpoints.v1.types
 
 /**
  * The data object received via HTTP in response to a request to update cluster configuration.
@@ -8,7 +8,7 @@ package net.corda.configuration.rpcops.impl.v1.types
  * @property schemaVersion The current configuration's schema version for the given section.
  * @property version The current configuration's optimistic-locking version for the given section.
  */
-internal data class HTTPUpdateConfigResponse(
+data class HTTPUpdateConfigResponse(
     val section: String,
     val config: String,
     val schemaVersion: Int,

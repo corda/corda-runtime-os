@@ -2,7 +2,7 @@ package net.corda.configuration.rpcops.impl.tests
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.rpcops.impl.ConfigRPCOpsEventHandler
-import net.corda.configuration.rpcops.impl.v1.ConfigRPCOps
+import net.corda.configuration.rpcops.impl.v1.ConfigRPCOpsInternal
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus.DOWN
@@ -97,7 +97,7 @@ class ConfigRPCOpsEventHandlerTests {
 
     @Test
     fun `closes all resources and sets status to DOWN upon stopping`() {
-        val configRPCOps = mock<ConfigRPCOps>()
+        val configRPCOps = mock<ConfigRPCOpsInternal>()
         val (configReadService, updateHandle) = getConfigReadServiceAndUpdateHandle()
         val (coordinator, registrationHandle) = getCoordinatorAndRegistrationHandle()
         val eventHandler = ConfigRPCOpsEventHandler(configReadService, configRPCOps)

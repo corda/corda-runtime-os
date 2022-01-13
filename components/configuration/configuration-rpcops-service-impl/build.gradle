@@ -13,6 +13,7 @@ dependencies {
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:configuration:configuration-rpcops-service')
     implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:configuration:configuration-endpoints')
     implementation project(':libs:http-rpc:http-rpc')
     implementation project(":libs:http-rpc:http-rpc-common")
     implementation project(':libs:lifecycle:lifecycle')
