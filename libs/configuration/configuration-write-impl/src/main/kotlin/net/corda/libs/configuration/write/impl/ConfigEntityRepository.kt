@@ -3,6 +3,7 @@ package net.corda.libs.configuration.write.impl
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.libs.configuration.write.WrongVersionException
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import java.time.Clock
@@ -25,7 +26,7 @@ internal class ConfigEntityRepository(private val entityManagerFactory: EntityMa
      *  @return The updated [ConfigEntity].
      */
     fun writeEntities(req: ConfigurationManagementRequest, clock: Clock): ConfigEntity {
-        val newConfig = ConfigEntity(req.section, req.config, req.configSchemaVersion, clock.instant(), req.updateActor)
+        val newConfig = ConfigEntity(req.section, req.config, req.schemaVersion, clock.instant(), req.updateActor)
         val newConfigAudit = ConfigAuditEntity(newConfig)
 
         return entityManagerFactory.createEntityManager().transaction { entityManager ->
@@ -33,9 +34,9 @@ internal class ConfigEntityRepository(private val entityManagerFactory: EntityMa
             val updatedConfig = existingConfig?.apply { update(newConfig) } ?: newConfig
 
             if (req.version != updatedConfig.version) {
-                throw IllegalStateException(
+                throw WrongVersionException(
                     "The request specified a version of ${req.version}, but the current version in the database is " +
-                            "${updatedConfig.version}. The versions must match for any update."
+                            "${updatedConfig.version}. These versions must match to update the cluster configuration."
                 )
             }
 

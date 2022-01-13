@@ -12,13 +12,16 @@ import net.corda.membership.identity.MemberInfoExtension.Companion.softwareVersi
 import net.corda.membership.identity.MemberInfoExtension.Companion.status
 import net.corda.membership.impl.GroupPolicyExtension.Companion.GROUP_ID
 import net.corda.membership.impl.GroupPolicyImpl
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.ENDPOINT_PROTOCOL
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.ENDPOINT_URL
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.KEY_ALIAS
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.MEMBER_STATUS
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.ROTATED_KEY_ALIAS
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.STATIC_MEMBER_TEMPLATE
-import net.corda.membership.staticmemberlist.StaticMemberTemplateConstants.Companion.X500NAME
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.KEY_ALIAS
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.MEMBER_STATUS
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.MGM_KEY_ALIAS
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.ROTATED_KEY_ALIAS
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.STATIC_NETWORK_TEMPLATE
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.NAME
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.STATIC_MEMBERS
+import net.corda.membership.staticmemberlist.StaticMemberTemplateExtension.Companion.STATIC_MGM
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.identity.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -42,7 +45,7 @@ class MembershipGroupReaderTest {
         private val staticMemberTemplate: List<Map<String, String>> =
             listOf(
                 mapOf(
-                    X500NAME to "C=GB, L=London, O=Alice",
+                    NAME to "C=GB, L=London, O=Alice",
                     KEY_ALIAS to "alice-alias",
                     String.format(ROTATED_KEY_ALIAS, 1) to "alice-historic-alias-1",
                     MEMBER_STATUS to MEMBER_STATUS_ACTIVE,
@@ -50,7 +53,7 @@ class MembershipGroupReaderTest {
                     String.format(ENDPOINT_PROTOCOL, 1) to "1"
                 ),
                 mapOf(
-                    X500NAME to "C=GB, L=London, O=Bob",
+                    NAME to "C=GB, L=London, O=Bob",
                     KEY_ALIAS to "bob-alias",
                     String.format(ROTATED_KEY_ALIAS, 1) to "bob-historic-alias-1",
                     String.format(ROTATED_KEY_ALIAS, 2) to "bob-historic-alias-2",
@@ -59,7 +62,7 @@ class MembershipGroupReaderTest {
                     String.format(ENDPOINT_PROTOCOL, 1) to "1"
                 ),
                 mapOf(
-                    X500NAME to "C=GB, L=London, O=Charlie",
+                    NAME to "C=GB, L=London, O=Charlie",
                     KEY_ALIAS to "charlie-alias",
                     MEMBER_STATUS to MEMBER_STATUS_SUSPENDED,
                     String.format(ENDPOINT_URL, 1) to "https://charlie.corda5.r3.com:10000",
@@ -71,7 +74,12 @@ class MembershipGroupReaderTest {
         private val groupPolicy = GroupPolicyImpl(
             mapOf(
                 GROUP_ID to "8bede5ed-257e-4f6b-bfd7-26bb3b4f7715",
-                STATIC_MEMBER_TEMPLATE to staticMemberTemplate
+                STATIC_NETWORK_TEMPLATE to mapOf(
+                    STATIC_MGM to mapOf(
+                        MGM_KEY_ALIAS to "mgm-alias"
+                    ),
+                    STATIC_MEMBERS to staticMemberTemplate
+                )
             )
         )
 

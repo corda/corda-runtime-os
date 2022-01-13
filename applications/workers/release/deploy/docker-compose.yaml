@@ -20,6 +20,9 @@ services:
     container_name: rpc-worker
     # Created with `gradlew applications:workers:release:rpc:publishOSGiImage`.
     image: "corda-os-docker-dev.software.r3.com/corda-os-rpc-worker:latest-local"
+    command: -m kafka.common.bootstrap.servers=kafka:9092
+    ports:
+      - "8888:8888"
 
   zookeeper:
     container_name: zookeeper
